@@ -1,0 +1,189 @@
+package main
+
+import (
+	"bytes"
+	"fmt"
+	"go/ast"
+	"go/parser"
+	"go/printer"
+	"go/token"
+	"strings"
+)
+
+// ClientInfo is the subset of api/client.gen.go needed to generate CLI
+// commands: method signatures on *ClientWithResponses, the Params structs they
+// reference, and path-param type aliases.
+type ClientInfo struct {
+	Methods      map[string]*Method     // keyed by Go method name (without WithResponse suffix)
+	ParamStructs map[string]*StructInfo // keyed by Go type name
+	TypeAliases  map[string]string      // e.g. "IDParam" -> "string", "LimitParam" -> "int"
+}
+
+// Method captures one *ClientWithResponses method the generator may wrap.
+type Method struct {
+	Name      string  // e.g. "GetChannel" (without "WithResponse" suffix)
+	Params    []Param // signature params, in order, excluding ctx and variadic editors
+	ResponseT string  // e.g. "GetChannelResponse"
+}
+
+// Param is one positional method parameter.
+type Param struct {
+	Name string // argument name from the signature (e.g. "id", "params", "body")
+	Type string // printed type expression (e.g. "IDParam", "*ListChannelsParams", "CreateChannelJSONRequestBody")
+}
+
+// StructInfo captures a struct type declaration.
+type StructInfo struct {
+	Name   string
+	Fields []FieldInfo
+}
+
+// FieldInfo is one field of a query-params struct.
+type FieldInfo struct {
+	GoName  string // Go field name (PascalCase)
+	Type    string // printed type expression (e.g. "*string", "*ListChannelsParamsKind")
+	JSONTag string // the first segment of the json:"..." tag (e.g. "kind")
+}
+
+// parseClient reads api/client.gen.go and extracts the information the
+// generator needs.
+func parseClient(path string) (*ClientInfo, error) {
+	fset := token.NewFileSet()
+	file, err := parser.ParseFile(fset, path, nil, parser.ParseComments)
+	if err != nil {
+		return nil, fmt.Errorf("parse %s: %w", path, err)
+	}
+
+	info := &ClientInfo{
+		Methods:      map[string]*Method{},
+		ParamStructs: map[string]*StructInfo{},
+		TypeAliases:  map[string]string{},
+	}
+
+	// First pass: type decls (aliases and structs).
+	for _, decl := range file.Decls {
+		gd, ok := decl.(*ast.GenDecl)
+		if !ok || gd.Tok != token.TYPE {
+			continue
+		}
+		for _, spec := range gd.Specs {
+			ts := spec.(*ast.TypeSpec)
+			switch t := ts.Type.(type) {
+			case *ast.Ident:
+				// e.g. "type IDParam = string" (alias, ts.Assign != 0) or
+				//      "type ListChannelsParamsKind string" (named defined type)
+				info.TypeAliases[ts.Name.Name] = t.Name
+			case *ast.StructType:
+				if !strings.HasSuffix(ts.Name.Name, "Params") {
+					continue
+				}
+				si := &StructInfo{Name: ts.Name.Name}
+				for _, f := range t.Fields.List {
+					if len(f.Names) == 0 {
+						continue
+					}
+					ftype, err := printExpr(fset, f.Type)
+					if err != nil {
+						return nil, err
+					}
+					jsonTag := jsonTagKey(f.Tag)
+					for _, n := range f.Names {
+						si.Fields = append(si.Fields, FieldInfo{
+							GoName:  n.Name,
+							Type:    ftype,
+							JSONTag: jsonTag,
+						})
+					}
+				}
+				info.ParamStructs[ts.Name.Name] = si
+			}
+		}
+	}
+
+	// Second pass: method decls on *ClientWithResponses.
+	for _, decl := range file.Decls {
+		fd, ok := decl.(*ast.FuncDecl)
+		if !ok || fd.Recv == nil || len(fd.Recv.List) == 0 {
+			continue
+		}
+		recv := fd.Recv.List[0].Type
+		star, ok := recv.(*ast.StarExpr)
+		if !ok {
+			continue
+		}
+		ident, ok := star.X.(*ast.Ident)
+		if !ok || ident.Name != "ClientWithResponses" {
+			continue
+		}
+		name := fd.Name.Name
+		if !strings.HasSuffix(name, "WithResponse") {
+			continue
+		}
+		// Skip the "WithBody" raw-body variant — we use the typed JSON form.
+		if strings.HasSuffix(name, "WithBodyWithResponse") {
+			continue
+		}
+		base := strings.TrimSuffix(name, "WithResponse")
+		m := &Method{
+			Name:      base,
+			ResponseT: base + "Response",
+		}
+		// Extract params: skip first (ctx) and any variadic RequestEditorFn.
+		params := fd.Type.Params.List
+		for i, p := range params {
+			if i == 0 {
+				continue // ctx
+			}
+			if _, isEllipsis := p.Type.(*ast.Ellipsis); isEllipsis {
+				continue
+			}
+			ptype, err := printExpr(fset, p.Type)
+			if err != nil {
+				return nil, err
+			}
+			// p.Names may be empty for anonymous params (shouldn't happen here).
+			for _, n := range p.Names {
+				m.Params = append(m.Params, Param{Name: n.Name, Type: ptype})
+			}
+			if len(p.Names) == 0 {
+				m.Params = append(m.Params, Param{Name: fmt.Sprintf("arg%d", i), Type: ptype})
+			}
+		}
+		info.Methods[base] = m
+	}
+
+	return info, nil
+}
+
+func printExpr(fset *token.FileSet, e ast.Expr) (string, error) {
+	var buf bytes.Buffer
+	if err := printer.Fprint(&buf, fset, e); err != nil {
+		return "", err
+	}
+	return buf.String(), nil
+}
+
+// jsonTagKey returns the first comma-delimited segment of a `json:"..."` tag,
+// or empty string if no json tag is present.
+func jsonTagKey(lit *ast.BasicLit) string {
+	if lit == nil {
+		return ""
+	}
+	raw := strings.Trim(lit.Value, "`")
+	// Minimal struct-tag parsing: look for json:"...".
+	const key = `json:"`
+	idx := strings.Index(raw, key)
+	if idx < 0 {
+		return ""
+	}
+	rest := raw[idx+len(key):]
+	end := strings.Index(rest, `"`)
+	if end < 0 {
+		return ""
+	}
+	val := rest[:end]
+	if comma := strings.Index(val, ","); comma >= 0 {
+		val = val[:comma]
+	}
+	return val
+}
