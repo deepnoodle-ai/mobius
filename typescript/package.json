@@ -1,0 +1,21 @@
+{
+  "name": "@deepnoodle/mobius",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "TypeScript SDK for Mobius workflow orchestration",
+  "license": "Apache-2.0",
+  "packageManager": "pnpm@10.18.3",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "generate": "openapi-typescript ../openapi.yaml -o src/api/schema.ts && node scripts/gen-api-index.js",
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "test": "tsc -p tsconfig.test.json && node --test build-test/test/*.test.js"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.0",
+    "openapi-typescript": "^7.6.0",
+    "typescript": "^5.0.0"
+  }
+}
