@@ -1,0 +1,7032 @@
+openapi: 3.0.3
+info:
+  title: mobius API
+  version: 0.1.0
+  description: Mobius is a work coordination platform for mixed teams of humans, systems,
+    and AI agents
+servers:
+- url: https://api.mobiusops.ai
+  description: Production
+- url: http://localhost:8080
+  description: Local development
+tags:
+- name: channels
+  x-displayName: channels
+- name: audit-logs
+  x-displayName: audit-logs
+- name: api-keys
+  x-displayName: api-keys
+- name: auth
+  x-displayName: auth
+- name: workflows
+  x-displayName: workflows
+- name: runs
+  x-displayName: runs
+- name: actions
+  x-displayName: actions
+- name: jobs
+  x-displayName: jobs
+- name: triggers
+  x-displayName: triggers
+- name: workers
+  x-displayName: workers
+- name: namespaces
+  x-displayName: namespaces
+- name: webhooks
+  x-displayName: webhooks
+- name: integrations
+  x-displayName: integrations
+- name: roles
+  x-displayName: roles
+- name: interactions
+  x-displayName: interactions
+- name: slack
+  x-displayName: slack
+- name: groups
+  x-displayName: groups
+- name: tools
+  x-displayName: tools
+paths:
+  /channels:
+    post:
+      operationId: createChannel
+      tags:
+      - channels
+      summary: Create a channel
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - data
+              properties:
+                data:
+                  $ref: '#/components/schemas/CreateChannelRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChannelDataResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    get:
+      operationId: listChannels
+      tags:
+      - channels
+      summary: List channels
+      parameters:
+      - name: kind
+        in: query
+        schema:
+          type: string
+          enum:
+          - dm
+          - channel
+        description: Filter by channel kind
+      - name: private
+        in: query
+        schema:
+          type: boolean
+        description: Filter by private flag
+      - $ref: '#/components/parameters/CursorParam'
+      - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChannelListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /channels/{id}:
+    get:
+      operationId: getChannel
+      tags:
+      - channels
+      summary: Get a channel
+      parameters:
+      - $ref: '#/components/parameters/IDParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChannelDataResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      operationId: updateChannel
+      tags:
+      - channels
+      summary: Update a channel
+      parameters:
+      - $ref: '#/components/parameters/IDParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - data
+              properties:
+                data:
+                  $ref: '#/components/schemas/UpdateChannelRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChannelDataResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      operationId: deleteChannel
+      tags:
+      - channels
+      summary: Delete a channel
+      parameters:
+      - $ref: '#/components/parameters/IDParam'
+      responses:
+        '204':
+          description: No Content
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /channels/{id}/members:
+    get:
+      operationId: listChannelMembers
+      tags:
+      - channels
+      summary: List channel members
+      parameters:
+      - $ref: '#/components/parameters/IDParam'
+      - $ref: '#/components/parameters/CursorParam'
+      - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChannelMemberListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      operationId: addChannelMember
+      tags:
+      - channels
+      summary: Add a member to a channel
+      parameters:
+      - $ref: '#/components/parameters/IDParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - data
+              properties:
+                data:
+                  $ref: '#/components/schemas/AddChannelMemberRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChannelMemberDataResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /channels/{id}/members/{userId}:
+    delete:
+      operationId: removeChannelMember
+      tags:
+      - channels
+      summary: Remove a member from a channel
+      parameters:
+      - $ref: '#/components/parameters/IDParam'
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '204':
+          description: No Content
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /channels/{id}/messages:
+    get:
+      operationId: listChannelMessages
+      tags:
+      - channels
+      summary: List messages in a channel
+      parameters:
+      - $ref: '#/components/parameters/IDParam'
+      - name: sender_id
+        in: query
+        schema:
+          type: string
+        description: Filter by sender
+      - name: reply_to
+        in: query
+        schema:
+          type: string
+        description: Filter to replies of a specific message
+      - name: pinned
+        in: query
+        schema:
+          type: boolean
+        description: Filter by pinned status
+      - $ref: '#/components/parameters/CursorParam'
+      - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChannelMessageListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      operationId: sendChannelMessage
+      tags:
+      - channels
+      summary: Send a message to a channel
+      parameters:
+      - $ref: '#/components/parameters/IDParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - data
+              properties:
+                data:
+                  $ref: '#/components/schemas/SendChannelMessageRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChannelMessageDataResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /channels/{id}/messages/{messageId}:
+    get:
+      operationId: getChannelMessage
+      tags:
+      - channels
+      summary: Get a specific message
+      parameters:
+      - $ref: '#/components/parameters/IDParam'
+      - name: messageId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChannelMessageDataResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      operationId: updateChannelMessage
+      tags:
+      - channels
+      summary: Update a channel message
+      parameters:
+      - $ref: '#/components/parameters/IDParam'
+      - name: messageId
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - data
+              properties:
+                data:
+                  $ref: '#/components/schemas/UpdateChannelMessageRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChannelMessageDataResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /audit-logs:
+    get:
+      operationId: listAuditLogs
+      tags:
+      - audit-logs
+      summary: List audit log entries
+      parameters:
+      - name: resource_type
+        in: query
+        schema:
+          type: string
+        description: Filter by resource type
+      - name: resource_id
+        in: query
+        schema:
+          type: string
+        description: Filter by resource ID
+      - name: user_id
+        in: query
+        schema:
+          type: string
+        description: Filter by user ID
+      - name: actor_type
+        in: query
+        schema:
+          type: string
+        description: Filter by actor type
+      - name: actor_id
+        in: query
+        schema:
+          type: string
+        description: Filter by actor ID
+      - name: action
+        in: query
+        schema:
+          type: string
+        description: Filter by action (create, update, delete)
+      - name: created_after
+        in: query
+        schema:
+          type: string
+          format: date-time
+        description: Filter to entries created after this timestamp
+      - name: created_before
+        in: query
+        schema:
+          type: string
+          format: date-time
+        description: Filter to entries created before this timestamp
+      - $ref: '#/components/parameters/CursorParam'
+      - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditLogListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /api-keys:
+    post:
+      operationId: createAPIKey
+      tags:
+      - api-keys
+      summary: Create an API key
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - data
+              properties:
+                data:
+                  $ref: '#/components/schemas/CreateAPIKeyRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIKeyCreateResultDataResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    get:
+      operationId: listAPIKeys
+      tags:
+      - api-keys
+      summary: List API keys
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIKeyListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /api-keys/{id}:
+    get:
+      operationId: getAPIKey
+      tags:
+      - api-keys
+      summary: Get an API key
+      parameters:
+      - $ref: '#/components/parameters/IDParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIKeyDataResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      operationId: revokeAPIKey
+      tags:
+      - api-keys
+      summary: Revoke an API key
+      parameters:
+      - $ref: '#/components/parameters/IDParam'
+      responses:
+        '204':
+          description: No Content
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /auth/device/code:
+    post:
+      operationId: createDeviceCode
+      tags:
+      - auth
+      summary: Start a browser-based CLI login flow
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - data
+              properties:
+                data:
+                  $ref: '#/components/schemas/CreateDeviceCodeRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeviceCodeResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+  /auth/device/token:
+    post:
+      operationId: exchangeDeviceCode
+      tags:
+      - auth
+      summary: Poll a browser-based CLI login flow for completion
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - data
+              properties:
+                data:
+                  $ref: '#/components/schemas/ExchangeDeviceCodeRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeviceTokenResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+  /auth/device/confirm:
+    post:
+      operationId: confirmDeviceCode
+      tags:
+      - auth
+      summary: Confirm a browser-based CLI login flow from the signed-in app
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - data
+              properties:
+                data:
+                  $ref: '#/components/schemas/ConfirmDeviceCodeRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfirmDeviceCodeResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Forbidden
+  /cli-credentials:
+    get:
+      operationId: listCLICredentials
+      tags:
+      - auth
+      summary: List browser-issued CLI credentials for the current user
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CLICredentialListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /cli-credentials/{id}:
+    delete:
+      operationId: revokeCLICredential
+      tags:
+      - auth
+      summary: Revoke one browser-issued CLI credential
+      parameters:
+      - $ref: '#/components/parameters/IDParam'
+      responses:
+        '204':
+          description: No Content
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /namespaces/{ns}/workflows:
+    get:
+      operationId: listWorkflows
+      tags:
+      - workflows
+      summary: List workflow definitions
+      parameters:
+      - $ref: '#/components/parameters/NamespaceSlugParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowDefinitionListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      operationId: createWorkflow
+      tags:
+      - workflows
+      summary: Create a workflow definition
+      parameters:
+      - $ref: '#/components/parameters/NamespaceSlugParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - data
+              properties:
+                data:
+                  $ref: '#/components/schemas/CreateWorkflowRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowDefinitionDataResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /namespaces/{ns}/workflows/{id}:
+    get:
+      operationId: getWorkflow
+      tags:
+      - workflows
+      summary: Get a workflow definition (with its latest version spec)
+      parameters:
+      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/IDParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowDefinitionDataResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      operationId: updateWorkflow
+      tags:
+      - workflows
+      summary: Update a workflow definition (new spec creates a new version)
+      parameters:
+      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/IDParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - data
+              properties:
+                data:
+                  $ref: '#/components/schemas/UpdateWorkflowRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowDefinitionDataResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      operationId: deleteWorkflow
+      tags:
+      - workflows
+      summary: Delete a workflow definition
+      parameters:
+      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/IDParam'
+      responses:
+        '204':
+          description: No Content
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /namespaces/{ns}/workflows/{id}/versions:
+    get:
+      operationId: listWorkflowVersions
+      tags:
+      - workflows
+      summary: List versions of a workflow definition
+      parameters:
+      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/IDParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowVersionListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /namespaces/{ns}/workflows/{id}/runs:
+    get:
+      operationId: listWorkflowRuns
+      tags:
+      - workflows
+      - runs
+      summary: List runs for a workflow definition
+      parameters:
+      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/IDParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowRunListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      operationId: startWorkflowRun
+      tags:
+      - workflows
+      - runs
+      summary: Start a new workflow run (enqueue)
+      description: 'Enqueues a workflow run. Supports an `Idempotency-Key`
+
+        header: when present, the first successful run is cached
+
+        for 24h and subsequent calls with the same key return the
+
+        original run instead of creating a new one.
+
+        '
+      parameters:
+      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/IDParam'
+      - name: Idempotency-Key
+        in: header
+        required: false
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - data
+              properties:
+                data:
+                  $ref: '#/components/schemas/StartRunRequest'
+      responses:
+        '202':
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowRunDataResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /namespaces/{ns}/runs:
+    get:
+      operationId: listRuns
+      tags:
+      - runs
+      summary: List workflow runs in a namespace
+      description: 'Supports cursor-based pagination and keyset filtering by
+
+        status, workflow type, queue, parent run, and
+
+        initiator. Returns `{data, next_cursor?}`; pass `next_cursor`
+
+        back in the next call to walk the result set.
+
+        '
+      parameters:
+      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - name: status
+        in: query
+        schema:
+          $ref: '#/components/schemas/WorkflowRunStatus'
+      - name: workflow_type
+        in: query
+        schema:
+          type: string
+      - name: queue
+        in: query
+        schema:
+          type: string
+      - name: parent_run_id
+        in: query
+        schema:
+          type: string
+      - name: initiated_by
+        in: query
+        schema:
+          type: string
+      - name: external_id
+        in: query
+        schema:
+          type: string
+      - name: group
+        in: query
+        schema:
+          type: string
+      - $ref: '#/components/parameters/CursorParam'
+      - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowRunListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /namespaces/{ns}/runs/cancellations:
+    post:
+      operationId: bulkCancelRuns
+      tags:
+      - runs
+      summary: Request cancellation for a batch of runs
+      description: 'Sets `cancel_requested` on every run in the request body.
+
+        Per-run errors are reported inline so callers can see
+
+        partial success.
+
+        '
+      parameters:
+      - $ref: '#/components/parameters/NamespaceSlugParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - data
+              properties:
+                data:
+                  $ref: '#/components/schemas/BulkRunRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BulkRunDataResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /namespaces/{ns}/runs/retries:
+    post:
+      operationId: bulkRetryRuns
+      tags:
+      - runs
+      summary: Re-enqueue a batch of failed runs
+      description: 'Flips every listed failed run back to queued with its
+
+        error message cleared. Per-run errors are reported inline.
+
+        '
+      parameters:
+      - $ref: '#/components/parameters/NamespaceSlugParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - data
+              properties:
+                data:
+                  $ref: '#/components/schemas/BulkRunRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BulkRunDataResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /namespaces/{ns}/runs/{id}:
+    get:
+      operationId: getRun
+      tags:
+      - runs
+      summary: Get a workflow run (including spec and run state blobs)
+      parameters:
+      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/IDParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowRunDetailDataResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /namespaces/{ns}/runs/{id}/action-log:
+    get:
+      operationId: getRunActionLog
+      tags:
+      - runs
+      summary: Get the append-only action log for a run
+      parameters:
+      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/IDParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionLogListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /namespaces/{ns}/runs/{id}/jobs:
+    get:
+      operationId: getRunJobs
+      tags:
+      - runs
+      summary: Get workflow jobs for a run
+      parameters:
+      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/IDParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /namespaces/{ns}/runs/events:
+    get:
+      operationId: streamNamespaceRunEvents
+      tags:
+      - runs
+      summary: Subscribe to a namespace-wide stream of run events (SSE)
+      description: 'Opens a Server-Sent Events connection. Each frame carries a
+
+        JSON envelope `{type, run_id, seq, timestamp, data}` where
+
+        `type` is one of `run_updated`, `job_updated`, or
+
+        `action_appended`, and `seq` is a monotonic durable
+
+        cursor.
+
+
+        Pass `?since=<seq>` on reconnect to replay any durable
+
+        events the server has recorded past that cursor before
+
+        switching back to live updates; clients should record the
+
+        largest `seq` they have observed. Comment frames
+
+        (`:keepalive`) are emitted every ~15s to keep intermediaries
+
+        from closing the connection.
+
+        '
+      parameters:
+      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - name: since
+        in: query
+        description: Durable event seq cursor to replay from.
+        schema:
+          type: integer
+          format: int64
+      responses:
+        '200':
+          description: OK (text/event-stream)
+          content:
+            text/event-stream:
+              schema:
+                type: string
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /namespaces/{ns}/runs/{id}/cancellations:
+    post:
+      operationId: cancelRun
+      tags:
+      - runs
+      summary: Request cancellation of an in-flight run
+      description: 'Sets the cancel_requested flag on the run. The next heartbeat
+
+        response includes `directives.should_cancel: true`, and the
+
+        worker is expected to drop the run cooperatively.
+
+        '
+      parameters:
+      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/IDParam'
+      responses:
+        '204':
+          description: No Content
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /namespaces/{ns}/runs/{id}/resumptions:
+    post:
+      operationId: resumeRun
+      tags:
+      - runs
+      summary: Flip a suspended run back to queued
+      parameters:
+      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/IDParam'
+      responses:
+        '204':
+          description: No Content
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /namespaces/{ns}/runs/{id}/signals:
+    post:
+      operationId: sendRunSignal
+      tags:
+      - runs
+      summary: Deliver a signal to a suspended run
+      description: 'Durably enqueues a signal keyed by (run_id, name). If the run
+
+        is currently suspended waiting on that topic it is flipped
+
+        back to queued so the next poll picks it up. Otherwise the
+
+        signal sits in the store until a future suspended branch
+
+        receives it.
+
+        '
+      parameters:
+      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/IDParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - data
+              properties:
+                data:
+                  $ref: '#/components/schemas/SendRunSignalRequest'
+      responses:
+        '202':
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RunSignalDataResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /namespaces/{ns}/runs/{id}/events:
+    get:
+      operationId: streamRunEvents
+      tags:
+      - runs
+      summary: Subscribe to a stream of events for a single run (SSE)
+      description: 'Same envelope as `/namespaces/{ns}/runs/events` but filtered to
+        a single run.
+
+        The server writes one seed `run_updated` frame on connection
+
+        so reconnects do not miss the latest state, and supports
+
+        `?since=<seq>` replay for durable events recorded since the
+
+        given seq cursor.
+
+        '
+      parameters:
+      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/IDParam'
+      - name: since
+        in: query
+        description: Durable event seq cursor to replay from.
+        schema:
+          type: integer
+          format: int64
+      responses:
+        '200':
+          description: OK (text/event-stream)
+          content:
+            text/event-stream:
+              schema:
+                type: string
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /actions:
+    get:
+      operationId: listActions
+      tags:
+      - actions
+      summary: List custom actions in the org
+      parameters:
+      - $ref: '#/components/parameters/CursorParam'
+      - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomActionListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      operationId: createAction
+      tags:
+      - actions
+      summary: Create a custom action in the org
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - data
+              properties:
+                data:
+                  $ref: '#/components/schemas/CreateCustomActionRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomActionDataResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /actions/{actionName}:
+    get:
+      operationId: getAction
+      tags:
+      - actions
+      summary: Get a custom action by name
+      parameters:
+      - $ref: '#/components/parameters/ActionNameParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomActionDataResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      operationId: updateAction
+      tags:
+      - actions
+      summary: Update a custom action
+      parameters:
+      - $ref: '#/components/parameters/ActionNameParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - data
+              properties:
+                data:
+                  $ref: '#/components/schemas/UpdateCustomActionRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomActionDataResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      operationId: deleteAction
+      tags:
+      - actions
+      summary: Delete a custom action
+      parameters:
+      - $ref: '#/components/parameters/ActionNameParam'
+      responses:
+        '204':
+          $ref: '#/components/responses/NoContent'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /actions/{actionName}/secret/rotate:
+    post:
+      operationId: rotateActionSecret
+      tags:
+      - actions
+      summary: Rotate a custom action signing secret
+      parameters:
+      - $ref: '#/components/parameters/ActionNameParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RotateSecretDataResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /action-audit-log:
+    get:
+      operationId: listActionAuditLog
+      tags:
+      - actions
+      summary: List action invocation audit records
+      parameters:
+      - $ref: '#/components/parameters/CursorParam'
+      - $ref: '#/components/parameters/LimitParam'
+      - name: run_id
+        in: query
+        schema:
+          type: string
+      - name: action_name
+        in: query
+        schema:
+          type: string
+      - name: status
+        in: query
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionAuditLogListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /actions/catalog:
+    get:
+      operationId: listCatalogActions
+      tags:
+      - actions
+      summary: List platform and custom actions available in the org
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionCatalogListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /actions/catalog/{actionName}:
+    get:
+      operationId: getCatalogAction
+      tags:
+      - actions
+      summary: Get one catalog action by name
+      parameters:
+      - $ref: '#/components/parameters/ActionNameParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionCatalogDataResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /namespaces/{ns}/jobs/claim:
+    post:
+      operationId: claimJob
+      tags:
+      - jobs
+      summary: Long-poll for the next claimable workflow job
+      description: 'Atomically claims the next pending workflow job whose queue name
+        is
+
+        in the worker''s `queues` subscription and whose action is in the
+
+        worker''s `actions` filter when provided. If no job is immediately
+
+        available and
+
+        `wait_seconds > 0`, the server holds the request open for up
+
+        to `wait_seconds` (capped at 30). Returns 204 when the poll
+
+        window closes empty.
+
+        '
+      parameters:
+      - $ref: '#/components/parameters/NamespaceSlugParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - data
+              properties:
+                data:
+                  $ref: '#/components/schemas/JobClaimRequest'
+      responses:
+        '200':
+          description: Job claimed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobClaimDataResponse'
+        '204':
+          description: No jobs available within the poll window
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /namespaces/{ns}/jobs/{id}/heartbeat:
+    post:
+      operationId: heartbeatJob
+      tags:
+      - jobs
+      summary: Refresh the lease on a claimed workflow job
+      description: 'Returns a small JSON envelope rather than 204 so the server can
+
+        attach directives (cancel signals, configuration changes, etc.)
+
+        to the heartbeat response without another round of API churn.
+
+        '
+      parameters:
+      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/IDParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - data
+              properties:
+                data:
+                  $ref: '#/components/schemas/JobFenceRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobHeartbeatDataResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /namespaces/{ns}/jobs/{id}/complete:
+    post:
+      operationId: completeJob
+      tags:
+      - jobs
+      summary: Report terminal status for a claimed workflow job
+      parameters:
+      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/IDParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - data
+              properties:
+                data:
+                  $ref: '#/components/schemas/JobCompleteRequest'
+      responses:
+        '204':
+          description: No Content
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /namespaces/{ns}/jobs/{id}/interactions:
+    post:
+      operationId: createJobInteraction
+      tags:
+      - jobs
+      summary: Create a human-in-the-loop interaction from a claimed workflow job
+      description: 'Job-scoped form of interaction creation for the step-claim runtime.
+
+        The job is used to derive the owning run and enforce namespace
+
+        scoping before creating the interaction.
+
+        '
+      parameters:
+      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/IDParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - data
+              properties:
+                data:
+                  $ref: '#/components/schemas/CreateJobInteractionRequest'
+      responses:
+        '201':
+          description: Interaction created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InteractionDataResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /namespaces/{ns}/jobs/{id}/actions/{actionName}:
+    post:
+      operationId: runJobAction
+      tags:
+      - jobs
+      summary: Execute one server-side action for a claimed workflow job
+      parameters:
+      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/IDParam'
+      - $ref: '#/components/parameters/ActionNameParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - data
+              properties:
+                data:
+                  $ref: '#/components/schemas/RunActionRequest'
+      responses:
+        '200':
+          description: Action executed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RunActionResultDataResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /namespaces/{ns}/triggers:
+    get:
+      operationId: listTriggers
+      tags:
+      - triggers
+      summary: List triggers in the namespace
+      parameters:
+      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - name: kind
+        in: query
+        schema:
+          $ref: '#/components/schemas/TriggerKind'
+      - name: enabled
+        in: query
+        schema:
+          type: boolean
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TriggerListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      operationId: createTrigger
+      tags:
+      - triggers
+      summary: Create a trigger
+      parameters:
+      - $ref: '#/components/parameters/NamespaceSlugParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - data
+              properties:
+                data:
+                  $ref: '#/components/schemas/CreateTriggerRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TriggerDataResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /namespaces/{ns}/triggers/{id}:
+    get:
+      operationId: getTrigger
+      tags:
+      - triggers
+      summary: Get a trigger by id
+      parameters:
+      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/IDParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TriggerDataResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      operationId: updateTrigger
+      tags:
+      - triggers
+      summary: Update a trigger
+      parameters:
+      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/IDParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - data
+              properties:
+                data:
+                  $ref: '#/components/schemas/UpdateTriggerRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TriggerDataResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      operationId: deleteTrigger
+      tags:
+      - triggers
+      summary: Delete a trigger
+      parameters:
+      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/IDParam'
+      responses:
+        '204':
+          description: No Content
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /namespaces/{ns}/triggers/{id}/fires:
+    get:
+      operationId: listTriggerFires
+      tags:
+      - triggers
+      summary: List fire history for a trigger
+      parameters:
+      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/IDParam'
+      - name: status
+        in: query
+        schema:
+          $ref: '#/components/schemas/TriggerFireStatus'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TriggerFireListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /namespaces/{ns}/workers:
+    get:
+      operationId: listWorkers
+      tags:
+      - workers
+      summary: List recently seen workers in the namespace
+      parameters:
+      - $ref: '#/components/parameters/NamespaceSlugParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkerListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /namespaces:
+    get:
+      operationId: listNamespaces
+      tags:
+      - namespaces
+      summary: List namespaces in the org
+      parameters:
+      - name: search
+        in: query
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NamespaceListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      operationId: createNamespace
+      tags:
+      - namespaces
+      summary: Create a namespace
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - data
+              properties:
+                data:
+                  $ref: '#/components/schemas/CreateNamespaceRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NamespaceDataResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /namespaces/{id}:
+    get:
+      operationId: getNamespace
+      tags:
+      - namespaces
+      summary: Get a namespace by id
+      parameters:
+      - $ref: '#/components/parameters/IDParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NamespaceDataResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      operationId: updateNamespace
+      tags:
+      - namespaces
+      summary: Update a namespace
+      parameters:
+      - $ref: '#/components/parameters/IDParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - data
+              properties:
+                data:
+                  $ref: '#/components/schemas/UpdateNamespaceRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NamespaceDataResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      operationId: deleteNamespace
+      tags:
+      - namespaces
+      summary: Delete a namespace
+      parameters:
+      - $ref: '#/components/parameters/IDParam'
+      responses:
+        '204':
+          description: No Content
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /namespaces/{ns}/webhooks:
+    get:
+      operationId: listWebhooks
+      tags:
+      - webhooks
+      summary: List webhooks
+      description: 'Lists the managed webhook endpoints in the namespace. Each webhook
+        is an
+
+        inbound endpoint hosted by Mobius.
+
+        '
+      parameters:
+      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - name: enabled
+        in: query
+        schema:
+          type: boolean
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebhookListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      operationId: createWebhook
+      tags:
+      - webhooks
+      summary: Create webhook
+      description: 'Creates a managed inbound webhook endpoint for the namespace and
+        returns
+
+        its `receive_url`.
+
+        '
+      parameters:
+      - $ref: '#/components/parameters/NamespaceSlugParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - data
+              properties:
+                data:
+                  $ref: '#/components/schemas/CreateWebhookRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebhookDataResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /namespaces/{ns}/webhooks/{id}:
+    get:
+      operationId: getWebhook
+      tags:
+      - webhooks
+      summary: Get webhook
+      description: 'Returns one managed inbound webhook endpoint by ID.
+
+        '
+      parameters:
+      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/IDParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebhookDataResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      operationId: updateWebhook
+      tags:
+      - webhooks
+      summary: Update webhook
+      description: 'Updates a managed inbound webhook endpoint. This can rename the
+        webhook,
+
+        enable or disable it, or rotate its shared secret.
+
+        '
+      parameters:
+      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/IDParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - data
+              properties:
+                data:
+                  $ref: '#/components/schemas/UpdateWebhookRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebhookDataResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      operationId: deleteWebhook
+      tags:
+      - webhooks
+      summary: Delete webhook
+      description: 'Deletes a managed inbound webhook endpoint and its configuration.
+
+        '
+      parameters:
+      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/IDParam'
+      responses:
+        '204':
+          description: No Content
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /namespaces/{ns}/webhooks/{id}/events:
+    get:
+      operationId: listWebhookEvents
+      tags:
+      - webhooks
+      summary: List webhook events
+      description: 'Lists inbound requests previously received by the managed webhook
+
+        endpoint.
+
+        '
+      parameters:
+      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/IDParam'
+      - name: status
+        in: query
+        schema:
+          $ref: '#/components/schemas/WebhookEventStatus'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebhookEventListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /integrations:
+    get:
+      operationId: listIntegrations
+      tags:
+      - integrations
+      summary: List integrations in the org
+      parameters:
+      - name: provider
+        in: query
+        schema:
+          type: string
+      - name: status
+        in: query
+        schema:
+          $ref: '#/components/schemas/IntegrationStatus'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IntegrationListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      operationId: createIntegration
+      tags:
+      - integrations
+      summary: Create an integration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - data
+              properties:
+                data:
+                  $ref: '#/components/schemas/CreateIntegrationRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IntegrationDataResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /integrations/{id}:
+    get:
+      operationId: getIntegration
+      tags:
+      - integrations
+      summary: Get an integration by id
+      parameters:
+      - $ref: '#/components/parameters/IDParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IntegrationDataResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      operationId: updateIntegration
+      tags:
+      - integrations
+      summary: Update an integration
+      parameters:
+      - $ref: '#/components/parameters/IDParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - data
+              properties:
+                data:
+                  $ref: '#/components/schemas/UpdateIntegrationRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IntegrationDataResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      operationId: deleteIntegration
+      tags:
+      - integrations
+      summary: Delete an integration
+      parameters:
+      - $ref: '#/components/parameters/IDParam'
+      responses:
+        '204':
+          description: No Content
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /roles:
+    get:
+      operationId: listRoles
+      tags:
+      - roles
+      summary: List roles
+      parameters:
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 200
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Forbidden
+    post:
+      operationId: createRole
+      tags:
+      - roles
+      summary: Create a custom role
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - data
+              properties:
+                data:
+                  $ref: '#/components/schemas/CreateRoleRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleDataResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Forbidden
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /roles/{id}:
+    get:
+      operationId: getRole
+      tags:
+      - roles
+      summary: Get a role
+      parameters:
+      - $ref: '#/components/parameters/IDParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleDataResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Forbidden
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      operationId: updateRole
+      tags:
+      - roles
+      summary: Update a custom role
+      parameters:
+      - $ref: '#/components/parameters/IDParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - data
+              properties:
+                data:
+                  $ref: '#/components/schemas/UpdateRoleRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleDataResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Forbidden
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+    delete:
+      operationId: deleteRole
+      tags:
+      - roles
+      summary: Delete a custom role
+      parameters:
+      - $ref: '#/components/parameters/IDParam'
+      responses:
+        '204':
+          description: No Content
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Forbidden
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /role-assignments:
+    get:
+      operationId: listRoleAssignments
+      tags:
+      - roles
+      summary: List role assignments
+      parameters:
+      - name: actor_type
+        in: query
+        schema:
+          type: string
+          enum:
+          - user
+          - service_account
+      - name: actor_id
+        in: query
+        schema:
+          type: string
+      - name: role_id
+        in: query
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleAssignmentListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Forbidden
+    post:
+      operationId: createRoleAssignment
+      tags:
+      - roles
+      summary: Create a role assignment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - data
+              properties:
+                data:
+                  $ref: '#/components/schemas/CreateRoleAssignmentRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleAssignmentDataResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Forbidden
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /role-assignments/{id}:
+    delete:
+      operationId: deleteRoleAssignment
+      tags:
+      - roles
+      summary: Delete a role assignment
+      parameters:
+      - $ref: '#/components/parameters/IDParam'
+      responses:
+        '204':
+          description: No Content
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Forbidden
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /namespaces/{ns}/interactions:
+    post:
+      operationId: createInteraction
+      tags:
+      - interactions
+      summary: Create an interaction explicitly
+      parameters:
+      - $ref: '#/components/parameters/NamespaceSlugParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - data
+              properties:
+                data:
+                  $ref: '#/components/schemas/CreateInteractionRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InteractionDataResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    get:
+      operationId: listInteractions
+      tags:
+      - interactions
+      summary: List interactions
+      parameters:
+      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - name: status
+        in: query
+        schema:
+          type: string
+          enum:
+          - pending
+          - completed
+          - expired
+        description: Filter by status
+      - name: run_id
+        in: query
+        schema:
+          type: string
+        description: Filter by originating run ID
+      - name: target_actor_type
+        in: query
+        schema:
+          type: string
+          enum:
+          - member
+          - agent
+          - group
+        description: Filter by target actor type
+      - name: target_actor_id
+        in: query
+        schema:
+          type: string
+        description: Filter by target actor ID
+      - name: inbox
+        in: query
+        schema:
+          type: boolean
+        description: When true, returns only interactions visible to the authenticated
+          user (direct + group membership)
+      - $ref: '#/components/parameters/CursorParam'
+      - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InteractionListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /namespaces/{ns}/interactions/{id}:
+    get:
+      operationId: getInteraction
+      tags:
+      - interactions
+      summary: Get an interaction
+      parameters:
+      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/IDParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InteractionDataResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /namespaces/{ns}/interactions/{id}/respond:
+    post:
+      operationId: respondToInteraction
+      tags:
+      - interactions
+      summary: Submit a response to an interaction
+      description: 'Canonical interaction response endpoint for both human responders
+        and
+
+        agent workers. When the authenticated request is not associated with a
+
+        member user and the interaction targets an agent queue, the server
+
+        attributes the response to that target agent automatically.
+
+        '
+      parameters:
+      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/IDParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - data
+              properties:
+                data:
+                  $ref: '#/components/schemas/RespondToInteractionRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InteractionDataResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /namespaces/{ns}/interactions/{id}/claim:
+    post:
+      operationId: claimInteraction
+      tags:
+      - interactions
+      summary: Claim a pending first-responder group interaction
+      parameters:
+      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/IDParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InteractionDataResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /namespaces/{ns}/interactions/{id}/release:
+    post:
+      operationId: releaseInteraction
+      tags:
+      - interactions
+      summary: Release a claimed first-responder group interaction
+      parameters:
+      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/IDParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InteractionDataResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /integrations/slack/connect:
+    post:
+      operationId: startSlackInstall
+      tags:
+      - slack
+      summary: Start Slack connection flow
+      description: 'Generates a signed state token and returns the Slack OAuth authorize
+        URL.
+
+        The caller should redirect the user''s browser to the returned URL.
+
+        '
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SlackInstallDataResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /integrations/slack/disconnect:
+    post:
+      operationId: disconnectSlack
+      tags:
+      - slack
+      summary: Disconnect Slack integration
+      description: 'Revokes the Slack bot token and deletes the integration record.
+
+        Clears all active alert state for the org.
+
+        '
+      responses:
+        '204':
+          description: No Content
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /provider/slack/oauth/callback:
+    get:
+      operationId: slackOAuthCallback
+      tags:
+      - slack
+      summary: Slack OAuth callback
+      description: 'Handles the Slack OAuth redirect. Validates state, exchanges the
+        code
+
+        for a bot token, and upserts the Slack integration for the org.
+
+        Redirects to the Slack settings page on success.
+
+        '
+      parameters:
+      - name: code
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: state
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: error
+        in: query
+        required: false
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OAuth callback handled without redirect
+        '302':
+          description: Redirect to settings page
+        '400':
+          $ref: '#/components/responses/BadRequest'
+  /provider/slack/events:
+    post:
+      operationId: handleSlackEvents
+      tags:
+      - slack
+      summary: Slack Events API webhook
+      description: 'Receives Slack Events API callbacks (URL verification, app_uninstalled,
+
+        tokens_revoked). Requires valid Slack request signature.
+
+        '
+      responses:
+        '200':
+          description: OK
+        '401':
+          description: Invalid signature
+  /provider/slack/interactions:
+    post:
+      operationId: handleSlackInteract
+      tags:
+      - slack
+      summary: Slack interactive component webhook
+      description: 'Receives Slack interactive payloads (block_actions, view_submission).
+
+        Requires valid Slack request signature.
+
+        '
+      responses:
+        '200':
+          description: OK
+        '401':
+          description: Invalid signature
+  /provider/slack/commands:
+    post:
+      operationId: handleSlackCommands
+      tags:
+      - slack
+      summary: Slack slash command webhook
+      description: 'Receives /mobius slash command payloads.
+
+        Requires valid Slack request signature.
+
+        '
+      responses:
+        '200':
+          description: OK
+        '401':
+          description: Invalid signature
+  /groups:
+    post:
+      operationId: createGroup
+      tags:
+      - groups
+      summary: Create a group
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - data
+              properties:
+                data:
+                  $ref: '#/components/schemas/CreateGroupRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupDataResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          $ref: '#/components/responses/Conflict'
+    get:
+      operationId: listGroups
+      tags:
+      - groups
+      summary: List groups in an org
+      parameters:
+      - $ref: '#/components/parameters/CursorParam'
+      - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupWithCountListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /groups/{groupId}:
+    get:
+      operationId: getGroup
+      tags:
+      - groups
+      summary: Get a group with member count
+      parameters:
+      - $ref: '#/components/parameters/GroupIDParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupWithCountDataResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      operationId: updateGroup
+      tags:
+      - groups
+      summary: Update a group
+      parameters:
+      - $ref: '#/components/parameters/GroupIDParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - data
+              properties:
+                data:
+                  $ref: '#/components/schemas/UpdateGroupRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupDataResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      operationId: deleteGroup
+      tags:
+      - groups
+      summary: Delete a group
+      description: Rejected if any pending interaction targets this group.
+      parameters:
+      - $ref: '#/components/parameters/GroupIDParam'
+      responses:
+        '204':
+          description: No Content
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /groups/{groupId}/members:
+    get:
+      operationId: listGroupMembers
+      tags:
+      - groups
+      summary: List members of a group
+      parameters:
+      - $ref: '#/components/parameters/GroupIDParam'
+      - $ref: '#/components/parameters/CursorParam'
+      - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupMemberListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      operationId: addGroupMember
+      tags:
+      - groups
+      summary: Add a member to a group
+      parameters:
+      - $ref: '#/components/parameters/GroupIDParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - data
+              properties:
+                data:
+                  $ref: '#/components/schemas/AddGroupMemberRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupMemberDataResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /groups/{groupId}/members/{userId}:
+    delete:
+      operationId: removeGroupMember
+      tags:
+      - groups
+      summary: Remove a member from a group
+      parameters:
+      - $ref: '#/components/parameters/GroupIDParam'
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '204':
+          description: No Content
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /members/{userId}/groups:
+    get:
+      operationId: listMemberGroups
+      tags:
+      - groups
+      summary: List groups a member belongs to
+      parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /tools:
+    get:
+      operationId: listTools
+      tags:
+      - tools
+      summary: List tool-published workflows
+      description: 'Returns all workflow definitions that have been published as tools
+
+        for the authenticated org. Each entry includes the tool name,
+
+        description, and JSON Schema for the input — compatible with the
+
+        Anthropic and OpenAI tool use APIs.
+
+        '
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToolDefinitionListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /namespaces/{ns}/tools/{slug}/runs:
+    post:
+      operationId: runTool
+      tags:
+      - tools
+      summary: Invoke a workflow tool
+      description: 'Starts a workflow run for the named tool (workflow slug) and waits
+
+        for it to complete up to `timeout_seconds` (default 30s, max 120s).
+
+        Returns the run output directly when the workflow completes within
+
+        the timeout. On timeout the response includes the run ID and
+
+        `status: pending` so the caller can switch to polling via
+
+        `GET /namespaces/{ns}/tools/{slug}/runs/{run_id}`.
+
+        '
+      parameters:
+      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - data
+              properties:
+                data:
+                  $ref: '#/components/schemas/ToolRunRequest'
+      responses:
+        '200':
+          description: OK — run completed synchronously
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToolRunDataResponse'
+        '202':
+          description: Accepted — run is pending; poll for result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToolRunDataResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /namespaces/{ns}/tools/{slug}/runs/{runId}:
+    get:
+      operationId: getToolRun
+      tags:
+      - tools
+      summary: Poll for the result of an async tool run
+      parameters:
+      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: runId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToolRunDataResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      description: API key passed as Bearer token
+  parameters:
+    NamespaceSlugParam:
+      name: ns
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Namespace slug (unique per organization)
+    IDParam:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+    ActionNameParam:
+      name: actionName
+      in: path
+      required: true
+      schema:
+        type: string
+    CursorParam:
+      name: cursor
+      in: query
+      description: Cursor for pagination (opaque string from previous response)
+      schema:
+        type: string
+    LimitParam:
+      name: limit
+      in: query
+      description: Maximum number of items to return
+      schema:
+        type: integer
+        default: 50
+        minimum: 1
+        maximum: 200
+    GroupIDParam:
+      name: groupId
+      in: path
+      required: true
+      schema:
+        type: string
+  responses:
+    BadRequest:
+      description: Bad Request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: Not Found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Conflict:
+      description: Conflict
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    ServiceUnavailable:
+      description: Service Unavailable
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NoContent:
+      description: No Content
+  schemas:
+    ErrorResponse:
+      type: object
+      required:
+      - error
+      properties:
+        error:
+          type: object
+          required:
+          - code
+          - message
+          properties:
+            code:
+              type: string
+              description: Machine-readable error code
+            message:
+              type: string
+              description: Human-readable error message
+    HealthResponse:
+      type: object
+      required:
+      - status
+      properties:
+        status:
+          type: string
+    Metadata:
+      type: object
+      additionalProperties: true
+    Channel:
+      type: object
+      required:
+      - id
+      - name
+      - display_name
+      - kind
+      - private
+      - created_by
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+          description: Channel slug (unique within org)
+        display_name:
+          type: string
+          description: Human-facing display name
+        topic:
+          type: string
+          description: Channel topic or description
+        kind:
+          type: string
+          enum:
+          - dm
+          - channel
+          description: Channel type
+        private:
+          type: boolean
+          description: Whether the channel is private
+        created_by:
+          type: string
+          description: ID of the user who created the channel
+        archived_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Timestamp when the channel was archived
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    ChannelDataResponse:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          $ref: '#/components/schemas/Channel'
+    ChannelListResponse:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Channel'
+        has_more:
+          type: boolean
+        next_cursor:
+          type: string
+    ChannelMember:
+      type: object
+      required:
+      - id
+      - channel_id
+      - user_id
+      - role
+      - joined_at
+      properties:
+        id:
+          type: string
+        channel_id:
+          type: string
+        user_id:
+          type: string
+        role:
+          type: string
+          enum:
+          - member
+          - admin
+          description: Member's role in the channel
+        last_read_message_id:
+          type: string
+          nullable: true
+          description: Last message read by this member
+        muted:
+          type: boolean
+          description: Whether notifications are muted
+        starred:
+          type: boolean
+          description: Whether the member has starred this channel
+        joined_at:
+          type: string
+          format: date-time
+    ChannelMemberDataResponse:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          $ref: '#/components/schemas/ChannelMember'
+    ChannelMemberListResponse:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChannelMember'
+        has_more:
+          type: boolean
+        next_cursor:
+          type: string
+    ChannelMessage:
+      type: object
+      required:
+      - id
+      - channel_id
+      - sender_id
+      - type
+      - content
+      - created_at
+      properties:
+        id:
+          type: string
+        channel_id:
+          type: string
+        sender_id:
+          type: string
+          description: ID of the message sender (user or agent)
+        display:
+          type: string
+          enum:
+          - message
+          - notice
+          - card
+          description: Rendering layout mode
+        type:
+          type: string
+          description: Dot-namespaced message type (e.g. user.message, ai.response)
+        content:
+          type: string
+          description: Message content (markdown)
+        reply_to:
+          type: string
+          nullable: true
+          description: ID of the message this is a reply to (threading)
+        metadata:
+          $ref: '#/components/schemas/Metadata'
+        pinned:
+          type: boolean
+          description: Whether this message is pinned
+        pinned_by:
+          type: string
+          nullable: true
+          description: ID of user who pinned this message
+        edited_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: When the message was last edited
+        created_at:
+          type: string
+          format: date-time
+    ChannelMessageDataResponse:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          $ref: '#/components/schemas/ChannelMessage'
+    ChannelMessageListResponse:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChannelMessage'
+        has_more:
+          type: boolean
+        next_cursor:
+          type: string
+    CreateChannelRequest:
+      type: object
+      required:
+      - name
+      - display_name
+      - kind
+      properties:
+        name:
+          type: string
+          description: Channel slug (unique, immutable)
+        display_name:
+          type: string
+          description: Human-facing display name
+        topic:
+          type: string
+          description: Channel topic or description
+        kind:
+          type: string
+          enum:
+          - dm
+          - channel
+          description: Channel type
+        private:
+          type: boolean
+          default: false
+          description: Whether the channel is private (invite-only)
+        member_ids:
+          type: array
+          items:
+            type: string
+          description: Initial member IDs to add to the channel
+    UpdateChannelRequest:
+      type: object
+      properties:
+        display_name:
+          type: string
+        topic:
+          type: string
+        private:
+          type: boolean
+    AddChannelMemberRequest:
+      type: object
+      required:
+      - user_id
+      properties:
+        user_id:
+          type: string
+          description: User or agent ID to add
+        role:
+          type: string
+          enum:
+          - member
+          - admin
+          default: member
+    SendChannelMessageRequest:
+      type: object
+      required:
+      - content
+      properties:
+        content:
+          type: string
+          description: Message content (markdown)
+        display:
+          type: string
+          enum:
+          - message
+          - notice
+          - card
+          default: message
+          description: Rendering layout mode
+        type:
+          type: string
+          default: user.message
+          description: Dot-namespaced message type
+        reply_to:
+          type: string
+          description: Parent message ID for threading
+        metadata:
+          $ref: '#/components/schemas/Metadata'
+    UpdateChannelMessageRequest:
+      type: object
+      properties:
+        content:
+          type: string
+          description: Updated message content (markdown)
+        metadata:
+          $ref: '#/components/schemas/Metadata'
+        pinned:
+          type: boolean
+          description: Whether this message is pinned
+    AuditLogEntry:
+      type: object
+      required:
+      - id
+      - action
+      - resource_type
+      - resource_id
+      - created_at
+      properties:
+        id:
+          type: string
+          description: Unique audit log entry ID
+        user_id:
+          type: string
+          description: ID of the user who performed the action, when a human user
+            is attributable
+        actor_type:
+          type: string
+          description: Durable actor type that performed the action
+        actor_id:
+          type: string
+          description: Durable actor ID that performed the action
+        credential_id:
+          type: string
+          description: Credential ID used for the request, when applicable
+        action:
+          type: string
+          enum:
+          - create
+          - update
+          - delete
+          description: Type of action performed
+        resource_type:
+          type: string
+          description: Type of resource affected (e.g., task, channel, document)
+        resource_id:
+          type: string
+          description: ID of the affected resource
+        resource_name:
+          type: string
+          description: Human-readable name of the affected resource
+        changes:
+          type: object
+          additionalProperties: true
+          description: Object containing before/after changes for update actions
+        ip_address:
+          type: string
+          description: IP address of the request
+        user_agent:
+          type: string
+          description: User agent of the request
+        created_at:
+          type: string
+          format: date-time
+          description: Timestamp when the action was performed
+    AuditLogListResponse:
+      type: object
+      required:
+      - data
+      - has_more
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditLogEntry'
+        next_cursor:
+          type: string
+          description: Cursor for fetching next page of results
+        has_more:
+          type: boolean
+          description: Whether more results are available
+    APIKey:
+      type: object
+      required:
+      - id
+      - name
+      - key_prefix
+      - scope
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        key_prefix:
+          type: string
+          description: First 8 characters of the key for identification
+        scope:
+          type: string
+          enum:
+          - org
+          - system
+        permissions:
+          type: array
+          items:
+            type: string
+        service_account_id:
+          type: string
+        expires_at:
+          type: string
+          format: date-time
+        last_used_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    APIKeyDataResponse:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          $ref: '#/components/schemas/APIKey'
+    APIKeyCreateResult:
+      type: object
+      required:
+      - id
+      - name
+      - key_prefix
+      - scope
+      - created_at
+      - updated_at
+      - key
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        key_prefix:
+          type: string
+          description: First 8 characters of the key for identification
+        scope:
+          type: string
+          enum:
+          - org
+          - system
+        permissions:
+          type: array
+          items:
+            type: string
+        service_account_id:
+          type: string
+        expires_at:
+          type: string
+          format: date-time
+        last_used_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        key:
+          type: string
+          description: The raw API key (shown only once)
+    APIKeyCreateResultDataResponse:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          $ref: '#/components/schemas/APIKeyCreateResult'
+    APIKeyListResponse:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/APIKey'
+    CreateAPIKeyRequest:
+      type: object
+      required:
+      - name
+      properties:
+        name:
+          type: string
+        scope:
+          type: string
+          enum:
+          - org
+          - system
+          default: org
+        permissions:
+          type: array
+          items:
+            type: string
+        service_account_id:
+          type: string
+        expires_at:
+          type: string
+          format: date-time
+    CreateDeviceCodeRequest:
+      type: object
+      properties:
+        requested_org_id:
+          type: string
+        label:
+          type: string
+    ExchangeDeviceCodeRequest:
+      type: object
+      required:
+      - device_code
+      properties:
+        device_code:
+          type: string
+    ConfirmDeviceCodeRequest:
+      type: object
+      required:
+      - user_code
+      properties:
+        user_code:
+          type: string
+        label:
+          type: string
+    DeviceCodeResponse:
+      type: object
+      required:
+      - device_code
+      - user_code
+      - verification_uri
+      - verification_uri_complete
+      - expires_in
+      - interval
+      properties:
+        device_code:
+          type: string
+        user_code:
+          type: string
+        verification_uri:
+          type: string
+        verification_uri_complete:
+          type: string
+        expires_in:
+          type: integer
+        interval:
+          type: integer
+    DeviceTokenStatus:
+      type: string
+      enum:
+      - authorization_pending
+      - complete
+      - expired
+      - denied
+    DeviceTokenResponse:
+      type: object
+      required:
+      - status
+      properties:
+        status:
+          $ref: '#/components/schemas/DeviceTokenStatus'
+        token:
+          type: string
+        credential_id:
+          type: string
+    ConfirmDeviceCodeResult:
+      type: object
+      required:
+      - confirmed
+      properties:
+        confirmed:
+          type: boolean
+    CLICredentialStatus:
+      type: string
+      enum:
+      - active
+      - revoked
+    CLICredential:
+      type: object
+      required:
+      - id
+      - org_id
+      - user_id
+      - label
+      - token_prefix
+      - status
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+        org_id:
+          type: string
+        user_id:
+          type: string
+        label:
+          type: string
+        token_prefix:
+          type: string
+        status:
+          $ref: '#/components/schemas/CLICredentialStatus'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        last_used_at:
+          type: string
+          format: date-time
+        expires_at:
+          type: string
+          format: date-time
+    CLICredentialListResponse:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/CLICredential'
+    WorkflowSpec:
+      type: object
+      required:
+      - name
+      - steps
+      description: 'Workflow definition shaped like `workflow.Options`.
+
+
+        Authoring rule: `action` is the canonical field for executable steps.
+
+        When `action_kind` is omitted, `action` uses worker/job semantics.
+
+        Use `action_kind: "server"` for Mobius-managed server actions such as
+
+        platform integrations or custom HTTP-backed actions.
+
+        '
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          description: Workflow name.
+        description:
+          type: string
+        start_at:
+          type: string
+          description: Step name to start execution from. Defaults to the first step.
+        inputs:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkflowInput'
+        outputs:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkflowOutput'
+        state:
+          type: object
+          additionalProperties: true
+          description: Initial workflow state.
+        steps:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkflowStep'
+    WorkflowInput:
+      type: object
+      required:
+      - name
+      - type
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+        description:
+          type: string
+        default:
+          description: Optional default value.
+    WorkflowOutput:
+      type: object
+      required:
+      - name
+      - variable
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+        variable:
+          type: string
+        branch:
+          type: string
+          description: Defaults to `main` when omitted.
+        description:
+          type: string
+    WorkflowStep:
+      description: 'A workflow step. Exactly one step shape should be used.
+
+        '
+      oneOf:
+      - $ref: '#/components/schemas/WorkflowExecutableStep'
+      - $ref: '#/components/schemas/WorkflowJoinStep'
+      - $ref: '#/components/schemas/WorkflowWaitSignalStep'
+      - $ref: '#/components/schemas/WorkflowSleepStep'
+      - $ref: '#/components/schemas/WorkflowPauseStep'
+      - $ref: '#/components/schemas/WorkflowInteractionStep'
+    WorkflowStepBase:
+      type: object
+      required:
+      - name
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        next:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkflowEdge'
+        edge_matching_strategy:
+          $ref: '#/components/schemas/WorkflowEdgeMatchingStrategy'
+        each:
+          $ref: '#/components/schemas/WorkflowEach'
+    WorkflowExecutableStep:
+      allOf:
+      - $ref: '#/components/schemas/WorkflowStepBase'
+      - type: object
+        required:
+        - action
+        properties:
+          action:
+            type: string
+            description: 'Canonical executable-step field.
+
+              When `action_kind` is omitted, the engine treats this as a worker action.
+
+              Use `action_kind: server` for Mobius-managed server actions.
+
+              '
+          action_kind:
+            $ref: '#/components/schemas/WorkflowActionKind'
+          store:
+            type: string
+          parameters:
+            type: object
+            additionalProperties: true
+          retry:
+            type: array
+            items:
+              $ref: '#/components/schemas/WorkflowRetry'
+          catch:
+            type: array
+            items:
+              $ref: '#/components/schemas/WorkflowCatch'
+      example:
+        name: summarize
+        action: summarize-document
+        parameters:
+          doc_id: ${inputs.doc_id}
+    WorkflowJoinStep:
+      allOf:
+      - $ref: '#/components/schemas/WorkflowStepBase'
+      - type: object
+        required:
+        - join
+        properties:
+          join:
+            $ref: '#/components/schemas/WorkflowJoinConfig'
+    WorkflowWaitSignalStep:
+      allOf:
+      - $ref: '#/components/schemas/WorkflowStepBase'
+      - type: object
+        required:
+        - wait_signal
+        properties:
+          wait_signal:
+            $ref: '#/components/schemas/WorkflowWaitSignalConfig'
+    WorkflowSleepStep:
+      allOf:
+      - $ref: '#/components/schemas/WorkflowStepBase'
+      - type: object
+        required:
+        - sleep
+        properties:
+          sleep:
+            $ref: '#/components/schemas/WorkflowSleepConfig'
+    WorkflowPauseStep:
+      allOf:
+      - $ref: '#/components/schemas/WorkflowStepBase'
+      - type: object
+        required:
+        - pause
+        properties:
+          pause:
+            $ref: '#/components/schemas/WorkflowPauseConfig'
+    WorkflowInteractionStep:
+      allOf:
+      - $ref: '#/components/schemas/WorkflowStepBase'
+      - type: object
+        required:
+        - interaction
+        properties:
+          interaction:
+            $ref: '#/components/schemas/WorkflowInteractionConfig'
+    WorkflowActionKind:
+      type: string
+      enum:
+      - worker
+      - server
+      description: 'Execution mode for `action` steps.
+
+        Omit for the current default of `worker`.
+
+        '
+    WorkflowEdgeMatchingStrategy:
+      type: string
+      enum:
+      - all
+      - first
+    WorkflowEdge:
+      type: object
+      required:
+      - step
+      additionalProperties: false
+      properties:
+        step:
+          type: string
+        condition:
+          type: string
+        branch:
+          type: string
+    WorkflowEach:
+      type: object
+      required:
+      - items
+      additionalProperties: false
+      properties:
+        items:
+          description: Expression or literal collection to iterate over.
+        as:
+          type: string
+    WorkflowRetry:
+      type: object
+      additionalProperties: false
+      properties:
+        error_equals:
+          type: array
+          items:
+            type: string
+        max_retries:
+          type: integer
+          minimum: 0
+        base_delay:
+          type: string
+          description: Go duration string.
+        max_delay:
+          type: string
+          description: Go duration string.
+        backoff_rate:
+          type: number
+        jitter_strategy:
+          type: string
+          enum:
+          - NONE
+          - FULL
+        timeout:
+          type: string
+          description: Go duration string.
+    WorkflowCatch:
+      type: object
+      required:
+      - error_equals
+      - next
+      additionalProperties: false
+      properties:
+        error_equals:
+          type: array
+          items:
+            type: string
+        next:
+          type: string
+        store:
+          type: string
+    WorkflowJoinConfig:
+      type: object
+      properties:
+        branches:
+          type: array
+          items:
+            type: string
+        count:
+          type: integer
+          minimum: 0
+        branch_mappings:
+          type: object
+          additionalProperties:
+            type: string
+    WorkflowWaitSignalConfig:
+      type: object
+      required:
+      - topic
+      - timeout
+      additionalProperties: false
+      properties:
+        topic:
+          type: string
+        timeout:
+          type: string
+          description: Go duration string.
+        store:
+          type: string
+        on_timeout:
+          type: string
+    WorkflowSleepConfig:
+      type: object
+      required:
+      - duration
+      additionalProperties: false
+      properties:
+        duration:
+          type: string
+          description: Go duration string.
+    WorkflowPauseConfig:
+      type: object
+      additionalProperties: false
+      properties:
+        reason:
+          type: string
+    WorkflowInteractionConfig:
+      type: object
+      required:
+      - type
+      - message
+      - target
+      - timeout
+      additionalProperties: false
+      properties:
+        type:
+          type: string
+          enum:
+          - approval
+          - review
+          - input
+        message:
+          type: string
+        context:
+          type: object
+          additionalProperties: true
+        spec:
+          $ref: '#/components/schemas/WorkflowInteractionSpec'
+        timeout:
+          type: string
+          description: Go duration string.
+        target:
+          $ref: '#/components/schemas/WorkflowInteractionTarget'
+    WorkflowInteractionSpec:
+      type: object
+      required:
+      - mode
+      additionalProperties: false
+      description: 'Declarative interaction UI contract embedded in a workflow definition.
+
+        This mirrors the persisted interaction spec used at runtime and is
+
+        intentionally portable across web, email, and agent experiences.
+
+        '
+      properties:
+        mode:
+          type: string
+          enum:
+          - confirm
+          - select
+          - multi_select
+          - input
+        options:
+          type: array
+          description: Required for `select` and `multi_select` modes.
+          items:
+            $ref: '#/components/schemas/WorkflowInteractionOption'
+        default_value:
+          type: string
+          description: Default selected option for `select` mode.
+        default_values:
+          type: array
+          description: Default selected options for `multi_select` mode.
+          items:
+            type: string
+        default_text:
+          type: string
+          description: Initial text value for `input` mode.
+        default_confirmed:
+          type: boolean
+          description: Initial yes/no value for `confirm` mode.
+        placeholder:
+          type: string
+          description: Hint text shown for `input` mode.
+        multiline:
+          type: boolean
+          description: When true, render `input` mode as a multiline text area.
+    WorkflowInteractionOption:
+      type: object
+      required:
+      - value
+      - label
+      additionalProperties: false
+      properties:
+        value:
+          type: string
+        label:
+          type: string
+        description:
+          type: string
+    WorkflowInteractionTarget:
+      type: object
+      required:
+      - type
+      - id
+      additionalProperties: false
+      properties:
+        type:
+          type: string
+          enum:
+          - user
+          - group
+        id:
+          type: string
+        require_all:
+          type: boolean
+    WorkflowDefinition:
+      type: object
+      required:
+      - id
+      - name
+      - slug
+      - latest_version
+      - created_by
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+        namespace_id:
+          type: string
+        queue:
+          type: string
+          description: Default queue name for runs of this workflow.
+        name:
+          type: string
+        slug:
+          type: string
+        description:
+          type: string
+        latest_version:
+          type: integer
+        published_as_tool:
+          type: boolean
+          description: When true, this workflow is exposed as a callable tool via
+            /api/tools.
+        spec:
+          $ref: '#/components/schemas/WorkflowSpec'
+        created_by:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    WorkflowDefinitionDataResponse:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          $ref: '#/components/schemas/WorkflowDefinition'
+    WorkflowDefinitionListResponse:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkflowDefinition'
+    CreateWorkflowRequest:
+      type: object
+      required:
+      - name
+      - spec
+      properties:
+        name:
+          type: string
+        slug:
+          type: string
+        description:
+          type: string
+        namespace_id:
+          type: string
+        queue:
+          type: string
+          description: Default queue for runs of this workflow. Defaults to "default".
+        published_as_tool:
+          type: boolean
+          description: When true, expose this workflow as a callable tool via /api/tools.
+        spec:
+          $ref: '#/components/schemas/WorkflowSpec'
+    UpdateWorkflowRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        queue:
+          type: string
+        published_as_tool:
+          type: boolean
+          description: When true, expose this workflow as a callable tool via /api/tools.
+        spec:
+          $ref: '#/components/schemas/WorkflowSpec'
+    WorkflowVersion:
+      type: object
+      required:
+      - id
+      - version
+      - spec
+      - created_by
+      - created_at
+      properties:
+        id:
+          type: string
+        version:
+          type: integer
+        spec:
+          $ref: '#/components/schemas/WorkflowSpec'
+        created_by:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+    WorkflowVersionListResponse:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkflowVersion'
+    WorkflowRunStatus:
+      type: string
+      enum:
+      - queued
+      - running
+      - completed
+      - failed
+      - suspended
+    WorkflowRun:
+      type: object
+      required:
+      - id
+      - definition_id
+      - definition_version_id
+      - definition_version
+      - workflow_name
+      - status
+      - attempt
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+        namespace_id:
+          type: string
+        queue:
+          type: string
+        parent_run_id:
+          type: string
+        definition_id:
+          type: string
+        definition_version_id:
+          type: string
+        definition_version:
+          type: integer
+        workflow_name:
+          type: string
+        status:
+          $ref: '#/components/schemas/WorkflowRunStatus'
+        attempt:
+          type: integer
+        inputs:
+          type: object
+          additionalProperties: true
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
+        error_message:
+          type: string
+        actor_type:
+          type: string
+        actor_id:
+          type: string
+        initiated_by:
+          type: string
+        external_id:
+          type: string
+        group:
+          type: string
+        callback_url:
+          type: string
+          description: 'Outbound customer callback URL intended for terminal run
+
+            notifications. The value is persisted on the run, but callback
+
+            delivery is not yet active.
+
+            '
+        created_at:
+          type: string
+          format: date-time
+        started_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    WorkflowRunDataResponse:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          $ref: '#/components/schemas/WorkflowRun'
+    WorkflowRunListResponse:
+      type: object
+      required:
+      - data
+      - has_more
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkflowRun'
+        has_more:
+          type: boolean
+          description: True when more pages are available.
+        next_cursor:
+          type: string
+          description: 'Opaque cursor for fetching the next page. Present only when
+
+            has_more is true.
+
+            '
+    WorkflowRunDetail:
+      allOf:
+      - $ref: '#/components/schemas/WorkflowRun'
+      - type: object
+        properties:
+          result_b64:
+            type: string
+            description: Base64-encoded terminal result blob
+          jobs:
+            type: array
+            items:
+              $ref: '#/components/schemas/Job'
+    WorkflowRunDetailDataResponse:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          $ref: '#/components/schemas/WorkflowRunDetail'
+    StartRunRequest:
+      type: object
+      properties:
+        namespace_id:
+          type: string
+        queue:
+          type: string
+          description: 'Queue name to enqueue the run on. Defaults to the
+
+            workflow definition''s queue, then "default".
+
+            '
+        callback_url:
+          type: string
+          description: 'Outbound customer callback URL intended for terminal run
+
+            notifications. If set, Mobius stores this value on the run for
+
+            future callback delivery, but terminal-status callback delivery is
+
+            not yet active.
+
+            '
+        inputs:
+          type: object
+          additionalProperties: true
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
+        external_id:
+          type: string
+        group:
+          type: string
+    ActionLogEntry:
+      type: object
+      required:
+      - id
+      - action
+      - step_name
+      - branch_id
+      - started_at
+      - duration_ms
+      properties:
+        id:
+          type: string
+        action:
+          type: string
+        step_name:
+          type: string
+        branch_id:
+          type: string
+        parameters:
+          type: object
+          additionalProperties: true
+        result:
+          type: object
+          additionalProperties: true
+        error:
+          type: string
+        started_at:
+          type: string
+          format: date-time
+        duration_ms:
+          type: integer
+    ActionLogListResponse:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ActionLogEntry'
+    Job:
+      type: object
+      required:
+      - id
+      - namespace_id
+      - run_id
+      - step_name
+      - action
+      - queue
+      - status
+      - attempt
+      - max_attempts
+      - scheduled_at
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+        namespace_id:
+          type: string
+        run_id:
+          type: string
+        parent_job_id:
+          type: string
+        path_id:
+          type: string
+        step_name:
+          type: string
+        action:
+          type: string
+        queue:
+          type: string
+        parameters:
+          type: object
+          additionalProperties: true
+        status:
+          type: string
+        claimed_by:
+          type: string
+        claimed_at:
+          type: string
+          format: date-time
+        heartbeat_at:
+          type: string
+          format: date-time
+        attempt:
+          type: integer
+        max_attempts:
+          type: integer
+        scheduled_at:
+          type: string
+          format: date-time
+        last_error:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    JobListResponse:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Job'
+    SendRunSignalRequest:
+      type: object
+      required:
+      - name
+      properties:
+        name:
+          type: string
+          description: Signal topic (e.g. "approval", "webhook").
+        payload:
+          type: object
+          additionalProperties: true
+    RunSignal:
+      type: object
+      required:
+      - id
+      - run_id
+      - name
+      properties:
+        id:
+          type: string
+        run_id:
+          type: string
+        name:
+          type: string
+    RunSignalDataResponse:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          $ref: '#/components/schemas/RunSignal'
+    BulkRunRequest:
+      type: object
+      required:
+      - run_ids
+      properties:
+        run_ids:
+          type: array
+          items:
+            type: string
+    BulkRunResult:
+      type: object
+      required:
+      - succeeded
+      properties:
+        succeeded:
+          type: array
+          items:
+            type: string
+        failures:
+          type: object
+          additionalProperties:
+            type: string
+          description: Map of run_id -> error message for per-run failures.
+    BulkRunDataResponse:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          $ref: '#/components/schemas/BulkRunResult'
+    CustomActionAnnotations:
+      type: object
+      properties:
+        idempotent:
+          type: boolean
+        destructive:
+          type: boolean
+        read_only:
+          type: boolean
+    CreateCustomActionRequest:
+      type: object
+      required:
+      - name
+      - endpoint_url
+      properties:
+        name:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        endpoint_url:
+          type: string
+          format: uri
+        input_schema:
+          type: object
+          additionalProperties: true
+        output_schema:
+          type: object
+          additionalProperties: true
+        annotations:
+          $ref: '#/components/schemas/CustomActionAnnotations'
+    UpdateCustomActionRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        endpoint_url:
+          type: string
+          format: uri
+        input_schema:
+          type: object
+          additionalProperties: true
+        output_schema:
+          type: object
+          additionalProperties: true
+        annotations:
+          $ref: '#/components/schemas/CustomActionAnnotations'
+    CustomAction:
+      type: object
+      required:
+      - id
+      - org_id
+      - name
+      - endpoint_url
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+        org_id:
+          type: string
+        name:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        endpoint_url:
+          type: string
+          format: uri
+        input_schema:
+          type: object
+          additionalProperties: true
+        output_schema:
+          type: object
+          additionalProperties: true
+        annotations:
+          $ref: '#/components/schemas/CustomActionAnnotations'
+        signing_secret:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    CustomActionDataResponse:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          $ref: '#/components/schemas/CustomAction'
+    CustomActionListResponse:
+      type: object
+      required:
+      - data
+      - has_more
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/CustomAction'
+        next_cursor:
+          type: string
+        has_more:
+          type: boolean
+    RotateSecretResult:
+      type: object
+      required:
+      - signing_secret
+      properties:
+        signing_secret:
+          type: string
+    RotateSecretDataResponse:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          $ref: '#/components/schemas/RotateSecretResult'
+    ActionCatalogEntry:
+      type: object
+      required:
+      - name
+      - source
+      - available
+      properties:
+        name:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        integration:
+          type: string
+        source:
+          type: string
+        available:
+          type: boolean
+        annotations:
+          $ref: '#/components/schemas/CustomActionAnnotations'
+        input_schema:
+          type: object
+          additionalProperties: true
+        output_schema:
+          type: object
+          additionalProperties: true
+        endpoint_url:
+          type: string
+          format: uri
+    ActionCatalogDataResponse:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          $ref: '#/components/schemas/ActionCatalogEntry'
+    ActionCatalogListResponse:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ActionCatalogEntry'
+    ActionAuditLogEntry:
+      type: object
+      required:
+      - id
+      - action_name
+      - source
+      - status
+      - retry_count
+      - started_at
+      - finished_at
+      properties:
+        id:
+          type: string
+        run_id:
+          type: string
+        step_name:
+          type: string
+        action_name:
+          type: string
+        source:
+          type: string
+        parameters:
+          type: object
+          additionalProperties: true
+        output_summary:
+          type: object
+          additionalProperties: true
+        status:
+          type: string
+        retry_count:
+          type: integer
+        started_at:
+          type: string
+          format: date-time
+        finished_at:
+          type: string
+          format: date-time
+        error_type:
+          type: string
+        error_message:
+          type: string
+    ActionAuditLogListResponse:
+      type: object
+      required:
+      - data
+      - has_more
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ActionAuditLogEntry'
+        next_cursor:
+          type: string
+        has_more:
+          type: boolean
+    JobClaimRequest:
+      type: object
+      required:
+      - worker_id
+      properties:
+        worker_id:
+          type: string
+        worker_name:
+          type: string
+        worker_version:
+          type: string
+        queues:
+          type: array
+          description: 'Queue names the worker subscribes to. When empty the
+
+            worker claims from any queue in the org. Runs default
+
+            to the "default" queue when not specified.
+
+            '
+          items:
+            type: string
+        actions:
+          type: array
+          description: Action names this worker can execute.
+          items:
+            type: string
+        wait_seconds:
+          type: integer
+          minimum: 0
+          maximum: 30
+          description: 'How long to hold the request open waiting for a job to
+
+            surface. 0 returns immediately.
+
+            '
+    JobClaim:
+      type: object
+      required:
+      - job_id
+      - run_id
+      - namespace_id
+      - workflow_name
+      - step_name
+      - action
+      - attempt
+      - queue
+      - parameters
+      properties:
+        job_id:
+          type: string
+        run_id:
+          type: string
+        namespace_id:
+          type: string
+        workflow_name:
+          type: string
+        step_name:
+          type: string
+        action:
+          type: string
+        parameters:
+          type: object
+          additionalProperties: true
+        attempt:
+          type: integer
+        queue:
+          type: string
+        heartbeat_interval_seconds:
+          type: integer
+    JobHeartbeatDirectives:
+      type: object
+      properties:
+        should_cancel:
+          type: boolean
+          default: false
+          description: When true the worker must stop processing and complete with
+            status failed.
+    JobHeartbeat:
+      type: object
+      required:
+      - ok
+      - directives
+      properties:
+        ok:
+          type: boolean
+        directives:
+          $ref: '#/components/schemas/JobHeartbeatDirectives'
+    JobClaimDataResponse:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          $ref: '#/components/schemas/JobClaim'
+    JobFenceRequest:
+      type: object
+      required:
+      - worker_id
+      - attempt
+      properties:
+        worker_id:
+          type: string
+        attempt:
+          type: integer
+    JobHeartbeatDataResponse:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          $ref: '#/components/schemas/JobHeartbeat'
+    JobCompleteRequest:
+      type: object
+      required:
+      - worker_id
+      - attempt
+      - status
+      properties:
+        worker_id:
+          type: string
+        attempt:
+          type: integer
+        status:
+          type: string
+          enum:
+          - completed
+          - failed
+        result_b64:
+          type: string
+        error_type:
+          type: string
+        error_message:
+          type: string
+    RunActionRequest:
+      type: object
+      properties:
+        parameters:
+          type: object
+          additionalProperties: true
+        timeout_seconds:
+          type: integer
+          minimum: 0
+        dry_run:
+          type: boolean
+    RunActionResult:
+      type: object
+      required:
+      - output
+      properties:
+        output:
+          oneOf:
+          - type: object
+            additionalProperties: true
+          - type: array
+            items: {}
+          - type: string
+          - type: number
+          - type: integer
+          - type: boolean
+    RunActionResultDataResponse:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          $ref: '#/components/schemas/RunActionResult'
+    ActorRef:
+      type: object
+      required:
+      - type
+      - id
+      properties:
+        type:
+          type: string
+          enum:
+          - member
+          - agent
+          - group
+        id:
+          type: string
+          description: User ID for member; queue name for agent; group ID/slug for
+            group
+    InteractionType:
+      type: string
+      enum:
+      - approval
+      - review
+      - input
+    InteractionSpecMode:
+      type: string
+      description: 'Declarative UI/input primitive for collecting the response. This
+        is a
+
+        portable rendering contract, not executable code.
+
+        '
+      enum:
+      - confirm
+      - select
+      - multi_select
+      - input
+    InteractionOption:
+      type: object
+      required:
+      - value
+      - label
+      additionalProperties: false
+      description: Selectable option for `select` and `multi_select` modes.
+      properties:
+        value:
+          type: string
+        label:
+          type: string
+        description:
+          type: string
+    InteractionSpec:
+      type: object
+      required:
+      - mode
+      additionalProperties: false
+      description: 'Declarative dialog contract for rendering and validating an interaction.
+
+        `type` defines the semantic intent; `mode` defines the input affordance.
+
+        Compatibility rules are enforced server-side:
+
+        - `approval` requires `mode = confirm`
+
+        - `review` requires `mode = select`
+
+        - `input` supports `input`, `select`, or `multi_select`
+
+        '
+      properties:
+        mode:
+          $ref: '#/components/schemas/InteractionSpecMode'
+        options:
+          type: array
+          description: Required for `select` and `multi_select` modes.
+          items:
+            $ref: '#/components/schemas/InteractionOption'
+        default_value:
+          type: string
+          description: Default selected option for `select` mode.
+        default_values:
+          type: array
+          description: Default selected options for `multi_select` mode.
+          items:
+            type: string
+        default_text:
+          type: string
+          description: Initial text value for `input` mode.
+        default_confirmed:
+          type: boolean
+          description: Initial yes/no value for `confirm` mode.
+        placeholder:
+          type: string
+          description: Hint text shown for `input` mode.
+        multiline:
+          type: boolean
+          description: When true, render `input` mode as a multiline text area.
+    CreateJobInteractionRequest:
+      type: object
+      required:
+      - target_actor
+      - type
+      - message
+      description: 'Creates an interaction from a claimed job context. The server
+        derives
+
+        the owning run from the job and may derive the topic when omitted.
+
+        '
+      properties:
+        target_actor:
+          $ref: '#/components/schemas/ActorRef'
+        type:
+          $ref: '#/components/schemas/InteractionType'
+        message:
+          type: string
+        topic:
+          type: string
+          description: 'Optional signal topic override. When omitted, the server derives
+
+            the topic from step_name or falls back to a default interaction topic.
+
+            '
+        step_name:
+          type: string
+          description: Optional workflow step label for UI/debugging context
+        context:
+          type: object
+          additionalProperties: true
+        spec:
+          $ref: '#/components/schemas/InteractionSpec'
+        require_all:
+          type: boolean
+          default: false
+          description: 'When target_actor.type is "group", setting require_all=true
+
+            means all snapshotted group members must respond before the
+
+            interaction is considered complete. Ignored for non-group targets.
+
+            '
+        timeout:
+          type: string
+          description: 'Optional duration string (e.g. "24h", "30m") specifying how
+            long
+
+            the interaction should remain open before expiring. When absent
+
+            the caller is responsible for setting expires_at directly.
+
+            '
+        expires_at:
+          type: string
+          format: date-time
+    InteractionValue:
+      description: Free-form JSON payload supplied by the responder.
+      oneOf:
+      - type: object
+        additionalProperties: true
+      - type: array
+        items: {}
+      - type: string
+      - type: number
+      - type: integer
+      - type: boolean
+    InteractionResponse:
+      type: object
+      required:
+      - value
+      - at
+      properties:
+        value:
+          $ref: '#/components/schemas/InteractionValue'
+        comment:
+          type: string
+          nullable: true
+        at:
+          type: string
+          format: date-time
+          description: When the response was submitted
+    InteractionPartialResponse:
+      type: object
+      required:
+      - user_id
+      - value
+      - responded_at
+      properties:
+        user_id:
+          type: string
+        value:
+          $ref: '#/components/schemas/InteractionValue'
+        comment:
+          type: string
+          nullable: true
+        responded_at:
+          type: string
+          format: date-time
+    Interaction:
+      type: object
+      required:
+      - id
+      - org_id
+      - type
+      - status
+      - target_actor
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+        org_id:
+          type: string
+        run_id:
+          type: string
+          nullable: true
+          description: Originating workflow run when the interaction is run-backed.
+        topic:
+          type: string
+          nullable: true
+          description: Signal topic used to resume the originating run when run-backed.
+        type:
+          $ref: '#/components/schemas/InteractionType'
+        status:
+          type: string
+          enum:
+          - pending
+          - completed
+          - expired
+        message:
+          type: string
+          nullable: true
+          description: Human-readable message shown to the responder
+        context:
+          type: object
+          additionalProperties: true
+          nullable: true
+        spec:
+          $ref: '#/components/schemas/InteractionSpec'
+        target_actor:
+          $ref: '#/components/schemas/ActorRef'
+        responder_actor:
+          $ref: '#/components/schemas/ActorRef'
+          nullable: true
+        response:
+          $ref: '#/components/schemas/InteractionResponse'
+          nullable: true
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        target_group_id:
+          type: string
+          nullable: true
+          description: Resolved group ID (set when target_actor.type = group)
+        target_member_snapshot:
+          type: array
+          items:
+            type: string
+          nullable: true
+          description: User IDs of group members at the time of creation
+        routing_policy_snapshot:
+          type: string
+          enum:
+          - first_responder
+          - all_members
+          nullable: true
+          description: Group routing policy captured at creation time
+        require_all:
+          type: boolean
+          description: When true, all snapshotted members must respond before completion
+        claimed_by:
+          type: string
+          nullable: true
+          description: User ID of the member who claimed this interaction (first_responder
+            only)
+        claimed_at:
+          type: string
+          format: date-time
+          nullable: true
+        partial_responses:
+          type: array
+          items:
+            $ref: '#/components/schemas/InteractionPartialResponse'
+          nullable: true
+          description: Per-member responses for all_members routing
+    InteractionDataResponse:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          $ref: '#/components/schemas/Interaction'
+    TriggerKind:
+      type: string
+      enum:
+      - schedule
+      - webhook
+      - event
+    ConcurrencyPolicy:
+      type: string
+      enum:
+      - allow
+      - forbid
+      - replace
+    TriggerFireStatus:
+      type: string
+      enum:
+      - success
+      - failed
+      - skipped
+    TriggerTarget:
+      type: object
+      required:
+      - workflow_id
+      properties:
+        workflow_id:
+          type: string
+        condition:
+          type: string
+        input_mapping:
+          type: object
+          additionalProperties:
+            type: string
+    Trigger:
+      type: object
+      required:
+      - id
+      - org_id
+      - name
+      - kind
+      - concurrency_policy
+      - enabled
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+        org_id:
+          type: string
+        namespace_id:
+          type: string
+        name:
+          type: string
+        kind:
+          $ref: '#/components/schemas/TriggerKind'
+        source_config:
+          type: object
+          additionalProperties: true
+        filter_config:
+          type: object
+          additionalProperties: true
+        targets:
+          type: array
+          items:
+            $ref: '#/components/schemas/TriggerTarget'
+        concurrency_policy:
+          $ref: '#/components/schemas/ConcurrencyPolicy'
+        enabled:
+          type: boolean
+        last_fire_at:
+          type: string
+          format: date-time
+        next_fire_at:
+          type: string
+          format: date-time
+        created_by:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    TriggerDataResponse:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          $ref: '#/components/schemas/Trigger'
+    TriggerListResponse:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Trigger'
+    TriggerFire:
+      type: object
+      required:
+      - id
+      - org_id
+      - trigger_id
+      - fired_at
+      - status
+      - created_at
+      properties:
+        id:
+          type: string
+        org_id:
+          type: string
+        trigger_id:
+          type: string
+        scheduled_at:
+          type: string
+          format: date-time
+        fired_at:
+          type: string
+          format: date-time
+        run_id:
+          type: string
+        status:
+          $ref: '#/components/schemas/TriggerFireStatus'
+        error:
+          type: string
+        dedup_key:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+    TriggerFireListResponse:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/TriggerFire'
+    CreateTriggerRequest:
+      type: object
+      required:
+      - name
+      - kind
+      properties:
+        namespace_id:
+          type: string
+        name:
+          type: string
+        kind:
+          $ref: '#/components/schemas/TriggerKind'
+        source_config:
+          type: object
+          additionalProperties: true
+        filter_config:
+          type: object
+          additionalProperties: true
+        targets:
+          type: array
+          items:
+            $ref: '#/components/schemas/TriggerTarget'
+        concurrency_policy:
+          $ref: '#/components/schemas/ConcurrencyPolicy'
+        enabled:
+          type: boolean
+    UpdateTriggerRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        source_config:
+          type: object
+          additionalProperties: true
+        filter_config:
+          type: object
+          additionalProperties: true
+        targets:
+          type: array
+          items:
+            $ref: '#/components/schemas/TriggerTarget'
+        concurrency_policy:
+          $ref: '#/components/schemas/ConcurrencyPolicy'
+        enabled:
+          type: boolean
+    Worker:
+      type: object
+      required:
+      - worker_id
+      - stale
+      properties:
+        worker_id:
+          type: string
+        name:
+          type: string
+        version:
+          type: string
+        last_seen_at:
+          type: string
+          format: date-time
+        capabilities:
+          type: array
+          items:
+            type: string
+        stale:
+          type: boolean
+    WorkerListResponse:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Worker'
+    Namespace:
+      type: object
+      required:
+      - id
+      - name
+      - slug
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        slug:
+          type: string
+        description:
+          type: string
+        created_by:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    NamespaceDataResponse:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          $ref: '#/components/schemas/Namespace'
+    NamespaceListResponse:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Namespace'
+    CreateNamespaceRequest:
+      type: object
+      required:
+      - name
+      properties:
+        name:
+          type: string
+        slug:
+          type: string
+        description:
+          type: string
+    UpdateNamespaceRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+    WebhookEventStatus:
+      type: string
+      enum:
+      - pending
+      - acknowledged
+      - failed
+      - expired
+    Webhook:
+      type: object
+      required:
+      - id
+      - org_id
+      - name
+      - slug
+      - enabled
+      - receive_url
+      - created_at
+      - updated_at
+      description: 'A managed inbound webhook endpoint hosted by Mobius.
+
+        '
+      properties:
+        id:
+          type: string
+        org_id:
+          type: string
+        namespace_id:
+          type: string
+        name:
+          type: string
+        slug:
+          type: string
+          description: Immutable URL-safe identifier used in the receive endpoint
+        receive_url:
+          type: string
+          description: Full URL that external systems POST to when sending inbound
+            webhook events to Mobius.
+        enabled:
+          type: boolean
+        created_by:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    WebhookDataResponse:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          $ref: '#/components/schemas/Webhook'
+    WebhookListResponse:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Webhook'
+    WebhookEvent:
+      type: object
+      required:
+      - id
+      - org_id
+      - webhook_id
+      - status
+      - received_at
+      description: 'One inbound HTTP request received by a managed webhook endpoint.
+
+        '
+      properties:
+        id:
+          type: string
+        org_id:
+          type: string
+        webhook_id:
+          type: string
+        payload:
+          type: object
+          additionalProperties: true
+        status:
+          $ref: '#/components/schemas/WebhookEventStatus'
+        received_at:
+          type: string
+          format: date-time
+        acknowledged_at:
+          type: string
+          format: date-time
+        expires_at:
+          type: string
+          format: date-time
+    WebhookEventListResponse:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/WebhookEvent'
+    CreateWebhookRequest:
+      type: object
+      required:
+      - name
+      properties:
+        namespace_id:
+          type: string
+        name:
+          type: string
+        slug:
+          type: string
+          description: URL-safe slug; auto-generated from name if omitted
+        secret:
+          type: string
+          description: Shared secret associated with the webhook. Stored as a hash
+            and not returned after creation.
+        enabled:
+          type: boolean
+    UpdateWebhookRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        secret:
+          type: string
+          description: Replace or clear the webhook's shared secret
+        enabled:
+          type: boolean
+    IntegrationStatus:
+      type: string
+      enum:
+      - active
+      - inactive
+      - expired
+    Integration:
+      type: object
+      required:
+      - id
+      - org_id
+      - name
+      - provider
+      - status
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+        org_id:
+          type: string
+        name:
+          type: string
+        provider:
+          type: string
+        config:
+          type: object
+          additionalProperties: true
+        status:
+          $ref: '#/components/schemas/IntegrationStatus'
+        created_by:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    IntegrationDataResponse:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          $ref: '#/components/schemas/Integration'
+    IntegrationListResponse:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Integration'
+    CreateIntegrationRequest:
+      type: object
+      required:
+      - name
+      - provider
+      properties:
+        name:
+          type: string
+        provider:
+          type: string
+        config:
+          type: object
+          additionalProperties: true
+    UpdateIntegrationRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        config:
+          type: object
+          additionalProperties: true
+        status:
+          $ref: '#/components/schemas/IntegrationStatus'
+    BillingSubscription:
+      type: object
+      required:
+      - id
+      - org_id
+      - plan_type
+      - status
+      - seat_count
+      - current_period_start
+      - current_period_end
+      - trial_days_remaining
+      - trial_warning
+      - monthly_credit_cap
+      - per_run_step_cap
+      - alert_thresholds_percent
+      - cancel_at_period_end
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+        org_id:
+          type: string
+        plan_type:
+          type: string
+        status:
+          type: string
+        seat_count:
+          type: integer
+        current_period_start:
+          type: string
+          format: date-time
+        current_period_end:
+          type: string
+          format: date-time
+        trial_ends_at:
+          type: string
+          format: date-time
+        grace_ends_at:
+          type: string
+          format: date-time
+        trial_days_remaining:
+          type: integer
+        trial_warning:
+          type: boolean
+        monthly_credit_cap:
+          type: integer
+          format: int64
+        per_run_step_cap:
+          type: integer
+        alert_thresholds_percent:
+          type: array
+          items:
+            type: integer
+        cancel_at_period_end:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    BillingSubscriptionDataResponse:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          $ref: '#/components/schemas/BillingSubscription'
+    BillingPlan:
+      type: object
+      required:
+      - plan_type
+      - price_cents
+      - included_credits
+      - seat_limit
+      - default_monthly_credit_cap
+      - default_per_run_step_cap
+      - max_alert_thresholds
+      - trial_days
+      - credit_card_required
+      properties:
+        plan_type:
+          type: string
+        price_cents:
+          type: integer
+        included_credits:
+          type: integer
+          format: int64
+        seat_limit:
+          type: integer
+        default_monthly_credit_cap:
+          type: integer
+          format: int64
+        default_per_run_step_cap:
+          type: integer
+        max_alert_thresholds:
+          type: integer
+        trial_days:
+          type: integer
+        credit_card_required:
+          type: boolean
+    BillingPlanListResponse:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/BillingPlan'
+    BillingUsageKeySummary:
+      type: object
+      required:
+      - api_key_id
+      - count
+      properties:
+        api_key_id:
+          type: string
+        count:
+          type: integer
+    BillingUsageSummary:
+      type: object
+      required:
+      - current_period_start
+      - current_period_end
+      - current_usage
+      - included_limit
+      - overage_calls
+      - overage_cost
+      - by_category
+      - by_api_key
+      properties:
+        current_period_start:
+          type: string
+          format: date-time
+        current_period_end:
+          type: string
+          format: date-time
+        current_usage:
+          type: integer
+        included_limit:
+          type: integer
+        overage_calls:
+          type: integer
+        overage_cost:
+          type: integer
+        by_category:
+          type: object
+          additionalProperties:
+            type: integer
+        by_api_key:
+          type: array
+          items:
+            $ref: '#/components/schemas/BillingUsageKeySummary'
+    BillingUsageDataResponse:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          $ref: '#/components/schemas/BillingUsageSummary'
+    Invoice:
+      type: object
+      required:
+      - id
+      - status
+      - currency
+      - amount_due
+      - amount_paid
+      - created_at
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+        currency:
+          type: string
+        amount_due:
+          type: integer
+        amount_paid:
+          type: integer
+        hosted_invoice_url:
+          type: string
+          format: uri
+        invoice_pdf:
+          type: string
+          format: uri
+        created_at:
+          type: string
+          format: date-time
+    InvoiceListResponse:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Invoice'
+    CreateCheckoutRequest:
+      type: object
+      required:
+      - success_url
+      - cancel_url
+      properties:
+        success_url:
+          type: string
+          format: uri
+        cancel_url:
+          type: string
+          format: uri
+    CreatePortalRequest:
+      type: object
+      required:
+      - return_url
+      properties:
+        return_url:
+          type: string
+          format: uri
+    BillingURLResult:
+      type: object
+      required:
+      - url
+      properties:
+        url:
+          type: string
+          format: uri
+    BillingURLResultDataResponse:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          $ref: '#/components/schemas/BillingURLResult'
+    UpdateBillingLimitsRequest:
+      type: object
+      properties:
+        monthly_credit_cap:
+          type: integer
+          format: int64
+        per_run_step_cap:
+          type: integer
+        alert_thresholds_percent:
+          type: array
+          items:
+            type: integer
+    OnboardingStatus:
+      type: object
+      required:
+      - completed
+      properties:
+        completed:
+          type: boolean
+          description: Whether the user has completed onboarding and has an org
+        org_id:
+          type: string
+          description: The user's org ID (present only when completed is true)
+        org_name:
+          type: string
+          description: The user's org display name (present only when completed is
+            true)
+    OnboardingStatusDataResponse:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          $ref: '#/components/schemas/OnboardingStatus'
+    OnboardingResult:
+      type: object
+      required:
+      - org_id
+      - org_name
+      properties:
+        org_id:
+          type: string
+          description: ID of the newly created (or existing) org
+        org_name:
+          type: string
+          description: Display name of the org
+    OnboardingResultDataResponse:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          $ref: '#/components/schemas/OnboardingResult'
+    AdminMetrics:
+      type: object
+      required:
+      - generated_at
+      - window_minutes
+      - runs_per_minute
+      - total_runs_window
+      - failure_rate
+      - avg_run_seconds
+      - p95_step_seconds
+      - queue_depth
+      - running_count
+      - active_workers
+      - stale_workers
+      - status_breakdown
+      - live_subscribers
+      properties:
+        generated_at:
+          type: string
+          format: date-time
+        window_minutes:
+          type: integer
+        runs_per_minute:
+          type: number
+          format: double
+        total_runs_window:
+          type: integer
+        failure_rate:
+          type: number
+          format: double
+        avg_run_seconds:
+          type: number
+          format: double
+        p95_step_seconds:
+          type: number
+          format: double
+        queue_depth:
+          type: integer
+        running_count:
+          type: integer
+        active_workers:
+          type: integer
+        stale_workers:
+          type: integer
+        status_breakdown:
+          type: object
+          additionalProperties:
+            type: integer
+        live_subscribers:
+          type: integer
+    AdminMetricsDataResponse:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          $ref: '#/components/schemas/AdminMetrics'
+    AdminWorker:
+      type: object
+      required:
+      - worker_id
+      - stale
+      properties:
+        worker_id:
+          type: string
+        name:
+          type: string
+        version:
+          type: string
+        last_seen_at:
+          type: string
+          format: date-time
+        capabilities:
+          type: array
+          items:
+            type: string
+        stale:
+          type: boolean
+    AdminWorkerListResponse:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminWorker'
+    AuthContext:
+      type: object
+      required:
+      - user_id
+      - auth_type
+      - is_admin
+      properties:
+        user_id:
+          type: string
+        org_id:
+          type: string
+        role:
+          type: string
+          description: Org member role (owner, admin, member) — empty for API-key
+            auth
+        auth_type:
+          type: string
+          description: How the caller authenticated (clerk, api_key, cli_token)
+        is_admin:
+          type: boolean
+    AuthContextDataResponse:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          $ref: '#/components/schemas/AuthContext'
+    PreviewPermissionsRequest:
+      type: object
+      properties:
+        service_account_default_role:
+          type: string
+          description: Role name to assign by default to service accounts without
+            existing assignments.
+    EnablePermissionsRequest:
+      type: object
+      properties:
+        service_account_default_role:
+          type: string
+          description: Fallback role name for service accounts when assignments are
+            omitted.
+        assignments:
+          type: array
+          items:
+            $ref: '#/components/schemas/PermissionsAssignmentInput'
+    PermissionsAssignmentInput:
+      type: object
+      required:
+      - actor_type
+      - actor_id
+      properties:
+        actor_type:
+          type: string
+          enum:
+          - user
+          - service_account
+        actor_id:
+          type: string
+        role_id:
+          type: string
+        role_name:
+          type: string
+        namespace_id:
+          type: string
+    PermissionsAssignmentProposal:
+      type: object
+      required:
+      - actor_type
+      - actor_id
+      - role_id
+      - role_name
+      properties:
+        actor_type:
+          type: string
+          enum:
+          - user
+          - service_account
+        actor_id:
+          type: string
+        role_id:
+          type: string
+        role_name:
+          type: string
+        namespace_id:
+          type: string
+    PermissionsPlan:
+      type: object
+      required:
+      - permissions_enabled
+      - assignments
+      properties:
+        permissions_enabled:
+          type: boolean
+        assignments:
+          type: array
+          items:
+            $ref: '#/components/schemas/PermissionsAssignmentProposal'
+    PermissionsPlanDataResponse:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          $ref: '#/components/schemas/PermissionsPlan'
+    PermissionsState:
+      type: object
+      required:
+      - permissions_enabled
+      properties:
+        permissions_enabled:
+          type: boolean
+    PermissionsStateDataResponse:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          $ref: '#/components/schemas/PermissionsState'
+    Role:
+      type: object
+      required:
+      - id
+      - name
+      - description
+      - permissions
+      - system_defined
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+        org_id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        permissions:
+          type: array
+          items:
+            type: string
+        system_defined:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    RoleAssignment:
+      type: object
+      required:
+      - id
+      - org_id
+      - actor_type
+      - actor_id
+      - role_id
+      - role_name
+      - created_at
+      properties:
+        id:
+          type: string
+        org_id:
+          type: string
+        actor_type:
+          type: string
+          enum:
+          - user
+          - service_account
+        actor_id:
+          type: string
+        role_id:
+          type: string
+        role_name:
+          type: string
+        namespace_id:
+          type: string
+        granted_by_actor_type:
+          type: string
+        granted_by_actor_id:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+    RoleDataResponse:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          $ref: '#/components/schemas/Role'
+    RoleListResponse:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Role'
+    RoleAssignmentDataResponse:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          $ref: '#/components/schemas/RoleAssignment'
+    RoleAssignmentListResponse:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/RoleAssignment'
+    CreateRoleRequest:
+      type: object
+      required:
+      - name
+      - permissions
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        permissions:
+          type: array
+          items:
+            type: string
+    UpdateRoleRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        permissions:
+          type: array
+          items:
+            type: string
+    CreateRoleAssignmentRequest:
+      type: object
+      required:
+      - actor_type
+      - actor_id
+      properties:
+        actor_type:
+          type: string
+          enum:
+          - user
+          - service_account
+        actor_id:
+          type: string
+        role_id:
+          type: string
+        role_name:
+          type: string
+        namespace_id:
+          type: string
+    User:
+      type: object
+      required:
+      - id
+      - email
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        first_name:
+          type: string
+        last_name:
+          type: string
+        avatar_url:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    UserDataResponse:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          $ref: '#/components/schemas/User'
+    Org:
+      type: object
+      required:
+      - id
+      - name
+      - slug
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        slug:
+          type: string
+        metadata:
+          type: object
+          additionalProperties: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    OrgDataResponse:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          $ref: '#/components/schemas/Org'
+    OrgListResponse:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Org'
+        has_more:
+          type: boolean
+        next_cursor:
+          type: string
+    CreateOrgRequest:
+      type: object
+      required:
+      - name
+      - slug
+      properties:
+        name:
+          type: string
+        slug:
+          type: string
+        metadata:
+          type: object
+          additionalProperties: true
+    UpdateOrgRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        slug:
+          type: string
+        metadata:
+          type: object
+          additionalProperties: true
+    OrgMember:
+      type: object
+      required:
+      - id
+      - org_id
+      - user_id
+      - role
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+        org_id:
+          type: string
+        user_id:
+          type: string
+        role:
+          type: string
+          enum:
+          - owner
+          - admin
+          - member
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        user:
+          $ref: '#/components/schemas/User'
+    OrgMemberDataResponse:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          $ref: '#/components/schemas/OrgMember'
+    OrgMemberListResponse:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrgMember'
+        has_more:
+          type: boolean
+        next_cursor:
+          type: string
+    AddOrgMemberRequest:
+      type: object
+      required:
+      - user_id
+      - role
+      properties:
+        user_id:
+          type: string
+        role:
+          type: string
+          enum:
+          - owner
+          - admin
+          - member
+    UpdateOrgMemberRoleRequest:
+      type: object
+      required:
+      - role
+      properties:
+        role:
+          type: string
+          enum:
+          - owner
+          - admin
+          - member
+    InteractionListResponse:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Interaction'
+    CreateInteractionRequest:
+      type: object
+      required:
+      - type
+      - target_actor
+      - message
+      description: 'Creates an interaction directly. When `run_id` is provided, `topic`
+        is
+
+        also required and the interaction is linked to that run. When both are
+
+        omitted, the interaction is standalone and completes with no workflow
+
+        resume side effect. For worker/job usage, prefer the job-scoped route
+
+        so the server can derive the owning run from the claimed job context.
+
+        '
+      properties:
+        run_id:
+          type: string
+          nullable: true
+        topic:
+          type: string
+          nullable: true
+          description: Signal topic the interaction will complete against when run-backed.
+        target_actor:
+          $ref: '#/components/schemas/ActorRef'
+        type:
+          $ref: '#/components/schemas/InteractionType'
+        message:
+          type: string
+        context:
+          type: object
+          additionalProperties: true
+        spec:
+          $ref: '#/components/schemas/InteractionSpec'
+        require_all:
+          type: boolean
+          default: false
+          description: 'When target_actor.type is "group", setting require_all=true
+
+            means all snapshotted group members must respond before the
+
+            interaction is considered complete. Ignored for non-group targets.
+
+            '
+        expires_at:
+          type: string
+          format: date-time
+    RespondToInteractionRequest:
+      type: object
+      properties:
+        value:
+          $ref: '#/components/schemas/InteractionValue'
+        comment:
+          type: string
+    SlackInstall:
+      type: object
+      required:
+      - authorize_url
+      properties:
+        authorize_url:
+          type: string
+          description: The Slack OAuth authorize URL to redirect the user to.
+    SlackInstallDataResponse:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          $ref: '#/components/schemas/SlackInstall'
+    Group:
+      type: object
+      required:
+      - id
+      - org_id
+      - slug
+      - name
+      - routing_policy
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+        org_id:
+          type: string
+        slug:
+          type: string
+          description: URL-safe identifier, unique within the org
+        name:
+          type: string
+          description: Human-readable display name
+        description:
+          type: string
+        routing_policy:
+          type: string
+          enum:
+          - first_responder
+          - all_members
+          description: How interactions are dispatched to members
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    GroupDataResponse:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          $ref: '#/components/schemas/Group'
+    GroupListResponse:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Group'
+    GroupWithCount:
+      allOf:
+      - $ref: '#/components/schemas/Group'
+      - type: object
+        required:
+        - member_count
+        properties:
+          member_count:
+            type: integer
+            description: Current number of members
+    GroupWithCountDataResponse:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          $ref: '#/components/schemas/GroupWithCount'
+    GroupWithCountListResponse:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/GroupWithCount'
+        has_more:
+          type: boolean
+        next_cursor:
+          type: string
+    GroupMember:
+      type: object
+      required:
+      - id
+      - group_id
+      - org_id
+      - user_id
+      - added_at
+      properties:
+        id:
+          type: string
+        group_id:
+          type: string
+        org_id:
+          type: string
+        user_id:
+          type: string
+        added_by:
+          type: string
+          nullable: true
+        added_at:
+          type: string
+          format: date-time
+    GroupMemberDataResponse:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          $ref: '#/components/schemas/GroupMember'
+    GroupMemberListResponse:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/GroupMember'
+        has_more:
+          type: boolean
+        next_cursor:
+          type: string
+    CreateGroupRequest:
+      type: object
+      required:
+      - name
+      properties:
+        slug:
+          type: string
+          description: URL-safe slug. Auto-derived from name if omitted.
+        name:
+          type: string
+          description: Display name (1-64 chars)
+        description:
+          type: string
+        routing_policy:
+          type: string
+          enum:
+          - first_responder
+          - all_members
+          default: first_responder
+    UpdateGroupRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        routing_policy:
+          type: string
+          enum:
+          - first_responder
+          - all_members
+    AddGroupMemberRequest:
+      type: object
+      required:
+      - user_id
+      properties:
+        user_id:
+          type: string
+          description: Org member user ID to add
+    ServiceAccountStatus:
+      type: string
+      enum:
+      - active
+      - disabled
+    ServiceAccount:
+      type: object
+      required:
+      - id
+      - org_id
+      - name
+      - display_name
+      - status
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+        org_id:
+          type: string
+        name:
+          type: string
+        display_name:
+          type: string
+        description:
+          type: string
+        status:
+          $ref: '#/components/schemas/ServiceAccountStatus'
+        owner_user_id:
+          type: string
+        metadata:
+          type: object
+          additionalProperties: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    ServiceAccountDataResponse:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          $ref: '#/components/schemas/ServiceAccount'
+    ServiceAccountListResponse:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ServiceAccount'
+    CreateServiceAccountRequest:
+      type: object
+      required:
+      - name
+      properties:
+        name:
+          type: string
+        display_name:
+          type: string
+        description:
+          type: string
+        owner_user_id:
+          type: string
+        metadata:
+          type: object
+          additionalProperties: true
+        role_id:
+          type: string
+        role_name:
+          type: string
+        namespace_id:
+          type: string
+    UpdateServiceAccountRequest:
+      type: object
+      properties:
+        display_name:
+          type: string
+        description:
+          type: string
+        status:
+          $ref: '#/components/schemas/ServiceAccountStatus'
+        owner_user_id:
+          type: string
+        metadata:
+          type: object
+          additionalProperties: true
+    ToolDefinition:
+      type: object
+      required:
+      - name
+      - description
+      - input_schema
+      properties:
+        name:
+          type: string
+          description: Tool name (workflow slug). Stable across publish/unpublish
+            cycles.
+        description:
+          type: string
+          description: Human-readable description of what the tool does.
+        input_schema:
+          type: object
+          description: JSON Schema Draft 7 object describing the tool inputs.
+          additionalProperties: true
+    ToolDefinitionListResponse:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ToolDefinition'
+    ToolRunRequest:
+      type: object
+      properties:
+        input:
+          type: object
+          description: Input values matching the tool's input_schema.
+          additionalProperties: true
+        timeout_seconds:
+          type: integer
+          description: 'How long (in seconds) to wait for synchronous completion.
+
+            Default 30, max 120. If the run does not complete within this
+
+            window the response is 202 with status pending.
+
+            '
+          minimum: 1
+          maximum: 120
+    ToolRun:
+      type: object
+      required:
+      - run_id
+      - status
+      properties:
+        run_id:
+          type: string
+          description: Unique run identifier for polling.
+        status:
+          type: string
+          description: Run status — "pending", "running", "completed", or "failed".
+          enum:
+          - pending
+          - running
+          - completed
+          - failed
+          - suspended
+        output:
+          type: object
+          description: Run output. Present when status is "completed".
+          additionalProperties: true
+        error:
+          type: string
+          description: Error message. Present when status is "failed".
+    ToolRunDataResponse:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          $ref: '#/components/schemas/ToolRun'
+x-tagGroups:
+- name: System Endpoints
+  tags:
+  - system
+- name: Channels
+  tags:
+  - channels
+- name: Audit Logs
+  tags:
+  - audit-logs
+- name: API Keys
+  tags:
+  - api-keys
+- name: Authentication Endpoints
+  tags:
+  - auth
+- name: Workflows
+  tags:
+  - workflows
+  - runs
+- name: Actions
+  tags:
+  - actions
+- name: Jobs (Worker Protocol)
+  tags:
+  - jobs
+- name: Triggers
+  tags:
+  - triggers
+- name: Workers
+  tags:
+  - workers
+- name: Namespaces
+  tags:
+  - namespaces
+- name: Webhooks
+  tags:
+  - webhooks
+- name: Integrations
+  tags:
+  - integrations
+- name: Billing Endpoints
+  tags:
+  - billing
+- name: Onboarding Endpoints
+  tags:
+  - onboarding
+- name: Admin Endpoints
+  tags:
+  - admin
+- name: Permissions Rollout
+  tags:
+  - permissions
+- name: Roles
+  tags:
+  - roles
+- name: User Endpoints
+  tags:
+  - users
+- name: Organization Endpoints
+  tags:
+  - orgs
+- name: Interactions
+  tags:
+  - interactions
+- name: Slack Integration
+  tags:
+  - slack
+- name: Groups
+  tags:
+  - groups
+- name: Service Accounts
+  tags:
+  - service-accounts
+- name: Tools
+  tags:
+  - tools

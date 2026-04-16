@@ -1,0 +1,8 @@
+{
+  "worker_id": "worker-abc",
+  "worker_name": "billing-worker",
+  "worker_version": "1.2.3",
+  "queues": ["billing", "reports"],
+  "actions": ["stripe_charge", "send_receipt"],
+  "wait_seconds": 20
+}

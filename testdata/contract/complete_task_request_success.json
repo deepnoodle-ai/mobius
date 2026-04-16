@@ -1,0 +1,6 @@
+{
+  "worker_id": "worker-abc",
+  "attempt": 1,
+  "status": "completed",
+  "result_b64": "eyJvayI6dHJ1ZX0="
+}

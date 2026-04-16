@@ -1,0 +1,46 @@
+{
+  "fixtures": [
+    {
+      "file": "claim_request_minimal.json",
+      "schema": "JobClaimRequest",
+      "kind": "request",
+      "endpoint": "POST /namespaces/{ns}/jobs/claim"
+    },
+    {
+      "file": "claim_request_full.json",
+      "schema": "JobClaimRequest",
+      "kind": "request",
+      "endpoint": "POST /namespaces/{ns}/jobs/claim"
+    },
+    {
+      "file": "claim_response.json",
+      "schema": "JobClaimDataResponse",
+      "kind": "response",
+      "endpoint": "POST /namespaces/{ns}/jobs/claim"
+    },
+    {
+      "file": "heartbeat_task_request.json",
+      "schema": "JobFenceRequest",
+      "kind": "request",
+      "endpoint": "POST /namespaces/{ns}/jobs/{id}/heartbeat"
+    },
+    {
+      "file": "heartbeat_task_response.json",
+      "schema": "JobHeartbeatDataResponse",
+      "kind": "response",
+      "endpoint": "POST /namespaces/{ns}/jobs/{id}/heartbeat"
+    },
+    {
+      "file": "complete_task_request_success.json",
+      "schema": "JobCompleteRequest",
+      "kind": "request",
+      "endpoint": "POST /namespaces/{ns}/jobs/{id}/complete"
+    },
+    {
+      "file": "complete_task_request_failed.json",
+      "schema": "JobCompleteRequest",
+      "kind": "request",
+      "endpoint": "POST /namespaces/{ns}/jobs/{id}/complete"
+    }
+  ]
+}

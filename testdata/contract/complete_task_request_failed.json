@@ -1,0 +1,7 @@
+{
+  "worker_id": "worker-abc",
+  "attempt": 3,
+  "status": "failed",
+  "error_type": "Error",
+  "error_message": "activity stripe_charge raised: connection refused"
+}
