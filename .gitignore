@@ -1,14 +1,14 @@
-# If you prefer the allow list template instead of the deny list, see community template:
-# https://github.com/github/gitignore/blob/main/community/Golang/Go.AllowList.gitignore
-#
-# Binaries for programs and plugins
+# --- Go ---------------------------------------------------------------------
+# Compiled binaries and shared objects
 *.exe
 *.exe~
 *.dll
 *.so
 *.dylib
+cmd/mobius/mobius
+cmd/mobius-cligen/mobius-cligen
 
-# Test binary, built with `go test -c`
+# Test binary built with `go test -c`
 *.test
 
 # Code coverage profiles and other test artifacts
@@ -17,16 +17,69 @@ coverage.*
 *.coverprofile
 profile.cov
 
-# Dependency directories (remove the comment below to include it)
-# vendor/
-
 # Go workspace file
 go.work
 go.work.sum
 
-# env file
-.env
+# --- Python -----------------------------------------------------------------
+__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.py[cod]
+*$py.class
+*.egg
+*.egg-info/
+.eggs/
+build/
+dist/
+pip-log.txt
+pip-delete-this-directory.txt
 
-# Editor/IDE
-# .idea/
-# .vscode/
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Tooling caches
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.pytype/
+.pyre/
+.tox/
+.nox/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+
+# uv lock file — this is a library, not an application
+python/uv.lock
+
+# --- TypeScript / Node ------------------------------------------------------
+node_modules/
+dist/
+build/
+build-test/
+*.tsbuildinfo
+
+# Log files
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# --- Environments / secrets -------------------------------------------------
+.env
+.env.*
+!.env.example
+
+# --- Editor / IDE -----------------------------------------------------------
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store

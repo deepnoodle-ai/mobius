@@ -1,0 +1,3 @@
+api/client.gen.go linguist-generated=true
+typescript/src/api/schema.ts linguist-generated=true
+python/deepnoodle/mobius/_api/models.py linguist-generated=true
