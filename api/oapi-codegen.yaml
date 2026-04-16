@@ -1,0 +1,6 @@
+package: api
+output: mobius/api/client.gen.go
+generate:
+  client: true
+  models: true
+  embedded-spec: false
