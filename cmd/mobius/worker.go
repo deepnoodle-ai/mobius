@@ -8,13 +8,13 @@ import (
 	"github.com/deepnoodle-ai/wonton/cli"
 	"github.com/google/uuid"
 
-	"github.com/deepnoodle-ai/mobius/action"
 	"github.com/deepnoodle-ai/mobius/mobius"
+	"github.com/deepnoodle-ai/mobius/mobius/action"
 )
 
 // registerWorkerCommand attaches the `mobius worker` subcommand, which claims
 // and executes tasks from one or more queues in the configured namespace. The
-// worker ships with every stock action from github.com/deepnoodle-ai/mobius/action
+// worker ships with every stock action from github.com/deepnoodle-ai/mobius/mobius/action
 // registered, so it can run trivial and test workflows out of the box.
 func registerWorkerCommand(app *cli.App) {
 	app.Command("worker").
@@ -74,7 +74,7 @@ func registerWorkerCommand(app *cli.App) {
 }
 
 // registerStockActions attaches every general-purpose action from
-// github.com/deepnoodle-ai/mobius/action to the worker. These cover most trivial and
+// github.com/deepnoodle-ai/mobius/mobius/action to the worker. These cover most trivial and
 // test workflows without requiring custom code.
 func registerStockActions(w *mobius.Worker) {
 	stock := []mobius.Action{

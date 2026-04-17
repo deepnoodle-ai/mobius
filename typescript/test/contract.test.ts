@@ -14,15 +14,24 @@ import type {
 } from "../src/api/index.js";
 import { Client } from "../src/client.js";
 
-// Contract fixtures at <repo>/testdata/contract are shared with the Go and
-// Python SDKs. Each fixture is driven through the real Client against a fake
-// fetch. For request fixtures we assert the body the client sends equals the
-// fixture. For response fixtures we assert the client parses and returns the
-// fixture losslessly. Parity holds when all three languages pass the same set.
+// Contract fixtures at <repo>/internal/testdata/contract are shared with the
+// Go and Python SDKs. Each fixture is driven through the real Client against a
+// fake fetch. For request fixtures we assert the body the client sends equals
+// the fixture. For response fixtures we assert the client parses and returns
+// the fixture losslessly. Parity holds when all three languages pass the same
+// set.
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const contractDir = join(__dirname, "..", "..", "..", "testdata", "contract");
+const contractDir = join(
+  __dirname,
+  "..",
+  "..",
+  "..",
+  "internal",
+  "testdata",
+  "contract",
+);
 
 const NAMESPACE = "test-ns";
 

@@ -3,7 +3,7 @@ OPENAPI_TS_VERSION      := 7.6.0
 DATAMODEL_CODEGEN_VER   := 0.28.5
 DATAMODEL_CODEGEN_PY    := 3.12
 
-GO_CLIENT       := api/client.gen.go
+GO_CLIENT       := mobius/api/client.gen.go
 GO_CLI_COMMANDS := cmd/mobius/commands.gen.go
 TS_SCHEMA       := typescript/src/api/schema.ts
 PY_MODELS       := python/deepnoodle/mobius/_api/models.py
@@ -17,7 +17,7 @@ generate: generate-go generate-go-cli generate-ts generate-py
 
 generate-go:
 	@echo "=> generating Go client"
-	oapi-codegen --config api/oapi-codegen.yaml openapi.yaml
+	oapi-codegen --config mobius/api/oapi-codegen.yaml openapi.yaml
 
 # Regenerate mobius CLI subcommands from the Go client + OpenAPI spec.
 # Override or suppress individual commands via internal/cligen/overrides.go.
@@ -63,8 +63,8 @@ generate-check: generate
 	fi
 
 # Run all three SDK test suites. Cross-language contract tests in each
-# language exercise the shared fixtures under testdata/contract, so this
-# target is the single check that proves wire-format parity.
+# language exercise the shared fixtures under internal/testdata/contract, so
+# this target is the single check that proves wire-format parity.
 test: test-go test-ts test-py
 
 test-go:

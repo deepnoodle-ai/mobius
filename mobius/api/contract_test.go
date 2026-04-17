@@ -8,19 +8,19 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/deepnoodle-ai/mobius/api"
+	"github.com/deepnoodle-ai/mobius/mobius/api"
 )
 
-// Contract fixtures live at <repo>/testdata/contract and are shared with the
-// TypeScript and Python SDKs. Each fixture is round-tripped through the
-// corresponding generated type and the result is compared to the original
+// Contract fixtures live at <repo>/internal/testdata/contract and are shared
+// with the TypeScript and Python SDKs. Each fixture is round-tripped through
+// the corresponding generated type and the result is compared to the original
 // fixture as a generic JSON value. Parity with the other SDKs is guaranteed
 // when every language's contract test passes against the same fixture set.
 //
 // If a field is missing from a type or silently dropped, this test fails.
 // Do not "fix" the fixture — fix the type (or the spec).
 
-const contractDir = "../testdata/contract"
+const contractDir = "../../internal/testdata/contract"
 
 type fixtureEntry struct {
 	File     string `json:"file"`

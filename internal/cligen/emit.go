@@ -398,7 +398,7 @@ import (
 	"github.com/deepnoodle-ai/wonton/cli"
 `)
 	if usesAPI {
-		b.WriteString("\n\t\"github.com/deepnoodle-ai/mobius/api\"\n")
+		b.WriteString("\n\t\"github.com/deepnoodle-ai/mobius/mobius/api\"\n")
 	}
 	fmt.Fprintf(&b, `)
 

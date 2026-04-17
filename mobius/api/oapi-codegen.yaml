@@ -1,5 +1,5 @@
 package: api
-output: api/client.gen.go
+output: mobius/api/client.gen.go
 generate:
   client: true
   models: true
