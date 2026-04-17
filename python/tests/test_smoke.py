@@ -34,12 +34,12 @@ def _client_with(handler) -> Client:
     return c
 
 
-def test_claim_task_returns_none_on_204() -> None:
+def test_claim_job_returns_none_on_204() -> None:
     def handler(_: httpx.Request) -> httpx.Response:
         return httpx.Response(204)
 
     client = _client_with(handler)
-    task = client.claim_task(JobClaimRequest(worker_id="worker-1"))
+    task = client.claim_job(JobClaimRequest(worker_id="worker-1"))
     assert task is None
 
 
@@ -49,7 +49,7 @@ def test_client_defaults_to_production_api_host() -> None:
     client.close()
 
 
-def test_claim_task_returns_task_on_200() -> None:
+def test_claim_job_returns_task_on_200() -> None:
     def handler(_: httpx.Request) -> httpx.Response:
         return httpx.Response(
             200,
@@ -69,7 +69,7 @@ def test_claim_task_returns_task_on_200() -> None:
         )
 
     client = _client_with(handler)
-    task = client.claim_task(JobClaimRequest(worker_id="worker-1"))
+    task = client.claim_job(JobClaimRequest(worker_id="worker-1"))
     assert task is not None
     assert task.job_id == "task_1"
     assert task.action == "print"
@@ -82,18 +82,18 @@ def test_heartbeat_409_raises_lease_lost() -> None:
 
     client = _client_with(handler)
     with pytest.raises(LeaseLostError):
-        client.heartbeat_task(
+        client.heartbeat_job(
             "task_1", JobFenceRequest(worker_id="w", attempt=1)
         )
 
 
-def test_complete_task_409_raises_lease_lost() -> None:
+def test_complete_job_409_raises_lease_lost() -> None:
     def handler(_: httpx.Request) -> httpx.Response:
         return httpx.Response(409)
 
     client = _client_with(handler)
     with pytest.raises(LeaseLostError):
-        client.complete_task(
+        client.complete_job(
             "task_1",
             JobCompleteRequest(
                 worker_id="w", attempt=1, status=JobStatus.completed
