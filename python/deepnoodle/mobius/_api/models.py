@@ -1762,6 +1762,93 @@ class AddGroupMemberRequest(BaseModel):
     user_id: str = Field(..., description='Org member user ID to add')
 
 
+class AgentStatus(Enum):
+    active = 'active'
+    inactive = 'inactive'
+
+
+class AgentPresence(Enum):
+    online = 'online'
+    offline = 'offline'
+    stale = 'stale'
+
+
+class AgentSessionStatus(Enum):
+    connected = 'connected'
+    disconnected = 'disconnected'
+    stale = 'stale'
+
+
+class Agent(BaseModel):
+    id: str
+    org_id: str
+    service_account_id: str
+    name: str
+    display_name: str
+    description: str | None = None
+    kind: str | None = None
+    capabilities: dict[str, Any] | None = None
+    config: dict[str, Any] | None = None
+    status: AgentStatus
+    presence: AgentPresence
+    created_at: datetime
+    updated_at: datetime
+
+
+class AgentSession(BaseModel):
+    id: str
+    org_id: str
+    agent_id: str
+    status: AgentSessionStatus
+    transport: str
+    metadata: dict[str, Any] | None = None
+    connected_at: datetime | None = None
+    last_seen_at: datetime | None = None
+    disconnected_at: datetime | None = None
+    created_at: datetime
+    updated_at: datetime
+
+
+class AgentDataResponse(BaseModel):
+    data: Agent
+
+
+class AgentListResponse(BaseModel):
+    data: list[Agent]
+
+
+class AgentSessionDataResponse(BaseModel):
+    data: AgentSession
+
+
+class AgentSessionListResponse(BaseModel):
+    data: list[AgentSession]
+
+
+class CreateAgentRequest(BaseModel):
+    service_account_id: str
+    name: str
+    display_name: str | None = None
+    description: str | None = None
+    kind: str | None = None
+    capabilities: dict[str, Any] | None = None
+    config: dict[str, Any] | None = None
+
+
+class UpdateAgentRequest(BaseModel):
+    display_name: str | None = None
+    description: str | None = None
+    kind: str | None = None
+    capabilities: dict[str, Any] | None = None
+    config: dict[str, Any] | None = None
+    status: AgentStatus | None = None
+
+
+class CreateAgentSessionRequest(BaseModel):
+    transport: str
+    metadata: dict[str, Any] | None = None
+
+
 class ServiceAccountStatus(Enum):
     active = 'active'
     disabled = 'disabled'

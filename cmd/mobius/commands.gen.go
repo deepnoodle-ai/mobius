@@ -21,6 +21,7 @@ import (
 // delegating to the per-group registrars in the commands_<group>.gen.go files.
 func registerGeneratedCommands(app *cli.App) {
 	registerActionsCommands(app)
+	registerAgentsCommands(app)
 	registerApiKeysCommands(app)
 	registerAuditLogsCommands(app)
 	registerAuthCommands(app)
