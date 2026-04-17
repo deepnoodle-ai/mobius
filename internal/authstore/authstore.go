@@ -49,17 +49,31 @@ type Credential struct {
 	CreatedAt    string `json:"created_at,omitempty"`
 }
 
-// Path returns the absolute location of the credentials file, honoring
-// MOBIUS_CONFIG_DIR when set so tests and alternate homes can redirect it.
+// Path returns the absolute location of the credentials file.
+//
+// Resolution order, most specific first:
+//  1. MOBIUS_CONFIG_DIR — explicit app-specific override; treated as the
+//     directory that directly contains credentials.json. Intended for tests
+//     and power users who want multiple local profiles.
+//  2. XDG_CONFIG_HOME (when set, non-empty, and absolute, per the XDG Base
+//     Directory Specification) → $XDG_CONFIG_HOME/mobius/credentials.json.
+//  3. Default: <home>/.config/mobius/credentials.json on every platform.
+//     We intentionally do NOT use os.UserConfigDir() because on macOS it
+//     returns ~/Library/Application Support, which is the wrong neighborhood
+//     for a developer CLI — peers like gh, gcloud, and stripe all live under
+//     ~/.config, and users expect mobius to sit alongside them.
 func Path() (string, error) {
 	if dir := os.Getenv("MOBIUS_CONFIG_DIR"); dir != "" {
 		return filepath.Join(dir, "credentials.json"), nil
 	}
-	base, err := os.UserConfigDir()
-	if err != nil {
-		return "", fmt.Errorf("locate user config dir: %w", err)
+	if xdg := os.Getenv("XDG_CONFIG_HOME"); xdg != "" && filepath.IsAbs(xdg) {
+		return filepath.Join(xdg, "mobius", "credentials.json"), nil
 	}
-	return filepath.Join(base, "mobius", "credentials.json"), nil
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", fmt.Errorf("locate user home dir: %w", err)
+	}
+	return filepath.Join(home, ".config", "mobius", "credentials.json"), nil
 }
 
 // Load reads the saved credential. It returns (nil, nil) when no credential
