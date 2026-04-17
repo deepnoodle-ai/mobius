@@ -8,9 +8,17 @@ GO_CLI_COMMANDS := cmd/mobius/commands.gen.go
 TS_SCHEMA       := typescript/src/api/schema.ts
 PY_MODELS       := python/deepnoodle/mobius/_api/models.py
 
-.PHONY: generate generate-go generate-go-cli generate-ts generate-py generate-check \
+.PHONY: build-cli release-cli \
+        generate generate-go generate-go-cli generate-ts generate-py generate-check \
         test test-go test-ts test-py \
         tools tools-go tools-ts
+
+build-cli:
+	go build -o bin/mobius ./cmd/mobius
+
+release-cli:
+	@if [ -z "$(VERSION)" ]; then echo "Usage: make release-cli VERSION=0.1.0"; exit 1; fi
+	python3 ./scripts/release.py $(VERSION)
 
 # Regenerate clients in all three languages from openapi.yaml.
 generate: generate-go generate-go-cli generate-ts generate-py

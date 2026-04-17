@@ -25,7 +25,7 @@ func registerWorkerCommand(app *cli.App) {
 				Default("mobius-worker").
 				Help("Worker name reported to Mobius"),
 			cli.String("worker-version", "").
-				Default("dev").
+				Default(buildVersion()).
 				Help("Worker version reported to Mobius"),
 			cli.Strings("queues", "q").
 				Env("MOBIUS_QUEUES").
