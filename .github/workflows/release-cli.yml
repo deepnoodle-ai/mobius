@@ -1,0 +1,116 @@
+name: release-cli
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to release (e.g. v0.1.0)"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: cli
+      url: https://github.com/deepnoodle-ai/mobius/releases
+
+    steps:
+      - name: Determine version
+        id: version
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TAG="${{ github.event.inputs.tag }}"
+          fi
+
+          VERSION="${TAG#v}"
+          PRERELEASE=false
+          if [[ "$VERSION" == *"-"* ]]; then
+            PRERELEASE=true
+          fi
+
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "prerelease=${PRERELEASE}" >> "$GITHUB_OUTPUT"
+          echo "Releasing Mobius CLI ${VERSION} (tag ${TAG})"
+
+      - uses: actions/checkout@v4
+        with:
+          ref: refs/tags/${{ steps.version.outputs.tag }}
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
+
+      - name: Test Go SDK and CLI
+        run: make test-go
+
+      - name: Build release artifacts
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: make release-cli VERSION="${VERSION}"
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.version.outputs.tag }}
+          VERSION: ${{ steps.version.outputs.version }}
+          PRERELEASE: ${{ steps.version.outputs.prerelease }}
+        run: |
+          EXTRA_ARGS=""
+          if [ "$PRERELEASE" = "true" ]; then
+            EXTRA_ARGS="--prerelease"
+          fi
+
+          gh release create "${TAG}" \
+            --title "Mobius v${VERSION}" \
+            --generate-notes \
+            ${EXTRA_ARGS} \
+            dist/mobius-darwin-arm64 \
+            dist/mobius-darwin-amd64 \
+            dist/mobius-linux-amd64 \
+            dist/mobius-linux-arm64 \
+            dist/mobius-windows-amd64.zip \
+            dist/checksums.txt
+
+      - name: Update Homebrew tap
+        if: steps.version.outputs.prerelease != 'true'
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          TAP_GITHUB_TOKEN: ${{ secrets.TAP_GITHUB_TOKEN }}
+        run: |
+          if [ -z "$TAP_GITHUB_TOKEN" ]; then
+            echo "TAP_GITHUB_TOKEN not set, skipping Homebrew tap update"
+            exit 0
+          fi
+
+          SHA_DARWIN_ARM64=$(sha256sum dist/mobius-darwin-arm64 | awk '{print $1}')
+          SHA_DARWIN_AMD64=$(sha256sum dist/mobius-darwin-amd64 | awk '{print $1}')
+          SHA_LINUX_ARM64=$(sha256sum dist/mobius-linux-arm64 | awk '{print $1}')
+          SHA_LINUX_AMD64=$(sha256sum dist/mobius-linux-amd64 | awk '{print $1}')
+
+          sed -e "s/{{VERSION}}/${VERSION}/g" \
+              -e "s/{{SHA_DARWIN_ARM64}}/${SHA_DARWIN_ARM64}/g" \
+              -e "s/{{SHA_DARWIN_AMD64}}/${SHA_DARWIN_AMD64}/g" \
+              -e "s/{{SHA_LINUX_ARM64}}/${SHA_LINUX_ARM64}/g" \
+              -e "s/{{SHA_LINUX_AMD64}}/${SHA_LINUX_AMD64}/g" \
+              scripts/mobius.rb.tmpl > /tmp/mobius.rb
+
+          git clone "https://x-access-token:${TAP_GITHUB_TOKEN}@github.com/deepnoodle-ai/homebrew-tap.git" /tmp/homebrew-tap
+          mkdir -p /tmp/homebrew-tap/Formula
+          cp /tmp/mobius.rb /tmp/homebrew-tap/Formula/mobius.rb
+
+          cd /tmp/homebrew-tap
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Formula/mobius.rb
+          git commit -m "Update mobius to ${VERSION}" || echo "No changes to commit"
+          git push
