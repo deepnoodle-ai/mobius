@@ -72,6 +72,8 @@ func registerWebhooksCommands(app *cli.App) {
 		Args("ns").
 		Flags(
 			cli.Bool("enabled", "").Help("enabled"),
+			cli.String("cursor", "").Help("cursor"),
+			cli.Int("limit", "").Help("limit"),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -81,6 +83,14 @@ func registerWebhooksCommands(app *cli.App) {
 			if ctx.IsSet("enabled") {
 				v := ctx.Bool("enabled")
 				params.Enabled = &v
+			}
+			if ctx.IsSet("cursor") {
+				v := ctx.String("cursor")
+				params.Cursor = &v
+			}
+			if ctx.IsSet("limit") {
+				v := ctx.Int("limit")
+				params.Limit = &v
 			}
 			resp, err := client.ListWebhooksWithResponse(ctx.Context(), p0, params)
 			if err != nil {
@@ -94,6 +104,8 @@ func registerWebhooksCommands(app *cli.App) {
 		Args("ns", "id").
 		Flags(
 			cli.String("status", "").Help("status"),
+			cli.String("cursor", "").Help("cursor"),
+			cli.Int("limit", "").Help("limit"),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -104,6 +116,14 @@ func registerWebhooksCommands(app *cli.App) {
 			if ctx.IsSet("status") {
 				v := api.WebhookEventStatus(ctx.String("status"))
 				params.Status = &v
+			}
+			if ctx.IsSet("cursor") {
+				v := ctx.String("cursor")
+				params.Cursor = &v
+			}
+			if ctx.IsSet("limit") {
+				v := ctx.Int("limit")
+				params.Limit = &v
 			}
 			resp, err := client.ListWebhookEventsWithResponse(ctx.Context(), p0, p1, params)
 			if err != nil {

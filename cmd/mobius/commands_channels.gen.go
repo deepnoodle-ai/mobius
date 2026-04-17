@@ -18,7 +18,7 @@ func registerChannelsCommands(app *cli.App) {
 	channelsGrp := app.Group("channels")
 	channelsGrp.Command("add-member").
 		Description("Add a member to a channel").
-		Args("id").
+		Args("ns", "id").
 		Flags(
 			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin)"),
 		).
@@ -26,11 +26,12 @@ func registerChannelsCommands(app *cli.App) {
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
 			p0 := ctx.Arg(0)
+			p1 := ctx.Arg(1)
 			var body api.AddChannelMemberJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
 			}
-			resp, err := client.AddChannelMemberWithResponse(ctx.Context(), p0, body)
+			resp, err := client.AddChannelMemberWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}
@@ -39,17 +40,19 @@ func registerChannelsCommands(app *cli.App) {
 
 	channelsGrp.Command("create").
 		Description("Create a channel").
+		Args("ns").
 		Flags(
 			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin)"),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
+			p0 := ctx.Arg(0)
 			var body api.CreateChannelJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
 			}
-			resp, err := client.CreateChannelWithResponse(ctx.Context(), body)
+			resp, err := client.CreateChannelWithResponse(ctx.Context(), p0, body)
 			if err != nil {
 				return err
 			}
@@ -58,12 +61,13 @@ func registerChannelsCommands(app *cli.App) {
 
 	channelsGrp.Command("delete").
 		Description("Delete a channel").
-		Args("id").
+		Args("ns", "id").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
 			p0 := ctx.Arg(0)
-			resp, err := client.DeleteChannelWithResponse(ctx.Context(), p0)
+			p1 := ctx.Arg(1)
+			resp, err := client.DeleteChannelWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}
@@ -72,12 +76,13 @@ func registerChannelsCommands(app *cli.App) {
 
 	channelsGrp.Command("get").
 		Description("Get a channel").
-		Args("id").
+		Args("ns", "id").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
 			p0 := ctx.Arg(0)
-			resp, err := client.GetChannelWithResponse(ctx.Context(), p0)
+			p1 := ctx.Arg(1)
+			resp, err := client.GetChannelWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}
@@ -86,13 +91,14 @@ func registerChannelsCommands(app *cli.App) {
 
 	channelsGrp.Command("get-message").
 		Description("Get a specific message").
-		Args("id", "message-id").
+		Args("ns", "id", "message-id").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
 			p0 := ctx.Arg(0)
 			p1 := ctx.Arg(1)
-			resp, err := client.GetChannelMessageWithResponse(ctx.Context(), p0, p1)
+			p2 := ctx.Arg(2)
+			resp, err := client.GetChannelMessageWithResponse(ctx.Context(), p0, p1, p2)
 			if err != nil {
 				return err
 			}
@@ -101,6 +107,7 @@ func registerChannelsCommands(app *cli.App) {
 
 	channelsGrp.Command("list").
 		Description("List channels").
+		Args("ns").
 		Flags(
 			cli.String("kind", "").Help("kind"),
 			cli.Bool("private", "").Help("private"),
@@ -110,6 +117,7 @@ func registerChannelsCommands(app *cli.App) {
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
+			p0 := ctx.Arg(0)
 			params := &api.ListChannelsParams{}
 			if ctx.IsSet("kind") {
 				v := api.ListChannelsParamsKind(ctx.String("kind"))
@@ -127,7 +135,7 @@ func registerChannelsCommands(app *cli.App) {
 				v := api.LimitParam(ctx.Int("limit"))
 				params.Limit = &v
 			}
-			resp, err := client.ListChannelsWithResponse(ctx.Context(), params)
+			resp, err := client.ListChannelsWithResponse(ctx.Context(), p0, params)
 			if err != nil {
 				return err
 			}
@@ -136,7 +144,7 @@ func registerChannelsCommands(app *cli.App) {
 
 	channelsGrp.Command("list-members").
 		Description("List channel members").
-		Args("id").
+		Args("ns", "id").
 		Flags(
 			cli.String("cursor", "").Help("cursor"),
 			cli.Int("limit", "").Help("limit"),
@@ -145,6 +153,7 @@ func registerChannelsCommands(app *cli.App) {
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
 			p0 := ctx.Arg(0)
+			p1 := ctx.Arg(1)
 			params := &api.ListChannelMembersParams{}
 			if ctx.IsSet("cursor") {
 				v := api.CursorParam(ctx.String("cursor"))
@@ -154,7 +163,7 @@ func registerChannelsCommands(app *cli.App) {
 				v := api.LimitParam(ctx.Int("limit"))
 				params.Limit = &v
 			}
-			resp, err := client.ListChannelMembersWithResponse(ctx.Context(), p0, params)
+			resp, err := client.ListChannelMembersWithResponse(ctx.Context(), p0, p1, params)
 			if err != nil {
 				return err
 			}
@@ -163,7 +172,7 @@ func registerChannelsCommands(app *cli.App) {
 
 	channelsGrp.Command("list-messages").
 		Description("List messages in a channel").
-		Args("id").
+		Args("ns", "id").
 		Flags(
 			cli.String("sender-id", "").Help("sender-id"),
 			cli.String("reply-to", "").Help("reply-to"),
@@ -175,6 +184,7 @@ func registerChannelsCommands(app *cli.App) {
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
 			p0 := ctx.Arg(0)
+			p1 := ctx.Arg(1)
 			params := &api.ListChannelMessagesParams{}
 			if ctx.IsSet("sender-id") {
 				v := ctx.String("sender-id")
@@ -196,7 +206,7 @@ func registerChannelsCommands(app *cli.App) {
 				v := api.LimitParam(ctx.Int("limit"))
 				params.Limit = &v
 			}
-			resp, err := client.ListChannelMessagesWithResponse(ctx.Context(), p0, params)
+			resp, err := client.ListChannelMessagesWithResponse(ctx.Context(), p0, p1, params)
 			if err != nil {
 				return err
 			}
@@ -205,13 +215,14 @@ func registerChannelsCommands(app *cli.App) {
 
 	channelsGrp.Command("remove-member").
 		Description("Remove a member from a channel").
-		Args("id", "user-id").
+		Args("ns", "id", "user-id").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
 			p0 := ctx.Arg(0)
 			p1 := ctx.Arg(1)
-			resp, err := client.RemoveChannelMemberWithResponse(ctx.Context(), p0, p1)
+			p2 := ctx.Arg(2)
+			resp, err := client.RemoveChannelMemberWithResponse(ctx.Context(), p0, p1, p2)
 			if err != nil {
 				return err
 			}
@@ -220,49 +231,7 @@ func registerChannelsCommands(app *cli.App) {
 
 	channelsGrp.Command("send-message").
 		Description("Send a message to a channel").
-		Args("id").
-		Flags(
-			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin)"),
-		).
-		Use(cli.RequireFlags("api-key")).
-		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
-			p0 := ctx.Arg(0)
-			var body api.SendChannelMessageJSONRequestBody
-			if err := readJSONBody(ctx, &body); err != nil {
-				return err
-			}
-			resp, err := client.SendChannelMessageWithResponse(ctx.Context(), p0, body)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
-		})
-
-	channelsGrp.Command("update").
-		Description("Update a channel").
-		Args("id").
-		Flags(
-			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin)"),
-		).
-		Use(cli.RequireFlags("api-key")).
-		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
-			p0 := ctx.Arg(0)
-			var body api.UpdateChannelJSONRequestBody
-			if err := readJSONBody(ctx, &body); err != nil {
-				return err
-			}
-			resp, err := client.UpdateChannelWithResponse(ctx.Context(), p0, body)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
-		})
-
-	channelsGrp.Command("update-message").
-		Description("Update a channel message").
-		Args("id", "message-id").
+		Args("ns", "id").
 		Flags(
 			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin)"),
 		).
@@ -271,11 +240,56 @@ func registerChannelsCommands(app *cli.App) {
 			client := clientFromContext(ctx).RawClient()
 			p0 := ctx.Arg(0)
 			p1 := ctx.Arg(1)
+			var body api.SendChannelMessageJSONRequestBody
+			if err := readJSONBody(ctx, &body); err != nil {
+				return err
+			}
+			resp, err := client.SendChannelMessageWithResponse(ctx.Context(), p0, p1, body)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, resp.StatusCode(), resp.Body)
+		})
+
+	channelsGrp.Command("update").
+		Description("Update a channel").
+		Args("ns", "id").
+		Flags(
+			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin)"),
+		).
+		Use(cli.RequireFlags("api-key")).
+		Run(func(ctx *cli.Context) error {
+			client := clientFromContext(ctx).RawClient()
+			p0 := ctx.Arg(0)
+			p1 := ctx.Arg(1)
+			var body api.UpdateChannelJSONRequestBody
+			if err := readJSONBody(ctx, &body); err != nil {
+				return err
+			}
+			resp, err := client.UpdateChannelWithResponse(ctx.Context(), p0, p1, body)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, resp.StatusCode(), resp.Body)
+		})
+
+	channelsGrp.Command("update-message").
+		Description("Update a channel message").
+		Args("ns", "id", "message-id").
+		Flags(
+			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin)"),
+		).
+		Use(cli.RequireFlags("api-key")).
+		Run(func(ctx *cli.Context) error {
+			client := clientFromContext(ctx).RawClient()
+			p0 := ctx.Arg(0)
+			p1 := ctx.Arg(1)
+			p2 := ctx.Arg(2)
 			var body api.UpdateChannelMessageJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
 			}
-			resp, err := client.UpdateChannelMessageWithResponse(ctx.Context(), p0, p1, body)
+			resp, err := client.UpdateChannelMessageWithResponse(ctx.Context(), p0, p1, p2, body)
 			if err != nil {
 				return err
 			}

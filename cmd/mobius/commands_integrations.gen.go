@@ -68,6 +68,8 @@ func registerIntegrationsCommands(app *cli.App) {
 		Flags(
 			cli.String("provider", "").Help("provider"),
 			cli.String("status", "").Help("status"),
+			cli.String("cursor", "").Help("cursor"),
+			cli.Int("limit", "").Help("limit"),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -80,6 +82,14 @@ func registerIntegrationsCommands(app *cli.App) {
 			if ctx.IsSet("status") {
 				v := api.IntegrationStatus(ctx.String("status"))
 				params.Status = &v
+			}
+			if ctx.IsSet("cursor") {
+				v := ctx.String("cursor")
+				params.Cursor = &v
+			}
+			if ctx.IsSet("limit") {
+				v := ctx.Int("limit")
+				params.Limit = &v
 			}
 			resp, err := client.ListIntegrationsWithResponse(ctx.Context(), params)
 			if err != nil {

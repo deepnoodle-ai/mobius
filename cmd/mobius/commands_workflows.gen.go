@@ -70,11 +70,24 @@ func registerWorkflowsCommands(app *cli.App) {
 	workflowsGrp.Command("list").
 		Description("List workflow definitions").
 		Args("ns").
+		Flags(
+			cli.String("cursor", "").Help("cursor"),
+			cli.Int("limit", "").Help("limit"),
+		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
 			p0 := ctx.Arg(0)
-			resp, err := client.ListWorkflowsWithResponse(ctx.Context(), p0)
+			params := &api.ListWorkflowsParams{}
+			if ctx.IsSet("cursor") {
+				v := ctx.String("cursor")
+				params.Cursor = &v
+			}
+			if ctx.IsSet("limit") {
+				v := ctx.Int("limit")
+				params.Limit = &v
+			}
+			resp, err := client.ListWorkflowsWithResponse(ctx.Context(), p0, params)
 			if err != nil {
 				return err
 			}
