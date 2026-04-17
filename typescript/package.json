@@ -1,6 +1,6 @@
 {
   "name": "@deepnoodle/mobius",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "type": "module",
   "description": "TypeScript SDK for Mobius workflow orchestration",
   "license": "Apache-2.0",
