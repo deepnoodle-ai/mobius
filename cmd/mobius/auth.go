@@ -2,8 +2,12 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"runtime"
@@ -14,8 +18,34 @@ import (
 
 	"github.com/deepnoodle-ai/mobius/internal/authstore"
 	"github.com/deepnoodle-ai/mobius/mobius"
-	"github.com/deepnoodle-ai/mobius/mobius/api"
 )
+
+// deviceCodeGrantType is the RFC 8628 §3.4 grant_type for the token endpoint.
+const deviceCodeGrantType = "urn:ietf:params:oauth:grant-type:device_code"
+
+// deviceCodeResponse mirrors RFC 8628 §3.2.
+type deviceCodeResponse struct {
+	DeviceCode              string `json:"device_code"`
+	UserCode                string `json:"user_code"`
+	VerificationURI         string `json:"verification_uri"`
+	VerificationURIComplete string `json:"verification_uri_complete"`
+	ExpiresIn               int    `json:"expires_in"`
+	Interval                int    `json:"interval"`
+}
+
+// deviceTokenResponse is the RFC 6749 §5.1 success envelope plus the
+// mobius-specific credential_id extension.
+type deviceTokenResponse struct {
+	AccessToken  string `json:"access_token"`
+	TokenType    string `json:"token_type"`
+	CredentialID string `json:"credential_id"`
+}
+
+// oauthError matches the RFC 6749 §5.2 error envelope.
+type oauthError struct {
+	Error            string `json:"error"`
+	ErrorDescription string `json:"error_description"`
+}
 
 // registerAuthCommands wires up the `mobius auth` group. Unlike most groups,
 // auth is entirely hand-written: the generated commands for the device-flow
@@ -51,58 +81,53 @@ func registerAuthCommands(app *cli.App) {
 		Run(runAuthRevoke)
 }
 
-// runAuthLogin implements the OAuth-device-flow-style login. It builds an
-// unauthenticated client (the two device endpoints are public), creates a
-// challenge, opens the browser, polls until the user confirms, then persists
-// the returned token locally.
+// runAuthLogin implements RFC 8628 (OAuth 2.0 Device Authorization Grant).
+// It posts form-encoded requests to /auth/device/code and /auth/device/token,
+// polls until the browser-side confirm completes, then persists the returned
+// bearer token locally. These two endpoints are intentionally not part of the
+// typed SDK client: they use form bodies and the RFC 6749 §5.2 error envelope
+// rather than the API-wide {error: {code, message}} shape.
 func runAuthLogin(ctx *cli.Context) error {
 	apiURL := ctx.String("api-url")
 	if apiURL == "" {
 		apiURL = mobius.DefaultBaseURL
 	}
+	apiURL = strings.TrimRight(apiURL, "/")
 
-	// Use an unauthenticated client here: the login endpoints are public and
-	// we do not want a stale --api-key to be sent on the challenge POST.
-	unauth := mobius.NewClient(
-		mobius.WithBaseURL(apiURL),
-		mobius.WithLogger(newLogger(ctx.String("log-level"))),
-	).RawClient()
+	httpClient := &http.Client{Timeout: 15 * time.Second}
 
 	label := ctx.String("label")
 	if label == "" {
 		label = defaultDeviceLabel()
 	}
 
-	req := api.CreateDeviceCodeJSONRequestBody{
-		Data: api.CreateDeviceCodeRequest{Label: &label},
+	form := url.Values{}
+	if label != "" {
+		form.Set("mobius_label", label)
 	}
 	if org := ctx.String("org"); org != "" {
-		req.Data.RequestedOrgId = &org
+		form.Set("mobius_requested_org_id", org)
 	}
 
-	createResp, err := unauth.CreateDeviceCodeWithResponse(ctx.Context(), req)
+	challenge, err := postDeviceCode(ctx.Context(), httpClient, apiURL, form)
 	if err != nil {
-		return fmt.Errorf("request device code: %w", err)
+		return err
 	}
-	if createResp.JSON200 == nil {
-		return fmt.Errorf("request device code: HTTP %d: %s", createResp.StatusCode(), string(createResp.Body))
-	}
-	challenge := createResp.JSON200
 
 	ctx.Println("")
 	ctx.Printf("  Your verification code: %s\n", challenge.UserCode)
-	ctx.Printf("  Open this URL:          %s\n", challenge.VerificationUriComplete)
+	ctx.Printf("  Open this URL:          %s\n", challenge.VerificationURIComplete)
 	ctx.Println("")
 
 	if !ctx.Bool("no-browser") {
-		if err := openBrowser(challenge.VerificationUriComplete); err != nil {
+		if err := openBrowser(challenge.VerificationURIComplete); err != nil {
 			ctx.Warn("could not open browser automatically: %s", err)
 		}
 	}
 
 	ctx.Println("Waiting for you to confirm in the browser...")
 
-	token, credID, err := pollForToken(ctx.Context(), unauth, challenge)
+	token, credID, err := pollForToken(ctx.Context(), httpClient, apiURL, challenge)
 	if err != nil {
 		return err
 	}
@@ -124,11 +149,43 @@ func runAuthLogin(ctx *cli.Context) error {
 	return nil
 }
 
-// pollForToken exchanges the device code at the server-requested cadence,
-// stopping when the flow completes, is denied, or expires. We honor the
-// server's suggested interval and cap the overall wait by expires_in so a
-// stuck browser does not hang the CLI forever.
-func pollForToken(ctx context.Context, client *api.ClientWithResponses, ch *api.DeviceCodeResponse) (string, string, error) {
+// postDeviceCode calls RFC 8628 §3.1 (Device Authorization Request) with a
+// form body and decodes the flat §3.2 JSON response.
+func postDeviceCode(ctx context.Context, client *http.Client, apiURL string, form url.Values) (*deviceCodeResponse, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, apiURL+"/auth/device/code", strings.NewReader(form.Encode()))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("request device code: %w", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+	body, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode != http.StatusOK {
+		var oe oauthError
+		if err := json.Unmarshal(body, &oe); err == nil && oe.Error != "" {
+			if oe.ErrorDescription != "" {
+				return nil, fmt.Errorf("request device code: %s (%s)", oe.Error, oe.ErrorDescription)
+			}
+			return nil, fmt.Errorf("request device code: %s", oe.Error)
+		}
+		return nil, fmt.Errorf("request device code: HTTP %d: %s", resp.StatusCode, strings.TrimSpace(string(body)))
+	}
+	var out deviceCodeResponse
+	if err := json.Unmarshal(body, &out); err != nil {
+		return nil, fmt.Errorf("decode device code response: %w", err)
+	}
+	return &out, nil
+}
+
+// pollForToken exchanges the device code at the server-requested cadence
+// using RFC 8628 §3.4–3.5 semantics: authorization_pending and slow_down
+// responses are expected during the normal waiting window, everything else
+// is terminal. We honor the server's suggested interval, increase it by 5s on
+// slow_down, and cap the overall wait by expires_in.
+func pollForToken(ctx context.Context, client *http.Client, apiURL string, ch *deviceCodeResponse) (string, string, error) {
 	interval := time.Duration(ch.Interval) * time.Second
 	if interval <= 0 {
 		interval = 5 * time.Second
@@ -144,33 +201,53 @@ func pollForToken(ctx context.Context, client *api.ClientWithResponses, ch *api.
 		if time.Now().After(expiresAt) {
 			return "", "", errors.New("login flow expired before confirmation; run `mobius auth login` again")
 		}
-		resp, err := client.ExchangeDeviceCodeWithResponse(ctx, api.ExchangeDeviceCodeJSONRequestBody{
-			Data: api.ExchangeDeviceCodeRequest{DeviceCode: ch.DeviceCode},
-		})
+
+		form := url.Values{
+			"grant_type":  {deviceCodeGrantType},
+			"device_code": {ch.DeviceCode},
+		}
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, apiURL+"/auth/device/token", strings.NewReader(form.Encode()))
+		if err != nil {
+			return "", "", err
+		}
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		resp, err := client.Do(req)
 		if err != nil {
 			return "", "", fmt.Errorf("poll for token: %w", err)
 		}
-		if resp.JSON200 == nil {
-			return "", "", fmt.Errorf("poll for token: HTTP %d: %s", resp.StatusCode(), string(resp.Body))
+		body, _ := io.ReadAll(resp.Body)
+		_ = resp.Body.Close()
+
+		if resp.StatusCode == http.StatusOK {
+			var tok deviceTokenResponse
+			if err := json.Unmarshal(body, &tok); err != nil {
+				return "", "", fmt.Errorf("decode token response: %w", err)
+			}
+			if tok.AccessToken == "" {
+				return "", "", errors.New("server returned 200 but no access_token")
+			}
+			return tok.AccessToken, tok.CredentialID, nil
 		}
-		switch string(resp.JSON200.Status) {
+
+		var oe oauthError
+		if err := json.Unmarshal(body, &oe); err != nil {
+			return "", "", fmt.Errorf("poll for token: HTTP %d: %s", resp.StatusCode, strings.TrimSpace(string(body)))
+		}
+		switch oe.Error {
 		case "authorization_pending":
 			continue
-		case "complete":
-			if resp.JSON200.Token == nil || *resp.JSON200.Token == "" {
-				return "", "", errors.New("server returned complete status but no token")
-			}
-			credID := ""
-			if resp.JSON200.CredentialId != nil {
-				credID = *resp.JSON200.CredentialId
-			}
-			return *resp.JSON200.Token, credID, nil
-		case "denied":
+		case "slow_down":
+			interval += 5 * time.Second
+			continue
+		case "access_denied":
 			return "", "", errors.New("login was denied in the browser")
-		case "expired":
+		case "expired_token":
 			return "", "", errors.New("login flow expired before confirmation; run `mobius auth login` again")
 		default:
-			return "", "", fmt.Errorf("unexpected device token status: %q", resp.JSON200.Status)
+			if oe.ErrorDescription != "" {
+				return "", "", fmt.Errorf("device token exchange failed: %s (%s)", oe.Error, oe.ErrorDescription)
+			}
+			return "", "", fmt.Errorf("device token exchange failed: %s", oe.Error)
 		}
 	}
 }

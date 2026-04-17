@@ -32,15 +32,16 @@ var overrides = map[string]Override{
 	// The browser-based CLI login flow is hand-written in auth.go because it
 	// needs to drive the device challenge, open the browser, poll for
 	// completion, and persist the returned credential locally — none of which
-	// the generic generator can produce. The CLI-credential management
+	// the generic generator can produce. (The RFC 8628 device authorization
+	// and token endpoints themselves are intentionally absent from the typed
+	// OpenAPI surface — they use form bodies and OAuth error envelopes — so
+	// no Skip entry is needed for those.) The CLI-credential management
 	// commands (list / revoke) are also hand-written so they render as
 	// ergonomic `mobius auth list` / `mobius auth revoke` subcommands that
 	// authenticate using the saved credential rather than forcing --api-key.
-	"createDeviceCode":     {Skip: true},
-	"exchangeDeviceCode":   {Skip: true},
-	"confirmDeviceCode":    {Skip: true},
-	"listCLICredentials":   {Skip: true},
-	"revokeCLICredential":  {Skip: true},
+	"confirmDeviceCode":   {Skip: true},
+	"listCLICredentials":  {Skip: true},
+	"revokeCLICredential": {Skip: true},
 
 	// --- Skipped: low-value or webhook-style endpoints ---
 	// These accept opaque payloads and are intended for external callers

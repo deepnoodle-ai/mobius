@@ -505,60 +505,6 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /auth/device/code:
-    post:
-      operationId: createDeviceCode
-      tags:
-      - auth
-      summary: Start a browser-based CLI login flow
-      security: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-              - data
-              properties:
-                data:
-                  $ref: '#/components/schemas/CreateDeviceCodeRequest'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DeviceCodeResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-  /auth/device/token:
-    post:
-      operationId: exchangeDeviceCode
-      tags:
-      - auth
-      summary: Poll a browser-based CLI login flow for completion
-      security: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-              - data
-              properties:
-                data:
-                  $ref: '#/components/schemas/ExchangeDeviceCodeRequest'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DeviceTokenResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
   /auth/device/confirm:
     post:
       operationId: confirmDeviceCode
@@ -3827,20 +3773,6 @@ components:
         expires_at:
           type: string
           format: date-time
-    CreateDeviceCodeRequest:
-      type: object
-      properties:
-        requested_org_id:
-          type: string
-        label:
-          type: string
-    ExchangeDeviceCodeRequest:
-      type: object
-      required:
-      - device_code
-      properties:
-        device_code:
-          type: string
     ConfirmDeviceCodeRequest:
       type: object
       required:
@@ -3849,46 +3781,6 @@ components:
         user_code:
           type: string
         label:
-          type: string
-    DeviceCodeResponse:
-      type: object
-      required:
-      - device_code
-      - user_code
-      - verification_uri
-      - verification_uri_complete
-      - expires_in
-      - interval
-      properties:
-        device_code:
-          type: string
-        user_code:
-          type: string
-        verification_uri:
-          type: string
-        verification_uri_complete:
-          type: string
-        expires_in:
-          type: integer
-        interval:
-          type: integer
-    DeviceTokenStatus:
-      type: string
-      enum:
-      - authorization_pending
-      - complete
-      - expired
-      - denied
-    DeviceTokenResponse:
-      type: object
-      required:
-      - status
-      properties:
-        status:
-          $ref: '#/components/schemas/DeviceTokenStatus'
-        token:
-          type: string
-        credential_id:
           type: string
     ConfirmDeviceCodeResult:
       type: object

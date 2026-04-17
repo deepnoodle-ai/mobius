@@ -165,40 +165,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/auth/device/code": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Start a browser-based CLI login flow */
-        post: operations["createDeviceCode"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/auth/device/token": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Poll a browser-based CLI login flow for completion */
-        post: operations["exchangeDeviceCode"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/auth/device/confirm": {
         parameters: {
             query?: never;
@@ -1824,31 +1790,9 @@ export interface components {
             /** Format: date-time */
             expires_at?: string;
         };
-        CreateDeviceCodeRequest: {
-            requested_org_id?: string;
-            label?: string;
-        };
-        ExchangeDeviceCodeRequest: {
-            device_code: string;
-        };
         ConfirmDeviceCodeRequest: {
             user_code: string;
             label?: string;
-        };
-        DeviceCodeResponse: {
-            device_code: string;
-            user_code: string;
-            verification_uri: string;
-            verification_uri_complete: string;
-            expires_in: number;
-            interval: number;
-        };
-        /** @enum {string} */
-        DeviceTokenStatus: "authorization_pending" | "complete" | "expired" | "denied";
-        DeviceTokenResponse: {
-            status: components["schemas"]["DeviceTokenStatus"];
-            token?: string;
-            credential_id?: string;
         };
         ConfirmDeviceCodeResult: {
             confirmed: boolean;
@@ -4028,60 +3972,6 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
-        };
-    };
-    createDeviceCode: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    data: components["schemas"]["CreateDeviceCodeRequest"];
-                };
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DeviceCodeResponse"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-        };
-    };
-    exchangeDeviceCode: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    data: components["schemas"]["ExchangeDeviceCodeRequest"];
-                };
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DeviceTokenResponse"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
         };
     };
     confirmDeviceCode: {
