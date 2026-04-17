@@ -6,10 +6,10 @@ Mobius is a work coordination platform for mixed teams of humans, systems, and A
 
 - **Go** — `go.mod` at the repo root. The primary library lives at [`github.com/deepnoodle-ai/mobius/mobius`](https://pkg.go.dev/github.com/deepnoodle-ai/mobius/mobius).
 - **CLI** — the `mobius` command at [`cmd/mobius/`](cmd/mobius/), built on the Go library. Resource subcommands (`mobius workflows list`, `mobius runs get`, …) plus a `worker` subcommand.
-- **Stock actions** — a small library of ready-to-use actions (print, fail, json, time, random) at [`github.com/deepnoodle-ai/mobius/action`](https://pkg.go.dev/github.com/deepnoodle-ai/mobius/action).
+- **Stock actions** — a small library of ready-to-use actions (print, fail, json, time, random) at [`github.com/deepnoodle-ai/mobius/mobius/action`](https://pkg.go.dev/github.com/deepnoodle-ai/mobius/mobius/action).
 - **Python client** — packaged as [`deepnoodle-mobius`](https://pypi.org/project/deepnoodle-mobius/) on PyPI.
 - **TypeScript client** — packaged as [`@deepnoodle/mobius`](https://www.npmjs.com/package/@deepnoodle/mobius) on npm.
-- **OpenAPI spec** — [`openapi.yaml`](openapi.yaml) at the repo root is the source of truth. All three clients are generated from it and share a [cross-language contract test suite](testdata/contract/).
+- **OpenAPI spec** — [`openapi.yaml`](openapi.yaml) at the repo root is the source of truth. All three clients are generated from it and share a [cross-language contract test suite](internal/testdata/contract/).
 
 ## Concepts
 
@@ -163,7 +163,7 @@ make test            # run every language's test suite
 
 ### Cross-language contract tests
 
-All three clients share canonical JSON fixtures under [`testdata/contract/`](testdata/contract). Each language has a contract test that round-trips every fixture through its own types and asserts the result is unchanged. Parity is guaranteed when `make test` passes.
+All three clients share canonical JSON fixtures under [`internal/testdata/contract/`](internal/testdata/contract). Each language has a contract test that round-trips every fixture through its own types and asserts the result is unchanged. Parity is guaranteed when `make test` passes.
 
 ## Security
 

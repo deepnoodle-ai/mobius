@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/deepnoodle-ai/mobius/api"
+	"github.com/deepnoodle-ai/mobius/mobius/api"
 )
 
 // ErrLeaseLost is returned when the server responds with 409 Conflict,

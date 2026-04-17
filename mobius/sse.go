@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/deepnoodle-ai/mobius/api"
+	"github.com/deepnoodle-ai/mobius/mobius/api"
 )
 
 // RunEventType identifies the kind of Server-Sent Event for a run.

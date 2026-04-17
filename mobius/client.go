@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/deepnoodle-ai/mobius/api"
+	"github.com/deepnoodle-ai/mobius/mobius/api"
 )
 
 const defaultHTTPTimeout = 60 * time.Second

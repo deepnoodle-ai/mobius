@@ -7,7 +7,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-CONTRACT_DIR = Path(__file__).resolve().parents[2] / "testdata" / "contract"
+CONTRACT_DIR = Path(__file__).resolve().parents[2] / "internal" / "testdata" / "contract"
 
 
 def load_manifest() -> list[dict[str, str]]:

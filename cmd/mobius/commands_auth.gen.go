@@ -10,7 +10,7 @@ package main
 import (
 	"github.com/deepnoodle-ai/wonton/cli"
 
-	"github.com/deepnoodle-ai/mobius/api"
+	"github.com/deepnoodle-ai/mobius/mobius/api"
 )
 
 // registerAuthCommands registers every generated subcommand in the "auth" group.
