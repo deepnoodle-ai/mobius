@@ -18,17 +18,19 @@ func registerAgentsCommands(app *cli.App) {
 	agentsGrp := app.Group("agents")
 	agentsGrp.Command("create").
 		Description("Create an agent").
+		Args("ns").
 		Flags(
 			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin)"),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
+			p0 := ctx.Arg(0)
 			var body api.CreateAgentJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
 			}
-			resp, err := client.CreateAgentWithResponse(ctx.Context(), body)
+			resp, err := client.CreateAgentWithResponse(ctx.Context(), p0, body)
 			if err != nil {
 				return err
 			}
@@ -37,7 +39,7 @@ func registerAgentsCommands(app *cli.App) {
 
 	agentsGrp.Command("create-session").
 		Description("Create an agent session").
-		Args("id").
+		Args("ns", "id").
 		Flags(
 			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin)"),
 		).
@@ -45,11 +47,12 @@ func registerAgentsCommands(app *cli.App) {
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
 			p0 := ctx.Arg(0)
+			p1 := ctx.Arg(1)
 			var body api.CreateAgentSessionJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
 			}
-			resp, err := client.CreateAgentSessionWithResponse(ctx.Context(), p0, body)
+			resp, err := client.CreateAgentSessionWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}
@@ -58,12 +61,13 @@ func registerAgentsCommands(app *cli.App) {
 
 	agentsGrp.Command("delete").
 		Description("Delete an agent").
-		Args("id").
+		Args("ns", "id").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
 			p0 := ctx.Arg(0)
-			resp, err := client.DeleteAgentWithResponse(ctx.Context(), p0)
+			p1 := ctx.Arg(1)
+			resp, err := client.DeleteAgentWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}
@@ -72,12 +76,13 @@ func registerAgentsCommands(app *cli.App) {
 
 	agentsGrp.Command("disconnect-session").
 		Description("Disconnect an agent session").
-		Args("session-id").
+		Args("ns", "session-id").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
 			p0 := ctx.Arg(0)
-			resp, err := client.DisconnectAgentSessionWithResponse(ctx.Context(), p0)
+			p1 := ctx.Arg(1)
+			resp, err := client.DisconnectAgentSessionWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}
@@ -86,12 +91,13 @@ func registerAgentsCommands(app *cli.App) {
 
 	agentsGrp.Command("get").
 		Description("Get an agent").
-		Args("id").
+		Args("ns", "id").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
 			p0 := ctx.Arg(0)
-			resp, err := client.GetAgentWithResponse(ctx.Context(), p0)
+			p1 := ctx.Arg(1)
+			resp, err := client.GetAgentWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}
@@ -100,12 +106,13 @@ func registerAgentsCommands(app *cli.App) {
 
 	agentsGrp.Command("get-session").
 		Description("Get an agent session").
-		Args("session-id").
+		Args("ns", "session-id").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
 			p0 := ctx.Arg(0)
-			resp, err := client.GetAgentSessionWithResponse(ctx.Context(), p0)
+			p1 := ctx.Arg(1)
+			resp, err := client.GetAgentSessionWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}
@@ -114,12 +121,13 @@ func registerAgentsCommands(app *cli.App) {
 
 	agentsGrp.Command("heartbeat-agent-session").
 		Description("Heartbeat an agent session").
-		Args("session-id").
+		Args("ns", "session-id").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
 			p0 := ctx.Arg(0)
-			resp, err := client.HeartbeatAgentSessionWithResponse(ctx.Context(), p0)
+			p1 := ctx.Arg(1)
+			resp, err := client.HeartbeatAgentSessionWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}
@@ -128,6 +136,7 @@ func registerAgentsCommands(app *cli.App) {
 
 	agentsGrp.Command("list").
 		Description("List agents").
+		Args("ns").
 		Flags(
 			cli.String("service-account-id", "").Help("service-account-id"),
 			cli.String("status", "").Help("status"),
@@ -136,6 +145,7 @@ func registerAgentsCommands(app *cli.App) {
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
+			p0 := ctx.Arg(0)
 			params := &api.ListAgentsParams{}
 			if ctx.IsSet("service-account-id") {
 				v := ctx.String("service-account-id")
@@ -149,7 +159,7 @@ func registerAgentsCommands(app *cli.App) {
 				v := api.LimitParam(ctx.Int("limit"))
 				params.Limit = &v
 			}
-			resp, err := client.ListAgentsWithResponse(ctx.Context(), params)
+			resp, err := client.ListAgentsWithResponse(ctx.Context(), p0, params)
 			if err != nil {
 				return err
 			}
@@ -158,7 +168,7 @@ func registerAgentsCommands(app *cli.App) {
 
 	agentsGrp.Command("list-sessions").
 		Description("List sessions for an agent").
-		Args("id").
+		Args("ns", "id").
 		Flags(
 			cli.String("status", "").Help("status"),
 			cli.String("transport", "").Help("transport"),
@@ -168,6 +178,7 @@ func registerAgentsCommands(app *cli.App) {
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
 			p0 := ctx.Arg(0)
+			p1 := ctx.Arg(1)
 			params := &api.ListAgentSessionsParams{}
 			if ctx.IsSet("status") {
 				v := api.AgentSessionStatus(ctx.String("status"))
@@ -181,7 +192,7 @@ func registerAgentsCommands(app *cli.App) {
 				v := api.LimitParam(ctx.Int("limit"))
 				params.Limit = &v
 			}
-			resp, err := client.ListAgentSessionsWithResponse(ctx.Context(), p0, params)
+			resp, err := client.ListAgentSessionsWithResponse(ctx.Context(), p0, p1, params)
 			if err != nil {
 				return err
 			}
@@ -190,7 +201,7 @@ func registerAgentsCommands(app *cli.App) {
 
 	agentsGrp.Command("update").
 		Description("Update an agent").
-		Args("id").
+		Args("ns", "id").
 		Flags(
 			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin)"),
 		).
@@ -198,11 +209,12 @@ func registerAgentsCommands(app *cli.App) {
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
 			p0 := ctx.Arg(0)
+			p1 := ctx.Arg(1)
 			var body api.UpdateAgentJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
 			}
-			resp, err := client.UpdateAgentWithResponse(ctx.Context(), p0, body)
+			resp, err := client.UpdateAgentWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}

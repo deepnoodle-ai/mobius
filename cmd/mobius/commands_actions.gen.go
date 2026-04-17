@@ -17,18 +17,20 @@ import (
 func registerActionsCommands(app *cli.App) {
 	actionsGrp := app.Group("actions")
 	actionsGrp.Command("create").
-		Description("Create a custom action in the org").
+		Description("Create an action in the namespace").
+		Args("ns").
 		Flags(
 			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin)"),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
+			p0 := ctx.Arg(0)
 			var body api.CreateActionJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
 			}
-			resp, err := client.CreateActionWithResponse(ctx.Context(), body)
+			resp, err := client.CreateActionWithResponse(ctx.Context(), p0, body)
 			if err != nil {
 				return err
 			}
@@ -36,13 +38,14 @@ func registerActionsCommands(app *cli.App) {
 		})
 
 	actionsGrp.Command("delete").
-		Description("Delete a custom action").
-		Args("action-name").
+		Description("Delete an action").
+		Args("ns", "action-name").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
 			p0 := ctx.Arg(0)
-			resp, err := client.DeleteActionWithResponse(ctx.Context(), p0)
+			p1 := ctx.Arg(1)
+			resp, err := client.DeleteActionWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}
@@ -50,13 +53,14 @@ func registerActionsCommands(app *cli.App) {
 		})
 
 	actionsGrp.Command("get").
-		Description("Get a custom action by name").
-		Args("action-name").
+		Description("Get an action by name").
+		Args("ns", "action-name").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
 			p0 := ctx.Arg(0)
-			resp, err := client.GetActionWithResponse(ctx.Context(), p0)
+			p1 := ctx.Arg(1)
+			resp, err := client.GetActionWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}
@@ -65,12 +69,13 @@ func registerActionsCommands(app *cli.App) {
 
 	actionsGrp.Command("get-action").
 		Description("Get one catalog action by name").
-		Args("action-name").
+		Args("ns", "action-name").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
 			p0 := ctx.Arg(0)
-			resp, err := client.GetCatalogActionWithResponse(ctx.Context(), p0)
+			p1 := ctx.Arg(1)
+			resp, err := client.GetCatalogActionWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}
@@ -78,7 +83,8 @@ func registerActionsCommands(app *cli.App) {
 		})
 
 	actionsGrp.Command("list").
-		Description("List custom actions in the org").
+		Description("List actions in the namespace").
+		Args("ns").
 		Flags(
 			cli.String("cursor", "").Help("cursor"),
 			cli.Int("limit", "").Help("limit"),
@@ -86,6 +92,7 @@ func registerActionsCommands(app *cli.App) {
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
+			p0 := ctx.Arg(0)
 			params := &api.ListActionsParams{}
 			if ctx.IsSet("cursor") {
 				v := api.CursorParam(ctx.String("cursor"))
@@ -95,7 +102,7 @@ func registerActionsCommands(app *cli.App) {
 				v := api.LimitParam(ctx.Int("limit"))
 				params.Limit = &v
 			}
-			resp, err := client.ListActionsWithResponse(ctx.Context(), params)
+			resp, err := client.ListActionsWithResponse(ctx.Context(), p0, params)
 			if err != nil {
 				return err
 			}
@@ -103,11 +110,13 @@ func registerActionsCommands(app *cli.App) {
 		})
 
 	actionsGrp.Command("list-actions").
-		Description("List platform and custom actions available in the org").
+		Description("List platform and namespace actions available in the namespace").
+		Args("ns").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
-			resp, err := client.ListCatalogActionsWithResponse(ctx.Context())
+			p0 := ctx.Arg(0)
+			resp, err := client.ListCatalogActionsWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
 			}
@@ -116,6 +125,7 @@ func registerActionsCommands(app *cli.App) {
 
 	actionsGrp.Command("list-audit-log").
 		Description("List action invocation audit records").
+		Args("ns").
 		Flags(
 			cli.String("cursor", "").Help("cursor"),
 			cli.Int("limit", "").Help("limit"),
@@ -126,6 +136,7 @@ func registerActionsCommands(app *cli.App) {
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
+			p0 := ctx.Arg(0)
 			params := &api.ListActionAuditLogParams{}
 			if ctx.IsSet("cursor") {
 				v := api.CursorParam(ctx.String("cursor"))
@@ -147,7 +158,7 @@ func registerActionsCommands(app *cli.App) {
 				v := ctx.String("status")
 				params.Status = &v
 			}
-			resp, err := client.ListActionAuditLogWithResponse(ctx.Context(), params)
+			resp, err := client.ListActionAuditLogWithResponse(ctx.Context(), p0, params)
 			if err != nil {
 				return err
 			}
@@ -155,13 +166,14 @@ func registerActionsCommands(app *cli.App) {
 		})
 
 	actionsGrp.Command("rotate-secret").
-		Description("Rotate a custom action signing secret").
-		Args("action-name").
+		Description("Rotate an action signing secret").
+		Args("ns", "action-name").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
 			p0 := ctx.Arg(0)
-			resp, err := client.RotateActionSecretWithResponse(ctx.Context(), p0)
+			p1 := ctx.Arg(1)
+			resp, err := client.RotateActionSecretWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}
@@ -169,8 +181,8 @@ func registerActionsCommands(app *cli.App) {
 		})
 
 	actionsGrp.Command("update").
-		Description("Update a custom action").
-		Args("action-name").
+		Description("Update an action").
+		Args("ns", "action-name").
 		Flags(
 			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin)"),
 		).
@@ -178,11 +190,12 @@ func registerActionsCommands(app *cli.App) {
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
 			p0 := ctx.Arg(0)
+			p1 := ctx.Arg(1)
 			var body api.UpdateActionJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
 			}
-			resp, err := client.UpdateActionWithResponse(ctx.Context(), p0, body)
+			resp, err := client.UpdateActionWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}

@@ -73,6 +73,8 @@ func registerTriggersCommands(app *cli.App) {
 		Flags(
 			cli.String("kind", "").Help("kind"),
 			cli.Bool("enabled", "").Help("enabled"),
+			cli.String("cursor", "").Help("cursor"),
+			cli.Int("limit", "").Help("limit"),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -87,6 +89,14 @@ func registerTriggersCommands(app *cli.App) {
 				v := ctx.Bool("enabled")
 				params.Enabled = &v
 			}
+			if ctx.IsSet("cursor") {
+				v := ctx.String("cursor")
+				params.Cursor = &v
+			}
+			if ctx.IsSet("limit") {
+				v := ctx.Int("limit")
+				params.Limit = &v
+			}
 			resp, err := client.ListTriggersWithResponse(ctx.Context(), p0, params)
 			if err != nil {
 				return err
@@ -99,6 +109,8 @@ func registerTriggersCommands(app *cli.App) {
 		Args("ns", "id").
 		Flags(
 			cli.String("status", "").Help("status"),
+			cli.String("cursor", "").Help("cursor"),
+			cli.Int("limit", "").Help("limit"),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -109,6 +121,14 @@ func registerTriggersCommands(app *cli.App) {
 			if ctx.IsSet("status") {
 				v := api.TriggerFireStatus(ctx.String("status"))
 				params.Status = &v
+			}
+			if ctx.IsSet("cursor") {
+				v := ctx.String("cursor")
+				params.Cursor = &v
+			}
+			if ctx.IsSet("limit") {
+				v := ctx.Int("limit")
+				params.Limit = &v
 			}
 			resp, err := client.ListTriggerFiresWithResponse(ctx.Context(), p0, p1, params)
 			if err != nil {

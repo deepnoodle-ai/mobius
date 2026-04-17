@@ -41,7 +41,7 @@ class Kind(Enum):
 
 class Channel(BaseModel):
     id: str
-    name: str = Field(..., description='Channel slug (unique within org)')
+    name: str = Field(..., description='Channel slug (unique within namespace)')
     display_name: str = Field(..., description='Human-facing display name')
     topic: str | None = Field(None, description='Channel topic or description')
     kind: Kind = Field(..., description='Channel type')
@@ -608,52 +608,53 @@ class BulkRunDataResponse(BaseModel):
     data: BulkRunResult
 
 
-class CustomActionAnnotations(BaseModel):
+class ActionAnnotations(BaseModel):
     idempotent: bool | None = None
     destructive: bool | None = None
     read_only: bool | None = None
 
 
-class CreateCustomActionRequest(BaseModel):
+class CreateActionRequest(BaseModel):
     name: str
     title: str | None = None
     description: str | None = None
     endpoint_url: AnyUrl
     input_schema: dict[str, Any] | None = None
     output_schema: dict[str, Any] | None = None
-    annotations: CustomActionAnnotations | None = None
+    annotations: ActionAnnotations | None = None
 
 
-class UpdateCustomActionRequest(BaseModel):
+class UpdateActionRequest(BaseModel):
     title: str | None = None
     description: str | None = None
     endpoint_url: AnyUrl | None = None
     input_schema: dict[str, Any] | None = None
     output_schema: dict[str, Any] | None = None
-    annotations: CustomActionAnnotations | None = None
+    annotations: ActionAnnotations | None = None
 
 
-class CustomAction(BaseModel):
+class Action1(BaseModel):
     id: str
     org_id: str
+    namespace_id: str
     name: str
     title: str | None = None
     description: str | None = None
     endpoint_url: AnyUrl
     input_schema: dict[str, Any] | None = None
     output_schema: dict[str, Any] | None = None
-    annotations: CustomActionAnnotations | None = None
+    annotations: ActionAnnotations | None = None
     signing_secret: str | None = None
     created_at: datetime
     updated_at: datetime
 
 
-class CustomActionDataResponse(BaseModel):
-    data: CustomAction
+class ActionDataResponse(BaseModel):
+    data: Action1
 
 
-class CustomActionListResponse(BaseModel):
-    data: list[CustomAction]
+class ActionListResponse(BaseModel):
+    data: list[Action1]
     next_cursor: str | None = None
     has_more: bool
 
@@ -673,7 +674,7 @@ class ActionCatalogEntry(BaseModel):
     integration: str | None = None
     source: str
     available: bool
-    annotations: CustomActionAnnotations | None = None
+    annotations: ActionAnnotations | None = None
     input_schema: dict[str, Any] | None = None
     output_schema: dict[str, Any] | None = None
     endpoint_url: AnyUrl | None = None
@@ -1020,7 +1021,7 @@ class TriggerTarget(BaseModel):
 class Trigger(BaseModel):
     id: str
     org_id: str
-    namespace_id: str | None = None
+    namespace_id: str
     name: str
     kind: TriggerKind
     source_config: dict[str, Any] | None = None
@@ -1041,6 +1042,8 @@ class TriggerDataResponse(BaseModel):
 
 class TriggerListResponse(BaseModel):
     data: list[Trigger]
+    next_cursor: str | None = None
+    has_more: bool
 
 
 class TriggerFire(BaseModel):
@@ -1058,10 +1061,11 @@ class TriggerFire(BaseModel):
 
 class TriggerFireListResponse(BaseModel):
     data: list[TriggerFire]
+    next_cursor: str | None = None
+    has_more: bool
 
 
 class CreateTriggerRequest(BaseModel):
-    namespace_id: str | None = None
     name: str
     kind: TriggerKind
     source_config: dict[str, Any] | None = None
@@ -1137,7 +1141,7 @@ class Webhook(BaseModel):
 
     id: str
     org_id: str
-    namespace_id: str | None = None
+    namespace_id: str
     name: str
     slug: str = Field(
         ..., description='Immutable URL-safe identifier used in the receive endpoint'
@@ -1158,6 +1162,8 @@ class WebhookDataResponse(BaseModel):
 
 class WebhookListResponse(BaseModel):
     data: list[Webhook]
+    next_cursor: str | None = None
+    has_more: bool
 
 
 class WebhookEvent(BaseModel):
@@ -1178,10 +1184,11 @@ class WebhookEvent(BaseModel):
 
 class WebhookEventListResponse(BaseModel):
     data: list[WebhookEvent]
+    next_cursor: str | None = None
+    has_more: bool
 
 
 class CreateWebhookRequest(BaseModel):
-    namespace_id: str | None = None
     name: str
     slug: str | None = Field(
         None, description='URL-safe slug; auto-generated from name if omitted'
@@ -1225,6 +1232,8 @@ class IntegrationDataResponse(BaseModel):
 
 class IntegrationListResponse(BaseModel):
     data: list[Integration]
+    next_cursor: str | None = None
+    has_more: bool
 
 
 class CreateIntegrationRequest(BaseModel):
@@ -1751,6 +1760,7 @@ class AgentSessionStatus(Enum):
 class Agent(BaseModel):
     id: str
     org_id: str
+    namespace_id: str
     service_account_id: str
     name: str
     display_name: str
@@ -1767,6 +1777,7 @@ class Agent(BaseModel):
 class AgentSession(BaseModel):
     id: str
     org_id: str
+    namespace_id: str
     agent_id: str
     status: AgentSessionStatus
     transport: str
@@ -2101,6 +2112,8 @@ class WorkflowDefinitionDataResponse(BaseModel):
 
 class WorkflowDefinitionListResponse(BaseModel):
     data: list[WorkflowDefinition]
+    next_cursor: str | None = None
+    has_more: bool
 
 
 class CreateWorkflowRequest(BaseModel):

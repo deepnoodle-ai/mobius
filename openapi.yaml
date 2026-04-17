@@ -49,12 +49,14 @@ tags:
 - name: tools
   x-displayName: tools
 paths:
-  /channels:
+  /namespaces/{ns}/channels:
     post:
       operationId: createChannel
       tags:
       - channels
       summary: Create a channel
+      parameters:
+      - $ref: '#/components/parameters/NamespaceSlugParam'
       requestBody:
         required: true
         content:
@@ -83,6 +85,7 @@ paths:
       - channels
       summary: List channels
       parameters:
+      - $ref: '#/components/parameters/NamespaceSlugParam'
       - name: kind
         in: query
         schema:
@@ -107,13 +110,14 @@ paths:
                 $ref: '#/components/schemas/ChannelListResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
-  /channels/{id}:
+  /namespaces/{ns}/channels/{id}:
     get:
       operationId: getChannel
       tags:
       - channels
       summary: Get a channel
       parameters:
+      - $ref: '#/components/parameters/NamespaceSlugParam'
       - $ref: '#/components/parameters/IDParam'
       responses:
         '200':
@@ -132,6 +136,7 @@ paths:
       - channels
       summary: Update a channel
       parameters:
+      - $ref: '#/components/parameters/NamespaceSlugParam'
       - $ref: '#/components/parameters/IDParam'
       requestBody:
         required: true
@@ -163,6 +168,7 @@ paths:
       - channels
       summary: Delete a channel
       parameters:
+      - $ref: '#/components/parameters/NamespaceSlugParam'
       - $ref: '#/components/parameters/IDParam'
       responses:
         '204':
@@ -171,13 +177,14 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /channels/{id}/members:
+  /namespaces/{ns}/channels/{id}/members:
     get:
       operationId: listChannelMembers
       tags:
       - channels
       summary: List channel members
       parameters:
+      - $ref: '#/components/parameters/NamespaceSlugParam'
       - $ref: '#/components/parameters/IDParam'
       - $ref: '#/components/parameters/CursorParam'
       - $ref: '#/components/parameters/LimitParam'
@@ -198,6 +205,7 @@ paths:
       - channels
       summary: Add a member to a channel
       parameters:
+      - $ref: '#/components/parameters/NamespaceSlugParam'
       - $ref: '#/components/parameters/IDParam'
       requestBody:
         required: true
@@ -223,13 +231,14 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /channels/{id}/members/{userId}:
+  /namespaces/{ns}/channels/{id}/members/{userId}:
     delete:
       operationId: removeChannelMember
       tags:
       - channels
       summary: Remove a member from a channel
       parameters:
+      - $ref: '#/components/parameters/NamespaceSlugParam'
       - $ref: '#/components/parameters/IDParam'
       - name: userId
         in: path
@@ -243,13 +252,14 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /channels/{id}/messages:
+  /namespaces/{ns}/channels/{id}/messages:
     get:
       operationId: listChannelMessages
       tags:
       - channels
       summary: List messages in a channel
       parameters:
+      - $ref: '#/components/parameters/NamespaceSlugParam'
       - $ref: '#/components/parameters/IDParam'
       - name: sender_id
         in: query
@@ -285,6 +295,7 @@ paths:
       - channels
       summary: Send a message to a channel
       parameters:
+      - $ref: '#/components/parameters/NamespaceSlugParam'
       - $ref: '#/components/parameters/IDParam'
       requestBody:
         required: true
@@ -310,13 +321,14 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /channels/{id}/messages/{messageId}:
+  /namespaces/{ns}/channels/{id}/messages/{messageId}:
     get:
       operationId: getChannelMessage
       tags:
       - channels
       summary: Get a specific message
       parameters:
+      - $ref: '#/components/parameters/NamespaceSlugParam'
       - $ref: '#/components/parameters/IDParam'
       - name: messageId
         in: path
@@ -340,6 +352,7 @@ paths:
       - channels
       summary: Update a channel message
       parameters:
+      - $ref: '#/components/parameters/NamespaceSlugParam'
       - $ref: '#/components/parameters/IDParam'
       - name: messageId
         in: path
@@ -573,6 +586,16 @@ paths:
       summary: List workflow definitions
       parameters:
       - $ref: '#/components/parameters/NamespaceSlugParam'
+      - name: cursor
+        in: query
+        schema:
+          type: string
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 200
       responses:
         '200':
           description: OK
@@ -1126,13 +1149,14 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /actions:
+  /namespaces/{ns}/actions:
     get:
       operationId: listActions
       tags:
       - actions
-      summary: List custom actions in the org
+      summary: List actions in the namespace
       parameters:
+      - $ref: '#/components/parameters/NamespaceSlugParam'
       - $ref: '#/components/parameters/CursorParam'
       - $ref: '#/components/parameters/LimitParam'
       responses:
@@ -1141,14 +1165,16 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CustomActionListResponse'
+                $ref: '#/components/schemas/ActionListResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
     post:
       operationId: createAction
       tags:
       - actions
-      summary: Create a custom action in the org
+      summary: Create an action in the namespace
+      parameters:
+      - $ref: '#/components/parameters/NamespaceSlugParam'
       requestBody:
         required: true
         content:
@@ -1159,27 +1185,28 @@ paths:
               - data
               properties:
                 data:
-                  $ref: '#/components/schemas/CreateCustomActionRequest'
+                  $ref: '#/components/schemas/CreateActionRequest'
       responses:
         '201':
           description: Created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CustomActionDataResponse'
+                $ref: '#/components/schemas/ActionDataResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '409':
           $ref: '#/components/responses/Conflict'
-  /actions/{actionName}:
+  /namespaces/{ns}/actions/{actionName}:
     get:
       operationId: getAction
       tags:
       - actions
-      summary: Get a custom action by name
+      summary: Get an action by name
       parameters:
+      - $ref: '#/components/parameters/NamespaceSlugParam'
       - $ref: '#/components/parameters/ActionNameParam'
       responses:
         '200':
@@ -1187,7 +1214,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CustomActionDataResponse'
+                $ref: '#/components/schemas/ActionDataResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
@@ -1196,8 +1223,9 @@ paths:
       operationId: updateAction
       tags:
       - actions
-      summary: Update a custom action
+      summary: Update an action
       parameters:
+      - $ref: '#/components/parameters/NamespaceSlugParam'
       - $ref: '#/components/parameters/ActionNameParam'
       requestBody:
         required: true
@@ -1209,14 +1237,14 @@ paths:
               - data
               properties:
                 data:
-                  $ref: '#/components/schemas/UpdateCustomActionRequest'
+                  $ref: '#/components/schemas/UpdateActionRequest'
       responses:
         '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CustomActionDataResponse'
+                $ref: '#/components/schemas/ActionDataResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -1227,8 +1255,9 @@ paths:
       operationId: deleteAction
       tags:
       - actions
-      summary: Delete a custom action
+      summary: Delete an action
       parameters:
+      - $ref: '#/components/parameters/NamespaceSlugParam'
       - $ref: '#/components/parameters/ActionNameParam'
       responses:
         '204':
@@ -1239,13 +1268,14 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
-  /actions/{actionName}/secret/rotate:
+  /namespaces/{ns}/actions/{actionName}/secret/rotate:
     post:
       operationId: rotateActionSecret
       tags:
       - actions
-      summary: Rotate a custom action signing secret
+      summary: Rotate an action signing secret
       parameters:
+      - $ref: '#/components/parameters/NamespaceSlugParam'
       - $ref: '#/components/parameters/ActionNameParam'
       responses:
         '200':
@@ -1258,13 +1288,14 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /action-audit-log:
+  /namespaces/{ns}/action-audit-log:
     get:
       operationId: listActionAuditLog
       tags:
       - actions
       summary: List action invocation audit records
       parameters:
+      - $ref: '#/components/parameters/NamespaceSlugParam'
       - $ref: '#/components/parameters/CursorParam'
       - $ref: '#/components/parameters/LimitParam'
       - name: run_id
@@ -1290,12 +1321,14 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /actions/catalog:
+  /namespaces/{ns}/actions/catalog:
     get:
       operationId: listCatalogActions
       tags:
       - actions
-      summary: List platform and custom actions available in the org
+      summary: List platform and namespace actions available in the namespace
+      parameters:
+      - $ref: '#/components/parameters/NamespaceSlugParam'
       responses:
         '200':
           description: OK
@@ -1305,13 +1338,14 @@ paths:
                 $ref: '#/components/schemas/ActionCatalogListResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
-  /actions/catalog/{actionName}:
+  /namespaces/{ns}/actions/catalog/{actionName}:
     get:
       operationId: getCatalogAction
       tags:
       - actions
       summary: Get one catalog action by name
       parameters:
+      - $ref: '#/components/parameters/NamespaceSlugParam'
       - $ref: '#/components/parameters/ActionNameParam'
       responses:
         '200':
@@ -1537,6 +1571,16 @@ paths:
         in: query
         schema:
           type: boolean
+      - name: cursor
+        in: query
+        schema:
+          type: string
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 200
       responses:
         '200':
           description: OK
@@ -1659,6 +1703,16 @@ paths:
         in: query
         schema:
           $ref: '#/components/schemas/TriggerFireStatus'
+      - name: cursor
+        in: query
+        schema:
+          type: string
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 200
       responses:
         '200':
           description: OK
@@ -1820,6 +1874,16 @@ paths:
         in: query
         schema:
           type: boolean
+      - name: cursor
+        in: query
+        schema:
+          type: string
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 200
       responses:
         '200':
           description: OK
@@ -1967,6 +2031,16 @@ paths:
         in: query
         schema:
           $ref: '#/components/schemas/WebhookEventStatus'
+      - name: cursor
+        in: query
+        schema:
+          type: string
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 200
       responses:
         '200':
           description: OK
@@ -1993,6 +2067,16 @@ paths:
         in: query
         schema:
           $ref: '#/components/schemas/IntegrationStatus'
+      - name: cursor
+        in: query
+        schema:
+          type: string
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 200
       responses:
         '200':
           description: OK
@@ -2829,12 +2913,14 @@ paths:
                 $ref: '#/components/schemas/GroupListResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
-  /agents:
+  /namespaces/{ns}/agents:
     post:
       operationId: createAgent
       tags:
       - agents
       summary: Create an agent
+      parameters:
+      - $ref: '#/components/parameters/NamespaceSlugParam'
       requestBody:
         required: true
         content:
@@ -2857,6 +2943,8 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
     get:
@@ -2865,6 +2953,7 @@ paths:
       - agents
       summary: List agents
       parameters:
+      - $ref: '#/components/parameters/NamespaceSlugParam'
       - name: service_account_id
         in: query
         schema:
@@ -2883,13 +2972,16 @@ paths:
                 $ref: '#/components/schemas/AgentListResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
-  /agents/{id}:
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /namespaces/{ns}/agents/{id}:
     get:
       operationId: getAgent
       tags:
       - agents
       summary: Get an agent
       parameters:
+      - $ref: '#/components/parameters/NamespaceSlugParam'
       - $ref: '#/components/parameters/IDParam'
       responses:
         '200':
@@ -2908,6 +3000,7 @@ paths:
       - agents
       summary: Update an agent
       parameters:
+      - $ref: '#/components/parameters/NamespaceSlugParam'
       - $ref: '#/components/parameters/IDParam'
       requestBody:
         required: true
@@ -2939,6 +3032,7 @@ paths:
       - agents
       summary: Delete an agent
       parameters:
+      - $ref: '#/components/parameters/NamespaceSlugParam'
       - $ref: '#/components/parameters/IDParam'
       responses:
         '204':
@@ -2947,13 +3041,14 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /agents/{id}/sessions:
+  /namespaces/{ns}/agents/{id}/sessions:
     post:
       operationId: createAgentSession
       tags:
       - agents
       summary: Create an agent session
       parameters:
+      - $ref: '#/components/parameters/NamespaceSlugParam'
       - $ref: '#/components/parameters/IDParam'
       requestBody:
         required: true
@@ -2985,6 +3080,7 @@ paths:
       - agents
       summary: List sessions for an agent
       parameters:
+      - $ref: '#/components/parameters/NamespaceSlugParam'
       - $ref: '#/components/parameters/IDParam'
       - name: status
         in: query
@@ -3006,13 +3102,14 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /agents/sessions/{sessionId}:
+  /namespaces/{ns}/agents/sessions/{sessionId}:
     get:
       operationId: getAgentSession
       tags:
       - agents
       summary: Get an agent session
       parameters:
+      - $ref: '#/components/parameters/NamespaceSlugParam'
       - name: sessionId
         in: path
         required: true
@@ -3029,13 +3126,14 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /agents/sessions/{sessionId}/heartbeat:
+  /namespaces/{ns}/agents/sessions/{sessionId}/heartbeat:
     post:
       operationId: heartbeatAgentSession
       tags:
       - agents
       summary: Heartbeat an agent session
       parameters:
+      - $ref: '#/components/parameters/NamespaceSlugParam'
       - name: sessionId
         in: path
         required: true
@@ -3052,13 +3150,14 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /agents/sessions/{sessionId}/disconnect:
+  /namespaces/{ns}/agents/sessions/{sessionId}/disconnect:
     post:
       operationId: disconnectAgentSession
       tags:
       - agents
       summary: Disconnect an agent session
       parameters:
+      - $ref: '#/components/parameters/NamespaceSlugParam'
       - name: sessionId
         in: path
         required: true
@@ -3308,7 +3407,7 @@ components:
           type: string
         name:
           type: string
-          description: Channel slug (unique within org)
+          description: Channel slug (unique within namespace)
         display_name:
           type: string
           description: Human-facing display name
@@ -4298,11 +4397,16 @@ components:
       type: object
       required:
       - data
+      - has_more
       properties:
         data:
           type: array
           items:
             $ref: '#/components/schemas/WorkflowDefinition'
+        next_cursor:
+          type: string
+        has_more:
+          type: boolean
     CreateWorkflowRequest:
       type: object
       required:
@@ -4699,7 +4803,7 @@ components:
       properties:
         data:
           $ref: '#/components/schemas/BulkRunResult'
-    CustomActionAnnotations:
+    ActionAnnotations:
       type: object
       properties:
         idempotent:
@@ -4708,7 +4812,7 @@ components:
           type: boolean
         read_only:
           type: boolean
-    CreateCustomActionRequest:
+    CreateActionRequest:
       type: object
       required:
       - name
@@ -4730,8 +4834,8 @@ components:
           type: object
           additionalProperties: true
         annotations:
-          $ref: '#/components/schemas/CustomActionAnnotations'
-    UpdateCustomActionRequest:
+          $ref: '#/components/schemas/ActionAnnotations'
+    UpdateActionRequest:
       type: object
       properties:
         title:
@@ -4748,12 +4852,13 @@ components:
           type: object
           additionalProperties: true
         annotations:
-          $ref: '#/components/schemas/CustomActionAnnotations'
-    CustomAction:
+          $ref: '#/components/schemas/ActionAnnotations'
+    Action:
       type: object
       required:
       - id
       - org_id
+      - namespace_id
       - name
       - endpoint_url
       - created_at
@@ -4763,6 +4868,8 @@ components:
           type: string
         org_id:
           type: string
+        namespace_id:
+          type: string
         name:
           type: string
         title:
@@ -4779,7 +4886,7 @@ components:
           type: object
           additionalProperties: true
         annotations:
-          $ref: '#/components/schemas/CustomActionAnnotations'
+          $ref: '#/components/schemas/ActionAnnotations'
         signing_secret:
           type: string
         created_at:
@@ -4788,14 +4895,14 @@ components:
         updated_at:
           type: string
           format: date-time
-    CustomActionDataResponse:
+    ActionDataResponse:
       type: object
       required:
       - data
       properties:
         data:
-          $ref: '#/components/schemas/CustomAction'
-    CustomActionListResponse:
+          $ref: '#/components/schemas/Action'
+    ActionListResponse:
       type: object
       required:
       - data
@@ -4804,7 +4911,7 @@ components:
         data:
           type: array
           items:
-            $ref: '#/components/schemas/CustomAction'
+            $ref: '#/components/schemas/Action'
         next_cursor:
           type: string
         has_more:
@@ -4843,7 +4950,7 @@ components:
         available:
           type: boolean
         annotations:
-          $ref: '#/components/schemas/CustomActionAnnotations'
+          $ref: '#/components/schemas/ActionAnnotations'
         input_schema:
           type: object
           additionalProperties: true
@@ -5427,6 +5534,7 @@ components:
       required:
       - id
       - org_id
+      - namespace_id
       - name
       - kind
       - concurrency_policy
@@ -5483,11 +5591,16 @@ components:
       type: object
       required:
       - data
+      - has_more
       properties:
         data:
           type: array
           items:
             $ref: '#/components/schemas/Trigger'
+        next_cursor:
+          type: string
+        has_more:
+          type: boolean
     TriggerFire:
       type: object
       required:
@@ -5525,19 +5638,22 @@ components:
       type: object
       required:
       - data
+      - has_more
       properties:
         data:
           type: array
           items:
             $ref: '#/components/schemas/TriggerFire'
+        next_cursor:
+          type: string
+        has_more:
+          type: boolean
     CreateTriggerRequest:
       type: object
       required:
       - name
       - kind
       properties:
-        namespace_id:
-          type: string
         name:
           type: string
         kind:
@@ -5676,6 +5792,7 @@ components:
       required:
       - id
       - org_id
+      - namespace_id
       - name
       - slug
       - enabled
@@ -5722,11 +5839,16 @@ components:
       type: object
       required:
       - data
+      - has_more
       properties:
         data:
           type: array
           items:
             $ref: '#/components/schemas/Webhook'
+        next_cursor:
+          type: string
+        has_more:
+          type: boolean
     WebhookEvent:
       type: object
       required:
@@ -5763,18 +5885,21 @@ components:
       type: object
       required:
       - data
+      - has_more
       properties:
         data:
           type: array
           items:
             $ref: '#/components/schemas/WebhookEvent'
+        next_cursor:
+          type: string
+        has_more:
+          type: boolean
     CreateWebhookRequest:
       type: object
       required:
       - name
       properties:
-        namespace_id:
-          type: string
         name:
           type: string
         slug:
@@ -5845,11 +5970,16 @@ components:
       type: object
       required:
       - data
+      - has_more
       properties:
         data:
           type: array
           items:
             $ref: '#/components/schemas/Integration'
+        next_cursor:
+          type: string
+        has_more:
+          type: boolean
     CreateIntegrationRequest:
       type: object
       required:
@@ -6947,6 +7077,7 @@ components:
       required:
       - id
       - org_id
+      - namespace_id
       - service_account_id
       - name
       - display_name
@@ -6958,6 +7089,8 @@ components:
         id:
           type: string
         org_id:
+          type: string
+        namespace_id:
           type: string
         service_account_id:
           type: string
@@ -6990,6 +7123,7 @@ components:
       required:
       - id
       - org_id
+      - namespace_id
       - agent_id
       - status
       - transport
@@ -6999,6 +7133,8 @@ components:
         id:
           type: string
         org_id:
+          type: string
+        namespace_id:
           type: string
         agent_id:
           type: string
