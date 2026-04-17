@@ -42,6 +42,7 @@ func newApp() *cli.App {
 	)
 
 	registerWorkerCommand(app)
+	registerAuthCommands(app)
 	registerGeneratedCommands(app)
 
 	return app

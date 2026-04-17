@@ -20,6 +20,8 @@ import (
 
 	"github.com/deepnoodle-ai/wonton/cli"
 	"github.com/deepnoodle-ai/wonton/env"
+
+	"github.com/deepnoodle-ai/mobius/internal/authstore"
 )
 
 func main() {
@@ -27,9 +29,38 @@ func main() {
 		_ = env.LoadEnvFile(".env")
 	}
 
+	// Resolve the saved browser-based login credential into the same
+	// environment variables the global flags already honor, so commands
+	// using `cli.RequireFlags("api-key")` succeed without forcing the user
+	// to re-specify anything. Explicit --api-key / MOBIUS_API_KEY /
+	// MOBIUS_API_URL still win because they reach the flag parser first.
+	applySavedCredential()
+
 	app := newApp()
 	if err := app.Execute(); err != nil {
 		app.PrintError(err)
 		os.Exit(cli.GetExitCode(err))
+	}
+}
+
+// applySavedCredential fills in MOBIUS_API_KEY / MOBIUS_API_URL from the
+// persisted browser-login credential when those variables are not already
+// set, so the rest of the CLI can treat saved and explicit credentials
+// identically. Errors are intentionally swallowed — an unreadable
+// credentials file must not block commands that do not need auth (e.g.
+// `mobius auth login`, `mobius --help`).
+func applySavedCredential() {
+	if _, ok := os.LookupEnv("MOBIUS_API_KEY"); ok {
+		return
+	}
+	cred, err := authstore.Load()
+	if err != nil || cred == nil || cred.Token == "" {
+		return
+	}
+	os.Setenv("MOBIUS_API_KEY", cred.Token)
+	if cred.APIURL != "" {
+		if _, ok := os.LookupEnv("MOBIUS_API_URL"); !ok {
+			os.Setenv("MOBIUS_API_URL", cred.APIURL)
+		}
 	}
 }

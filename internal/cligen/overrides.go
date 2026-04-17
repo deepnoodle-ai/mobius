@@ -29,8 +29,18 @@ type Override struct {
 // next to the rule itself.
 var overrides = map[string]Override{
 	// --- Skipped: hand-written in cmd/mobius ---
-	// (none yet; `worker` is a runtime subcommand with no corresponding API
-	// operation, so it does not need to be listed here.)
+	// The browser-based CLI login flow is hand-written in auth.go because it
+	// needs to drive the device challenge, open the browser, poll for
+	// completion, and persist the returned credential locally — none of which
+	// the generic generator can produce. The CLI-credential management
+	// commands (list / revoke) are also hand-written so they render as
+	// ergonomic `mobius auth list` / `mobius auth revoke` subcommands that
+	// authenticate using the saved credential rather than forcing --api-key.
+	"createDeviceCode":     {Skip: true},
+	"exchangeDeviceCode":   {Skip: true},
+	"confirmDeviceCode":    {Skip: true},
+	"listCLICredentials":   {Skip: true},
+	"revokeCLICredential":  {Skip: true},
 
 	// --- Skipped: low-value or webhook-style endpoints ---
 	// These accept opaque payloads and are intended for external callers
