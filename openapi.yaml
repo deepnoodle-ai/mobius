@@ -44,6 +44,8 @@ tags:
   x-displayName: slack
 - name: groups
   x-displayName: groups
+- name: agents
+  x-displayName: agents
 - name: tools
   x-displayName: tools
 paths:
@@ -2881,6 +2883,252 @@ paths:
                 $ref: '#/components/schemas/GroupListResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
+  /agents:
+    post:
+      operationId: createAgent
+      tags:
+      - agents
+      summary: Create an agent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - data
+              properties:
+                data:
+                  $ref: '#/components/schemas/CreateAgentRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentDataResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          $ref: '#/components/responses/Conflict'
+    get:
+      operationId: listAgents
+      tags:
+      - agents
+      summary: List agents
+      parameters:
+      - name: service_account_id
+        in: query
+        schema:
+          type: string
+      - name: status
+        in: query
+        schema:
+          $ref: '#/components/schemas/AgentStatus'
+      - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /agents/{id}:
+    get:
+      operationId: getAgent
+      tags:
+      - agents
+      summary: Get an agent
+      parameters:
+      - $ref: '#/components/parameters/IDParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentDataResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      operationId: updateAgent
+      tags:
+      - agents
+      summary: Update an agent
+      parameters:
+      - $ref: '#/components/parameters/IDParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - data
+              properties:
+                data:
+                  $ref: '#/components/schemas/UpdateAgentRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentDataResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      operationId: deleteAgent
+      tags:
+      - agents
+      summary: Delete an agent
+      parameters:
+      - $ref: '#/components/parameters/IDParam'
+      responses:
+        '204':
+          description: No Content
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /agents/{id}/sessions:
+    post:
+      operationId: createAgentSession
+      tags:
+      - agents
+      summary: Create an agent session
+      parameters:
+      - $ref: '#/components/parameters/IDParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - data
+              properties:
+                data:
+                  $ref: '#/components/schemas/CreateAgentSessionRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentSessionDataResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    get:
+      operationId: listAgentSessions
+      tags:
+      - agents
+      summary: List sessions for an agent
+      parameters:
+      - $ref: '#/components/parameters/IDParam'
+      - name: status
+        in: query
+        schema:
+          $ref: '#/components/schemas/AgentSessionStatus'
+      - name: transport
+        in: query
+        schema:
+          type: string
+      - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentSessionListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /agents/sessions/{sessionId}:
+    get:
+      operationId: getAgentSession
+      tags:
+      - agents
+      summary: Get an agent session
+      parameters:
+      - name: sessionId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentSessionDataResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /agents/sessions/{sessionId}/heartbeat:
+    post:
+      operationId: heartbeatAgentSession
+      tags:
+      - agents
+      summary: Heartbeat an agent session
+      parameters:
+      - name: sessionId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentSessionDataResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /agents/sessions/{sessionId}/disconnect:
+    post:
+      operationId: disconnectAgentSession
+      tags:
+      - agents
+      summary: Disconnect an agent session
+      parameters:
+      - name: sessionId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentSessionDataResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /tools:
     get:
       operationId: listTools
@@ -6785,6 +7033,189 @@ components:
         user_id:
           type: string
           description: Org member user ID to add
+    AgentStatus:
+      type: string
+      enum:
+      - active
+      - inactive
+    AgentPresence:
+      type: string
+      enum:
+      - online
+      - offline
+      - stale
+    AgentSessionStatus:
+      type: string
+      enum:
+      - connected
+      - disconnected
+      - stale
+    Agent:
+      type: object
+      required:
+      - id
+      - org_id
+      - service_account_id
+      - name
+      - display_name
+      - status
+      - presence
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+        org_id:
+          type: string
+        service_account_id:
+          type: string
+        name:
+          type: string
+        display_name:
+          type: string
+        description:
+          type: string
+        kind:
+          type: string
+        capabilities:
+          type: object
+          additionalProperties: true
+        config:
+          type: object
+          additionalProperties: true
+        status:
+          $ref: '#/components/schemas/AgentStatus'
+        presence:
+          $ref: '#/components/schemas/AgentPresence'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    AgentSession:
+      type: object
+      required:
+      - id
+      - org_id
+      - agent_id
+      - status
+      - transport
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+        org_id:
+          type: string
+        agent_id:
+          type: string
+        status:
+          $ref: '#/components/schemas/AgentSessionStatus'
+        transport:
+          type: string
+        metadata:
+          type: object
+          additionalProperties: true
+        connected_at:
+          type: string
+          format: date-time
+          nullable: true
+        last_seen_at:
+          type: string
+          format: date-time
+          nullable: true
+        disconnected_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    AgentDataResponse:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          $ref: '#/components/schemas/Agent'
+    AgentListResponse:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Agent'
+    AgentSessionDataResponse:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          $ref: '#/components/schemas/AgentSession'
+    AgentSessionListResponse:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AgentSession'
+    CreateAgentRequest:
+      type: object
+      required:
+      - service_account_id
+      - name
+      properties:
+        service_account_id:
+          type: string
+        name:
+          type: string
+        display_name:
+          type: string
+        description:
+          type: string
+        kind:
+          type: string
+        capabilities:
+          type: object
+          additionalProperties: true
+        config:
+          type: object
+          additionalProperties: true
+    UpdateAgentRequest:
+      type: object
+      properties:
+        display_name:
+          type: string
+        description:
+          type: string
+        kind:
+          type: string
+        capabilities:
+          type: object
+          additionalProperties: true
+        config:
+          type: object
+          additionalProperties: true
+        status:
+          $ref: '#/components/schemas/AgentStatus'
+    CreateAgentSessionRequest:
+      type: object
+      required:
+      - transport
+      properties:
+        transport:
+          type: string
+        metadata:
+          type: object
+          additionalProperties: true
     ServiceAccountStatus:
       type: string
       enum:
@@ -7024,6 +7455,9 @@ x-tagGroups:
 - name: Groups
   tags:
   - groups
+- name: Agents
+  tags:
+  - agents
 - name: Service Accounts
   tags:
   - service-accounts
