@@ -104,7 +104,7 @@ test("contract: claim_request_minimal sent verbatim", async () => {
   const captured: { last?: Captured } = {};
   const restore = installFakeFetch({ status: 204 }, captured);
   try {
-    const result = await newClient().claimTask(fixture);
+    const result = await newClient().claimJob(fixture);
     assert.equal(result, null);
   } finally {
     restore();
@@ -119,7 +119,7 @@ test("contract: claim_request_full sent verbatim", async () => {
   const captured: { last?: Captured } = {};
   const restore = installFakeFetch({ status: 204 }, captured);
   try {
-    await newClient().claimTask(fixture);
+    await newClient().claimJob(fixture);
   } finally {
     restore();
   }
@@ -132,7 +132,7 @@ test("contract: heartbeat_task_request sent verbatim", async () => {
   const captured: { last?: Captured } = {};
   const restore = installFakeFetch({ status: 200, body: reply }, captured);
   try {
-    await newClient().heartbeatTask("task_test", fixture);
+    await newClient().heartbeatJob("task_test", fixture);
   } finally {
     restore();
   }
@@ -150,7 +150,7 @@ test("contract: complete_task_request_success sent verbatim", async () => {
   const captured: { last?: Captured } = {};
   const restore = installFakeFetch({ status: 204 }, captured);
   try {
-    await newClient().completeTask("task_test", fixture);
+    await newClient().completeJob("task_test", fixture);
   } finally {
     restore();
   }
@@ -168,7 +168,7 @@ test("contract: complete_task_request_failed sent verbatim", async () => {
   const captured: { last?: Captured } = {};
   const restore = installFakeFetch({ status: 204 }, captured);
   try {
-    await newClient().completeTask("task_test", fixture);
+    await newClient().completeJob("task_test", fixture);
   } finally {
     restore();
   }
@@ -183,7 +183,7 @@ test("contract: claim_response parsed losslessly", async () => {
   const restore = installFakeFetch({ status: 200, body: fixture }, captured);
   let task;
   try {
-    task = await newClient().claimTask({ worker_id: "worker-abc" });
+    task = await newClient().claimJob({ worker_id: "worker-abc" });
   } finally {
     restore();
   }
@@ -197,7 +197,7 @@ test("contract: heartbeat_task_response parsed losslessly", async () => {
   const restore = installFakeFetch({ status: 200, body: fixture }, captured);
   let heartbeat: JobHeartbeat;
   try {
-    heartbeat = await newClient().heartbeatTask("task_test", {
+    heartbeat = await newClient().heartbeatJob("task_test", {
       worker_id: "worker-abc",
       attempt: 1,
     });

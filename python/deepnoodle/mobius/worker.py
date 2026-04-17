@@ -70,7 +70,7 @@ class Worker:
         with ThreadPoolExecutor(max_workers=self._config.concurrency) as pool:
             while not self._stop_event.is_set():
                 try:
-                    task = self._client.claim_task(claim_req)
+                    task = self._client.claim_job(claim_req)
                 except Exception as exc:
                     logger.error("claim error: %s", exc)
                     time.sleep(2)
@@ -145,7 +145,7 @@ class Worker:
             else None
         )
         try:
-            self._client.complete_task(
+            self._client.complete_job(
                 task.job_id,
                 JobCompleteRequest(
                     worker_id=self._config.worker_id,
@@ -171,7 +171,7 @@ class Worker:
         )
         while not stop.wait(timeout=float(interval)):
             try:
-                envelope = self._client.heartbeat_task(task.job_id, fence)
+                envelope = self._client.heartbeat_job(task.job_id, fence)
                 if envelope.directives.should_cancel:
                     logger.warning(
                         "cancel directive received for job %s", task.job_id
@@ -193,7 +193,7 @@ class Worker:
         self, task: JobClaim, error_type: str, message: str
     ) -> None:
         try:
-            self._client.complete_task(
+            self._client.complete_job(
                 task.job_id,
                 JobCompleteRequest(
                     worker_id=self._config.worker_id,

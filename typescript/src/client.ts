@@ -55,7 +55,7 @@ export class Client {
    * Long-poll for the next claimable job. Returns null when the poll
    * window closes without a job being available.
    */
-  async claimTask(
+  async claimJob(
     req: JobClaimRequest,
     signal?: AbortSignal,
   ): Promise<JobClaim | null> {
@@ -69,7 +69,7 @@ export class Client {
   }
 
   /** Refresh the lease on a claimed job. */
-  async heartbeatTask(
+  async heartbeatJob(
     jobId: string,
     req: JobFenceRequest,
   ): Promise<JobHeartbeat> {
@@ -83,7 +83,7 @@ export class Client {
   }
 
   /** Report the terminal status of a claimed job. */
-  async completeTask(jobId: string, req: JobCompleteRequest): Promise<void> {
+  async completeJob(jobId: string, req: JobCompleteRequest): Promise<void> {
     const resp = await this.request(
       `/namespaces/${encodeURIComponent(this.namespace)}/jobs/${encodeURIComponent(jobId)}/complete`,
       { method: "POST", body: { data: req } },

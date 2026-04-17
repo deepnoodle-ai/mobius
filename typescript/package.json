@@ -1,17 +1,55 @@
 {
   "name": "@deepnoodle/mobius",
-  "version": "0.1.0",
+  "version": "0.0.1",
   "type": "module",
   "description": "TypeScript SDK for Mobius workflow orchestration",
   "license": "Apache-2.0",
+  "author": "Deepnoodle",
+  "homepage": "https://github.com/deepnoodle-ai/mobius#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/deepnoodle-ai/mobius.git",
+    "directory": "typescript"
+  },
+  "bugs": {
+    "url": "https://github.com/deepnoodle-ai/mobius/issues"
+  },
+  "keywords": [
+    "mobius",
+    "workflow",
+    "orchestration",
+    "worker",
+    "deepnoodle",
+    "sdk"
+  ],
   "packageManager": "pnpm@10.18.3",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "generate": "openapi-typescript ../openapi.yaml -o src/api/schema.ts && node scripts/gen-api-index.js",
     "build": "tsc",
     "typecheck": "tsc --noEmit",
-    "test": "tsc -p tsconfig.test.json && node --test build-test/test/*.test.js"
+    "test": "tsc -p tsconfig.test.json && node --test build-test/test/*.test.js",
+    "prepublishOnly": "pnpm run build"
   },
   "devDependencies": {
     "@types/node": "^25.6.0",

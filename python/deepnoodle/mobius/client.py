@@ -75,7 +75,7 @@ class Client:
 
     # --- Runtime API ---------------------------------------------------------
 
-    def claim_task(self, req: JobClaimRequest) -> JobClaim | None:
+    def claim_job(self, req: JobClaimRequest) -> JobClaim | None:
         resp = self._http.post(
             f"/namespaces/{self.namespace}/jobs/claim",
             json={"data": _dump(req)},
@@ -85,7 +85,7 @@ class Client:
         resp.raise_for_status()
         return JobClaimDataResponse.model_validate(resp.json()).data
 
-    def heartbeat_task(
+    def heartbeat_job(
         self, job_id: str, req: JobFenceRequest
     ) -> JobHeartbeat:
         resp = self._http.post(
@@ -97,7 +97,7 @@ class Client:
         resp.raise_for_status()
         return JobHeartbeatDataResponse.model_validate(resp.json()).data
 
-    def complete_task(self, job_id: str, req: JobCompleteRequest) -> None:
+    def complete_job(self, job_id: str, req: JobCompleteRequest) -> None:
         resp = self._http.post(
             f"/namespaces/{self.namespace}/jobs/{job_id}/complete",
             json={"data": _dump(req)},

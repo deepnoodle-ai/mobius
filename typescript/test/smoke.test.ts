@@ -33,18 +33,18 @@ test("smoke: defaults to the production API host", async () => {
   }) as typeof fetch;
 
   const client = new Client({ apiKey: "mbx_test", namespace: "test-ns" });
-  await client.claimTask({ worker_id: "worker-1" });
+  await client.claimJob({ worker_id: "worker-1" });
 
   assert.equal(requestedURL, `${DEFAULT_BASE_URL}/namespaces/test-ns/jobs/claim`);
 });
 
-test("smoke: claimTask returns null on 204", async () => {
+test("smoke: claimJob returns null on 204", async () => {
   const client = clientWithFakeFetch({ status: 204 });
-  const task = await client.claimTask({ worker_id: "worker-1" });
+  const task = await client.claimJob({ worker_id: "worker-1" });
   assert.equal(task, null);
 });
 
-test("smoke: claimTask returns task on 200", async () => {
+test("smoke: claimJob returns task on 200", async () => {
   const client = clientWithFakeFetch({
     status: 200,
     body: {
@@ -61,25 +61,25 @@ test("smoke: claimTask returns task on 200", async () => {
       },
     },
   });
-  const task = await client.claimTask({ worker_id: "worker-1" });
+  const task = await client.claimJob({ worker_id: "worker-1" });
   assert.ok(task);
   assert.equal(task!.job_id, "task_1");
   assert.equal(task!.action, "print");
 });
 
-test("smoke: heartbeatTask 409 raises LeaseLostError", async () => {
+test("smoke: heartbeatJob 409 raises LeaseLostError", async () => {
   const client = clientWithFakeFetch({ status: 409 });
   await assert.rejects(
-    () => client.heartbeatTask("task_1", { worker_id: "w", attempt: 1 }),
+    () => client.heartbeatJob("task_1", { worker_id: "w", attempt: 1 }),
     LeaseLostError,
   );
 });
 
-test("smoke: completeTask 409 raises LeaseLostError", async () => {
+test("smoke: completeJob 409 raises LeaseLostError", async () => {
   const client = clientWithFakeFetch({ status: 409 });
   await assert.rejects(
     () =>
-      client.completeTask("task_1", {
+      client.completeJob("task_1", {
         worker_id: "w",
         attempt: 1,
         status: "completed",

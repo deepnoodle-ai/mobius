@@ -139,7 +139,7 @@ export class Worker {
         if (this.config.version) claimReq.worker_version = this.config.version;
         if (this.config.queues.length > 0) claimReq.queues = this.config.queues;
         if (this.config.actions.length > 0) claimReq.actions = this.config.actions;
-        task = await this.client.claimTask(claimReq, combined);
+        task = await this.client.claimJob(claimReq, combined);
       } catch (err) {
         if (combined.aborted) break;
         this.logger.error("[mobius] claim error:", err);
@@ -191,7 +191,7 @@ export class Worker {
     let hbLost = false;
     const heartbeatTimer = setInterval(async () => {
       try {
-        const hb = await this.client.heartbeatTask(jobId, {
+        const hb = await this.client.heartbeatJob(jobId, {
           worker_id: workerId,
           attempt,
         });
@@ -223,7 +223,7 @@ export class Worker {
       if (result != null) {
         completeReq.result_b64 = Buffer.from(JSON.stringify(result)).toString("base64");
       }
-      await this.client.completeTask(jobId, completeReq);
+      await this.client.completeJob(jobId, completeReq);
       this.logger.info(`[mobius] job ${jobId} completed`);
     } catch (err) {
       clearInterval(heartbeatTimer);
@@ -254,7 +254,7 @@ export class Worker {
     msg: string,
   ): Promise<void> {
     try {
-      await this.client.completeTask(jobId, {
+      await this.client.completeJob(jobId, {
         worker_id: workerId,
         attempt,
         status: "failed",
