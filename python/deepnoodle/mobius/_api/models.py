@@ -291,40 +291,9 @@ class CreateAPIKeyRequest(BaseModel):
     expires_at: datetime | None = None
 
 
-class CreateDeviceCodeRequest(BaseModel):
-    requested_org_id: str | None = None
-    label: str | None = None
-
-
-class ExchangeDeviceCodeRequest(BaseModel):
-    device_code: str
-
-
 class ConfirmDeviceCodeRequest(BaseModel):
     user_code: str
     label: str | None = None
-
-
-class DeviceCodeResponse(BaseModel):
-    device_code: str
-    user_code: str
-    verification_uri: str
-    verification_uri_complete: str
-    expires_in: int
-    interval: int
-
-
-class DeviceTokenStatus(Enum):
-    authorization_pending = 'authorization_pending'
-    complete = 'complete'
-    expired = 'expired'
-    denied = 'denied'
-
-
-class DeviceTokenResponse(BaseModel):
-    status: DeviceTokenStatus
-    token: str | None = None
-    credential_id: str | None = None
 
 
 class ConfirmDeviceCodeResult(BaseModel):

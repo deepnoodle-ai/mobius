@@ -341,30 +341,6 @@ func (e CreateRoleAssignmentRequestActorType) Valid() bool {
 	}
 }
 
-// Defines values for DeviceTokenStatus.
-const (
-	DeviceTokenStatusAuthorizationPending DeviceTokenStatus = "authorization_pending"
-	DeviceTokenStatusComplete             DeviceTokenStatus = "complete"
-	DeviceTokenStatusDenied               DeviceTokenStatus = "denied"
-	DeviceTokenStatusExpired              DeviceTokenStatus = "expired"
-)
-
-// Valid indicates whether the value is a known member of the DeviceTokenStatus enum.
-func (e DeviceTokenStatus) Valid() bool {
-	switch e {
-	case DeviceTokenStatusAuthorizationPending:
-		return true
-	case DeviceTokenStatusComplete:
-		return true
-	case DeviceTokenStatusDenied:
-		return true
-	case DeviceTokenStatusExpired:
-		return true
-	default:
-		return false
-	}
-}
-
 // Defines values for GroupRoutingPolicy.
 const (
 	GroupRoutingPolicyAllMembers     GroupRoutingPolicy = "all_members"
@@ -838,19 +814,19 @@ func (e ListChannelsParamsKind) Valid() bool {
 
 // Defines values for ListInteractionsParamsStatus.
 const (
-	Completed ListInteractionsParamsStatus = "completed"
-	Expired   ListInteractionsParamsStatus = "expired"
-	Pending   ListInteractionsParamsStatus = "pending"
+	ListInteractionsParamsStatusCompleted ListInteractionsParamsStatus = "completed"
+	ListInteractionsParamsStatusExpired   ListInteractionsParamsStatus = "expired"
+	ListInteractionsParamsStatusPending   ListInteractionsParamsStatus = "pending"
 )
 
 // Valid indicates whether the value is a known member of the ListInteractionsParamsStatus enum.
 func (e ListInteractionsParamsStatus) Valid() bool {
 	switch e {
-	case Completed:
+	case ListInteractionsParamsStatusCompleted:
 		return true
-	case Expired:
+	case ListInteractionsParamsStatusExpired:
 		return true
-	case Pending:
+	case ListInteractionsParamsStatusPending:
 		return true
 	default:
 		return false
@@ -1403,12 +1379,6 @@ type CreateCustomActionRequest struct {
 	Title        *string                  `json:"title,omitempty"`
 }
 
-// CreateDeviceCodeRequest defines model for CreateDeviceCodeRequest.
-type CreateDeviceCodeRequest struct {
-	Label          *string `json:"label,omitempty"`
-	RequestedOrgId *string `json:"requested_org_id,omitempty"`
-}
-
 // CreateGroupRequest defines model for CreateGroupRequest.
 type CreateGroupRequest struct {
 	Description *string `json:"description,omitempty"`
@@ -1604,26 +1574,6 @@ type CustomActionListResponse struct {
 	NextCursor *string        `json:"next_cursor,omitempty"`
 }
 
-// DeviceCodeResponse defines model for DeviceCodeResponse.
-type DeviceCodeResponse struct {
-	DeviceCode              string `json:"device_code"`
-	ExpiresIn               int    `json:"expires_in"`
-	Interval                int    `json:"interval"`
-	UserCode                string `json:"user_code"`
-	VerificationUri         string `json:"verification_uri"`
-	VerificationUriComplete string `json:"verification_uri_complete"`
-}
-
-// DeviceTokenResponse defines model for DeviceTokenResponse.
-type DeviceTokenResponse struct {
-	CredentialId *string           `json:"credential_id,omitempty"`
-	Status       DeviceTokenStatus `json:"status"`
-	Token        *string           `json:"token,omitempty"`
-}
-
-// DeviceTokenStatus defines model for DeviceTokenStatus.
-type DeviceTokenStatus string
-
 // ErrorResponse defines model for ErrorResponse.
 type ErrorResponse struct {
 	Error struct {
@@ -1633,11 +1583,6 @@ type ErrorResponse struct {
 		// Message Human-readable error message
 		Message string `json:"message"`
 	} `json:"error"`
-}
-
-// ExchangeDeviceCodeRequest defines model for ExchangeDeviceCodeRequest.
-type ExchangeDeviceCodeRequest struct {
-	DeviceCode string `json:"device_code"`
 }
 
 // Group defines model for Group.
@@ -3041,19 +2986,9 @@ type ListAuditLogsParams struct {
 	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
-// CreateDeviceCodeJSONBody defines parameters for CreateDeviceCode.
-type CreateDeviceCodeJSONBody struct {
-	Data CreateDeviceCodeRequest `json:"data"`
-}
-
 // ConfirmDeviceCodeJSONBody defines parameters for ConfirmDeviceCode.
 type ConfirmDeviceCodeJSONBody struct {
 	Data ConfirmDeviceCodeRequest `json:"data"`
-}
-
-// ExchangeDeviceCodeJSONBody defines parameters for ExchangeDeviceCode.
-type ExchangeDeviceCodeJSONBody struct {
-	Data ExchangeDeviceCodeRequest `json:"data"`
 }
 
 // ListChannelsParams defines parameters for ListChannels.
@@ -3427,14 +3362,8 @@ type CreateAgentSessionJSONRequestBody CreateAgentSessionJSONBody
 // CreateAPIKeyJSONRequestBody defines body for CreateAPIKey for application/json ContentType.
 type CreateAPIKeyJSONRequestBody CreateAPIKeyJSONBody
 
-// CreateDeviceCodeJSONRequestBody defines body for CreateDeviceCode for application/json ContentType.
-type CreateDeviceCodeJSONRequestBody CreateDeviceCodeJSONBody
-
 // ConfirmDeviceCodeJSONRequestBody defines body for ConfirmDeviceCode for application/json ContentType.
 type ConfirmDeviceCodeJSONRequestBody ConfirmDeviceCodeJSONBody
-
-// ExchangeDeviceCodeJSONRequestBody defines body for ExchangeDeviceCode for application/json ContentType.
-type ExchangeDeviceCodeJSONRequestBody ExchangeDeviceCodeJSONBody
 
 // CreateChannelJSONRequestBody defines body for CreateChannel for application/json ContentType.
 type CreateChannelJSONRequestBody CreateChannelJSONBody
@@ -4190,20 +4119,10 @@ type ClientInterface interface {
 	// ListAuditLogs request
 	ListAuditLogs(ctx context.Context, params *ListAuditLogsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CreateDeviceCodeWithBody request with any body
-	CreateDeviceCodeWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	CreateDeviceCode(ctx context.Context, body CreateDeviceCodeJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
 	// ConfirmDeviceCodeWithBody request with any body
 	ConfirmDeviceCodeWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	ConfirmDeviceCode(ctx context.Context, body ConfirmDeviceCodeJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// ExchangeDeviceCodeWithBody request with any body
-	ExchangeDeviceCodeWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	ExchangeDeviceCode(ctx context.Context, body ExchangeDeviceCodeJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListChannels request
 	ListChannels(ctx context.Context, params *ListChannelsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -4911,30 +4830,6 @@ func (c *Client) ListAuditLogs(ctx context.Context, params *ListAuditLogsParams,
 	return c.Client.Do(req)
 }
 
-func (c *Client) CreateDeviceCodeWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateDeviceCodeRequestWithBody(c.Server, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) CreateDeviceCode(ctx context.Context, body CreateDeviceCodeJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateDeviceCodeRequest(c.Server, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
 func (c *Client) ConfirmDeviceCodeWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewConfirmDeviceCodeRequestWithBody(c.Server, contentType, body)
 	if err != nil {
@@ -4949,30 +4844,6 @@ func (c *Client) ConfirmDeviceCodeWithBody(ctx context.Context, contentType stri
 
 func (c *Client) ConfirmDeviceCode(ctx context.Context, body ConfirmDeviceCodeJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewConfirmDeviceCodeRequest(c.Server, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) ExchangeDeviceCodeWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewExchangeDeviceCodeRequestWithBody(c.Server, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) ExchangeDeviceCode(ctx context.Context, body ExchangeDeviceCodeJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewExchangeDeviceCodeRequest(c.Server, body)
 	if err != nil {
 		return nil, err
 	}
@@ -7724,46 +7595,6 @@ func NewListAuditLogsRequest(server string, params *ListAuditLogsParams) (*http.
 	return req, nil
 }
 
-// NewCreateDeviceCodeRequest calls the generic CreateDeviceCode builder with application/json body
-func NewCreateDeviceCodeRequest(server string, body CreateDeviceCodeJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewCreateDeviceCodeRequestWithBody(server, "application/json", bodyReader)
-}
-
-// NewCreateDeviceCodeRequestWithBody generates requests for CreateDeviceCode with any type of body
-func NewCreateDeviceCodeRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/auth/device/code")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("POST", queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
 // NewConfirmDeviceCodeRequest calls the generic ConfirmDeviceCode builder with application/json body
 func NewConfirmDeviceCodeRequest(server string, body ConfirmDeviceCodeJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
@@ -7785,46 +7616,6 @@ func NewConfirmDeviceCodeRequestWithBody(server string, contentType string, body
 	}
 
 	operationPath := fmt.Sprintf("/auth/device/confirm")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("POST", queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewExchangeDeviceCodeRequest calls the generic ExchangeDeviceCode builder with application/json body
-func NewExchangeDeviceCodeRequest(server string, body ExchangeDeviceCodeJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewExchangeDeviceCodeRequestWithBody(server, "application/json", bodyReader)
-}
-
-// NewExchangeDeviceCodeRequestWithBody generates requests for ExchangeDeviceCode with any type of body
-func NewExchangeDeviceCodeRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/auth/device/token")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -12572,20 +12363,10 @@ type ClientWithResponsesInterface interface {
 	// ListAuditLogsWithResponse request
 	ListAuditLogsWithResponse(ctx context.Context, params *ListAuditLogsParams, reqEditors ...RequestEditorFn) (*ListAuditLogsResponse, error)
 
-	// CreateDeviceCodeWithBodyWithResponse request with any body
-	CreateDeviceCodeWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateDeviceCodeResponse, error)
-
-	CreateDeviceCodeWithResponse(ctx context.Context, body CreateDeviceCodeJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateDeviceCodeResponse, error)
-
 	// ConfirmDeviceCodeWithBodyWithResponse request with any body
 	ConfirmDeviceCodeWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ConfirmDeviceCodeResponse, error)
 
 	ConfirmDeviceCodeWithResponse(ctx context.Context, body ConfirmDeviceCodeJSONRequestBody, reqEditors ...RequestEditorFn) (*ConfirmDeviceCodeResponse, error)
-
-	// ExchangeDeviceCodeWithBodyWithResponse request with any body
-	ExchangeDeviceCodeWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ExchangeDeviceCodeResponse, error)
-
-	ExchangeDeviceCodeWithResponse(ctx context.Context, body ExchangeDeviceCodeJSONRequestBody, reqEditors ...RequestEditorFn) (*ExchangeDeviceCodeResponse, error)
 
 	// ListChannelsWithResponse request
 	ListChannelsWithResponse(ctx context.Context, params *ListChannelsParams, reqEditors ...RequestEditorFn) (*ListChannelsResponse, error)
@@ -13507,29 +13288,6 @@ func (r ListAuditLogsResponse) StatusCode() int {
 	return 0
 }
 
-type CreateDeviceCodeResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *DeviceCodeResponse
-	JSON400      *BadRequest
-}
-
-// Status returns HTTPResponse.Status
-func (r CreateDeviceCodeResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r CreateDeviceCodeResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
 type ConfirmDeviceCodeResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -13548,29 +13306,6 @@ func (r ConfirmDeviceCodeResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r ConfirmDeviceCodeResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type ExchangeDeviceCodeResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *DeviceTokenResponse
-	JSON400      *BadRequest
-}
-
-// Status returns HTTPResponse.Status
-func (r ExchangeDeviceCodeResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ExchangeDeviceCodeResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -16071,23 +15806,6 @@ func (c *ClientWithResponses) ListAuditLogsWithResponse(ctx context.Context, par
 	return ParseListAuditLogsResponse(rsp)
 }
 
-// CreateDeviceCodeWithBodyWithResponse request with arbitrary body returning *CreateDeviceCodeResponse
-func (c *ClientWithResponses) CreateDeviceCodeWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateDeviceCodeResponse, error) {
-	rsp, err := c.CreateDeviceCodeWithBody(ctx, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateDeviceCodeResponse(rsp)
-}
-
-func (c *ClientWithResponses) CreateDeviceCodeWithResponse(ctx context.Context, body CreateDeviceCodeJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateDeviceCodeResponse, error) {
-	rsp, err := c.CreateDeviceCode(ctx, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateDeviceCodeResponse(rsp)
-}
-
 // ConfirmDeviceCodeWithBodyWithResponse request with arbitrary body returning *ConfirmDeviceCodeResponse
 func (c *ClientWithResponses) ConfirmDeviceCodeWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ConfirmDeviceCodeResponse, error) {
 	rsp, err := c.ConfirmDeviceCodeWithBody(ctx, contentType, body, reqEditors...)
@@ -16103,23 +15821,6 @@ func (c *ClientWithResponses) ConfirmDeviceCodeWithResponse(ctx context.Context,
 		return nil, err
 	}
 	return ParseConfirmDeviceCodeResponse(rsp)
-}
-
-// ExchangeDeviceCodeWithBodyWithResponse request with arbitrary body returning *ExchangeDeviceCodeResponse
-func (c *ClientWithResponses) ExchangeDeviceCodeWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ExchangeDeviceCodeResponse, error) {
-	rsp, err := c.ExchangeDeviceCodeWithBody(ctx, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseExchangeDeviceCodeResponse(rsp)
-}
-
-func (c *ClientWithResponses) ExchangeDeviceCodeWithResponse(ctx context.Context, body ExchangeDeviceCodeJSONRequestBody, reqEditors ...RequestEditorFn) (*ExchangeDeviceCodeResponse, error) {
-	rsp, err := c.ExchangeDeviceCode(ctx, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseExchangeDeviceCodeResponse(rsp)
 }
 
 // ListChannelsWithResponse request returning *ListChannelsResponse
@@ -18169,39 +17870,6 @@ func ParseListAuditLogsResponse(rsp *http.Response) (*ListAuditLogsResponse, err
 	return response, nil
 }
 
-// ParseCreateDeviceCodeResponse parses an HTTP response from a CreateDeviceCodeWithResponse call
-func ParseCreateDeviceCodeResponse(rsp *http.Response) (*CreateDeviceCodeResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &CreateDeviceCodeResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest DeviceCodeResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest BadRequest
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	}
-
-	return response, nil
-}
-
 // ParseConfirmDeviceCodeResponse parses an HTTP response from a ConfirmDeviceCodeWithResponse call
 func ParseConfirmDeviceCodeResponse(rsp *http.Response) (*ConfirmDeviceCodeResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -18236,39 +17904,6 @@ func ParseConfirmDeviceCodeResponse(rsp *http.Response) (*ConfirmDeviceCodeRespo
 			return nil, err
 		}
 		response.JSON401 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseExchangeDeviceCodeResponse parses an HTTP response from a ExchangeDeviceCodeWithResponse call
-func ParseExchangeDeviceCodeResponse(rsp *http.Response) (*ExchangeDeviceCodeResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ExchangeDeviceCodeResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest DeviceTokenResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest BadRequest
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
 
 	}
 
