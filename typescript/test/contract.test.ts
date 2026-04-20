@@ -5,12 +5,11 @@ import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
 import type {
-  JobClaimDataResponse,
+  JobClaim,
   JobClaimRequest,
   JobCompleteRequest,
   JobFenceRequest,
   JobHeartbeat,
-  JobHeartbeatDataResponse,
 } from "../src/api/index.js";
 import { Client } from "../src/client.js";
 
@@ -33,7 +32,7 @@ const contractDir = join(
   "contract",
 );
 
-const NAMESPACE = "test-ns";
+const PROJECT = "test-project";
 
 interface FixtureEntry {
   file: string;
@@ -47,7 +46,9 @@ interface Manifest {
 }
 
 function loadManifest(): Manifest {
-  return JSON.parse(readFileSync(join(contractDir, "manifest.json"), "utf-8")) as Manifest;
+  return JSON.parse(
+    readFileSync(join(contractDir, "manifest.json"), "utf-8"),
+  ) as Manifest;
 }
 
 function readFixture<T>(file: string): T {
@@ -90,7 +91,7 @@ function newClient(): Client {
   return new Client({
     baseURL: "https://api.example.invalid",
     apiKey: "mbx_test",
-    namespace: NAMESPACE,
+    project: PROJECT,
   });
 }
 
@@ -109,9 +110,9 @@ test("contract: claim_request_minimal sent verbatim", async () => {
   } finally {
     restore();
   }
-  assert.equal(captured.last?.path, `/namespaces/${NAMESPACE}/jobs/claim`);
+  assert.equal(captured.last?.path, `/projects/${PROJECT}/jobs/claim`);
   assert.equal(captured.last?.method, "POST");
-  assert.deepStrictEqual(captured.last?.body, { data: fixture });
+  assert.deepStrictEqual(captured.last?.body, fixture);
 });
 
 test("contract: claim_request_full sent verbatim", async () => {
@@ -123,12 +124,12 @@ test("contract: claim_request_full sent verbatim", async () => {
   } finally {
     restore();
   }
-  assert.deepStrictEqual(captured.last?.body, { data: fixture });
+  assert.deepStrictEqual(captured.last?.body, fixture);
 });
 
 test("contract: heartbeat_task_request sent verbatim", async () => {
   const fixture = readFixture<JobFenceRequest>("heartbeat_task_request.json");
-  const reply = { data: { ok: true, directives: {} } };
+  const reply = { ok: true, directives: {} };
   const captured: { last?: Captured } = {};
   const restore = installFakeFetch({ status: 200, body: reply }, captured);
   try {
@@ -138,9 +139,9 @@ test("contract: heartbeat_task_request sent verbatim", async () => {
   }
   assert.equal(
     captured.last?.path,
-    `/namespaces/${NAMESPACE}/jobs/task_test/heartbeat`,
+    `/projects/${PROJECT}/jobs/task_test/heartbeat`,
   );
-  assert.deepStrictEqual(captured.last?.body, { data: fixture });
+  assert.deepStrictEqual(captured.last?.body, fixture);
 });
 
 test("contract: complete_task_request_success sent verbatim", async () => {
@@ -156,9 +157,9 @@ test("contract: complete_task_request_success sent verbatim", async () => {
   }
   assert.equal(
     captured.last?.path,
-    `/namespaces/${NAMESPACE}/jobs/task_test/complete`,
+    `/projects/${PROJECT}/jobs/task_test/complete`,
   );
-  assert.deepStrictEqual(captured.last?.body, { data: fixture });
+  assert.deepStrictEqual(captured.last?.body, fixture);
 });
 
 test("contract: complete_task_request_failed sent verbatim", async () => {
@@ -172,13 +173,13 @@ test("contract: complete_task_request_failed sent verbatim", async () => {
   } finally {
     restore();
   }
-  assert.deepStrictEqual(captured.last?.body, { data: fixture });
+  assert.deepStrictEqual(captured.last?.body, fixture);
 });
 
 // ---------- response fixtures ----------
 
 test("contract: claim_response parsed losslessly", async () => {
-  const fixture = readFixture<JobClaimDataResponse>("claim_response.json");
+  const fixture = readFixture<JobClaim>("claim_response.json");
   const captured: { last?: Captured } = {};
   const restore = installFakeFetch({ status: 200, body: fixture }, captured);
   let task;
@@ -188,11 +189,11 @@ test("contract: claim_response parsed losslessly", async () => {
     restore();
   }
   assert.ok(task, "expected task, got null");
-  assert.deepStrictEqual(task, fixture.data);
+  assert.deepStrictEqual(task, fixture);
 });
 
 test("contract: heartbeat_task_response parsed losslessly", async () => {
-  const fixture = readFixture<JobHeartbeatDataResponse>("heartbeat_task_response.json");
+  const fixture = readFixture<JobHeartbeat>("heartbeat_task_response.json");
   const captured: { last?: Captured } = {};
   const restore = installFakeFetch({ status: 200, body: fixture }, captured);
   let heartbeat: JobHeartbeat;
@@ -204,5 +205,5 @@ test("contract: heartbeat_task_response parsed losslessly", async () => {
   } finally {
     restore();
   }
-  assert.deepStrictEqual(heartbeat, fixture.data);
+  assert.deepStrictEqual(heartbeat, fixture);
 });

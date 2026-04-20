@@ -30,6 +30,11 @@ class Metadata(BaseModel):
     )
 
 
+class ChannelMessageSenderType(Enum):
+    member = 'member'
+    agent = 'agent'
+
+
 class Kind(Enum):
     """
     Channel type
@@ -41,7 +46,7 @@ class Kind(Enum):
 
 class Channel(BaseModel):
     id: str
-    name: str = Field(..., description='Channel slug (unique within namespace)')
+    name: str = Field(..., description='Channel slug (unique within project)')
     display_name: str = Field(..., description='Human-facing display name')
     topic: str | None = Field(None, description='Channel topic or description')
     kind: Kind = Field(..., description='Channel type')
@@ -54,12 +59,8 @@ class Channel(BaseModel):
     updated_at: datetime
 
 
-class ChannelDataResponse(BaseModel):
-    data: Channel
-
-
 class ChannelListResponse(BaseModel):
-    data: list[Channel]
+    items: list[Channel]
     has_more: bool | None = None
     next_cursor: str | None = None
 
@@ -88,12 +89,8 @@ class ChannelMember(BaseModel):
     joined_at: datetime
 
 
-class ChannelMemberDataResponse(BaseModel):
-    data: ChannelMember
-
-
 class ChannelMemberListResponse(BaseModel):
-    data: list[ChannelMember]
+    items: list[ChannelMember]
     has_more: bool | None = None
     next_cursor: str | None = None
 
@@ -111,10 +108,14 @@ class Display(Enum):
 class ChannelMessage(BaseModel):
     id: str
     channel_id: str
+    sender_type: ChannelMessageSenderType
     sender_id: str = Field(..., description='ID of the message sender (user or agent)')
+    sender_session_id: str | None = Field(
+        None, description='Live agent session that sent the message when applicable'
+    )
     display: Display | None = Field(None, description='Rendering layout mode')
     type: str = Field(
-        ..., description='Dot-namespaced message type (e.g. user.message, ai.response)'
+        ..., description='Dot-projectd message type (e.g. user.message, ai.response)'
     )
     content: str = Field(..., description='Message content (markdown)')
     reply_to: str | None = Field(
@@ -131,12 +132,8 @@ class ChannelMessage(BaseModel):
     created_at: datetime
 
 
-class ChannelMessageDataResponse(BaseModel):
-    data: ChannelMessage
-
-
 class ChannelMessageListResponse(BaseModel):
-    data: list[ChannelMessage]
+    items: list[ChannelMessage]
     has_more: bool | None = None
     next_cursor: str | None = None
 
@@ -171,9 +168,15 @@ class AddChannelMemberRequest(BaseModel):
 
 
 class SendChannelMessageRequest(BaseModel):
+    sender_agent_id: str | None = Field(
+        None, description='Durable agent identity to attribute the message to.'
+    )
+    sender_session_id: str | None = Field(
+        None, description='Live agent session to attribute the message to.'
+    )
     content: str = Field(..., description='Message content (markdown)')
     display: Display | None = Field('message', description='Rendering layout mode')
-    type: str | None = Field('user.message', description='Dot-namespaced message type')
+    type: str | None = Field('user.message', description='Dot-projectd message type')
     reply_to: str | None = Field(None, description='Parent message ID for threading')
     metadata: Metadata | None = None
 
@@ -199,6 +202,9 @@ class AuditLogEntry(BaseModel):
     user_id: str | None = Field(
         None,
         description='ID of the user who performed the action, when a human user is attributable',
+    )
+    project_id: str | None = Field(
+        None, description='Project ID when the audited resource is project-scoped'
     )
     actor_type: str | None = Field(
         None, description='Durable actor type that performed the action'
@@ -228,7 +234,7 @@ class AuditLogEntry(BaseModel):
 
 
 class AuditLogListResponse(BaseModel):
-    data: list[AuditLogEntry]
+    items: list[AuditLogEntry] | None = None
     next_cursor: str | None = Field(
         None, description='Cursor for fetching next page of results'
     )
@@ -248,15 +254,12 @@ class APIKey(BaseModel):
     )
     scope: Scope
     permissions: list[str] | None = None
+    project_id: str | None = None
     service_account_id: str | None = None
     expires_at: datetime | None = None
     last_used_at: datetime | None = None
     created_at: datetime
     updated_at: datetime
-
-
-class APIKeyDataResponse(BaseModel):
-    data: APIKey
 
 
 class APIKeyCreateResult(BaseModel):
@@ -267,6 +270,7 @@ class APIKeyCreateResult(BaseModel):
     )
     scope: Scope
     permissions: list[str] | None = None
+    project_id: str | None = None
     service_account_id: str | None = None
     expires_at: datetime | None = None
     last_used_at: datetime | None = None
@@ -275,12 +279,8 @@ class APIKeyCreateResult(BaseModel):
     key: str = Field(..., description='The raw API key (shown only once)')
 
 
-class APIKeyCreateResultDataResponse(BaseModel):
-    data: APIKeyCreateResult
-
-
 class APIKeyListResponse(BaseModel):
-    data: list[APIKey]
+    items: list[APIKey]
 
 
 class CreateAPIKeyRequest(BaseModel):
@@ -289,6 +289,19 @@ class CreateAPIKeyRequest(BaseModel):
     permissions: list[str] | None = None
     service_account_id: str | None = None
     expires_at: datetime | None = None
+
+
+class AuthContext(BaseModel):
+    user_id: str
+    org_id: str | None = None
+    role: str | None = Field(
+        None,
+        description='Org member role (owner, admin, member) — empty for API-key auth',
+    )
+    auth_type: str = Field(
+        ..., description='How the caller authenticated (clerk, api_key, cli_token)'
+    )
+    is_admin: bool
 
 
 class ConfirmDeviceCodeRequest(BaseModel):
@@ -319,7 +332,7 @@ class CLICredential(BaseModel):
 
 
 class CLICredentialListResponse(BaseModel):
-    data: list[CLICredential]
+    items: list[CLICredential]
 
 
 class WorkflowInput(BaseModel):
@@ -480,12 +493,17 @@ class WorkflowRunStatus(Enum):
 
 class WorkflowRun(BaseModel):
     id: str
-    namespace_id: str | None = None
     queue: str | None = None
     parent_run_id: str | None = None
-    definition_id: str
-    definition_version_id: str
-    definition_version: int
+    definition_id: str | None = Field(
+        None,
+        description='ID of the workflow definition this run was started from.\nEmpty for ephemeral runs started from an inline spec.\n',
+    )
+    definition_version: int | None = Field(None, description='Zero for ephemeral runs.')
+    ephemeral: bool | None = Field(
+        None,
+        description='True when the run was started from an inline spec rather\nthan a saved workflow definition. Equivalent to\n`definition_id == ""`.\n',
+    )
     workflow_name: str
     status: WorkflowRunStatus
     attempt: int
@@ -507,33 +525,13 @@ class WorkflowRun(BaseModel):
     updated_at: datetime
 
 
-class WorkflowRunDataResponse(BaseModel):
-    data: WorkflowRun
-
-
 class WorkflowRunListResponse(BaseModel):
-    data: list[WorkflowRun]
+    items: list[WorkflowRun] | None = None
     has_more: bool = Field(..., description='True when more pages are available.')
     next_cursor: str | None = Field(
         None,
         description='Opaque cursor for fetching the next page. Present only when\nhas_more is true.\n',
     )
-
-
-class StartRunRequest(BaseModel):
-    namespace_id: str | None = None
-    queue: str | None = Field(
-        None,
-        description='Queue name to enqueue the run on. Defaults to the\nworkflow definition\'s queue, then "default".\n',
-    )
-    callback_url: str | None = Field(
-        None,
-        description='Outbound customer callback URL intended for terminal run\nnotifications. If set, Mobius stores this value on the run for\nfuture callback delivery, but terminal-status callback delivery is\nnot yet active.\n',
-    )
-    inputs: dict[str, Any] | None = None
-    metadata: dict[str, str] | None = None
-    external_id: str | None = None
-    group: str | None = None
 
 
 class ActionLogEntry(BaseModel):
@@ -549,12 +547,11 @@ class ActionLogEntry(BaseModel):
 
 
 class ActionLogListResponse(BaseModel):
-    data: list[ActionLogEntry]
+    items: list[ActionLogEntry]
 
 
 class Job(BaseModel):
     id: str
-    namespace_id: str
     run_id: str
     parent_job_id: str | None = None
     path_id: str | None = None
@@ -564,6 +561,8 @@ class Job(BaseModel):
     parameters: dict[str, Any] | None = None
     status: str
     claimed_by: str | None = None
+    agent_id: str | None = None
+    agent_session_id: str | None = None
     claimed_at: datetime | None = None
     heartbeat_at: datetime | None = None
     attempt: int
@@ -575,7 +574,7 @@ class Job(BaseModel):
 
 
 class JobListResponse(BaseModel):
-    data: list[Job]
+    items: list[Job]
 
 
 class SendRunSignalRequest(BaseModel):
@@ -589,10 +588,6 @@ class RunSignal(BaseModel):
     name: str
 
 
-class RunSignalDataResponse(BaseModel):
-    data: RunSignal
-
-
 class BulkRunRequest(BaseModel):
     run_ids: list[str]
 
@@ -602,10 +597,6 @@ class BulkRunResult(BaseModel):
     failures: dict[str, str] | None = Field(
         None, description='Map of run_id -> error message for per-run failures.'
     )
-
-
-class BulkRunDataResponse(BaseModel):
-    data: BulkRunResult
 
 
 class ActionAnnotations(BaseModel):
@@ -636,7 +627,6 @@ class UpdateActionRequest(BaseModel):
 class Action1(BaseModel):
     id: str
     org_id: str
-    namespace_id: str
     name: str
     title: str | None = None
     description: str | None = None
@@ -649,22 +639,14 @@ class Action1(BaseModel):
     updated_at: datetime
 
 
-class ActionDataResponse(BaseModel):
-    data: Action1
-
-
 class ActionListResponse(BaseModel):
-    data: list[Action1]
+    items: list[Action1] | None = None
     next_cursor: str | None = None
     has_more: bool
 
 
 class RotateSecretResult(BaseModel):
     signing_secret: str
-
-
-class RotateSecretDataResponse(BaseModel):
-    data: RotateSecretResult
 
 
 class ActionCatalogEntry(BaseModel):
@@ -680,12 +662,8 @@ class ActionCatalogEntry(BaseModel):
     endpoint_url: AnyUrl | None = None
 
 
-class ActionCatalogDataResponse(BaseModel):
-    data: ActionCatalogEntry
-
-
 class ActionCatalogListResponse(BaseModel):
-    data: list[ActionCatalogEntry]
+    items: list[ActionCatalogEntry]
 
 
 class ActionAuditLogEntry(BaseModel):
@@ -705,13 +683,19 @@ class ActionAuditLogEntry(BaseModel):
 
 
 class ActionAuditLogListResponse(BaseModel):
-    data: list[ActionAuditLogEntry]
+    items: list[ActionAuditLogEntry] | None = None
     next_cursor: str | None = None
     has_more: bool
 
 
 class JobClaimRequest(BaseModel):
     worker_id: str
+    agent_id: str | None = Field(
+        None, description='Durable agent identity the worker is acting on behalf of.'
+    )
+    agent_session_id: str | None = Field(
+        None, description='Live agent session the worker is acting on behalf of.'
+    )
     worker_name: str | None = None
     worker_version: str | None = None
     queues: list[str] | None = Field(
@@ -732,10 +716,11 @@ class JobClaimRequest(BaseModel):
 class JobClaim(BaseModel):
     job_id: str
     run_id: str
-    namespace_id: str
     workflow_name: str
     step_name: str
     action: str
+    agent_id: str | None = None
+    agent_session_id: str | None = None
     parameters: dict[str, Any]
     attempt: int
     queue: str
@@ -754,17 +739,9 @@ class JobHeartbeat(BaseModel):
     directives: JobHeartbeatDirectives
 
 
-class JobClaimDataResponse(BaseModel):
-    data: JobClaim
-
-
 class JobFenceRequest(BaseModel):
     worker_id: str
     attempt: int
-
-
-class JobHeartbeatDataResponse(BaseModel):
-    data: JobHeartbeat
 
 
 class Status(Enum):
@@ -791,8 +768,18 @@ class RunActionResult(BaseModel):
     output: dict[str, Any] | list | str | float | int | bool
 
 
-class RunActionResultDataResponse(BaseModel):
-    data: RunActionResult
+class JobEventEntry(BaseModel):
+    type: str = Field(
+        ...,
+        description='Caller-chosen event type identifier. The `mobius.` prefix is\nreserved for server-emitted well-known kinds.\n',
+        max_length=64,
+        min_length=1,
+        pattern='^[a-zA-Z0-9_.-]+$',
+    )
+    payload: dict[str, Any] = Field(
+        ...,
+        description='Free-form JSON payload. Bounded by the server-side byte\nlimit (default 16 KiB); oversize events are rejected with\n413.\n',
+    )
 
 
 class Type2(Enum):
@@ -990,10 +977,6 @@ class Interaction(BaseModel):
     )
 
 
-class InteractionDataResponse(BaseModel):
-    data: Interaction
-
-
 class TriggerKind(Enum):
     schedule = 'schedule'
     webhook = 'webhook'
@@ -1021,7 +1004,6 @@ class TriggerTarget(BaseModel):
 class Trigger(BaseModel):
     id: str
     org_id: str
-    namespace_id: str
     name: str
     kind: TriggerKind
     source_config: dict[str, Any] | None = None
@@ -1036,12 +1018,8 @@ class Trigger(BaseModel):
     updated_at: datetime
 
 
-class TriggerDataResponse(BaseModel):
-    data: Trigger
-
-
 class TriggerListResponse(BaseModel):
-    data: list[Trigger]
+    items: list[Trigger] | None = None
     next_cursor: str | None = None
     has_more: bool
 
@@ -1060,7 +1038,7 @@ class TriggerFire(BaseModel):
 
 
 class TriggerFireListResponse(BaseModel):
-    data: list[TriggerFire]
+    items: list[TriggerFire] | None = None
     next_cursor: str | None = None
     has_more: bool
 
@@ -1094,10 +1072,10 @@ class Worker(BaseModel):
 
 
 class WorkerListResponse(BaseModel):
-    data: list[Worker]
+    items: list[Worker]
 
 
-class Namespace(BaseModel):
+class Project(BaseModel):
     id: str
     name: str
     slug: str
@@ -1107,21 +1085,17 @@ class Namespace(BaseModel):
     updated_at: datetime
 
 
-class NamespaceDataResponse(BaseModel):
-    data: Namespace
+class ProjectListResponse(BaseModel):
+    items: list[Project]
 
 
-class NamespaceListResponse(BaseModel):
-    data: list[Namespace]
-
-
-class CreateNamespaceRequest(BaseModel):
+class CreateProjectRequest(BaseModel):
     name: str
     slug: str | None = None
     description: str | None = None
 
 
-class UpdateNamespaceRequest(BaseModel):
+class UpdateProjectRequest(BaseModel):
     name: str | None = None
     description: str | None = None
 
@@ -1141,7 +1115,6 @@ class Webhook(BaseModel):
 
     id: str
     org_id: str
-    namespace_id: str
     name: str
     slug: str = Field(
         ..., description='Immutable URL-safe identifier used in the receive endpoint'
@@ -1156,12 +1129,8 @@ class Webhook(BaseModel):
     updated_at: datetime
 
 
-class WebhookDataResponse(BaseModel):
-    data: Webhook
-
-
 class WebhookListResponse(BaseModel):
-    data: list[Webhook]
+    items: list[Webhook] | None = None
     next_cursor: str | None = None
     has_more: bool
 
@@ -1183,7 +1152,7 @@ class WebhookEvent(BaseModel):
 
 
 class WebhookEventListResponse(BaseModel):
-    data: list[WebhookEvent]
+    items: list[WebhookEvent] | None = None
     next_cursor: str | None = None
     has_more: bool
 
@@ -1226,12 +1195,8 @@ class Integration(BaseModel):
     updated_at: datetime
 
 
-class IntegrationDataResponse(BaseModel):
-    data: Integration
-
-
 class IntegrationListResponse(BaseModel):
-    data: list[Integration]
+    items: list[Integration] | None = None
     next_cursor: str | None = None
     has_more: bool
 
@@ -1246,6 +1211,19 @@ class UpdateIntegrationRequest(BaseModel):
     name: str | None = None
     config: dict[str, Any] | None = None
     status: IntegrationStatus | None = None
+
+
+class CopyIntegrationRequest(BaseModel):
+    source_project_id: str = Field(
+        ..., description='ID of the project the integration is copied from.'
+    )
+    source_integration_id: str = Field(
+        ..., description='ID of the integration to copy.'
+    )
+    name: str | None = Field(
+        None,
+        description='Optional new name for the copied integration. Defaults to the source name.',
+    )
 
 
 class BillingSubscription(BaseModel):
@@ -1268,10 +1246,6 @@ class BillingSubscription(BaseModel):
     updated_at: datetime
 
 
-class BillingSubscriptionDataResponse(BaseModel):
-    data: BillingSubscription
-
-
 class BillingPlan(BaseModel):
     plan_type: str
     price_cents: int
@@ -1285,7 +1259,7 @@ class BillingPlan(BaseModel):
 
 
 class BillingPlanListResponse(BaseModel):
-    data: list[BillingPlan]
+    items: list[BillingPlan]
 
 
 class BillingUsageKeySummary(BaseModel):
@@ -1304,10 +1278,6 @@ class BillingUsageSummary(BaseModel):
     by_api_key: list[BillingUsageKeySummary]
 
 
-class BillingUsageDataResponse(BaseModel):
-    data: BillingUsageSummary
-
-
 class Invoice(BaseModel):
     id: str
     status: str
@@ -1320,7 +1290,7 @@ class Invoice(BaseModel):
 
 
 class InvoiceListResponse(BaseModel):
-    data: list[Invoice]
+    items: list[Invoice]
 
 
 class CreateCheckoutRequest(BaseModel):
@@ -1334,10 +1304,6 @@ class CreatePortalRequest(BaseModel):
 
 class BillingURLResult(BaseModel):
     url: AnyUrl
-
-
-class BillingURLResultDataResponse(BaseModel):
-    data: BillingURLResult
 
 
 class UpdateBillingLimitsRequest(BaseModel):
@@ -1359,20 +1325,12 @@ class OnboardingStatus(BaseModel):
     )
 
 
-class OnboardingStatusDataResponse(BaseModel):
-    data: OnboardingStatus
-
-
 class OnboardingResult(BaseModel):
     org_id: str = Field(..., description='ID of the newly created (or existing) org')
     org_name: str = Field(..., description='Display name of the org')
 
 
-class OnboardingResultDataResponse(BaseModel):
-    data: OnboardingResult
-
-
-class AdminMetrics(BaseModel):
+class ProjectMetrics(BaseModel):
     generated_at: datetime
     window_minutes: int
     runs_per_minute: float
@@ -1385,41 +1343,6 @@ class AdminMetrics(BaseModel):
     active_workers: int
     stale_workers: int
     status_breakdown: dict[str, int]
-    live_subscribers: int
-
-
-class AdminMetricsDataResponse(BaseModel):
-    data: AdminMetrics
-
-
-class AdminWorker(BaseModel):
-    worker_id: str
-    name: str | None = None
-    version: str | None = None
-    last_seen_at: datetime | None = None
-    capabilities: list[str] | None = None
-    stale: bool
-
-
-class AdminWorkerListResponse(BaseModel):
-    data: list[AdminWorker]
-
-
-class AuthContext(BaseModel):
-    user_id: str
-    org_id: str | None = None
-    role: str | None = Field(
-        None,
-        description='Org member role (owner, admin, member) — empty for API-key auth',
-    )
-    auth_type: str = Field(
-        ..., description='How the caller authenticated (clerk, api_key, cli_token)'
-    )
-    is_admin: bool
-
-
-class AuthContextDataResponse(BaseModel):
-    data: AuthContext
 
 
 class PreviewPermissionsRequest(BaseModel):
@@ -1439,7 +1362,7 @@ class PermissionsAssignmentInput(BaseModel):
     actor_id: str
     role_id: str | None = None
     role_name: str | None = None
-    namespace_id: str | None = None
+    project_id: str | None = None
 
 
 class PermissionsAssignmentProposal(BaseModel):
@@ -1447,7 +1370,7 @@ class PermissionsAssignmentProposal(BaseModel):
     actor_id: str
     role_id: str
     role_name: str
-    namespace_id: str | None = None
+    project_id: str | None = None
 
 
 class PermissionsPlan(BaseModel):
@@ -1455,21 +1378,14 @@ class PermissionsPlan(BaseModel):
     assignments: list[PermissionsAssignmentProposal]
 
 
-class PermissionsPlanDataResponse(BaseModel):
-    data: PermissionsPlan
-
-
 class PermissionsState(BaseModel):
     permissions_enabled: bool
-
-
-class PermissionsStateDataResponse(BaseModel):
-    data: PermissionsState
 
 
 class Role2(BaseModel):
     id: str
     org_id: str | None = None
+    project_id: str | None = None
     name: str
     description: str
     permissions: list[str]
@@ -1485,35 +1401,29 @@ class RoleAssignment(BaseModel):
     actor_id: str
     role_id: str
     role_name: str
-    namespace_id: str | None = None
+    project_id: str | None = None
     granted_by_actor_type: str | None = None
     granted_by_actor_id: str | None = None
     created_at: datetime
 
 
-class RoleDataResponse(BaseModel):
-    data: Role2
-
-
 class RoleListResponse(BaseModel):
-    data: list[Role2]
-
-
-class RoleAssignmentDataResponse(BaseModel):
-    data: RoleAssignment
+    items: list[Role2]
 
 
 class RoleAssignmentListResponse(BaseModel):
-    data: list[RoleAssignment]
+    items: list[RoleAssignment]
 
 
 class CreateRoleRequest(BaseModel):
+    project_id: str | None = None
     name: str
     description: str | None = None
     permissions: list[str]
 
 
 class UpdateRoleRequest(BaseModel):
+    project_id: str | None = None
     name: str | None = None
     description: str | None = None
     permissions: list[str] | None = None
@@ -1524,7 +1434,7 @@ class CreateRoleAssignmentRequest(BaseModel):
     actor_id: str
     role_id: str | None = None
     role_name: str | None = None
-    namespace_id: str | None = None
+    project_id: str | None = None
 
 
 class User(BaseModel):
@@ -1537,10 +1447,6 @@ class User(BaseModel):
     updated_at: datetime
 
 
-class UserDataResponse(BaseModel):
-    data: User
-
-
 class Org(BaseModel):
     id: str
     name: str
@@ -1550,12 +1456,8 @@ class Org(BaseModel):
     updated_at: datetime
 
 
-class OrgDataResponse(BaseModel):
-    data: Org
-
-
 class OrgListResponse(BaseModel):
-    data: list[Org]
+    items: list[Org]
     has_more: bool | None = None
     next_cursor: str | None = None
 
@@ -1588,12 +1490,8 @@ class OrgMember(BaseModel):
     user: User | None = None
 
 
-class OrgMemberDataResponse(BaseModel):
-    data: OrgMember
-
-
 class OrgMemberListResponse(BaseModel):
-    data: list[OrgMember]
+    items: list[OrgMember]
     has_more: bool | None = None
     next_cursor: str | None = None
 
@@ -1608,7 +1506,7 @@ class UpdateOrgMemberRoleRequest(BaseModel):
 
 
 class InteractionListResponse(BaseModel):
-    data: list[Interaction]
+    items: list[Interaction]
 
 
 class CreateInteractionRequest(BaseModel):
@@ -1649,10 +1547,6 @@ class SlackInstall(BaseModel):
     )
 
 
-class SlackInstallDataResponse(BaseModel):
-    data: SlackInstall
-
-
 class RoutingPolicy(Enum):
     """
     How interactions are dispatched to members
@@ -1665,7 +1559,7 @@ class RoutingPolicy(Enum):
 class Group(BaseModel):
     id: str
     org_id: str
-    slug: str = Field(..., description='URL-safe identifier, unique within the org')
+    slug: str = Field(..., description='URL-safe identifier, unique within the project')
     name: str = Field(..., description='Human-readable display name')
     description: str | None = None
     routing_policy: RoutingPolicy = Field(
@@ -1675,24 +1569,16 @@ class Group(BaseModel):
     updated_at: datetime
 
 
-class GroupDataResponse(BaseModel):
-    data: Group
-
-
 class GroupListResponse(BaseModel):
-    data: list[Group]
+    items: list[Group]
 
 
 class GroupWithCount(Group):
     member_count: int = Field(..., description='Current number of members')
 
 
-class GroupWithCountDataResponse(BaseModel):
-    data: GroupWithCount
-
-
 class GroupWithCountListResponse(BaseModel):
-    data: list[GroupWithCount]
+    items: list[GroupWithCount]
     has_more: bool | None = None
     next_cursor: str | None = None
 
@@ -1706,12 +1592,8 @@ class GroupMember(BaseModel):
     added_at: datetime
 
 
-class GroupMemberDataResponse(BaseModel):
-    data: GroupMember
-
-
 class GroupMemberListResponse(BaseModel):
-    data: list[GroupMember]
+    items: list[GroupMember]
     has_more: bool | None = None
     next_cursor: str | None = None
 
@@ -1760,7 +1642,6 @@ class AgentSessionStatus(Enum):
 class Agent(BaseModel):
     id: str
     org_id: str
-    namespace_id: str
     service_account_id: str
     name: str
     display_name: str
@@ -1777,7 +1658,6 @@ class Agent(BaseModel):
 class AgentSession(BaseModel):
     id: str
     org_id: str
-    namespace_id: str
     agent_id: str
     status: AgentSessionStatus
     transport: str
@@ -1789,20 +1669,12 @@ class AgentSession(BaseModel):
     updated_at: datetime
 
 
-class AgentDataResponse(BaseModel):
-    data: Agent
-
-
 class AgentListResponse(BaseModel):
-    data: list[Agent]
-
-
-class AgentSessionDataResponse(BaseModel):
-    data: AgentSession
+    items: list[Agent]
 
 
 class AgentSessionListResponse(BaseModel):
-    data: list[AgentSession]
+    items: list[AgentSession]
 
 
 class CreateAgentRequest(BaseModel):
@@ -1847,12 +1719,8 @@ class ServiceAccount(BaseModel):
     updated_at: datetime
 
 
-class ServiceAccountDataResponse(BaseModel):
-    data: ServiceAccount
-
-
 class ServiceAccountListResponse(BaseModel):
-    data: list[ServiceAccount]
+    items: list[ServiceAccount]
 
 
 class CreateServiceAccountRequest(BaseModel):
@@ -1863,7 +1731,6 @@ class CreateServiceAccountRequest(BaseModel):
     metadata: dict[str, Any] | None = None
     role_id: str | None = None
     role_name: str | None = None
-    namespace_id: str | None = None
 
 
 class UpdateServiceAccountRequest(BaseModel):
@@ -1888,7 +1755,7 @@ class ToolDefinition(BaseModel):
 
 
 class ToolDefinitionListResponse(BaseModel):
-    data: list[ToolDefinition]
+    items: list[ToolDefinition]
 
 
 class ToolRunRequest(BaseModel):
@@ -1926,10 +1793,6 @@ class ToolRun(BaseModel):
     error: str | None = Field(
         None, description='Error message. Present when status is "failed".'
     )
-
-
-class ToolRunDataResponse(BaseModel):
-    data: ToolRun
 
 
 class WorkflowStepBase(BaseModel):
@@ -2003,15 +1866,17 @@ class WorkflowInteractionSpec(BaseModel):
     )
 
 
-class WorkflowRunDetail(WorkflowRun):
-    result_b64: str | None = Field(
-        None, description='Base64-encoded terminal result blob'
-    )
-    jobs: list[Job] | None = None
+class JobEventsRequest(BaseModel):
+    """
+    Fenced batch of custom run events published by the worker
+    holding a job's lease. The fence is per-request: every event in
+    `events` is published under the same `worker_id` + `attempt`.
 
+    """
 
-class WorkflowRunDetailDataResponse(BaseModel):
-    data: WorkflowRunDetail
+    worker_id: str
+    attempt: int
+    events: list[JobEventEntry] = Field(..., max_length=100, min_length=1)
 
 
 class EnablePermissionsRequest(BaseModel):
@@ -2088,10 +1953,6 @@ class WorkflowSpec(BaseModel):
 
 class WorkflowDefinition(BaseModel):
     id: str
-    namespace_id: str | None = None
-    queue: str | None = Field(
-        None, description='Default queue name for runs of this workflow.'
-    )
     name: str
     slug: str
     description: str | None = None
@@ -2106,12 +1967,8 @@ class WorkflowDefinition(BaseModel):
     updated_at: datetime
 
 
-class WorkflowDefinitionDataResponse(BaseModel):
-    data: WorkflowDefinition
-
-
 class WorkflowDefinitionListResponse(BaseModel):
-    data: list[WorkflowDefinition]
+    items: list[WorkflowDefinition] | None = None
     next_cursor: str | None = None
     has_more: bool
 
@@ -2120,11 +1977,6 @@ class CreateWorkflowRequest(BaseModel):
     name: str
     slug: str | None = None
     description: str | None = None
-    namespace_id: str | None = None
-    queue: str | None = Field(
-        None,
-        description='Default queue for runs of this workflow. Defaults to "default".',
-    )
     published_as_tool: bool | None = Field(
         None,
         description='When true, expose this workflow as a callable tool via /api/tools.',
@@ -2135,7 +1987,6 @@ class CreateWorkflowRequest(BaseModel):
 class UpdateWorkflowRequest(BaseModel):
     name: str | None = None
     description: str | None = None
-    queue: str | None = None
     published_as_tool: bool | None = Field(
         None,
         description='When true, expose this workflow as a callable tool via /api/tools.',
@@ -2144,12 +1995,48 @@ class UpdateWorkflowRequest(BaseModel):
 
 
 class WorkflowVersion(BaseModel):
-    id: str
     version: int
-    spec: WorkflowSpec
+    spec: WorkflowSpec | None = None
     created_by: str
     created_at: datetime
 
 
 class WorkflowVersionListResponse(BaseModel):
-    data: list[WorkflowVersion]
+    items: list[WorkflowVersion]
+
+
+class WorkflowRunDetail(WorkflowRun):
+    spec: WorkflowSpec | None = None
+    result_b64: str | None = Field(
+        None, description='Base64-encoded terminal result blob'
+    )
+    jobs: list[Job] | None = None
+
+
+class StartRunRequest(BaseModel):
+    """
+    Start a workflow run. Provide exactly one of `definition_id` or
+    `spec` — they are mutually exclusive. When both are absent on
+    the path-less `POST /projects/{project}/runs` endpoint, or when both
+    are present, the request is rejected with 400. On the
+    definition-bound endpoint (`POST /projects/{project}/workflows/{id}/runs`)
+    `definition_id` is implied by the path and `spec` is forbidden.
+
+    """
+
+    definition_id: str | None = Field(
+        None,
+        description='ID of an existing workflow definition to run. Mutually\nexclusive with `spec`. On the definition-bound path this is\nignored (the path segment wins) but must not conflict.\n',
+    )
+    spec: WorkflowSpec | None = None
+    queue: str | None = Field(
+        None, description='Queue name to enqueue the run on. Defaults to "default".\n'
+    )
+    callback_url: str | None = Field(
+        None,
+        description='Outbound customer callback URL intended for terminal run\nnotifications. If set, Mobius stores this value on the run for\nfuture callback delivery, but terminal-status callback delivery is\nnot yet active.\n',
+    )
+    inputs: dict[str, Any] | None = None
+    metadata: dict[str, str] | None = None
+    external_id: str | None = None
+    group: str | None = None

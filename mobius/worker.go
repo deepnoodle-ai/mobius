@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"sync"
 	"time"
 )
 
@@ -19,7 +20,7 @@ type WorkerConfig struct {
 	// Version is the version string reported to Mobius (e.g. "1.2.0").
 	Version string
 	// Queues is the list of queue names this worker subscribes to.
-	// Empty means "claim tasks from any queue in the namespace". Runs
+	// Empty means "claim tasks from any queue in the project". Runs
 	// default to the "default" queue when not explicitly assigned.
 	Queues []string
 	// Actions is an optional filter of action names this worker
@@ -40,6 +41,12 @@ type WorkerConfig struct {
 	// Logger is the structured logger used by the worker and action
 	// implementations. Defaults to slog.Default().
 	Logger *slog.Logger
+	// EventQueueSize bounds buffered custom events per executing task.
+	// When full, the oldest event is dropped. Defaults to 256.
+	EventQueueSize int
+	// EventBatchSize controls how many custom events are sent per HTTP request.
+	// Defaults to 20.
+	EventBatchSize int
 }
 
 // Worker polls Mobius for queued tasks, executes the corresponding
@@ -64,6 +71,12 @@ func (c *Client) NewWorker(cfg WorkerConfig) *Worker {
 	}
 	if cfg.Logger == nil {
 		cfg.Logger = slog.Default()
+	}
+	if cfg.EventQueueSize <= 0 {
+		cfg.EventQueueSize = 256
+	}
+	if cfg.EventBatchSize <= 0 {
+		cfg.EventBatchSize = 20
 	}
 	return &Worker{
 		client:   c,
@@ -135,14 +148,19 @@ func (w *Worker) executeTask(ctx context.Context, task *runtimeTask) {
 	defer cancel()
 
 	hbDone := make(chan struct{})
+	eventer := newTaskEventer(w, task, log)
+	eventDone := make(chan struct{})
 	go w.heartbeatLoop(execCtx, task, cancel, hbDone)
+	go eventer.run(execCtx, eventDone)
 
-	ctxVal := newContext(execCtx, task, log)
+	ctxVal := newContext(execCtx, task, log, eventer.emit)
 
 	result, err := safeExecute(action, ctxVal, task.Parameters)
 
 	cancel()
 	<-hbDone
+	eventer.stop()
+	<-eventDone
 
 	if err != nil {
 		log.Error("action failed", "error", err)
@@ -229,4 +247,107 @@ func classifyError(err error) string {
 		return "Timeout"
 	}
 	return "Error"
+}
+
+type taskEventer struct {
+	worker   *Worker
+	task     *runtimeTask
+	log      *slog.Logger
+	mu       sync.Mutex
+	notifyCh chan struct{}
+	events   []jobEventEntry
+	closed   bool
+}
+
+func newTaskEventer(w *Worker, task *runtimeTask, log *slog.Logger) *taskEventer {
+	return &taskEventer{
+		worker:   w,
+		task:     task,
+		log:      log,
+		notifyCh: make(chan struct{}, 1),
+	}
+}
+
+func (e *taskEventer) emit(eventType string, payload map[string]any) {
+	if eventType == "" {
+		return
+	}
+	if payload == nil {
+		payload = map[string]any{}
+	}
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	if e.closed {
+		return
+	}
+	if len(e.events) >= e.worker.config.EventQueueSize {
+		e.events = append(e.events[1:], jobEventEntry{Type: eventType, Payload: payload})
+		e.log.Warn("custom event queue full; dropping oldest event")
+	} else {
+		e.events = append(e.events, jobEventEntry{Type: eventType, Payload: payload})
+	}
+	select {
+	case e.notifyCh <- struct{}{}:
+	default:
+	}
+}
+
+func (e *taskEventer) stop() {
+	e.mu.Lock()
+	e.closed = true
+	e.mu.Unlock()
+	select {
+	case e.notifyCh <- struct{}{}:
+	default:
+	}
+}
+
+func (e *taskEventer) popBatch() []jobEventEntry {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	if len(e.events) == 0 {
+		return nil
+	}
+	n := e.worker.config.EventBatchSize
+	if n > len(e.events) {
+		n = len(e.events)
+	}
+	batch := append([]jobEventEntry(nil), e.events[:n]...)
+	e.events = append([]jobEventEntry(nil), e.events[n:]...)
+	return batch
+}
+
+func (e *taskEventer) isDone() bool {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	return e.closed && len(e.events) == 0
+}
+
+func (e *taskEventer) run(ctx context.Context, done chan<- struct{}) {
+	defer close(done)
+	for {
+		if batch := e.popBatch(); len(batch) > 0 {
+			if err := e.worker.client.runtimeEmitEvents(context.Background(), e.task, batch); err != nil {
+				switch {
+				case errors.Is(err, ErrLeaseLost):
+					e.log.Warn("custom event emit: lease lost")
+					return
+				case errors.Is(err, ErrPayloadTooLarge):
+					e.log.Warn("custom event emit rejected: payload too large")
+				case errors.Is(err, ErrRateLimited):
+					e.log.Warn("custom event emit rejected: rate limited")
+				default:
+					e.log.Error("custom event emit failed", "error", err)
+				}
+			}
+			continue
+		}
+		if e.isDone() {
+			return
+		}
+		select {
+		case <-ctx.Done():
+		case <-e.notifyCh:
+		}
+	}
 }

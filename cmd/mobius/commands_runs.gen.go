@@ -16,16 +16,16 @@ import (
 // registerRunsCommands registers every generated subcommand in the "runs" group.
 func registerRunsCommands(app *cli.App) {
 	runsGrp := app.Group("runs")
+	runsGrp.Alias("run")
 	runsGrp.Command("bulk-runs").
 		Description("Request cancellation for a batch of runs").
-		Args("ns").
 		Flags(
 			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin)"),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
-			p0 := ctx.Arg(0)
+			p0 := ctx.String("project")
 			var body api.BulkCancelRunsJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -39,14 +39,13 @@ func registerRunsCommands(app *cli.App) {
 
 	runsGrp.Command("bulk-runs-2").
 		Description("Re-enqueue a batch of failed runs").
-		Args("ns").
 		Flags(
 			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin)"),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
-			p0 := ctx.Arg(0)
+			p0 := ctx.String("project")
 			var body api.BulkRetryRunsJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -60,12 +59,12 @@ func registerRunsCommands(app *cli.App) {
 
 	runsGrp.Command("cancel").
 		Description("Request cancellation of an in-flight run").
-		Args("ns", "id").
+		Args("id").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
-			p0 := ctx.Arg(0)
-			p1 := ctx.Arg(1)
+			p0 := ctx.String("project")
+			p1 := ctx.Arg(0)
 			resp, err := client.CancelRunWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
@@ -75,12 +74,12 @@ func registerRunsCommands(app *cli.App) {
 
 	runsGrp.Command("get").
 		Description("Get a workflow run (including spec and run state blobs)").
-		Args("ns", "id").
+		Args("id").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
-			p0 := ctx.Arg(0)
-			p1 := ctx.Arg(1)
+			p0 := ctx.String("project")
+			p1 := ctx.Arg(0)
 			resp, err := client.GetRunWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
@@ -90,12 +89,12 @@ func registerRunsCommands(app *cli.App) {
 
 	runsGrp.Command("get-action-log").
 		Description("Get the append-only action log for a run").
-		Args("ns", "id").
+		Args("id").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
-			p0 := ctx.Arg(0)
-			p1 := ctx.Arg(1)
+			p0 := ctx.String("project")
+			p1 := ctx.Arg(0)
 			resp, err := client.GetRunActionLogWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
@@ -105,12 +104,12 @@ func registerRunsCommands(app *cli.App) {
 
 	runsGrp.Command("get-jobs").
 		Description("Get workflow jobs for a run").
-		Args("ns", "id").
+		Args("id").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
-			p0 := ctx.Arg(0)
-			p1 := ctx.Arg(1)
+			p0 := ctx.String("project")
+			p1 := ctx.Arg(0)
 			resp, err := client.GetRunJobsWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
@@ -119,8 +118,7 @@ func registerRunsCommands(app *cli.App) {
 		})
 
 	runsGrp.Command("list").
-		Description("List workflow runs in a namespace").
-		Args("ns").
+		Description("List workflow runs in a project").
 		Flags(
 			cli.String("status", "").Help("status"),
 			cli.String("workflow-type", "").Help("workflow-type"),
@@ -135,7 +133,7 @@ func registerRunsCommands(app *cli.App) {
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
-			p0 := ctx.Arg(0)
+			p0 := ctx.String("project")
 			params := &api.ListRunsParams{}
 			if ctx.IsSet("status") {
 				v := api.WorkflowRunStatus(ctx.String("status"))
@@ -182,12 +180,12 @@ func registerRunsCommands(app *cli.App) {
 
 	runsGrp.Command("resume-run").
 		Description("Flip a suspended run back to queued").
-		Args("ns", "id").
+		Args("id").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
-			p0 := ctx.Arg(0)
-			p1 := ctx.Arg(1)
+			p0 := ctx.String("project")
+			p1 := ctx.Arg(0)
 			resp, err := client.ResumeRunWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
@@ -197,15 +195,15 @@ func registerRunsCommands(app *cli.App) {
 
 	runsGrp.Command("send-signal").
 		Description("Deliver a signal to a suspended run").
-		Args("ns", "id").
+		Args("id").
 		Flags(
 			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin)"),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
-			p0 := ctx.Arg(0)
-			p1 := ctx.Arg(1)
+			p0 := ctx.String("project")
+			p1 := ctx.Arg(0)
 			var body api.SendRunSignalJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -217,22 +215,41 @@ func registerRunsCommands(app *cli.App) {
 			return printResponse(ctx, resp.StatusCode(), resp.Body)
 		})
 
-	runsGrp.Command("stream-namespace-run-events").
-		Description("Subscribe to a namespace-wide stream of run events (SSE)").
-		Args("ns").
+	runsGrp.Command("start-run").
+		Description("Start a new workflow run").
+		Flags(
+			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin)"),
+		).
+		Use(cli.RequireFlags("api-key")).
+		Run(func(ctx *cli.Context) error {
+			client := clientFromContext(ctx).RawClient()
+			p0 := ctx.String("project")
+			var body api.StartRunJSONRequestBody
+			if err := readJSONBody(ctx, &body); err != nil {
+				return err
+			}
+			resp, err := client.StartRunWithResponse(ctx.Context(), p0, body)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, resp.StatusCode(), resp.Body)
+		})
+
+	runsGrp.Command("stream-project-run-events").
+		Description("Subscribe to a project-wide stream of run events (SSE)").
 		Flags(
 			cli.Int("since", "").Help("since"),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
-			p0 := ctx.Arg(0)
-			params := &api.StreamNamespaceRunEventsParams{}
+			p0 := ctx.String("project")
+			params := &api.StreamProjectRunEventsParams{}
 			if ctx.IsSet("since") {
 				v := int64(ctx.Int("since"))
 				params.Since = &v
 			}
-			resp, err := client.StreamNamespaceRunEventsWithResponse(ctx.Context(), p0, params)
+			resp, err := client.StreamProjectRunEventsWithResponse(ctx.Context(), p0, params)
 			if err != nil {
 				return err
 			}
@@ -241,15 +258,15 @@ func registerRunsCommands(app *cli.App) {
 
 	runsGrp.Command("stream-run-events").
 		Description("Subscribe to a stream of events for a single run (SSE)").
-		Args("ns", "id").
+		Args("id").
 		Flags(
 			cli.Int("since", "").Help("since"),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
-			p0 := ctx.Arg(0)
-			p1 := ctx.Arg(1)
+			p0 := ctx.String("project")
+			p1 := ctx.Arg(0)
 			params := &api.StreamRunEventsParams{}
 			if ctx.IsSet("since") {
 				v := int64(ctx.Int("since"))

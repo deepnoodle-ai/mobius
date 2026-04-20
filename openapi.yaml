@@ -16,8 +16,6 @@ tags:
   x-displayName: audit-logs
 - name: api-keys
   x-displayName: api-keys
-- name: auth
-  x-displayName: auth
 - name: workflows
   x-displayName: workflows
 - name: runs
@@ -30,12 +28,14 @@ tags:
   x-displayName: triggers
 - name: workers
   x-displayName: workers
-- name: namespaces
-  x-displayName: namespaces
+- name: projects
+  x-displayName: projects
 - name: webhooks
   x-displayName: webhooks
 - name: integrations
   x-displayName: integrations
+- name: metrics
+  x-displayName: metrics
 - name: roles
   x-displayName: roles
 - name: interactions
@@ -49,32 +49,27 @@ tags:
 - name: tools
   x-displayName: tools
 paths:
-  /namespaces/{ns}/channels:
+  /projects/{project}/channels:
     post:
       operationId: createChannel
       tags:
       - channels
       summary: Create a channel
       parameters:
-      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/ProjectSlugParam'
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              required:
-              - data
-              properties:
-                data:
-                  $ref: '#/components/schemas/CreateChannelRequest'
+              $ref: '#/components/schemas/CreateChannelRequest'
       responses:
         '201':
           description: Created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ChannelDataResponse'
+                $ref: '#/components/schemas/Channel'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -85,7 +80,7 @@ paths:
       - channels
       summary: List channels
       parameters:
-      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/ProjectSlugParam'
       - name: kind
         in: query
         schema:
@@ -110,14 +105,14 @@ paths:
                 $ref: '#/components/schemas/ChannelListResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
-  /namespaces/{ns}/channels/{id}:
+  /projects/{project}/channels/{id}:
     get:
       operationId: getChannel
       tags:
       - channels
       summary: Get a channel
       parameters:
-      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/ProjectSlugParam'
       - $ref: '#/components/parameters/IDParam'
       responses:
         '200':
@@ -125,7 +120,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ChannelDataResponse'
+                $ref: '#/components/schemas/Channel'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
@@ -136,26 +131,21 @@ paths:
       - channels
       summary: Update a channel
       parameters:
-      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/ProjectSlugParam'
       - $ref: '#/components/parameters/IDParam'
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              required:
-              - data
-              properties:
-                data:
-                  $ref: '#/components/schemas/UpdateChannelRequest'
+              $ref: '#/components/schemas/UpdateChannelRequest'
       responses:
         '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ChannelDataResponse'
+                $ref: '#/components/schemas/Channel'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -168,7 +158,7 @@ paths:
       - channels
       summary: Delete a channel
       parameters:
-      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/ProjectSlugParam'
       - $ref: '#/components/parameters/IDParam'
       responses:
         '204':
@@ -177,14 +167,14 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /namespaces/{ns}/channels/{id}/members:
+  /projects/{project}/channels/{id}/members:
     get:
       operationId: listChannelMembers
       tags:
       - channels
       summary: List channel members
       parameters:
-      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/ProjectSlugParam'
       - $ref: '#/components/parameters/IDParam'
       - $ref: '#/components/parameters/CursorParam'
       - $ref: '#/components/parameters/LimitParam'
@@ -205,40 +195,35 @@ paths:
       - channels
       summary: Add a member to a channel
       parameters:
-      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/ProjectSlugParam'
       - $ref: '#/components/parameters/IDParam'
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              required:
-              - data
-              properties:
-                data:
-                  $ref: '#/components/schemas/AddChannelMemberRequest'
+              $ref: '#/components/schemas/AddChannelMemberRequest'
       responses:
         '201':
           description: Created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ChannelMemberDataResponse'
+                $ref: '#/components/schemas/ChannelMember'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /namespaces/{ns}/channels/{id}/members/{userId}:
+  /projects/{project}/channels/{id}/members/{userId}:
     delete:
       operationId: removeChannelMember
       tags:
       - channels
       summary: Remove a member from a channel
       parameters:
-      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/ProjectSlugParam'
       - $ref: '#/components/parameters/IDParam'
       - name: userId
         in: path
@@ -252,14 +237,14 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /namespaces/{ns}/channels/{id}/messages:
+  /projects/{project}/channels/{id}/messages:
     get:
       operationId: listChannelMessages
       tags:
       - channels
       summary: List messages in a channel
       parameters:
-      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/ProjectSlugParam'
       - $ref: '#/components/parameters/IDParam'
       - name: sender_id
         in: query
@@ -295,40 +280,35 @@ paths:
       - channels
       summary: Send a message to a channel
       parameters:
-      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/ProjectSlugParam'
       - $ref: '#/components/parameters/IDParam'
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              required:
-              - data
-              properties:
-                data:
-                  $ref: '#/components/schemas/SendChannelMessageRequest'
+              $ref: '#/components/schemas/SendChannelMessageRequest'
       responses:
         '201':
           description: Created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ChannelMessageDataResponse'
+                $ref: '#/components/schemas/ChannelMessage'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /namespaces/{ns}/channels/{id}/messages/{messageId}:
+  /projects/{project}/channels/{id}/messages/{messageId}:
     get:
       operationId: getChannelMessage
       tags:
       - channels
       summary: Get a specific message
       parameters:
-      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/ProjectSlugParam'
       - $ref: '#/components/parameters/IDParam'
       - name: messageId
         in: path
@@ -341,7 +321,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ChannelMessageDataResponse'
+                $ref: '#/components/schemas/ChannelMessage'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
@@ -352,7 +332,7 @@ paths:
       - channels
       summary: Update a channel message
       parameters:
-      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/ProjectSlugParam'
       - $ref: '#/components/parameters/IDParam'
       - name: messageId
         in: path
@@ -364,19 +344,14 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              required:
-              - data
-              properties:
-                data:
-                  $ref: '#/components/schemas/UpdateChannelMessageRequest'
+              $ref: '#/components/schemas/UpdateChannelMessageRequest'
       responses:
         '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ChannelMessageDataResponse'
+                $ref: '#/components/schemas/ChannelMessage'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -395,6 +370,11 @@ paths:
         schema:
           type: string
         description: Filter by resource type
+      - name: project_id
+        in: query
+        schema:
+          type: string
+        description: Filter by project ID
       - name: resource_id
         in: query
         schema:
@@ -454,19 +434,14 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              required:
-              - data
-              properties:
-                data:
-                  $ref: '#/components/schemas/CreateAPIKeyRequest'
+              $ref: '#/components/schemas/CreateAPIKeyRequest'
       responses:
         '201':
           description: Created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/APIKeyCreateResultDataResponse'
+                $ref: '#/components/schemas/APIKeyCreateResult'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -499,7 +474,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/APIKeyDataResponse'
+                $ref: '#/components/schemas/APIKey'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
@@ -518,58 +493,74 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /auth/device/confirm:
+  /projects/{project}/api-keys:
     post:
-      operationId: confirmDeviceCode
+      operationId: createProjectAPIKey
       tags:
-      - auth
-      summary: Confirm a browser-based CLI login flow from the signed-in app
+      - api-keys
+      summary: Create a project-pinned API key
+      parameters:
+      - $ref: '#/components/parameters/ProjectSlugParam'
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              required:
-              - data
-              properties:
-                data:
-                  $ref: '#/components/schemas/ConfirmDeviceCodeRequest'
+              $ref: '#/components/schemas/CreateAPIKeyRequest'
       responses:
-        '200':
-          description: OK
+        '201':
+          description: Created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ConfirmDeviceCodeResult'
+                $ref: '#/components/schemas/APIKeyCreateResult'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
-        '403':
-          description: Forbidden
-  /cli-credentials:
     get:
-      operationId: listCLICredentials
+      operationId: listProjectAPIKeys
       tags:
-      - auth
-      summary: List browser-issued CLI credentials for the current user
+      - api-keys
+      summary: List project-pinned API keys
+      parameters:
+      - $ref: '#/components/parameters/ProjectSlugParam'
       responses:
         '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CLICredentialListResponse'
+                $ref: '#/components/schemas/APIKeyListResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
-  /cli-credentials/{id}:
-    delete:
-      operationId: revokeCLICredential
+  /projects/{project}/api-keys/{id}:
+    get:
+      operationId: getProjectAPIKey
       tags:
-      - auth
-      summary: Revoke one browser-issued CLI credential
+      - api-keys
+      summary: Get a project-pinned API key
       parameters:
+      - $ref: '#/components/parameters/ProjectSlugParam'
+      - $ref: '#/components/parameters/IDParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIKey'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      operationId: revokeProjectAPIKey
+      tags:
+      - api-keys
+      summary: Revoke a project-pinned API key
+      parameters:
+      - $ref: '#/components/parameters/ProjectSlugParam'
       - $ref: '#/components/parameters/IDParam'
       responses:
         '204':
@@ -578,14 +569,14 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /namespaces/{ns}/workflows:
+  /projects/{project}/workflows:
     get:
       operationId: listWorkflows
       tags:
       - workflows
       summary: List workflow definitions
       parameters:
-      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/ProjectSlugParam'
       - name: cursor
         in: query
         schema:
@@ -613,25 +604,20 @@ paths:
       - workflows
       summary: Create a workflow definition
       parameters:
-      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/ProjectSlugParam'
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              required:
-              - data
-              properties:
-                data:
-                  $ref: '#/components/schemas/CreateWorkflowRequest'
+              $ref: '#/components/schemas/CreateWorkflowRequest'
       responses:
         '201':
           description: Created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/WorkflowDefinitionDataResponse'
+                $ref: '#/components/schemas/WorkflowDefinition'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -640,14 +626,14 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
-  /namespaces/{ns}/workflows/{id}:
+  /projects/{project}/workflows/{id}:
     get:
       operationId: getWorkflow
       tags:
       - workflows
       summary: Get a workflow definition (with its latest version spec)
       parameters:
-      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/ProjectSlugParam'
       - $ref: '#/components/parameters/IDParam'
       responses:
         '200':
@@ -655,7 +641,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/WorkflowDefinitionDataResponse'
+                $ref: '#/components/schemas/WorkflowDefinition'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
@@ -666,26 +652,21 @@ paths:
       - workflows
       summary: Update a workflow definition (new spec creates a new version)
       parameters:
-      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/ProjectSlugParam'
       - $ref: '#/components/parameters/IDParam'
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              required:
-              - data
-              properties:
-                data:
-                  $ref: '#/components/schemas/UpdateWorkflowRequest'
+              $ref: '#/components/schemas/UpdateWorkflowRequest'
       responses:
         '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/WorkflowDefinitionDataResponse'
+                $ref: '#/components/schemas/WorkflowDefinition'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -698,7 +679,7 @@ paths:
       - workflows
       summary: Delete a workflow definition
       parameters:
-      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/ProjectSlugParam'
       - $ref: '#/components/parameters/IDParam'
       responses:
         '204':
@@ -707,15 +688,21 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /namespaces/{ns}/workflows/{id}/versions:
+  /projects/{project}/workflows/{id}/versions:
     get:
       operationId: listWorkflowVersions
       tags:
       - workflows
       summary: List versions of a workflow definition
       parameters:
-      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/ProjectSlugParam'
       - $ref: '#/components/parameters/IDParam'
+      - name: include_spec
+        in: query
+        required: false
+        description: When true, include the full workflow spec for each version.
+        schema:
+          type: boolean
       responses:
         '200':
           description: OK
@@ -727,7 +714,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /namespaces/{ns}/workflows/{id}/runs:
+  /projects/{project}/workflows/{id}/runs:
     get:
       operationId: listWorkflowRuns
       tags:
@@ -735,7 +722,7 @@ paths:
       - runs
       summary: List runs for a workflow definition
       parameters:
-      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/ProjectSlugParam'
       - $ref: '#/components/parameters/IDParam'
       responses:
         '200':
@@ -752,53 +739,74 @@ paths:
       - workflows
       - runs
       summary: Start a new workflow run (enqueue)
-      description: 'Enqueues a workflow run. Supports an `Idempotency-Key`
-
-        header: when present, the first successful run is cached
-
-        for 24h and subsequent calls with the same key return the
-
-        original run instead of creating a new one.
+      description: 'Enqueues a workflow run.
 
         '
       parameters:
-      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/ProjectSlugParam'
       - $ref: '#/components/parameters/IDParam'
-      - name: Idempotency-Key
-        in: header
-        required: false
-        schema:
-          type: string
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              required:
-              - data
-              properties:
-                data:
-                  $ref: '#/components/schemas/StartRunRequest'
+              $ref: '#/components/schemas/StartRunRequest'
       responses:
         '202':
           description: Accepted
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/WorkflowRunDataResponse'
+                $ref: '#/components/schemas/WorkflowRun'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /namespaces/{ns}/runs:
+  /projects/{project}/runs:
+    post:
+      operationId: startRun
+      tags:
+      - runs
+      summary: Start a new workflow run
+      description: 'Starts a workflow run. Exactly one of `definition_id` or `spec`
+
+        must be provided on the request body. When `spec` is provided,
+
+        the run is ephemeral — no `WorkflowDefinition` is created, and
+
+        the returned run carries an empty `definition_id` and a zero
+
+        `definition_version`.
+
+        '
+      parameters:
+      - $ref: '#/components/parameters/ProjectSlugParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StartRunRequest'
+      responses:
+        '202':
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowRun'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
     get:
       operationId: listRuns
       tags:
       - runs
-      summary: List workflow runs in a namespace
+      summary: List workflow runs in a project
       description: 'Supports cursor-based pagination and keyset filtering by
 
         status, workflow type, queue, parent run, and
@@ -809,7 +817,7 @@ paths:
 
         '
       parameters:
-      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/ProjectSlugParam'
       - name: status
         in: query
         schema:
@@ -849,7 +857,7 @@ paths:
                 $ref: '#/components/schemas/WorkflowRunListResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
-  /namespaces/{ns}/runs/cancellations:
+  /projects/{project}/runs/cancellations:
     post:
       operationId: bulkCancelRuns
       tags:
@@ -863,30 +871,25 @@ paths:
 
         '
       parameters:
-      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/ProjectSlugParam'
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              required:
-              - data
-              properties:
-                data:
-                  $ref: '#/components/schemas/BulkRunRequest'
+              $ref: '#/components/schemas/BulkRunRequest'
       responses:
         '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/BulkRunDataResponse'
+                $ref: '#/components/schemas/BulkRunResult'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
-  /namespaces/{ns}/runs/retries:
+  /projects/{project}/runs/retries:
     post:
       operationId: bulkRetryRuns
       tags:
@@ -898,37 +901,32 @@ paths:
 
         '
       parameters:
-      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/ProjectSlugParam'
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              required:
-              - data
-              properties:
-                data:
-                  $ref: '#/components/schemas/BulkRunRequest'
+              $ref: '#/components/schemas/BulkRunRequest'
       responses:
         '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/BulkRunDataResponse'
+                $ref: '#/components/schemas/BulkRunResult'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
-  /namespaces/{ns}/runs/{id}:
+  /projects/{project}/runs/{id}:
     get:
       operationId: getRun
       tags:
       - runs
       summary: Get a workflow run (including spec and run state blobs)
       parameters:
-      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/ProjectSlugParam'
       - $ref: '#/components/parameters/IDParam'
       responses:
         '200':
@@ -936,19 +934,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/WorkflowRunDetailDataResponse'
+                $ref: '#/components/schemas/WorkflowRunDetail'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /namespaces/{ns}/runs/{id}/action-log:
+  /projects/{project}/runs/{id}/action-log:
     get:
       operationId: getRunActionLog
       tags:
       - runs
       summary: Get the append-only action log for a run
       parameters:
-      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/ProjectSlugParam'
       - $ref: '#/components/parameters/IDParam'
       responses:
         '200':
@@ -961,14 +959,14 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /namespaces/{ns}/runs/{id}/jobs:
+  /projects/{project}/runs/{id}/jobs:
     get:
       operationId: getRunJobs
       tags:
       - runs
       summary: Get workflow jobs for a run
       parameters:
-      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/ProjectSlugParam'
       - $ref: '#/components/parameters/IDParam'
       responses:
         '200':
@@ -981,12 +979,12 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /namespaces/{ns}/runs/events:
+  /projects/{project}/runs/events:
     get:
-      operationId: streamNamespaceRunEvents
+      operationId: streamProjectRunEvents
       tags:
       - runs
-      summary: Subscribe to a namespace-wide stream of run events (SSE)
+      summary: Subscribe to a project-wide stream of run events (SSE)
       description: 'Opens a Server-Sent Events connection. Each frame carries a
 
         JSON envelope `{type, run_id, seq, timestamp, data}` where
@@ -1012,7 +1010,7 @@ paths:
 
         '
       parameters:
-      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/ProjectSlugParam'
       - name: since
         in: query
         description: Durable event seq cursor to replay from.
@@ -1028,7 +1026,7 @@ paths:
                 type: string
         '401':
           $ref: '#/components/responses/Unauthorized'
-  /namespaces/{ns}/runs/{id}/cancellations:
+  /projects/{project}/runs/{id}/cancellations:
     post:
       operationId: cancelRun
       tags:
@@ -1042,7 +1040,7 @@ paths:
 
         '
       parameters:
-      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/ProjectSlugParam'
       - $ref: '#/components/parameters/IDParam'
       responses:
         '204':
@@ -1051,14 +1049,14 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /namespaces/{ns}/runs/{id}/resumptions:
+  /projects/{project}/runs/{id}/resumptions:
     post:
       operationId: resumeRun
       tags:
       - runs
       summary: Flip a suspended run back to queued
       parameters:
-      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/ProjectSlugParam'
       - $ref: '#/components/parameters/IDParam'
       responses:
         '204':
@@ -1067,7 +1065,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /namespaces/{ns}/runs/{id}/signals:
+  /projects/{project}/runs/{id}/signals:
     post:
       operationId: sendRunSignal
       tags:
@@ -1085,40 +1083,35 @@ paths:
 
         '
       parameters:
-      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/ProjectSlugParam'
       - $ref: '#/components/parameters/IDParam'
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              required:
-              - data
-              properties:
-                data:
-                  $ref: '#/components/schemas/SendRunSignalRequest'
+              $ref: '#/components/schemas/SendRunSignalRequest'
       responses:
         '202':
           description: Accepted
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RunSignalDataResponse'
+                $ref: '#/components/schemas/RunSignal'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /namespaces/{ns}/runs/{id}/events:
+  /projects/{project}/runs/{id}/events:
     get:
       operationId: streamRunEvents
       tags:
       - runs
       summary: Subscribe to a stream of events for a single run (SSE)
-      description: 'Same envelope as `/namespaces/{ns}/runs/events` but filtered to
-        a single run.
+      description: 'Same envelope as `/projects/{project}/runs/events` but filtered
+        to a single run.
 
         The server writes one seed `run_updated` frame on connection
 
@@ -1130,7 +1123,7 @@ paths:
 
         '
       parameters:
-      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/ProjectSlugParam'
       - $ref: '#/components/parameters/IDParam'
       - name: since
         in: query
@@ -1149,14 +1142,14 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /namespaces/{ns}/actions:
+  /projects/{project}/actions:
     get:
       operationId: listActions
       tags:
       - actions
-      summary: List actions in the namespace
+      summary: List actions in the project
       parameters:
-      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/ProjectSlugParam'
       - $ref: '#/components/parameters/CursorParam'
       - $ref: '#/components/parameters/LimitParam'
       responses:
@@ -1172,41 +1165,36 @@ paths:
       operationId: createAction
       tags:
       - actions
-      summary: Create an action in the namespace
+      summary: Create an action in the project
       parameters:
-      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/ProjectSlugParam'
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              required:
-              - data
-              properties:
-                data:
-                  $ref: '#/components/schemas/CreateActionRequest'
+              $ref: '#/components/schemas/CreateActionRequest'
       responses:
         '201':
           description: Created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ActionDataResponse'
+                $ref: '#/components/schemas/Action'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '409':
           $ref: '#/components/responses/Conflict'
-  /namespaces/{ns}/actions/{actionName}:
+  /projects/{project}/actions/{actionName}:
     get:
       operationId: getAction
       tags:
       - actions
       summary: Get an action by name
       parameters:
-      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/ProjectSlugParam'
       - $ref: '#/components/parameters/ActionNameParam'
       responses:
         '200':
@@ -1214,7 +1202,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ActionDataResponse'
+                $ref: '#/components/schemas/Action'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
@@ -1225,26 +1213,21 @@ paths:
       - actions
       summary: Update an action
       parameters:
-      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/ProjectSlugParam'
       - $ref: '#/components/parameters/ActionNameParam'
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              required:
-              - data
-              properties:
-                data:
-                  $ref: '#/components/schemas/UpdateActionRequest'
+              $ref: '#/components/schemas/UpdateActionRequest'
       responses:
         '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ActionDataResponse'
+                $ref: '#/components/schemas/Action'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -1257,7 +1240,7 @@ paths:
       - actions
       summary: Delete an action
       parameters:
-      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/ProjectSlugParam'
       - $ref: '#/components/parameters/ActionNameParam'
       responses:
         '204':
@@ -1268,14 +1251,14 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
-  /namespaces/{ns}/actions/{actionName}/secret/rotate:
+  /projects/{project}/actions/{actionName}/secret/rotate:
     post:
       operationId: rotateActionSecret
       tags:
       - actions
       summary: Rotate an action signing secret
       parameters:
-      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/ProjectSlugParam'
       - $ref: '#/components/parameters/ActionNameParam'
       responses:
         '200':
@@ -1283,19 +1266,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RotateSecretDataResponse'
+                $ref: '#/components/schemas/RotateSecretResult'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /namespaces/{ns}/action-audit-log:
+  /projects/{project}/action-audit-log:
     get:
       operationId: listActionAuditLog
       tags:
       - actions
       summary: List action invocation audit records
       parameters:
-      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/ProjectSlugParam'
       - $ref: '#/components/parameters/CursorParam'
       - $ref: '#/components/parameters/LimitParam'
       - name: run_id
@@ -1321,14 +1304,14 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /namespaces/{ns}/actions/catalog:
+  /projects/{project}/actions/catalog:
     get:
       operationId: listCatalogActions
       tags:
       - actions
-      summary: List platform and namespace actions available in the namespace
+      summary: List platform and project actions available in the project
       parameters:
-      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/ProjectSlugParam'
       responses:
         '200':
           description: OK
@@ -1338,14 +1321,14 @@ paths:
                 $ref: '#/components/schemas/ActionCatalogListResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
-  /namespaces/{ns}/actions/catalog/{actionName}:
+  /projects/{project}/actions/catalog/{actionName}:
     get:
       operationId: getCatalogAction
       tags:
       - actions
       summary: Get one catalog action by name
       parameters:
-      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/ProjectSlugParam'
       - $ref: '#/components/parameters/ActionNameParam'
       responses:
         '200':
@@ -1353,12 +1336,12 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ActionCatalogDataResponse'
+                $ref: '#/components/schemas/ActionCatalogEntry'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /namespaces/{ns}/jobs/claim:
+  /projects/{project}/jobs/claim:
     post:
       operationId: claimJob
       tags:
@@ -1381,25 +1364,20 @@ paths:
 
         '
       parameters:
-      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/ProjectSlugParam'
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              required:
-              - data
-              properties:
-                data:
-                  $ref: '#/components/schemas/JobClaimRequest'
+              $ref: '#/components/schemas/JobClaimRequest'
       responses:
         '200':
           description: Job claimed
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/JobClaimDataResponse'
+                $ref: '#/components/schemas/JobClaim'
         '204':
           description: No jobs available within the poll window
         '400':
@@ -1408,7 +1386,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /namespaces/{ns}/jobs/{id}/heartbeat:
+  /projects/{project}/jobs/{id}/heartbeat:
     post:
       operationId: heartbeatJob
       tags:
@@ -1422,52 +1400,42 @@ paths:
 
         '
       parameters:
-      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/ProjectSlugParam'
       - $ref: '#/components/parameters/IDParam'
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              required:
-              - data
-              properties:
-                data:
-                  $ref: '#/components/schemas/JobFenceRequest'
+              $ref: '#/components/schemas/JobFenceRequest'
       responses:
         '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/JobHeartbeatDataResponse'
+                $ref: '#/components/schemas/JobHeartbeat'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
-  /namespaces/{ns}/jobs/{id}/complete:
+  /projects/{project}/jobs/{id}/complete:
     post:
       operationId: completeJob
       tags:
       - jobs
       summary: Report terminal status for a claimed workflow job
       parameters:
-      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/ProjectSlugParam'
       - $ref: '#/components/parameters/IDParam'
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              required:
-              - data
-              properties:
-                data:
-                  $ref: '#/components/schemas/JobCompleteRequest'
+              $ref: '#/components/schemas/JobCompleteRequest'
       responses:
         '204':
           description: No Content
@@ -1479,40 +1447,56 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
-  /namespaces/{ns}/jobs/{id}/interactions:
+  /projects/{project}/jobs/{id}/events:
     post:
-      operationId: createJobInteraction
+      operationId: emitJobEvents
       tags:
       - jobs
-      summary: Create a human-in-the-loop interaction from a claimed workflow job
-      description: 'Job-scoped form of interaction creation for the step-claim runtime.
+      summary: Emit one or more custom events from a claimed workflow job
+      description: 'Publishes a batch of custom run events on behalf of the worker
 
-        The job is used to derive the owning run and enforce namespace
+        holding the job''s current lease. Events are appended to the
 
-        scoping before creating the interaction.
+        durable run event store (so they replay via `?since=<seq>`) and
+
+        fanned out to any live SSE subscribers on the run.
+
+
+        Authorization requires `mobius.job.emit_event`. Each event must
+
+        present the active lease fence (`worker_id` + `attempt`); stale
+
+        fences are rejected with 409.
+
+
+        `type` is a caller-chosen identifier. The `mobius.` prefix is
+
+        reserved for future server-emitted well-known kinds and is
+
+        rejected with 400.
+
+
+        Validation is atomic: if any event in the batch is invalid, the
+
+        whole request is rejected and nothing is published. Successful
+
+        batches return a `data` array of results in the same order as
+
+        the request.
 
         '
       parameters:
-      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/ProjectSlugParam'
       - $ref: '#/components/parameters/IDParam'
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              required:
-              - data
-              properties:
-                data:
-                  $ref: '#/components/schemas/CreateJobInteractionRequest'
+              $ref: '#/components/schemas/JobEventsRequest'
       responses:
-        '201':
-          description: Interaction created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/InteractionDataResponse'
+        '204':
+          description: Events accepted
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -1521,14 +1505,63 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
-  /namespaces/{ns}/jobs/{id}/actions/{actionName}:
+        '413':
+          description: Payload Too Large
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Too Many Requests
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /projects/{project}/jobs/{id}/interactions:
+    post:
+      operationId: createJobInteraction
+      tags:
+      - jobs
+      summary: Create a human-in-the-loop interaction from a claimed workflow job
+      description: 'Job-scoped form of interaction creation for the step-claim runtime.
+
+        The job is used to derive the owning run and enforce project
+
+        scoping before creating the interaction.
+
+        '
+      parameters:
+      - $ref: '#/components/parameters/ProjectSlugParam'
+      - $ref: '#/components/parameters/IDParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateJobInteractionRequest'
+      responses:
+        '201':
+          description: Interaction created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Interaction'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /projects/{project}/jobs/{id}/actions/{actionName}:
     post:
       operationId: runJobAction
       tags:
       - jobs
       summary: Execute one server-side action for a claimed workflow job
       parameters:
-      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/ProjectSlugParam'
       - $ref: '#/components/parameters/IDParam'
       - $ref: '#/components/parameters/ActionNameParam'
       requestBody:
@@ -1536,33 +1569,28 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              required:
-              - data
-              properties:
-                data:
-                  $ref: '#/components/schemas/RunActionRequest'
+              $ref: '#/components/schemas/RunActionRequest'
       responses:
         '200':
           description: Action executed
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RunActionResultDataResponse'
+                $ref: '#/components/schemas/RunActionResult'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /namespaces/{ns}/triggers:
+  /projects/{project}/triggers:
     get:
       operationId: listTriggers
       tags:
       - triggers
-      summary: List triggers in the namespace
+      summary: List triggers in the project
       parameters:
-      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/ProjectSlugParam'
       - name: kind
         in: query
         schema:
@@ -1598,39 +1626,34 @@ paths:
       - triggers
       summary: Create a trigger
       parameters:
-      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/ProjectSlugParam'
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              required:
-              - data
-              properties:
-                data:
-                  $ref: '#/components/schemas/CreateTriggerRequest'
+              $ref: '#/components/schemas/CreateTriggerRequest'
       responses:
         '201':
           description: Created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TriggerDataResponse'
+                $ref: '#/components/schemas/Trigger'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /namespaces/{ns}/triggers/{id}:
+  /projects/{project}/triggers/{id}:
     get:
       operationId: getTrigger
       tags:
       - triggers
       summary: Get a trigger by id
       parameters:
-      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/ProjectSlugParam'
       - $ref: '#/components/parameters/IDParam'
       responses:
         '200':
@@ -1638,7 +1661,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TriggerDataResponse'
+                $ref: '#/components/schemas/Trigger'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
@@ -1649,26 +1672,21 @@ paths:
       - triggers
       summary: Update a trigger
       parameters:
-      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/ProjectSlugParam'
       - $ref: '#/components/parameters/IDParam'
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              required:
-              - data
-              properties:
-                data:
-                  $ref: '#/components/schemas/UpdateTriggerRequest'
+              $ref: '#/components/schemas/UpdateTriggerRequest'
       responses:
         '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TriggerDataResponse'
+                $ref: '#/components/schemas/Trigger'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -1681,7 +1699,7 @@ paths:
       - triggers
       summary: Delete a trigger
       parameters:
-      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/ProjectSlugParam'
       - $ref: '#/components/parameters/IDParam'
       responses:
         '204':
@@ -1690,14 +1708,14 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /namespaces/{ns}/triggers/{id}/fires:
+  /projects/{project}/triggers/{id}/fires:
     get:
       operationId: listTriggerFires
       tags:
       - triggers
       summary: List fire history for a trigger
       parameters:
-      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/ProjectSlugParam'
       - $ref: '#/components/parameters/IDParam'
       - name: status
         in: query
@@ -1724,14 +1742,14 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /namespaces/{ns}/workers:
+  /projects/{project}/workers:
     get:
       operationId: listWorkers
       tags:
       - workers
-      summary: List recently seen workers in the namespace
+      summary: List recently seen workers in the project
       parameters:
-      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/ProjectSlugParam'
       responses:
         '200':
           description: OK
@@ -1743,12 +1761,12 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /namespaces:
+  /projects:
     get:
-      operationId: listNamespaces
+      operationId: listProjects
       tags:
-      - namespaces
-      summary: List namespaces in the org
+      - projects
+      summary: List projects in the org
       parameters:
       - name: search
         in: query
@@ -1760,44 +1778,39 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/NamespaceListResponse'
+                $ref: '#/components/schemas/ProjectListResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
     post:
-      operationId: createNamespace
+      operationId: createProject
       tags:
-      - namespaces
-      summary: Create a namespace
+      - projects
+      summary: Create a project
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              required:
-              - data
-              properties:
-                data:
-                  $ref: '#/components/schemas/CreateNamespaceRequest'
+              $ref: '#/components/schemas/CreateProjectRequest'
       responses:
         '201':
           description: Created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/NamespaceDataResponse'
+                $ref: '#/components/schemas/Project'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '409':
           $ref: '#/components/responses/Conflict'
-  /namespaces/{id}:
+  /projects/{id}:
     get:
-      operationId: getNamespace
+      operationId: getProject
       tags:
-      - namespaces
-      summary: Get a namespace by id
+      - projects
+      summary: Get a project by id
       parameters:
       - $ref: '#/components/parameters/IDParam'
       responses:
@@ -1806,16 +1819,16 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/NamespaceDataResponse'
+                $ref: '#/components/schemas/Project'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
     patch:
-      operationId: updateNamespace
+      operationId: updateProject
       tags:
-      - namespaces
-      summary: Update a namespace
+      - projects
+      summary: Update a project
       parameters:
       - $ref: '#/components/parameters/IDParam'
       requestBody:
@@ -1823,19 +1836,14 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              required:
-              - data
-              properties:
-                data:
-                  $ref: '#/components/schemas/UpdateNamespaceRequest'
+              $ref: '#/components/schemas/UpdateProjectRequest'
       responses:
         '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/NamespaceDataResponse'
+                $ref: '#/components/schemas/Project'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -1843,10 +1851,10 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
     delete:
-      operationId: deleteNamespace
+      operationId: deleteProject
       tags:
-      - namespaces
-      summary: Delete a namespace
+      - projects
+      summary: Delete a project
       parameters:
       - $ref: '#/components/parameters/IDParam'
       responses:
@@ -1856,20 +1864,20 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /namespaces/{ns}/webhooks:
+  /projects/{project}/webhooks:
     get:
       operationId: listWebhooks
       tags:
       - webhooks
       summary: List webhooks
-      description: 'Lists the managed webhook endpoints in the namespace. Each webhook
+      description: 'Lists the managed webhook endpoints in the project. Each webhook
         is an
 
         inbound endpoint hosted by Mobius.
 
         '
       parameters:
-      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/ProjectSlugParam'
       - name: enabled
         in: query
         schema:
@@ -1900,32 +1908,27 @@ paths:
       tags:
       - webhooks
       summary: Create webhook
-      description: 'Creates a managed inbound webhook endpoint for the namespace and
+      description: 'Creates a managed inbound webhook endpoint for the project and
         returns
 
         its `receive_url`.
 
         '
       parameters:
-      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/ProjectSlugParam'
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              required:
-              - data
-              properties:
-                data:
-                  $ref: '#/components/schemas/CreateWebhookRequest'
+              $ref: '#/components/schemas/CreateWebhookRequest'
       responses:
         '201':
           description: Created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/WebhookDataResponse'
+                $ref: '#/components/schemas/Webhook'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -1934,7 +1937,7 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
-  /namespaces/{ns}/webhooks/{id}:
+  /projects/{project}/webhooks/{id}:
     get:
       operationId: getWebhook
       tags:
@@ -1944,7 +1947,7 @@ paths:
 
         '
       parameters:
-      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/ProjectSlugParam'
       - $ref: '#/components/parameters/IDParam'
       responses:
         '200':
@@ -1952,7 +1955,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/WebhookDataResponse'
+                $ref: '#/components/schemas/Webhook'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
@@ -1969,26 +1972,21 @@ paths:
 
         '
       parameters:
-      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/ProjectSlugParam'
       - $ref: '#/components/parameters/IDParam'
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              required:
-              - data
-              properties:
-                data:
-                  $ref: '#/components/schemas/UpdateWebhookRequest'
+              $ref: '#/components/schemas/UpdateWebhookRequest'
       responses:
         '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/WebhookDataResponse'
+                $ref: '#/components/schemas/Webhook'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -2004,7 +2002,7 @@ paths:
 
         '
       parameters:
-      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/ProjectSlugParam'
       - $ref: '#/components/parameters/IDParam'
       responses:
         '204':
@@ -2013,7 +2011,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /namespaces/{ns}/webhooks/{id}/events:
+  /projects/{project}/webhooks/{id}/events:
     get:
       operationId: listWebhookEvents
       tags:
@@ -2025,7 +2023,7 @@ paths:
 
         '
       parameters:
-      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/ProjectSlugParam'
       - $ref: '#/components/parameters/IDParam'
       - name: status
         in: query
@@ -2052,13 +2050,14 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /integrations:
+  /projects/{project}/integrations:
     get:
       operationId: listIntegrations
       tags:
       - integrations
-      summary: List integrations in the org
+      summary: List integrations in the project
       parameters:
+      - $ref: '#/components/parameters/ProjectSlugParam'
       - name: provider
         in: query
         schema:
@@ -2090,36 +2089,34 @@ paths:
       operationId: createIntegration
       tags:
       - integrations
-      summary: Create an integration
+      summary: Create an integration in the project
+      parameters:
+      - $ref: '#/components/parameters/ProjectSlugParam'
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              required:
-              - data
-              properties:
-                data:
-                  $ref: '#/components/schemas/CreateIntegrationRequest'
+              $ref: '#/components/schemas/CreateIntegrationRequest'
       responses:
         '201':
           description: Created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/IntegrationDataResponse'
+                $ref: '#/components/schemas/Integration'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
-  /integrations/{id}:
+  /projects/{project}/integrations/{id}:
     get:
       operationId: getIntegration
       tags:
       - integrations
       summary: Get an integration by id
       parameters:
+      - $ref: '#/components/parameters/ProjectSlugParam'
       - $ref: '#/components/parameters/IDParam'
       responses:
         '200':
@@ -2127,7 +2124,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/IntegrationDataResponse'
+                $ref: '#/components/schemas/Integration'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
@@ -2138,25 +2135,21 @@ paths:
       - integrations
       summary: Update an integration
       parameters:
+      - $ref: '#/components/parameters/ProjectSlugParam'
       - $ref: '#/components/parameters/IDParam'
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              required:
-              - data
-              properties:
-                data:
-                  $ref: '#/components/schemas/UpdateIntegrationRequest'
+              $ref: '#/components/schemas/UpdateIntegrationRequest'
       responses:
         '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/IntegrationDataResponse'
+                $ref: '#/components/schemas/Integration'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -2169,10 +2162,66 @@ paths:
       - integrations
       summary: Delete an integration
       parameters:
+      - $ref: '#/components/parameters/ProjectSlugParam'
       - $ref: '#/components/parameters/IDParam'
       responses:
         '204':
           description: No Content
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /projects/{project}/integrations/copy:
+    post:
+      operationId: copyIntegration
+      tags:
+      - integrations
+      summary: Copy an integration from another project
+      description: 'Clones an integration from another project within the same org
+
+        into this project. The encrypted credential blob and config are
+
+        preserved; the (provider, name) pair must be unique within this
+
+        project or a different `name` must be supplied.
+
+        '
+      parameters:
+      - $ref: '#/components/parameters/ProjectSlugParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CopyIntegrationRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Integration'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /projects/{project}/metrics:
+    get:
+      operationId: getProjectMetrics
+      tags:
+      - metrics
+      summary: Get operational metrics for a project
+      parameters:
+      - $ref: '#/components/parameters/ProjectSlugParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectMetrics'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
@@ -2190,6 +2239,10 @@ paths:
           type: integer
           minimum: 1
           maximum: 200
+      - name: project_id
+        in: query
+        schema:
+          type: string
       responses:
         '200':
           description: OK
@@ -2211,19 +2264,14 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              required:
-              - data
-              properties:
-                data:
-                  $ref: '#/components/schemas/CreateRoleRequest'
+              $ref: '#/components/schemas/CreateRoleRequest'
       responses:
         '201':
           description: Created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RoleDataResponse'
+                $ref: '#/components/schemas/Role'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -2240,13 +2288,17 @@ paths:
       summary: Get a role
       parameters:
       - $ref: '#/components/parameters/IDParam'
+      - name: project_id
+        in: query
+        schema:
+          type: string
       responses:
         '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RoleDataResponse'
+                $ref: '#/components/schemas/Role'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -2260,24 +2312,23 @@ paths:
       summary: Update a custom role
       parameters:
       - $ref: '#/components/parameters/IDParam'
+      - name: project_id
+        in: query
+        schema:
+          type: string
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              required:
-              - data
-              properties:
-                data:
-                  $ref: '#/components/schemas/UpdateRoleRequest'
+              $ref: '#/components/schemas/UpdateRoleRequest'
       responses:
         '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RoleDataResponse'
+                $ref: '#/components/schemas/Role'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -2295,6 +2346,10 @@ paths:
       summary: Delete a custom role
       parameters:
       - $ref: '#/components/parameters/IDParam'
+      - name: project_id
+        in: query
+        schema:
+          type: string
       responses:
         '204':
           description: No Content
@@ -2326,6 +2381,10 @@ paths:
         in: query
         schema:
           type: string
+      - name: project_id
+        in: query
+        schema:
+          type: string
       responses:
         '200':
           description: OK
@@ -2347,19 +2406,14 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              required:
-              - data
-              properties:
-                data:
-                  $ref: '#/components/schemas/CreateRoleAssignmentRequest'
+              $ref: '#/components/schemas/CreateRoleAssignmentRequest'
       responses:
         '201':
           description: Created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RoleAssignmentDataResponse'
+                $ref: '#/components/schemas/RoleAssignment'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -2387,32 +2441,27 @@ paths:
           description: Forbidden
         '404':
           $ref: '#/components/responses/NotFound'
-  /namespaces/{ns}/interactions:
+  /projects/{project}/interactions:
     post:
       operationId: createInteraction
       tags:
       - interactions
       summary: Create an interaction explicitly
       parameters:
-      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/ProjectSlugParam'
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              required:
-              - data
-              properties:
-                data:
-                  $ref: '#/components/schemas/CreateInteractionRequest'
+              $ref: '#/components/schemas/CreateInteractionRequest'
       responses:
         '201':
           description: Created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/InteractionDataResponse'
+                $ref: '#/components/schemas/Interaction'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -2425,7 +2474,7 @@ paths:
       - interactions
       summary: List interactions
       parameters:
-      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/ProjectSlugParam'
       - name: status
         in: query
         schema:
@@ -2471,14 +2520,14 @@ paths:
                 $ref: '#/components/schemas/InteractionListResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
-  /namespaces/{ns}/interactions/{id}:
+  /projects/{project}/interactions/{id}:
     get:
       operationId: getInteraction
       tags:
       - interactions
       summary: Get an interaction
       parameters:
-      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/ProjectSlugParam'
       - $ref: '#/components/parameters/IDParam'
       responses:
         '200':
@@ -2486,12 +2535,12 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/InteractionDataResponse'
+                $ref: '#/components/schemas/Interaction'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /namespaces/{ns}/interactions/{id}/respond:
+  /projects/{project}/interactions/{id}/respond:
     post:
       operationId: respondToInteraction
       tags:
@@ -2508,26 +2557,21 @@ paths:
 
         '
       parameters:
-      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/ProjectSlugParam'
       - $ref: '#/components/parameters/IDParam'
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              required:
-              - data
-              properties:
-                data:
-                  $ref: '#/components/schemas/RespondToInteractionRequest'
+              $ref: '#/components/schemas/RespondToInteractionRequest'
       responses:
         '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/InteractionDataResponse'
+                $ref: '#/components/schemas/Interaction'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -2536,14 +2580,14 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
-  /namespaces/{ns}/interactions/{id}/claim:
+  /projects/{project}/interactions/{id}/claim:
     post:
       operationId: claimInteraction
       tags:
       - interactions
       summary: Claim a pending first-responder group interaction
       parameters:
-      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/ProjectSlugParam'
       - $ref: '#/components/parameters/IDParam'
       responses:
         '200':
@@ -2551,21 +2595,21 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/InteractionDataResponse'
+                $ref: '#/components/schemas/Interaction'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /namespaces/{ns}/interactions/{id}/release:
+  /projects/{project}/interactions/{id}/release:
     post:
       operationId: releaseInteraction
       tags:
       - interactions
       summary: Release a claimed first-responder group interaction
       parameters:
-      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/ProjectSlugParam'
       - $ref: '#/components/parameters/IDParam'
       responses:
         '200':
@@ -2573,14 +2617,14 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/InteractionDataResponse'
+                $ref: '#/components/schemas/Interaction'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /integrations/slack/connect:
+  /projects/{project}/integrations/slack/connect:
     post:
       operationId: startSlackInstall
       tags:
@@ -2591,27 +2635,33 @@ paths:
 
         The caller should redirect the user''s browser to the returned URL.
 
+        The resulting integration is owned by the specified project.
+
         '
+      parameters:
+      - $ref: '#/components/parameters/ProjectSlugParam'
       responses:
         '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SlackInstallDataResponse'
+                $ref: '#/components/schemas/SlackInstall'
         '401':
           $ref: '#/components/responses/Unauthorized'
-  /integrations/slack/disconnect:
+  /projects/{project}/integrations/slack/disconnect:
     post:
       operationId: disconnectSlack
       tags:
       - slack
       summary: Disconnect Slack integration
-      description: 'Revokes the Slack bot token and deletes the integration record.
+      description: 'Revokes the Slack bot token and deletes the project''s Slack integration.
 
-        Clears all active alert state for the org.
+        Clears active alert state for the project.
 
         '
+      parameters:
+      - $ref: '#/components/parameters/ProjectSlugParam'
       responses:
         '204':
           description: No Content
@@ -2704,30 +2754,27 @@ paths:
           description: OK
         '401':
           description: Invalid signature
-  /groups:
+  /projects/{project}/groups:
     post:
       operationId: createGroup
       tags:
       - groups
       summary: Create a group
+      parameters:
+      - $ref: '#/components/parameters/ProjectSlugParam'
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              required:
-              - data
-              properties:
-                data:
-                  $ref: '#/components/schemas/CreateGroupRequest'
+              $ref: '#/components/schemas/CreateGroupRequest'
       responses:
         '201':
           description: Created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GroupDataResponse'
+                $ref: '#/components/schemas/Group'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -2738,8 +2785,9 @@ paths:
       operationId: listGroups
       tags:
       - groups
-      summary: List groups in an org
+      summary: List groups in a project
       parameters:
+      - $ref: '#/components/parameters/ProjectSlugParam'
       - $ref: '#/components/parameters/CursorParam'
       - $ref: '#/components/parameters/LimitParam'
       responses:
@@ -2751,13 +2799,14 @@ paths:
                 $ref: '#/components/schemas/GroupWithCountListResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
-  /groups/{groupId}:
+  /projects/{project}/groups/{groupId}:
     get:
       operationId: getGroup
       tags:
       - groups
       summary: Get a group with member count
       parameters:
+      - $ref: '#/components/parameters/ProjectSlugParam'
       - $ref: '#/components/parameters/GroupIDParam'
       responses:
         '200':
@@ -2765,7 +2814,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GroupWithCountDataResponse'
+                $ref: '#/components/schemas/GroupWithCount'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
@@ -2776,25 +2825,21 @@ paths:
       - groups
       summary: Update a group
       parameters:
+      - $ref: '#/components/parameters/ProjectSlugParam'
       - $ref: '#/components/parameters/GroupIDParam'
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              required:
-              - data
-              properties:
-                data:
-                  $ref: '#/components/schemas/UpdateGroupRequest'
+              $ref: '#/components/schemas/UpdateGroupRequest'
       responses:
         '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GroupDataResponse'
+                $ref: '#/components/schemas/Group'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -2808,6 +2853,7 @@ paths:
       summary: Delete a group
       description: Rejected if any pending interaction targets this group.
       parameters:
+      - $ref: '#/components/parameters/ProjectSlugParam'
       - $ref: '#/components/parameters/GroupIDParam'
       responses:
         '204':
@@ -2818,13 +2864,14 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /groups/{groupId}/members:
+  /projects/{project}/groups/{groupId}/members:
     get:
       operationId: listGroupMembers
       tags:
       - groups
       summary: List members of a group
       parameters:
+      - $ref: '#/components/parameters/ProjectSlugParam'
       - $ref: '#/components/parameters/GroupIDParam'
       - $ref: '#/components/parameters/CursorParam'
       - $ref: '#/components/parameters/LimitParam'
@@ -2845,25 +2892,21 @@ paths:
       - groups
       summary: Add a member to a group
       parameters:
+      - $ref: '#/components/parameters/ProjectSlugParam'
       - $ref: '#/components/parameters/GroupIDParam'
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              required:
-              - data
-              properties:
-                data:
-                  $ref: '#/components/schemas/AddGroupMemberRequest'
+              $ref: '#/components/schemas/AddGroupMemberRequest'
       responses:
         '201':
           description: Created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GroupMemberDataResponse'
+                $ref: '#/components/schemas/GroupMember'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -2872,13 +2915,14 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
-  /groups/{groupId}/members/{userId}:
+  /projects/{project}/groups/{groupId}/members/{userId}:
     delete:
       operationId: removeGroupMember
       tags:
       - groups
       summary: Remove a member from a group
       parameters:
+      - $ref: '#/components/parameters/ProjectSlugParam'
       - $ref: '#/components/parameters/GroupIDParam'
       - name: userId
         in: path
@@ -2892,13 +2936,14 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /members/{userId}/groups:
+  /projects/{project}/members/{userId}/groups:
     get:
       operationId: listMemberGroups
       tags:
       - groups
       summary: List groups a member belongs to
       parameters:
+      - $ref: '#/components/parameters/ProjectSlugParam'
       - name: userId
         in: path
         required: true
@@ -2913,32 +2958,27 @@ paths:
                 $ref: '#/components/schemas/GroupListResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
-  /namespaces/{ns}/agents:
+  /projects/{project}/agents:
     post:
       operationId: createAgent
       tags:
       - agents
       summary: Create an agent
       parameters:
-      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/ProjectSlugParam'
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              required:
-              - data
-              properties:
-                data:
-                  $ref: '#/components/schemas/CreateAgentRequest'
+              $ref: '#/components/schemas/CreateAgentRequest'
       responses:
         '201':
           description: Created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AgentDataResponse'
+                $ref: '#/components/schemas/Agent'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -2953,7 +2993,7 @@ paths:
       - agents
       summary: List agents
       parameters:
-      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/ProjectSlugParam'
       - name: service_account_id
         in: query
         schema:
@@ -2974,14 +3014,14 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /namespaces/{ns}/agents/{id}:
+  /projects/{project}/agents/{id}:
     get:
       operationId: getAgent
       tags:
       - agents
       summary: Get an agent
       parameters:
-      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/ProjectSlugParam'
       - $ref: '#/components/parameters/IDParam'
       responses:
         '200':
@@ -2989,7 +3029,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AgentDataResponse'
+                $ref: '#/components/schemas/Agent'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
@@ -3000,26 +3040,21 @@ paths:
       - agents
       summary: Update an agent
       parameters:
-      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/ProjectSlugParam'
       - $ref: '#/components/parameters/IDParam'
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              required:
-              - data
-              properties:
-                data:
-                  $ref: '#/components/schemas/UpdateAgentRequest'
+              $ref: '#/components/schemas/UpdateAgentRequest'
       responses:
         '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AgentDataResponse'
+                $ref: '#/components/schemas/Agent'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -3032,7 +3067,7 @@ paths:
       - agents
       summary: Delete an agent
       parameters:
-      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/ProjectSlugParam'
       - $ref: '#/components/parameters/IDParam'
       responses:
         '204':
@@ -3041,33 +3076,28 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /namespaces/{ns}/agents/{id}/sessions:
+  /projects/{project}/agents/{id}/sessions:
     post:
       operationId: createAgentSession
       tags:
       - agents
       summary: Create an agent session
       parameters:
-      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/ProjectSlugParam'
       - $ref: '#/components/parameters/IDParam'
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              required:
-              - data
-              properties:
-                data:
-                  $ref: '#/components/schemas/CreateAgentSessionRequest'
+              $ref: '#/components/schemas/CreateAgentSessionRequest'
       responses:
         '201':
           description: Created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AgentSessionDataResponse'
+                $ref: '#/components/schemas/AgentSession'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -3080,7 +3110,7 @@ paths:
       - agents
       summary: List sessions for an agent
       parameters:
-      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/ProjectSlugParam'
       - $ref: '#/components/parameters/IDParam'
       - name: status
         in: query
@@ -3102,14 +3132,14 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /namespaces/{ns}/agents/sessions/{sessionId}:
+  /projects/{project}/agents/sessions/{sessionId}:
     get:
       operationId: getAgentSession
       tags:
       - agents
       summary: Get an agent session
       parameters:
-      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/ProjectSlugParam'
       - name: sessionId
         in: path
         required: true
@@ -3121,19 +3151,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AgentSessionDataResponse'
+                $ref: '#/components/schemas/AgentSession'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /namespaces/{ns}/agents/sessions/{sessionId}/heartbeat:
+  /projects/{project}/agents/sessions/{sessionId}/heartbeat:
     post:
       operationId: heartbeatAgentSession
       tags:
       - agents
       summary: Heartbeat an agent session
       parameters:
-      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/ProjectSlugParam'
       - name: sessionId
         in: path
         required: true
@@ -3145,19 +3175,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AgentSessionDataResponse'
+                $ref: '#/components/schemas/AgentSession'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /namespaces/{ns}/agents/sessions/{sessionId}/disconnect:
+  /projects/{project}/agents/sessions/{sessionId}/disconnect:
     post:
       operationId: disconnectAgentSession
       tags:
       - agents
       summary: Disconnect an agent session
       parameters:
-      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/ProjectSlugParam'
       - name: sessionId
         in: path
         required: true
@@ -3169,7 +3199,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AgentSessionDataResponse'
+                $ref: '#/components/schemas/AgentSession'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
@@ -3198,7 +3228,7 @@ paths:
                 $ref: '#/components/schemas/ToolDefinitionListResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
-  /namespaces/{ns}/tools/{slug}/runs:
+  /projects/{project}/tools/{slug}/runs:
     post:
       operationId: runTool
       tags:
@@ -3214,11 +3244,11 @@ paths:
 
         `status: pending` so the caller can switch to polling via
 
-        `GET /namespaces/{ns}/tools/{slug}/runs/{run_id}`.
+        `GET /projects/{project}/tools/{slug}/runs/{run_id}`.
 
         '
       parameters:
-      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/ProjectSlugParam'
       - name: slug
         in: path
         required: true
@@ -3229,39 +3259,34 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              required:
-              - data
-              properties:
-                data:
-                  $ref: '#/components/schemas/ToolRunRequest'
+              $ref: '#/components/schemas/ToolRunRequest'
       responses:
         '200':
           description: OK — run completed synchronously
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ToolRunDataResponse'
+                $ref: '#/components/schemas/ToolRun'
         '202':
           description: Accepted — run is pending; poll for result
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ToolRunDataResponse'
+                $ref: '#/components/schemas/ToolRun'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /namespaces/{ns}/tools/{slug}/runs/{runId}:
+  /projects/{project}/tools/{slug}/runs/{runId}:
     get:
       operationId: getToolRun
       tags:
       - tools
       summary: Poll for the result of an async tool run
       parameters:
-      - $ref: '#/components/parameters/NamespaceSlugParam'
+      - $ref: '#/components/parameters/ProjectSlugParam'
       - name: slug
         in: path
         required: true
@@ -3278,7 +3303,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ToolRunDataResponse'
+                $ref: '#/components/schemas/ToolRun'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
@@ -3290,13 +3315,13 @@ components:
       scheme: bearer
       description: API key passed as Bearer token
   parameters:
-    NamespaceSlugParam:
-      name: ns
+    ProjectSlugParam:
+      name: project
       in: path
       required: true
       schema:
         type: string
-      description: Namespace slug (unique per organization)
+      description: Project slug (unique per organization)
     IDParam:
       name: id
       in: path
@@ -3391,6 +3416,11 @@ components:
     Metadata:
       type: object
       additionalProperties: true
+    ChannelMessageSenderType:
+      type: string
+      enum:
+      - member
+      - agent
     Channel:
       type: object
       required:
@@ -3407,7 +3437,7 @@ components:
           type: string
         name:
           type: string
-          description: Channel slug (unique within namespace)
+          description: Channel slug (unique within project)
         display_name:
           type: string
           description: Human-facing display name
@@ -3437,19 +3467,12 @@ components:
         updated_at:
           type: string
           format: date-time
-    ChannelDataResponse:
-      type: object
-      required:
-      - data
-      properties:
-        data:
-          $ref: '#/components/schemas/Channel'
     ChannelListResponse:
       type: object
       required:
-      - data
+      - items
       properties:
-        data:
+        items:
           type: array
           items:
             $ref: '#/components/schemas/Channel'
@@ -3491,19 +3514,12 @@ components:
         joined_at:
           type: string
           format: date-time
-    ChannelMemberDataResponse:
-      type: object
-      required:
-      - data
-      properties:
-        data:
-          $ref: '#/components/schemas/ChannelMember'
     ChannelMemberListResponse:
       type: object
       required:
-      - data
+      - items
       properties:
-        data:
+        items:
           type: array
           items:
             $ref: '#/components/schemas/ChannelMember'
@@ -3516,6 +3532,7 @@ components:
       required:
       - id
       - channel_id
+      - sender_type
       - sender_id
       - type
       - content
@@ -3525,9 +3542,15 @@ components:
           type: string
         channel_id:
           type: string
+        sender_type:
+          $ref: '#/components/schemas/ChannelMessageSenderType'
         sender_id:
           type: string
           description: ID of the message sender (user or agent)
+        sender_session_id:
+          type: string
+          nullable: true
+          description: Live agent session that sent the message when applicable
         display:
           type: string
           enum:
@@ -3537,7 +3560,7 @@ components:
           description: Rendering layout mode
         type:
           type: string
-          description: Dot-namespaced message type (e.g. user.message, ai.response)
+          description: Dot-projectd message type (e.g. user.message, ai.response)
         content:
           type: string
           description: Message content (markdown)
@@ -3562,19 +3585,12 @@ components:
         created_at:
           type: string
           format: date-time
-    ChannelMessageDataResponse:
-      type: object
-      required:
-      - data
-      properties:
-        data:
-          $ref: '#/components/schemas/ChannelMessage'
     ChannelMessageListResponse:
       type: object
       required:
-      - data
+      - items
       properties:
-        data:
+        items:
           type: array
           items:
             $ref: '#/components/schemas/ChannelMessage'
@@ -3641,6 +3657,12 @@ components:
       required:
       - content
       properties:
+        sender_agent_id:
+          type: string
+          description: Durable agent identity to attribute the message to.
+        sender_session_id:
+          type: string
+          description: Live agent session to attribute the message to.
         content:
           type: string
           description: Message content (markdown)
@@ -3655,7 +3677,7 @@ components:
         type:
           type: string
           default: user.message
-          description: Dot-namespaced message type
+          description: Dot-projectd message type
         reply_to:
           type: string
           description: Parent message ID for threading
@@ -3688,6 +3710,9 @@ components:
           type: string
           description: ID of the user who performed the action, when a human user
             is attributable
+        project_id:
+          type: string
+          description: Project ID when the audited resource is project-scoped
         actor_type:
           type: string
           description: Durable actor type that performed the action
@@ -3733,7 +3758,7 @@ components:
       - data
       - has_more
       properties:
-        data:
+        items:
           type: array
           items:
             $ref: '#/components/schemas/AuditLogEntry'
@@ -3769,6 +3794,8 @@ components:
           type: array
           items:
             type: string
+        project_id:
+          type: string
         service_account_id:
           type: string
         expires_at:
@@ -3783,13 +3810,6 @@ components:
         updated_at:
           type: string
           format: date-time
-    APIKeyDataResponse:
-      type: object
-      required:
-      - data
-      properties:
-        data:
-          $ref: '#/components/schemas/APIKey'
     APIKeyCreateResult:
       type: object
       required:
@@ -3817,6 +3837,8 @@ components:
           type: array
           items:
             type: string
+        project_id:
+          type: string
         service_account_id:
           type: string
         expires_at:
@@ -3834,19 +3856,12 @@ components:
         key:
           type: string
           description: The raw API key (shown only once)
-    APIKeyCreateResultDataResponse:
-      type: object
-      required:
-      - data
-      properties:
-        data:
-          $ref: '#/components/schemas/APIKeyCreateResult'
     APIKeyListResponse:
       type: object
       required:
-      - data
+      - items
       properties:
-        data:
+        items:
           type: array
           items:
             $ref: '#/components/schemas/APIKey'
@@ -3872,6 +3887,26 @@ components:
         expires_at:
           type: string
           format: date-time
+    AuthContext:
+      type: object
+      required:
+      - user_id
+      - auth_type
+      - is_admin
+      properties:
+        user_id:
+          type: string
+        org_id:
+          type: string
+        role:
+          type: string
+          description: Org member role (owner, admin, member) — empty for API-key
+            auth
+        auth_type:
+          type: string
+          description: How the caller authenticated (clerk, api_key, cli_token)
+        is_admin:
+          type: boolean
     ConfirmDeviceCodeRequest:
       type: object
       required:
@@ -3932,9 +3967,9 @@ components:
     CLICredentialListResponse:
       type: object
       required:
-      - data
+      - items
       properties:
-        data:
+        items:
           type: array
           items:
             $ref: '#/components/schemas/CLICredential'
@@ -4359,11 +4394,6 @@ components:
       properties:
         id:
           type: string
-        namespace_id:
-          type: string
-        queue:
-          type: string
-          description: Default queue name for runs of this workflow.
         name:
           type: string
         slug:
@@ -4386,20 +4416,13 @@ components:
         updated_at:
           type: string
           format: date-time
-    WorkflowDefinitionDataResponse:
-      type: object
-      required:
-      - data
-      properties:
-        data:
-          $ref: '#/components/schemas/WorkflowDefinition'
     WorkflowDefinitionListResponse:
       type: object
       required:
       - data
       - has_more
       properties:
-        data:
+        items:
           type: array
           items:
             $ref: '#/components/schemas/WorkflowDefinition'
@@ -4419,11 +4442,6 @@ components:
           type: string
         description:
           type: string
-        namespace_id:
-          type: string
-        queue:
-          type: string
-          description: Default queue for runs of this workflow. Defaults to "default".
         published_as_tool:
           type: boolean
           description: When true, expose this workflow as a callable tool via /api/tools.
@@ -4436,8 +4454,6 @@ components:
           type: string
         description:
           type: string
-        queue:
-          type: string
         published_as_tool:
           type: boolean
           description: When true, expose this workflow as a callable tool via /api/tools.
@@ -4446,14 +4462,10 @@ components:
     WorkflowVersion:
       type: object
       required:
-      - id
       - version
-      - spec
       - created_by
       - created_at
       properties:
-        id:
-          type: string
         version:
           type: integer
         spec:
@@ -4466,9 +4478,9 @@ components:
     WorkflowVersionListResponse:
       type: object
       required:
-      - data
+      - items
       properties:
-        data:
+        items:
           type: array
           items:
             $ref: '#/components/schemas/WorkflowVersion'
@@ -4484,9 +4496,6 @@ components:
       type: object
       required:
       - id
-      - definition_id
-      - definition_version_id
-      - definition_version
       - workflow_name
       - status
       - attempt
@@ -4495,18 +4504,29 @@ components:
       properties:
         id:
           type: string
-        namespace_id:
-          type: string
         queue:
           type: string
         parent_run_id:
           type: string
         definition_id:
           type: string
-        definition_version_id:
-          type: string
+          description: 'ID of the workflow definition this run was started from.
+
+            Empty for ephemeral runs started from an inline spec.
+
+            '
         definition_version:
           type: integer
+          description: Zero for ephemeral runs.
+        ephemeral:
+          type: boolean
+          description: 'True when the run was started from an inline spec rather
+
+            than a saved workflow definition. Equivalent to
+
+            `definition_id == ""`.
+
+            '
         workflow_name:
           type: string
         status:
@@ -4553,20 +4573,13 @@ components:
         updated_at:
           type: string
           format: date-time
-    WorkflowRunDataResponse:
-      type: object
-      required:
-      - data
-      properties:
-        data:
-          $ref: '#/components/schemas/WorkflowRun'
     WorkflowRunListResponse:
       type: object
       required:
       - data
       - has_more
       properties:
-        data:
+        items:
           type: array
           items:
             $ref: '#/components/schemas/WorkflowRun'
@@ -4585,6 +4598,8 @@ components:
       - $ref: '#/components/schemas/WorkflowRun'
       - type: object
         properties:
+          spec:
+            $ref: '#/components/schemas/WorkflowSpec'
           result_b64:
             type: string
             description: Base64-encoded terminal result blob
@@ -4592,23 +4607,36 @@ components:
             type: array
             items:
               $ref: '#/components/schemas/Job'
-    WorkflowRunDetailDataResponse:
-      type: object
-      required:
-      - data
-      properties:
-        data:
-          $ref: '#/components/schemas/WorkflowRunDetail'
     StartRunRequest:
       type: object
+      description: 'Start a workflow run. Provide exactly one of `definition_id` or
+
+        `spec` — they are mutually exclusive. When both are absent on
+
+        the path-less `POST /projects/{project}/runs` endpoint, or when both
+
+        are present, the request is rejected with 400. On the
+
+        definition-bound endpoint (`POST /projects/{project}/workflows/{id}/runs`)
+
+        `definition_id` is implied by the path and `spec` is forbidden.
+
+        '
       properties:
-        namespace_id:
+        definition_id:
           type: string
+          description: 'ID of an existing workflow definition to run. Mutually
+
+            exclusive with `spec`. On the definition-bound path this is
+
+            ignored (the path segment wins) but must not conflict.
+
+            '
+        spec:
+          $ref: '#/components/schemas/WorkflowSpec'
         queue:
           type: string
-          description: 'Queue name to enqueue the run on. Defaults to the
-
-            workflow definition''s queue, then "default".
+          description: 'Queue name to enqueue the run on. Defaults to "default".
 
             '
         callback_url:
@@ -4667,9 +4695,9 @@ components:
     ActionLogListResponse:
       type: object
       required:
-      - data
+      - items
       properties:
-        data:
+        items:
           type: array
           items:
             $ref: '#/components/schemas/ActionLogEntry'
@@ -4677,7 +4705,6 @@ components:
       type: object
       required:
       - id
-      - namespace_id
       - run_id
       - step_name
       - action
@@ -4690,8 +4717,6 @@ components:
       - updated_at
       properties:
         id:
-          type: string
-        namespace_id:
           type: string
         run_id:
           type: string
@@ -4711,6 +4736,10 @@ components:
         status:
           type: string
         claimed_by:
+          type: string
+        agent_id:
+          type: string
+        agent_session_id:
           type: string
         claimed_at:
           type: string
@@ -4736,9 +4765,9 @@ components:
     JobListResponse:
       type: object
       required:
-      - data
+      - items
       properties:
-        data:
+        items:
           type: array
           items:
             $ref: '#/components/schemas/Job'
@@ -4766,13 +4795,6 @@ components:
           type: string
         name:
           type: string
-    RunSignalDataResponse:
-      type: object
-      required:
-      - data
-      properties:
-        data:
-          $ref: '#/components/schemas/RunSignal'
     BulkRunRequest:
       type: object
       required:
@@ -4796,13 +4818,6 @@ components:
           additionalProperties:
             type: string
           description: Map of run_id -> error message for per-run failures.
-    BulkRunDataResponse:
-      type: object
-      required:
-      - data
-      properties:
-        data:
-          $ref: '#/components/schemas/BulkRunResult'
     ActionAnnotations:
       type: object
       properties:
@@ -4858,7 +4873,6 @@ components:
       required:
       - id
       - org_id
-      - namespace_id
       - name
       - endpoint_url
       - created_at
@@ -4867,8 +4881,6 @@ components:
         id:
           type: string
         org_id:
-          type: string
-        namespace_id:
           type: string
         name:
           type: string
@@ -4895,20 +4907,13 @@ components:
         updated_at:
           type: string
           format: date-time
-    ActionDataResponse:
-      type: object
-      required:
-      - data
-      properties:
-        data:
-          $ref: '#/components/schemas/Action'
     ActionListResponse:
       type: object
       required:
       - data
       - has_more
       properties:
-        data:
+        items:
           type: array
           items:
             $ref: '#/components/schemas/Action'
@@ -4923,13 +4928,6 @@ components:
       properties:
         signing_secret:
           type: string
-    RotateSecretDataResponse:
-      type: object
-      required:
-      - data
-      properties:
-        data:
-          $ref: '#/components/schemas/RotateSecretResult'
     ActionCatalogEntry:
       type: object
       required:
@@ -4960,19 +4958,12 @@ components:
         endpoint_url:
           type: string
           format: uri
-    ActionCatalogDataResponse:
-      type: object
-      required:
-      - data
-      properties:
-        data:
-          $ref: '#/components/schemas/ActionCatalogEntry'
     ActionCatalogListResponse:
       type: object
       required:
-      - data
+      - items
       properties:
-        data:
+        items:
           type: array
           items:
             $ref: '#/components/schemas/ActionCatalogEntry'
@@ -5023,7 +5014,7 @@ components:
       - data
       - has_more
       properties:
-        data:
+        items:
           type: array
           items:
             $ref: '#/components/schemas/ActionAuditLogEntry'
@@ -5038,6 +5029,12 @@ components:
       properties:
         worker_id:
           type: string
+        agent_id:
+          type: string
+          description: Durable agent identity the worker is acting on behalf of.
+        agent_session_id:
+          type: string
+          description: Live agent session the worker is acting on behalf of.
         worker_name:
           type: string
         worker_version:
@@ -5072,7 +5069,6 @@ components:
       required:
       - job_id
       - run_id
-      - namespace_id
       - workflow_name
       - step_name
       - action
@@ -5084,13 +5080,15 @@ components:
           type: string
         run_id:
           type: string
-        namespace_id:
-          type: string
         workflow_name:
           type: string
         step_name:
           type: string
         action:
+          type: string
+        agent_id:
+          type: string
+        agent_session_id:
           type: string
         parameters:
           type: object
@@ -5119,13 +5117,6 @@ components:
           type: boolean
         directives:
           $ref: '#/components/schemas/JobHeartbeatDirectives'
-    JobClaimDataResponse:
-      type: object
-      required:
-      - data
-      properties:
-        data:
-          $ref: '#/components/schemas/JobClaim'
     JobFenceRequest:
       type: object
       required:
@@ -5136,13 +5127,6 @@ components:
           type: string
         attempt:
           type: integer
-    JobHeartbeatDataResponse:
-      type: object
-      required:
-      - data
-      properties:
-        data:
-          $ref: '#/components/schemas/JobHeartbeat'
     JobCompleteRequest:
       type: object
       required:
@@ -5191,13 +5175,57 @@ components:
           - type: number
           - type: integer
           - type: boolean
-    RunActionResultDataResponse:
+    JobEventsRequest:
       type: object
       required:
-      - data
+      - worker_id
+      - attempt
+      - events
+      description: 'Fenced batch of custom run events published by the worker
+
+        holding a job''s lease. The fence is per-request: every event in
+
+        `events` is published under the same `worker_id` + `attempt`.
+
+        '
       properties:
-        data:
-          $ref: '#/components/schemas/RunActionResult'
+        worker_id:
+          type: string
+        attempt:
+          type: integer
+        events:
+          type: array
+          minItems: 1
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/JobEventEntry'
+    JobEventEntry:
+      type: object
+      required:
+      - type
+      - payload
+      properties:
+        type:
+          type: string
+          minLength: 1
+          maxLength: 64
+          pattern: ^[a-zA-Z0-9_.-]+$
+          description: 'Caller-chosen event type identifier. The `mobius.` prefix
+            is
+
+            reserved for server-emitted well-known kinds.
+
+            '
+        payload:
+          type: object
+          additionalProperties: true
+          description: 'Free-form JSON payload. Bounded by the server-side byte
+
+            limit (default 16 KiB); oversize events are rejected with
+
+            413.
+
+            '
     ActorRef:
       type: object
       required:
@@ -5491,13 +5519,6 @@ components:
             $ref: '#/components/schemas/InteractionPartialResponse'
           nullable: true
           description: Per-member responses for all_members routing
-    InteractionDataResponse:
-      type: object
-      required:
-      - data
-      properties:
-        data:
-          $ref: '#/components/schemas/Interaction'
     TriggerKind:
       type: string
       enum:
@@ -5534,7 +5555,6 @@ components:
       required:
       - id
       - org_id
-      - namespace_id
       - name
       - kind
       - concurrency_policy
@@ -5545,8 +5565,6 @@ components:
         id:
           type: string
         org_id:
-          type: string
-        namespace_id:
           type: string
         name:
           type: string
@@ -5580,20 +5598,13 @@ components:
         updated_at:
           type: string
           format: date-time
-    TriggerDataResponse:
-      type: object
-      required:
-      - data
-      properties:
-        data:
-          $ref: '#/components/schemas/Trigger'
     TriggerListResponse:
       type: object
       required:
       - data
       - has_more
       properties:
-        data:
+        items:
           type: array
           items:
             $ref: '#/components/schemas/Trigger'
@@ -5640,7 +5651,7 @@ components:
       - data
       - has_more
       properties:
-        data:
+        items:
           type: array
           items:
             $ref: '#/components/schemas/TriggerFire'
@@ -5715,13 +5726,13 @@ components:
     WorkerListResponse:
       type: object
       required:
-      - data
+      - items
       properties:
-        data:
+        items:
           type: array
           items:
             $ref: '#/components/schemas/Worker'
-    Namespace:
+    Project:
       type: object
       required:
       - id
@@ -5746,23 +5757,16 @@ components:
         updated_at:
           type: string
           format: date-time
-    NamespaceDataResponse:
+    ProjectListResponse:
       type: object
       required:
-      - data
+      - items
       properties:
-        data:
-          $ref: '#/components/schemas/Namespace'
-    NamespaceListResponse:
-      type: object
-      required:
-      - data
-      properties:
-        data:
+        items:
           type: array
           items:
-            $ref: '#/components/schemas/Namespace'
-    CreateNamespaceRequest:
+            $ref: '#/components/schemas/Project'
+    CreateProjectRequest:
       type: object
       required:
       - name
@@ -5773,7 +5777,7 @@ components:
           type: string
         description:
           type: string
-    UpdateNamespaceRequest:
+    UpdateProjectRequest:
       type: object
       properties:
         name:
@@ -5792,7 +5796,6 @@ components:
       required:
       - id
       - org_id
-      - namespace_id
       - name
       - slug
       - enabled
@@ -5806,8 +5809,6 @@ components:
         id:
           type: string
         org_id:
-          type: string
-        namespace_id:
           type: string
         name:
           type: string
@@ -5828,20 +5829,13 @@ components:
         updated_at:
           type: string
           format: date-time
-    WebhookDataResponse:
-      type: object
-      required:
-      - data
-      properties:
-        data:
-          $ref: '#/components/schemas/Webhook'
     WebhookListResponse:
       type: object
       required:
       - data
       - has_more
       properties:
-        data:
+        items:
           type: array
           items:
             $ref: '#/components/schemas/Webhook'
@@ -5887,7 +5881,7 @@ components:
       - data
       - has_more
       properties:
-        data:
+        items:
           type: array
           items:
             $ref: '#/components/schemas/WebhookEvent'
@@ -5959,20 +5953,13 @@ components:
         updated_at:
           type: string
           format: date-time
-    IntegrationDataResponse:
-      type: object
-      required:
-      - data
-      properties:
-        data:
-          $ref: '#/components/schemas/Integration'
     IntegrationListResponse:
       type: object
       required:
       - data
       - has_more
       properties:
-        data:
+        items:
           type: array
           items:
             $ref: '#/components/schemas/Integration'
@@ -6003,6 +5990,22 @@ components:
           additionalProperties: true
         status:
           $ref: '#/components/schemas/IntegrationStatus'
+    CopyIntegrationRequest:
+      type: object
+      required:
+      - source_project_id
+      - source_integration_id
+      properties:
+        source_project_id:
+          type: string
+          description: ID of the project the integration is copied from.
+        source_integration_id:
+          type: string
+          description: ID of the integration to copy.
+        name:
+          type: string
+          description: Optional new name for the copied integration. Defaults to the
+            source name.
     BillingSubscription:
       type: object
       required:
@@ -6065,13 +6068,6 @@ components:
         updated_at:
           type: string
           format: date-time
-    BillingSubscriptionDataResponse:
-      type: object
-      required:
-      - data
-      properties:
-        data:
-          $ref: '#/components/schemas/BillingSubscription'
     BillingPlan:
       type: object
       required:
@@ -6108,9 +6104,9 @@ components:
     BillingPlanListResponse:
       type: object
       required:
-      - data
+      - items
       properties:
-        data:
+        items:
           type: array
           items:
             $ref: '#/components/schemas/BillingPlan'
@@ -6158,13 +6154,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/BillingUsageKeySummary'
-    BillingUsageDataResponse:
-      type: object
-      required:
-      - data
-      properties:
-        data:
-          $ref: '#/components/schemas/BillingUsageSummary'
     Invoice:
       type: object
       required:
@@ -6197,9 +6186,9 @@ components:
     InvoiceListResponse:
       type: object
       required:
-      - data
+      - items
       properties:
-        data:
+        items:
           type: array
           items:
             $ref: '#/components/schemas/Invoice'
@@ -6231,13 +6220,6 @@ components:
         url:
           type: string
           format: uri
-    BillingURLResultDataResponse:
-      type: object
-      required:
-      - data
-      properties:
-        data:
-          $ref: '#/components/schemas/BillingURLResult'
     UpdateBillingLimitsRequest:
       type: object
       properties:
@@ -6265,13 +6247,6 @@ components:
           type: string
           description: The user's org display name (present only when completed is
             true)
-    OnboardingStatusDataResponse:
-      type: object
-      required:
-      - data
-      properties:
-        data:
-          $ref: '#/components/schemas/OnboardingStatus'
     OnboardingResult:
       type: object
       required:
@@ -6284,14 +6259,7 @@ components:
         org_name:
           type: string
           description: Display name of the org
-    OnboardingResultDataResponse:
-      type: object
-      required:
-      - data
-      properties:
-        data:
-          $ref: '#/components/schemas/OnboardingResult'
-    AdminMetrics:
+    ProjectMetrics:
       type: object
       required:
       - generated_at
@@ -6306,7 +6274,6 @@ components:
       - active_workers
       - stale_workers
       - status_breakdown
-      - live_subscribers
       properties:
         generated_at:
           type: string
@@ -6339,72 +6306,6 @@ components:
           type: object
           additionalProperties:
             type: integer
-        live_subscribers:
-          type: integer
-    AdminMetricsDataResponse:
-      type: object
-      required:
-      - data
-      properties:
-        data:
-          $ref: '#/components/schemas/AdminMetrics'
-    AdminWorker:
-      type: object
-      required:
-      - worker_id
-      - stale
-      properties:
-        worker_id:
-          type: string
-        name:
-          type: string
-        version:
-          type: string
-        last_seen_at:
-          type: string
-          format: date-time
-        capabilities:
-          type: array
-          items:
-            type: string
-        stale:
-          type: boolean
-    AdminWorkerListResponse:
-      type: object
-      required:
-      - data
-      properties:
-        data:
-          type: array
-          items:
-            $ref: '#/components/schemas/AdminWorker'
-    AuthContext:
-      type: object
-      required:
-      - user_id
-      - auth_type
-      - is_admin
-      properties:
-        user_id:
-          type: string
-        org_id:
-          type: string
-        role:
-          type: string
-          description: Org member role (owner, admin, member) — empty for API-key
-            auth
-        auth_type:
-          type: string
-          description: How the caller authenticated (clerk, api_key, cli_token)
-        is_admin:
-          type: boolean
-    AuthContextDataResponse:
-      type: object
-      required:
-      - data
-      properties:
-        data:
-          $ref: '#/components/schemas/AuthContext'
     PreviewPermissionsRequest:
       type: object
       properties:
@@ -6440,7 +6341,7 @@ components:
           type: string
         role_name:
           type: string
-        namespace_id:
+        project_id:
           type: string
     PermissionsAssignmentProposal:
       type: object
@@ -6461,7 +6362,7 @@ components:
           type: string
         role_name:
           type: string
-        namespace_id:
+        project_id:
           type: string
     PermissionsPlan:
       type: object
@@ -6475,13 +6376,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/PermissionsAssignmentProposal'
-    PermissionsPlanDataResponse:
-      type: object
-      required:
-      - data
-      properties:
-        data:
-          $ref: '#/components/schemas/PermissionsPlan'
     PermissionsState:
       type: object
       required:
@@ -6489,13 +6383,6 @@ components:
       properties:
         permissions_enabled:
           type: boolean
-    PermissionsStateDataResponse:
-      type: object
-      required:
-      - data
-      properties:
-        data:
-          $ref: '#/components/schemas/PermissionsState'
     Role:
       type: object
       required:
@@ -6510,6 +6397,8 @@ components:
         id:
           type: string
         org_id:
+          type: string
+        project_id:
           type: string
         name:
           type: string
@@ -6553,7 +6442,7 @@ components:
           type: string
         role_name:
           type: string
-        namespace_id:
+        project_id:
           type: string
         granted_by_actor_type:
           type: string
@@ -6562,35 +6451,21 @@ components:
         created_at:
           type: string
           format: date-time
-    RoleDataResponse:
-      type: object
-      required:
-      - data
-      properties:
-        data:
-          $ref: '#/components/schemas/Role'
     RoleListResponse:
       type: object
       required:
-      - data
+      - items
       properties:
-        data:
+        items:
           type: array
           items:
             $ref: '#/components/schemas/Role'
-    RoleAssignmentDataResponse:
-      type: object
-      required:
-      - data
-      properties:
-        data:
-          $ref: '#/components/schemas/RoleAssignment'
     RoleAssignmentListResponse:
       type: object
       required:
-      - data
+      - items
       properties:
-        data:
+        items:
           type: array
           items:
             $ref: '#/components/schemas/RoleAssignment'
@@ -6600,6 +6475,8 @@ components:
       - name
       - permissions
       properties:
+        project_id:
+          type: string
         name:
           type: string
         description:
@@ -6611,6 +6488,8 @@ components:
     UpdateRoleRequest:
       type: object
       properties:
+        project_id:
+          type: string
         name:
           type: string
         description:
@@ -6636,7 +6515,7 @@ components:
           type: string
         role_name:
           type: string
-        namespace_id:
+        project_id:
           type: string
     User:
       type: object
@@ -6662,13 +6541,6 @@ components:
         updated_at:
           type: string
           format: date-time
-    UserDataResponse:
-      type: object
-      required:
-      - data
-      properties:
-        data:
-          $ref: '#/components/schemas/User'
     Org:
       type: object
       required:
@@ -6693,19 +6565,12 @@ components:
         updated_at:
           type: string
           format: date-time
-    OrgDataResponse:
-      type: object
-      required:
-      - data
-      properties:
-        data:
-          $ref: '#/components/schemas/Org'
     OrgListResponse:
       type: object
       required:
-      - data
+      - items
       properties:
-        data:
+        items:
           type: array
           items:
             $ref: '#/components/schemas/Org'
@@ -6766,19 +6631,12 @@ components:
           format: date-time
         user:
           $ref: '#/components/schemas/User'
-    OrgMemberDataResponse:
-      type: object
-      required:
-      - data
-      properties:
-        data:
-          $ref: '#/components/schemas/OrgMember'
     OrgMemberListResponse:
       type: object
       required:
-      - data
+      - items
       properties:
-        data:
+        items:
           type: array
           items:
             $ref: '#/components/schemas/OrgMember'
@@ -6814,9 +6672,9 @@ components:
     InteractionListResponse:
       type: object
       required:
-      - data
+      - items
       properties:
-        data:
+        items:
           type: array
           items:
             $ref: '#/components/schemas/Interaction'
@@ -6885,13 +6743,6 @@ components:
         authorize_url:
           type: string
           description: The Slack OAuth authorize URL to redirect the user to.
-    SlackInstallDataResponse:
-      type: object
-      required:
-      - data
-      properties:
-        data:
-          $ref: '#/components/schemas/SlackInstall'
     Group:
       type: object
       required:
@@ -6909,7 +6760,7 @@ components:
           type: string
         slug:
           type: string
-          description: URL-safe identifier, unique within the org
+          description: URL-safe identifier, unique within the project
         name:
           type: string
           description: Human-readable display name
@@ -6927,19 +6778,12 @@ components:
         updated_at:
           type: string
           format: date-time
-    GroupDataResponse:
-      type: object
-      required:
-      - data
-      properties:
-        data:
-          $ref: '#/components/schemas/Group'
     GroupListResponse:
       type: object
       required:
-      - data
+      - items
       properties:
-        data:
+        items:
           type: array
           items:
             $ref: '#/components/schemas/Group'
@@ -6953,19 +6797,12 @@ components:
           member_count:
             type: integer
             description: Current number of members
-    GroupWithCountDataResponse:
-      type: object
-      required:
-      - data
-      properties:
-        data:
-          $ref: '#/components/schemas/GroupWithCount'
     GroupWithCountListResponse:
       type: object
       required:
-      - data
+      - items
       properties:
-        data:
+        items:
           type: array
           items:
             $ref: '#/components/schemas/GroupWithCount'
@@ -6996,19 +6833,12 @@ components:
         added_at:
           type: string
           format: date-time
-    GroupMemberDataResponse:
-      type: object
-      required:
-      - data
-      properties:
-        data:
-          $ref: '#/components/schemas/GroupMember'
     GroupMemberListResponse:
       type: object
       required:
-      - data
+      - items
       properties:
-        data:
+        items:
           type: array
           items:
             $ref: '#/components/schemas/GroupMember'
@@ -7077,7 +6907,6 @@ components:
       required:
       - id
       - org_id
-      - namespace_id
       - service_account_id
       - name
       - display_name
@@ -7089,8 +6918,6 @@ components:
         id:
           type: string
         org_id:
-          type: string
-        namespace_id:
           type: string
         service_account_id:
           type: string
@@ -7123,7 +6950,6 @@ components:
       required:
       - id
       - org_id
-      - namespace_id
       - agent_id
       - status
       - transport
@@ -7133,8 +6959,6 @@ components:
         id:
           type: string
         org_id:
-          type: string
-        namespace_id:
           type: string
         agent_id:
           type: string
@@ -7163,35 +6987,21 @@ components:
         updated_at:
           type: string
           format: date-time
-    AgentDataResponse:
-      type: object
-      required:
-      - data
-      properties:
-        data:
-          $ref: '#/components/schemas/Agent'
     AgentListResponse:
       type: object
       required:
-      - data
+      - items
       properties:
-        data:
+        items:
           type: array
           items:
             $ref: '#/components/schemas/Agent'
-    AgentSessionDataResponse:
-      type: object
-      required:
-      - data
-      properties:
-        data:
-          $ref: '#/components/schemas/AgentSession'
     AgentSessionListResponse:
       type: object
       required:
-      - data
+      - items
       properties:
-        data:
+        items:
           type: array
           items:
             $ref: '#/components/schemas/AgentSession'
@@ -7283,19 +7093,12 @@ components:
         updated_at:
           type: string
           format: date-time
-    ServiceAccountDataResponse:
-      type: object
-      required:
-      - data
-      properties:
-        data:
-          $ref: '#/components/schemas/ServiceAccount'
     ServiceAccountListResponse:
       type: object
       required:
-      - data
+      - items
       properties:
-        data:
+        items:
           type: array
           items:
             $ref: '#/components/schemas/ServiceAccount'
@@ -7318,8 +7121,6 @@ components:
         role_id:
           type: string
         role_name:
-          type: string
-        namespace_id:
           type: string
     UpdateServiceAccountRequest:
       type: object
@@ -7356,9 +7157,9 @@ components:
     ToolDefinitionListResponse:
       type: object
       required:
-      - data
+      - items
       properties:
-        data:
+        items:
           type: array
           items:
             $ref: '#/components/schemas/ToolDefinition'
@@ -7405,17 +7206,7 @@ components:
         error:
           type: string
           description: Error message. Present when status is "failed".
-    ToolRunDataResponse:
-      type: object
-      required:
-      - data
-      properties:
-        data:
-          $ref: '#/components/schemas/ToolRun'
 x-tagGroups:
-- name: System Endpoints
-  tags:
-  - system
 - name: Channels
   tags:
   - channels
@@ -7425,9 +7216,6 @@ x-tagGroups:
 - name: API Keys
   tags:
   - api-keys
-- name: Authentication Endpoints
-  tags:
-  - auth
 - name: Workflows
   tags:
   - workflows
@@ -7444,36 +7232,21 @@ x-tagGroups:
 - name: Workers
   tags:
   - workers
-- name: Namespaces
+- name: Projects
   tags:
-  - namespaces
+  - projects
 - name: Webhooks
   tags:
   - webhooks
 - name: Integrations
   tags:
   - integrations
-- name: Billing Endpoints
+- name: Metrics
   tags:
-  - billing
-- name: Onboarding Endpoints
-  tags:
-  - onboarding
-- name: Admin Endpoints
-  tags:
-  - admin
-- name: Permissions Rollout
-  tags:
-  - permissions
+  - metrics
 - name: Roles
   tags:
   - roles
-- name: User Endpoints
-  tags:
-  - users
-- name: Organization Endpoints
-  tags:
-  - orgs
 - name: Interactions
   tags:
   - interactions
@@ -7486,9 +7259,6 @@ x-tagGroups:
 - name: Agents
   tags:
   - agents
-- name: Service Accounts
-  tags:
-  - service-accounts
 - name: Tools
   tags:
   - tools

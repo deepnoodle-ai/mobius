@@ -19,7 +19,8 @@ func registerSlackCommands(app *cli.App) {
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
-			resp, err := client.DisconnectSlackWithResponse(ctx.Context())
+			p0 := ctx.String("project")
+			resp, err := client.DisconnectSlackWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
 			}
@@ -31,7 +32,8 @@ func registerSlackCommands(app *cli.App) {
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
-			resp, err := client.StartSlackInstallWithResponse(ctx.Context())
+			p0 := ctx.String("project")
+			resp, err := client.StartSlackInstallWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
 			}

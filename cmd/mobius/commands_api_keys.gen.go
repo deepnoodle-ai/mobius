@@ -16,6 +16,27 @@ import (
 // registerApiKeysCommands registers every generated subcommand in the "api-keys" group.
 func registerApiKeysCommands(app *cli.App) {
 	apiKeysGrp := app.Group("api-keys")
+	apiKeysGrp.Alias("api-key")
+	apiKeysGrp.Command("create-a-pi-key").
+		Description("Create a project-pinned API key").
+		Flags(
+			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin)"),
+		).
+		Use(cli.RequireFlags("api-key")).
+		Run(func(ctx *cli.Context) error {
+			client := clientFromContext(ctx).RawClient()
+			p0 := ctx.String("project")
+			var body api.CreateProjectAPIKeyJSONRequestBody
+			if err := readJSONBody(ctx, &body); err != nil {
+				return err
+			}
+			resp, err := client.CreateProjectAPIKeyWithResponse(ctx.Context(), p0, body)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, resp.StatusCode(), resp.Body)
+		})
+
 	apiKeysGrp.Command("create-key").
 		Description("Create an API key").
 		Flags(
@@ -29,6 +50,21 @@ func registerApiKeysCommands(app *cli.App) {
 				return err
 			}
 			resp, err := client.CreateAPIKeyWithResponse(ctx.Context(), body)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, resp.StatusCode(), resp.Body)
+		})
+
+	apiKeysGrp.Command("get-a-pi-key").
+		Description("Get a project-pinned API key").
+		Args("id").
+		Use(cli.RequireFlags("api-key")).
+		Run(func(ctx *cli.Context) error {
+			client := clientFromContext(ctx).RawClient()
+			p0 := ctx.String("project")
+			p1 := ctx.Arg(0)
+			resp, err := client.GetProjectAPIKeyWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}
@@ -49,12 +85,40 @@ func registerApiKeysCommands(app *cli.App) {
 			return printResponse(ctx, resp.StatusCode(), resp.Body)
 		})
 
+	apiKeysGrp.Command("list-a-pi-keys").
+		Description("List project-pinned API keys").
+		Use(cli.RequireFlags("api-key")).
+		Run(func(ctx *cli.Context) error {
+			client := clientFromContext(ctx).RawClient()
+			p0 := ctx.String("project")
+			resp, err := client.ListProjectAPIKeysWithResponse(ctx.Context(), p0)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, resp.StatusCode(), resp.Body)
+		})
+
 	apiKeysGrp.Command("list-keys").
 		Description("List API keys").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
 			resp, err := client.ListAPIKeysWithResponse(ctx.Context())
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, resp.StatusCode(), resp.Body)
+		})
+
+	apiKeysGrp.Command("revoke-a-pi-key").
+		Description("Revoke a project-pinned API key").
+		Args("id").
+		Use(cli.RequireFlags("api-key")).
+		Run(func(ctx *cli.Context) error {
+			client := clientFromContext(ctx).RawClient()
+			p0 := ctx.String("project")
+			p1 := ctx.Arg(0)
+			resp, err := client.RevokeProjectAPIKeyWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}

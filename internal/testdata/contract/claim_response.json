@@ -1,17 +1,14 @@
 {
-  "data": {
-    "job_id": "task_01H0000000000000000001",
-    "run_id": "run_01H0000000000000000002",
-    "namespace_id": "ns_01H0000000000000000003",
-    "workflow_name": "charge-customer",
-    "step_name": "charge",
-    "action": "stripe_charge",
-    "parameters": {
-      "amount": 4200,
-      "currency": "usd"
-    },
-    "attempt": 1,
-    "queue": "billing",
-    "heartbeat_interval_seconds": 20
-  }
+  "job_id": "task_01H0000000000000000001",
+  "run_id": "run_01H0000000000000000002",
+  "workflow_name": "charge-customer",
+  "step_name": "charge",
+  "action": "stripe_charge",
+  "parameters": {
+    "amount": 4200,
+    "currency": "usd"
+  },
+  "attempt": 1,
+  "queue": "billing",
+  "heartbeat_interval_seconds": 20
 }

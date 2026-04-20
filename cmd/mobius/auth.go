@@ -319,6 +319,17 @@ func runAuthStatus(ctx *cli.Context) error {
 	return nil
 }
 
+type cliCredential struct {
+	Id         string     `json:"id"`
+	Status     string     `json:"status"`
+	Label      string     `json:"label"`
+	LastUsedAt *time.Time `json:"last_used_at"`
+}
+
+type cliCredentialListResponse struct {
+	Data []cliCredential `json:"data"`
+}
+
 // runAuthList lists the CLI credentials the authenticated user has minted
 // across devices. This hits an authenticated endpoint, so it uses the
 // resolved client (saved credential or explicit key).
@@ -326,20 +337,25 @@ func runAuthList(ctx *cli.Context) error {
 	if !hasAuth(ctx) {
 		return errLoginRequired()
 	}
-	client := clientFromContext(ctx).RawClient()
-	resp, err := client.ListCLICredentialsWithResponse(ctx.Context())
+	resp, err := authAPIGet(ctx, "/cli-credentials")
 	if err != nil {
 		return err
 	}
-	if resp.JSON200 == nil {
-		return fmt.Errorf("list CLI credentials: HTTP %d: %s", resp.StatusCode(), string(resp.Body))
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("list CLI credentials: HTTP %d: %s", resp.StatusCode, string(body))
 	}
-	if len(resp.JSON200.Data) == 0 {
+	var result cliCredentialListResponse
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return fmt.Errorf("list CLI credentials: decode: %w", err)
+	}
+	if len(result.Data) == 0 {
 		ctx.Println("No CLI credentials.")
 		return nil
 	}
 	ctx.Printf("%-28s  %-8s  %-32s  %s\n", "ID", "STATUS", "LABEL", "LAST USED")
-	for _, c := range resp.JSON200.Data {
+	for _, c := range result.Data {
 		lastUsed := "never"
 		if c.LastUsedAt != nil {
 			lastUsed = c.LastUsedAt.Format(time.RFC3339)
@@ -354,13 +370,19 @@ func runAuthRevoke(ctx *cli.Context) error {
 		return errLoginRequired()
 	}
 	id := ctx.Arg(0)
-	client := clientFromContext(ctx).RawClient()
-	resp, err := client.RevokeCLICredentialWithResponse(ctx.Context(), id)
+	req, err := http.NewRequestWithContext(ctx.Context(), http.MethodDelete, authAPIURL(ctx, "/cli-credentials/"+id), nil)
 	if err != nil {
 		return err
 	}
-	if resp.StatusCode() < 200 || resp.StatusCode() >= 300 {
-		return fmt.Errorf("revoke CLI credential: HTTP %d: %s", resp.StatusCode(), string(resp.Body))
+	authAPISetHeaders(ctx, req)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("revoke CLI credential: HTTP %d: %s", resp.StatusCode, string(body))
 	}
 	ctx.Success("Revoked CLI credential %s", id)
 	// If the user revoked the credential they are currently using, the
@@ -370,6 +392,32 @@ func runAuthRevoke(ctx *cli.Context) error {
 		_ = authstore.Delete()
 	}
 	return nil
+}
+
+func authAPIURL(ctx *cli.Context, path string) string {
+	base := strings.TrimRight(ctx.String("api-url"), "/")
+	return base + path
+}
+
+func authAPISetHeaders(ctx *cli.Context, req *http.Request) {
+	key := ctx.String("api-key")
+	if key == "" {
+		if cred, err := authstore.Load(); err == nil && cred != nil {
+			key = cred.Token
+		}
+	}
+	if key != "" {
+		req.Header.Set("Authorization", "Bearer "+key)
+	}
+}
+
+func authAPIGet(ctx *cli.Context, path string) (*http.Response, error) {
+	req, err := http.NewRequestWithContext(ctx.Context(), http.MethodGet, authAPIURL(ctx, path), nil)
+	if err != nil {
+		return nil, err
+	}
+	authAPISetHeaders(ctx, req)
+	return http.DefaultClient.Do(req)
 }
 
 // hasAuth reports whether clientFromContext will have a usable token.

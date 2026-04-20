@@ -16,15 +16,16 @@ import (
 // registerToolsCommands registers every generated subcommand in the "tools" group.
 func registerToolsCommands(app *cli.App) {
 	toolsGrp := app.Group("tools")
+	toolsGrp.Alias("tool")
 	toolsGrp.Command("get-run").
 		Description("Poll for the result of an async tool run").
-		Args("ns", "slug", "run-id").
+		Args("slug", "run-id").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
-			p0 := ctx.Arg(0)
-			p1 := ctx.Arg(1)
-			p2 := ctx.Arg(2)
+			p0 := ctx.String("project")
+			p1 := ctx.Arg(0)
+			p2 := ctx.Arg(1)
 			resp, err := client.GetToolRunWithResponse(ctx.Context(), p0, p1, p2)
 			if err != nil {
 				return err
@@ -46,15 +47,15 @@ func registerToolsCommands(app *cli.App) {
 
 	toolsGrp.Command("run-tool").
 		Description("Invoke a workflow tool").
-		Args("ns", "slug").
+		Args("slug").
 		Flags(
 			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin)"),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
-			p0 := ctx.Arg(0)
-			p1 := ctx.Arg(1)
+			p0 := ctx.String("project")
+			p1 := ctx.Arg(0)
 			var body api.RunToolJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err

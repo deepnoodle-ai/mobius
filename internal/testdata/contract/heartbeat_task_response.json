@@ -1,8 +1,6 @@
 {
-  "data": {
-    "ok": true,
-    "directives": {
-      "should_cancel": true
-    }
+  "ok": true,
+  "directives": {
+    "should_cancel": true
   }
 }

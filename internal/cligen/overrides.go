@@ -40,6 +40,7 @@ var overrides = map[string]Override{
 	// ergonomic `mobius auth list` / `mobius auth revoke` subcommands that
 	// authenticate using the saved credential rather than forcing --api-key.
 	"confirmDeviceCode":   {Skip: true},
+	"getAuthContext":      {Skip: true},
 	"listCLICredentials":  {Skip: true},
 	"revokeCLICredential": {Skip: true},
 

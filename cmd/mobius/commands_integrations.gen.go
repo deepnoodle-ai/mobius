@@ -16,19 +16,41 @@ import (
 // registerIntegrationsCommands registers every generated subcommand in the "integrations" group.
 func registerIntegrationsCommands(app *cli.App) {
 	integrationsGrp := app.Group("integrations")
-	integrationsGrp.Command("create").
-		Description("Create an integration").
+	integrationsGrp.Alias("integration")
+	integrationsGrp.Command("copy-integration").
+		Description("Copy an integration from another project").
 		Flags(
 			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin)"),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
+			p0 := ctx.String("project")
+			var body api.CopyIntegrationJSONRequestBody
+			if err := readJSONBody(ctx, &body); err != nil {
+				return err
+			}
+			resp, err := client.CopyIntegrationWithResponse(ctx.Context(), p0, body)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, resp.StatusCode(), resp.Body)
+		})
+
+	integrationsGrp.Command("create").
+		Description("Create an integration in the project").
+		Flags(
+			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin)"),
+		).
+		Use(cli.RequireFlags("api-key")).
+		Run(func(ctx *cli.Context) error {
+			client := clientFromContext(ctx).RawClient()
+			p0 := ctx.String("project")
 			var body api.CreateIntegrationJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
 			}
-			resp, err := client.CreateIntegrationWithResponse(ctx.Context(), body)
+			resp, err := client.CreateIntegrationWithResponse(ctx.Context(), p0, body)
 			if err != nil {
 				return err
 			}
@@ -41,8 +63,9 @@ func registerIntegrationsCommands(app *cli.App) {
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
-			p0 := ctx.Arg(0)
-			resp, err := client.DeleteIntegrationWithResponse(ctx.Context(), p0)
+			p0 := ctx.String("project")
+			p1 := ctx.Arg(0)
+			resp, err := client.DeleteIntegrationWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}
@@ -55,8 +78,9 @@ func registerIntegrationsCommands(app *cli.App) {
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
-			p0 := ctx.Arg(0)
-			resp, err := client.GetIntegrationWithResponse(ctx.Context(), p0)
+			p0 := ctx.String("project")
+			p1 := ctx.Arg(0)
+			resp, err := client.GetIntegrationWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}
@@ -64,7 +88,7 @@ func registerIntegrationsCommands(app *cli.App) {
 		})
 
 	integrationsGrp.Command("list").
-		Description("List integrations in the org").
+		Description("List integrations in the project").
 		Flags(
 			cli.String("provider", "").Help("provider"),
 			cli.String("status", "").Help("status"),
@@ -74,6 +98,7 @@ func registerIntegrationsCommands(app *cli.App) {
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
+			p0 := ctx.String("project")
 			params := &api.ListIntegrationsParams{}
 			if ctx.IsSet("provider") {
 				v := ctx.String("provider")
@@ -91,7 +116,7 @@ func registerIntegrationsCommands(app *cli.App) {
 				v := ctx.Int("limit")
 				params.Limit = &v
 			}
-			resp, err := client.ListIntegrationsWithResponse(ctx.Context(), params)
+			resp, err := client.ListIntegrationsWithResponse(ctx.Context(), p0, params)
 			if err != nil {
 				return err
 			}
@@ -107,12 +132,13 @@ func registerIntegrationsCommands(app *cli.App) {
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
-			p0 := ctx.Arg(0)
+			p0 := ctx.String("project")
+			p1 := ctx.Arg(0)
 			var body api.UpdateIntegrationJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
 			}
-			resp, err := client.UpdateIntegrationWithResponse(ctx.Context(), p0, body)
+			resp, err := client.UpdateIntegrationWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}

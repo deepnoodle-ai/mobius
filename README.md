@@ -24,7 +24,7 @@ Set your API key:
 
 ```bash
 export MOBIUS_API_KEY=mbx_your_api_key_here
-export MOBIUS_NAMESPACE=default
+export MOBIUS_PROJECT=default
 ```
 
 Check the CLI is working:
@@ -34,7 +34,7 @@ mobius --version
 mobius --help
 ```
 
-Inspect the resources available in your namespace:
+Inspect the resources available in your project:
 
 ```bash
 mobius workflows list
@@ -49,7 +49,7 @@ mobius worker \
     --queues default
 ```
 
-The stock worker registers built-in actions like `print`, `fail`, `json`, `time`, and `random`. Run `mobius worker --help` for the full worker flags. Global flags can also be provided via `MOBIUS_API_URL`, `MOBIUS_API_KEY`, `MOBIUS_NAMESPACE`, and `MOBIUS_LOG_LEVEL`.
+The stock worker registers built-in actions like `print`, `fail`, `json`, `time`, and `random`. Run `mobius worker --help` for the full worker flags. Global flags can also be provided via `MOBIUS_API_URL`, `MOBIUS_API_KEY`, `MOBIUS_PROJECT`, and `MOBIUS_LOG_LEVEL`.
 
 ## Documentation
 

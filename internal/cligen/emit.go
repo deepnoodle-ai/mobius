@@ -27,12 +27,16 @@ type PlannedCommand struct {
 	Body       *BodyArg    // non-nil if method takes a JSONRequestBody
 }
 
-// PathArg is a path parameter surfaced as a positional CLI argument.
+// PathArg is a path parameter surfaced on the CLI. Most path params are
+// positional arguments; some (e.g. "project") are surfaced as global flags
+// on the root app, so the command reads them via ctx.String instead of
+// consuming a positional slot.
 type PathArg struct {
 	GoName   string // signature argument name (e.g. "id")
 	FlagName string // kebab-case CLI flag name (e.g. "id")
 	GoType   string // e.g. "IDParam" or "string"
 	IsInt    bool
+	AsFlag   bool // read from a global flag rather than a positional arg
 }
 
 // QueryBlock captures the *{OpId}Params query-params struct.
@@ -134,12 +138,16 @@ func classifyParams(m *Method, client *ClientInfo, pc *PlannedCommand) (bool, st
 			pc.Body = &BodyArg{GoName: p.Name, TypeName: p.Type}
 		case isSimplePathParam(p.Type, client):
 			kind := underlyingKind(p.Type, client)
-			pc.PathParams = append(pc.PathParams, PathArg{
+			arg := PathArg{
 				GoName:   p.Name,
 				FlagName: toKebab(p.Name),
 				GoType:   p.Type,
 				IsInt:    kind == "int",
-			})
+			}
+			if p.Name == "project" && kind == "string" {
+				arg.AsFlag = true
+			}
+			pc.PathParams = append(pc.PathParams, arg)
 		default:
 			return false, fmt.Sprintf("unsupported parameter type %q", p.Type)
 		}
@@ -351,6 +359,17 @@ func groupFileName(group string) string {
 	return "commands_" + strings.ReplaceAll(group, "-", "_") + ".gen.go"
 }
 
+// singularAlias returns the singular form of a group name when the group name
+// looks like a regular English plural (ending in "s"). It returns "" when no
+// sensible singular alias exists — e.g. for "slack", or group names too short
+// to strip a character from.
+func singularAlias(group string) string {
+	if len(group) < 2 || !strings.HasSuffix(group, "s") {
+		return ""
+	}
+	return group[:len(group)-1]
+}
+
 // groupRegisterFunc returns the registrar function name for a group.
 func groupRegisterFunc(group string) string {
 	// e.g. "api-keys" -> "registerApiKeysCommands"
@@ -376,6 +395,9 @@ func renderGroupFile(group string, cmds []PlannedCommand, description string) ([
 			groupVar(group), group, description)
 	} else {
 		fmt.Fprintf(&body, "\t%s := app.Group(%q)\n", groupVar(group), group)
+	}
+	if alias := singularAlias(group); alias != "" {
+		fmt.Fprintf(&body, "\t%s.Alias(%q)\n", groupVar(group), alias)
 	}
 	for _, c := range cmds {
 		if err := renderCommand(&body, group, c); err != nil {
@@ -459,16 +481,21 @@ func renderCommand(b *bytes.Buffer, group string, c PlannedCommand) error {
 	fmt.Fprintf(b, "\t%s.Command(%q).\n", groupVar(group), c.Command)
 	fmt.Fprintf(b, "\t\tDescription(%q).\n", c.Description)
 
-	// Positional args (path params).
-	if len(c.PathParams) > 0 {
-		var args []string
-		for _, p := range c.PathParams {
-			args = append(args, fmt.Sprintf("%q", p.FlagName))
+	// Positional args (path params that aren't surfaced as flags).
+	var positional []string
+	for _, p := range c.PathParams {
+		if p.AsFlag {
+			continue
 		}
-		fmt.Fprintf(b, "\t\tArgs(%s).\n", strings.Join(args, ", "))
+		positional = append(positional, fmt.Sprintf("%q", p.FlagName))
+	}
+	if len(positional) > 0 {
+		fmt.Fprintf(b, "\t\tArgs(%s).\n", strings.Join(positional, ", "))
 	}
 
-	// Flags (query + body file).
+	// Flags (query + body file). Flag-backed path params like --project are
+	// declared as global flags on the root app, so we don't emit a
+	// per-command flag for them here — the handler reads them via ctx.String.
 	var flags []string
 	if c.QueryBlock != nil {
 		for _, f := range c.QueryBlock.Fields {
@@ -499,13 +526,20 @@ func renderCommand(b *bytes.Buffer, group string, c PlannedCommand) error {
 	fmt.Fprintf(b, "\t\tRun(func(ctx *cli.Context) error {\n")
 	fmt.Fprintf(b, "\t\t\tclient := clientFromContext(ctx).RawClient()\n")
 
-	// Collect path-param locals.
+	// Collect path-param locals. Positional path params consume args in
+	// order; flag-backed ones (e.g. --project) read from their flag.
+	argIdx := 0
 	for i, p := range c.PathParams {
-		if p.IsInt {
-			fmt.Fprintf(b, "\t\t\tp%d, err := parseIntArg(ctx.Arg(%d), %q)\n", i, i, p.FlagName)
+		switch {
+		case p.AsFlag:
+			fmt.Fprintf(b, "\t\t\tp%d := ctx.String(%q)\n", i, p.FlagName)
+		case p.IsInt:
+			fmt.Fprintf(b, "\t\t\tp%d, err := parseIntArg(ctx.Arg(%d), %q)\n", i, argIdx, p.FlagName)
 			fmt.Fprintf(b, "\t\t\tif err != nil { return err }\n")
-		} else {
-			fmt.Fprintf(b, "\t\t\tp%d := ctx.Arg(%d)\n", i, i)
+			argIdx++
+		default:
+			fmt.Fprintf(b, "\t\t\tp%d := ctx.Arg(%d)\n", i, argIdx)
+			argIdx++
 		}
 	}
 

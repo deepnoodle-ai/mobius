@@ -14,7 +14,7 @@
     },
     {
       "file": "claim_response.json",
-      "schema": "JobClaimDataResponse",
+      "schema": "JobClaim",
       "kind": "response",
       "endpoint": "POST /namespaces/{ns}/jobs/claim"
     },
@@ -26,7 +26,7 @@
     },
     {
       "file": "heartbeat_task_response.json",
-      "schema": "JobHeartbeatDataResponse",
+      "schema": "JobHeartbeat",
       "kind": "response",
       "endpoint": "POST /namespaces/{ns}/jobs/{id}/heartbeat"
     },

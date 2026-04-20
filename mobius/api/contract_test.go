@@ -57,12 +57,12 @@ func newForSchema(schema string) (any, bool) {
 	switch schema {
 	case "JobClaimRequest":
 		return &api.JobClaimRequest{}, true
-	case "JobClaimDataResponse":
-		return &api.JobClaimDataResponse{}, true
+	case "JobClaim":
+		return &api.JobClaim{}, true
 	case "JobFenceRequest":
 		return &api.JobFenceRequest{}, true
-	case "JobHeartbeatDataResponse":
-		return &api.JobHeartbeatDataResponse{}, true
+	case "JobHeartbeat":
+		return &api.JobHeartbeat{}, true
 	case "JobCompleteRequest":
 		return &api.JobCompleteRequest{}, true
 	}
