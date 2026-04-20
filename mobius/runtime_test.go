@@ -59,7 +59,7 @@ func newTestClient(t *testing.T, h http.Handler) (*Client, *httptest.Server) {
 	t.Helper()
 	srv := httptest.NewServer(h)
 	t.Cleanup(srv.Close)
-	c := NewClient(WithBaseURL(srv.URL), WithAPIKey("mbx_test"), WithProjectSlug("test-project"))
+	c := NewClient(WithBaseURL(srv.URL), WithAPIKey("mbx_test"), WithProjectHandle("test-project"))
 	return c, srv
 }
 

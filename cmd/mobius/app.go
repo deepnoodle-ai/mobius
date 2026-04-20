@@ -33,7 +33,7 @@ func newApp() *cli.App {
 		cli.String("project", "").
 			Env("MOBIUS_PROJECT").
 			Default("default").
-			Help("Project slug"),
+			Help("Project handle"),
 		cli.String("log-level", "").
 			Env("MOBIUS_LOG_LEVEL").
 			Default("info").
@@ -56,7 +56,7 @@ func clientFromContext(ctx *cli.Context) *mobius.Client {
 	return mobius.NewClient(
 		mobius.WithBaseURL(ctx.String("api-url")),
 		mobius.WithAPIKey(ctx.String("api-key")),
-		mobius.WithProjectSlug(ctx.String("project")),
+		mobius.WithProjectHandle(ctx.String("project")),
 		mobius.WithLogger(logger),
 	)
 }

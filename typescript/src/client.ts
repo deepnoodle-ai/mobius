@@ -9,7 +9,7 @@ import type {
 export interface ClientOptions {
   apiKey: string;
   baseURL?: string;
-  /** Project slug used for all project-scoped operations. */
+  /** Project handle used for all project-scoped operations. */
   project?: string;
   /** Compatibility alias for older callers. */
   namespace?: string;

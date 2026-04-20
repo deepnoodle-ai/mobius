@@ -1538,7 +1538,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/projects/{project}/tools/{slug}/runs": {
+    "/projects/{project}/tools/{handle}/runs": {
         parameters: {
             query?: never;
             header?: never;
@@ -1549,12 +1549,12 @@ export interface paths {
         put?: never;
         /**
          * Invoke a workflow tool
-         * @description Starts a workflow run for the named tool (workflow slug) and waits
+         * @description Starts a workflow run for the named tool (workflow handle) and waits
          *     for it to complete up to `timeout_seconds` (default 30s, max 120s).
          *     Returns the run output directly when the workflow completes within
          *     the timeout. On timeout the response includes the run ID and
          *     `status: pending` so the caller can switch to polling via
-         *     `GET /projects/{project}/tools/{slug}/runs/{run_id}`.
+         *     `GET /projects/{project}/tools/{handle}/runs/{run_id}`.
          */
         post: operations["runTool"];
         delete?: never;
@@ -1563,7 +1563,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/projects/{project}/tools/{slug}/runs/{runId}": {
+    "/projects/{project}/tools/{handle}/runs/{runId}": {
         parameters: {
             query?: never;
             header?: never;
@@ -1602,7 +1602,7 @@ export interface components {
         ChannelMessageSenderType: "member" | "agent";
         Channel: {
             id: string;
-            /** @description Channel slug (unique within project) */
+            /** @description Channel handle (unique within project) */
             name: string;
             /** @description Human-facing display name */
             display_name: string;
@@ -1693,7 +1693,7 @@ export interface components {
             next_cursor?: string;
         };
         CreateChannelRequest: {
-            /** @description Channel slug (unique, immutable) */
+            /** @description Channel handle (unique, immutable) */
             name: string;
             /** @description Human-facing display name */
             display_name: string;
@@ -2082,7 +2082,7 @@ export interface components {
         WorkflowDefinition: {
             id: string;
             name: string;
-            slug: string;
+            handle: string;
             description?: string;
             latest_version: number;
             /** @description When true, this workflow is exposed as a callable tool via /api/tools. */
@@ -2101,7 +2101,7 @@ export interface components {
         };
         CreateWorkflowRequest: {
             name: string;
-            slug?: string;
+            handle?: string;
             description?: string;
             /** @description When true, expose this workflow as a callable tool via /api/tools. */
             published_as_tool?: boolean;
@@ -2504,7 +2504,7 @@ export interface components {
         ActorRef: {
             /** @enum {string} */
             type: "member" | "agent" | "group";
-            /** @description User ID for member; queue name for agent; group ID/slug for group */
+            /** @description User ID for member; queue name for agent; group ID/handle for group */
             id: string;
         };
         /** @enum {string} */
@@ -2748,7 +2748,7 @@ export interface components {
         Project: {
             id: string;
             name: string;
-            slug: string;
+            handle: string;
             description?: string;
             created_by?: string;
             /** Format: date-time */
@@ -2761,7 +2761,7 @@ export interface components {
         };
         CreateProjectRequest: {
             name: string;
-            slug?: string;
+            handle?: string;
             description?: string;
         };
         UpdateProjectRequest: {
@@ -2776,7 +2776,7 @@ export interface components {
             org_id: string;
             name: string;
             /** @description Immutable URL-safe identifier used in the receive endpoint */
-            slug: string;
+            handle: string;
             /** @description Full URL that external systems POST to when sending inbound webhook events to Mobius. */
             receive_url: string;
             enabled: boolean;
@@ -2814,8 +2814,8 @@ export interface components {
         };
         CreateWebhookRequest: {
             name: string;
-            /** @description URL-safe slug; auto-generated from name if omitted */
-            slug?: string;
+            /** @description URL-safe handle; auto-generated from name if omitted */
+            handle?: string;
             /** @description Shared secret associated with the webhook. Stored as a hash and not returned after creation. */
             secret?: string;
             enabled?: boolean;
@@ -3100,7 +3100,7 @@ export interface components {
         Org: {
             id: string;
             name: string;
-            slug: string;
+            handle: string;
             metadata?: {
                 [key: string]: unknown;
             };
@@ -3116,14 +3116,14 @@ export interface components {
         };
         CreateOrgRequest: {
             name: string;
-            slug: string;
+            handle: string;
             metadata?: {
                 [key: string]: unknown;
             };
         };
         UpdateOrgRequest: {
             name?: string;
-            slug?: string;
+            handle?: string;
             metadata?: {
                 [key: string]: unknown;
             };
@@ -3197,7 +3197,7 @@ export interface components {
             id: string;
             org_id: string;
             /** @description URL-safe identifier, unique within the project */
-            slug: string;
+            handle: string;
             /** @description Human-readable display name */
             name: string;
             description?: string;
@@ -3238,8 +3238,8 @@ export interface components {
             next_cursor?: string;
         };
         CreateGroupRequest: {
-            /** @description URL-safe slug. Auto-derived from name if omitted. */
-            slug?: string;
+            /** @description URL-safe handle. Auto-derived from name if omitted. */
+            handle?: string;
             /** @description Display name (1-64 chars) */
             name: string;
             description?: string;
@@ -3385,7 +3385,7 @@ export interface components {
             };
         };
         ToolDefinition: {
-            /** @description Tool name (workflow slug). Stable across publish/unpublish cycles. */
+            /** @description Tool name (workflow handle). Stable across publish/unpublish cycles. */
             name: string;
             /** @description Human-readable description of what the tool does. */
             description: string;
@@ -3480,8 +3480,8 @@ export interface components {
         };
     };
     parameters: {
-        /** @description Project slug (unique per organization) */
-        ProjectSlugParam: string;
+        /** @description Project handle (unique per organization) */
+        ProjectHandleParam: string;
         IDParam: string;
         ActionNameParam: string;
         /** @description Cursor for pagination (opaque string from previous response) */
@@ -3510,8 +3510,8 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
             };
             cookie?: never;
         };
@@ -3534,8 +3534,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
             };
             cookie?: never;
         };
@@ -3563,8 +3563,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -3589,8 +3589,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -3613,8 +3613,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -3649,8 +3649,8 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -3675,8 +3675,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -3706,8 +3706,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
                 id: components["parameters"]["IDParam"];
                 userId: string;
             };
@@ -3742,8 +3742,8 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -3768,8 +3768,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -3799,8 +3799,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
                 id: components["parameters"]["IDParam"];
                 messageId: string;
             };
@@ -3826,8 +3826,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
                 id: components["parameters"]["IDParam"];
                 messageId: string;
             };
@@ -3995,8 +3995,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
             };
             cookie?: never;
         };
@@ -4019,8 +4019,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
             };
             cookie?: never;
         };
@@ -4048,8 +4048,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -4074,8 +4074,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -4101,8 +4101,8 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
             };
             cookie?: never;
         };
@@ -4126,8 +4126,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
             };
             cookie?: never;
         };
@@ -4157,8 +4157,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -4183,8 +4183,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -4207,8 +4207,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -4241,8 +4241,8 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -4267,8 +4267,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -4292,8 +4292,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -4335,8 +4335,8 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
             };
             cookie?: never;
         };
@@ -4359,8 +4359,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
             };
             cookie?: never;
         };
@@ -4389,8 +4389,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
             };
             cookie?: never;
         };
@@ -4418,8 +4418,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
             };
             cookie?: never;
         };
@@ -4447,8 +4447,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -4473,8 +4473,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -4499,8 +4499,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -4528,8 +4528,8 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
             };
             cookie?: never;
         };
@@ -4552,8 +4552,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -4576,8 +4576,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -4600,8 +4600,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -4634,8 +4634,8 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -4665,8 +4665,8 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
             };
             cookie?: never;
         };
@@ -4689,8 +4689,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
             };
             cookie?: never;
         };
@@ -4719,8 +4719,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
                 actionName: components["parameters"]["ActionNameParam"];
             };
             cookie?: never;
@@ -4745,8 +4745,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
                 actionName: components["parameters"]["ActionNameParam"];
             };
             cookie?: never;
@@ -4764,8 +4764,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
                 actionName: components["parameters"]["ActionNameParam"];
             };
             cookie?: never;
@@ -4795,8 +4795,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
                 actionName: components["parameters"]["ActionNameParam"];
             };
             cookie?: never;
@@ -4829,8 +4829,8 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
             };
             cookie?: never;
         };
@@ -4854,8 +4854,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
             };
             cookie?: never;
         };
@@ -4878,8 +4878,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
                 actionName: components["parameters"]["ActionNameParam"];
             };
             cookie?: never;
@@ -4904,8 +4904,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
             };
             cookie?: never;
         };
@@ -4941,8 +4941,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -4972,8 +4972,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -5002,8 +5002,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -5050,8 +5050,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -5082,8 +5082,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
                 id: components["parameters"]["IDParam"];
                 actionName: components["parameters"]["ActionNameParam"];
             };
@@ -5119,8 +5119,8 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
             };
             cookie?: never;
         };
@@ -5144,8 +5144,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
             };
             cookie?: never;
         };
@@ -5174,8 +5174,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -5200,8 +5200,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -5224,8 +5224,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -5259,8 +5259,8 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -5285,8 +5285,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
             };
             cookie?: never;
         };
@@ -5439,8 +5439,8 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
             };
             cookie?: never;
         };
@@ -5464,8 +5464,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
             };
             cookie?: never;
         };
@@ -5495,8 +5495,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -5521,8 +5521,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -5545,8 +5545,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -5580,8 +5580,8 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -5611,8 +5611,8 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
             };
             cookie?: never;
         };
@@ -5635,8 +5635,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
             };
             cookie?: never;
         };
@@ -5664,8 +5664,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -5690,8 +5690,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -5721,8 +5721,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -5745,8 +5745,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
             };
             cookie?: never;
         };
@@ -5775,8 +5775,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
             };
             cookie?: never;
         };
@@ -6080,8 +6080,8 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
             };
             cookie?: never;
         };
@@ -6104,8 +6104,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
             };
             cookie?: never;
         };
@@ -6134,8 +6134,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -6160,8 +6160,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -6192,8 +6192,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -6219,8 +6219,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -6246,8 +6246,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
             };
             cookie?: never;
         };
@@ -6270,8 +6270,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
             };
             cookie?: never;
         };
@@ -6403,8 +6403,8 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
             };
             cookie?: never;
         };
@@ -6427,8 +6427,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
             };
             cookie?: never;
         };
@@ -6457,8 +6457,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
                 groupId: components["parameters"]["GroupIDParam"];
             };
             cookie?: never;
@@ -6483,8 +6483,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
                 groupId: components["parameters"]["GroupIDParam"];
             };
             cookie?: never;
@@ -6508,8 +6508,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
                 groupId: components["parameters"]["GroupIDParam"];
             };
             cookie?: never;
@@ -6544,8 +6544,8 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
                 groupId: components["parameters"]["GroupIDParam"];
             };
             cookie?: never;
@@ -6570,8 +6570,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
                 groupId: components["parameters"]["GroupIDParam"];
             };
             cookie?: never;
@@ -6602,8 +6602,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
                 groupId: components["parameters"]["GroupIDParam"];
                 userId: string;
             };
@@ -6627,8 +6627,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
                 userId: string;
             };
             cookie?: never;
@@ -6657,8 +6657,8 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
             };
             cookie?: never;
         };
@@ -6682,8 +6682,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
             };
             cookie?: never;
         };
@@ -6713,8 +6713,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -6739,8 +6739,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -6763,8 +6763,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -6799,8 +6799,8 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -6825,8 +6825,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -6856,8 +6856,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
                 sessionId: string;
             };
             cookie?: never;
@@ -6882,8 +6882,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
                 sessionId: string;
             };
             cookie?: never;
@@ -6908,8 +6908,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
                 sessionId: string;
             };
             cookie?: never;
@@ -6955,9 +6955,9 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
-                slug: string;
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+                handle: string;
             };
             cookie?: never;
         };
@@ -6995,9 +6995,9 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project slug (unique per organization) */
-                project: components["parameters"]["ProjectSlugParam"];
-                slug: string;
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+                handle: string;
                 runId: string;
             };
             cookie?: never;

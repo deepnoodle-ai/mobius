@@ -19,7 +19,7 @@ func registerToolsCommands(app *cli.App) {
 	toolsGrp.Alias("tool")
 	toolsGrp.Command("get-run").
 		Description("Poll for the result of an async tool run").
-		Args("slug", "run-id").
+		Args("handle", "run-id").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
@@ -47,7 +47,7 @@ func registerToolsCommands(app *cli.App) {
 
 	toolsGrp.Command("run-tool").
 		Description("Invoke a workflow tool").
-		Args("slug").
+		Args("handle").
 		Flags(
 			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin)"),
 		).
