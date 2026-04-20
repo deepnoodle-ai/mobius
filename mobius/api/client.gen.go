@@ -1124,7 +1124,7 @@ type AuditLogEntry struct {
 	// ResourceName Human-readable name of the affected resource
 	ResourceName *string `json:"resource_name,omitempty"`
 
-	// ResourceType Type of resource affected (e.g., task, channel, document)
+	// ResourceType Type of resource affected (e.g., job, channel, document)
 	ResourceType string `json:"resource_type"`
 
 	// UserAgent User agent of the request

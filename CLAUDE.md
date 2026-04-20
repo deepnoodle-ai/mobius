@@ -40,7 +40,7 @@ an override in the same change as the spec edit.
 **`internal/testdata/contract/` is the cross-language wire-format contract.**
 Each SDK round-trips every fixture through its generated types and asserts
 byte-equivalence. If a fixture fails in one SDK, fix the SDK or the spec —
-never edit the fixture to match current SDK behavior. The runtime task
+never edit the fixture to match current SDK behavior. The runtime job
 endpoints (claim / heartbeat / complete) are hand-written in each SDK and
 validated *only* by these fixtures, so contract-test failures are real wire
 bugs.

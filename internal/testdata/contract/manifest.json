@@ -4,43 +4,43 @@
       "file": "claim_request_minimal.json",
       "schema": "JobClaimRequest",
       "kind": "request",
-      "endpoint": "POST /namespaces/{ns}/jobs/claim"
+      "endpoint": "POST /projects/{project}/jobs/claim"
     },
     {
       "file": "claim_request_full.json",
       "schema": "JobClaimRequest",
       "kind": "request",
-      "endpoint": "POST /namespaces/{ns}/jobs/claim"
+      "endpoint": "POST /projects/{project}/jobs/claim"
     },
     {
       "file": "claim_response.json",
       "schema": "JobClaim",
       "kind": "response",
-      "endpoint": "POST /namespaces/{ns}/jobs/claim"
+      "endpoint": "POST /projects/{project}/jobs/claim"
     },
     {
-      "file": "heartbeat_task_request.json",
+      "file": "heartbeat_job_request.json",
       "schema": "JobFenceRequest",
       "kind": "request",
-      "endpoint": "POST /namespaces/{ns}/jobs/{id}/heartbeat"
+      "endpoint": "POST /projects/{project}/jobs/{id}/heartbeat"
     },
     {
-      "file": "heartbeat_task_response.json",
+      "file": "heartbeat_job_response.json",
       "schema": "JobHeartbeat",
       "kind": "response",
-      "endpoint": "POST /namespaces/{ns}/jobs/{id}/heartbeat"
+      "endpoint": "POST /projects/{project}/jobs/{id}/heartbeat"
     },
     {
-      "file": "complete_task_request_success.json",
+      "file": "complete_job_request_success.json",
       "schema": "JobCompleteRequest",
       "kind": "request",
-      "endpoint": "POST /namespaces/{ns}/jobs/{id}/complete"
+      "endpoint": "POST /projects/{project}/jobs/{id}/complete"
     },
     {
-      "file": "complete_task_request_failed.json",
+      "file": "complete_job_request_failed.json",
       "schema": "JobCompleteRequest",
       "kind": "request",
-      "endpoint": "POST /namespaces/{ns}/jobs/{id}/complete"
+      "endpoint": "POST /projects/{project}/jobs/{id}/complete"
     }
   ]
 }

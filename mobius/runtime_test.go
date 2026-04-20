@@ -73,25 +73,25 @@ func TestNewClient_WithBaseURLOverride(t *testing.T) {
 	assert.Equal(t, c.baseURL, "https://api.example.invalid")
 }
 
-func TestRuntimeClaim_Task(t *testing.T) {
-	claimBody := `{"job_id":"task_1","run_id":"run_1","workflow_name":"hello","step_name":"greet","action":"print","parameters":{"msg":"hi"},"attempt":1,"queue":"default","heartbeat_interval_seconds":15}`
+func TestRuntimeClaim_Job(t *testing.T) {
+	claimBody := `{"job_id":"job_1","run_id":"run_1","workflow_name":"hello","step_name":"greet","action":"print","parameters":{"msg":"hi"},"attempt":1,"queue":"default","heartbeat_interval_seconds":15}`
 	h := newRecorder(t, map[string]stubResponse{
 		"/projects/test-project/jobs/claim": {status: 200, body: claimBody},
 	})
 	c, _ := newTestClient(t, h)
 
 	cfg := WorkerConfig{WorkerID: "w1", Name: "name", Version: "v1", PollWaitSeconds: 1, Actions: []string{"print"}}
-	task, err := c.runtimeClaim(context.Background(), cfg)
+	job, err := c.runtimeClaim(context.Background(), cfg)
 	assert.NoError(t, err)
-	assert.NotNil(t, task)
-	assert.Equal(t, task.TaskID, "task_1")
-	assert.Equal(t, task.RunID, "run_1")
-	assert.Equal(t, task.Action, "print")
-	assert.Equal(t, task.Attempt, 1)
-	assert.Equal(t, task.Queue, "default")
-	assert.Equal(t, task.StepName, "greet")
-	assert.Equal(t, task.WorkerID, "w1")
-	assert.Equal(t, task.HeartbeatInterval, 15*time.Second)
+	assert.NotNil(t, job)
+	assert.Equal(t, job.JobID, "job_1")
+	assert.Equal(t, job.RunID, "run_1")
+	assert.Equal(t, job.Action, "print")
+	assert.Equal(t, job.Attempt, 1)
+	assert.Equal(t, job.Queue, "default")
+	assert.Equal(t, job.StepName, "greet")
+	assert.Equal(t, job.WorkerID, "w1")
+	assert.Equal(t, job.HeartbeatInterval, 15*time.Second)
 	assert.Equal(t, h.lastHeader["/projects/test-project/jobs/claim"].Get("Authorization"), "Bearer mbx_test")
 
 	var sent map[string]any
@@ -108,9 +108,9 @@ func TestRuntimeClaim_Empty(t *testing.T) {
 		"/projects/test-project/jobs/claim": {status: 204, body: ""},
 	})
 	c, _ := newTestClient(t, h)
-	task, err := c.runtimeClaim(context.Background(), WorkerConfig{WorkerID: "w1", PollWaitSeconds: 1})
+	job, err := c.runtimeClaim(context.Background(), WorkerConfig{WorkerID: "w1", PollWaitSeconds: 1})
 	assert.NoError(t, err)
-	assert.Nil(t, task)
+	assert.Nil(t, job)
 }
 
 func TestRuntimeHeartbeat_Directives(t *testing.T) {
@@ -118,8 +118,8 @@ func TestRuntimeHeartbeat_Directives(t *testing.T) {
 		"/projects/test-project/jobs/": {status: 200, body: `{"ok":true,"directives":{"should_cancel":true}}`},
 	})
 	c, _ := newTestClient(t, h)
-	task := &runtimeTask{TaskID: "task_1", Attempt: 1, WorkerID: "w1"}
-	dirs, err := c.runtimeHeartbeat(context.Background(), task)
+	job := &runtimeJob{JobID: "job_1", Attempt: 1, WorkerID: "w1"}
+	dirs, err := c.runtimeHeartbeat(context.Background(), job)
 	assert.NoError(t, err)
 	assert.NotNil(t, dirs)
 	assert.NotNil(t, dirs.ShouldCancel)
@@ -131,7 +131,7 @@ func TestRuntimeHeartbeat_LeaseLost(t *testing.T) {
 		"/projects/test-project/jobs/": {status: 409, body: ""},
 	})
 	c, _ := newTestClient(t, h)
-	_, err := c.runtimeHeartbeat(context.Background(), &runtimeTask{TaskID: "task_1", Attempt: 1, WorkerID: "w1"})
+	_, err := c.runtimeHeartbeat(context.Background(), &runtimeJob{JobID: "job_1", Attempt: 1, WorkerID: "w1"})
 	assert.ErrorIs(t, err, ErrLeaseLost)
 }
 
@@ -140,8 +140,8 @@ func TestRuntimeCompleteSuccess(t *testing.T) {
 		"/projects/test-project/jobs/": {status: 204, body: ""},
 	})
 	c, _ := newTestClient(t, h)
-	task := &runtimeTask{TaskID: "task_1", Attempt: 1, WorkerID: "w1"}
-	err := c.runtimeCompleteSuccess(context.Background(), task, map[string]any{"ok": true})
+	job := &runtimeJob{JobID: "job_1", Attempt: 1, WorkerID: "w1"}
+	err := c.runtimeCompleteSuccess(context.Background(), job, map[string]any{"ok": true})
 	assert.NoError(t, err)
 
 	var sent map[string]any
@@ -155,7 +155,7 @@ func TestRuntimeCompleteFailure_LeaseLost(t *testing.T) {
 		"/projects/test-project/jobs/": {status: 409, body: ""},
 	})
 	c, _ := newTestClient(t, h)
-	err := c.runtimeCompleteFailure(context.Background(), &runtimeTask{TaskID: "task_1", Attempt: 1, WorkerID: "w1"}, "Error", "boom")
+	err := c.runtimeCompleteFailure(context.Background(), &runtimeJob{JobID: "job_1", Attempt: 1, WorkerID: "w1"}, "Error", "boom")
 	assert.ErrorIs(t, err, ErrLeaseLost)
 }
 
@@ -164,7 +164,7 @@ func TestRuntimeCompleteFailure_Body(t *testing.T) {
 		"/projects/test-project/jobs/": {status: 204, body: ""},
 	})
 	c, _ := newTestClient(t, h)
-	err := c.runtimeCompleteFailure(context.Background(), &runtimeTask{TaskID: "task_1", Attempt: 2, WorkerID: "w1"}, "Timeout", "deadline exceeded")
+	err := c.runtimeCompleteFailure(context.Background(), &runtimeJob{JobID: "job_1", Attempt: 2, WorkerID: "w1"}, "Timeout", "deadline exceeded")
 	assert.NoError(t, err)
 
 	var sent map[string]any
@@ -176,17 +176,17 @@ func TestRuntimeCompleteFailure_Body(t *testing.T) {
 
 func TestRuntimeEmitEvents(t *testing.T) {
 	h := newRecorder(t, map[string]stubResponse{
-		"/projects/test-project/jobs/task_1/events": {status: 204, body: ""},
+		"/projects/test-project/jobs/job_1/events": {status: 204, body: ""},
 	})
 	c, _ := newTestClient(t, h)
-	task := &runtimeTask{TaskID: "task_1", Attempt: 1, WorkerID: "w1"}
-	err := c.runtimeEmitEvents(context.Background(), task, []jobEventEntry{
+	job := &runtimeJob{JobID: "job_1", Attempt: 1, WorkerID: "w1"}
+	err := c.runtimeEmitEvents(context.Background(), job, []jobEventEntry{
 		{Type: "scrape.page_done", Payload: map[string]any{"url": "https://example.com"}},
 	})
 	assert.NoError(t, err)
 
 	var sent map[string]any
-	_ = json.Unmarshal(h.lastBody["/projects/test-project/jobs/task_1/events"], &sent)
+	_ = json.Unmarshal(h.lastBody["/projects/test-project/jobs/job_1/events"], &sent)
 	assert.Equal(t, sent["worker_id"], "w1")
 	assert.Equal(t, sent["attempt"], float64(1))
 	events, _ := sent["events"].([]any)
@@ -195,10 +195,10 @@ func TestRuntimeEmitEvents(t *testing.T) {
 	assert.Equal(t, first["type"], "scrape.page_done")
 }
 
-func TestWorkerExecuteTask_EmitsCustomEvents(t *testing.T) {
+func TestWorkerExecuteJob_EmitsCustomEvents(t *testing.T) {
 	h := newRecorder(t, map[string]stubResponse{
-		"/projects/test-project/jobs/task_1/complete": {status: 204, body: ""},
-		"/projects/test-project/jobs/task_1/events":   {status: 204, body: ""},
+		"/projects/test-project/jobs/job_1/complete": {status: 204, body: ""},
+		"/projects/test-project/jobs/job_1/events":   {status: 204, body: ""},
 	})
 	c, _ := newTestClient(t, h)
 	w := c.NewWorker(WorkerConfig{WorkerID: "w1", EventBatchSize: 10})
@@ -207,8 +207,8 @@ func TestWorkerExecuteTask_EmitsCustomEvents(t *testing.T) {
 		return map[string]any{"ok": true}, nil
 	}))
 
-	w.executeTask(context.Background(), &runtimeTask{
-		TaskID:            "task_1",
+	w.executeJob(context.Background(), &runtimeJob{
+		JobID:             "job_1",
 		RunID:             "run_1",
 		ProjectID:         "prj_1",
 		WorkflowName:      "hello",
@@ -222,7 +222,7 @@ func TestWorkerExecuteTask_EmitsCustomEvents(t *testing.T) {
 	})
 
 	var sent map[string]any
-	_ = json.Unmarshal(h.lastBody["/projects/test-project/jobs/task_1/events"], &sent)
+	_ = json.Unmarshal(h.lastBody["/projects/test-project/jobs/job_1/events"], &sent)
 	events, _ := sent["events"].([]any)
 	assert.Len(t, events, 1)
 	first, _ := events[0].(map[string]any)

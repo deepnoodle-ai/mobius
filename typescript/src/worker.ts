@@ -43,7 +43,7 @@ export interface WorkerConfig {
   version?: string;
   /**
    * Queue names this worker subscribes to. Empty (or omitted) means claim
-   * jobs from any queue in the namespace. Runs default to the "default"
+   * jobs from any queue in the project. Runs default to the "default"
    * queue.
    */
   queues?: string[];
@@ -157,7 +157,7 @@ export class Worker {
         await Promise.race(running);
       }
 
-      let task: JobClaim | null;
+      let job: JobClaim | null;
       try {
         const claimReq: JobClaimRequest = {
           worker_id: this.config.workerId,
@@ -168,7 +168,7 @@ export class Worker {
         if (this.config.queues.length > 0) claimReq.queues = this.config.queues;
         if (this.config.actions.length > 0)
           claimReq.actions = this.config.actions;
-        task = await this.client.claimJob(claimReq, combined);
+        job = await this.client.claimJob(claimReq, combined);
       } catch (err) {
         if (combined.aborted) break;
         this.logger.error("[mobius] claim error:", err);
@@ -176,12 +176,12 @@ export class Worker {
         continue;
       }
 
-      if (task == null) {
+      if (job == null) {
         await sleep(0, combined);
         continue;
       }
 
-      const p = this.executeTask(task, combined).finally(() =>
+      const p = this.executeJob(job, combined).finally(() =>
         running.delete(p),
       );
       running.add(p);
@@ -191,36 +191,36 @@ export class Worker {
     this.logger.info(`[mobius] worker ${this.config.workerId} stopped`);
   }
 
-  /** Gracefully stop the worker after in-flight tasks complete. */
+  /** Gracefully stop the worker after in-flight jobs complete. */
   stop(): void {
     this.abortController.abort();
   }
 
   // ---------------------------------------------------------------------------
 
-  private async executeTask(
-    task: JobClaim,
+  private async executeJob(
+    job: JobClaim,
     signal: AbortSignal,
   ): Promise<void> {
-    const jobId = task.job_id;
+    const jobId = job.job_id;
     const workerId = this.config.workerId;
-    const attempt = task.attempt;
+    const attempt = job.attempt;
     this.logger.info(
-      `[mobius] job ${jobId} claimed (workflow=${task.workflow_name}, step=${task.step_name}, action=${task.action}, attempt=${attempt})`,
+      `[mobius] job ${jobId} claimed (workflow=${job.workflow_name}, step=${job.step_name}, action=${job.action}, attempt=${attempt})`,
     );
 
-    const fn = this.actions.get(task.action);
+    const fn = this.actions.get(job.action);
     if (!fn) {
-      const msg = `action ${JSON.stringify(task.action)} not registered on this worker`;
+      const msg = `action ${JSON.stringify(job.action)} not registered on this worker`;
       this.logger.error(`[mobius] ${msg}`);
-      await this.failTask(jobId, workerId, attempt, "ActionNotRegistered", msg);
+      await this.failJob(jobId, workerId, attempt, "ActionNotRegistered", msg);
       return;
     }
 
     const actionController = new AbortController();
     const onAbort = () => actionController.abort();
     signal.addEventListener("abort", onAbort, { once: true });
-    const eventer = new TaskEventer(this.client, task, {
+    const eventer = new JobEventer(this.client, job, {
       workerId,
       queueSize: this.config.eventQueueSize,
       batchSize: this.config.eventBatchSize,
@@ -229,18 +229,18 @@ export class Worker {
     const eventerPromise = eventer.run();
     const actionContext: ActionContext = {
       jobId,
-      runId: task.run_id,
+      runId: job.run_id,
       projectId: this.client.project,
       workerId,
       attempt,
-      queue: task.queue,
-      workflowName: task.workflow_name,
-      stepName: task.step_name,
-      action: task.action,
+      queue: job.queue,
+      workflowName: job.workflow_name,
+      stepName: job.step_name,
+      action: job.action,
       emitEvent: (type, payload) => eventer.emit(type, payload),
     };
 
-    const interval = this.heartbeatInterval(task);
+    const interval = this.heartbeatInterval(job);
     let hbLost = false;
     const heartbeatTimer = setInterval(async () => {
       try {
@@ -267,7 +267,7 @@ export class Worker {
 
     try {
       const result = await fn(
-        task.parameters,
+        job.parameters,
         actionController.signal,
         actionContext,
       );
@@ -299,20 +299,20 @@ export class Worker {
       }
       this.logger.error(`[mobius] job ${jobId} failed:`, err);
       const errType = actionController.signal.aborted ? "Timeout" : "Error";
-      await this.failTask(jobId, workerId, attempt, errType, String(err));
+      await this.failJob(jobId, workerId, attempt, errType, String(err));
     }
   }
 
-  private heartbeatInterval(task: JobClaim): number {
+  private heartbeatInterval(job: JobClaim): number {
     if (this.config.heartbeatIntervalMs != null)
       return this.config.heartbeatIntervalMs;
-    if (task.heartbeat_interval_seconds != null) {
-      return task.heartbeat_interval_seconds * 1000;
+    if (job.heartbeat_interval_seconds != null) {
+      return job.heartbeat_interval_seconds * 1000;
     }
     return 10_000;
   }
 
-  private async failTask(
+  private async failJob(
     jobId: string,
     workerId: string,
     attempt: number,
@@ -362,14 +362,14 @@ function anySignal(...signals: AbortSignal[]): AbortSignal {
   return controller.signal;
 }
 
-class TaskEventer {
+class JobEventer {
   private readonly queue: JobEventEntry[] = [];
   private closed = false;
   private wake: (() => void) | null = null;
 
   constructor(
     private readonly client: Client,
-    private readonly task: JobClaim,
+    private readonly job: JobClaim,
     private readonly options: {
       workerId: string;
       queueSize: number;
@@ -408,32 +408,32 @@ class TaskEventer {
         continue;
       }
       try {
-        await this.client.emitJobEvents(this.task.job_id, {
+        await this.client.emitJobEvents(this.job.job_id, {
           worker_id: this.options.workerId,
-          attempt: this.task.attempt,
+          attempt: this.job.attempt,
           events: batch,
         });
       } catch (err) {
         if (err instanceof LeaseLostError) {
           this.options.logger.warn(
-            `[mobius] job ${this.task.job_id}: lease lost during custom event emit`,
+            `[mobius] job ${this.job.job_id}: lease lost during custom event emit`,
           );
           return;
         }
         if (err instanceof PayloadTooLargeError) {
           this.options.logger.warn(
-            `[mobius] job ${this.task.job_id}: custom event payload too large`,
+            `[mobius] job ${this.job.job_id}: custom event payload too large`,
           );
           continue;
         }
         if (err instanceof RateLimitedError) {
           this.options.logger.warn(
-            `[mobius] job ${this.task.job_id}: custom event rate limited`,
+            `[mobius] job ${this.job.job_id}: custom event rate limited`,
           );
           continue;
         }
         this.options.logger.error(
-          `[mobius] job ${this.task.job_id}: custom event emit failed:`,
+          `[mobius] job ${this.job.job_id}: custom event emit failed:`,
           err,
         );
       }

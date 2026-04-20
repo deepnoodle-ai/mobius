@@ -14,6 +14,6 @@ fixture byte-for-byte once both sides are normalized (same key order, no extra
 or missing fields, same scalar encoding). If an SDK cannot represent a field
 losslessly, that is a contract bug — fix the SDK, not the fixture.
 
-These fixtures are the source of truth for the hand-written runtime task
+These fixtures are the source of truth for the hand-written runtime job
 endpoints (claim, heartbeat, complete). Do not edit them to match an SDK's
 current behavior; edit them to match `openapi.yaml` and fix the SDK.

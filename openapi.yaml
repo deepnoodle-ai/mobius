@@ -3731,7 +3731,7 @@ components:
           description: Type of action performed
         resource_type:
           type: string
-          description: Type of resource affected (e.g., task, channel, document)
+          description: Type of resource affected (e.g., job, channel, document)
         resource_id:
           type: string
           description: ID of the affected resource

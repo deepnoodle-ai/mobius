@@ -1,7 +1,7 @@
 // Package mobius provides the Go SDK for building Mobius workers and for
 // managing workflows, runs, triggers, webhooks, and other Mobius resources.
 //
-// Workers claim individual tasks — one action invocation on behalf of a
+// Workers claim individual jobs — one action invocation on behalf of a
 // workflow run — from the Mobius runtime API, execute the corresponding
 // registered action locally, and report the result back. The backend
 // owns the workflow engine; the SDK only defines and runs actions.
@@ -24,7 +24,7 @@ import (
 
 // Action is one named unit of work a worker can execute on behalf of
 // the Mobius runtime. Actions are registered with a Worker and
-// invoked by name whenever the server dispatches a matching task.
+// invoked by name whenever the server dispatches a matching job.
 type Action interface {
 	Name() string
 	Execute(ctx Context, params map[string]any) (any, error)

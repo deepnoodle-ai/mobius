@@ -20,28 +20,28 @@ type WorkerConfig struct {
 	// Version is the version string reported to Mobius (e.g. "1.2.0").
 	Version string
 	// Queues is the list of queue names this worker subscribes to.
-	// Empty means "claim tasks from any queue in the project". Runs
+	// Empty means "claim jobs from any queue in the project". Runs
 	// default to the "default" queue when not explicitly assigned.
 	Queues []string
 	// Actions is an optional filter of action names this worker
 	// will claim. When empty the worker advertises every action in
 	// its registry — set this only if you want to claim a subset.
 	Actions []string
-	// Concurrency is the maximum number of tasks to execute in parallel.
+	// Concurrency is the maximum number of jobs to execute in parallel.
 	// Defaults to 10.
 	Concurrency int
 	// PollWaitSeconds is the long-poll window per claim request (0–30s).
-	// The server holds the connection open until a task is available or
+	// The server holds the connection open until a job is available or
 	// the window closes. Defaults to 20.
 	PollWaitSeconds int
-	// HeartbeatInterval overrides the heartbeat cadence while a task is
+	// HeartbeatInterval overrides the heartbeat cadence while a job is
 	// executing. When zero the SDK uses the interval advertised by the
 	// server in the claim response, falling back to 10s.
 	HeartbeatInterval time.Duration
 	// Logger is the structured logger used by the worker and action
 	// implementations. Defaults to slog.Default().
 	Logger *slog.Logger
-	// EventQueueSize bounds buffered custom events per executing task.
+	// EventQueueSize bounds buffered custom events per executing job.
 	// When full, the oldest event is dropped. Defaults to 256.
 	EventQueueSize int
 	// EventBatchSize controls how many custom events are sent per HTTP request.
@@ -49,7 +49,7 @@ type WorkerConfig struct {
 	EventBatchSize int
 }
 
-// Worker polls Mobius for queued tasks, executes the corresponding
+// Worker polls Mobius for queued jobs, executes the corresponding
 // registered action, and reports the result back via the runtime API.
 //
 // Create a Worker with Client.NewWorker, register actions with
@@ -97,7 +97,7 @@ func (w *Worker) Run(ctx context.Context) error {
 		case sem <- struct{}{}:
 		}
 
-		task, err := w.client.runtimeClaim(ctx, w.config)
+		job, err := w.client.runtimeClaim(ctx, w.config)
 		if err != nil {
 			<-sem
 			if ctx.Err() != nil {
@@ -111,36 +111,36 @@ func (w *Worker) Run(ctx context.Context) error {
 			}
 			continue
 		}
-		if task == nil {
+		if job == nil {
 			<-sem
 			continue
 		}
 
 		go func() {
 			defer func() { <-sem }()
-			w.executeTask(ctx, task)
+			w.executeJob(ctx, job)
 		}()
 	}
 }
 
-// executeTask runs a single claimed task through the registered
+// executeJob runs a single claimed job through the registered
 // action, streaming heartbeats for the duration of the invocation.
-func (w *Worker) executeTask(ctx context.Context, task *runtimeTask) {
+func (w *Worker) executeJob(ctx context.Context, job *runtimeJob) {
 	log := w.config.Logger.With(
-		"task_id", task.TaskID,
-		"run_id", task.RunID,
-		"workflow", task.WorkflowName,
-		"step", task.StepName,
-		"action", task.Action,
-		"attempt", task.Attempt,
+		"job_id", job.JobID,
+		"run_id", job.RunID,
+		"workflow", job.WorkflowName,
+		"step", job.StepName,
+		"action", job.Action,
+		"attempt", job.Attempt,
 	)
-	log.Info("task claimed")
+	log.Info("job claimed")
 
-	action, ok := w.registry.Get(task.Action)
+	action, ok := w.registry.Get(job.Action)
 	if !ok {
-		msg := fmt.Sprintf("action %q not registered on this worker", task.Action)
+		msg := fmt.Sprintf("action %q not registered on this worker", job.Action)
 		log.Error(msg)
-		w.failTask(task, "ActionNotRegistered", msg)
+		w.failJob(job, "ActionNotRegistered", msg)
 		return
 	}
 
@@ -148,14 +148,14 @@ func (w *Worker) executeTask(ctx context.Context, task *runtimeTask) {
 	defer cancel()
 
 	hbDone := make(chan struct{})
-	eventer := newTaskEventer(w, task, log)
+	eventer := newJobEventer(w, job, log)
 	eventDone := make(chan struct{})
-	go w.heartbeatLoop(execCtx, task, cancel, hbDone)
+	go w.heartbeatLoop(execCtx, job, cancel, hbDone)
 	go eventer.run(execCtx, eventDone)
 
-	ctxVal := newContext(execCtx, task, log, eventer.emit)
+	ctxVal := newContext(execCtx, job, log, eventer.emit)
 
-	result, err := safeExecute(action, ctxVal, task.Parameters)
+	result, err := safeExecute(action, ctxVal, job.Parameters)
 
 	cancel()
 	<-hbDone
@@ -164,30 +164,30 @@ func (w *Worker) executeTask(ctx context.Context, task *runtimeTask) {
 
 	if err != nil {
 		log.Error("action failed", "error", err)
-		w.failTask(task, classifyError(err), err.Error())
+		w.failJob(job, classifyError(err), err.Error())
 		return
 	}
 
-	if err := w.client.runtimeCompleteSuccess(context.Background(), task, result); err != nil {
+	if err := w.client.runtimeCompleteSuccess(context.Background(), job, result); err != nil {
 		if errors.Is(err, ErrLeaseLost) {
 			log.Warn("complete: lease lost")
 			return
 		}
-		log.Error("failed to complete task", "error", err)
+		log.Error("failed to complete job", "error", err)
 		return
 	}
-	log.Info("task complete")
+	log.Info("job complete")
 }
 
-// heartbeatLoop periodically refreshes the task lease and, on a
+// heartbeatLoop periodically refreshes the job lease and, on a
 // cancellation directive or lease loss, cancels the action via
 // the provided cancel func. It exits when ctx is done.
-func (w *Worker) heartbeatLoop(ctx context.Context, task *runtimeTask, cancelAction context.CancelFunc, done chan<- struct{}) {
+func (w *Worker) heartbeatLoop(ctx context.Context, job *runtimeJob, cancelAction context.CancelFunc, done chan<- struct{}) {
 	defer close(done)
 
 	interval := w.config.HeartbeatInterval
 	if interval <= 0 {
-		interval = task.HeartbeatInterval
+		interval = job.HeartbeatInterval
 	}
 	if interval <= 0 {
 		interval = 10 * time.Second
@@ -201,18 +201,18 @@ func (w *Worker) heartbeatLoop(ctx context.Context, task *runtimeTask, cancelAct
 		case <-ctx.Done():
 			return
 		case <-t.C:
-			directives, err := w.client.runtimeHeartbeat(context.Background(), task)
+			directives, err := w.client.runtimeHeartbeat(context.Background(), job)
 			if err != nil {
 				if errors.Is(err, ErrLeaseLost) {
-					w.config.Logger.Warn("heartbeat: lease lost; cancelling action", "task_id", task.TaskID)
+					w.config.Logger.Warn("heartbeat: lease lost; cancelling action", "job_id", job.JobID)
 					cancelAction()
 					return
 				}
-				w.config.Logger.Error("heartbeat error", "task_id", task.TaskID, "error", err)
+				w.config.Logger.Error("heartbeat error", "job_id", job.JobID, "error", err)
 				continue
 			}
 			if directives != nil && directives.ShouldCancel != nil && *directives.ShouldCancel {
-				w.config.Logger.Warn("heartbeat: cancel requested", "task_id", task.TaskID)
+				w.config.Logger.Warn("heartbeat: cancel requested", "job_id", job.JobID)
 				cancelAction()
 				return
 			}
@@ -220,11 +220,11 @@ func (w *Worker) heartbeatLoop(ctx context.Context, task *runtimeTask, cancelAct
 	}
 }
 
-func (w *Worker) failTask(task *runtimeTask, errorType, message string) {
+func (w *Worker) failJob(job *runtimeJob, errorType, message string) {
 	// Use a background context so a cancelled exec ctx doesn't prevent
 	// reporting terminal status.
-	if err := w.client.runtimeCompleteFailure(context.Background(), task, errorType, message); err != nil {
-		w.config.Logger.Error("failed to report task failure", "task_id", task.TaskID, "error", err)
+	if err := w.client.runtimeCompleteFailure(context.Background(), job, errorType, message); err != nil {
+		w.config.Logger.Error("failed to report job failure", "job_id", job.JobID, "error", err)
 	}
 }
 
@@ -249,9 +249,9 @@ func classifyError(err error) string {
 	return "Error"
 }
 
-type taskEventer struct {
+type jobEventer struct {
 	worker   *Worker
-	task     *runtimeTask
+	job      *runtimeJob
 	log      *slog.Logger
 	mu       sync.Mutex
 	notifyCh chan struct{}
@@ -259,16 +259,16 @@ type taskEventer struct {
 	closed   bool
 }
 
-func newTaskEventer(w *Worker, task *runtimeTask, log *slog.Logger) *taskEventer {
-	return &taskEventer{
+func newJobEventer(w *Worker, job *runtimeJob, log *slog.Logger) *jobEventer {
+	return &jobEventer{
 		worker:   w,
-		task:     task,
+		job:      job,
 		log:      log,
 		notifyCh: make(chan struct{}, 1),
 	}
 }
 
-func (e *taskEventer) emit(eventType string, payload map[string]any) {
+func (e *jobEventer) emit(eventType string, payload map[string]any) {
 	if eventType == "" {
 		return
 	}
@@ -292,7 +292,7 @@ func (e *taskEventer) emit(eventType string, payload map[string]any) {
 	}
 }
 
-func (e *taskEventer) stop() {
+func (e *jobEventer) stop() {
 	e.mu.Lock()
 	e.closed = true
 	e.mu.Unlock()
@@ -302,7 +302,7 @@ func (e *taskEventer) stop() {
 	}
 }
 
-func (e *taskEventer) popBatch() []jobEventEntry {
+func (e *jobEventer) popBatch() []jobEventEntry {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	if len(e.events) == 0 {
@@ -317,17 +317,17 @@ func (e *taskEventer) popBatch() []jobEventEntry {
 	return batch
 }
 
-func (e *taskEventer) isDone() bool {
+func (e *jobEventer) isDone() bool {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	return e.closed && len(e.events) == 0
 }
 
-func (e *taskEventer) run(ctx context.Context, done chan<- struct{}) {
+func (e *jobEventer) run(ctx context.Context, done chan<- struct{}) {
 	defer close(done)
 	for {
 		if batch := e.popBatch(); len(batch) > 0 {
-			if err := e.worker.client.runtimeEmitEvents(context.Background(), e.task, batch); err != nil {
+			if err := e.worker.client.runtimeEmitEvents(context.Background(), e.job, batch); err != nil {
 				switch {
 				case errors.Is(err, ErrLeaseLost):
 					e.log.Warn("custom event emit: lease lost")

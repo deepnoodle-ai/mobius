@@ -2,7 +2,7 @@
 //
 // The root `mobius` command exposes subcommands for interacting with Mobius API
 // resources (workflows, runs, triggers, …) plus a `worker` subcommand that
-// claims and executes tasks from one or more queues.
+// claims and executes jobs from one or more queues.
 //
 // Global flags — `--api-url`, `--api-key`, `--project`, `--log-level` — are
 // shared by every subcommand and fall back to the matching MOBIUS_* environment

@@ -127,49 +127,49 @@ test("contract: claim_request_full sent verbatim", async () => {
   assert.deepStrictEqual(captured.last?.body, fixture);
 });
 
-test("contract: heartbeat_task_request sent verbatim", async () => {
-  const fixture = readFixture<JobFenceRequest>("heartbeat_task_request.json");
+test("contract: heartbeat_job_request sent verbatim", async () => {
+  const fixture = readFixture<JobFenceRequest>("heartbeat_job_request.json");
   const reply = { ok: true, directives: {} };
   const captured: { last?: Captured } = {};
   const restore = installFakeFetch({ status: 200, body: reply }, captured);
   try {
-    await newClient().heartbeatJob("task_test", fixture);
+    await newClient().heartbeatJob("job_test", fixture);
   } finally {
     restore();
   }
   assert.equal(
     captured.last?.path,
-    `/projects/${PROJECT}/jobs/task_test/heartbeat`,
+    `/projects/${PROJECT}/jobs/job_test/heartbeat`,
   );
   assert.deepStrictEqual(captured.last?.body, fixture);
 });
 
-test("contract: complete_task_request_success sent verbatim", async () => {
+test("contract: complete_job_request_success sent verbatim", async () => {
   const fixture = readFixture<JobCompleteRequest>(
-    "complete_task_request_success.json",
+    "complete_job_request_success.json",
   );
   const captured: { last?: Captured } = {};
   const restore = installFakeFetch({ status: 204 }, captured);
   try {
-    await newClient().completeJob("task_test", fixture);
+    await newClient().completeJob("job_test", fixture);
   } finally {
     restore();
   }
   assert.equal(
     captured.last?.path,
-    `/projects/${PROJECT}/jobs/task_test/complete`,
+    `/projects/${PROJECT}/jobs/job_test/complete`,
   );
   assert.deepStrictEqual(captured.last?.body, fixture);
 });
 
-test("contract: complete_task_request_failed sent verbatim", async () => {
+test("contract: complete_job_request_failed sent verbatim", async () => {
   const fixture = readFixture<JobCompleteRequest>(
-    "complete_task_request_failed.json",
+    "complete_job_request_failed.json",
   );
   const captured: { last?: Captured } = {};
   const restore = installFakeFetch({ status: 204 }, captured);
   try {
-    await newClient().completeJob("task_test", fixture);
+    await newClient().completeJob("job_test", fixture);
   } finally {
     restore();
   }
@@ -182,23 +182,23 @@ test("contract: claim_response parsed losslessly", async () => {
   const fixture = readFixture<JobClaim>("claim_response.json");
   const captured: { last?: Captured } = {};
   const restore = installFakeFetch({ status: 200, body: fixture }, captured);
-  let task;
+  let job;
   try {
-    task = await newClient().claimJob({ worker_id: "worker-abc" });
+    job = await newClient().claimJob({ worker_id: "worker-abc" });
   } finally {
     restore();
   }
-  assert.ok(task, "expected task, got null");
-  assert.deepStrictEqual(task, fixture);
+  assert.ok(job, "expected job, got null");
+  assert.deepStrictEqual(job, fixture);
 });
 
-test("contract: heartbeat_task_response parsed losslessly", async () => {
-  const fixture = readFixture<JobHeartbeat>("heartbeat_task_response.json");
+test("contract: heartbeat_job_response parsed losslessly", async () => {
+  const fixture = readFixture<JobHeartbeat>("heartbeat_job_response.json");
   const captured: { last?: Captured } = {};
   const restore = installFakeFetch({ status: 200, body: fixture }, captured);
   let heartbeat: JobHeartbeat;
   try {
-    heartbeat = await newClient().heartbeatJob("task_test", {
+    heartbeat = await newClient().heartbeatJob("job_test", {
       worker_id: "worker-abc",
       attempt: 1,
     });

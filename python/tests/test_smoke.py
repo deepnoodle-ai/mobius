@@ -41,8 +41,8 @@ def test_claim_job_returns_none_on_204() -> None:
         return httpx.Response(204)
 
     client = _client_with(handler)
-    task = client.claim_job(JobClaimRequest(worker_id="worker-1"))
-    assert task is None
+    job = client.claim_job(JobClaimRequest(worker_id="worker-1"))
+    assert job is None
 
 
 def test_client_defaults_to_production_api_host() -> None:
@@ -51,12 +51,12 @@ def test_client_defaults_to_production_api_host() -> None:
     client.close()
 
 
-def test_claim_job_returns_task_on_200() -> None:
+def test_claim_job_returns_job_on_200() -> None:
     def handler(_: httpx.Request) -> httpx.Response:
         return httpx.Response(
             200,
             json={
-                "job_id": "task_1",
+                "job_id": "job_1",
                 "run_id": "run_1",
                 "workflow_name": "hello",
                 "step_name": "greet",
@@ -68,11 +68,11 @@ def test_claim_job_returns_task_on_200() -> None:
         )
 
     client = _client_with(handler)
-    task = client.claim_job(JobClaimRequest(worker_id="worker-1"))
-    assert task is not None
-    assert task.job_id == "task_1"
-    assert task.action == "print"
-    assert task.parameters == {"msg": "hi"}
+    job = client.claim_job(JobClaimRequest(worker_id="worker-1"))
+    assert job is not None
+    assert job.job_id == "job_1"
+    assert job.action == "print"
+    assert job.parameters == {"msg": "hi"}
 
 
 def test_heartbeat_409_raises_lease_lost() -> None:
