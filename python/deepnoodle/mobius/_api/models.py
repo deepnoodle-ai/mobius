@@ -217,7 +217,7 @@ class AuditLogEntry(BaseModel):
     )
     action: Action = Field(..., description='Type of action performed')
     resource_type: str = Field(
-        ..., description='Type of resource affected (e.g., task, channel, document)'
+        ..., description='Type of resource affected (e.g., job, channel, document)'
     )
     resource_id: str = Field(..., description='ID of the affected resource')
     resource_name: str | None = Field(

@@ -114,21 +114,21 @@ class Worker:
         with ThreadPoolExecutor(max_workers=self._config.concurrency) as pool:
             while not self._stop_event.is_set():
                 try:
-                    task = self._client.claim_job(claim_req)
+                    job = self._client.claim_job(claim_req)
                 except Exception as exc:
                     logger.error("claim error: %s", exc)
                     time.sleep(2)
                     continue
 
-                if task is None:
+                if job is None:
                     continue
 
-                pool.submit(self._execute_task, task)
+                pool.submit(self._execute_job, job)
 
         logger.info("worker %s stopped", self._config.worker_id)
 
     def stop(self) -> None:
-        """Signal the claim loop to stop after in-flight tasks complete."""
+        """Signal the claim loop to stop after in-flight jobs complete."""
         self._stop_event.set()
 
     # -------------------------------------------------------------------------
@@ -143,24 +143,24 @@ class Worker:
             wait_seconds=self._config.poll_wait_seconds,
         )
 
-    def _execute_task(self, task: JobClaim) -> None:
+    def _execute_job(self, job: JobClaim) -> None:
         log: logging.LoggerAdapter[logging.Logger] = logging.LoggerAdapter(
             logger,
             {
-                "job_id": task.job_id,
-                "run_id": task.run_id,
-                "step": task.step_name,
-                "action": task.action,
-                "attempt": task.attempt,
+                "job_id": job.job_id,
+                "run_id": job.run_id,
+                "step": job.step_name,
+                "action": job.action,
+                "attempt": job.attempt,
             },
         )
-        log.info("job claimed (workflow=%s)", task.workflow_name)
+        log.info("job claimed (workflow=%s)", job.workflow_name)
 
-        fn = self._actions.get(task.action)
+        fn = self._actions.get(job.action)
         if fn is None:
-            msg = f"action {task.action!r} not registered on this worker"
+            msg = f"action {job.action!r} not registered on this worker"
             log.error(msg)
-            self._fail_task(task, "ActionNotRegistered", msg)
+            self._fail_job(job, "ActionNotRegistered", msg)
             return
 
         stop_hb = threading.Event()
@@ -170,38 +170,38 @@ class Worker:
         stop_events = threading.Event()
         hb_thread = threading.Thread(
             target=self._heartbeat_loop,
-            args=(task, stop_hb),
+            args=(job, stop_hb),
             daemon=True,
         )
         event_thread = threading.Thread(
             target=self._event_loop,
-            args=(task, event_queue, stop_events),
+            args=(job, event_queue, stop_events),
             daemon=True,
         )
         hb_thread.start()
         event_thread.start()
         ctx = ActionContext(
-            job_id=task.job_id,
-            run_id=task.run_id,
+            job_id=job.job_id,
+            run_id=job.run_id,
             project_id=self._client.project,
             worker_id=self._config.worker_id,
-            attempt=task.attempt,
-            queue=task.queue,
-            workflow_name=task.workflow_name,
-            step_name=task.step_name,
-            action=task.action,
+            attempt=job.attempt,
+            queue=job.queue,
+            workflow_name=job.workflow_name,
+            step_name=job.step_name,
+            action=job.action,
             _event_queue=event_queue,
         )
 
         try:
-            result = self._invoke_action(fn, ctx, dict(task.parameters or {}))
+            result = self._invoke_action(fn, ctx, dict(job.parameters or {}))
         except Exception as exc:
             stop_hb.set()
             stop_events.set()
             hb_thread.join()
             event_thread.join()
             log.error("action failed: %s", exc)
-            self._fail_task(task, "Error", str(exc))
+            self._fail_job(job, "Error", str(exc))
             return
 
         stop_hb.set()
@@ -216,10 +216,10 @@ class Worker:
         )
         try:
             self._client.complete_job(
-                task.job_id,
+                job.job_id,
                 JobCompleteRequest(
                     worker_id=self._config.worker_id,
-                    attempt=task.attempt,
+                    attempt=job.attempt,
                     status=JobStatus.completed,
                     result_b64=result_b64,
                 ),
@@ -230,44 +230,44 @@ class Worker:
         except Exception as exc:
             log.error("failed to complete job: %s", exc)
 
-    def _heartbeat_loop(self, task: JobClaim, stop: threading.Event) -> None:
+    def _heartbeat_loop(self, job: JobClaim, stop: threading.Event) -> None:
         interval = (
-            task.heartbeat_interval_seconds
-            if task.heartbeat_interval_seconds
+            job.heartbeat_interval_seconds
+            if job.heartbeat_interval_seconds
             else self._config.heartbeat_interval
         )
         fence = JobFenceRequest(
-            worker_id=self._config.worker_id, attempt=task.attempt
+            worker_id=self._config.worker_id, attempt=job.attempt
         )
         while not stop.wait(timeout=float(interval)):
             try:
-                envelope = self._client.heartbeat_job(task.job_id, fence)
+                envelope = self._client.heartbeat_job(job.job_id, fence)
                 if envelope.directives.should_cancel:
                     logger.warning(
-                        "cancel directive received for job %s", task.job_id
+                        "cancel directive received for job %s", job.job_id
                     )
                     stop.set()
                     return
             except LeaseLostError:
                 logger.warning(
-                    "lease lost during heartbeat for job %s", task.job_id
+                    "lease lost during heartbeat for job %s", job.job_id
                 )
                 stop.set()
                 return
             except Exception as exc:
                 logger.error(
-                    "heartbeat error for job %s: %s", task.job_id, exc
+                    "heartbeat error for job %s: %s", job.job_id, exc
                 )
 
-    def _fail_task(
-        self, task: JobClaim, error_type: str, message: str
+    def _fail_job(
+        self, job: JobClaim, error_type: str, message: str
     ) -> None:
         try:
             self._client.complete_job(
-                task.job_id,
+                job.job_id,
                 JobCompleteRequest(
                     worker_id=self._config.worker_id,
-                    attempt=task.attempt,
+                    attempt=job.attempt,
                     status=JobStatus.failed,
                     error_type=error_type,
                     error_message=message,
@@ -275,12 +275,12 @@ class Worker:
             )
         except Exception as exc:
             logger.error(
-                "failed to report job failure for %s: %s", task.job_id, exc
+                "failed to report job failure for %s: %s", job.job_id, exc
             )
 
     def _event_loop(
         self,
-        task: JobClaim,
+        job: JobClaim,
         event_queue: "queue.Queue[JobEventEntry]",
         stop: threading.Event,
     ) -> None:
@@ -299,17 +299,17 @@ class Worker:
 
             try:
                 self._client.emit_job_events(
-                    task.job_id,
+                    job.job_id,
                     JobEventsRequest(
                         worker_id=self._config.worker_id,
-                        attempt=task.attempt,
+                        attempt=job.attempt,
                         events=batch,
                     ),
                 )
             except LeaseLostError:
                 logger.warning(
                     "lease lost during custom-event emit for job %s",
-                    task.job_id,
+                    job.job_id,
                 )
                 return
             except PayloadTooLargeError as exc:
@@ -319,7 +319,7 @@ class Worker:
             except Exception as exc:
                 logger.warning(
                     "failed to emit custom event batch for job %s: %s",
-                    task.job_id,
+                    job.job_id,
                     exc,
                 )
 

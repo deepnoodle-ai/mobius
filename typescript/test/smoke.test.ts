@@ -53,15 +53,15 @@ test("smoke: defaults to the production API host", async () => {
 
 test("smoke: claimJob returns null on 204", async () => {
   const client = clientWithFakeFetch({ status: 204 });
-  const task = await client.claimJob({ worker_id: "worker-1" });
-  assert.equal(task, null);
+  const job = await client.claimJob({ worker_id: "worker-1" });
+  assert.equal(job, null);
 });
 
-test("smoke: claimJob returns task on 200", async () => {
+test("smoke: claimJob returns job on 200", async () => {
   const client = clientWithFakeFetch({
     status: 200,
     body: {
-      job_id: "task_1",
+      job_id: "job_1",
       run_id: "run_1",
       workflow_name: "hello",
       step_name: "greet",
@@ -71,16 +71,16 @@ test("smoke: claimJob returns task on 200", async () => {
       queue: "default",
     },
   });
-  const task = await client.claimJob({ worker_id: "worker-1" });
-  assert.ok(task);
-  assert.equal(task!.job_id, "task_1");
-  assert.equal(task!.action, "print");
+  const job = await client.claimJob({ worker_id: "worker-1" });
+  assert.ok(job);
+  assert.equal(job!.job_id, "job_1");
+  assert.equal(job!.action, "print");
 });
 
 test("smoke: heartbeatJob 409 raises LeaseLostError", async () => {
   const client = clientWithFakeFetch({ status: 409 });
   await assert.rejects(
-    () => client.heartbeatJob("task_1", { worker_id: "w", attempt: 1 }),
+    () => client.heartbeatJob("job_1", { worker_id: "w", attempt: 1 }),
     LeaseLostError,
   );
 });
@@ -89,7 +89,7 @@ test("smoke: completeJob 409 raises LeaseLostError", async () => {
   const client = clientWithFakeFetch({ status: 409 });
   await assert.rejects(
     () =>
-      client.completeJob("task_1", {
+      client.completeJob("job_1", {
         worker_id: "w",
         attempt: 1,
         status: "completed",
@@ -112,7 +112,7 @@ test("smoke: emitJobEvent posts to project events endpoint", async () => {
     baseURL: "https://api.example.invalid",
     project: "test-project",
   });
-  await client.emitJobEvent("task_1", {
+  await client.emitJobEvent("job_1", {
     worker_id: "worker-1",
     attempt: 1,
     type: "scrape.page_done",
@@ -121,7 +121,7 @@ test("smoke: emitJobEvent posts to project events endpoint", async () => {
 
   assert.equal(
     requestedURL,
-    "https://api.example.invalid/projects/test-project/jobs/task_1/events",
+    "https://api.example.invalid/projects/test-project/jobs/job_1/events",
   );
   assert.match(requestBody, /"type":"scrape\.page_done"/);
 });
@@ -130,7 +130,7 @@ test("smoke: emitJobEvents 413 raises PayloadTooLargeError", async () => {
   const client = clientWithFakeFetch({ status: 413 });
   await assert.rejects(
     () =>
-      client.emitJobEvent("task_1", {
+      client.emitJobEvent("job_1", {
         worker_id: "w",
         attempt: 1,
         type: "oversize",
@@ -151,7 +151,7 @@ test("smoke: emitJobEvents 429 raises RateLimitedError", async () => {
   });
   await assert.rejects(
     () =>
-      client.emitJobEvent("task_1", {
+      client.emitJobEvent("job_1", {
         worker_id: "w",
         attempt: 1,
         type: "progress",

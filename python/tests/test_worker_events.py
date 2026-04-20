@@ -9,8 +9,8 @@ from deepnoodle.mobius.worker import Worker, WorkerConfig
 
 
 class FakeClient:
-    def __init__(self, task) -> None:
-        self.task = task
+    def __init__(self, job) -> None:
+        self.job = job
         self.project = "prj_1"
         self.claims = 0
         self.emitted: list[tuple[str, str, dict[str, object]]] = []
@@ -19,7 +19,7 @@ class FakeClient:
     def claim_job(self, _req):
         self.claims += 1
         if self.claims == 1:
-            return self.task
+            return self.job
         return None
 
     def heartbeat_job(self, *_args, **_kwargs):
@@ -37,7 +37,7 @@ class FakeClient:
 
 
 def test_worker_supports_action_context_emit_event() -> None:
-    task = SimpleNamespace(
+    job = SimpleNamespace(
         job_id="job_1",
         run_id="run_1",
         workflow_name="demo",
@@ -48,7 +48,7 @@ def test_worker_supports_action_context_emit_event() -> None:
         queue="default",
         heartbeat_interval_seconds=60,
     )
-    client = FakeClient(task)
+    client = FakeClient(job)
     worker = Worker(
         client,  # type: ignore[arg-type]
         WorkerConfig(

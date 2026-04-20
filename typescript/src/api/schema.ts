@@ -1773,7 +1773,7 @@ export interface components {
              * @enum {string}
              */
             action: "create" | "update" | "delete";
-            /** @description Type of resource affected (e.g., task, channel, document) */
+            /** @description Type of resource affected (e.g., job, channel, document) */
             resource_type: string;
             /** @description ID of the affected resource */
             resource_id: string;

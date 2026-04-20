@@ -13,7 +13,7 @@ import (
 )
 
 // registerWorkerCommand attaches the `mobius worker` subcommand, which claims
-// and executes tasks from one or more queues in the configured project. The
+// and executes jobs from one or more queues in the configured project. The
 // worker ships with every stock action from github.com/deepnoodle-ai/mobius/mobius/action
 // registered, so it can run trivial and test workflows out of the box.
 func registerWorkerCommand(app *cli.App) {

@@ -57,9 +57,9 @@ test("worker: action context can emit custom events", async () => {
 
   await (
     worker as unknown as {
-      executeTask(task: JobClaim, signal: AbortSignal): Promise<void>;
+      executeJob(job: JobClaim, signal: AbortSignal): Promise<void>;
     }
-  ).executeTask(
+  ).executeJob(
     {
       job_id: "job_1",
       run_id: "run_1",

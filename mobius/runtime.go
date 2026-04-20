@@ -15,14 +15,14 @@ import (
 )
 
 // ErrLeaseLost is returned when the server responds with 409 Conflict,
-// indicating that the worker's lease on a task has been reclaimed.
+// indicating that the worker's lease on a job has been reclaimed.
 var ErrLeaseLost = errors.New("mobius: lease lost")
 
-// runtimeTask is the SDK's internal representation of a claimed task.
-// Each task represents a single action invocation on behalf of a
+// runtimeJob is the SDK's internal representation of a claimed job.
+// Each job represents a single action invocation on behalf of a
 // workflow run; workers no longer claim whole runs.
-type runtimeTask struct {
-	TaskID            string
+type runtimeJob struct {
+	JobID             string
 	RunID             string
 	ProjectID         string
 	WorkflowName      string
@@ -50,10 +50,10 @@ type jobEventsRequest struct {
 	Events   []jobEventEntry `json:"events"`
 }
 
-// runtimeClaim long-polls for the next available task matching the
+// runtimeClaim long-polls for the next available job matching the
 // worker's queue and action filters. Returns nil when the poll
 // window closes empty.
-func (c *Client) runtimeClaim(ctx context.Context, cfg WorkerConfig) (*runtimeTask, error) {
+func (c *Client) runtimeClaim(ctx context.Context, cfg WorkerConfig) (*runtimeJob, error) {
 	wait := cfg.PollWaitSeconds
 	data := api.JobClaimRequest{
 		WorkerId:    cfg.WorkerID,
@@ -95,8 +95,8 @@ func (c *Client) runtimeClaim(ctx context.Context, cfg WorkerConfig) (*runtimeTa
 	if claim.HeartbeatIntervalSeconds != nil {
 		hb = time.Duration(*claim.HeartbeatIntervalSeconds) * time.Second
 	}
-	return &runtimeTask{
-		TaskID:            claim.JobId,
+	return &runtimeJob{
+		JobID:             claim.JobId,
 		RunID:             claim.RunId,
 		ProjectID:         c.projectSlug,
 		WorkflowName:      claim.WorkflowName,
@@ -110,12 +110,12 @@ func (c *Client) runtimeClaim(ctx context.Context, cfg WorkerConfig) (*runtimeTa
 	}, nil
 }
 
-// runtimeHeartbeat refreshes the lease on a claimed task and returns
+// runtimeHeartbeat refreshes the lease on a claimed job and returns
 // any directives from the server. Returns ErrLeaseLost on 409.
-func (c *Client) runtimeHeartbeat(ctx context.Context, task *runtimeTask) (*api.JobHeartbeatDirectives, error) {
-	resp, err := c.runtimeRequest(ctx, http.MethodPost, fmt.Sprintf("/projects/%s/jobs/%s/heartbeat", c.projectSlug, task.TaskID), api.JobFenceRequest{
-		WorkerId: task.WorkerID,
-		Attempt:  task.Attempt,
+func (c *Client) runtimeHeartbeat(ctx context.Context, job *runtimeJob) (*api.JobHeartbeatDirectives, error) {
+	resp, err := c.runtimeRequest(ctx, http.MethodPost, fmt.Sprintf("/projects/%s/jobs/%s/heartbeat", c.projectSlug, job.JobID), api.JobFenceRequest{
+		WorkerId: job.WorkerID,
+		Attempt:  job.Attempt,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("mobius: heartbeat: %w", err)
@@ -134,13 +134,13 @@ func (c *Client) runtimeHeartbeat(ctx context.Context, task *runtimeTask) (*api.
 	return &body.Directives, nil
 }
 
-// runtimeCompleteSuccess reports a successful task completion along
+// runtimeCompleteSuccess reports a successful job completion along
 // with its action result. The result is JSON-encoded and delivered
 // as a base64-encoded blob.
-func (c *Client) runtimeCompleteSuccess(ctx context.Context, task *runtimeTask, result any) error {
+func (c *Client) runtimeCompleteSuccess(ctx context.Context, job *runtimeJob, result any) error {
 	data := api.JobCompleteRequest{
-		WorkerId: task.WorkerID,
-		Attempt:  task.Attempt,
+		WorkerId: job.WorkerID,
+		Attempt:  job.Attempt,
 		Status:   api.JobCompleteRequestStatusCompleted,
 	}
 	if result != nil {
@@ -151,27 +151,27 @@ func (c *Client) runtimeCompleteSuccess(ctx context.Context, task *runtimeTask, 
 		enc := base64.StdEncoding.EncodeToString(b)
 		data.ResultB64 = &enc
 	}
-	return c.runtimeCompleteRaw(ctx, task.TaskID, data)
+	return c.runtimeCompleteRaw(ctx, job.JobID, data)
 }
 
-// runtimeCompleteFailure reports a failed task with an error message
+// runtimeCompleteFailure reports a failed job with an error message
 // and optional error type. The server uses the error type to decide
-// whether the task is retryable.
-func (c *Client) runtimeCompleteFailure(ctx context.Context, task *runtimeTask, errorType, message string) error {
+// whether the job is retryable.
+func (c *Client) runtimeCompleteFailure(ctx context.Context, job *runtimeJob, errorType, message string) error {
 	data := api.JobCompleteRequest{
-		WorkerId:     task.WorkerID,
-		Attempt:      task.Attempt,
+		WorkerId:     job.WorkerID,
+		Attempt:      job.Attempt,
 		Status:       api.JobCompleteRequestStatusFailed,
 		ErrorMessage: strPtr(message),
 	}
 	if errorType != "" {
 		data.ErrorType = &errorType
 	}
-	return c.runtimeCompleteRaw(ctx, task.TaskID, data)
+	return c.runtimeCompleteRaw(ctx, job.JobID, data)
 }
 
-func (c *Client) runtimeCompleteRaw(ctx context.Context, taskID string, req api.JobCompleteRequest) error {
-	resp, err := c.runtimeRequest(ctx, http.MethodPost, fmt.Sprintf("/projects/%s/jobs/%s/complete", c.projectSlug, taskID), req)
+func (c *Client) runtimeCompleteRaw(ctx context.Context, jobID string, req api.JobCompleteRequest) error {
+	resp, err := c.runtimeRequest(ctx, http.MethodPost, fmt.Sprintf("/projects/%s/jobs/%s/complete", c.projectSlug, jobID), req)
 	if err != nil {
 		return fmt.Errorf("mobius: complete: %w", err)
 	}
@@ -185,13 +185,13 @@ func (c *Client) runtimeCompleteRaw(ctx context.Context, taskID string, req api.
 	return nil
 }
 
-func (c *Client) runtimeEmitEvents(ctx context.Context, task *runtimeTask, events []jobEventEntry) error {
+func (c *Client) runtimeEmitEvents(ctx context.Context, job *runtimeJob, events []jobEventEntry) error {
 	if len(events) == 0 {
 		return nil
 	}
-	resp, err := c.runtimeRequest(ctx, http.MethodPost, fmt.Sprintf("/projects/%s/jobs/%s/events", c.projectSlug, task.TaskID), jobEventsRequest{
-		WorkerID: task.WorkerID,
-		Attempt:  task.Attempt,
+	resp, err := c.runtimeRequest(ctx, http.MethodPost, fmt.Sprintf("/projects/%s/jobs/%s/events", c.projectSlug, job.JobID), jobEventsRequest{
+		WorkerID: job.WorkerID,
+		Attempt:  job.Attempt,
 		Events:   events,
 	})
 	if err != nil {
