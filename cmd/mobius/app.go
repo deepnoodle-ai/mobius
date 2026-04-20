@@ -30,10 +30,10 @@ func newApp() *cli.App {
 		cli.String("api-key", "").
 			Env("MOBIUS_API_KEY").
 			Help("API key (mbx_...)"),
-		cli.String("namespace", "n").
-			Env("MOBIUS_NAMESPACE").
+		cli.String("project", "").
+			Env("MOBIUS_PROJECT").
 			Default("default").
-			Help("Namespace slug"),
+			Help("Project slug"),
 		cli.String("log-level", "").
 			Env("MOBIUS_LOG_LEVEL").
 			Default("info").
@@ -56,7 +56,7 @@ func clientFromContext(ctx *cli.Context) *mobius.Client {
 	return mobius.NewClient(
 		mobius.WithBaseURL(ctx.String("api-url")),
 		mobius.WithAPIKey(ctx.String("api-key")),
-		mobius.WithNamespaceSlug(ctx.String("namespace")),
+		mobius.WithProjectSlug(ctx.String("project")),
 		mobius.WithLogger(logger),
 	)
 }

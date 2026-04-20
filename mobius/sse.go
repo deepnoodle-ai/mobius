@@ -57,7 +57,7 @@ type sseEnvelope struct {
 //		fmt.Printf("Event: %v (seq %d)\n", ev.Type, ev.Seq)
 //	}
 func (c *Client) WatchRun(ctx context.Context, runID string, since int64) (<-chan RunEvent, error) {
-	resp, err := c.ac.StreamRunEventsWithResponse(ctx, api.NamespaceSlugParam(c.namespaceSlug), api.IDParam(runID), &api.StreamRunEventsParams{
+	resp, err := c.ac.StreamRunEventsWithResponse(ctx, api.ProjectSlugParam(c.projectSlug), api.IDParam(runID), &api.StreamRunEventsParams{
 		Since: &since,
 	})
 	if err != nil {
@@ -72,7 +72,7 @@ func (c *Client) WatchRun(ctx context.Context, runID string, since int64) (<-cha
 	return ch, nil
 }
 
-// WatchNamespaceRuns opens a namespace-wide Server-Sent Events stream and emits
+// WatchProjectRuns opens a project-wide Server-Sent Events stream and emits
 // decoded RunEvent values on the returned channel. The channel is closed
 // when ctx is cancelled or the server closes the connection.
 //
@@ -81,22 +81,22 @@ func (c *Client) WatchRun(ctx context.Context, runID string, since int64) (<-cha
 //
 // Example:
 //
-//	events, err := client.WatchNamespaceRuns(ctx, 0)
+//	events, err := client.WatchProjectRuns(ctx, 0)
 //	if err != nil {
 //		return err
 //	}
 //	for ev := range events {
 //		fmt.Printf("Run %s event: %v (seq %d)\n", ev.RunID, ev.Type, ev.Seq)
 //	}
-func (c *Client) WatchNamespaceRuns(ctx context.Context, since int64) (<-chan RunEvent, error) {
-	resp, err := c.ac.StreamNamespaceRunEventsWithResponse(ctx, api.NamespaceSlugParam(c.namespaceSlug), &api.StreamNamespaceRunEventsParams{
+func (c *Client) WatchProjectRuns(ctx context.Context, since int64) (<-chan RunEvent, error) {
+	resp, err := c.ac.StreamProjectRunEventsWithResponse(ctx, api.ProjectSlugParam(c.projectSlug), &api.StreamProjectRunEventsParams{
 		Since: &since,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("mobius: open namespace stream: %w", err)
+		return nil, fmt.Errorf("mobius: open project stream: %w", err)
 	}
 	if resp.StatusCode() != http.StatusOK {
-		return nil, fmt.Errorf("mobius: stream namespace events: unexpected status %d", resp.StatusCode())
+		return nil, fmt.Errorf("mobius: stream project events: unexpected status %d", resp.StatusCode())
 	}
 
 	ch := make(chan RunEvent)

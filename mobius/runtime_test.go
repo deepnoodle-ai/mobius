@@ -3,12 +3,14 @@ package mobius
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/deepnoodle-ai/wonton/assert"
 )
 
 // --- runtime HTTP paths ----------------------------------------------------
@@ -57,162 +59,172 @@ func newTestClient(t *testing.T, h http.Handler) (*Client, *httptest.Server) {
 	t.Helper()
 	srv := httptest.NewServer(h)
 	t.Cleanup(srv.Close)
-	c := NewClient(WithBaseURL(srv.URL), WithAPIKey("mbx_test"), WithNamespaceSlug("test-ns"))
+	c := NewClient(WithBaseURL(srv.URL), WithAPIKey("mbx_test"), WithProjectSlug("test-project"))
 	return c, srv
 }
 
 func TestNewClient_DefaultBaseURL(t *testing.T) {
 	c := NewClient()
-	if c.baseURL != DefaultBaseURL {
-		t.Fatalf("baseURL = %q, want %q", c.baseURL, DefaultBaseURL)
-	}
+	assert.Equal(t, c.baseURL, DefaultBaseURL)
 }
 
 func TestNewClient_WithBaseURLOverride(t *testing.T) {
 	c := NewClient(WithBaseURL("https://api.example.invalid"))
-	if c.baseURL != "https://api.example.invalid" {
-		t.Fatalf("baseURL = %q, want override", c.baseURL)
-	}
+	assert.Equal(t, c.baseURL, "https://api.example.invalid")
 }
 
 func TestRuntimeClaim_Task(t *testing.T) {
-	claimBody := `{"data":{"job_id":"task_1","run_id":"run_1","namespace_id":"ns_1","workflow_name":"hello","step_name":"greet","action":"print","parameters":{"msg":"hi"},"attempt":1,"queue":"default","heartbeat_interval_seconds":15}}`
+	claimBody := `{"job_id":"task_1","run_id":"run_1","workflow_name":"hello","step_name":"greet","action":"print","parameters":{"msg":"hi"},"attempt":1,"queue":"default","heartbeat_interval_seconds":15}`
 	h := newRecorder(t, map[string]stubResponse{
-		"/namespaces/test-ns/jobs/claim": {status: 200, body: claimBody},
+		"/projects/test-project/jobs/claim": {status: 200, body: claimBody},
 	})
 	c, _ := newTestClient(t, h)
 
 	cfg := WorkerConfig{WorkerID: "w1", Name: "name", Version: "v1", PollWaitSeconds: 1, Actions: []string{"print"}}
 	task, err := c.runtimeClaim(context.Background(), cfg)
-	if err != nil {
-		t.Fatalf("claim: %v", err)
-	}
-	if task == nil {
-		t.Fatal("expected task, got nil")
-	}
-	if task.TaskID != "task_1" || task.RunID != "run_1" || task.Action != "print" {
-		t.Errorf("task = %+v", task)
-	}
-	if task.Attempt != 1 || task.Queue != "default" || task.StepName != "greet" {
-		t.Errorf("task fields: %+v", task)
-	}
-	if task.WorkerID != "w1" {
-		t.Errorf("worker id = %q, want w1", task.WorkerID)
-	}
-	if task.HeartbeatInterval.Seconds() != 15 {
-		t.Errorf("heartbeat interval = %v, want 15s", task.HeartbeatInterval)
-	}
-	if got := h.lastHeader["/namespaces/test-ns/jobs/claim"].Get("Authorization"); got != "Bearer mbx_test" {
-		t.Errorf("auth header = %q", got)
-	}
+	assert.NoError(t, err)
+	assert.NotNil(t, task)
+	assert.Equal(t, task.TaskID, "task_1")
+	assert.Equal(t, task.RunID, "run_1")
+	assert.Equal(t, task.Action, "print")
+	assert.Equal(t, task.Attempt, 1)
+	assert.Equal(t, task.Queue, "default")
+	assert.Equal(t, task.StepName, "greet")
+	assert.Equal(t, task.WorkerID, "w1")
+	assert.Equal(t, task.HeartbeatInterval, 15*time.Second)
+	assert.Equal(t, h.lastHeader["/projects/test-project/jobs/claim"].Get("Authorization"), "Bearer mbx_test")
+
 	var sent map[string]any
-	_ = json.Unmarshal(h.lastBody["/namespaces/test-ns/jobs/claim"], &sent)
-	data, _ := sent["data"].(map[string]any)
-	if data == nil {
-		t.Fatalf("claim body missing data envelope: %v", sent)
-	}
-	if data["worker_id"] != "w1" || data["worker_name"] != "name" {
-		t.Errorf("claim body = %v", data)
-	}
-	if acts, _ := data["actions"].([]any); len(acts) != 1 || acts[0] != "print" {
-		t.Errorf("actions filter not forwarded: %v", data["actions"])
-	}
+	_ = json.Unmarshal(h.lastBody["/projects/test-project/jobs/claim"], &sent)
+	assert.Equal(t, sent["worker_id"], "w1")
+	assert.Equal(t, sent["worker_name"], "name")
+	acts, _ := sent["actions"].([]any)
+	assert.Equal(t, len(acts), 1)
+	assert.Equal(t, acts[0], "print")
 }
 
 func TestRuntimeClaim_Empty(t *testing.T) {
 	h := newRecorder(t, map[string]stubResponse{
-		"/namespaces/test-ns/jobs/claim": {status: 204, body: ""},
+		"/projects/test-project/jobs/claim": {status: 204, body: ""},
 	})
 	c, _ := newTestClient(t, h)
 	task, err := c.runtimeClaim(context.Background(), WorkerConfig{WorkerID: "w1", PollWaitSeconds: 1})
-	if err != nil {
-		t.Fatalf("claim: %v", err)
-	}
-	if task != nil {
-		t.Errorf("expected nil task, got %+v", task)
-	}
+	assert.NoError(t, err)
+	assert.Nil(t, task)
 }
 
 func TestRuntimeHeartbeat_Directives(t *testing.T) {
 	h := newRecorder(t, map[string]stubResponse{
-		"/namespaces/test-ns/jobs/": {status: 200, body: `{"data":{"ok":true,"directives":{"should_cancel":true}}}`},
+		"/projects/test-project/jobs/": {status: 200, body: `{"ok":true,"directives":{"should_cancel":true}}`},
 	})
 	c, _ := newTestClient(t, h)
 	task := &runtimeTask{TaskID: "task_1", Attempt: 1, WorkerID: "w1"}
 	dirs, err := c.runtimeHeartbeat(context.Background(), task)
-	if err != nil {
-		t.Fatalf("heartbeat: %v", err)
-	}
-	if dirs == nil || dirs.ShouldCancel == nil || !*dirs.ShouldCancel {
-		t.Errorf("expected should_cancel=true, got %+v", dirs)
-	}
+	assert.NoError(t, err)
+	assert.NotNil(t, dirs)
+	assert.NotNil(t, dirs.ShouldCancel)
+	assert.True(t, *dirs.ShouldCancel)
 }
 
 func TestRuntimeHeartbeat_LeaseLost(t *testing.T) {
 	h := newRecorder(t, map[string]stubResponse{
-		"/namespaces/test-ns/jobs/": {status: 409, body: ""},
+		"/projects/test-project/jobs/": {status: 409, body: ""},
 	})
 	c, _ := newTestClient(t, h)
 	_, err := c.runtimeHeartbeat(context.Background(), &runtimeTask{TaskID: "task_1", Attempt: 1, WorkerID: "w1"})
-	if !errors.Is(err, ErrLeaseLost) {
-		t.Errorf("err = %v, want ErrLeaseLost", err)
-	}
+	assert.ErrorIs(t, err, ErrLeaseLost)
 }
 
 func TestRuntimeCompleteSuccess(t *testing.T) {
 	h := newRecorder(t, map[string]stubResponse{
-		"/namespaces/test-ns/jobs/": {status: 204, body: ""},
+		"/projects/test-project/jobs/": {status: 204, body: ""},
 	})
 	c, _ := newTestClient(t, h)
 	task := &runtimeTask{TaskID: "task_1", Attempt: 1, WorkerID: "w1"}
 	err := c.runtimeCompleteSuccess(context.Background(), task, map[string]any{"ok": true})
-	if err != nil {
-		t.Fatalf("complete: %v", err)
-	}
+	assert.NoError(t, err)
+
 	var sent map[string]any
-	_ = json.Unmarshal(h.lastBody["/namespaces/test-ns/jobs/"], &sent)
-	data, _ := sent["data"].(map[string]any)
-	if data == nil {
-		t.Fatalf("complete body missing data envelope: %v", sent)
-	}
-	if data["status"] != "completed" {
-		t.Errorf("status = %v", data["status"])
-	}
-	if data["result_b64"] == nil {
-		t.Errorf("expected result_b64 in body, got %v", data)
-	}
+	_ = json.Unmarshal(h.lastBody["/projects/test-project/jobs/"], &sent)
+	assert.Equal(t, sent["status"], "completed")
+	assert.NotNil(t, sent["result_b64"])
 }
 
 func TestRuntimeCompleteFailure_LeaseLost(t *testing.T) {
 	h := newRecorder(t, map[string]stubResponse{
-		"/namespaces/test-ns/jobs/": {status: 409, body: ""},
+		"/projects/test-project/jobs/": {status: 409, body: ""},
 	})
 	c, _ := newTestClient(t, h)
 	err := c.runtimeCompleteFailure(context.Background(), &runtimeTask{TaskID: "task_1", Attempt: 1, WorkerID: "w1"}, "Error", "boom")
-	if !errors.Is(err, ErrLeaseLost) {
-		t.Errorf("err = %v, want ErrLeaseLost", err)
-	}
+	assert.ErrorIs(t, err, ErrLeaseLost)
 }
 
 func TestRuntimeCompleteFailure_Body(t *testing.T) {
 	h := newRecorder(t, map[string]stubResponse{
-		"/namespaces/test-ns/jobs/": {status: 204, body: ""},
+		"/projects/test-project/jobs/": {status: 204, body: ""},
 	})
 	c, _ := newTestClient(t, h)
 	err := c.runtimeCompleteFailure(context.Background(), &runtimeTask{TaskID: "task_1", Attempt: 2, WorkerID: "w1"}, "Timeout", "deadline exceeded")
-	if err != nil {
-		t.Fatalf("complete: %v", err)
-	}
+	assert.NoError(t, err)
+
 	var sent map[string]any
-	_ = json.Unmarshal(h.lastBody["/namespaces/test-ns/jobs/"], &sent)
-	data, _ := sent["data"].(map[string]any)
-	if data == nil {
-		t.Fatalf("complete body missing data envelope: %v", sent)
-	}
-	if data["status"] != "failed" {
-		t.Errorf("status = %v", data["status"])
-	}
-	if data["error_type"] != "Timeout" || data["error_message"] != "deadline exceeded" {
-		t.Errorf("error fields = %v", data)
-	}
+	_ = json.Unmarshal(h.lastBody["/projects/test-project/jobs/"], &sent)
+	assert.Equal(t, sent["status"], "failed")
+	assert.Equal(t, sent["error_type"], "Timeout")
+	assert.Equal(t, sent["error_message"], "deadline exceeded")
+}
+
+func TestRuntimeEmitEvents(t *testing.T) {
+	h := newRecorder(t, map[string]stubResponse{
+		"/projects/test-project/jobs/task_1/events": {status: 204, body: ""},
+	})
+	c, _ := newTestClient(t, h)
+	task := &runtimeTask{TaskID: "task_1", Attempt: 1, WorkerID: "w1"}
+	err := c.runtimeEmitEvents(context.Background(), task, []jobEventEntry{
+		{Type: "scrape.page_done", Payload: map[string]any{"url": "https://example.com"}},
+	})
+	assert.NoError(t, err)
+
+	var sent map[string]any
+	_ = json.Unmarshal(h.lastBody["/projects/test-project/jobs/task_1/events"], &sent)
+	assert.Equal(t, sent["worker_id"], "w1")
+	assert.Equal(t, sent["attempt"], float64(1))
+	events, _ := sent["events"].([]any)
+	assert.Len(t, events, 1)
+	first, _ := events[0].(map[string]any)
+	assert.Equal(t, first["type"], "scrape.page_done")
+}
+
+func TestWorkerExecuteTask_EmitsCustomEvents(t *testing.T) {
+	h := newRecorder(t, map[string]stubResponse{
+		"/projects/test-project/jobs/task_1/complete": {status: 204, body: ""},
+		"/projects/test-project/jobs/task_1/events":   {status: 204, body: ""},
+	})
+	c, _ := newTestClient(t, h)
+	w := c.NewWorker(WorkerConfig{WorkerID: "w1", EventBatchSize: 10})
+	w.Register(ActionFunc("print", func(ctx Context, params map[string]any) (any, error) {
+		ctx.EmitEvent("scrape.started", map[string]any{"url": params["url"]})
+		return map[string]any{"ok": true}, nil
+	}))
+
+	w.executeTask(context.Background(), &runtimeTask{
+		TaskID:            "task_1",
+		RunID:             "run_1",
+		ProjectID:         "prj_1",
+		WorkflowName:      "hello",
+		StepName:          "greet",
+		Action:            "print",
+		Parameters:        map[string]any{"url": "https://example.com"},
+		Attempt:           1,
+		Queue:             "default",
+		WorkerID:          "w1",
+		HeartbeatInterval: time.Hour,
+	})
+
+	var sent map[string]any
+	_ = json.Unmarshal(h.lastBody["/projects/test-project/jobs/task_1/events"], &sent)
+	events, _ := sent["events"].([]any)
+	assert.Len(t, events, 1)
+	first, _ := events[0].(map[string]any)
+	assert.Equal(t, first["type"], "scrape.started")
 }

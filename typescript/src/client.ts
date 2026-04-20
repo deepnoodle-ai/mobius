@@ -1,30 +1,63 @@
 import type {
   JobClaim,
-  JobClaimDataResponse,
   JobClaimRequest,
   JobCompleteRequest,
   JobFenceRequest,
   JobHeartbeat,
-  JobHeartbeatDataResponse,
 } from "./api/index.js";
 
 export interface ClientOptions {
   apiKey: string;
   baseURL?: string;
-  /** Namespace slug used for all namespace-scoped operations. */
+  /** Project slug used for all project-scoped operations. */
+  project?: string;
+  /** Compatibility alias for older callers. */
   namespace?: string;
   /** Fetch timeout in milliseconds. Defaults to 60_000. */
   timeoutMs?: number;
 }
 
 export const DEFAULT_BASE_URL = "https://api.mobiusops.ai";
-export const DEFAULT_NAMESPACE = "default";
+export const DEFAULT_PROJECT = "default";
+export const DEFAULT_NAMESPACE = DEFAULT_PROJECT;
 
 export class LeaseLostError extends Error {
   constructor(public readonly jobId: string) {
     super(`lease lost for job ${jobId}`);
     this.name = "LeaseLostError";
   }
+}
+
+export class PayloadTooLargeError extends Error {
+  constructor(public readonly jobId: string) {
+    super(`custom event payload too large for job ${jobId}`);
+    this.name = "PayloadTooLargeError";
+  }
+}
+
+export class RateLimitedError extends Error {
+  constructor(
+    public readonly jobId: string,
+    public readonly retryAfter?: number,
+  ) {
+    super(
+      retryAfter != null
+        ? `custom event rate limited for job ${jobId} (retry after ${retryAfter}s)`
+        : `custom event rate limited for job ${jobId}`,
+    );
+    this.name = "RateLimitedError";
+  }
+}
+
+export interface JobEventEntry {
+  type: string;
+  payload: Record<string, unknown>;
+}
+
+export interface JobEventsRequest {
+  worker_id: string;
+  attempt: number;
+  events: JobEventEntry[];
 }
 
 /**
@@ -37,13 +70,13 @@ export class LeaseLostError extends Error {
  */
 export class Client {
   private readonly baseURL: string;
-  private readonly namespace: string;
+  readonly project: string;
   private readonly headers: Record<string, string>;
   private readonly timeoutMs: number;
 
   constructor(opts: ClientOptions) {
     this.baseURL = (opts.baseURL ?? DEFAULT_BASE_URL).replace(/\/$/, "");
-    this.namespace = opts.namespace ?? DEFAULT_NAMESPACE;
+    this.project = opts.project ?? opts.namespace ?? DEFAULT_PROJECT;
     this.headers = {
       Authorization: `Bearer ${opts.apiKey}`,
       "Content-Type": "application/json",
@@ -60,12 +93,11 @@ export class Client {
     signal?: AbortSignal,
   ): Promise<JobClaim | null> {
     const resp = await this.request(
-      `/namespaces/${encodeURIComponent(this.namespace)}/jobs/claim`,
-      { method: "POST", body: { data: req }, signal },
+      `/projects/${encodeURIComponent(this.project)}/jobs/claim`,
+      { method: "POST", body: req, signal },
     );
     if (resp.status === 204) return null;
-    const body = (await resp.json()) as JobClaimDataResponse;
-    return body.data;
+    return (await resp.json()) as JobClaim;
   }
 
   /** Refresh the lease on a claimed job. */
@@ -74,21 +106,55 @@ export class Client {
     req: JobFenceRequest,
   ): Promise<JobHeartbeat> {
     const resp = await this.request(
-      `/namespaces/${encodeURIComponent(this.namespace)}/jobs/${encodeURIComponent(jobId)}/heartbeat`,
-      { method: "POST", body: { data: req } },
+      `/projects/${encodeURIComponent(this.project)}/jobs/${encodeURIComponent(jobId)}/heartbeat`,
+      { method: "POST", body: req },
     );
     if (resp.status === 409) throw new LeaseLostError(jobId);
-    const body = (await resp.json()) as JobHeartbeatDataResponse;
-    return body.data;
+    return (await resp.json()) as JobHeartbeat;
   }
 
   /** Report the terminal status of a claimed job. */
   async completeJob(jobId: string, req: JobCompleteRequest): Promise<void> {
     const resp = await this.request(
-      `/namespaces/${encodeURIComponent(this.namespace)}/jobs/${encodeURIComponent(jobId)}/complete`,
-      { method: "POST", body: { data: req } },
+      `/projects/${encodeURIComponent(this.project)}/jobs/${encodeURIComponent(jobId)}/complete`,
+      { method: "POST", body: req },
     );
     if (resp.status === 409) throw new LeaseLostError(jobId);
+  }
+
+  async emitJobEvents(jobId: string, req: JobEventsRequest): Promise<void> {
+    const resp = await this.request(
+      `/projects/${encodeURIComponent(this.project)}/jobs/${encodeURIComponent(jobId)}/events`,
+      { method: "POST", body: req },
+    );
+    if (resp.status === 409) throw new LeaseLostError(jobId);
+    if (resp.status === 413) throw new PayloadTooLargeError(jobId);
+    if (resp.status === 429) {
+      const retryAfterHeader = resp.headers.get("Retry-After");
+      const retryAfter = retryAfterHeader
+        ? Number.parseInt(retryAfterHeader, 10)
+        : undefined;
+      throw new RateLimitedError(
+        jobId,
+        Number.isFinite(retryAfter) ? retryAfter : undefined,
+      );
+    }
+  }
+
+  async emitJobEvent(
+    jobId: string,
+    req: {
+      worker_id: string;
+      attempt: number;
+      type: string;
+      payload: Record<string, unknown>;
+    },
+  ): Promise<void> {
+    await this.emitJobEvents(jobId, {
+      worker_id: req.worker_id,
+      attempt: req.attempt,
+      events: [{ type: req.type, payload: req.payload }],
+    });
   }
 
   private async request(
@@ -107,9 +173,17 @@ export class Client {
       init.body = JSON.stringify(opts.body);
     }
     const resp = await fetch(this.baseURL + path, init);
-    if (!resp.ok && resp.status !== 204 && resp.status !== 409) {
+    if (
+      !resp.ok &&
+      resp.status !== 204 &&
+      resp.status !== 409 &&
+      resp.status !== 413 &&
+      resp.status !== 429
+    ) {
       const text = await resp.text().catch(() => "");
-      throw new Error(`mobius API ${opts.method} ${path}: HTTP ${resp.status}: ${text}`);
+      throw new Error(
+        `mobius API ${opts.method} ${path}: HTTP ${resp.status}: ${text}`,
+      );
     }
     return resp;
   }
@@ -124,7 +198,9 @@ function anySignal(...signals: AbortSignal[]): AbortSignal {
       controller.abort(s.reason);
       break;
     }
-    s.addEventListener("abort", () => controller.abort(s.reason), { once: true });
+    s.addEventListener("abort", () => controller.abort(s.reason), {
+      once: true,
+    });
   }
   return controller.signal;
 }

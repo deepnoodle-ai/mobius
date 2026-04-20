@@ -13,78 +13,79 @@ import (
 	"github.com/deepnoodle-ai/mobius/mobius/api"
 )
 
-// registerNamespacesCommands registers every generated subcommand in the "namespaces" group.
-func registerNamespacesCommands(app *cli.App) {
-	namespacesGrp := app.Group("namespaces")
-	namespacesGrp.Command("create").
-		Description("Create a namespace").
+// registerProjectsCommands registers every generated subcommand in the "projects" group.
+func registerProjectsCommands(app *cli.App) {
+	projectsGrp := app.Group("projects")
+	projectsGrp.Alias("project")
+	projectsGrp.Command("create").
+		Description("Create a project").
 		Flags(
 			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin)"),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
-			var body api.CreateNamespaceJSONRequestBody
+			var body api.CreateProjectJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
 			}
-			resp, err := client.CreateNamespaceWithResponse(ctx.Context(), body)
+			resp, err := client.CreateProjectWithResponse(ctx.Context(), body)
 			if err != nil {
 				return err
 			}
 			return printResponse(ctx, resp.StatusCode(), resp.Body)
 		})
 
-	namespacesGrp.Command("delete").
-		Description("Delete a namespace").
+	projectsGrp.Command("delete").
+		Description("Delete a project").
 		Args("id").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
 			p0 := ctx.Arg(0)
-			resp, err := client.DeleteNamespaceWithResponse(ctx.Context(), p0)
+			resp, err := client.DeleteProjectWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
 			}
 			return printResponse(ctx, resp.StatusCode(), resp.Body)
 		})
 
-	namespacesGrp.Command("get").
-		Description("Get a namespace by id").
+	projectsGrp.Command("get").
+		Description("Get a project by id").
 		Args("id").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
 			p0 := ctx.Arg(0)
-			resp, err := client.GetNamespaceWithResponse(ctx.Context(), p0)
+			resp, err := client.GetProjectWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
 			}
 			return printResponse(ctx, resp.StatusCode(), resp.Body)
 		})
 
-	namespacesGrp.Command("list").
-		Description("List namespaces in the org").
+	projectsGrp.Command("list").
+		Description("List projects in the org").
 		Flags(
 			cli.String("search", "").Help("search"),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
-			params := &api.ListNamespacesParams{}
+			params := &api.ListProjectsParams{}
 			if ctx.IsSet("search") {
 				v := ctx.String("search")
 				params.Search = &v
 			}
-			resp, err := client.ListNamespacesWithResponse(ctx.Context(), params)
+			resp, err := client.ListProjectsWithResponse(ctx.Context(), params)
 			if err != nil {
 				return err
 			}
 			return printResponse(ctx, resp.StatusCode(), resp.Body)
 		})
 
-	namespacesGrp.Command("update").
-		Description("Update a namespace").
+	projectsGrp.Command("update").
+		Description("Update a project").
 		Args("id").
 		Flags(
 			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin)"),
@@ -93,11 +94,11 @@ func registerNamespacesCommands(app *cli.App) {
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
 			p0 := ctx.Arg(0)
-			var body api.UpdateNamespaceJSONRequestBody
+			var body api.UpdateProjectJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
 			}
-			resp, err := client.UpdateNamespaceWithResponse(ctx.Context(), p0, body)
+			resp, err := client.UpdateProjectWithResponse(ctx.Context(), p0, body)
 			if err != nil {
 				return err
 			}

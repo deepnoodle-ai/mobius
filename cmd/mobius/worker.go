@@ -13,7 +13,7 @@ import (
 )
 
 // registerWorkerCommand attaches the `mobius worker` subcommand, which claims
-// and executes tasks from one or more queues in the configured namespace. The
+// and executes tasks from one or more queues in the configured project. The
 // worker ships with every stock action from github.com/deepnoodle-ai/mobius/mobius/action
 // registered, so it can run trivial and test workflows out of the box.
 func registerWorkerCommand(app *cli.App) {
@@ -29,7 +29,7 @@ func registerWorkerCommand(app *cli.App) {
 				Help("Worker version reported to Mobius"),
 			cli.Strings("queues", "q").
 				Env("MOBIUS_QUEUES").
-				Help("Queue names to poll; empty = all queues in the namespace"),
+				Help("Queue names to poll; empty = all queues in the project"),
 			cli.Int("concurrency", "").
 				Default(10).
 				Help("Maximum runs to execute in parallel"),
@@ -60,7 +60,7 @@ func registerWorkerCommand(app *cli.App) {
 			logger.Info("starting worker",
 				"worker_id", workerID,
 				"api_url", ctx.String("api-url"),
-				"namespace", ctx.String("namespace"),
+				"project", ctx.String("project"),
 				"queues", queues,
 				"concurrency", ctx.Int("concurrency"),
 			)

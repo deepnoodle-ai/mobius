@@ -16,10 +16,12 @@ import (
 // registerAuditLogsCommands registers every generated subcommand in the "audit-logs" group.
 func registerAuditLogsCommands(app *cli.App) {
 	auditLogsGrp := app.Group("audit-logs")
+	auditLogsGrp.Alias("audit-log")
 	auditLogsGrp.Command("list-logs").
 		Description("List audit log entries").
 		Flags(
 			cli.String("resource-type", "").Help("resource-type"),
+			cli.String("project-id", "").Help("project-id"),
 			cli.String("resource-id", "").Help("resource-id"),
 			cli.String("user-id", "").Help("user-id"),
 			cli.String("actor-type", "").Help("actor-type"),
@@ -35,6 +37,10 @@ func registerAuditLogsCommands(app *cli.App) {
 			if ctx.IsSet("resource-type") {
 				v := ctx.String("resource-type")
 				params.ResourceType = &v
+			}
+			if ctx.IsSet("project-id") {
+				v := ctx.String("project-id")
+				params.ProjectId = &v
 			}
 			if ctx.IsSet("resource-id") {
 				v := ctx.String("resource-id")

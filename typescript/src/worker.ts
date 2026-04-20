@@ -3,7 +3,13 @@ import type {
   JobClaimRequest,
   JobCompleteRequest,
 } from "./api/index.js";
-import { Client, LeaseLostError } from "./client.js";
+import {
+  Client,
+  LeaseLostError,
+  PayloadTooLargeError,
+  RateLimitedError,
+  type JobEventEntry,
+} from "./client.js";
 
 /**
  * Logger interface used by Worker for status and error output. Compatible with
@@ -61,6 +67,10 @@ export interface WorkerConfig {
    * (e.g. pino, winston) to route messages elsewhere.
    */
   logger?: Logger | null;
+  /** Max buffered custom events per in-flight job before dropping oldest. */
+  eventQueueSize?: number;
+  /** Max custom events per HTTP batch. Defaults to 20. */
+  eventBatchSize?: number;
 }
 
 /**
@@ -71,7 +81,21 @@ export interface WorkerConfig {
 export type ActionFn = (
   params: Record<string, unknown>,
   signal: AbortSignal,
+  ctx: ActionContext,
 ) => Promise<unknown>;
+
+export interface ActionContext {
+  jobId: string;
+  runId: string;
+  projectId?: string;
+  workerId: string;
+  attempt: number;
+  queue?: string;
+  workflowName?: string;
+  stepName?: string;
+  action?: string;
+  emitEvent(type: string, payload: Record<string, unknown>): void;
+}
 
 /**
  * Worker claims jobs from Mobius and dispatches each to the corresponding
@@ -79,7 +103,9 @@ export type ActionFn = (
  * behalf of a workflow run; the backend owns the workflow engine.
  */
 export class Worker {
-  private readonly config: Required<Omit<WorkerConfig, "logger" | "heartbeatIntervalMs">> & {
+  private readonly config: Required<
+    Omit<WorkerConfig, "logger" | "heartbeatIntervalMs">
+  > & {
     heartbeatIntervalMs: number | undefined;
   };
   private readonly logger: Logger;
@@ -99,6 +125,8 @@ export class Worker {
       concurrency: config.concurrency ?? 10,
       pollWaitSeconds: config.pollWaitSeconds ?? 20,
       heartbeatIntervalMs: config.heartbeatIntervalMs,
+      eventQueueSize: config.eventQueueSize ?? 256,
+      eventBatchSize: config.eventBatchSize ?? 20,
     };
     this.logger =
       config.logger === null ? silentLogger : (config.logger ?? defaultLogger);
@@ -138,7 +166,8 @@ export class Worker {
         if (this.config.name) claimReq.worker_name = this.config.name;
         if (this.config.version) claimReq.worker_version = this.config.version;
         if (this.config.queues.length > 0) claimReq.queues = this.config.queues;
-        if (this.config.actions.length > 0) claimReq.actions = this.config.actions;
+        if (this.config.actions.length > 0)
+          claimReq.actions = this.config.actions;
         task = await this.client.claimJob(claimReq, combined);
       } catch (err) {
         if (combined.aborted) break;
@@ -152,7 +181,9 @@ export class Worker {
         continue;
       }
 
-      const p = this.executeTask(task, combined).finally(() => running.delete(p));
+      const p = this.executeTask(task, combined).finally(() =>
+        running.delete(p),
+      );
       running.add(p);
     }
 
@@ -167,7 +198,10 @@ export class Worker {
 
   // ---------------------------------------------------------------------------
 
-  private async executeTask(task: JobClaim, signal: AbortSignal): Promise<void> {
+  private async executeTask(
+    task: JobClaim,
+    signal: AbortSignal,
+  ): Promise<void> {
     const jobId = task.job_id;
     const workerId = this.config.workerId;
     const attempt = task.attempt;
@@ -186,6 +220,25 @@ export class Worker {
     const actionController = new AbortController();
     const onAbort = () => actionController.abort();
     signal.addEventListener("abort", onAbort, { once: true });
+    const eventer = new TaskEventer(this.client, task, {
+      workerId,
+      queueSize: this.config.eventQueueSize,
+      batchSize: this.config.eventBatchSize,
+      logger: this.logger,
+    });
+    const eventerPromise = eventer.run();
+    const actionContext: ActionContext = {
+      jobId,
+      runId: task.run_id,
+      projectId: this.client.project,
+      workerId,
+      attempt,
+      queue: task.queue,
+      workflowName: task.workflow_name,
+      stepName: task.step_name,
+      action: task.action,
+      emitEvent: (type, payload) => eventer.emit(type, payload),
+    };
 
     const interval = this.heartbeatInterval(task);
     let hbLost = false;
@@ -201,7 +254,9 @@ export class Worker {
         }
       } catch (err) {
         if (err instanceof LeaseLostError) {
-          this.logger.warn(`[mobius] job ${jobId}: lease lost during heartbeat`);
+          this.logger.warn(
+            `[mobius] job ${jobId}: lease lost during heartbeat`,
+          );
           hbLost = true;
           actionController.abort();
         } else {
@@ -211,9 +266,15 @@ export class Worker {
     }, interval);
 
     try {
-      const result = await fn(task.parameters, actionController.signal);
+      const result = await fn(
+        task.parameters,
+        actionController.signal,
+        actionContext,
+      );
       clearInterval(heartbeatTimer);
       signal.removeEventListener("abort", onAbort);
+      eventer.stop();
+      await eventerPromise;
       if (hbLost) return;
       const completeReq: JobCompleteRequest = {
         worker_id: workerId,
@@ -221,13 +282,17 @@ export class Worker {
         status: "completed",
       };
       if (result != null) {
-        completeReq.result_b64 = Buffer.from(JSON.stringify(result)).toString("base64");
+        completeReq.result_b64 = Buffer.from(JSON.stringify(result)).toString(
+          "base64",
+        );
       }
       await this.client.completeJob(jobId, completeReq);
       this.logger.info(`[mobius] job ${jobId} completed`);
     } catch (err) {
       clearInterval(heartbeatTimer);
       signal.removeEventListener("abort", onAbort);
+      eventer.stop();
+      await eventerPromise;
       if (err instanceof LeaseLostError || hbLost) {
         this.logger.warn(`[mobius] job ${jobId}: lease lost — will be retried`);
         return;
@@ -239,7 +304,8 @@ export class Worker {
   }
 
   private heartbeatInterval(task: JobClaim): number {
-    if (this.config.heartbeatIntervalMs != null) return this.config.heartbeatIntervalMs;
+    if (this.config.heartbeatIntervalMs != null)
+      return this.config.heartbeatIntervalMs;
     if (task.heartbeat_interval_seconds != null) {
       return task.heartbeat_interval_seconds * 1000;
     }
@@ -262,7 +328,10 @@ export class Worker {
         error_message: msg,
       });
     } catch (err) {
-      this.logger.error(`[mobius] failed to report failure for job ${jobId}:`, err);
+      this.logger.error(
+        `[mobius] failed to report failure for job ${jobId}:`,
+        err,
+      );
     }
   }
 }
@@ -291,4 +360,83 @@ function anySignal(...signals: AbortSignal[]): AbortSignal {
     s.addEventListener("abort", () => controller.abort(), { once: true });
   }
   return controller.signal;
+}
+
+class TaskEventer {
+  private readonly queue: JobEventEntry[] = [];
+  private closed = false;
+  private wake: (() => void) | null = null;
+
+  constructor(
+    private readonly client: Client,
+    private readonly task: JobClaim,
+    private readonly options: {
+      workerId: string;
+      queueSize: number;
+      batchSize: number;
+      logger: Logger;
+    },
+  ) {}
+
+  emit(type: string, payload: Record<string, unknown>): void {
+    if (!type || this.closed) return;
+    if (this.queue.length >= this.options.queueSize) {
+      this.queue.shift();
+      this.options.logger.warn(
+        "[mobius] custom event queue full; dropping oldest event",
+      );
+    }
+    this.queue.push({ type, payload });
+    this.wake?.();
+  }
+
+  stop(): void {
+    this.closed = true;
+    this.wake?.();
+  }
+
+  async run(): Promise<void> {
+    while (!this.closed || this.queue.length > 0) {
+      const batch = this.queue.splice(0, this.options.batchSize);
+      if (batch.length === 0) {
+        await new Promise<void>((resolve) => {
+          this.wake = () => {
+            this.wake = null;
+            resolve();
+          };
+        });
+        continue;
+      }
+      try {
+        await this.client.emitJobEvents(this.task.job_id, {
+          worker_id: this.options.workerId,
+          attempt: this.task.attempt,
+          events: batch,
+        });
+      } catch (err) {
+        if (err instanceof LeaseLostError) {
+          this.options.logger.warn(
+            `[mobius] job ${this.task.job_id}: lease lost during custom event emit`,
+          );
+          return;
+        }
+        if (err instanceof PayloadTooLargeError) {
+          this.options.logger.warn(
+            `[mobius] job ${this.task.job_id}: custom event payload too large`,
+          );
+          continue;
+        }
+        if (err instanceof RateLimitedError) {
+          this.options.logger.warn(
+            `[mobius] job ${this.task.job_id}: custom event rate limited`,
+          );
+          continue;
+        }
+        this.options.logger.error(
+          `[mobius] job ${this.task.job_id}: custom event emit failed:`,
+          err,
+        );
+      }
+    }
+  }
 }

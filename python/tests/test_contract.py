@@ -14,11 +14,11 @@ import pytest
 from pydantic import BaseModel
 
 from deepnoodle.mobius._api.models import (
-    JobClaimDataResponse,
+    JobClaim,
     JobClaimRequest,
     JobCompleteRequest,
     JobFenceRequest,
-    JobHeartbeatDataResponse,
+    JobHeartbeat,
 )
 
 from .conftest import canonicalize, load_fixture, load_manifest
@@ -27,9 +27,9 @@ from .conftest import canonicalize, load_fixture, load_manifest
 # so new fixtures must come with a Python binding.
 SCHEMA_BINDINGS: dict[str, type[BaseModel]] = {
     "JobClaimRequest": JobClaimRequest,
-    "JobClaimDataResponse": JobClaimDataResponse,
+    "JobClaim": JobClaim,
     "JobFenceRequest": JobFenceRequest,
-    "JobHeartbeatDataResponse": JobHeartbeatDataResponse,
+    "JobHeartbeat": JobHeartbeat,
     "JobCompleteRequest": JobCompleteRequest,
 }
 

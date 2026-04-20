@@ -16,16 +16,16 @@ import (
 // registerTriggersCommands registers every generated subcommand in the "triggers" group.
 func registerTriggersCommands(app *cli.App) {
 	triggersGrp := app.Group("triggers")
+	triggersGrp.Alias("trigger")
 	triggersGrp.Command("create").
 		Description("Create a trigger").
-		Args("ns").
 		Flags(
 			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin)"),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
-			p0 := ctx.Arg(0)
+			p0 := ctx.String("project")
 			var body api.CreateTriggerJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -39,12 +39,12 @@ func registerTriggersCommands(app *cli.App) {
 
 	triggersGrp.Command("delete").
 		Description("Delete a trigger").
-		Args("ns", "id").
+		Args("id").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
-			p0 := ctx.Arg(0)
-			p1 := ctx.Arg(1)
+			p0 := ctx.String("project")
+			p1 := ctx.Arg(0)
 			resp, err := client.DeleteTriggerWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
@@ -54,12 +54,12 @@ func registerTriggersCommands(app *cli.App) {
 
 	triggersGrp.Command("get").
 		Description("Get a trigger by id").
-		Args("ns", "id").
+		Args("id").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
-			p0 := ctx.Arg(0)
-			p1 := ctx.Arg(1)
+			p0 := ctx.String("project")
+			p1 := ctx.Arg(0)
 			resp, err := client.GetTriggerWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
@@ -68,8 +68,7 @@ func registerTriggersCommands(app *cli.App) {
 		})
 
 	triggersGrp.Command("list").
-		Description("List triggers in the namespace").
-		Args("ns").
+		Description("List triggers in the project").
 		Flags(
 			cli.String("kind", "").Help("kind"),
 			cli.Bool("enabled", "").Help("enabled"),
@@ -79,7 +78,7 @@ func registerTriggersCommands(app *cli.App) {
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
-			p0 := ctx.Arg(0)
+			p0 := ctx.String("project")
 			params := &api.ListTriggersParams{}
 			if ctx.IsSet("kind") {
 				v := api.TriggerKind(ctx.String("kind"))
@@ -106,7 +105,7 @@ func registerTriggersCommands(app *cli.App) {
 
 	triggersGrp.Command("list-fires").
 		Description("List fire history for a trigger").
-		Args("ns", "id").
+		Args("id").
 		Flags(
 			cli.String("status", "").Help("status"),
 			cli.String("cursor", "").Help("cursor"),
@@ -115,8 +114,8 @@ func registerTriggersCommands(app *cli.App) {
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
-			p0 := ctx.Arg(0)
-			p1 := ctx.Arg(1)
+			p0 := ctx.String("project")
+			p1 := ctx.Arg(0)
 			params := &api.ListTriggerFiresParams{}
 			if ctx.IsSet("status") {
 				v := api.TriggerFireStatus(ctx.String("status"))
@@ -139,15 +138,15 @@ func registerTriggersCommands(app *cli.App) {
 
 	triggersGrp.Command("update").
 		Description("Update a trigger").
-		Args("ns", "id").
+		Args("id").
 		Flags(
 			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin)"),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
-			p0 := ctx.Arg(0)
-			p1 := ctx.Arg(1)
+			p0 := ctx.String("project")
+			p1 := ctx.Arg(0)
 			var body api.UpdateTriggerJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err

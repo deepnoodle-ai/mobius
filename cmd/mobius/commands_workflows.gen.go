@@ -16,16 +16,16 @@ import (
 // registerWorkflowsCommands registers every generated subcommand in the "workflows" group.
 func registerWorkflowsCommands(app *cli.App) {
 	workflowsGrp := app.Group("workflows")
+	workflowsGrp.Alias("workflow")
 	workflowsGrp.Command("create").
 		Description("Create a workflow definition").
-		Args("ns").
 		Flags(
 			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin)"),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
-			p0 := ctx.Arg(0)
+			p0 := ctx.String("project")
 			var body api.CreateWorkflowJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -39,12 +39,12 @@ func registerWorkflowsCommands(app *cli.App) {
 
 	workflowsGrp.Command("delete").
 		Description("Delete a workflow definition").
-		Args("ns", "id").
+		Args("id").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
-			p0 := ctx.Arg(0)
-			p1 := ctx.Arg(1)
+			p0 := ctx.String("project")
+			p1 := ctx.Arg(0)
 			resp, err := client.DeleteWorkflowWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
@@ -54,12 +54,12 @@ func registerWorkflowsCommands(app *cli.App) {
 
 	workflowsGrp.Command("get").
 		Description("Get a workflow definition (with its latest version spec)").
-		Args("ns", "id").
+		Args("id").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
-			p0 := ctx.Arg(0)
-			p1 := ctx.Arg(1)
+			p0 := ctx.String("project")
+			p1 := ctx.Arg(0)
 			resp, err := client.GetWorkflowWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
@@ -69,7 +69,6 @@ func registerWorkflowsCommands(app *cli.App) {
 
 	workflowsGrp.Command("list").
 		Description("List workflow definitions").
-		Args("ns").
 		Flags(
 			cli.String("cursor", "").Help("cursor"),
 			cli.Int("limit", "").Help("limit"),
@@ -77,7 +76,7 @@ func registerWorkflowsCommands(app *cli.App) {
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
-			p0 := ctx.Arg(0)
+			p0 := ctx.String("project")
 			params := &api.ListWorkflowsParams{}
 			if ctx.IsSet("cursor") {
 				v := ctx.String("cursor")
@@ -96,12 +95,12 @@ func registerWorkflowsCommands(app *cli.App) {
 
 	workflowsGrp.Command("list-runs").
 		Description("List runs for a workflow definition").
-		Args("ns", "id").
+		Args("id").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
-			p0 := ctx.Arg(0)
-			p1 := ctx.Arg(1)
+			p0 := ctx.String("project")
+			p1 := ctx.Arg(0)
 			resp, err := client.ListWorkflowRunsWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
@@ -111,13 +110,21 @@ func registerWorkflowsCommands(app *cli.App) {
 
 	workflowsGrp.Command("list-versions").
 		Description("List versions of a workflow definition").
-		Args("ns", "id").
+		Args("id").
+		Flags(
+			cli.Bool("include-spec", "").Help("include-spec"),
+		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
-			p0 := ctx.Arg(0)
-			p1 := ctx.Arg(1)
-			resp, err := client.ListWorkflowVersionsWithResponse(ctx.Context(), p0, p1)
+			p0 := ctx.String("project")
+			p1 := ctx.Arg(0)
+			params := &api.ListWorkflowVersionsParams{}
+			if ctx.IsSet("include-spec") {
+				v := ctx.Bool("include-spec")
+				params.IncludeSpec = &v
+			}
+			resp, err := client.ListWorkflowVersionsWithResponse(ctx.Context(), p0, p1, params)
 			if err != nil {
 				return err
 			}
@@ -126,26 +133,20 @@ func registerWorkflowsCommands(app *cli.App) {
 
 	workflowsGrp.Command("start-workflow-run").
 		Description("Start a new workflow run (enqueue)").
-		Args("ns", "id").
+		Args("id").
 		Flags(
-			cli.String("idempotency-key", "").Help("idempotency-key"),
 			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin)"),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
-			p0 := ctx.Arg(0)
-			p1 := ctx.Arg(1)
-			params := &api.StartWorkflowRunParams{}
-			if ctx.IsSet("idempotency-key") {
-				v := ctx.String("idempotency-key")
-				params.IdempotencyKey = &v
-			}
+			p0 := ctx.String("project")
+			p1 := ctx.Arg(0)
 			var body api.StartWorkflowRunJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
 			}
-			resp, err := client.StartWorkflowRunWithResponse(ctx.Context(), p0, p1, params, body)
+			resp, err := client.StartWorkflowRunWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}
@@ -154,15 +155,15 @@ func registerWorkflowsCommands(app *cli.App) {
 
 	workflowsGrp.Command("update").
 		Description("Update a workflow definition (new spec creates a new version)").
-		Args("ns", "id").
+		Args("id").
 		Flags(
 			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin)"),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
-			p0 := ctx.Arg(0)
-			p1 := ctx.Arg(1)
+			p0 := ctx.String("project")
+			p1 := ctx.Arg(0)
 			var body api.UpdateWorkflowJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err

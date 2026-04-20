@@ -16,6 +16,7 @@ import (
 // registerGroupsCommands registers every generated subcommand in the "groups" group.
 func registerGroupsCommands(app *cli.App) {
 	groupsGrp := app.Group("groups")
+	groupsGrp.Alias("group")
 	groupsGrp.Command("add-member").
 		Description("Add a member to a group").
 		Args("group-id").
@@ -25,12 +26,13 @@ func registerGroupsCommands(app *cli.App) {
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
-			p0 := ctx.Arg(0)
+			p0 := ctx.String("project")
+			p1 := ctx.Arg(0)
 			var body api.AddGroupMemberJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
 			}
-			resp, err := client.AddGroupMemberWithResponse(ctx.Context(), p0, body)
+			resp, err := client.AddGroupMemberWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}
@@ -45,11 +47,12 @@ func registerGroupsCommands(app *cli.App) {
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
+			p0 := ctx.String("project")
 			var body api.CreateGroupJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
 			}
-			resp, err := client.CreateGroupWithResponse(ctx.Context(), body)
+			resp, err := client.CreateGroupWithResponse(ctx.Context(), p0, body)
 			if err != nil {
 				return err
 			}
@@ -62,8 +65,9 @@ func registerGroupsCommands(app *cli.App) {
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
-			p0 := ctx.Arg(0)
-			resp, err := client.DeleteGroupWithResponse(ctx.Context(), p0)
+			p0 := ctx.String("project")
+			p1 := ctx.Arg(0)
+			resp, err := client.DeleteGroupWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}
@@ -76,8 +80,9 @@ func registerGroupsCommands(app *cli.App) {
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
-			p0 := ctx.Arg(0)
-			resp, err := client.GetGroupWithResponse(ctx.Context(), p0)
+			p0 := ctx.String("project")
+			p1 := ctx.Arg(0)
+			resp, err := client.GetGroupWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}
@@ -85,7 +90,7 @@ func registerGroupsCommands(app *cli.App) {
 		})
 
 	groupsGrp.Command("list").
-		Description("List groups in an org").
+		Description("List groups in a project").
 		Flags(
 			cli.String("cursor", "").Help("cursor"),
 			cli.Int("limit", "").Help("limit"),
@@ -93,6 +98,7 @@ func registerGroupsCommands(app *cli.App) {
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
+			p0 := ctx.String("project")
 			params := &api.ListGroupsParams{}
 			if ctx.IsSet("cursor") {
 				v := api.CursorParam(ctx.String("cursor"))
@@ -102,7 +108,7 @@ func registerGroupsCommands(app *cli.App) {
 				v := api.LimitParam(ctx.Int("limit"))
 				params.Limit = &v
 			}
-			resp, err := client.ListGroupsWithResponse(ctx.Context(), params)
+			resp, err := client.ListGroupsWithResponse(ctx.Context(), p0, params)
 			if err != nil {
 				return err
 			}
@@ -115,8 +121,9 @@ func registerGroupsCommands(app *cli.App) {
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
-			p0 := ctx.Arg(0)
-			resp, err := client.ListMemberGroupsWithResponse(ctx.Context(), p0)
+			p0 := ctx.String("project")
+			p1 := ctx.Arg(0)
+			resp, err := client.ListMemberGroupsWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}
@@ -133,7 +140,8 @@ func registerGroupsCommands(app *cli.App) {
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
-			p0 := ctx.Arg(0)
+			p0 := ctx.String("project")
+			p1 := ctx.Arg(0)
 			params := &api.ListGroupMembersParams{}
 			if ctx.IsSet("cursor") {
 				v := api.CursorParam(ctx.String("cursor"))
@@ -143,7 +151,7 @@ func registerGroupsCommands(app *cli.App) {
 				v := api.LimitParam(ctx.Int("limit"))
 				params.Limit = &v
 			}
-			resp, err := client.ListGroupMembersWithResponse(ctx.Context(), p0, params)
+			resp, err := client.ListGroupMembersWithResponse(ctx.Context(), p0, p1, params)
 			if err != nil {
 				return err
 			}
@@ -156,9 +164,10 @@ func registerGroupsCommands(app *cli.App) {
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
-			p0 := ctx.Arg(0)
-			p1 := ctx.Arg(1)
-			resp, err := client.RemoveGroupMemberWithResponse(ctx.Context(), p0, p1)
+			p0 := ctx.String("project")
+			p1 := ctx.Arg(0)
+			p2 := ctx.Arg(1)
+			resp, err := client.RemoveGroupMemberWithResponse(ctx.Context(), p0, p1, p2)
 			if err != nil {
 				return err
 			}
@@ -174,12 +183,13 @@ func registerGroupsCommands(app *cli.App) {
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
-			p0 := ctx.Arg(0)
+			p0 := ctx.String("project")
+			p1 := ctx.Arg(0)
 			var body api.UpdateGroupJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
 			}
-			resp, err := client.UpdateGroupWithResponse(ctx.Context(), p0, body)
+			resp, err := client.UpdateGroupWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}

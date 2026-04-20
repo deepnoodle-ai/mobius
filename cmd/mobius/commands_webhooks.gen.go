@@ -16,16 +16,16 @@ import (
 // registerWebhooksCommands registers every generated subcommand in the "webhooks" group.
 func registerWebhooksCommands(app *cli.App) {
 	webhooksGrp := app.Group("webhooks")
+	webhooksGrp.Alias("webhook")
 	webhooksGrp.Command("create").
 		Description("Create webhook").
-		Args("ns").
 		Flags(
 			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin)"),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
-			p0 := ctx.Arg(0)
+			p0 := ctx.String("project")
 			var body api.CreateWebhookJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -39,12 +39,12 @@ func registerWebhooksCommands(app *cli.App) {
 
 	webhooksGrp.Command("delete").
 		Description("Delete webhook").
-		Args("ns", "id").
+		Args("id").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
-			p0 := ctx.Arg(0)
-			p1 := ctx.Arg(1)
+			p0 := ctx.String("project")
+			p1 := ctx.Arg(0)
 			resp, err := client.DeleteWebhookWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
@@ -54,12 +54,12 @@ func registerWebhooksCommands(app *cli.App) {
 
 	webhooksGrp.Command("get").
 		Description("Get webhook").
-		Args("ns", "id").
+		Args("id").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
-			p0 := ctx.Arg(0)
-			p1 := ctx.Arg(1)
+			p0 := ctx.String("project")
+			p1 := ctx.Arg(0)
 			resp, err := client.GetWebhookWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
@@ -69,7 +69,6 @@ func registerWebhooksCommands(app *cli.App) {
 
 	webhooksGrp.Command("list").
 		Description("List webhooks").
-		Args("ns").
 		Flags(
 			cli.Bool("enabled", "").Help("enabled"),
 			cli.String("cursor", "").Help("cursor"),
@@ -78,7 +77,7 @@ func registerWebhooksCommands(app *cli.App) {
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
-			p0 := ctx.Arg(0)
+			p0 := ctx.String("project")
 			params := &api.ListWebhooksParams{}
 			if ctx.IsSet("enabled") {
 				v := ctx.Bool("enabled")
@@ -101,7 +100,7 @@ func registerWebhooksCommands(app *cli.App) {
 
 	webhooksGrp.Command("list-events").
 		Description("List webhook events").
-		Args("ns", "id").
+		Args("id").
 		Flags(
 			cli.String("status", "").Help("status"),
 			cli.String("cursor", "").Help("cursor"),
@@ -110,8 +109,8 @@ func registerWebhooksCommands(app *cli.App) {
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
-			p0 := ctx.Arg(0)
-			p1 := ctx.Arg(1)
+			p0 := ctx.String("project")
+			p1 := ctx.Arg(0)
 			params := &api.ListWebhookEventsParams{}
 			if ctx.IsSet("status") {
 				v := api.WebhookEventStatus(ctx.String("status"))
@@ -134,15 +133,15 @@ func registerWebhooksCommands(app *cli.App) {
 
 	webhooksGrp.Command("update").
 		Description("Update webhook").
-		Args("ns", "id").
+		Args("id").
 		Flags(
 			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin)"),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
-			p0 := ctx.Arg(0)
-			p1 := ctx.Arg(1)
+			p0 := ctx.String("project")
+			p1 := ctx.Arg(0)
 			var body api.UpdateWebhookJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err

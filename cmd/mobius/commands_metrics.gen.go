@@ -11,17 +11,17 @@ import (
 	"github.com/deepnoodle-ai/wonton/cli"
 )
 
-// registerWorkersCommands registers every generated subcommand in the "workers" group.
-func registerWorkersCommands(app *cli.App) {
-	workersGrp := app.Group("workers")
-	workersGrp.Alias("worker")
-	workersGrp.Command("list").
-		Description("List recently seen workers in the project").
+// registerMetricsCommands registers every generated subcommand in the "metrics" group.
+func registerMetricsCommands(app *cli.App) {
+	metricsGrp := app.Group("metrics")
+	metricsGrp.Alias("metric")
+	metricsGrp.Command("get-metrics").
+		Description("Get operational metrics for a project").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
 			p0 := ctx.String("project")
-			resp, err := client.ListWorkersWithResponse(ctx.Context(), p0)
+			resp, err := client.GetProjectMetricsWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
 			}

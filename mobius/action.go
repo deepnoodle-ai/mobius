@@ -9,7 +9,7 @@
 // Typical usage:
 //
 //	client := mobius.NewClient(mobius.WithAPIKey("mbx_..."))
-//	worker := client.NewWorker(mobius.WorkerConfig{Namespace: "default"})
+//	worker := client.NewWorker(mobius.WorkerConfig{WorkerID: "worker-1"})
 //	mobius.RegisterAction(worker, "send_email", sendEmail)
 //	worker.Run(ctx)
 package mobius

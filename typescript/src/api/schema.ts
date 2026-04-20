@@ -4,7 +4,7 @@
  */
 
 export interface paths {
-    "/namespaces/{ns}/channels": {
+    "/projects/{project}/channels": {
         parameters: {
             query?: never;
             header?: never;
@@ -22,7 +22,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/namespaces/{ns}/channels/{id}": {
+    "/projects/{project}/channels/{id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -41,7 +41,7 @@ export interface paths {
         patch: operations["updateChannel"];
         trace?: never;
     };
-    "/namespaces/{ns}/channels/{id}/members": {
+    "/projects/{project}/channels/{id}/members": {
         parameters: {
             query?: never;
             header?: never;
@@ -59,7 +59,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/namespaces/{ns}/channels/{id}/members/{userId}": {
+    "/projects/{project}/channels/{id}/members/{userId}": {
         parameters: {
             query?: never;
             header?: never;
@@ -76,7 +76,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/namespaces/{ns}/channels/{id}/messages": {
+    "/projects/{project}/channels/{id}/messages": {
         parameters: {
             query?: never;
             header?: never;
@@ -94,7 +94,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/namespaces/{ns}/channels/{id}/messages/{messageId}": {
+    "/projects/{project}/channels/{id}/messages/{messageId}": {
         parameters: {
             query?: never;
             header?: never;
@@ -165,58 +165,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/auth/device/confirm": {
+    "/projects/{project}/api-keys": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** List project-pinned API keys */
+        get: operations["listProjectAPIKeys"];
         put?: never;
-        /** Confirm a browser-based CLI login flow from the signed-in app */
-        post: operations["confirmDeviceCode"];
+        /** Create a project-pinned API key */
+        post: operations["createProjectAPIKey"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/cli-credentials": {
+    "/projects/{project}/api-keys/{id}": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** List browser-issued CLI credentials for the current user */
-        get: operations["listCLICredentials"];
+        /** Get a project-pinned API key */
+        get: operations["getProjectAPIKey"];
         put?: never;
         post?: never;
-        delete?: never;
+        /** Revoke a project-pinned API key */
+        delete: operations["revokeProjectAPIKey"];
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/cli-credentials/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /** Revoke one browser-issued CLI credential */
-        delete: operations["revokeCLICredential"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/namespaces/{ns}/workflows": {
+    "/projects/{project}/workflows": {
         parameters: {
             query?: never;
             header?: never;
@@ -234,7 +219,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/namespaces/{ns}/workflows/{id}": {
+    "/projects/{project}/workflows/{id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -253,7 +238,7 @@ export interface paths {
         patch: operations["updateWorkflow"];
         trace?: never;
     };
-    "/namespaces/{ns}/workflows/{id}/versions": {
+    "/projects/{project}/workflows/{id}/versions": {
         parameters: {
             query?: never;
             header?: never;
@@ -270,7 +255,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/namespaces/{ns}/workflows/{id}/runs": {
+    "/projects/{project}/workflows/{id}/runs": {
         parameters: {
             query?: never;
             header?: never;
@@ -282,10 +267,7 @@ export interface paths {
         put?: never;
         /**
          * Start a new workflow run (enqueue)
-         * @description Enqueues a workflow run. Supports an `Idempotency-Key`
-         *     header: when present, the first successful run is cached
-         *     for 24h and subsequent calls with the same key return the
-         *     original run instead of creating a new one.
+         * @description Enqueues a workflow run.
          */
         post: operations["startWorkflowRun"];
         delete?: never;
@@ -294,7 +276,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/namespaces/{ns}/runs": {
+    "/projects/{project}/runs": {
         parameters: {
             query?: never;
             header?: never;
@@ -302,7 +284,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List workflow runs in a namespace
+         * List workflow runs in a project
          * @description Supports cursor-based pagination and keyset filtering by
          *     status, workflow type, queue, parent run, and
          *     initiator. Returns `{data, next_cursor?}`; pass `next_cursor`
@@ -310,14 +292,22 @@ export interface paths {
          */
         get: operations["listRuns"];
         put?: never;
-        post?: never;
+        /**
+         * Start a new workflow run
+         * @description Starts a workflow run. Exactly one of `definition_id` or `spec`
+         *     must be provided on the request body. When `spec` is provided,
+         *     the run is ephemeral — no `WorkflowDefinition` is created, and
+         *     the returned run carries an empty `definition_id` and a zero
+         *     `definition_version`.
+         */
+        post: operations["startRun"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/namespaces/{ns}/runs/cancellations": {
+    "/projects/{project}/runs/cancellations": {
         parameters: {
             query?: never;
             header?: never;
@@ -339,7 +329,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/namespaces/{ns}/runs/retries": {
+    "/projects/{project}/runs/retries": {
         parameters: {
             query?: never;
             header?: never;
@@ -360,7 +350,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/namespaces/{ns}/runs/{id}": {
+    "/projects/{project}/runs/{id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -377,7 +367,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/namespaces/{ns}/runs/{id}/action-log": {
+    "/projects/{project}/runs/{id}/action-log": {
         parameters: {
             query?: never;
             header?: never;
@@ -394,7 +384,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/namespaces/{ns}/runs/{id}/jobs": {
+    "/projects/{project}/runs/{id}/jobs": {
         parameters: {
             query?: never;
             header?: never;
@@ -411,7 +401,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/namespaces/{ns}/runs/events": {
+    "/projects/{project}/runs/events": {
         parameters: {
             query?: never;
             header?: never;
@@ -419,7 +409,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Subscribe to a namespace-wide stream of run events (SSE)
+         * Subscribe to a project-wide stream of run events (SSE)
          * @description Opens a Server-Sent Events connection. Each frame carries a
          *     JSON envelope `{type, run_id, seq, timestamp, data}` where
          *     `type` is one of `run_updated`, `job_updated`, or
@@ -433,7 +423,7 @@ export interface paths {
          *     (`:keepalive`) are emitted every ~15s to keep intermediaries
          *     from closing the connection.
          */
-        get: operations["streamNamespaceRunEvents"];
+        get: operations["streamProjectRunEvents"];
         put?: never;
         post?: never;
         delete?: never;
@@ -442,7 +432,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/namespaces/{ns}/runs/{id}/cancellations": {
+    "/projects/{project}/runs/{id}/cancellations": {
         parameters: {
             query?: never;
             header?: never;
@@ -464,7 +454,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/namespaces/{ns}/runs/{id}/resumptions": {
+    "/projects/{project}/runs/{id}/resumptions": {
         parameters: {
             query?: never;
             header?: never;
@@ -481,7 +471,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/namespaces/{ns}/runs/{id}/signals": {
+    "/projects/{project}/runs/{id}/signals": {
         parameters: {
             query?: never;
             header?: never;
@@ -505,7 +495,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/namespaces/{ns}/runs/{id}/events": {
+    "/projects/{project}/runs/{id}/events": {
         parameters: {
             query?: never;
             header?: never;
@@ -514,7 +504,7 @@ export interface paths {
         };
         /**
          * Subscribe to a stream of events for a single run (SSE)
-         * @description Same envelope as `/namespaces/{ns}/runs/events` but filtered to a single run.
+         * @description Same envelope as `/projects/{project}/runs/events` but filtered to a single run.
          *     The server writes one seed `run_updated` frame on connection
          *     so reconnects do not miss the latest state, and supports
          *     `?since=<seq>` replay for durable events recorded since the
@@ -529,17 +519,17 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/namespaces/{ns}/actions": {
+    "/projects/{project}/actions": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** List actions in the namespace */
+        /** List actions in the project */
         get: operations["listActions"];
         put?: never;
-        /** Create an action in the namespace */
+        /** Create an action in the project */
         post: operations["createAction"];
         delete?: never;
         options?: never;
@@ -547,7 +537,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/namespaces/{ns}/actions/{actionName}": {
+    "/projects/{project}/actions/{actionName}": {
         parameters: {
             query?: never;
             header?: never;
@@ -566,7 +556,7 @@ export interface paths {
         patch: operations["updateAction"];
         trace?: never;
     };
-    "/namespaces/{ns}/actions/{actionName}/secret/rotate": {
+    "/projects/{project}/actions/{actionName}/secret/rotate": {
         parameters: {
             query?: never;
             header?: never;
@@ -583,7 +573,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/namespaces/{ns}/action-audit-log": {
+    "/projects/{project}/action-audit-log": {
         parameters: {
             query?: never;
             header?: never;
@@ -600,14 +590,14 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/namespaces/{ns}/actions/catalog": {
+    "/projects/{project}/actions/catalog": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** List platform and namespace actions available in the namespace */
+        /** List platform and project actions available in the project */
         get: operations["listCatalogActions"];
         put?: never;
         post?: never;
@@ -617,7 +607,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/namespaces/{ns}/actions/catalog/{actionName}": {
+    "/projects/{project}/actions/catalog/{actionName}": {
         parameters: {
             query?: never;
             header?: never;
@@ -634,7 +624,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/namespaces/{ns}/jobs/claim": {
+    "/projects/{project}/jobs/claim": {
         parameters: {
             query?: never;
             header?: never;
@@ -660,7 +650,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/namespaces/{ns}/jobs/{id}/heartbeat": {
+    "/projects/{project}/jobs/{id}/heartbeat": {
         parameters: {
             query?: never;
             header?: never;
@@ -682,7 +672,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/namespaces/{ns}/jobs/{id}/complete": {
+    "/projects/{project}/jobs/{id}/complete": {
         parameters: {
             query?: never;
             header?: never;
@@ -699,7 +689,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/namespaces/{ns}/jobs/{id}/interactions": {
+    "/projects/{project}/jobs/{id}/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Emit one or more custom events from a claimed workflow job
+         * @description Publishes a batch of custom run events on behalf of the worker
+         *     holding the job's current lease. Events are appended to the
+         *     durable run event store (so they replay via `?since=<seq>`) and
+         *     fanned out to any live SSE subscribers on the run.
+         *
+         *     Authorization requires `mobius.job.emit_event`. Each event must
+         *     present the active lease fence (`worker_id` + `attempt`); stale
+         *     fences are rejected with 409.
+         *
+         *     `type` is a caller-chosen identifier. The `mobius.` prefix is
+         *     reserved for future server-emitted well-known kinds and is
+         *     rejected with 400.
+         *
+         *     Validation is atomic: if any event in the batch is invalid, the
+         *     whole request is rejected and nothing is published. Successful
+         *     batches return a `data` array of results in the same order as
+         *     the request.
+         */
+        post: operations["emitJobEvents"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/projects/{project}/jobs/{id}/interactions": {
         parameters: {
             query?: never;
             header?: never;
@@ -711,7 +737,7 @@ export interface paths {
         /**
          * Create a human-in-the-loop interaction from a claimed workflow job
          * @description Job-scoped form of interaction creation for the step-claim runtime.
-         *     The job is used to derive the owning run and enforce namespace
+         *     The job is used to derive the owning run and enforce project
          *     scoping before creating the interaction.
          */
         post: operations["createJobInteraction"];
@@ -721,7 +747,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/namespaces/{ns}/jobs/{id}/actions/{actionName}": {
+    "/projects/{project}/jobs/{id}/actions/{actionName}": {
         parameters: {
             query?: never;
             header?: never;
@@ -738,14 +764,14 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/namespaces/{ns}/triggers": {
+    "/projects/{project}/triggers": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** List triggers in the namespace */
+        /** List triggers in the project */
         get: operations["listTriggers"];
         put?: never;
         /** Create a trigger */
@@ -756,7 +782,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/namespaces/{ns}/triggers/{id}": {
+    "/projects/{project}/triggers/{id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -775,7 +801,7 @@ export interface paths {
         patch: operations["updateTrigger"];
         trace?: never;
     };
-    "/namespaces/{ns}/triggers/{id}/fires": {
+    "/projects/{project}/triggers/{id}/fires": {
         parameters: {
             query?: never;
             header?: never;
@@ -792,14 +818,14 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/namespaces/{ns}/workers": {
+    "/projects/{project}/workers": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** List recently seen workers in the namespace */
+        /** List recently seen workers in the project */
         get: operations["listWorkers"];
         put?: never;
         post?: never;
@@ -809,44 +835,44 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/namespaces": {
+    "/projects": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** List namespaces in the org */
-        get: operations["listNamespaces"];
+        /** List projects in the org */
+        get: operations["listProjects"];
         put?: never;
-        /** Create a namespace */
-        post: operations["createNamespace"];
+        /** Create a project */
+        post: operations["createProject"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/namespaces/{id}": {
+    "/projects/{id}": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** Get a namespace by id */
-        get: operations["getNamespace"];
+        /** Get a project by id */
+        get: operations["getProject"];
         put?: never;
         post?: never;
-        /** Delete a namespace */
-        delete: operations["deleteNamespace"];
+        /** Delete a project */
+        delete: operations["deleteProject"];
         options?: never;
         head?: never;
-        /** Update a namespace */
-        patch: operations["updateNamespace"];
+        /** Update a project */
+        patch: operations["updateProject"];
         trace?: never;
     };
-    "/namespaces/{ns}/webhooks": {
+    "/projects/{project}/webhooks": {
         parameters: {
             query?: never;
             header?: never;
@@ -855,14 +881,14 @@ export interface paths {
         };
         /**
          * List webhooks
-         * @description Lists the managed webhook endpoints in the namespace. Each webhook is an
+         * @description Lists the managed webhook endpoints in the project. Each webhook is an
          *     inbound endpoint hosted by Mobius.
          */
         get: operations["listWebhooks"];
         put?: never;
         /**
          * Create webhook
-         * @description Creates a managed inbound webhook endpoint for the namespace and returns
+         * @description Creates a managed inbound webhook endpoint for the project and returns
          *     its `receive_url`.
          */
         post: operations["createWebhook"];
@@ -872,7 +898,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/namespaces/{ns}/webhooks/{id}": {
+    "/projects/{project}/webhooks/{id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -901,7 +927,7 @@ export interface paths {
         patch: operations["updateWebhook"];
         trace?: never;
     };
-    "/namespaces/{ns}/webhooks/{id}/events": {
+    "/projects/{project}/webhooks/{id}/events": {
         parameters: {
             query?: never;
             header?: never;
@@ -922,17 +948,17 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/integrations": {
+    "/projects/{project}/integrations": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** List integrations in the org */
+        /** List integrations in the project */
         get: operations["listIntegrations"];
         put?: never;
-        /** Create an integration */
+        /** Create an integration in the project */
         post: operations["createIntegration"];
         delete?: never;
         options?: never;
@@ -940,7 +966,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/integrations/{id}": {
+    "/projects/{project}/integrations/{id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -954,6 +980,46 @@ export interface paths {
         post?: never;
         /** Delete an integration */
         delete: operations["deleteIntegration"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/projects/{project}/integrations/copy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Copy an integration from another project
+         * @description Clones an integration from another project within the same org
+         *     into this project. The encrypted credential blob and config are
+         *     preserved; the (provider, name) pair must be unique within this
+         *     project or a different `name` must be supplied.
+         */
+        post: operations["copyIntegration"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/projects/{project}/metrics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get operational metrics for a project */
+        get: operations["getProjectMetrics"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -1031,7 +1097,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/namespaces/{ns}/interactions": {
+    "/projects/{project}/interactions": {
         parameters: {
             query?: never;
             header?: never;
@@ -1049,7 +1115,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/namespaces/{ns}/interactions/{id}": {
+    "/projects/{project}/interactions/{id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -1066,7 +1132,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/namespaces/{ns}/interactions/{id}/respond": {
+    "/projects/{project}/interactions/{id}/respond": {
         parameters: {
             query?: never;
             header?: never;
@@ -1089,7 +1155,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/namespaces/{ns}/interactions/{id}/claim": {
+    "/projects/{project}/interactions/{id}/claim": {
         parameters: {
             query?: never;
             header?: never;
@@ -1106,7 +1172,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/namespaces/{ns}/interactions/{id}/release": {
+    "/projects/{project}/interactions/{id}/release": {
         parameters: {
             query?: never;
             header?: never;
@@ -1123,7 +1189,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/integrations/slack/connect": {
+    "/projects/{project}/integrations/slack/connect": {
         parameters: {
             query?: never;
             header?: never;
@@ -1136,6 +1202,7 @@ export interface paths {
          * Start Slack connection flow
          * @description Generates a signed state token and returns the Slack OAuth authorize URL.
          *     The caller should redirect the user's browser to the returned URL.
+         *     The resulting integration is owned by the specified project.
          */
         post: operations["startSlackInstall"];
         delete?: never;
@@ -1144,7 +1211,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/integrations/slack/disconnect": {
+    "/projects/{project}/integrations/slack/disconnect": {
         parameters: {
             query?: never;
             header?: never;
@@ -1155,8 +1222,8 @@ export interface paths {
         put?: never;
         /**
          * Disconnect Slack integration
-         * @description Revokes the Slack bot token and deletes the integration record.
-         *     Clears all active alert state for the org.
+         * @description Revokes the Slack bot token and deletes the project's Slack integration.
+         *     Clears active alert state for the project.
          */
         post: operations["disconnectSlack"];
         delete?: never;
@@ -1250,14 +1317,14 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/groups": {
+    "/projects/{project}/groups": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** List groups in an org */
+        /** List groups in a project */
         get: operations["listGroups"];
         put?: never;
         /** Create a group */
@@ -1268,7 +1335,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/groups/{groupId}": {
+    "/projects/{project}/groups/{groupId}": {
         parameters: {
             query?: never;
             header?: never;
@@ -1290,7 +1357,7 @@ export interface paths {
         patch: operations["updateGroup"];
         trace?: never;
     };
-    "/groups/{groupId}/members": {
+    "/projects/{project}/groups/{groupId}/members": {
         parameters: {
             query?: never;
             header?: never;
@@ -1308,7 +1375,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/groups/{groupId}/members/{userId}": {
+    "/projects/{project}/groups/{groupId}/members/{userId}": {
         parameters: {
             query?: never;
             header?: never;
@@ -1325,7 +1392,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/members/{userId}/groups": {
+    "/projects/{project}/members/{userId}/groups": {
         parameters: {
             query?: never;
             header?: never;
@@ -1342,7 +1409,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/namespaces/{ns}/agents": {
+    "/projects/{project}/agents": {
         parameters: {
             query?: never;
             header?: never;
@@ -1360,7 +1427,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/namespaces/{ns}/agents/{id}": {
+    "/projects/{project}/agents/{id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -1379,7 +1446,7 @@ export interface paths {
         patch: operations["updateAgent"];
         trace?: never;
     };
-    "/namespaces/{ns}/agents/{id}/sessions": {
+    "/projects/{project}/agents/{id}/sessions": {
         parameters: {
             query?: never;
             header?: never;
@@ -1397,7 +1464,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/namespaces/{ns}/agents/sessions/{sessionId}": {
+    "/projects/{project}/agents/sessions/{sessionId}": {
         parameters: {
             query?: never;
             header?: never;
@@ -1414,7 +1481,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/namespaces/{ns}/agents/sessions/{sessionId}/heartbeat": {
+    "/projects/{project}/agents/sessions/{sessionId}/heartbeat": {
         parameters: {
             query?: never;
             header?: never;
@@ -1431,7 +1498,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/namespaces/{ns}/agents/sessions/{sessionId}/disconnect": {
+    "/projects/{project}/agents/sessions/{sessionId}/disconnect": {
         parameters: {
             query?: never;
             header?: never;
@@ -1471,7 +1538,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/namespaces/{ns}/tools/{slug}/runs": {
+    "/projects/{project}/tools/{slug}/runs": {
         parameters: {
             query?: never;
             header?: never;
@@ -1487,7 +1554,7 @@ export interface paths {
          *     Returns the run output directly when the workflow completes within
          *     the timeout. On timeout the response includes the run ID and
          *     `status: pending` so the caller can switch to polling via
-         *     `GET /namespaces/{ns}/tools/{slug}/runs/{run_id}`.
+         *     `GET /projects/{project}/tools/{slug}/runs/{run_id}`.
          */
         post: operations["runTool"];
         delete?: never;
@@ -1496,7 +1563,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/namespaces/{ns}/tools/{slug}/runs/{runId}": {
+    "/projects/{project}/tools/{slug}/runs/{runId}": {
         parameters: {
             query?: never;
             header?: never;
@@ -1531,9 +1598,11 @@ export interface components {
         Metadata: {
             [key: string]: unknown;
         };
+        /** @enum {string} */
+        ChannelMessageSenderType: "member" | "agent";
         Channel: {
             id: string;
-            /** @description Channel slug (unique within namespace) */
+            /** @description Channel slug (unique within project) */
             name: string;
             /** @description Human-facing display name */
             display_name: string;
@@ -1558,11 +1627,8 @@ export interface components {
             /** Format: date-time */
             updated_at: string;
         };
-        ChannelDataResponse: {
-            data: components["schemas"]["Channel"];
-        };
         ChannelListResponse: {
-            data: components["schemas"]["Channel"][];
+            items: components["schemas"]["Channel"][];
             has_more?: boolean;
             next_cursor?: string;
         };
@@ -1584,25 +1650,25 @@ export interface components {
             /** Format: date-time */
             joined_at: string;
         };
-        ChannelMemberDataResponse: {
-            data: components["schemas"]["ChannelMember"];
-        };
         ChannelMemberListResponse: {
-            data: components["schemas"]["ChannelMember"][];
+            items: components["schemas"]["ChannelMember"][];
             has_more?: boolean;
             next_cursor?: string;
         };
         ChannelMessage: {
             id: string;
             channel_id: string;
+            sender_type: components["schemas"]["ChannelMessageSenderType"];
             /** @description ID of the message sender (user or agent) */
             sender_id: string;
+            /** @description Live agent session that sent the message when applicable */
+            sender_session_id?: string | null;
             /**
              * @description Rendering layout mode
              * @enum {string}
              */
             display?: "message" | "notice" | "card";
-            /** @description Dot-namespaced message type (e.g. user.message, ai.response) */
+            /** @description Dot-projectd message type (e.g. user.message, ai.response) */
             type: string;
             /** @description Message content (markdown) */
             content: string;
@@ -1621,11 +1687,8 @@ export interface components {
             /** Format: date-time */
             created_at: string;
         };
-        ChannelMessageDataResponse: {
-            data: components["schemas"]["ChannelMessage"];
-        };
         ChannelMessageListResponse: {
-            data: components["schemas"]["ChannelMessage"][];
+            items: components["schemas"]["ChannelMessage"][];
             has_more?: boolean;
             next_cursor?: string;
         };
@@ -1664,6 +1727,10 @@ export interface components {
             role: "member" | "admin";
         };
         SendChannelMessageRequest: {
+            /** @description Durable agent identity to attribute the message to. */
+            sender_agent_id?: string;
+            /** @description Live agent session to attribute the message to. */
+            sender_session_id?: string;
             /** @description Message content (markdown) */
             content: string;
             /**
@@ -1673,7 +1740,7 @@ export interface components {
              */
             display: "message" | "notice" | "card";
             /**
-             * @description Dot-namespaced message type
+             * @description Dot-projectd message type
              * @default user.message
              */
             type: string;
@@ -1693,6 +1760,8 @@ export interface components {
             id: string;
             /** @description ID of the user who performed the action, when a human user is attributable */
             user_id?: string;
+            /** @description Project ID when the audited resource is project-scoped */
+            project_id?: string;
             /** @description Durable actor type that performed the action */
             actor_type?: string;
             /** @description Durable actor ID that performed the action */
@@ -1725,7 +1794,7 @@ export interface components {
             created_at: string;
         };
         AuditLogListResponse: {
-            data: components["schemas"]["AuditLogEntry"][];
+            items?: components["schemas"]["AuditLogEntry"][];
             /** @description Cursor for fetching next page of results */
             next_cursor?: string;
             /** @description Whether more results are available */
@@ -1739,6 +1808,7 @@ export interface components {
             /** @enum {string} */
             scope: "org" | "system";
             permissions?: string[];
+            project_id?: string;
             service_account_id?: string;
             /** Format: date-time */
             expires_at?: string;
@@ -1749,9 +1819,6 @@ export interface components {
             /** Format: date-time */
             updated_at: string;
         };
-        APIKeyDataResponse: {
-            data: components["schemas"]["APIKey"];
-        };
         APIKeyCreateResult: {
             id: string;
             name: string;
@@ -1760,6 +1827,7 @@ export interface components {
             /** @enum {string} */
             scope: "org" | "system";
             permissions?: string[];
+            project_id?: string;
             service_account_id?: string;
             /** Format: date-time */
             expires_at?: string;
@@ -1772,11 +1840,8 @@ export interface components {
             /** @description The raw API key (shown only once) */
             key: string;
         };
-        APIKeyCreateResultDataResponse: {
-            data: components["schemas"]["APIKeyCreateResult"];
-        };
         APIKeyListResponse: {
-            data: components["schemas"]["APIKey"][];
+            items: components["schemas"]["APIKey"][];
         };
         CreateAPIKeyRequest: {
             name: string;
@@ -1789,6 +1854,15 @@ export interface components {
             service_account_id?: string;
             /** Format: date-time */
             expires_at?: string;
+        };
+        AuthContext: {
+            user_id: string;
+            org_id?: string;
+            /** @description Org member role (owner, admin, member) — empty for API-key auth */
+            role?: string;
+            /** @description How the caller authenticated (clerk, api_key, cli_token) */
+            auth_type: string;
+            is_admin: boolean;
         };
         ConfirmDeviceCodeRequest: {
             user_code: string;
@@ -1816,7 +1890,7 @@ export interface components {
             expires_at?: string;
         };
         CLICredentialListResponse: {
-            data: components["schemas"]["CLICredential"][];
+            items: components["schemas"]["CLICredential"][];
         };
         /**
          * @description Workflow definition shaped like `workflow.Options`.
@@ -2007,9 +2081,6 @@ export interface components {
         };
         WorkflowDefinition: {
             id: string;
-            namespace_id?: string;
-            /** @description Default queue name for runs of this workflow. */
-            queue?: string;
             name: string;
             slug: string;
             description?: string;
@@ -2023,11 +2094,8 @@ export interface components {
             /** Format: date-time */
             updated_at: string;
         };
-        WorkflowDefinitionDataResponse: {
-            data: components["schemas"]["WorkflowDefinition"];
-        };
         WorkflowDefinitionListResponse: {
-            data: components["schemas"]["WorkflowDefinition"][];
+            items?: components["schemas"]["WorkflowDefinition"][];
             next_cursor?: string;
             has_more: boolean;
         };
@@ -2035,9 +2103,6 @@ export interface components {
             name: string;
             slug?: string;
             description?: string;
-            namespace_id?: string;
-            /** @description Default queue for runs of this workflow. Defaults to "default". */
-            queue?: string;
             /** @description When true, expose this workflow as a callable tool via /api/tools. */
             published_as_tool?: boolean;
             spec: components["schemas"]["WorkflowSpec"];
@@ -2045,32 +2110,39 @@ export interface components {
         UpdateWorkflowRequest: {
             name?: string;
             description?: string;
-            queue?: string;
             /** @description When true, expose this workflow as a callable tool via /api/tools. */
             published_as_tool?: boolean;
             spec?: components["schemas"]["WorkflowSpec"];
         };
         WorkflowVersion: {
-            id: string;
             version: number;
-            spec: components["schemas"]["WorkflowSpec"];
+            spec?: components["schemas"]["WorkflowSpec"];
             created_by: string;
             /** Format: date-time */
             created_at: string;
         };
         WorkflowVersionListResponse: {
-            data: components["schemas"]["WorkflowVersion"][];
+            items: components["schemas"]["WorkflowVersion"][];
         };
         /** @enum {string} */
         WorkflowRunStatus: "queued" | "running" | "completed" | "failed" | "suspended";
         WorkflowRun: {
             id: string;
-            namespace_id?: string;
             queue?: string;
             parent_run_id?: string;
-            definition_id: string;
-            definition_version_id: string;
-            definition_version: number;
+            /**
+             * @description ID of the workflow definition this run was started from.
+             *     Empty for ephemeral runs started from an inline spec.
+             */
+            definition_id?: string;
+            /** @description Zero for ephemeral runs. */
+            definition_version?: number;
+            /**
+             * @description True when the run was started from an inline spec rather
+             *     than a saved workflow definition. Equivalent to
+             *     `definition_id == ""`.
+             */
+            ephemeral?: boolean;
             workflow_name: string;
             status: components["schemas"]["WorkflowRunStatus"];
             attempt: number;
@@ -2101,11 +2173,8 @@ export interface components {
             /** Format: date-time */
             updated_at: string;
         };
-        WorkflowRunDataResponse: {
-            data: components["schemas"]["WorkflowRun"];
-        };
         WorkflowRunListResponse: {
-            data: components["schemas"]["WorkflowRun"][];
+            items?: components["schemas"]["WorkflowRun"][];
             /** @description True when more pages are available. */
             has_more: boolean;
             /**
@@ -2115,19 +2184,28 @@ export interface components {
             next_cursor?: string;
         };
         WorkflowRunDetail: components["schemas"]["WorkflowRun"] & {
+            spec?: components["schemas"]["WorkflowSpec"];
             /** @description Base64-encoded terminal result blob */
             result_b64?: string;
             jobs?: components["schemas"]["Job"][];
         };
-        WorkflowRunDetailDataResponse: {
-            data: components["schemas"]["WorkflowRunDetail"];
-        };
+        /**
+         * @description Start a workflow run. Provide exactly one of `definition_id` or
+         *     `spec` — they are mutually exclusive. When both are absent on
+         *     the path-less `POST /projects/{project}/runs` endpoint, or when both
+         *     are present, the request is rejected with 400. On the
+         *     definition-bound endpoint (`POST /projects/{project}/workflows/{id}/runs`)
+         *     `definition_id` is implied by the path and `spec` is forbidden.
+         */
         StartRunRequest: {
-            namespace_id?: string;
             /**
-             * @description Queue name to enqueue the run on. Defaults to the
-             *     workflow definition's queue, then "default".
+             * @description ID of an existing workflow definition to run. Mutually
+             *     exclusive with `spec`. On the definition-bound path this is
+             *     ignored (the path segment wins) but must not conflict.
              */
+            definition_id?: string;
+            spec?: components["schemas"]["WorkflowSpec"];
+            /** @description Queue name to enqueue the run on. Defaults to "default". */
             queue?: string;
             /**
              * @description Outbound customer callback URL intended for terminal run
@@ -2162,11 +2240,10 @@ export interface components {
             duration_ms: number;
         };
         ActionLogListResponse: {
-            data: components["schemas"]["ActionLogEntry"][];
+            items: components["schemas"]["ActionLogEntry"][];
         };
         Job: {
             id: string;
-            namespace_id: string;
             run_id: string;
             parent_job_id?: string;
             path_id?: string;
@@ -2178,6 +2255,8 @@ export interface components {
             };
             status: string;
             claimed_by?: string;
+            agent_id?: string;
+            agent_session_id?: string;
             /** Format: date-time */
             claimed_at?: string;
             /** Format: date-time */
@@ -2193,7 +2272,7 @@ export interface components {
             updated_at: string;
         };
         JobListResponse: {
-            data: components["schemas"]["Job"][];
+            items: components["schemas"]["Job"][];
         };
         SendRunSignalRequest: {
             /** @description Signal topic (e.g. "approval", "webhook"). */
@@ -2207,9 +2286,6 @@ export interface components {
             run_id: string;
             name: string;
         };
-        RunSignalDataResponse: {
-            data: components["schemas"]["RunSignal"];
-        };
         BulkRunRequest: {
             run_ids: string[];
         };
@@ -2219,9 +2295,6 @@ export interface components {
             failures?: {
                 [key: string]: string;
             };
-        };
-        BulkRunDataResponse: {
-            data: components["schemas"]["BulkRunResult"];
         };
         ActionAnnotations: {
             idempotent?: boolean;
@@ -2258,7 +2331,6 @@ export interface components {
         Action: {
             id: string;
             org_id: string;
-            namespace_id: string;
             name: string;
             title?: string;
             description?: string;
@@ -2277,19 +2349,13 @@ export interface components {
             /** Format: date-time */
             updated_at: string;
         };
-        ActionDataResponse: {
-            data: components["schemas"]["Action"];
-        };
         ActionListResponse: {
-            data: components["schemas"]["Action"][];
+            items?: components["schemas"]["Action"][];
             next_cursor?: string;
             has_more: boolean;
         };
         RotateSecretResult: {
             signing_secret: string;
-        };
-        RotateSecretDataResponse: {
-            data: components["schemas"]["RotateSecretResult"];
         };
         ActionCatalogEntry: {
             name: string;
@@ -2308,11 +2374,8 @@ export interface components {
             /** Format: uri */
             endpoint_url?: string;
         };
-        ActionCatalogDataResponse: {
-            data: components["schemas"]["ActionCatalogEntry"];
-        };
         ActionCatalogListResponse: {
-            data: components["schemas"]["ActionCatalogEntry"][];
+            items: components["schemas"]["ActionCatalogEntry"][];
         };
         ActionAuditLogEntry: {
             id: string;
@@ -2336,12 +2399,16 @@ export interface components {
             error_message?: string;
         };
         ActionAuditLogListResponse: {
-            data: components["schemas"]["ActionAuditLogEntry"][];
+            items?: components["schemas"]["ActionAuditLogEntry"][];
             next_cursor?: string;
             has_more: boolean;
         };
         JobClaimRequest: {
             worker_id: string;
+            /** @description Durable agent identity the worker is acting on behalf of. */
+            agent_id?: string;
+            /** @description Live agent session the worker is acting on behalf of. */
+            agent_session_id?: string;
             worker_name?: string;
             worker_version?: string;
             /**
@@ -2361,10 +2428,11 @@ export interface components {
         JobClaim: {
             job_id: string;
             run_id: string;
-            namespace_id: string;
             workflow_name: string;
             step_name: string;
             action: string;
+            agent_id?: string;
+            agent_session_id?: string;
             parameters: {
                 [key: string]: unknown;
             };
@@ -2383,15 +2451,9 @@ export interface components {
             ok: boolean;
             directives: components["schemas"]["JobHeartbeatDirectives"];
         };
-        JobClaimDataResponse: {
-            data: components["schemas"]["JobClaim"];
-        };
         JobFenceRequest: {
             worker_id: string;
             attempt: number;
-        };
-        JobHeartbeatDataResponse: {
-            data: components["schemas"]["JobHeartbeat"];
         };
         JobCompleteRequest: {
             worker_id: string;
@@ -2414,8 +2476,30 @@ export interface components {
                 [key: string]: unknown;
             } | unknown[] | string | number | boolean;
         };
-        RunActionResultDataResponse: {
-            data: components["schemas"]["RunActionResult"];
+        /**
+         * @description Fenced batch of custom run events published by the worker
+         *     holding a job's lease. The fence is per-request: every event in
+         *     `events` is published under the same `worker_id` + `attempt`.
+         */
+        JobEventsRequest: {
+            worker_id: string;
+            attempt: number;
+            events: components["schemas"]["JobEventEntry"][];
+        };
+        JobEventEntry: {
+            /**
+             * @description Caller-chosen event type identifier. The `mobius.` prefix is
+             *     reserved for server-emitted well-known kinds.
+             */
+            type: string;
+            /**
+             * @description Free-form JSON payload. Bounded by the server-side byte
+             *     limit (default 16 KiB); oversize events are rejected with
+             *     413.
+             */
+            payload: {
+                [key: string]: unknown;
+            };
         };
         ActorRef: {
             /** @enum {string} */
@@ -2562,9 +2646,6 @@ export interface components {
             /** @description Per-member responses for all_members routing */
             partial_responses?: components["schemas"]["InteractionPartialResponse"][] | null;
         };
-        InteractionDataResponse: {
-            data: components["schemas"]["Interaction"];
-        };
         /** @enum {string} */
         TriggerKind: "schedule" | "webhook" | "event";
         /** @enum {string} */
@@ -2581,7 +2662,6 @@ export interface components {
         Trigger: {
             id: string;
             org_id: string;
-            namespace_id: string;
             name: string;
             kind: components["schemas"]["TriggerKind"];
             source_config?: {
@@ -2603,11 +2683,8 @@ export interface components {
             /** Format: date-time */
             updated_at: string;
         };
-        TriggerDataResponse: {
-            data: components["schemas"]["Trigger"];
-        };
         TriggerListResponse: {
-            data: components["schemas"]["Trigger"][];
+            items?: components["schemas"]["Trigger"][];
             next_cursor?: string;
             has_more: boolean;
         };
@@ -2627,7 +2704,7 @@ export interface components {
             created_at: string;
         };
         TriggerFireListResponse: {
-            data: components["schemas"]["TriggerFire"][];
+            items?: components["schemas"]["TriggerFire"][];
             next_cursor?: string;
             has_more: boolean;
         };
@@ -2666,9 +2743,9 @@ export interface components {
             stale: boolean;
         };
         WorkerListResponse: {
-            data: components["schemas"]["Worker"][];
+            items: components["schemas"]["Worker"][];
         };
-        Namespace: {
+        Project: {
             id: string;
             name: string;
             slug: string;
@@ -2679,18 +2756,15 @@ export interface components {
             /** Format: date-time */
             updated_at: string;
         };
-        NamespaceDataResponse: {
-            data: components["schemas"]["Namespace"];
+        ProjectListResponse: {
+            items: components["schemas"]["Project"][];
         };
-        NamespaceListResponse: {
-            data: components["schemas"]["Namespace"][];
-        };
-        CreateNamespaceRequest: {
+        CreateProjectRequest: {
             name: string;
             slug?: string;
             description?: string;
         };
-        UpdateNamespaceRequest: {
+        UpdateProjectRequest: {
             name?: string;
             description?: string;
         };
@@ -2700,7 +2774,6 @@ export interface components {
         Webhook: {
             id: string;
             org_id: string;
-            namespace_id: string;
             name: string;
             /** @description Immutable URL-safe identifier used in the receive endpoint */
             slug: string;
@@ -2713,11 +2786,8 @@ export interface components {
             /** Format: date-time */
             updated_at: string;
         };
-        WebhookDataResponse: {
-            data: components["schemas"]["Webhook"];
-        };
         WebhookListResponse: {
-            data: components["schemas"]["Webhook"][];
+            items?: components["schemas"]["Webhook"][];
             next_cursor?: string;
             has_more: boolean;
         };
@@ -2738,7 +2808,7 @@ export interface components {
             expires_at?: string;
         };
         WebhookEventListResponse: {
-            data: components["schemas"]["WebhookEvent"][];
+            items?: components["schemas"]["WebhookEvent"][];
             next_cursor?: string;
             has_more: boolean;
         };
@@ -2773,11 +2843,8 @@ export interface components {
             /** Format: date-time */
             updated_at: string;
         };
-        IntegrationDataResponse: {
-            data: components["schemas"]["Integration"];
-        };
         IntegrationListResponse: {
-            data: components["schemas"]["Integration"][];
+            items?: components["schemas"]["Integration"][];
             next_cursor?: string;
             has_more: boolean;
         };
@@ -2794,6 +2861,14 @@ export interface components {
                 [key: string]: unknown;
             };
             status?: components["schemas"]["IntegrationStatus"];
+        };
+        CopyIntegrationRequest: {
+            /** @description ID of the project the integration is copied from. */
+            source_project_id: string;
+            /** @description ID of the integration to copy. */
+            source_integration_id: string;
+            /** @description Optional new name for the copied integration. Defaults to the source name. */
+            name?: string;
         };
         BillingSubscription: {
             id: string;
@@ -2821,9 +2896,6 @@ export interface components {
             /** Format: date-time */
             updated_at: string;
         };
-        BillingSubscriptionDataResponse: {
-            data: components["schemas"]["BillingSubscription"];
-        };
         BillingPlan: {
             plan_type: string;
             price_cents: number;
@@ -2838,7 +2910,7 @@ export interface components {
             credit_card_required: boolean;
         };
         BillingPlanListResponse: {
-            data: components["schemas"]["BillingPlan"][];
+            items: components["schemas"]["BillingPlan"][];
         };
         BillingUsageKeySummary: {
             api_key_id: string;
@@ -2858,9 +2930,6 @@ export interface components {
             };
             by_api_key: components["schemas"]["BillingUsageKeySummary"][];
         };
-        BillingUsageDataResponse: {
-            data: components["schemas"]["BillingUsageSummary"];
-        };
         Invoice: {
             id: string;
             status: string;
@@ -2875,7 +2944,7 @@ export interface components {
             created_at: string;
         };
         InvoiceListResponse: {
-            data: components["schemas"]["Invoice"][];
+            items: components["schemas"]["Invoice"][];
         };
         CreateCheckoutRequest: {
             /** Format: uri */
@@ -2891,9 +2960,6 @@ export interface components {
             /** Format: uri */
             url: string;
         };
-        BillingURLResultDataResponse: {
-            data: components["schemas"]["BillingURLResult"];
-        };
         UpdateBillingLimitsRequest: {
             /** Format: int64 */
             monthly_credit_cap?: number;
@@ -2908,19 +2974,13 @@ export interface components {
             /** @description The user's org display name (present only when completed is true) */
             org_name?: string;
         };
-        OnboardingStatusDataResponse: {
-            data: components["schemas"]["OnboardingStatus"];
-        };
         OnboardingResult: {
             /** @description ID of the newly created (or existing) org */
             org_id: string;
             /** @description Display name of the org */
             org_name: string;
         };
-        OnboardingResultDataResponse: {
-            data: components["schemas"]["OnboardingResult"];
-        };
-        AdminMetrics: {
+        ProjectMetrics: {
             /** Format: date-time */
             generated_at: string;
             window_minutes: number;
@@ -2940,34 +3000,6 @@ export interface components {
             status_breakdown: {
                 [key: string]: number;
             };
-            live_subscribers: number;
-        };
-        AdminMetricsDataResponse: {
-            data: components["schemas"]["AdminMetrics"];
-        };
-        AdminWorker: {
-            worker_id: string;
-            name?: string;
-            version?: string;
-            /** Format: date-time */
-            last_seen_at?: string;
-            capabilities?: string[];
-            stale: boolean;
-        };
-        AdminWorkerListResponse: {
-            data: components["schemas"]["AdminWorker"][];
-        };
-        AuthContext: {
-            user_id: string;
-            org_id?: string;
-            /** @description Org member role (owner, admin, member) — empty for API-key auth */
-            role?: string;
-            /** @description How the caller authenticated (clerk, api_key, cli_token) */
-            auth_type: string;
-            is_admin: boolean;
-        };
-        AuthContextDataResponse: {
-            data: components["schemas"]["AuthContext"];
         };
         PreviewPermissionsRequest: {
             /** @description Role name to assign by default to service accounts without existing assignments. */
@@ -2984,7 +3016,7 @@ export interface components {
             actor_id: string;
             role_id?: string;
             role_name?: string;
-            namespace_id?: string;
+            project_id?: string;
         };
         PermissionsAssignmentProposal: {
             /** @enum {string} */
@@ -2992,24 +3024,19 @@ export interface components {
             actor_id: string;
             role_id: string;
             role_name: string;
-            namespace_id?: string;
+            project_id?: string;
         };
         PermissionsPlan: {
             permissions_enabled: boolean;
             assignments: components["schemas"]["PermissionsAssignmentProposal"][];
         };
-        PermissionsPlanDataResponse: {
-            data: components["schemas"]["PermissionsPlan"];
-        };
         PermissionsState: {
             permissions_enabled: boolean;
-        };
-        PermissionsStateDataResponse: {
-            data: components["schemas"]["PermissionsState"];
         };
         Role: {
             id: string;
             org_id?: string;
+            project_id?: string;
             name: string;
             description: string;
             permissions: string[];
@@ -3027,30 +3054,26 @@ export interface components {
             actor_id: string;
             role_id: string;
             role_name: string;
-            namespace_id?: string;
+            project_id?: string;
             granted_by_actor_type?: string;
             granted_by_actor_id?: string;
             /** Format: date-time */
             created_at: string;
         };
-        RoleDataResponse: {
-            data: components["schemas"]["Role"];
-        };
         RoleListResponse: {
-            data: components["schemas"]["Role"][];
-        };
-        RoleAssignmentDataResponse: {
-            data: components["schemas"]["RoleAssignment"];
+            items: components["schemas"]["Role"][];
         };
         RoleAssignmentListResponse: {
-            data: components["schemas"]["RoleAssignment"][];
+            items: components["schemas"]["RoleAssignment"][];
         };
         CreateRoleRequest: {
+            project_id?: string;
             name: string;
             description?: string;
             permissions: string[];
         };
         UpdateRoleRequest: {
+            project_id?: string;
             name?: string;
             description?: string;
             permissions?: string[];
@@ -3061,7 +3084,7 @@ export interface components {
             actor_id: string;
             role_id?: string;
             role_name?: string;
-            namespace_id?: string;
+            project_id?: string;
         };
         User: {
             id: string;
@@ -3073,9 +3096,6 @@ export interface components {
             created_at: string;
             /** Format: date-time */
             updated_at: string;
-        };
-        UserDataResponse: {
-            data: components["schemas"]["User"];
         };
         Org: {
             id: string;
@@ -3089,11 +3109,8 @@ export interface components {
             /** Format: date-time */
             updated_at: string;
         };
-        OrgDataResponse: {
-            data: components["schemas"]["Org"];
-        };
         OrgListResponse: {
-            data: components["schemas"]["Org"][];
+            items: components["schemas"]["Org"][];
             has_more?: boolean;
             next_cursor?: string;
         };
@@ -3123,11 +3140,8 @@ export interface components {
             updated_at: string;
             user?: components["schemas"]["User"];
         };
-        OrgMemberDataResponse: {
-            data: components["schemas"]["OrgMember"];
-        };
         OrgMemberListResponse: {
-            data: components["schemas"]["OrgMember"][];
+            items: components["schemas"]["OrgMember"][];
             has_more?: boolean;
             next_cursor?: string;
         };
@@ -3141,7 +3155,7 @@ export interface components {
             role: "owner" | "admin" | "member";
         };
         InteractionListResponse: {
-            data: components["schemas"]["Interaction"][];
+            items: components["schemas"]["Interaction"][];
         };
         /**
          * @description Creates an interaction directly. When `run_id` is provided, `topic` is
@@ -3179,13 +3193,10 @@ export interface components {
             /** @description The Slack OAuth authorize URL to redirect the user to. */
             authorize_url: string;
         };
-        SlackInstallDataResponse: {
-            data: components["schemas"]["SlackInstall"];
-        };
         Group: {
             id: string;
             org_id: string;
-            /** @description URL-safe identifier, unique within the org */
+            /** @description URL-safe identifier, unique within the project */
             slug: string;
             /** @description Human-readable display name */
             name: string;
@@ -3200,21 +3211,15 @@ export interface components {
             /** Format: date-time */
             updated_at: string;
         };
-        GroupDataResponse: {
-            data: components["schemas"]["Group"];
-        };
         GroupListResponse: {
-            data: components["schemas"]["Group"][];
+            items: components["schemas"]["Group"][];
         };
         GroupWithCount: components["schemas"]["Group"] & {
             /** @description Current number of members */
             member_count: number;
         };
-        GroupWithCountDataResponse: {
-            data: components["schemas"]["GroupWithCount"];
-        };
         GroupWithCountListResponse: {
-            data: components["schemas"]["GroupWithCount"][];
+            items: components["schemas"]["GroupWithCount"][];
             has_more?: boolean;
             next_cursor?: string;
         };
@@ -3227,11 +3232,8 @@ export interface components {
             /** Format: date-time */
             added_at: string;
         };
-        GroupMemberDataResponse: {
-            data: components["schemas"]["GroupMember"];
-        };
         GroupMemberListResponse: {
-            data: components["schemas"]["GroupMember"][];
+            items: components["schemas"]["GroupMember"][];
             has_more?: boolean;
             next_cursor?: string;
         };
@@ -3266,7 +3268,6 @@ export interface components {
         Agent: {
             id: string;
             org_id: string;
-            namespace_id: string;
             service_account_id: string;
             name: string;
             display_name: string;
@@ -3288,7 +3289,6 @@ export interface components {
         AgentSession: {
             id: string;
             org_id: string;
-            namespace_id: string;
             agent_id: string;
             status: components["schemas"]["AgentSessionStatus"];
             transport: string;
@@ -3306,17 +3306,11 @@ export interface components {
             /** Format: date-time */
             updated_at: string;
         };
-        AgentDataResponse: {
-            data: components["schemas"]["Agent"];
-        };
         AgentListResponse: {
-            data: components["schemas"]["Agent"][];
-        };
-        AgentSessionDataResponse: {
-            data: components["schemas"]["AgentSession"];
+            items: components["schemas"]["Agent"][];
         };
         AgentSessionListResponse: {
-            data: components["schemas"]["AgentSession"][];
+            items: components["schemas"]["AgentSession"][];
         };
         CreateAgentRequest: {
             service_account_id: string;
@@ -3367,11 +3361,8 @@ export interface components {
             /** Format: date-time */
             updated_at: string;
         };
-        ServiceAccountDataResponse: {
-            data: components["schemas"]["ServiceAccount"];
-        };
         ServiceAccountListResponse: {
-            data: components["schemas"]["ServiceAccount"][];
+            items: components["schemas"]["ServiceAccount"][];
         };
         CreateServiceAccountRequest: {
             name: string;
@@ -3383,7 +3374,6 @@ export interface components {
             };
             role_id?: string;
             role_name?: string;
-            namespace_id?: string;
         };
         UpdateServiceAccountRequest: {
             display_name?: string;
@@ -3405,7 +3395,7 @@ export interface components {
             };
         };
         ToolDefinitionListResponse: {
-            data: components["schemas"]["ToolDefinition"][];
+            items: components["schemas"]["ToolDefinition"][];
         };
         ToolRunRequest: {
             /** @description Input values matching the tool's input_schema. */
@@ -3433,9 +3423,6 @@ export interface components {
             };
             /** @description Error message. Present when status is "failed". */
             error?: string;
-        };
-        ToolRunDataResponse: {
-            data: components["schemas"]["ToolRun"];
         };
     };
     responses: {
@@ -3493,8 +3480,8 @@ export interface components {
         };
     };
     parameters: {
-        /** @description Namespace slug (unique per organization) */
-        NamespaceSlugParam: string;
+        /** @description Project slug (unique per organization) */
+        ProjectSlugParam: string;
         IDParam: string;
         ActionNameParam: string;
         /** @description Cursor for pagination (opaque string from previous response) */
@@ -3523,8 +3510,8 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Namespace slug (unique per organization) */
-                ns: components["parameters"]["NamespaceSlugParam"];
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
             };
             cookie?: never;
         };
@@ -3547,16 +3534,14 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Namespace slug (unique per organization) */
-                ns: components["parameters"]["NamespaceSlugParam"];
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
             };
             cookie?: never;
         };
         requestBody: {
             content: {
-                "application/json": {
-                    data: components["schemas"]["CreateChannelRequest"];
-                };
+                "application/json": components["schemas"]["CreateChannelRequest"];
             };
         };
         responses: {
@@ -3566,7 +3551,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ChannelDataResponse"];
+                    "application/json": components["schemas"]["Channel"];
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -3578,8 +3563,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Namespace slug (unique per organization) */
-                ns: components["parameters"]["NamespaceSlugParam"];
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -3592,7 +3577,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ChannelDataResponse"];
+                    "application/json": components["schemas"]["Channel"];
                 };
             };
             401: components["responses"]["Unauthorized"];
@@ -3604,8 +3589,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Namespace slug (unique per organization) */
-                ns: components["parameters"]["NamespaceSlugParam"];
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -3628,17 +3613,15 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Namespace slug (unique per organization) */
-                ns: components["parameters"]["NamespaceSlugParam"];
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
         };
         requestBody: {
             content: {
-                "application/json": {
-                    data: components["schemas"]["UpdateChannelRequest"];
-                };
+                "application/json": components["schemas"]["UpdateChannelRequest"];
             };
         };
         responses: {
@@ -3648,7 +3631,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ChannelDataResponse"];
+                    "application/json": components["schemas"]["Channel"];
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -3666,8 +3649,8 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Namespace slug (unique per organization) */
-                ns: components["parameters"]["NamespaceSlugParam"];
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -3692,17 +3675,15 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Namespace slug (unique per organization) */
-                ns: components["parameters"]["NamespaceSlugParam"];
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
         };
         requestBody: {
             content: {
-                "application/json": {
-                    data: components["schemas"]["AddChannelMemberRequest"];
-                };
+                "application/json": components["schemas"]["AddChannelMemberRequest"];
             };
         };
         responses: {
@@ -3712,7 +3693,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ChannelMemberDataResponse"];
+                    "application/json": components["schemas"]["ChannelMember"];
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -3725,8 +3706,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Namespace slug (unique per organization) */
-                ns: components["parameters"]["NamespaceSlugParam"];
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
                 id: components["parameters"]["IDParam"];
                 userId: string;
             };
@@ -3761,8 +3742,8 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Namespace slug (unique per organization) */
-                ns: components["parameters"]["NamespaceSlugParam"];
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -3787,17 +3768,15 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Namespace slug (unique per organization) */
-                ns: components["parameters"]["NamespaceSlugParam"];
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
         };
         requestBody: {
             content: {
-                "application/json": {
-                    data: components["schemas"]["SendChannelMessageRequest"];
-                };
+                "application/json": components["schemas"]["SendChannelMessageRequest"];
             };
         };
         responses: {
@@ -3807,7 +3786,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ChannelMessageDataResponse"];
+                    "application/json": components["schemas"]["ChannelMessage"];
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -3820,8 +3799,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Namespace slug (unique per organization) */
-                ns: components["parameters"]["NamespaceSlugParam"];
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
                 id: components["parameters"]["IDParam"];
                 messageId: string;
             };
@@ -3835,7 +3814,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ChannelMessageDataResponse"];
+                    "application/json": components["schemas"]["ChannelMessage"];
                 };
             };
             401: components["responses"]["Unauthorized"];
@@ -3847,8 +3826,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Namespace slug (unique per organization) */
-                ns: components["parameters"]["NamespaceSlugParam"];
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
                 id: components["parameters"]["IDParam"];
                 messageId: string;
             };
@@ -3856,9 +3835,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": {
-                    data: components["schemas"]["UpdateChannelMessageRequest"];
-                };
+                "application/json": components["schemas"]["UpdateChannelMessageRequest"];
             };
         };
         responses: {
@@ -3868,7 +3845,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ChannelMessageDataResponse"];
+                    "application/json": components["schemas"]["ChannelMessage"];
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -3881,6 +3858,8 @@ export interface operations {
             query?: {
                 /** @description Filter by resource type */
                 resource_type?: string;
+                /** @description Filter by project ID */
+                project_id?: string;
                 /** @description Filter by resource ID */
                 resource_id?: string;
                 /** @description Filter by user ID */
@@ -3948,9 +3927,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": {
-                    data: components["schemas"]["CreateAPIKeyRequest"];
-                };
+                "application/json": components["schemas"]["CreateAPIKeyRequest"];
             };
         };
         responses: {
@@ -3960,7 +3937,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["APIKeyCreateResultDataResponse"];
+                    "application/json": components["schemas"]["APIKeyCreateResult"];
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -3984,7 +3961,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["APIKeyDataResponse"];
+                    "application/json": components["schemas"]["APIKey"];
                 };
             };
             401: components["responses"]["Unauthorized"];
@@ -4013,46 +3990,14 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
-    confirmDeviceCode: {
+    listProjectAPIKeys: {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    data: components["schemas"]["ConfirmDeviceCodeRequest"];
-                };
+            path: {
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
             };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ConfirmDeviceCodeResult"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            /** @description Forbidden */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    listCLICredentials: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
             cookie?: never;
         };
         requestBody?: never;
@@ -4063,17 +4008,74 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CLICredentialListResponse"];
+                    "application/json": components["schemas"]["APIKeyListResponse"];
                 };
             };
             401: components["responses"]["Unauthorized"];
         };
     };
-    revokeCLICredential: {
+    createProjectAPIKey: {
         parameters: {
             query?: never;
             header?: never;
             path: {
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateAPIKeyRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIKeyCreateResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    getProjectAPIKey: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
+                id: components["parameters"]["IDParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIKey"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    revokeProjectAPIKey: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -4099,8 +4101,8 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Namespace slug (unique per organization) */
-                ns: components["parameters"]["NamespaceSlugParam"];
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
             };
             cookie?: never;
         };
@@ -4124,16 +4126,14 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Namespace slug (unique per organization) */
-                ns: components["parameters"]["NamespaceSlugParam"];
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
             };
             cookie?: never;
         };
         requestBody: {
             content: {
-                "application/json": {
-                    data: components["schemas"]["CreateWorkflowRequest"];
-                };
+                "application/json": components["schemas"]["CreateWorkflowRequest"];
             };
         };
         responses: {
@@ -4143,7 +4143,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["WorkflowDefinitionDataResponse"];
+                    "application/json": components["schemas"]["WorkflowDefinition"];
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -4157,8 +4157,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Namespace slug (unique per organization) */
-                ns: components["parameters"]["NamespaceSlugParam"];
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -4171,7 +4171,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["WorkflowDefinitionDataResponse"];
+                    "application/json": components["schemas"]["WorkflowDefinition"];
                 };
             };
             401: components["responses"]["Unauthorized"];
@@ -4183,8 +4183,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Namespace slug (unique per organization) */
-                ns: components["parameters"]["NamespaceSlugParam"];
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -4207,17 +4207,15 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Namespace slug (unique per organization) */
-                ns: components["parameters"]["NamespaceSlugParam"];
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
         };
         requestBody: {
             content: {
-                "application/json": {
-                    data: components["schemas"]["UpdateWorkflowRequest"];
-                };
+                "application/json": components["schemas"]["UpdateWorkflowRequest"];
             };
         };
         responses: {
@@ -4227,7 +4225,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["WorkflowDefinitionDataResponse"];
+                    "application/json": components["schemas"]["WorkflowDefinition"];
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -4237,11 +4235,14 @@ export interface operations {
     };
     listWorkflowVersions: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description When true, include the full workflow spec for each version. */
+                include_spec?: boolean;
+            };
             header?: never;
             path: {
-                /** @description Namespace slug (unique per organization) */
-                ns: components["parameters"]["NamespaceSlugParam"];
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -4266,8 +4267,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Namespace slug (unique per organization) */
-                ns: components["parameters"]["NamespaceSlugParam"];
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -4289,21 +4290,17 @@ export interface operations {
     startWorkflowRun: {
         parameters: {
             query?: never;
-            header?: {
-                "Idempotency-Key"?: string;
-            };
+            header?: never;
             path: {
-                /** @description Namespace slug (unique per organization) */
-                ns: components["parameters"]["NamespaceSlugParam"];
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
         };
         requestBody: {
             content: {
-                "application/json": {
-                    data: components["schemas"]["StartRunRequest"];
-                };
+                "application/json": components["schemas"]["StartRunRequest"];
             };
         };
         responses: {
@@ -4313,7 +4310,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["WorkflowRunDataResponse"];
+                    "application/json": components["schemas"]["WorkflowRun"];
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -4338,8 +4335,8 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Namespace slug (unique per organization) */
-                ns: components["parameters"]["NamespaceSlugParam"];
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
             };
             cookie?: never;
         };
@@ -4357,21 +4354,49 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
         };
     };
-    bulkCancelRuns: {
+    startRun: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                /** @description Namespace slug (unique per organization) */
-                ns: components["parameters"]["NamespaceSlugParam"];
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
             };
             cookie?: never;
         };
         requestBody: {
             content: {
-                "application/json": {
-                    data: components["schemas"]["BulkRunRequest"];
+                "application/json": components["schemas"]["StartRunRequest"];
+            };
+        };
+        responses: {
+            /** @description Accepted */
+            202: {
+                headers: {
+                    [name: string]: unknown;
                 };
+                content: {
+                    "application/json": components["schemas"]["WorkflowRun"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    bulkCancelRuns: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BulkRunRequest"];
             };
         };
         responses: {
@@ -4381,7 +4406,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["BulkRunDataResponse"];
+                    "application/json": components["schemas"]["BulkRunResult"];
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -4393,16 +4418,14 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Namespace slug (unique per organization) */
-                ns: components["parameters"]["NamespaceSlugParam"];
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
             };
             cookie?: never;
         };
         requestBody: {
             content: {
-                "application/json": {
-                    data: components["schemas"]["BulkRunRequest"];
-                };
+                "application/json": components["schemas"]["BulkRunRequest"];
             };
         };
         responses: {
@@ -4412,7 +4435,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["BulkRunDataResponse"];
+                    "application/json": components["schemas"]["BulkRunResult"];
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -4424,8 +4447,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Namespace slug (unique per organization) */
-                ns: components["parameters"]["NamespaceSlugParam"];
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -4438,7 +4461,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["WorkflowRunDetailDataResponse"];
+                    "application/json": components["schemas"]["WorkflowRunDetail"];
                 };
             };
             401: components["responses"]["Unauthorized"];
@@ -4450,8 +4473,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Namespace slug (unique per organization) */
-                ns: components["parameters"]["NamespaceSlugParam"];
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -4476,8 +4499,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Namespace slug (unique per organization) */
-                ns: components["parameters"]["NamespaceSlugParam"];
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -4497,7 +4520,7 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
-    streamNamespaceRunEvents: {
+    streamProjectRunEvents: {
         parameters: {
             query?: {
                 /** @description Durable event seq cursor to replay from. */
@@ -4505,8 +4528,8 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Namespace slug (unique per organization) */
-                ns: components["parameters"]["NamespaceSlugParam"];
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
             };
             cookie?: never;
         };
@@ -4529,8 +4552,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Namespace slug (unique per organization) */
-                ns: components["parameters"]["NamespaceSlugParam"];
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -4553,8 +4576,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Namespace slug (unique per organization) */
-                ns: components["parameters"]["NamespaceSlugParam"];
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -4577,17 +4600,15 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Namespace slug (unique per organization) */
-                ns: components["parameters"]["NamespaceSlugParam"];
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
         };
         requestBody: {
             content: {
-                "application/json": {
-                    data: components["schemas"]["SendRunSignalRequest"];
-                };
+                "application/json": components["schemas"]["SendRunSignalRequest"];
             };
         };
         responses: {
@@ -4597,7 +4618,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["RunSignalDataResponse"];
+                    "application/json": components["schemas"]["RunSignal"];
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -4613,8 +4634,8 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Namespace slug (unique per organization) */
-                ns: components["parameters"]["NamespaceSlugParam"];
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -4644,8 +4665,8 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Namespace slug (unique per organization) */
-                ns: components["parameters"]["NamespaceSlugParam"];
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
             };
             cookie?: never;
         };
@@ -4668,16 +4689,14 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Namespace slug (unique per organization) */
-                ns: components["parameters"]["NamespaceSlugParam"];
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
             };
             cookie?: never;
         };
         requestBody: {
             content: {
-                "application/json": {
-                    data: components["schemas"]["CreateActionRequest"];
-                };
+                "application/json": components["schemas"]["CreateActionRequest"];
             };
         };
         responses: {
@@ -4687,7 +4706,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ActionDataResponse"];
+                    "application/json": components["schemas"]["Action"];
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -4700,8 +4719,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Namespace slug (unique per organization) */
-                ns: components["parameters"]["NamespaceSlugParam"];
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
                 actionName: components["parameters"]["ActionNameParam"];
             };
             cookie?: never;
@@ -4714,7 +4733,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ActionDataResponse"];
+                    "application/json": components["schemas"]["Action"];
                 };
             };
             401: components["responses"]["Unauthorized"];
@@ -4726,8 +4745,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Namespace slug (unique per organization) */
-                ns: components["parameters"]["NamespaceSlugParam"];
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
                 actionName: components["parameters"]["ActionNameParam"];
             };
             cookie?: never;
@@ -4745,17 +4764,15 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Namespace slug (unique per organization) */
-                ns: components["parameters"]["NamespaceSlugParam"];
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
                 actionName: components["parameters"]["ActionNameParam"];
             };
             cookie?: never;
         };
         requestBody: {
             content: {
-                "application/json": {
-                    data: components["schemas"]["UpdateActionRequest"];
-                };
+                "application/json": components["schemas"]["UpdateActionRequest"];
             };
         };
         responses: {
@@ -4765,7 +4782,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ActionDataResponse"];
+                    "application/json": components["schemas"]["Action"];
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -4778,8 +4795,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Namespace slug (unique per organization) */
-                ns: components["parameters"]["NamespaceSlugParam"];
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
                 actionName: components["parameters"]["ActionNameParam"];
             };
             cookie?: never;
@@ -4792,7 +4809,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["RotateSecretDataResponse"];
+                    "application/json": components["schemas"]["RotateSecretResult"];
                 };
             };
             401: components["responses"]["Unauthorized"];
@@ -4812,8 +4829,8 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Namespace slug (unique per organization) */
-                ns: components["parameters"]["NamespaceSlugParam"];
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
             };
             cookie?: never;
         };
@@ -4837,8 +4854,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Namespace slug (unique per organization) */
-                ns: components["parameters"]["NamespaceSlugParam"];
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
             };
             cookie?: never;
         };
@@ -4861,8 +4878,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Namespace slug (unique per organization) */
-                ns: components["parameters"]["NamespaceSlugParam"];
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
                 actionName: components["parameters"]["ActionNameParam"];
             };
             cookie?: never;
@@ -4875,7 +4892,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ActionCatalogDataResponse"];
+                    "application/json": components["schemas"]["ActionCatalogEntry"];
                 };
             };
             401: components["responses"]["Unauthorized"];
@@ -4887,16 +4904,14 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Namespace slug (unique per organization) */
-                ns: components["parameters"]["NamespaceSlugParam"];
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
             };
             cookie?: never;
         };
         requestBody: {
             content: {
-                "application/json": {
-                    data: components["schemas"]["JobClaimRequest"];
-                };
+                "application/json": components["schemas"]["JobClaimRequest"];
             };
         };
         responses: {
@@ -4906,7 +4921,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["JobClaimDataResponse"];
+                    "application/json": components["schemas"]["JobClaim"];
                 };
             };
             /** @description No jobs available within the poll window */
@@ -4926,17 +4941,15 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Namespace slug (unique per organization) */
-                ns: components["parameters"]["NamespaceSlugParam"];
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
         };
         requestBody: {
             content: {
-                "application/json": {
-                    data: components["schemas"]["JobFenceRequest"];
-                };
+                "application/json": components["schemas"]["JobFenceRequest"];
             };
         };
         responses: {
@@ -4946,7 +4959,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["JobHeartbeatDataResponse"];
+                    "application/json": components["schemas"]["JobHeartbeat"];
                 };
             };
             401: components["responses"]["Unauthorized"];
@@ -4959,17 +4972,15 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Namespace slug (unique per organization) */
-                ns: components["parameters"]["NamespaceSlugParam"];
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
         };
         requestBody: {
             content: {
-                "application/json": {
-                    data: components["schemas"]["JobCompleteRequest"];
-                };
+                "application/json": components["schemas"]["JobCompleteRequest"];
             };
         };
         responses: {
@@ -4986,22 +4997,68 @@ export interface operations {
             409: components["responses"]["Conflict"];
         };
     };
-    createJobInteraction: {
+    emitJobEvents: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                /** @description Namespace slug (unique per organization) */
-                ns: components["parameters"]["NamespaceSlugParam"];
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
         };
         requestBody: {
             content: {
-                "application/json": {
-                    data: components["schemas"]["CreateJobInteractionRequest"];
+                "application/json": components["schemas"]["JobEventsRequest"];
+            };
+        };
+        responses: {
+            /** @description Events accepted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
                 };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            /** @description Payload Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    createJobInteraction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
+                id: components["parameters"]["IDParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateJobInteractionRequest"];
             };
         };
         responses: {
@@ -5011,7 +5068,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["InteractionDataResponse"];
+                    "application/json": components["schemas"]["Interaction"];
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -5025,8 +5082,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Namespace slug (unique per organization) */
-                ns: components["parameters"]["NamespaceSlugParam"];
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
                 id: components["parameters"]["IDParam"];
                 actionName: components["parameters"]["ActionNameParam"];
             };
@@ -5034,9 +5091,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": {
-                    data: components["schemas"]["RunActionRequest"];
-                };
+                "application/json": components["schemas"]["RunActionRequest"];
             };
         };
         responses: {
@@ -5046,7 +5101,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["RunActionResultDataResponse"];
+                    "application/json": components["schemas"]["RunActionResult"];
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -5064,8 +5119,8 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Namespace slug (unique per organization) */
-                ns: components["parameters"]["NamespaceSlugParam"];
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
             };
             cookie?: never;
         };
@@ -5089,16 +5144,14 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Namespace slug (unique per organization) */
-                ns: components["parameters"]["NamespaceSlugParam"];
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
             };
             cookie?: never;
         };
         requestBody: {
             content: {
-                "application/json": {
-                    data: components["schemas"]["CreateTriggerRequest"];
-                };
+                "application/json": components["schemas"]["CreateTriggerRequest"];
             };
         };
         responses: {
@@ -5108,7 +5161,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["TriggerDataResponse"];
+                    "application/json": components["schemas"]["Trigger"];
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -5121,8 +5174,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Namespace slug (unique per organization) */
-                ns: components["parameters"]["NamespaceSlugParam"];
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -5135,7 +5188,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["TriggerDataResponse"];
+                    "application/json": components["schemas"]["Trigger"];
                 };
             };
             401: components["responses"]["Unauthorized"];
@@ -5147,8 +5200,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Namespace slug (unique per organization) */
-                ns: components["parameters"]["NamespaceSlugParam"];
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -5171,17 +5224,15 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Namespace slug (unique per organization) */
-                ns: components["parameters"]["NamespaceSlugParam"];
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
         };
         requestBody: {
             content: {
-                "application/json": {
-                    data: components["schemas"]["UpdateTriggerRequest"];
-                };
+                "application/json": components["schemas"]["UpdateTriggerRequest"];
             };
         };
         responses: {
@@ -5191,7 +5242,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["TriggerDataResponse"];
+                    "application/json": components["schemas"]["Trigger"];
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -5208,8 +5259,8 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Namespace slug (unique per organization) */
-                ns: components["parameters"]["NamespaceSlugParam"];
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -5234,8 +5285,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Namespace slug (unique per organization) */
-                ns: components["parameters"]["NamespaceSlugParam"];
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
             };
             cookie?: never;
         };
@@ -5254,7 +5305,7 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
-    listNamespaces: {
+    listProjects: {
         parameters: {
             query?: {
                 search?: string;
@@ -5271,13 +5322,13 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["NamespaceListResponse"];
+                    "application/json": components["schemas"]["ProjectListResponse"];
                 };
             };
             401: components["responses"]["Unauthorized"];
         };
     };
-    createNamespace: {
+    createProject: {
         parameters: {
             query?: never;
             header?: never;
@@ -5286,9 +5337,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": {
-                    data: components["schemas"]["CreateNamespaceRequest"];
-                };
+                "application/json": components["schemas"]["CreateProjectRequest"];
             };
         };
         responses: {
@@ -5298,7 +5347,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["NamespaceDataResponse"];
+                    "application/json": components["schemas"]["Project"];
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -5306,7 +5355,7 @@ export interface operations {
             409: components["responses"]["Conflict"];
         };
     };
-    getNamespace: {
+    getProject: {
         parameters: {
             query?: never;
             header?: never;
@@ -5323,14 +5372,14 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["NamespaceDataResponse"];
+                    "application/json": components["schemas"]["Project"];
                 };
             };
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
         };
     };
-    deleteNamespace: {
+    deleteProject: {
         parameters: {
             query?: never;
             header?: never;
@@ -5352,7 +5401,7 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
-    updateNamespace: {
+    updateProject: {
         parameters: {
             query?: never;
             header?: never;
@@ -5363,9 +5412,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": {
-                    data: components["schemas"]["UpdateNamespaceRequest"];
-                };
+                "application/json": components["schemas"]["UpdateProjectRequest"];
             };
         };
         responses: {
@@ -5375,7 +5422,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["NamespaceDataResponse"];
+                    "application/json": components["schemas"]["Project"];
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -5392,8 +5439,8 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Namespace slug (unique per organization) */
-                ns: components["parameters"]["NamespaceSlugParam"];
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
             };
             cookie?: never;
         };
@@ -5417,16 +5464,14 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Namespace slug (unique per organization) */
-                ns: components["parameters"]["NamespaceSlugParam"];
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
             };
             cookie?: never;
         };
         requestBody: {
             content: {
-                "application/json": {
-                    data: components["schemas"]["CreateWebhookRequest"];
-                };
+                "application/json": components["schemas"]["CreateWebhookRequest"];
             };
         };
         responses: {
@@ -5436,7 +5481,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["WebhookDataResponse"];
+                    "application/json": components["schemas"]["Webhook"];
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -5450,8 +5495,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Namespace slug (unique per organization) */
-                ns: components["parameters"]["NamespaceSlugParam"];
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -5464,7 +5509,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["WebhookDataResponse"];
+                    "application/json": components["schemas"]["Webhook"];
                 };
             };
             401: components["responses"]["Unauthorized"];
@@ -5476,8 +5521,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Namespace slug (unique per organization) */
-                ns: components["parameters"]["NamespaceSlugParam"];
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -5500,17 +5545,15 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Namespace slug (unique per organization) */
-                ns: components["parameters"]["NamespaceSlugParam"];
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
         };
         requestBody: {
             content: {
-                "application/json": {
-                    data: components["schemas"]["UpdateWebhookRequest"];
-                };
+                "application/json": components["schemas"]["UpdateWebhookRequest"];
             };
         };
         responses: {
@@ -5520,7 +5563,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["WebhookDataResponse"];
+                    "application/json": components["schemas"]["Webhook"];
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -5537,8 +5580,8 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Namespace slug (unique per organization) */
-                ns: components["parameters"]["NamespaceSlugParam"];
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -5567,7 +5610,10 @@ export interface operations {
                 limit?: number;
             };
             header?: never;
-            path?: never;
+            path: {
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
+            };
             cookie?: never;
         };
         requestBody?: never;
@@ -5588,14 +5634,15 @@ export interface operations {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
+            path: {
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
+            };
             cookie?: never;
         };
         requestBody: {
             content: {
-                "application/json": {
-                    data: components["schemas"]["CreateIntegrationRequest"];
-                };
+                "application/json": components["schemas"]["CreateIntegrationRequest"];
             };
         };
         responses: {
@@ -5605,7 +5652,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["IntegrationDataResponse"];
+                    "application/json": components["schemas"]["Integration"];
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -5617,6 +5664,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -5629,7 +5678,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["IntegrationDataResponse"];
+                    "application/json": components["schemas"]["Integration"];
                 };
             };
             401: components["responses"]["Unauthorized"];
@@ -5641,15 +5690,15 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
         };
         requestBody: {
             content: {
-                "application/json": {
-                    data: components["schemas"]["UpdateIntegrationRequest"];
-                };
+                "application/json": components["schemas"]["UpdateIntegrationRequest"];
             };
         };
         responses: {
@@ -5659,7 +5708,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["IntegrationDataResponse"];
+                    "application/json": components["schemas"]["Integration"];
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -5672,6 +5721,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -5689,10 +5740,66 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
+    copyIntegration: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CopyIntegrationRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Integration"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getProjectMetrics: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectMetrics"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
     listRoles: {
         parameters: {
             query?: {
                 limit?: number;
+                project_id?: string;
             };
             header?: never;
             path?: never;
@@ -5728,9 +5835,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": {
-                    data: components["schemas"]["CreateRoleRequest"];
-                };
+                "application/json": components["schemas"]["CreateRoleRequest"];
             };
         };
         responses: {
@@ -5740,7 +5845,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["RoleDataResponse"];
+                    "application/json": components["schemas"]["Role"];
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -5757,7 +5862,9 @@ export interface operations {
     };
     getRole: {
         parameters: {
-            query?: never;
+            query?: {
+                project_id?: string;
+            };
             header?: never;
             path: {
                 id: components["parameters"]["IDParam"];
@@ -5772,7 +5879,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["RoleDataResponse"];
+                    "application/json": components["schemas"]["Role"];
                 };
             };
             401: components["responses"]["Unauthorized"];
@@ -5788,7 +5895,9 @@ export interface operations {
     };
     deleteRole: {
         parameters: {
-            query?: never;
+            query?: {
+                project_id?: string;
+            };
             header?: never;
             path: {
                 id: components["parameters"]["IDParam"];
@@ -5817,7 +5926,9 @@ export interface operations {
     };
     updateRole: {
         parameters: {
-            query?: never;
+            query?: {
+                project_id?: string;
+            };
             header?: never;
             path: {
                 id: components["parameters"]["IDParam"];
@@ -5826,9 +5937,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": {
-                    data: components["schemas"]["UpdateRoleRequest"];
-                };
+                "application/json": components["schemas"]["UpdateRoleRequest"];
             };
         };
         responses: {
@@ -5838,7 +5947,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["RoleDataResponse"];
+                    "application/json": components["schemas"]["Role"];
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -5860,6 +5969,7 @@ export interface operations {
                 actor_type?: "user" | "service_account";
                 actor_id?: string;
                 role_id?: string;
+                project_id?: string;
             };
             header?: never;
             path?: never;
@@ -5895,9 +6005,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": {
-                    data: components["schemas"]["CreateRoleAssignmentRequest"];
-                };
+                "application/json": components["schemas"]["CreateRoleAssignmentRequest"];
             };
         };
         responses: {
@@ -5907,7 +6015,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["RoleAssignmentDataResponse"];
+                    "application/json": components["schemas"]["RoleAssignment"];
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -5972,8 +6080,8 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Namespace slug (unique per organization) */
-                ns: components["parameters"]["NamespaceSlugParam"];
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
             };
             cookie?: never;
         };
@@ -5996,16 +6104,14 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Namespace slug (unique per organization) */
-                ns: components["parameters"]["NamespaceSlugParam"];
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
             };
             cookie?: never;
         };
         requestBody: {
             content: {
-                "application/json": {
-                    data: components["schemas"]["CreateInteractionRequest"];
-                };
+                "application/json": components["schemas"]["CreateInteractionRequest"];
             };
         };
         responses: {
@@ -6015,7 +6121,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["InteractionDataResponse"];
+                    "application/json": components["schemas"]["Interaction"];
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -6028,8 +6134,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Namespace slug (unique per organization) */
-                ns: components["parameters"]["NamespaceSlugParam"];
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -6042,7 +6148,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["InteractionDataResponse"];
+                    "application/json": components["schemas"]["Interaction"];
                 };
             };
             401: components["responses"]["Unauthorized"];
@@ -6054,17 +6160,15 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Namespace slug (unique per organization) */
-                ns: components["parameters"]["NamespaceSlugParam"];
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
         };
         requestBody: {
             content: {
-                "application/json": {
-                    data: components["schemas"]["RespondToInteractionRequest"];
-                };
+                "application/json": components["schemas"]["RespondToInteractionRequest"];
             };
         };
         responses: {
@@ -6074,7 +6178,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["InteractionDataResponse"];
+                    "application/json": components["schemas"]["Interaction"];
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -6088,8 +6192,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Namespace slug (unique per organization) */
-                ns: components["parameters"]["NamespaceSlugParam"];
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -6102,7 +6206,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["InteractionDataResponse"];
+                    "application/json": components["schemas"]["Interaction"];
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -6115,8 +6219,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Namespace slug (unique per organization) */
-                ns: components["parameters"]["NamespaceSlugParam"];
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -6129,7 +6233,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["InteractionDataResponse"];
+                    "application/json": components["schemas"]["Interaction"];
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -6141,7 +6245,10 @@ export interface operations {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
+            path: {
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
+            };
             cookie?: never;
         };
         requestBody?: never;
@@ -6152,7 +6259,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SlackInstallDataResponse"];
+                    "application/json": components["schemas"]["SlackInstall"];
                 };
             };
             401: components["responses"]["Unauthorized"];
@@ -6162,7 +6269,10 @@ export interface operations {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
+            path: {
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
+            };
             cookie?: never;
         };
         requestBody?: never;
@@ -6292,7 +6402,10 @@ export interface operations {
                 limit?: components["parameters"]["LimitParam"];
             };
             header?: never;
-            path?: never;
+            path: {
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
+            };
             cookie?: never;
         };
         requestBody?: never;
@@ -6313,14 +6426,15 @@ export interface operations {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
+            path: {
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
+            };
             cookie?: never;
         };
         requestBody: {
             content: {
-                "application/json": {
-                    data: components["schemas"]["CreateGroupRequest"];
-                };
+                "application/json": components["schemas"]["CreateGroupRequest"];
             };
         };
         responses: {
@@ -6330,7 +6444,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GroupDataResponse"];
+                    "application/json": components["schemas"]["Group"];
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -6343,6 +6457,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
                 groupId: components["parameters"]["GroupIDParam"];
             };
             cookie?: never;
@@ -6355,7 +6471,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GroupWithCountDataResponse"];
+                    "application/json": components["schemas"]["GroupWithCount"];
                 };
             };
             401: components["responses"]["Unauthorized"];
@@ -6367,6 +6483,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
                 groupId: components["parameters"]["GroupIDParam"];
             };
             cookie?: never;
@@ -6390,15 +6508,15 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
                 groupId: components["parameters"]["GroupIDParam"];
             };
             cookie?: never;
         };
         requestBody: {
             content: {
-                "application/json": {
-                    data: components["schemas"]["UpdateGroupRequest"];
-                };
+                "application/json": components["schemas"]["UpdateGroupRequest"];
             };
         };
         responses: {
@@ -6408,7 +6526,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GroupDataResponse"];
+                    "application/json": components["schemas"]["Group"];
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -6426,6 +6544,8 @@ export interface operations {
             };
             header?: never;
             path: {
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
                 groupId: components["parameters"]["GroupIDParam"];
             };
             cookie?: never;
@@ -6450,15 +6570,15 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
                 groupId: components["parameters"]["GroupIDParam"];
             };
             cookie?: never;
         };
         requestBody: {
             content: {
-                "application/json": {
-                    data: components["schemas"]["AddGroupMemberRequest"];
-                };
+                "application/json": components["schemas"]["AddGroupMemberRequest"];
             };
         };
         responses: {
@@ -6468,7 +6588,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GroupMemberDataResponse"];
+                    "application/json": components["schemas"]["GroupMember"];
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -6482,6 +6602,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
                 groupId: components["parameters"]["GroupIDParam"];
                 userId: string;
             };
@@ -6505,6 +6627,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
                 userId: string;
             };
             cookie?: never;
@@ -6533,8 +6657,8 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Namespace slug (unique per organization) */
-                ns: components["parameters"]["NamespaceSlugParam"];
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
             };
             cookie?: never;
         };
@@ -6558,16 +6682,14 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Namespace slug (unique per organization) */
-                ns: components["parameters"]["NamespaceSlugParam"];
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
             };
             cookie?: never;
         };
         requestBody: {
             content: {
-                "application/json": {
-                    data: components["schemas"]["CreateAgentRequest"];
-                };
+                "application/json": components["schemas"]["CreateAgentRequest"];
             };
         };
         responses: {
@@ -6577,7 +6699,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AgentDataResponse"];
+                    "application/json": components["schemas"]["Agent"];
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -6591,8 +6713,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Namespace slug (unique per organization) */
-                ns: components["parameters"]["NamespaceSlugParam"];
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -6605,7 +6727,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AgentDataResponse"];
+                    "application/json": components["schemas"]["Agent"];
                 };
             };
             401: components["responses"]["Unauthorized"];
@@ -6617,8 +6739,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Namespace slug (unique per organization) */
-                ns: components["parameters"]["NamespaceSlugParam"];
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -6641,17 +6763,15 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Namespace slug (unique per organization) */
-                ns: components["parameters"]["NamespaceSlugParam"];
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
         };
         requestBody: {
             content: {
-                "application/json": {
-                    data: components["schemas"]["UpdateAgentRequest"];
-                };
+                "application/json": components["schemas"]["UpdateAgentRequest"];
             };
         };
         responses: {
@@ -6661,7 +6781,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AgentDataResponse"];
+                    "application/json": components["schemas"]["Agent"];
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -6679,8 +6799,8 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Namespace slug (unique per organization) */
-                ns: components["parameters"]["NamespaceSlugParam"];
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -6705,17 +6825,15 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Namespace slug (unique per organization) */
-                ns: components["parameters"]["NamespaceSlugParam"];
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
         };
         requestBody: {
             content: {
-                "application/json": {
-                    data: components["schemas"]["CreateAgentSessionRequest"];
-                };
+                "application/json": components["schemas"]["CreateAgentSessionRequest"];
             };
         };
         responses: {
@@ -6725,7 +6843,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AgentSessionDataResponse"];
+                    "application/json": components["schemas"]["AgentSession"];
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -6738,8 +6856,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Namespace slug (unique per organization) */
-                ns: components["parameters"]["NamespaceSlugParam"];
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
                 sessionId: string;
             };
             cookie?: never;
@@ -6752,7 +6870,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AgentSessionDataResponse"];
+                    "application/json": components["schemas"]["AgentSession"];
                 };
             };
             401: components["responses"]["Unauthorized"];
@@ -6764,8 +6882,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Namespace slug (unique per organization) */
-                ns: components["parameters"]["NamespaceSlugParam"];
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
                 sessionId: string;
             };
             cookie?: never;
@@ -6778,7 +6896,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AgentSessionDataResponse"];
+                    "application/json": components["schemas"]["AgentSession"];
                 };
             };
             401: components["responses"]["Unauthorized"];
@@ -6790,8 +6908,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Namespace slug (unique per organization) */
-                ns: components["parameters"]["NamespaceSlugParam"];
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
                 sessionId: string;
             };
             cookie?: never;
@@ -6804,7 +6922,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AgentSessionDataResponse"];
+                    "application/json": components["schemas"]["AgentSession"];
                 };
             };
             401: components["responses"]["Unauthorized"];
@@ -6837,17 +6955,15 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Namespace slug (unique per organization) */
-                ns: components["parameters"]["NamespaceSlugParam"];
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
                 slug: string;
             };
             cookie?: never;
         };
         requestBody: {
             content: {
-                "application/json": {
-                    data: components["schemas"]["ToolRunRequest"];
-                };
+                "application/json": components["schemas"]["ToolRunRequest"];
             };
         };
         responses: {
@@ -6857,7 +6973,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ToolRunDataResponse"];
+                    "application/json": components["schemas"]["ToolRun"];
                 };
             };
             /** @description Accepted — run is pending; poll for result */
@@ -6866,7 +6982,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ToolRunDataResponse"];
+                    "application/json": components["schemas"]["ToolRun"];
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -6879,8 +6995,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Namespace slug (unique per organization) */
-                ns: components["parameters"]["NamespaceSlugParam"];
+                /** @description Project slug (unique per organization) */
+                project: components["parameters"]["ProjectSlugParam"];
                 slug: string;
                 runId: string;
             };
@@ -6894,7 +7010,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ToolRunDataResponse"];
+                    "application/json": components["schemas"]["ToolRun"];
                 };
             };
             401: components["responses"]["Unauthorized"];

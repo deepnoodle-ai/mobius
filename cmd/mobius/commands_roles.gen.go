@@ -16,6 +16,7 @@ import (
 // registerRolesCommands registers every generated subcommand in the "roles" group.
 func registerRolesCommands(app *cli.App) {
 	rolesGrp := app.Group("roles")
+	rolesGrp.Alias("role")
 	rolesGrp.Command("create").
 		Description("Create a custom role").
 		Flags(
@@ -57,11 +58,19 @@ func registerRolesCommands(app *cli.App) {
 	rolesGrp.Command("delete").
 		Description("Delete a custom role").
 		Args("id").
+		Flags(
+			cli.String("project-id", "").Help("project-id"),
+		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
 			p0 := ctx.Arg(0)
-			resp, err := client.DeleteRoleWithResponse(ctx.Context(), p0)
+			params := &api.DeleteRoleParams{}
+			if ctx.IsSet("project-id") {
+				v := ctx.String("project-id")
+				params.ProjectId = &v
+			}
+			resp, err := client.DeleteRoleWithResponse(ctx.Context(), p0, params)
 			if err != nil {
 				return err
 			}
@@ -85,11 +94,19 @@ func registerRolesCommands(app *cli.App) {
 	rolesGrp.Command("get").
 		Description("Get a role").
 		Args("id").
+		Flags(
+			cli.String("project-id", "").Help("project-id"),
+		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
 			p0 := ctx.Arg(0)
-			resp, err := client.GetRoleWithResponse(ctx.Context(), p0)
+			params := &api.GetRoleParams{}
+			if ctx.IsSet("project-id") {
+				v := ctx.String("project-id")
+				params.ProjectId = &v
+			}
+			resp, err := client.GetRoleWithResponse(ctx.Context(), p0, params)
 			if err != nil {
 				return err
 			}
@@ -100,6 +117,7 @@ func registerRolesCommands(app *cli.App) {
 		Description("List roles").
 		Flags(
 			cli.Int("limit", "").Help("limit"),
+			cli.String("project-id", "").Help("project-id"),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -108,6 +126,10 @@ func registerRolesCommands(app *cli.App) {
 			if ctx.IsSet("limit") {
 				v := ctx.Int("limit")
 				params.Limit = &v
+			}
+			if ctx.IsSet("project-id") {
+				v := ctx.String("project-id")
+				params.ProjectId = &v
 			}
 			resp, err := client.ListRolesWithResponse(ctx.Context(), params)
 			if err != nil {
@@ -122,6 +144,7 @@ func registerRolesCommands(app *cli.App) {
 			cli.String("actor-type", "").Help("actor-type"),
 			cli.String("actor-id", "").Help("actor-id"),
 			cli.String("role-id", "").Help("role-id"),
+			cli.String("project-id", "").Help("project-id"),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -139,6 +162,10 @@ func registerRolesCommands(app *cli.App) {
 				v := ctx.String("role-id")
 				params.RoleId = &v
 			}
+			if ctx.IsSet("project-id") {
+				v := ctx.String("project-id")
+				params.ProjectId = &v
+			}
 			resp, err := client.ListRoleAssignmentsWithResponse(ctx.Context(), params)
 			if err != nil {
 				return err
@@ -150,17 +177,23 @@ func registerRolesCommands(app *cli.App) {
 		Description("Update a custom role").
 		Args("id").
 		Flags(
+			cli.String("project-id", "").Help("project-id"),
 			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin)"),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
 			p0 := ctx.Arg(0)
+			params := &api.UpdateRoleParams{}
+			if ctx.IsSet("project-id") {
+				v := ctx.String("project-id")
+				params.ProjectId = &v
+			}
 			var body api.UpdateRoleJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
 			}
-			resp, err := client.UpdateRoleWithResponse(ctx.Context(), p0, body)
+			resp, err := client.UpdateRoleWithResponse(ctx.Context(), p0, params, body)
 			if err != nil {
 				return err
 			}

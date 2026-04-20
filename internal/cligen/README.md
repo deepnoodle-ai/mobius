@@ -28,7 +28,7 @@ var overrides = map[string]Override{
     "listWorkflowRuns": {
         Group:       "runs",
         Command:     "list",
-        Description: "List workflow runs in the current namespace",
+        Description: "List workflow runs in the current project",
     },
 }
 ```

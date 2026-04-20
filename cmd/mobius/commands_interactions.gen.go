@@ -16,14 +16,15 @@ import (
 // registerInteractionsCommands registers every generated subcommand in the "interactions" group.
 func registerInteractionsCommands(app *cli.App) {
 	interactionsGrp := app.Group("interactions")
+	interactionsGrp.Alias("interaction")
 	interactionsGrp.Command("claim").
 		Description("Claim a pending first-responder group interaction").
-		Args("ns", "id").
+		Args("id").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
-			p0 := ctx.Arg(0)
-			p1 := ctx.Arg(1)
+			p0 := ctx.String("project")
+			p1 := ctx.Arg(0)
 			resp, err := client.ClaimInteractionWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
@@ -33,14 +34,13 @@ func registerInteractionsCommands(app *cli.App) {
 
 	interactionsGrp.Command("create").
 		Description("Create an interaction explicitly").
-		Args("ns").
 		Flags(
 			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin)"),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
-			p0 := ctx.Arg(0)
+			p0 := ctx.String("project")
 			var body api.CreateInteractionJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -54,12 +54,12 @@ func registerInteractionsCommands(app *cli.App) {
 
 	interactionsGrp.Command("get").
 		Description("Get an interaction").
-		Args("ns", "id").
+		Args("id").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
-			p0 := ctx.Arg(0)
-			p1 := ctx.Arg(1)
+			p0 := ctx.String("project")
+			p1 := ctx.Arg(0)
 			resp, err := client.GetInteractionWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
@@ -69,7 +69,6 @@ func registerInteractionsCommands(app *cli.App) {
 
 	interactionsGrp.Command("list").
 		Description("List interactions").
-		Args("ns").
 		Flags(
 			cli.String("status", "").Help("status"),
 			cli.String("run-id", "").Help("run-id"),
@@ -82,7 +81,7 @@ func registerInteractionsCommands(app *cli.App) {
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
-			p0 := ctx.Arg(0)
+			p0 := ctx.String("project")
 			params := &api.ListInteractionsParams{}
 			if ctx.IsSet("status") {
 				v := api.ListInteractionsParamsStatus(ctx.String("status"))
@@ -121,12 +120,12 @@ func registerInteractionsCommands(app *cli.App) {
 
 	interactionsGrp.Command("release-interaction").
 		Description("Release a claimed first-responder group interaction").
-		Args("ns", "id").
+		Args("id").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
-			p0 := ctx.Arg(0)
-			p1 := ctx.Arg(1)
+			p0 := ctx.String("project")
+			p1 := ctx.Arg(0)
 			resp, err := client.ReleaseInteractionWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
@@ -136,15 +135,15 @@ func registerInteractionsCommands(app *cli.App) {
 
 	interactionsGrp.Command("respond-to-interaction").
 		Description("Submit a response to an interaction").
-		Args("ns", "id").
+		Args("id").
 		Flags(
 			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin)"),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
-			p0 := ctx.Arg(0)
-			p1 := ctx.Arg(1)
+			p0 := ctx.String("project")
+			p1 := ctx.Arg(0)
 			var body api.RespondToInteractionJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err

@@ -16,16 +16,16 @@ import (
 // registerJobsCommands registers every generated subcommand in the "jobs" group.
 func registerJobsCommands(app *cli.App) {
 	jobsGrp := app.Group("jobs")
+	jobsGrp.Alias("job")
 	jobsGrp.Command("claim").
 		Description("Long-poll for the next claimable workflow job").
-		Args("ns").
 		Flags(
 			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin)"),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
-			p0 := ctx.Arg(0)
+			p0 := ctx.String("project")
 			var body api.ClaimJobJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -39,15 +39,15 @@ func registerJobsCommands(app *cli.App) {
 
 	jobsGrp.Command("complete-job").
 		Description("Report terminal status for a claimed workflow job").
-		Args("ns", "id").
+		Args("id").
 		Flags(
 			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin)"),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
-			p0 := ctx.Arg(0)
-			p1 := ctx.Arg(1)
+			p0 := ctx.String("project")
+			p1 := ctx.Arg(0)
 			var body api.CompleteJobJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -61,15 +61,15 @@ func registerJobsCommands(app *cli.App) {
 
 	jobsGrp.Command("create-interaction").
 		Description("Create a human-in-the-loop interaction from a claimed workflow job").
-		Args("ns", "id").
+		Args("id").
 		Flags(
 			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin)"),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
-			p0 := ctx.Arg(0)
-			p1 := ctx.Arg(1)
+			p0 := ctx.String("project")
+			p1 := ctx.Arg(0)
 			var body api.CreateJobInteractionJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -81,17 +81,39 @@ func registerJobsCommands(app *cli.App) {
 			return printResponse(ctx, resp.StatusCode(), resp.Body)
 		})
 
-	jobsGrp.Command("heartbeat-job").
-		Description("Refresh the lease on a claimed workflow job").
-		Args("ns", "id").
+	jobsGrp.Command("emit-job-events").
+		Description("Emit one or more custom events from a claimed workflow job").
+		Args("id").
 		Flags(
 			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin)"),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
-			p0 := ctx.Arg(0)
-			p1 := ctx.Arg(1)
+			p0 := ctx.String("project")
+			p1 := ctx.Arg(0)
+			var body api.EmitJobEventsJSONRequestBody
+			if err := readJSONBody(ctx, &body); err != nil {
+				return err
+			}
+			resp, err := client.EmitJobEventsWithResponse(ctx.Context(), p0, p1, body)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, resp.StatusCode(), resp.Body)
+		})
+
+	jobsGrp.Command("heartbeat-job").
+		Description("Refresh the lease on a claimed workflow job").
+		Args("id").
+		Flags(
+			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin)"),
+		).
+		Use(cli.RequireFlags("api-key")).
+		Run(func(ctx *cli.Context) error {
+			client := clientFromContext(ctx).RawClient()
+			p0 := ctx.String("project")
+			p1 := ctx.Arg(0)
 			var body api.HeartbeatJobJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -105,16 +127,16 @@ func registerJobsCommands(app *cli.App) {
 
 	jobsGrp.Command("run-job-action").
 		Description("Execute one server-side action for a claimed workflow job").
-		Args("ns", "id", "action-name").
+		Args("id", "action-name").
 		Flags(
 			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin)"),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
-			p0 := ctx.Arg(0)
-			p1 := ctx.Arg(1)
-			p2 := ctx.Arg(2)
+			p0 := ctx.String("project")
+			p1 := ctx.Arg(0)
+			p2 := ctx.Arg(1)
 			var body api.RunJobActionJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err

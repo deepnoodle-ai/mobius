@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import base64
+import inspect
 import json
 import logging
+import queue
 import signal
 import threading
 import time
@@ -17,7 +19,14 @@ from ._api.models import (
     JobFenceRequest,
     Status as JobStatus,
 )
-from .client import Client, LeaseLostError
+from .client import (
+    Client,
+    JobEventEntry,
+    JobEventsRequest,
+    LeaseLostError,
+    PayloadTooLargeError,
+    RateLimitedError,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -34,10 +43,45 @@ class WorkerConfig:
     # Fallback heartbeat interval used when the server does not advertise one
     # in the claim response. Value is in seconds.
     heartbeat_interval: float = 10.0
+    # Max buffered custom events per in-flight job before we drop the oldest.
+    event_queue_size: int = 256
+    # Max custom events to send in one HTTP request.
+    event_batch_size: int = 20
 
 
 # ActionFunc receives JSON-decoded parameters and returns a JSON-serialisable result.
 ActionFunc = Callable[[dict[str, Any]], Any]
+
+
+@dataclass
+class ActionContext:
+    job_id: str
+    run_id: str
+    project_id: str | None
+    worker_id: str
+    attempt: int
+    queue: str | None
+    workflow_name: str | None
+    step_name: str | None
+    action: str | None
+    _event_queue: "queue.Queue[JobEventEntry]"
+
+    def emit_event(self, type: str, data: dict[str, Any]) -> None:
+        event = JobEventEntry(type=type, payload=data)
+        try:
+            self._event_queue.put_nowait(event)
+            return
+        except queue.Full:
+            pass
+
+        try:
+            self._event_queue.get_nowait()
+        except queue.Empty:
+            pass
+        try:
+            self._event_queue.put_nowait(event)
+        except queue.Full:
+            logger.warning("dropping custom event for job %s", self.job_id)
 
 
 class Worker:
@@ -120,24 +164,50 @@ class Worker:
             return
 
         stop_hb = threading.Event()
+        event_queue: "queue.Queue[JobEventEntry]" = queue.Queue(
+            maxsize=self._config.event_queue_size
+        )
+        stop_events = threading.Event()
         hb_thread = threading.Thread(
             target=self._heartbeat_loop,
             args=(task, stop_hb),
             daemon=True,
         )
+        event_thread = threading.Thread(
+            target=self._event_loop,
+            args=(task, event_queue, stop_events),
+            daemon=True,
+        )
         hb_thread.start()
+        event_thread.start()
+        ctx = ActionContext(
+            job_id=task.job_id,
+            run_id=task.run_id,
+            project_id=self._client.project,
+            worker_id=self._config.worker_id,
+            attempt=task.attempt,
+            queue=task.queue,
+            workflow_name=task.workflow_name,
+            step_name=task.step_name,
+            action=task.action,
+            _event_queue=event_queue,
+        )
 
         try:
-            result = fn(dict(task.parameters or {}))
+            result = self._invoke_action(fn, ctx, dict(task.parameters or {}))
         except Exception as exc:
             stop_hb.set()
+            stop_events.set()
             hb_thread.join()
+            event_thread.join()
             log.error("action failed: %s", exc)
             self._fail_task(task, "Error", str(exc))
             return
 
         stop_hb.set()
+        stop_events.set()
         hb_thread.join()
+        event_thread.join()
 
         result_b64 = (
             base64.b64encode(json.dumps(result).encode()).decode()
@@ -207,3 +277,67 @@ class Worker:
             logger.error(
                 "failed to report job failure for %s: %s", task.job_id, exc
             )
+
+    def _event_loop(
+        self,
+        task: JobClaim,
+        event_queue: "queue.Queue[JobEventEntry]",
+        stop: threading.Event,
+    ) -> None:
+        while not stop.is_set() or not event_queue.empty():
+            try:
+                first = event_queue.get(timeout=0.25)
+            except queue.Empty:
+                continue
+
+            batch = [first]
+            while len(batch) < self._config.event_batch_size:
+                try:
+                    batch.append(event_queue.get_nowait())
+                except queue.Empty:
+                    break
+
+            try:
+                self._client.emit_job_events(
+                    task.job_id,
+                    JobEventsRequest(
+                        worker_id=self._config.worker_id,
+                        attempt=task.attempt,
+                        events=batch,
+                    ),
+                )
+            except LeaseLostError:
+                logger.warning(
+                    "lease lost during custom-event emit for job %s",
+                    task.job_id,
+                )
+                return
+            except PayloadTooLargeError as exc:
+                logger.warning("%s", exc)
+            except RateLimitedError as exc:
+                logger.warning("%s", exc)
+            except Exception as exc:
+                logger.warning(
+                    "failed to emit custom event batch for job %s: %s",
+                    task.job_id,
+                    exc,
+                )
+
+    def _invoke_action(
+        self,
+        fn: ActionFunc,
+        ctx: ActionContext,
+        params: dict[str, Any],
+    ) -> Any:
+        positional = [
+            p
+            for p in inspect.signature(fn).parameters.values()
+            if p.kind
+            in (
+                inspect.Parameter.POSITIONAL_ONLY,
+                inspect.Parameter.POSITIONAL_OR_KEYWORD,
+            )
+        ]
+        if len(positional) >= 2:
+            return fn(ctx, params)  # type: ignore[misc]
+        return fn(params)

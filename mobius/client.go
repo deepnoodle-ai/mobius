@@ -2,6 +2,7 @@ package mobius
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"net/http"
 	"time"
@@ -12,15 +13,20 @@ import (
 const defaultHTTPTimeout = 60 * time.Second
 const DefaultBaseURL = "https://api.mobiusops.ai"
 
+var (
+	ErrPayloadTooLarge = errors.New("mobius: custom event payload too large")
+	ErrRateLimited     = errors.New("mobius: custom event rate limited")
+)
+
 // Client holds connection settings for the Mobius API. Create one with NewClient
 // and use it to construct Workers, start runs, or manage workflows.
 type Client struct {
-	baseURL       string
-	apiKey        string
-	namespaceSlug string
-	httpClient    *http.Client
-	ac            *api.ClientWithResponses
-	config        *ClientConfig
+	baseURL     string
+	apiKey      string
+	projectSlug string
+	httpClient  *http.Client
+	ac          *api.ClientWithResponses
+	config      *ClientConfig
 }
 
 // ClientConfig holds optional client configuration.
@@ -53,10 +59,10 @@ func WithLogger(log *slog.Logger) Option {
 	return func(c *Client) { c.config.Logger = log }
 }
 
-// WithNamespaceSlug sets the namespace slug used for all namespace-scoped operations.
-// Required for workers and namespace-scoped API operations.
-func WithNamespaceSlug(slug string) Option {
-	return func(c *Client) { c.namespaceSlug = slug }
+// WithProjectSlug sets the project slug used for all project-scoped operations.
+// Required for workers and project-scoped API operations.
+func WithProjectSlug(slug string) Option {
+	return func(c *Client) { c.projectSlug = slug }
 }
 
 // NewClient returns a Client targeting the default Mobius API host unless
