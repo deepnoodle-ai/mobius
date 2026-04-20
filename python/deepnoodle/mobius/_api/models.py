@@ -46,7 +46,7 @@ class Kind(Enum):
 
 class Channel(BaseModel):
     id: str
-    name: str = Field(..., description='Channel slug (unique within project)')
+    name: str = Field(..., description='Channel handle (unique within project)')
     display_name: str = Field(..., description='Human-facing display name')
     topic: str | None = Field(None, description='Channel topic or description')
     kind: Kind = Field(..., description='Channel type')
@@ -139,7 +139,7 @@ class ChannelMessageListResponse(BaseModel):
 
 
 class CreateChannelRequest(BaseModel):
-    name: str = Field(..., description='Channel slug (unique, immutable)')
+    name: str = Field(..., description='Channel handle (unique, immutable)')
     display_name: str = Field(..., description='Human-facing display name')
     topic: str | None = Field(None, description='Channel topic or description')
     kind: Kind = Field(..., description='Channel type')
@@ -792,7 +792,7 @@ class ActorRef(BaseModel):
     type: Type2
     id: str = Field(
         ...,
-        description='User ID for member; queue name for agent; group ID/slug for group',
+        description='User ID for member; queue name for agent; group ID/handle for group',
     )
 
 
@@ -1078,7 +1078,7 @@ class WorkerListResponse(BaseModel):
 class Project(BaseModel):
     id: str
     name: str
-    slug: str
+    handle: str
     description: str | None = None
     created_by: str | None = None
     created_at: datetime
@@ -1091,7 +1091,7 @@ class ProjectListResponse(BaseModel):
 
 class CreateProjectRequest(BaseModel):
     name: str
-    slug: str | None = None
+    handle: str | None = None
     description: str | None = None
 
 
@@ -1116,7 +1116,7 @@ class Webhook(BaseModel):
     id: str
     org_id: str
     name: str
-    slug: str = Field(
+    handle: str = Field(
         ..., description='Immutable URL-safe identifier used in the receive endpoint'
     )
     receive_url: str = Field(
@@ -1159,8 +1159,8 @@ class WebhookEventListResponse(BaseModel):
 
 class CreateWebhookRequest(BaseModel):
     name: str
-    slug: str | None = Field(
-        None, description='URL-safe slug; auto-generated from name if omitted'
+    handle: str | None = Field(
+        None, description='URL-safe handle; auto-generated from name if omitted'
     )
     secret: str | None = Field(
         None,
@@ -1450,7 +1450,7 @@ class User(BaseModel):
 class Org(BaseModel):
     id: str
     name: str
-    slug: str
+    handle: str
     metadata: dict[str, Any] | None = None
     created_at: datetime
     updated_at: datetime
@@ -1464,13 +1464,13 @@ class OrgListResponse(BaseModel):
 
 class CreateOrgRequest(BaseModel):
     name: str
-    slug: str
+    handle: str
     metadata: dict[str, Any] | None = None
 
 
 class UpdateOrgRequest(BaseModel):
     name: str | None = None
-    slug: str | None = None
+    handle: str | None = None
     metadata: dict[str, Any] | None = None
 
 
@@ -1559,7 +1559,9 @@ class RoutingPolicy(Enum):
 class Group(BaseModel):
     id: str
     org_id: str
-    slug: str = Field(..., description='URL-safe identifier, unique within the project')
+    handle: str = Field(
+        ..., description='URL-safe identifier, unique within the project'
+    )
     name: str = Field(..., description='Human-readable display name')
     description: str | None = None
     routing_policy: RoutingPolicy = Field(
@@ -1604,8 +1606,8 @@ class RoutingPolicy1(Enum):
 
 
 class CreateGroupRequest(BaseModel):
-    slug: str | None = Field(
-        None, description='URL-safe slug. Auto-derived from name if omitted.'
+    handle: str | None = Field(
+        None, description='URL-safe handle. Auto-derived from name if omitted.'
     )
     name: str = Field(..., description='Display name (1-64 chars)')
     description: str | None = None
@@ -1744,7 +1746,7 @@ class UpdateServiceAccountRequest(BaseModel):
 class ToolDefinition(BaseModel):
     name: str = Field(
         ...,
-        description='Tool name (workflow slug). Stable across publish/unpublish cycles.',
+        description='Tool name (workflow handle). Stable across publish/unpublish cycles.',
     )
     description: str = Field(
         ..., description='Human-readable description of what the tool does.'
@@ -1954,7 +1956,7 @@ class WorkflowSpec(BaseModel):
 class WorkflowDefinition(BaseModel):
     id: str
     name: str
-    slug: str
+    handle: str
     description: str | None = None
     latest_version: int
     published_as_tool: bool | None = Field(
@@ -1975,7 +1977,7 @@ class WorkflowDefinitionListResponse(BaseModel):
 
 class CreateWorkflowRequest(BaseModel):
     name: str
-    slug: str | None = None
+    handle: str | None = None
     description: str | None = None
     published_as_tool: bool | None = Field(
         None,

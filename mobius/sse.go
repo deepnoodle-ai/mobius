@@ -57,7 +57,7 @@ type sseEnvelope struct {
 //		fmt.Printf("Event: %v (seq %d)\n", ev.Type, ev.Seq)
 //	}
 func (c *Client) WatchRun(ctx context.Context, runID string, since int64) (<-chan RunEvent, error) {
-	resp, err := c.ac.StreamRunEventsWithResponse(ctx, api.ProjectSlugParam(c.projectSlug), api.IDParam(runID), &api.StreamRunEventsParams{
+	resp, err := c.ac.StreamRunEventsWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.IDParam(runID), &api.StreamRunEventsParams{
 		Since: &since,
 	})
 	if err != nil {
@@ -89,7 +89,7 @@ func (c *Client) WatchRun(ctx context.Context, runID string, since int64) (<-cha
 //		fmt.Printf("Run %s event: %v (seq %d)\n", ev.RunID, ev.Type, ev.Seq)
 //	}
 func (c *Client) WatchProjectRuns(ctx context.Context, since int64) (<-chan RunEvent, error) {
-	resp, err := c.ac.StreamProjectRunEventsWithResponse(ctx, api.ProjectSlugParam(c.projectSlug), &api.StreamProjectRunEventsParams{
+	resp, err := c.ac.StreamProjectRunEventsWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), &api.StreamProjectRunEventsParams{
 		Since: &since,
 	})
 	if err != nil {

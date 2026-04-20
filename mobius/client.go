@@ -21,12 +21,12 @@ var (
 // Client holds connection settings for the Mobius API. Create one with NewClient
 // and use it to construct Workers, start runs, or manage workflows.
 type Client struct {
-	baseURL     string
-	apiKey      string
-	projectSlug string
-	httpClient  *http.Client
-	ac          *api.ClientWithResponses
-	config      *ClientConfig
+	baseURL       string
+	apiKey        string
+	projectHandle string
+	httpClient    *http.Client
+	ac            *api.ClientWithResponses
+	config        *ClientConfig
 }
 
 // ClientConfig holds optional client configuration.
@@ -59,10 +59,10 @@ func WithLogger(log *slog.Logger) Option {
 	return func(c *Client) { c.config.Logger = log }
 }
 
-// WithProjectSlug sets the project slug used for all project-scoped operations.
+// WithProjectHandle sets the project handle used for all project-scoped operations.
 // Required for workers and project-scoped API operations.
-func WithProjectSlug(slug string) Option {
-	return func(c *Client) { c.projectSlug = slug }
+func WithProjectHandle(handle string) Option {
+	return func(c *Client) { c.projectHandle = handle }
 }
 
 // NewClient returns a Client targeting the default Mobius API host unless
