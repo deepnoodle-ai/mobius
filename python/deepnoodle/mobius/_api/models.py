@@ -1578,16 +1578,17 @@ class InteractionSpec(BaseModel):
 class CreateJobInteractionRequest(BaseModel):
     """
     Creates an interaction from a claimed job context. The server derives
-    the owning run from the job and may derive the topic when omitted.
+    the owning run from the job and may derive the signal name when
+    omitted.
 
     """
 
     target_actor: ActorRef
     type: InteractionType
     message: str = Field(..., description='Message shown to the responder.')
-    topic: str | None = Field(
+    signal_name: str | None = Field(
         None,
-        description='Optional signal topic override. When omitted, the server derives\nthe topic from step_name or falls back to a default interaction topic.\n',
+        description='Optional signal name override. When omitted, the server derives\nthe signal name from step_name or falls back to a default\ninteraction signal name.\n',
     )
     step_name: str | None = Field(
         None, description='Optional workflow step label for UI/debugging context'
@@ -1661,9 +1662,9 @@ class Interaction(BaseModel):
     run_id: str | None = Field(
         None, description='Originating workflow run when the interaction is run-backed.'
     )
-    topic: str | None = Field(
+    signal_name: str | None = Field(
         None,
-        description='Signal topic used to resume the originating run when run-backed.',
+        description='Signal name used to resume the originating run when run-backed.',
     )
     type: InteractionType
     status: Status1 = Field(..., description='Current status of the interaction.')
@@ -1915,7 +1916,7 @@ class UpdateTriggerRequest(BaseModel):
 
 
 class Worker(BaseModel):
-    worker_id: str = Field(
+    id: str = Field(
         ..., description='Caller-assigned stable identifier for this worker process.'
     )
     name: str | None = Field(
@@ -2821,11 +2822,12 @@ class InteractionListResponse(BaseModel):
 
 class CreateInteractionRequest(BaseModel):
     """
-    Creates an interaction directly. When `run_id` is provided, `topic` is
-    also required and the interaction is linked to that run. When both are
-    omitted, the interaction is standalone and completes with no workflow
-    resume side effect. For worker/job usage, prefer the job-scoped route
-    so the server can derive the owning run from the claimed job context.
+    Creates an interaction directly. When `run_id` is provided,
+    `signal_name` is also required and the interaction is linked to that
+    run. When both are omitted, the interaction is standalone and
+    completes with no workflow resume side effect. For worker/job usage,
+    prefer the job-scoped route so the server can derive the owning run
+    from the claimed job context.
 
     """
 
@@ -2833,9 +2835,9 @@ class CreateInteractionRequest(BaseModel):
         None,
         description='ID of the workflow run to resume when this interaction is completed.',
     )
-    topic: str | None = Field(
+    signal_name: str | None = Field(
         None,
-        description='Signal topic the interaction will complete against when run-backed.',
+        description='Signal name the interaction will complete against when run-backed.',
     )
     target_actor: ActorRef
     type: InteractionType

@@ -1685,11 +1685,12 @@ type CreateIntegrationRequest struct {
 	Provider string `json:"provider"`
 }
 
-// CreateInteractionRequest Creates an interaction directly. When `run_id` is provided, `topic` is
-// also required and the interaction is linked to that run. When both are
-// omitted, the interaction is standalone and completes with no workflow
-// resume side effect. For worker/job usage, prefer the job-scoped route
-// so the server can derive the owning run from the claimed job context.
+// CreateInteractionRequest Creates an interaction directly. When `run_id` is provided,
+// `signal_name` is also required and the interaction is linked to that
+// run. When both are omitted, the interaction is standalone and
+// completes with no workflow resume side effect. For worker/job usage,
+// prefer the job-scoped route so the server can derive the owning run
+// from the claimed job context.
 type CreateInteractionRequest struct {
 	// Context Additional key-value context surfaced in the UI alongside the message.
 	Context *map[string]interface{} `json:"context,omitempty"`
@@ -1708,6 +1709,9 @@ type CreateInteractionRequest struct {
 	// RunId ID of the workflow run to resume when this interaction is completed.
 	RunId *string `json:"run_id,omitempty"`
 
+	// SignalName Signal name the interaction will complete against when run-backed.
+	SignalName *string `json:"signal_name,omitempty"`
+
 	// Spec Declarative dialog contract for rendering and validating an interaction.
 	// `type` defines the semantic intent; `mode` defines the input affordance.
 	// Compatibility rules are enforced server-side:
@@ -1716,14 +1720,12 @@ type CreateInteractionRequest struct {
 	// - `input` supports `input`, `select`, or `multi_select`
 	Spec        *InteractionSpec `json:"spec,omitempty"`
 	TargetActor ActorRef         `json:"target_actor"`
-
-	// Topic Signal topic the interaction will complete against when run-backed.
-	Topic *string         `json:"topic,omitempty"`
-	Type  InteractionType `json:"type"`
+	Type        InteractionType  `json:"type"`
 }
 
 // CreateJobInteractionRequest Creates an interaction from a claimed job context. The server derives
-// the owning run from the job and may derive the topic when omitted.
+// the owning run from the job and may derive the signal name when
+// omitted.
 type CreateJobInteractionRequest struct {
 	// Context Additional key-value context surfaced in the UI alongside the message.
 	Context *map[string]interface{} `json:"context,omitempty"`
@@ -1738,6 +1740,11 @@ type CreateJobInteractionRequest struct {
 	// means all snapshotted group members must respond before the
 	// interaction is considered complete. Ignored for non-group targets.
 	RequireAll *bool `json:"require_all,omitempty"`
+
+	// SignalName Optional signal name override. When omitted, the server derives
+	// the signal name from step_name or falls back to a default
+	// interaction signal name.
+	SignalName *string `json:"signal_name,omitempty"`
 
 	// Spec Declarative dialog contract for rendering and validating an interaction.
 	// `type` defines the semantic intent; `mode` defines the input affordance.
@@ -1754,12 +1761,8 @@ type CreateJobInteractionRequest struct {
 	// Timeout Optional duration string (e.g. "24h", "30m") specifying how long
 	// the interaction should remain open before expiring. When absent
 	// the caller is responsible for setting expires_at directly.
-	Timeout *string `json:"timeout,omitempty"`
-
-	// Topic Optional signal topic override. When omitted, the server derives
-	// the topic from step_name or falls back to a default interaction topic.
-	Topic *string         `json:"topic,omitempty"`
-	Type  InteractionType `json:"type"`
+	Timeout *string         `json:"timeout,omitempty"`
+	Type    InteractionType `json:"type"`
 }
 
 // CreateOrgOrSystemAPIKeyRequest defines model for CreateOrgOrSystemAPIKeyRequest.
@@ -2156,6 +2159,9 @@ type Interaction struct {
 	// RunId Originating workflow run when the interaction is run-backed.
 	RunId *string `json:"run_id,omitempty"`
 
+	// SignalName Signal name used to resume the originating run when run-backed.
+	SignalName *string `json:"signal_name,omitempty"`
+
 	// Spec Declarative dialog contract for rendering and validating an interaction.
 	// `type` defines the semantic intent; `mode` defines the input affordance.
 	// Compatibility rules are enforced server-side:
@@ -2172,11 +2178,8 @@ type Interaction struct {
 	TargetGroupId *string `json:"target_group_id,omitempty"`
 
 	// TargetMemberSnapshot User IDs of group members at the time of creation
-	TargetMemberSnapshot *[]string `json:"target_member_snapshot,omitempty"`
-
-	// Topic Signal topic used to resume the originating run when run-backed.
-	Topic *string         `json:"topic,omitempty"`
-	Type  InteractionType `json:"type"`
+	TargetMemberSnapshot *[]string       `json:"target_member_snapshot,omitempty"`
+	Type                 InteractionType `json:"type"`
 
 	// UpdatedAt Timestamp when this interaction was last updated.
 	UpdatedAt time.Time `json:"updated_at"`
@@ -3272,6 +3275,9 @@ type Worker struct {
 	// Capabilities Reserved for future capability-based job routing. Not currently used for filtering.
 	Capabilities *[]string `json:"capabilities,omitempty"`
 
+	// Id Caller-assigned stable identifier for this worker process.
+	Id string `json:"id"`
+
 	// LastSeenAt Timestamp of the worker's most recent job claim poll. Updated on
 	// every `POST /v1/projects/{project}/jobs/claim` call regardless of whether a job was
 	// returned. Used to compute `stale`.
@@ -3286,9 +3292,6 @@ type Worker struct {
 
 	// Version Optional version string supplied in the claim request.
 	Version *string `json:"version,omitempty"`
-
-	// WorkerId Caller-assigned stable identifier for this worker process.
-	WorkerId string `json:"worker_id"`
 }
 
 // WorkerListResponse defines model for WorkerListResponse.
