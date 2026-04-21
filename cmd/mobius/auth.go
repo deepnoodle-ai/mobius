@@ -77,7 +77,7 @@ func registerAuthCommands(app *cli.App) {
 
 	grp.Command("revoke").
 		Description("Revoke one browser-issued CLI credential").
-		Args("id").
+		Args("id?").
 		Run(runAuthRevoke)
 }
 
@@ -152,7 +152,7 @@ func runAuthLogin(ctx *cli.Context) error {
 // postDeviceCode calls RFC 8628 §3.1 (Device Authorization Request) with a
 // form body and decodes the flat §3.2 JSON response.
 func postDeviceCode(ctx context.Context, client *http.Client, apiURL string, form url.Values) (*deviceCodeResponse, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, apiURL+"/auth/device/code", strings.NewReader(form.Encode()))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, apiURL+"/v1/auth/device/code", strings.NewReader(form.Encode()))
 	if err != nil {
 		return nil, err
 	}
@@ -206,7 +206,7 @@ func pollForToken(ctx context.Context, client *http.Client, apiURL string, ch *d
 			"grant_type":  {deviceCodeGrantType},
 			"device_code": {ch.DeviceCode},
 		}
-		req, err := http.NewRequestWithContext(ctx, http.MethodPost, apiURL+"/auth/device/token", strings.NewReader(form.Encode()))
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, apiURL+"/v1/auth/device/token", strings.NewReader(form.Encode()))
 		if err != nil {
 			return "", "", err
 		}
@@ -337,7 +337,7 @@ func runAuthList(ctx *cli.Context) error {
 	if !hasAuth(ctx) {
 		return errLoginRequired()
 	}
-	resp, err := authAPIGet(ctx, "/cli-credentials")
+	resp, err := authAPIGet(ctx, "/v1/cli-credentials")
 	if err != nil {
 		return err
 	}
@@ -370,7 +370,16 @@ func runAuthRevoke(ctx *cli.Context) error {
 		return errLoginRequired()
 	}
 	id := ctx.Arg(0)
-	req, err := http.NewRequestWithContext(ctx.Context(), http.MethodDelete, authAPIURL(ctx, "/cli-credentials/"+id), nil)
+	if id == "" {
+		// No ID given: show the list so the caller can discover what
+		// to pass, instead of dead-ending on "missing required argument".
+		if err := runAuthList(ctx); err != nil {
+			return err
+		}
+		ctx.Println("")
+		return errors.New("specify a credential ID to revoke: `mobius auth revoke <id>`")
+	}
+	req, err := http.NewRequestWithContext(ctx.Context(), http.MethodDelete, authAPIURL(ctx, "/v1/cli-credentials/"+id), nil)
 	if err != nil {
 		return err
 	}
