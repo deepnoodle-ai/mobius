@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 	"time"
@@ -101,6 +102,52 @@ func TestRuntimeClaim_Job(t *testing.T) {
 	acts, _ := sent["actions"].([]any)
 	assert.Equal(t, len(acts), 1)
 	assert.Equal(t, acts[0], "print")
+}
+
+// Regression: URL-unsafe characters in the project handle / job ID must be
+// PathEscape'd before being interpolated into the runtime routes, otherwise
+// the request either fails client-side or hits the wrong endpoint.
+func TestRuntimeClaim_EscapesProjectHandle(t *testing.T) {
+	const rawProject = "team a/b"
+	wantEscaped := "/v1/projects/" + url.PathEscape(rawProject) + "/jobs/claim"
+	claimBody := `{"job_id":"job_1","run_id":"run_1","workflow_name":"hello","step_name":"greet","action":"print","parameters":{},"attempt":1,"queue":"default","heartbeat_interval_seconds":15}`
+
+	var gotEscaped string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotEscaped = r.URL.EscapedPath()
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = io.WriteString(w, claimBody)
+	}))
+	t.Cleanup(srv.Close)
+	c := NewClient(WithBaseURL(srv.URL), WithAPIKey("mbx_test"), WithProjectHandle(rawProject))
+
+	cfg := WorkerConfig{WorkerID: "w1", PollWaitSeconds: 1, Actions: []string{"print"}}
+	job, err := c.runtimeClaim(context.Background(), cfg)
+	assert.NoError(t, err)
+	assert.NotNil(t, job)
+	assert.Equal(t, job.JobID, "job_1")
+	assert.Equal(t, gotEscaped, wantEscaped)
+}
+
+func TestRuntimeHeartbeat_EscapesJobID(t *testing.T) {
+	const rawJob = "job/with spaces"
+	wantEscaped := "/v1/projects/test-project/jobs/" + url.PathEscape(rawJob) + "/heartbeat"
+
+	var gotEscaped string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotEscaped = r.URL.EscapedPath()
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = io.WriteString(w, `{"lease_expires_at":"2026-01-01T00:00:00Z"}`)
+	}))
+	t.Cleanup(srv.Close)
+	c := NewClient(WithBaseURL(srv.URL), WithAPIKey("mbx_test"), WithProjectHandle("test-project"))
+
+	job := &runtimeJob{JobID: rawJob, WorkerID: "w1", Attempt: 1}
+	_, err := c.runtimeHeartbeat(context.Background(), job)
+	assert.NoError(t, err)
+	assert.Equal(t, gotEscaped, wantEscaped)
 }
 
 func TestRuntimeClaim_Empty(t *testing.T) {

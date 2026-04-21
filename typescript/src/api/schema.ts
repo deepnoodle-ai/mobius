@@ -877,9 +877,10 @@ export interface paths {
          *     The server derives the owning run and project scope from the job,
          *     so workers do not need to pass `run_id` explicitly. Prefer this
          *     route over `POST /v1/projects/{project}/interactions` from within a
-         *     job context. The optional `topic` field overrides the server-
-         *     derived signal topic; when omitted the server derives the topic
-         *     from `step_name` or uses a default interaction topic.
+         *     job context. The optional `signal_name` field overrides the
+         *     server-derived signal name; when omitted the server derives the
+         *     signal name from `step_name` or uses a default interaction
+         *     signal name.
          */
         post: operations["createJobInteraction"];
         delete?: never;
@@ -1356,12 +1357,13 @@ export interface paths {
         /**
          * Create an interaction
          * @description Creates a standalone or run-backed interaction. When `run_id` is
-         *     provided, `topic` is also required and completing the interaction
-         *     automatically delivers a signal that resumes the suspended run.
-         *     Omit both for a standalone interaction that completes with no
-         *     workflow side effect. Workers creating interactions from within a
-         *     job should use the job-scoped route (`POST /v1/projects/{project}/jobs/{id}/interactions`)
-         *     instead, which derives the run and topic automatically.
+         *     provided, `signal_name` is also required and completing the
+         *     interaction automatically delivers a signal that resumes the
+         *     suspended run. Omit both for a standalone interaction that
+         *     completes with no workflow side effect. Workers creating
+         *     interactions from within a job should use the job-scoped route
+         *     (`POST /v1/projects/{project}/jobs/{id}/interactions`) instead,
+         *     which derives the run and signal name automatically.
          */
         post: operations["createInteraction"];
         delete?: never;
@@ -3050,7 +3052,7 @@ export interface components {
             run_id: string;
             /** @description Handle of the workflow definition that owns this run. */
             workflow_name: string;
-            /** @description Step label from the workflow spec — used for UI and interaction topic derivation. */
+            /** @description Step label from the workflow spec — used for UI and for deriving the interaction signal name when a worker creates a run-backed interaction without an explicit signal_name. */
             step_name: string;
             /** @description Action name the worker must execute for this step. */
             action: string;
@@ -3223,7 +3225,8 @@ export interface components {
         };
         /**
          * @description Creates an interaction from a claimed job context. The server derives
-         *     the owning run from the job and may derive the topic when omitted.
+         *     the owning run from the job and may derive the signal name when
+         *     omitted.
          */
         CreateJobInteractionRequest: {
             target_actor: components["schemas"]["ActorRef"];
@@ -3231,10 +3234,11 @@ export interface components {
             /** @description Message shown to the responder. */
             message: string;
             /**
-             * @description Optional signal topic override. When omitted, the server derives
-             *     the topic from step_name or falls back to a default interaction topic.
+             * @description Optional signal name override. When omitted, the server derives
+             *     the signal name from step_name or falls back to a default
+             *     interaction signal name.
              */
-            topic?: string;
+            signal_name?: string;
             /** @description Optional workflow step label for UI/debugging context */
             step_name?: string;
             /** @description Additional key-value context surfaced in the UI alongside the message. */
@@ -3292,8 +3296,8 @@ export interface components {
             id: string;
             /** @description Originating workflow run when the interaction is run-backed. */
             run_id?: string | null;
-            /** @description Signal topic used to resume the originating run when run-backed. */
-            topic?: string | null;
+            /** @description Signal name used to resume the originating run when run-backed. */
+            signal_name?: string | null;
             type: components["schemas"]["InteractionType"];
             /**
              * @description Current status of the interaction.
@@ -3540,7 +3544,7 @@ export interface components {
         };
         Worker: {
             /** @description Caller-assigned stable identifier for this worker process. */
-            worker_id: string;
+            id: string;
             /** @description Optional human-readable name supplied in the claim request. */
             name?: string;
             /** @description Optional version string supplied in the claim request. */
@@ -4365,17 +4369,18 @@ export interface components {
             items: components["schemas"]["Interaction"][];
         };
         /**
-         * @description Creates an interaction directly. When `run_id` is provided, `topic` is
-         *     also required and the interaction is linked to that run. When both are
-         *     omitted, the interaction is standalone and completes with no workflow
-         *     resume side effect. For worker/job usage, prefer the job-scoped route
-         *     so the server can derive the owning run from the claimed job context.
+         * @description Creates an interaction directly. When `run_id` is provided,
+         *     `signal_name` is also required and the interaction is linked to that
+         *     run. When both are omitted, the interaction is standalone and
+         *     completes with no workflow resume side effect. For worker/job usage,
+         *     prefer the job-scoped route so the server can derive the owning run
+         *     from the claimed job context.
          */
         CreateInteractionRequest: {
             /** @description ID of the workflow run to resume when this interaction is completed. */
             run_id?: string | null;
-            /** @description Signal topic the interaction will complete against when run-backed. */
-            topic?: string | null;
+            /** @description Signal name the interaction will complete against when run-backed. */
+            signal_name?: string | null;
             target_actor: components["schemas"]["ActorRef"];
             type: components["schemas"]["InteractionType"];
             /** @description Message shown to the responder describing what response is needed. */

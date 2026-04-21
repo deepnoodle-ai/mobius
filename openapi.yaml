@@ -1720,11 +1720,13 @@ paths:
 
         route over `POST /v1/projects/{project}/interactions` from within a
 
-        job context. The optional `topic` field overrides the server-
+        job context. The optional `signal_name` field overrides the
 
-        derived signal topic; when omitted the server derives the topic
+        server-derived signal name; when omitted the server derives the
 
-        from `step_name` or uses a default interaction topic.
+        signal name from `step_name` or uses a default interaction
+
+        signal name.
 
         '
       parameters:
@@ -2809,17 +2811,19 @@ paths:
       description: 'Creates a standalone or run-backed interaction. When `run_id`
         is
 
-        provided, `topic` is also required and completing the interaction
+        provided, `signal_name` is also required and completing the
 
-        automatically delivers a signal that resumes the suspended run.
+        interaction automatically delivers a signal that resumes the
 
-        Omit both for a standalone interaction that completes with no
+        suspended run. Omit both for a standalone interaction that
 
-        workflow side effect. Workers creating interactions from within a
+        completes with no workflow side effect. Workers creating
 
-        job should use the job-scoped route (`POST /v1/projects/{project}/jobs/{id}/interactions`)
+        interactions from within a job should use the job-scoped route
 
-        instead, which derives the run and topic automatically.
+        (`POST /v1/projects/{project}/jobs/{id}/interactions`) instead,
+
+        which derives the run and signal name automatically.
 
         '
       parameters:
@@ -5962,8 +5966,9 @@ components:
           description: Handle of the workflow definition that owns this run.
         step_name:
           type: string
-          description: Step label from the workflow spec — used for UI and interaction
-            topic derivation.
+          description: Step label from the workflow spec — used for UI and for
+            deriving the interaction signal name when a worker creates a
+            run-backed interaction without an explicit signal_name.
         action:
           type: string
           description: Action name the worker must execute for this step.
@@ -6278,7 +6283,9 @@ components:
       description: 'Creates an interaction from a claimed job context. The server
         derives
 
-        the owning run from the job and may derive the topic when omitted.
+        the owning run from the job and may derive the signal name when
+
+        omitted.
 
         '
       properties:
@@ -6289,11 +6296,13 @@ components:
         message:
           type: string
           description: Message shown to the responder.
-        topic:
+        signal_name:
           type: string
-          description: 'Optional signal topic override. When omitted, the server derives
+          description: 'Optional signal name override. When omitted, the server derives
 
-            the topic from step_name or falls back to a default interaction topic.
+            the signal name from step_name or falls back to a default
+
+            interaction signal name.
 
             '
         step_name:
@@ -6394,10 +6403,10 @@ components:
           type: string
           nullable: true
           description: Originating workflow run when the interaction is run-backed.
-        topic:
+        signal_name:
           type: string
           nullable: true
-          description: Signal topic used to resume the originating run when run-backed.
+          description: Signal name used to resume the originating run when run-backed.
         type:
           $ref: '#/components/schemas/InteractionType'
         status:
@@ -6774,10 +6783,10 @@ components:
     Worker:
       type: object
       required:
-      - worker_id
+      - id
       - stale
       properties:
-        worker_id:
+        id:
           type: string
           description: Caller-assigned stable identifier for this worker process.
         name:
@@ -8145,16 +8154,20 @@ components:
       - type
       - target_actor
       - message
-      description: 'Creates an interaction directly. When `run_id` is provided, `topic`
-        is
+      dependencies:
+        run_id:
+        - signal_name
+      description: 'Creates an interaction directly. When `run_id` is provided,
 
-        also required and the interaction is linked to that run. When both are
+        `signal_name` is also required and the interaction is linked to that
 
-        omitted, the interaction is standalone and completes with no workflow
+        run. When both are omitted, the interaction is standalone and
 
-        resume side effect. For worker/job usage, prefer the job-scoped route
+        completes with no workflow resume side effect. For worker/job usage,
 
-        so the server can derive the owning run from the claimed job context.
+        prefer the job-scoped route so the server can derive the owning run
+
+        from the claimed job context.
 
         '
       properties:
@@ -8162,10 +8175,10 @@ components:
           type: string
           nullable: true
           description: ID of the workflow run to resume when this interaction is completed.
-        topic:
+        signal_name:
           type: string
           nullable: true
-          description: Signal topic the interaction will complete against when run-backed.
+          description: Signal name the interaction will complete against when run-backed.
         target_actor:
           $ref: '#/components/schemas/ActorRef'
         type:
