@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/deepnoodle-ai/wonton/cli"
+	"github.com/deepnoodle-ai/wonton/tui"
 
 	"github.com/deepnoodle-ai/mobius/internal/authstore"
 	"github.com/deepnoodle-ai/mobius/mobius"
@@ -77,7 +78,7 @@ func registerAuthCommands(app *cli.App) {
 
 	grp.Command("revoke").
 		Description("Revoke one browser-issued CLI credential").
-		Args("id").
+		Args("id?").
 		Run(runAuthRevoke)
 }
 
@@ -152,7 +153,7 @@ func runAuthLogin(ctx *cli.Context) error {
 // postDeviceCode calls RFC 8628 §3.1 (Device Authorization Request) with a
 // form body and decodes the flat §3.2 JSON response.
 func postDeviceCode(ctx context.Context, client *http.Client, apiURL string, form url.Values) (*deviceCodeResponse, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, apiURL+"/auth/device/code", strings.NewReader(form.Encode()))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, apiURL+"/v1/auth/device/code", strings.NewReader(form.Encode()))
 	if err != nil {
 		return nil, err
 	}
@@ -206,7 +207,7 @@ func pollForToken(ctx context.Context, client *http.Client, apiURL string, ch *d
 			"grant_type":  {deviceCodeGrantType},
 			"device_code": {ch.DeviceCode},
 		}
-		req, err := http.NewRequestWithContext(ctx, http.MethodPost, apiURL+"/auth/device/token", strings.NewReader(form.Encode()))
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, apiURL+"/v1/auth/device/token", strings.NewReader(form.Encode()))
 		if err != nil {
 			return "", "", err
 		}
@@ -327,7 +328,49 @@ type cliCredential struct {
 }
 
 type cliCredentialListResponse struct {
-	Data []cliCredential `json:"data"`
+	Items []cliCredential `json:"items"`
+}
+
+func fetchCLICredentials(ctx *cli.Context) ([]cliCredential, error) {
+	resp, err := authAPIGet(ctx, "/v1/auth/cli-credentials")
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("list CLI credentials: HTTP %d: %s", resp.StatusCode, string(body))
+	}
+	var result cliCredentialListResponse
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, fmt.Errorf("list CLI credentials: decode: %w", err)
+	}
+	return result.Items, nil
+}
+
+func printCLICredentials(ctx *cli.Context, creds []cliCredential) error {
+	rows := make([][]string, 0, len(creds))
+	for _, c := range creds {
+		lastUsed := "never"
+		if c.LastUsedAt != nil {
+			lastUsed = c.LastUsedAt.Format(time.RFC3339)
+		}
+		rows = append(rows, []string{c.Id, c.Status, c.Label, lastUsed})
+	}
+	// Non-interactive print: -1 means "no row selected" so the table
+	// doesn't reverse-video the first row.
+	sel := -1
+	view := tui.Table([]tui.TableColumn{
+		{Title: "ID"},
+		{Title: "STATUS"},
+		{Title: "LABEL"},
+		{Title: "LAST USED"},
+	}, &sel).Rows(rows)
+	if err := tui.Fprint(ctx.Stdout(), view); err != nil {
+		return err
+	}
+	ctx.Println("")
+	return nil
 }
 
 // runAuthList lists the CLI credentials the authenticated user has minted
@@ -337,32 +380,15 @@ func runAuthList(ctx *cli.Context) error {
 	if !hasAuth(ctx) {
 		return errLoginRequired()
 	}
-	resp, err := authAPIGet(ctx, "/cli-credentials")
+	creds, err := fetchCLICredentials(ctx)
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("list CLI credentials: HTTP %d: %s", resp.StatusCode, string(body))
-	}
-	var result cliCredentialListResponse
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return fmt.Errorf("list CLI credentials: decode: %w", err)
-	}
-	if len(result.Data) == 0 {
+	if len(creds) == 0 {
 		ctx.Println("No CLI credentials.")
 		return nil
 	}
-	ctx.Printf("%-28s  %-8s  %-32s  %s\n", "ID", "STATUS", "LABEL", "LAST USED")
-	for _, c := range result.Data {
-		lastUsed := "never"
-		if c.LastUsedAt != nil {
-			lastUsed = c.LastUsedAt.Format(time.RFC3339)
-		}
-		ctx.Printf("%-28s  %-8s  %-32s  %s\n", c.Id, c.Status, truncate(c.Label, 32), lastUsed)
-	}
-	return nil
+	return printCLICredentials(ctx, creds)
 }
 
 func runAuthRevoke(ctx *cli.Context) error {
@@ -370,7 +396,22 @@ func runAuthRevoke(ctx *cli.Context) error {
 		return errLoginRequired()
 	}
 	id := ctx.Arg(0)
-	req, err := http.NewRequestWithContext(ctx.Context(), http.MethodDelete, authAPIURL(ctx, "/cli-credentials/"+id), nil)
+	if id == "" {
+		creds, err := fetchCLICredentials(ctx)
+		if err != nil {
+			return err
+		}
+		if len(creds) == 0 {
+			ctx.Println("No CLI credentials to revoke.")
+			return nil
+		}
+		ctx.Println("Specify a credential ID to revoke. Available credentials:")
+		if err := printCLICredentials(ctx, creds); err != nil {
+			return err
+		}
+		return errors.New("specify a credential ID to revoke: `mobius auth revoke <id>`")
+	}
+	req, err := http.NewRequestWithContext(ctx.Context(), http.MethodDelete, authAPIURL(ctx, "/v1/auth/cli-credentials/"+id), nil)
 	if err != nil {
 		return err
 	}
@@ -465,13 +506,6 @@ func defaultDeviceLabel() string {
 	default:
 		return "mobius CLI"
 	}
-}
-
-func truncate(s string, n int) string {
-	if len(s) <= n {
-		return s
-	}
-	return s[:n-1] + "…"
 }
 
 func firstNonEmpty(vals ...string) string {

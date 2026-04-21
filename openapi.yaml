@@ -1720,13 +1720,11 @@ paths:
 
         route over `POST /v1/projects/{project}/interactions` from within a
 
-        job context. The optional `signal_name` field overrides the
+        job context. The optional `signal_name` field overrides the server-
 
-        server-derived signal name; when omitted the server derives the
+        derived signal name; when omitted the server derives the signal name
 
-        signal name from `step_name` or uses a default interaction
-
-        signal name.
+        from `step_name` or uses a default interaction signal name.
 
         '
       parameters:
@@ -5966,9 +5964,8 @@ components:
           description: Handle of the workflow definition that owns this run.
         step_name:
           type: string
-          description: Step label from the workflow spec — used for UI and for
-            deriving the interaction signal name when a worker creates a
-            run-backed interaction without an explicit signal_name.
+          description: Step name from the workflow spec — used for UI and interaction
+            topic derivation.
         action:
           type: string
           description: Action name the worker must execute for this step.
@@ -8157,6 +8154,8 @@ components:
       dependencies:
         run_id:
         - signal_name
+        signal_name:
+        - run_id
       description: 'Creates an interaction directly. When `run_id` is provided,
 
         `signal_name` is also required and the interaction is linked to that
@@ -8174,11 +8173,15 @@ components:
         run_id:
           type: string
           nullable: true
-          description: ID of the workflow run to resume when this interaction is completed.
+          description: ID of the workflow run to resume when this interaction is
+            completed. Provide together with `signal_name` for run-backed
+            interactions; omit or null both fields for standalone interactions.
         signal_name:
           type: string
           nullable: true
-          description: Signal name the interaction will complete against when run-backed.
+          description: Signal name the interaction will complete against when
+            run-backed. Provide together with `run_id` for run-backed
+            interactions; omit or null both fields for standalone interactions.
         target_actor:
           $ref: '#/components/schemas/ActorRef'
         type:

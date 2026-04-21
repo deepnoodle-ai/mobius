@@ -1706,10 +1706,10 @@ type CreateInteractionRequest struct {
 	// interaction is considered complete. Ignored for non-group targets.
 	RequireAll *bool `json:"require_all,omitempty"`
 
-	// RunId ID of the workflow run to resume when this interaction is completed.
+	// RunId ID of the workflow run to resume when this interaction is completed. Provide together with `signal_name` for run-backed interactions; omit or null both fields for standalone interactions.
 	RunId *string `json:"run_id,omitempty"`
 
-	// SignalName Signal name the interaction will complete against when run-backed.
+	// SignalName Signal name the interaction will complete against when run-backed. Provide together with `run_id` for run-backed interactions; omit or null both fields for standalone interactions.
 	SignalName *string `json:"signal_name,omitempty"`
 
 	// Spec Declarative dialog contract for rendering and validating an interaction.
@@ -2394,7 +2394,7 @@ type JobClaim struct {
 	// RunId Parent workflow run ID.
 	RunId string `json:"run_id"`
 
-	// StepName Step label from the workflow spec — used for UI and for deriving the interaction signal name when a worker creates a run-backed interaction without an explicit signal_name.
+	// StepName Step name from the workflow spec — used for UI and interaction topic derivation.
 	StepName string `json:"step_name"`
 
 	// WorkflowName Handle of the workflow definition that owns this run.
