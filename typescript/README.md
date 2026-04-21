@@ -58,6 +58,37 @@ const claim = await client.claimJob({
 });
 ```
 
+## Rate limiting
+
+The client retries `429 Too Many Requests` and `503 Service Unavailable`
+responses automatically, respecting the server's `Retry-After` header and
+falling back to exponential backoff (`1s`, `2s`, `4s`, capped at 60s). Non-
+idempotent `POST` / `PATCH` requests are retried only when they carry an
+`Idempotency-Key` header; otherwise a `429` surfaces as `RateLimitError`
+immediately.
+
+```ts
+import { Client, RateLimitError } from "@deepnoodle/mobius";
+
+const client = new Client({
+  apiKey: process.env.MOBIUS_API_KEY!,
+  retry: 3, // default; set to 0 to disable retries entirely
+});
+
+try {
+  await client.claimJob({ worker_id: "w1", queues: ["default"] });
+} catch (err) {
+  if (err instanceof RateLimitError) {
+    console.warn(
+      `rate limited on ${err.scope} scope; retry after ${err.retryAfter}s`,
+    );
+  }
+}
+```
+
+The full policy is documented in
+[`docs/retries.md`](https://github.com/deepnoodle-ai/mobius/blob/main/docs/retries.md).
+
 ## Documentation
 
 - [Mobius docs](https://docs.mobiusops.ai/)

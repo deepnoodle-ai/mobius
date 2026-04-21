@@ -3,6 +3,7 @@ export {
   LeaseLostError,
   PayloadTooLargeError,
   RateLimitedError,
+  RateLimitError,
 } from "./client.js";
 export {
   DEFAULT_BASE_URL,
@@ -12,6 +13,12 @@ export {
   type JobEventEntry,
   type JobEventsRequest,
 } from "./client.js";
+export {
+  DEFAULT_MAX_RETRIES,
+  MAX_RETRY_BACKOFF_SECONDS,
+  wrapFetchWithRetry,
+  type WrapRetryOptions,
+} from "./retry.js";
 
 export { Worker } from "./worker.js";
 export type {

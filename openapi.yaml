@@ -11,41 +11,41 @@ servers:
   description: Local development
 tags:
 - name: channels
-  x-displayName: channels
+  x-displayName: Channels
 - name: audit-logs
-  x-displayName: audit-logs
+  x-displayName: Audit Logs
 - name: api-keys
-  x-displayName: api-keys
+  x-displayName: API Keys
 - name: workflows
-  x-displayName: workflows
+  x-displayName: Workflows
 - name: runs
-  x-displayName: runs
+  x-displayName: Runs
 - name: actions
-  x-displayName: actions
+  x-displayName: Actions
 - name: jobs
-  x-displayName: jobs
+  x-displayName: Jobs
 - name: triggers
-  x-displayName: triggers
+  x-displayName: Triggers
 - name: workers
-  x-displayName: workers
+  x-displayName: Workers
 - name: projects
-  x-displayName: projects
+  x-displayName: Projects
 - name: webhooks
-  x-displayName: webhooks
+  x-displayName: Webhooks
 - name: integrations
-  x-displayName: integrations
+  x-displayName: Integrations
 - name: metrics
-  x-displayName: metrics
+  x-displayName: Metrics
 - name: roles
-  x-displayName: roles
+  x-displayName: Roles
 - name: interactions
-  x-displayName: interactions
+  x-displayName: Interactions
 - name: groups
-  x-displayName: groups
+  x-displayName: Groups
 - name: agents
-  x-displayName: agents
+  x-displayName: Agents
 - name: tools
-  x-displayName: tools
+  x-displayName: Tools
 paths:
   /projects/{project}/channels:
     post:
@@ -481,11 +481,20 @@ paths:
       operationId: createAPIKey
       tags:
       - api-keys
-      summary: Create an org-scoped API key
-      description: 'Creates a key valid for any project in the org. The raw key value
-        is
+      summary: Create an API key
+      description: 'Creates an API key for this org. Omit `project_id` to create an
 
-        returned in `key` and is never retrievable again after this response.
+        org-scoped key when the caller has org-level authorization, or set
+
+        `project_id` to pin the key to exactly one project. Project-pinned
+
+        keys remain inaccessible through org-level listing and management
+
+        unless the request is explicitly scoped with the same `project_id`.
+
+        The raw key value is returned in `key` and is never retrievable again
+
+        after this response.
 
         '
       requestBody:
@@ -505,13 +514,25 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
     get:
       operationId: listAPIKeys
       tags:
       - api-keys
-      summary: List org-scoped API keys
-      description: Returns all non-revoked org-level keys. Project-pinned keys are
-        not included; use the project endpoint.
+      summary: List API keys
+      description: 'Returns API keys for this org. When `project_id` is provided,
+        return
+
+        only keys pinned to that project. When `project_id` is omitted, return
+
+        only org-level keys; project-pinned keys are excluded because the
+
+        request has no project-scoped context.
+
+        '
+      parameters:
+      - $ref: '#/components/parameters/APIKeyProjectIDParam'
       responses:
         '200':
           description: OK
@@ -521,14 +542,17 @@ paths:
                 $ref: '#/components/schemas/APIKeyListResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /api-keys/{id}:
     get:
       operationId: getAPIKey
       tags:
       - api-keys
-      summary: Get an org-scoped API key
+      summary: Get an API key
       parameters:
       - $ref: '#/components/parameters/IDParam'
+      - $ref: '#/components/parameters/APIKeyProjectIDParam'
       responses:
         '200':
           description: OK
@@ -544,95 +568,22 @@ paths:
       operationId: revokeAPIKey
       tags:
       - api-keys
-      summary: Revoke an org-scoped API key
-      description: Permanently revokes the key. In-flight requests using this key
-        will immediately start receiving 401.
-      parameters:
-      - $ref: '#/components/parameters/IDParam'
-      responses:
-        '204':
-          description: No Content
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-  /projects/{project}/api-keys:
-    post:
-      operationId: createProjectAPIKey
-      tags:
-      - api-keys
-      summary: Create a project-pinned API key
-      description: 'Creates a key scoped to this project only. The key cannot be used
-        to
+      summary: Revoke an API key
+      description: 'Permanently revokes the key. In-flight requests using this key
+        will
 
-        access other projects even if the permissions would otherwise allow it.
+        immediately start receiving 401. When `project_id` is provided, revoke
 
-        The raw key value is returned in `key` and is never retrievable again.
+        only a key pinned to that project. When `project_id` is omitted,
+
+        project-pinned keys are excluded because the request has no
+
+        project-scoped context.
 
         '
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateAPIKeyRequest'
-      responses:
-        '201':
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/APIKeyCreateResult'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-    get:
-      operationId: listProjectAPIKeys
-      tags:
-      - api-keys
-      summary: List project-pinned API keys
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/APIKeyListResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-  /projects/{project}/api-keys/{id}:
-    get:
-      operationId: getProjectAPIKey
-      tags:
-      - api-keys
-      summary: Get a project-pinned API key
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/IDParam'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/APIKey'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-    delete:
-      operationId: revokeProjectAPIKey
-      tags:
-      - api-keys
-      summary: Revoke a project-pinned API key
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      - $ref: '#/components/parameters/IDParam'
+      - $ref: '#/components/parameters/APIKeyProjectIDParam'
       responses:
         '204':
           description: No Content
@@ -873,6 +824,8 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
   /projects/{project}/runs:
     post:
       operationId: startRun
@@ -911,6 +864,8 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
     get:
       operationId: listRuns
       tags:
@@ -1750,11 +1705,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '429':
-          description: Too Many Requests
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+          $ref: '#/components/responses/TooManyRequests'
   /projects/{project}/jobs/{id}/interactions:
     post:
       operationId: createJobInteraction
@@ -1892,11 +1843,11 @@ paths:
       description: 'Creates a trigger. For `schedule` triggers, `source_config.cron`
         is
 
-        required. For `webhook` triggers, `webhook_handle` is required and
+        required. For `webhook` triggers, `webhook_handle` is auto-derived from
 
-        must be unique within the project; the `receive_url` for posting events
+        `name` when omitted and must be unique within the project; the
 
-        is returned in the response.
+        `receive_url` for posting events is returned in the response.
 
         '
       parameters:
@@ -3739,6 +3690,21 @@ components:
         default: 50
         minimum: 1
         maximum: 200
+    APIKeyProjectIDParam:
+      name: project_id
+      in: query
+      required: false
+      schema:
+        $ref: '#/components/schemas/ProjectID'
+      description: 'Optional project scope for this request. When `project_id` is
+
+        provided, the API key operation is resolved in that project''s
+
+        permission context. When `project_id` is omitted, the request is
+
+        treated as org-level and project-pinned keys are excluded.
+
+        '
     GroupIDParam:
       name: groupId
       in: path
@@ -3783,6 +3749,42 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
+    TooManyRequests:
+      description: Rate limit exceeded. Retry after the delay indicated in the `Retry-After`
+        header.
+      headers:
+        Retry-After:
+          schema:
+            type: integer
+          description: Seconds to wait before retrying.
+        X-RateLimit-Limit:
+          schema:
+            type: integer
+          description: Limit of the tightest active rate-limit bucket.
+        X-RateLimit-Remaining:
+          schema:
+            type: integer
+          description: Requests remaining in the tightest bucket's current window.
+        X-RateLimit-Reset:
+          schema:
+            type: integer
+          description: Unix timestamp (seconds) when the tightest bucket resets.
+        X-RateLimit-Scope:
+          schema:
+            type: string
+            enum:
+            - key
+            - org
+          description: Scope of the tightest bucket.
+        X-RateLimit-Policy:
+          schema:
+            type: string
+          description: All active windows for the selected scope, in `limit;w=seconds`
+            form.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
     NoContent:
       description: No Content
   schemas:
@@ -3812,6 +3814,9 @@ components:
         status:
           type: string
           description: Current server status. `ok` when all dependencies are reachable.
+    ProjectID:
+      type: string
+      description: Project ID.
     Metadata:
       type: object
       additionalProperties: true
@@ -4246,6 +4251,10 @@ components:
         has_more:
           type: boolean
           description: Whether more results are available
+    APIKeyProjectID:
+      allOf:
+      - $ref: '#/components/schemas/ProjectID'
+      description: Set for project-pinned keys; omitted for org-scoped keys.
     APIKey:
       type: object
       required:
@@ -4272,16 +4281,16 @@ components:
           enum:
           - org
           - system
-          description: '`org` for standard API keys; `system` is reserved for platform-level
-            access.'
+          description: '`org` is the standard API key scope; `system` is reserved
+            for platform-level access. Project-pinned versus org-level behavior is
+            determined by `project_id`.'
         permissions:
           type: array
           items:
             type: string
           description: Explicit permission set granted to this key (e.g. "mobius.job.claim").
         project_id:
-          type: string
-          description: Set for project-pinned keys; empty for org-scoped keys.
+          $ref: '#/components/schemas/APIKeyProjectID'
         service_account_id:
           type: string
           description: Optional service account for attribution and quota tracking.
@@ -4330,16 +4339,16 @@ components:
           enum:
           - org
           - system
-          description: 'Scope of the key: `org` for org-wide keys, `project` for project-pinned
-            keys.'
+          description: Scope of the key. `org` is the standard API key scope, and
+            `system` is reserved for platform-only keys. Project-pinned versus org-level
+            behavior is determined by `project_id`.
         permissions:
           type: array
           items:
             type: string
           description: List of permissions granted to this key.
         project_id:
-          type: string
-          description: ID of the pinned project. Null for org-scoped keys.
+          $ref: '#/components/schemas/APIKeyProjectID'
         service_account_id:
           type: string
           description: ID of the service account this key belongs to.
@@ -4375,9 +4384,58 @@ components:
           items:
             $ref: '#/components/schemas/APIKey'
     CreateAPIKeyRequest:
+      oneOf:
+      - $ref: '#/components/schemas/CreateProjectPinnedAPIKeyRequest'
+      - $ref: '#/components/schemas/CreateOrgOrSystemAPIKeyRequest'
+    CreateProjectPinnedAPIKeyRequest:
       type: object
       required:
       - name
+      - project_id
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          description: Human-readable label, unique within the org (or project for
+            project-pinned keys).
+        project_id:
+          allOf:
+          - $ref: '#/components/schemas/ProjectID'
+          description: 'Set `project_id` to pin this key to exactly one project. When
+
+            `project_id` is omitted, the request creates an org-level key
+
+            instead.
+
+            '
+        scope:
+          type: string
+          enum:
+          - org
+          default: org
+          description: Standard API key scope for project-pinned keys.
+        permissions:
+          type: array
+          items:
+            type: string
+          description: 'Permissions to grant. Each permission must be held by the
+            creating
+
+            caller — you cannot grant more than you have.
+
+            '
+        service_account_id:
+          type: string
+          description: Associate this key with a service account for attribution.
+        expires_at:
+          type: string
+          format: date-time
+          description: Optional hard expiry. Omit for a non-expiring key.
+    CreateOrgOrSystemAPIKeyRequest:
+      type: object
+      required:
+      - name
+      additionalProperties: false
       properties:
         name:
           type: string
@@ -4389,7 +4447,8 @@ components:
           - org
           - system
           default: org
-          description: Key scope. Use `org` for standard API access.
+          description: Standard API key scope. Project-pinned versus org-level behavior
+            is determined separately by `project_id`.
         permissions:
           type: array
           items:
@@ -5225,6 +5284,16 @@ components:
         external_id:
           type: string
           description: Caller-supplied idempotency key or correlation ID.
+        cancel_requested:
+          type: boolean
+          description: 'True when a cancel has been requested on this run but the
+            run
+
+            has not yet reached a terminal state. Workers observe this on
+
+            their next heartbeat and stop work.
+
+            '
         created_at:
           type: string
           format: date-time
@@ -6677,9 +6746,11 @@ components:
           description: Whether the trigger starts enabled. Defaults to true.
         webhook_handle:
           type: string
-          description: 'URL-safe handle that determines the inbound receive URL. Required
+          description: 'URL-safe handle that determines the inbound receive URL. Auto-derived
 
-            for `webhook` triggers. Must be unique within the project.
+            from `name` for `webhook` triggers when omitted. Must be unique
+
+            within the project.
 
             '
         webhook_secret:

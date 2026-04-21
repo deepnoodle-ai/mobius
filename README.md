@@ -63,6 +63,12 @@ The stock worker registers built-in actions like `print`, `fail`, `json`, `time`
 - Python: [`deepnoodle-mobius`](https://pypi.org/project/deepnoodle-mobius/)
 - TypeScript: [`@deepnoodle/mobius`](https://www.npmjs.com/package/@deepnoodle/mobius)
 
+All three SDKs share the same retry and rate-limit handling: `429` and
+`503` responses are retried transparently (respecting `Retry-After`), and
+`429`s that can't be retried surface as a typed `RateLimitError` carrying
+the server's rate-limit headers. See [`docs/retries.md`](./docs/retries.md)
+for the full policy.
+
 ## Development
 
 ```bash
