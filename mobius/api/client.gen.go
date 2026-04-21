@@ -269,24 +269,6 @@ func (e ConcurrencyPolicy) Valid() bool {
 	}
 }
 
-// Defines values for CreateAPIKeyRequestScope.
-const (
-	Org    CreateAPIKeyRequestScope = "org"
-	System CreateAPIKeyRequestScope = "system"
-)
-
-// Valid indicates whether the value is a known member of the CreateAPIKeyRequestScope enum.
-func (e CreateAPIKeyRequestScope) Valid() bool {
-	switch e {
-	case Org:
-		return true
-	case System:
-		return true
-	default:
-		return false
-	}
-}
-
 // Defines values for CreateChannelRequestKind.
 const (
 	CreateChannelRequestKindChannel CreateChannelRequestKind = "channel"
@@ -317,6 +299,39 @@ func (e CreateGroupRequestRoutingPolicy) Valid() bool {
 	case CreateGroupRequestRoutingPolicyAllMembers:
 		return true
 	case CreateGroupRequestRoutingPolicyFirstResponder:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CreateOrgOrSystemAPIKeyRequestScope.
+const (
+	CreateOrgOrSystemAPIKeyRequestScopeOrg    CreateOrgOrSystemAPIKeyRequestScope = "org"
+	CreateOrgOrSystemAPIKeyRequestScopeSystem CreateOrgOrSystemAPIKeyRequestScope = "system"
+)
+
+// Valid indicates whether the value is a known member of the CreateOrgOrSystemAPIKeyRequestScope enum.
+func (e CreateOrgOrSystemAPIKeyRequestScope) Valid() bool {
+	switch e {
+	case CreateOrgOrSystemAPIKeyRequestScopeOrg:
+		return true
+	case CreateOrgOrSystemAPIKeyRequestScopeSystem:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CreateProjectPinnedAPIKeyRequestScope.
+const (
+	CreateProjectPinnedAPIKeyRequestScopeOrg CreateProjectPinnedAPIKeyRequestScope = "org"
+)
+
+// Valid indicates whether the value is a known member of the CreateProjectPinnedAPIKeyRequestScope enum.
+func (e CreateProjectPinnedAPIKeyRequestScope) Valid() bool {
+	switch e {
+	case CreateProjectPinnedAPIKeyRequestScopeOrg:
 		return true
 	default:
 		return false
@@ -895,10 +910,10 @@ type APIKey struct {
 	// Permissions Explicit permission set granted to this key (e.g. "mobius.job.claim").
 	Permissions *[]string `json:"permissions,omitempty"`
 
-	// ProjectId Set for project-pinned keys; empty for org-scoped keys.
-	ProjectId *string `json:"project_id,omitempty"`
+	// ProjectId Set for project-pinned keys; omitted for org-scoped keys.
+	ProjectId *APIKeyProjectID `json:"project_id,omitempty"`
 
-	// Scope `org` for standard API keys; `system` is reserved for platform-level access.
+	// Scope `org` is the standard API key scope; `system` is reserved for platform-level access. Project-pinned versus org-level behavior is determined by `project_id`.
 	Scope APIKeyScope `json:"scope"`
 
 	// ServiceAccountId Optional service account for attribution and quota tracking.
@@ -908,7 +923,7 @@ type APIKey struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-// APIKeyScope `org` for standard API keys; `system` is reserved for platform-level access.
+// APIKeyScope `org` is the standard API key scope; `system` is reserved for platform-level access. Project-pinned versus org-level behavior is determined by `project_id`.
 type APIKeyScope string
 
 // APIKeyCreateResult Returned only on key creation. Contains the raw `key` value which is not retrievable after this response.
@@ -937,10 +952,10 @@ type APIKeyCreateResult struct {
 	// Permissions List of permissions granted to this key.
 	Permissions *[]string `json:"permissions,omitempty"`
 
-	// ProjectId ID of the pinned project. Null for org-scoped keys.
-	ProjectId *string `json:"project_id,omitempty"`
+	// ProjectId Set for project-pinned keys; omitted for org-scoped keys.
+	ProjectId *APIKeyProjectID `json:"project_id,omitempty"`
 
-	// Scope Scope of the key: `org` for org-wide keys, `project` for project-pinned keys.
+	// Scope Scope of the key. `org` is the standard API key scope, and `system` is reserved for platform-only keys. Project-pinned versus org-level behavior is determined by `project_id`.
 	Scope APIKeyCreateResultScope `json:"scope"`
 
 	// ServiceAccountId ID of the service account this key belongs to.
@@ -950,7 +965,7 @@ type APIKeyCreateResult struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-// APIKeyCreateResultScope Scope of the key: `org` for org-wide keys, `project` for project-pinned keys.
+// APIKeyCreateResultScope Scope of the key. `org` is the standard API key scope, and `system` is reserved for platform-only keys. Project-pinned versus org-level behavior is determined by `project_id`.
 type APIKeyCreateResultScope string
 
 // APIKeyListResponse defines model for APIKeyListResponse.
@@ -958,6 +973,9 @@ type APIKeyListResponse struct {
 	// Items The list of results for this page.
 	Items []APIKey `json:"items"`
 }
+
+// APIKeyProjectID Project ID.
+type APIKeyProjectID = ProjectID
 
 // Action defines model for Action.
 type Action struct {
@@ -1553,25 +1571,8 @@ type CopyIntegrationRequest struct {
 
 // CreateAPIKeyRequest defines model for CreateAPIKeyRequest.
 type CreateAPIKeyRequest struct {
-	// ExpiresAt Optional hard expiry. Omit for a non-expiring key.
-	ExpiresAt *time.Time `json:"expires_at,omitempty"`
-
-	// Name Human-readable label, unique within the org (or project for project-pinned keys).
-	Name string `json:"name"`
-
-	// Permissions Permissions to grant. Each permission must be held by the creating
-	// caller — you cannot grant more than you have.
-	Permissions *[]string `json:"permissions,omitempty"`
-
-	// Scope Key scope. Use `org` for standard API access.
-	Scope *CreateAPIKeyRequestScope `json:"scope,omitempty"`
-
-	// ServiceAccountId Associate this key with a service account for attribution.
-	ServiceAccountId *string `json:"service_account_id,omitempty"`
+	union json.RawMessage
 }
-
-// CreateAPIKeyRequestScope Key scope. Use `org` for standard API access.
-type CreateAPIKeyRequestScope string
 
 // CreateActionRequest defines model for CreateActionRequest.
 type CreateActionRequest struct {
@@ -1770,6 +1771,55 @@ type CreateJobInteractionRequest struct {
 	Type  InteractionType `json:"type"`
 }
 
+// CreateOrgOrSystemAPIKeyRequest defines model for CreateOrgOrSystemAPIKeyRequest.
+type CreateOrgOrSystemAPIKeyRequest struct {
+	// ExpiresAt Optional hard expiry. Omit for a non-expiring key.
+	ExpiresAt *time.Time `json:"expires_at,omitempty"`
+
+	// Name Human-readable label, unique within the org (or project for project-pinned keys).
+	Name string `json:"name"`
+
+	// Permissions Permissions to grant. Each permission must be held by the creating
+	// caller — you cannot grant more than you have.
+	Permissions *[]string `json:"permissions,omitempty"`
+
+	// Scope Standard API key scope. Project-pinned versus org-level behavior is determined separately by `project_id`.
+	Scope *CreateOrgOrSystemAPIKeyRequestScope `json:"scope,omitempty"`
+
+	// ServiceAccountId Associate this key with a service account for attribution.
+	ServiceAccountId *string `json:"service_account_id,omitempty"`
+}
+
+// CreateOrgOrSystemAPIKeyRequestScope Standard API key scope. Project-pinned versus org-level behavior is determined separately by `project_id`.
+type CreateOrgOrSystemAPIKeyRequestScope string
+
+// CreateProjectPinnedAPIKeyRequest defines model for CreateProjectPinnedAPIKeyRequest.
+type CreateProjectPinnedAPIKeyRequest struct {
+	// ExpiresAt Optional hard expiry. Omit for a non-expiring key.
+	ExpiresAt *time.Time `json:"expires_at,omitempty"`
+
+	// Name Human-readable label, unique within the org (or project for project-pinned keys).
+	Name string `json:"name"`
+
+	// Permissions Permissions to grant. Each permission must be held by the creating
+	// caller — you cannot grant more than you have.
+	Permissions *[]string `json:"permissions,omitempty"`
+
+	// ProjectId Set `project_id` to pin this key to exactly one project. When
+	// `project_id` is omitted, the request creates an org-level key
+	// instead.
+	ProjectId ProjectID `json:"project_id"`
+
+	// Scope Standard API key scope for project-pinned keys.
+	Scope *CreateProjectPinnedAPIKeyRequestScope `json:"scope,omitempty"`
+
+	// ServiceAccountId Associate this key with a service account for attribution.
+	ServiceAccountId *string `json:"service_account_id,omitempty"`
+}
+
+// CreateProjectPinnedAPIKeyRequestScope Standard API key scope for project-pinned keys.
+type CreateProjectPinnedAPIKeyRequestScope string
+
 // CreateProjectRequest defines model for CreateProjectRequest.
 type CreateProjectRequest struct {
 	// Description Optional human-readable description.
@@ -1847,8 +1897,9 @@ type CreateTriggerRequest struct {
 	// Targets Workflows to start when this trigger fires.
 	Targets *[]TriggerTarget `json:"targets,omitempty"`
 
-	// WebhookHandle URL-safe handle that determines the inbound receive URL. Required
-	// for `webhook` triggers. Must be unique within the project.
+	// WebhookHandle URL-safe handle that determines the inbound receive URL. Auto-derived
+	// from `name` for `webhook` triggers when omitted. Must be unique
+	// within the project.
 	WebhookHandle *string `json:"webhook_handle,omitempty"`
 
 	// WebhookSecret Optional HMAC-SHA256 secret for verifying inbound webhook payloads.
@@ -2519,6 +2570,9 @@ type Project struct {
 	// UpdatedAt Timestamp when this project was last updated.
 	UpdatedAt time.Time `json:"updated_at"`
 }
+
+// ProjectID Project ID.
+type ProjectID = string
 
 // ProjectListResponse defines model for ProjectListResponse.
 type ProjectListResponse struct {
@@ -3648,6 +3702,11 @@ type WorkflowRun struct {
 	// Attempt Retry attempt number (1-based). Increments each time the run is retried.
 	Attempt int `json:"attempt"`
 
+	// CancelRequested True when a cancel has been requested on this run but the run
+	// has not yet reached a terminal state. Workers observe this on
+	// their next heartbeat and stop work.
+	CancelRequested *bool `json:"cancel_requested,omitempty"`
+
 	// CompletedAt Timestamp when this run reached a terminal state.
 	CompletedAt *time.Time `json:"completed_at,omitempty"`
 
@@ -3715,6 +3774,11 @@ type WorkflowRunDetail struct {
 
 	// Attempt Retry attempt number (1-based). Increments each time the run is retried.
 	Attempt int `json:"attempt"`
+
+	// CancelRequested True when a cancel has been requested on this run but the run
+	// has not yet reached a terminal state. Workers observe this on
+	// their next heartbeat and stop work.
+	CancelRequested *bool `json:"cancel_requested,omitempty"`
 
 	// CompletedAt Timestamp when this run reached a terminal state.
 	CompletedAt *time.Time `json:"completed_at,omitempty"`
@@ -3957,6 +4021,9 @@ type WorkflowWaitSignalStep struct {
 	WaitSignal WorkflowWaitSignalConfig `json:"wait_signal"`
 }
 
+// APIKeyProjectIDParam Project ID.
+type APIKeyProjectIDParam = ProjectID
+
 // ActionNameParam defines model for ActionNameParam.
 type ActionNameParam = string
 
@@ -3987,8 +4054,38 @@ type Forbidden = ErrorResponse
 // NotFound defines model for NotFound.
 type NotFound = ErrorResponse
 
+// TooManyRequests defines model for TooManyRequests.
+type TooManyRequests = ErrorResponse
+
 // Unauthorized defines model for Unauthorized.
 type Unauthorized = ErrorResponse
+
+// ListAPIKeysParams defines parameters for ListAPIKeys.
+type ListAPIKeysParams struct {
+	// ProjectId Optional project scope for this request. When `project_id` is
+	// provided, the API key operation is resolved in that project's
+	// permission context. When `project_id` is omitted, the request is
+	// treated as org-level and project-pinned keys are excluded.
+	ProjectId *APIKeyProjectIDParam `form:"project_id,omitempty" json:"project_id,omitempty"`
+}
+
+// RevokeAPIKeyParams defines parameters for RevokeAPIKey.
+type RevokeAPIKeyParams struct {
+	// ProjectId Optional project scope for this request. When `project_id` is
+	// provided, the API key operation is resolved in that project's
+	// permission context. When `project_id` is omitted, the request is
+	// treated as org-level and project-pinned keys are excluded.
+	ProjectId *APIKeyProjectIDParam `form:"project_id,omitempty" json:"project_id,omitempty"`
+}
+
+// GetAPIKeyParams defines parameters for GetAPIKey.
+type GetAPIKeyParams struct {
+	// ProjectId Optional project scope for this request. When `project_id` is
+	// provided, the API key operation is resolved in that project's
+	// permission context. When `project_id` is omitted, the request is
+	// treated as org-level and project-pinned keys are excluded.
+	ProjectId *APIKeyProjectIDParam `form:"project_id,omitempty" json:"project_id,omitempty"`
+}
 
 // ListAuditLogsParams defines parameters for ListAuditLogs.
 type ListAuditLogsParams struct {
@@ -4362,9 +4459,6 @@ type UpdateAgentJSONRequestBody = UpdateAgentRequest
 // CreateAgentSessionJSONRequestBody defines body for CreateAgentSession for application/json ContentType.
 type CreateAgentSessionJSONRequestBody = CreateAgentSessionRequest
 
-// CreateProjectAPIKeyJSONRequestBody defines body for CreateProjectAPIKey for application/json ContentType.
-type CreateProjectAPIKeyJSONRequestBody = CreateAPIKeyRequest
-
 // CreateChannelJSONRequestBody defines body for CreateChannel for application/json ContentType.
 type CreateChannelJSONRequestBody = CreateChannelRequest
 
@@ -4466,6 +4560,68 @@ type CreateRoleJSONRequestBody = CreateRoleRequest
 
 // UpdateRoleJSONRequestBody defines body for UpdateRole for application/json ContentType.
 type UpdateRoleJSONRequestBody = UpdateRoleRequest
+
+// AsCreateProjectPinnedAPIKeyRequest returns the union data inside the CreateAPIKeyRequest as a CreateProjectPinnedAPIKeyRequest
+func (t CreateAPIKeyRequest) AsCreateProjectPinnedAPIKeyRequest() (CreateProjectPinnedAPIKeyRequest, error) {
+	var body CreateProjectPinnedAPIKeyRequest
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromCreateProjectPinnedAPIKeyRequest overwrites any union data inside the CreateAPIKeyRequest as the provided CreateProjectPinnedAPIKeyRequest
+func (t *CreateAPIKeyRequest) FromCreateProjectPinnedAPIKeyRequest(v CreateProjectPinnedAPIKeyRequest) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeCreateProjectPinnedAPIKeyRequest performs a merge with any union data inside the CreateAPIKeyRequest, using the provided CreateProjectPinnedAPIKeyRequest
+func (t *CreateAPIKeyRequest) MergeCreateProjectPinnedAPIKeyRequest(v CreateProjectPinnedAPIKeyRequest) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsCreateOrgOrSystemAPIKeyRequest returns the union data inside the CreateAPIKeyRequest as a CreateOrgOrSystemAPIKeyRequest
+func (t CreateAPIKeyRequest) AsCreateOrgOrSystemAPIKeyRequest() (CreateOrgOrSystemAPIKeyRequest, error) {
+	var body CreateOrgOrSystemAPIKeyRequest
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromCreateOrgOrSystemAPIKeyRequest overwrites any union data inside the CreateAPIKeyRequest as the provided CreateOrgOrSystemAPIKeyRequest
+func (t *CreateAPIKeyRequest) FromCreateOrgOrSystemAPIKeyRequest(v CreateOrgOrSystemAPIKeyRequest) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeCreateOrgOrSystemAPIKeyRequest performs a merge with any union data inside the CreateAPIKeyRequest, using the provided CreateOrgOrSystemAPIKeyRequest
+func (t *CreateAPIKeyRequest) MergeCreateOrgOrSystemAPIKeyRequest(v CreateOrgOrSystemAPIKeyRequest) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t CreateAPIKeyRequest) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *CreateAPIKeyRequest) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
 
 // AsInteractionValue0 returns the union data inside the InteractionValue as a InteractionValue0
 func (t InteractionValue) AsInteractionValue0() (InteractionValue0, error) {
@@ -5039,7 +5195,7 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 // The interface specification for the client above.
 type ClientInterface interface {
 	// ListAPIKeys request
-	ListAPIKeys(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ListAPIKeys(ctx context.Context, params *ListAPIKeysParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// CreateAPIKeyWithBody request with any body
 	CreateAPIKeyWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -5047,10 +5203,10 @@ type ClientInterface interface {
 	CreateAPIKey(ctx context.Context, body CreateAPIKeyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// RevokeAPIKey request
-	RevokeAPIKey(ctx context.Context, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+	RevokeAPIKey(ctx context.Context, id IDParam, params *RevokeAPIKeyParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetAPIKey request
-	GetAPIKey(ctx context.Context, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetAPIKey(ctx context.Context, id IDParam, params *GetAPIKeyParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListAuditLogs request
 	ListAuditLogs(ctx context.Context, params *ListAuditLogsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -5140,20 +5296,6 @@ type ClientInterface interface {
 	CreateAgentSessionWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	CreateAgentSession(ctx context.Context, project ProjectHandleParam, id IDParam, body CreateAgentSessionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// ListProjectAPIKeys request
-	ListProjectAPIKeys(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// CreateProjectAPIKeyWithBody request with any body
-	CreateProjectAPIKeyWithBody(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	CreateProjectAPIKey(ctx context.Context, project ProjectHandleParam, body CreateProjectAPIKeyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// RevokeProjectAPIKey request
-	RevokeProjectAPIKey(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// GetProjectAPIKey request
-	GetProjectAPIKey(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListChannels request
 	ListChannels(ctx context.Context, project ProjectHandleParam, params *ListChannelsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -5476,8 +5618,8 @@ type ClientInterface interface {
 	UpdateRole(ctx context.Context, id IDParam, params *UpdateRoleParams, body UpdateRoleJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
-func (c *Client) ListAPIKeys(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListAPIKeysRequest(c.Server)
+func (c *Client) ListAPIKeys(ctx context.Context, params *ListAPIKeysParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListAPIKeysRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
@@ -5512,8 +5654,8 @@ func (c *Client) CreateAPIKey(ctx context.Context, body CreateAPIKeyJSONRequestB
 	return c.Client.Do(req)
 }
 
-func (c *Client) RevokeAPIKey(ctx context.Context, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewRevokeAPIKeyRequest(c.Server, id)
+func (c *Client) RevokeAPIKey(ctx context.Context, id IDParam, params *RevokeAPIKeyParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRevokeAPIKeyRequest(c.Server, id, params)
 	if err != nil {
 		return nil, err
 	}
@@ -5524,8 +5666,8 @@ func (c *Client) RevokeAPIKey(ctx context.Context, id IDParam, reqEditors ...Req
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetAPIKey(ctx context.Context, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetAPIKeyRequest(c.Server, id)
+func (c *Client) GetAPIKey(ctx context.Context, id IDParam, params *GetAPIKeyParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetAPIKeyRequest(c.Server, id, params)
 	if err != nil {
 		return nil, err
 	}
@@ -5910,66 +6052,6 @@ func (c *Client) CreateAgentSessionWithBody(ctx context.Context, project Project
 
 func (c *Client) CreateAgentSession(ctx context.Context, project ProjectHandleParam, id IDParam, body CreateAgentSessionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewCreateAgentSessionRequest(c.Server, project, id, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) ListProjectAPIKeys(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListProjectAPIKeysRequest(c.Server, project)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) CreateProjectAPIKeyWithBody(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateProjectAPIKeyRequestWithBody(c.Server, project, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) CreateProjectAPIKey(ctx context.Context, project ProjectHandleParam, body CreateProjectAPIKeyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateProjectAPIKeyRequest(c.Server, project, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) RevokeProjectAPIKey(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewRevokeProjectAPIKeyRequest(c.Server, project, id)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) GetProjectAPIKey(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetProjectAPIKeyRequest(c.Server, project, id)
 	if err != nil {
 		return nil, err
 	}
@@ -7397,7 +7479,7 @@ func (c *Client) UpdateRole(ctx context.Context, id IDParam, params *UpdateRoleP
 }
 
 // NewListAPIKeysRequest generates requests for ListAPIKeys
-func NewListAPIKeysRequest(server string) (*http.Request, error) {
+func NewListAPIKeysRequest(server string, params *ListAPIKeysParams) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -7413,6 +7495,28 @@ func NewListAPIKeysRequest(server string) (*http.Request, error) {
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.ProjectId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "project_id", *params.ProjectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
 	}
 
 	req, err := http.NewRequest("GET", queryURL.String(), nil)
@@ -7464,7 +7568,7 @@ func NewCreateAPIKeyRequestWithBody(server string, contentType string, body io.R
 }
 
 // NewRevokeAPIKeyRequest generates requests for RevokeAPIKey
-func NewRevokeAPIKeyRequest(server string, id IDParam) (*http.Request, error) {
+func NewRevokeAPIKeyRequest(server string, id IDParam, params *RevokeAPIKeyParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -7487,6 +7591,28 @@ func NewRevokeAPIKeyRequest(server string, id IDParam) (*http.Request, error) {
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.ProjectId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "project_id", *params.ProjectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
 	}
 
 	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
@@ -7498,7 +7624,7 @@ func NewRevokeAPIKeyRequest(server string, id IDParam) (*http.Request, error) {
 }
 
 // NewGetAPIKeyRequest generates requests for GetAPIKey
-func NewGetAPIKeyRequest(server string, id IDParam) (*http.Request, error) {
+func NewGetAPIKeyRequest(server string, id IDParam, params *GetAPIKeyParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -7521,6 +7647,28 @@ func NewGetAPIKeyRequest(server string, id IDParam) (*http.Request, error) {
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.ProjectId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "project_id", *params.ProjectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
 	}
 
 	req, err := http.NewRequest("GET", queryURL.String(), nil)
@@ -8974,169 +9122,6 @@ func NewCreateAgentSessionRequestWithBody(server string, project ProjectHandlePa
 	}
 
 	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewListProjectAPIKeysRequest generates requests for ListProjectAPIKeys
-func NewListProjectAPIKeysRequest(server string, project ProjectHandleParam) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/projects/%s/api-keys", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("GET", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewCreateProjectAPIKeyRequest calls the generic CreateProjectAPIKey builder with application/json body
-func NewCreateProjectAPIKeyRequest(server string, project ProjectHandleParam, body CreateProjectAPIKeyJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewCreateProjectAPIKeyRequestWithBody(server, project, "application/json", bodyReader)
-}
-
-// NewCreateProjectAPIKeyRequestWithBody generates requests for CreateProjectAPIKey with any type of body
-func NewCreateProjectAPIKeyRequestWithBody(server string, project ProjectHandleParam, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/projects/%s/api-keys", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("POST", queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewRevokeProjectAPIKeyRequest generates requests for RevokeProjectAPIKey
-func NewRevokeProjectAPIKeyRequest(server string, project ProjectHandleParam, id IDParam) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/projects/%s/api-keys/%s", pathParam0, pathParam1)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewGetProjectAPIKeyRequest generates requests for GetProjectAPIKey
-func NewGetProjectAPIKeyRequest(server string, project ProjectHandleParam, id IDParam) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/projects/%s/api-keys/%s", pathParam0, pathParam1)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("GET", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
 
 	return req, nil
 }
@@ -13947,7 +13932,7 @@ func WithBaseURL(baseURL string) ClientOption {
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
 	// ListAPIKeysWithResponse request
-	ListAPIKeysWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListAPIKeysResponse, error)
+	ListAPIKeysWithResponse(ctx context.Context, params *ListAPIKeysParams, reqEditors ...RequestEditorFn) (*ListAPIKeysResponse, error)
 
 	// CreateAPIKeyWithBodyWithResponse request with any body
 	CreateAPIKeyWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateAPIKeyResponse, error)
@@ -13955,10 +13940,10 @@ type ClientWithResponsesInterface interface {
 	CreateAPIKeyWithResponse(ctx context.Context, body CreateAPIKeyJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateAPIKeyResponse, error)
 
 	// RevokeAPIKeyWithResponse request
-	RevokeAPIKeyWithResponse(ctx context.Context, id IDParam, reqEditors ...RequestEditorFn) (*RevokeAPIKeyResponse, error)
+	RevokeAPIKeyWithResponse(ctx context.Context, id IDParam, params *RevokeAPIKeyParams, reqEditors ...RequestEditorFn) (*RevokeAPIKeyResponse, error)
 
 	// GetAPIKeyWithResponse request
-	GetAPIKeyWithResponse(ctx context.Context, id IDParam, reqEditors ...RequestEditorFn) (*GetAPIKeyResponse, error)
+	GetAPIKeyWithResponse(ctx context.Context, id IDParam, params *GetAPIKeyParams, reqEditors ...RequestEditorFn) (*GetAPIKeyResponse, error)
 
 	// ListAuditLogsWithResponse request
 	ListAuditLogsWithResponse(ctx context.Context, params *ListAuditLogsParams, reqEditors ...RequestEditorFn) (*ListAuditLogsResponse, error)
@@ -14048,20 +14033,6 @@ type ClientWithResponsesInterface interface {
 	CreateAgentSessionWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateAgentSessionResponse, error)
 
 	CreateAgentSessionWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body CreateAgentSessionJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateAgentSessionResponse, error)
-
-	// ListProjectAPIKeysWithResponse request
-	ListProjectAPIKeysWithResponse(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*ListProjectAPIKeysResponse, error)
-
-	// CreateProjectAPIKeyWithBodyWithResponse request with any body
-	CreateProjectAPIKeyWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateProjectAPIKeyResponse, error)
-
-	CreateProjectAPIKeyWithResponse(ctx context.Context, project ProjectHandleParam, body CreateProjectAPIKeyJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateProjectAPIKeyResponse, error)
-
-	// RevokeProjectAPIKeyWithResponse request
-	RevokeProjectAPIKeyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*RevokeProjectAPIKeyResponse, error)
-
-	// GetProjectAPIKeyWithResponse request
-	GetProjectAPIKeyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*GetProjectAPIKeyResponse, error)
 
 	// ListChannelsWithResponse request
 	ListChannelsWithResponse(ctx context.Context, project ProjectHandleParam, params *ListChannelsParams, reqEditors ...RequestEditorFn) (*ListChannelsResponse, error)
@@ -14389,6 +14360,7 @@ type ListAPIKeysResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *APIKeyListResponse
 	JSON401      *Unauthorized
+	JSON404      *NotFound
 }
 
 // Status returns HTTPResponse.Status
@@ -14413,6 +14385,7 @@ type CreateAPIKeyResponse struct {
 	JSON201      *APIKeyCreateResult
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
+	JSON404      *NotFound
 }
 
 // Status returns HTTPResponse.Status
@@ -15074,100 +15047,6 @@ func (r CreateAgentSessionResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r CreateAgentSessionResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type ListProjectAPIKeysResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *APIKeyListResponse
-	JSON401      *Unauthorized
-}
-
-// Status returns HTTPResponse.Status
-func (r ListProjectAPIKeysResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ListProjectAPIKeysResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type CreateProjectAPIKeyResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON201      *APIKeyCreateResult
-	JSON400      *BadRequest
-	JSON401      *Unauthorized
-}
-
-// Status returns HTTPResponse.Status
-func (r CreateProjectAPIKeyResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r CreateProjectAPIKeyResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type RevokeProjectAPIKeyResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON401      *Unauthorized
-	JSON404      *NotFound
-}
-
-// Status returns HTTPResponse.Status
-func (r RevokeProjectAPIKeyResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r RevokeProjectAPIKeyResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type GetProjectAPIKeyResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *APIKey
-	JSON401      *Unauthorized
-	JSON404      *NotFound
-}
-
-// Status returns HTTPResponse.Status
-func (r GetProjectAPIKeyResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetProjectAPIKeyResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -16032,7 +15911,7 @@ type EmitJobEventsResponse struct {
 	JSON404      *NotFound
 	JSON409      *Conflict
 	JSON413      *ErrorResponse
-	JSON429      *ErrorResponse
+	JSON429      *TooManyRequests
 }
 
 // Status returns HTTPResponse.Status
@@ -16179,6 +16058,7 @@ type StartRunResponse struct {
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
 	JSON404      *NotFound
+	JSON429      *TooManyRequests
 }
 
 // Status returns HTTPResponse.Status
@@ -16974,6 +16854,7 @@ type StartWorkflowRunResponse struct {
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
 	JSON404      *NotFound
+	JSON429      *TooManyRequests
 }
 
 // Status returns HTTPResponse.Status
@@ -17218,8 +17099,8 @@ func (r UpdateRoleResponse) StatusCode() int {
 }
 
 // ListAPIKeysWithResponse request returning *ListAPIKeysResponse
-func (c *ClientWithResponses) ListAPIKeysWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListAPIKeysResponse, error) {
-	rsp, err := c.ListAPIKeys(ctx, reqEditors...)
+func (c *ClientWithResponses) ListAPIKeysWithResponse(ctx context.Context, params *ListAPIKeysParams, reqEditors ...RequestEditorFn) (*ListAPIKeysResponse, error) {
+	rsp, err := c.ListAPIKeys(ctx, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -17244,8 +17125,8 @@ func (c *ClientWithResponses) CreateAPIKeyWithResponse(ctx context.Context, body
 }
 
 // RevokeAPIKeyWithResponse request returning *RevokeAPIKeyResponse
-func (c *ClientWithResponses) RevokeAPIKeyWithResponse(ctx context.Context, id IDParam, reqEditors ...RequestEditorFn) (*RevokeAPIKeyResponse, error) {
-	rsp, err := c.RevokeAPIKey(ctx, id, reqEditors...)
+func (c *ClientWithResponses) RevokeAPIKeyWithResponse(ctx context.Context, id IDParam, params *RevokeAPIKeyParams, reqEditors ...RequestEditorFn) (*RevokeAPIKeyResponse, error) {
+	rsp, err := c.RevokeAPIKey(ctx, id, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -17253,8 +17134,8 @@ func (c *ClientWithResponses) RevokeAPIKeyWithResponse(ctx context.Context, id I
 }
 
 // GetAPIKeyWithResponse request returning *GetAPIKeyResponse
-func (c *ClientWithResponses) GetAPIKeyWithResponse(ctx context.Context, id IDParam, reqEditors ...RequestEditorFn) (*GetAPIKeyResponse, error) {
-	rsp, err := c.GetAPIKey(ctx, id, reqEditors...)
+func (c *ClientWithResponses) GetAPIKeyWithResponse(ctx context.Context, id IDParam, params *GetAPIKeyParams, reqEditors ...RequestEditorFn) (*GetAPIKeyResponse, error) {
+	rsp, err := c.GetAPIKey(ctx, id, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -17540,50 +17421,6 @@ func (c *ClientWithResponses) CreateAgentSessionWithResponse(ctx context.Context
 		return nil, err
 	}
 	return ParseCreateAgentSessionResponse(rsp)
-}
-
-// ListProjectAPIKeysWithResponse request returning *ListProjectAPIKeysResponse
-func (c *ClientWithResponses) ListProjectAPIKeysWithResponse(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*ListProjectAPIKeysResponse, error) {
-	rsp, err := c.ListProjectAPIKeys(ctx, project, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseListProjectAPIKeysResponse(rsp)
-}
-
-// CreateProjectAPIKeyWithBodyWithResponse request with arbitrary body returning *CreateProjectAPIKeyResponse
-func (c *ClientWithResponses) CreateProjectAPIKeyWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateProjectAPIKeyResponse, error) {
-	rsp, err := c.CreateProjectAPIKeyWithBody(ctx, project, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateProjectAPIKeyResponse(rsp)
-}
-
-func (c *ClientWithResponses) CreateProjectAPIKeyWithResponse(ctx context.Context, project ProjectHandleParam, body CreateProjectAPIKeyJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateProjectAPIKeyResponse, error) {
-	rsp, err := c.CreateProjectAPIKey(ctx, project, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateProjectAPIKeyResponse(rsp)
-}
-
-// RevokeProjectAPIKeyWithResponse request returning *RevokeProjectAPIKeyResponse
-func (c *ClientWithResponses) RevokeProjectAPIKeyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*RevokeProjectAPIKeyResponse, error) {
-	rsp, err := c.RevokeProjectAPIKey(ctx, project, id, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseRevokeProjectAPIKeyResponse(rsp)
-}
-
-// GetProjectAPIKeyWithResponse request returning *GetProjectAPIKeyResponse
-func (c *ClientWithResponses) GetProjectAPIKeyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*GetProjectAPIKeyResponse, error) {
-	rsp, err := c.GetProjectAPIKey(ctx, project, id, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetProjectAPIKeyResponse(rsp)
 }
 
 // ListChannelsWithResponse request returning *ListChannelsResponse
@@ -18642,6 +18479,13 @@ func ParseListAPIKeysResponse(rsp *http.Response) (*ListAPIKeysResponse, error) 
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
 	}
 
 	return response, nil
@@ -18681,6 +18525,13 @@ func ParseCreateAPIKeyResponse(rsp *http.Response) (*CreateAPIKeyResponse, error
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
 
 	}
 
@@ -19754,152 +19605,6 @@ func ParseCreateAgentSessionResponse(rsp *http.Response) (*CreateAgentSessionRes
 			return nil, err
 		}
 		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseListProjectAPIKeysResponse parses an HTTP response from a ListProjectAPIKeysWithResponse call
-func ParseListProjectAPIKeysResponse(rsp *http.Response) (*ListProjectAPIKeysResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ListProjectAPIKeysResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest APIKeyListResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseCreateProjectAPIKeyResponse parses an HTTP response from a CreateProjectAPIKeyWithResponse call
-func ParseCreateProjectAPIKeyResponse(rsp *http.Response) (*CreateProjectAPIKeyResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &CreateProjectAPIKeyResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
-		var dest APIKeyCreateResult
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON201 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest BadRequest
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseRevokeProjectAPIKeyResponse parses an HTTP response from a RevokeProjectAPIKeyWithResponse call
-func ParseRevokeProjectAPIKeyResponse(rsp *http.Response) (*RevokeProjectAPIKeyResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &RevokeProjectAPIKeyResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseGetProjectAPIKeyResponse parses an HTTP response from a GetProjectAPIKeyWithResponse call
-func ParseGetProjectAPIKeyResponse(rsp *http.Response) (*GetProjectAPIKeyResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetProjectAPIKeyResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest APIKey
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
 		var dest Unauthorized
@@ -21440,7 +21145,7 @@ func ParseEmitJobEventsResponse(rsp *http.Response) (*EmitJobEventsResponse, err
 		response.JSON413 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
-		var dest ErrorResponse
+		var dest TooManyRequests
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -21699,6 +21404,13 @@ func ParseStartRunResponse(rsp *http.Response) (*StartRunResponse, error) {
 			return nil, err
 		}
 		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest TooManyRequests
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
 
 	}
 
@@ -23040,6 +22752,13 @@ func ParseStartWorkflowRunResponse(rsp *http.Response) (*StartWorkflowRunRespons
 			return nil, err
 		}
 		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest TooManyRequests
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
 
 	}
 

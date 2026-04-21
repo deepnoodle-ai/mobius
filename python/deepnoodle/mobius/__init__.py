@@ -9,6 +9,8 @@ from .client import (
     PayloadTooLargeError,
     RateLimitedError,
 )
+from .errors import RateLimitError
+from .retry import RetryingTransport
 from .worker import ActionContext, Worker, WorkerConfig
 
 __all__ = [
@@ -18,7 +20,9 @@ __all__ = [
     "DEFAULT_BASE_URL",
     "LeaseLostError",
     "PayloadTooLargeError",
+    "RateLimitError",
     "RateLimitedError",
+    "RetryingTransport",
     "Worker",
     "WorkerConfig",
     "action",

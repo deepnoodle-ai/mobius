@@ -14,6 +14,8 @@ from ._api.models import (
     JobFenceRequest,
     JobHeartbeat,
 )
+from .errors import RateLimitError
+from .retry import DEFAULT_MAX_RETRIES, RetryingTransport
 
 DEFAULT_BASE_URL = "https://api.mobiusops.ai"
 
@@ -25,6 +27,10 @@ class ClientOptions:
     project: str = "default"
     namespace: str | None = None
     timeout: float = 60.0
+    # Number of retries for 429/503 responses. 0 disables retries; 429
+    # responses then surface as RateLimitError immediately. See
+    # ../../docs/retries.md for the shared retry policy.
+    retry: int = DEFAULT_MAX_RETRIES
 
     def __post_init__(self) -> None:
         if self.namespace and self.project == "default":
@@ -44,12 +50,19 @@ class PayloadTooLargeError(Exception):
         self.job_id = job_id
 
 
-class RateLimitedError(Exception):
+class RateLimitedError(RateLimitError):
+    """Legacy per-job rate-limit error raised by :meth:`Client.emit_job_events`.
+
+    Subclass of :class:`RateLimitError` so callers catching the newer,
+    transport-raised ``RateLimitError`` also catch this. New code should
+    prefer ``RateLimitError``.
+    """
+
     def __init__(self, job_id: str, retry_after: int | None = None) -> None:
         msg = f"custom event rate limited for job {job_id}"
         if retry_after:
             msg += f" (retry after {retry_after}s)"
-        super().__init__(msg)
+        super().__init__(retry_after=float(retry_after or 0), message=msg)
         self.job_id = job_id
         self.retry_after = retry_after
 
@@ -86,6 +99,7 @@ class Client:
         project: str = "default",
         namespace: str | None = None,
         timeout: float = 60.0,
+        retry: int = DEFAULT_MAX_RETRIES,
     ) -> None:
         if isinstance(opts, ClientOptions):
             resolved = opts
@@ -96,13 +110,19 @@ class Client:
                 project=project,
                 namespace=namespace,
                 timeout=timeout,
+                retry=retry,
             )
 
         self._opts = resolved
+        transport = RetryingTransport(
+            httpx.HTTPTransport(),
+            max_retries=resolved.retry,
+        )
         self._http = httpx.Client(
             base_url=resolved.base_url,
             headers={"Authorization": f"Bearer {resolved.api_key}"},
             timeout=resolved.timeout,
+            transport=transport,
         )
 
     @property

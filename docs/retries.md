@@ -1,0 +1,136 @@
+# SDK Retry & Rate-Limit Handling
+
+The Mobius API may respond to any authenticated request with `429 Too Many
+Requests` when a rate-limit bucket is exhausted, or `503 Service Unavailable`
+when the backend is transiently overloaded. All official SDKs (Go, Python,
+TypeScript) share the same retry semantics so that customer behavior is
+consistent across languages.
+
+This document is the authoritative spec. If one language drifts from it,
+that language has a bug.
+
+## Scope
+
+The retry layer sits **below** the generated client and wraps every outbound
+request. It observes only the response status code and a small set of
+headers; it does not inspect request or response bodies.
+
+## Retryable status codes
+
+Only the following statuses trigger a retry:
+
+| Status | Meaning |
+|--------|---------|
+| `429 Too Many Requests` | Rate-limit exceeded for the credential or org. |
+| `503 Service Unavailable` | Backend signalling transient unavailability. |
+
+Any other status — including `500`, `502`, and `504` — is **not** retried.
+(Those can indicate half-applied writes; the caller decides how to handle.)
+
+Network-level errors (DNS failure, connection reset, I/O timeout) are also
+**not** retried automatically. Callers that want to retry network errors
+should do so at the application layer.
+
+## Idempotency gating
+
+Retrying a non-idempotent write risks creating duplicates. The SDK retries
+only when the request is safe to replay:
+
+- `GET`, `HEAD`, `PUT`, `DELETE` — always retried on retryable statuses.
+- `POST` — retried **only** when the request carries an `Idempotency-Key`
+  header. A `POST` without that header is never retried; on `429` the SDK
+  surfaces `RateLimitError` immediately.
+- `PATCH` — treated like `POST`: retried only with `Idempotency-Key`.
+
+## Backoff
+
+For each retry the SDK sleeps a bounded number of seconds, chosen as:
+
+1. If the response carries `Retry-After`, parse it:
+   - integer number of seconds, **or**
+   - HTTP-date (RFC 7231) — delta = date − now.
+2. Otherwise fall back to exponential backoff: `1s`, `2s`, `4s`, ...
+   (doubling each attempt).
+3. In all cases clamp the per-attempt wait to `[0, 60s]`. A server that asks
+   for a 600s wait is ignored beyond the cap; callers that want to honor
+   very long waits should disable SDK retries and implement their own
+   policy.
+
+The context/`AbortSignal` passed by the caller is respected during sleep —
+cancellation aborts the retry loop with the cancellation error.
+
+## Retry budget
+
+- Default: **3 retries** per request (so up to 4 total attempts).
+- Configurable by the caller: `0` disables retries, any positive integer is
+  permitted.
+- When retries are exhausted, or when retrying is not allowed (see
+  [idempotency gating](#idempotency-gating)), the SDK raises a typed
+  `RateLimitError` populated from the last response's headers.
+
+`503` retries that eventually give up do **not** wrap into `RateLimitError`
+— the SDK passes the underlying response through so the caller's existing
+status handling applies.
+
+## `RateLimitError` shape
+
+All three SDKs expose the same fields (naming follows language conventions):
+
+| Field | Type | Source |
+|-------|------|--------|
+| `retry_after` | duration (or seconds) | `Retry-After` header; `0` if absent |
+| `limit` | integer | `X-RateLimit-Limit` header |
+| `remaining` | integer | `X-RateLimit-Remaining` header |
+| `reset_at` | timestamp | `X-RateLimit-Reset` (Unix seconds) |
+| `scope` | string (`"key"` / `"org"`) | `X-RateLimit-Scope` header |
+
+The backend also emits `X-RateLimit-Policy` describing the policy
+(`"<limit>;w=<seconds>"`). SDKs surface it on the error for diagnostics but
+do not rely on it for control flow.
+
+The error's message is stable:
+
+```
+mobius: rate limit exceeded (scope=<scope>, retry after <N>s)
+```
+
+### Error wrapping
+
+Each SDK surfaces `RateLimitError` in a way idiomatic for that language:
+
+- **Go** — `*RateLimitError` unwraps to the sentinel `ErrRateLimited`, so
+  `errors.Is(err, mobius.ErrRateLimited)` keeps working for existing
+  callers. New callers can `errors.As(err, &rle)` for the rich fields.
+- **Python** — `RateLimitError` subclasses `Exception`. The pre-existing
+  `RateLimitedError` (emitted from custom events) is kept as an alias for
+  backward compatibility with the 0.0.x release line.
+- **TypeScript** — `RateLimitError` extends `Error` and is thrown from the
+  wrapped `fetch`.
+
+## Defaults summary
+
+| Knob | Default |
+|------|---------|
+| Retry statuses | `{429, 503}` |
+| Retries | `3` |
+| Retry non-idempotent POST on 429 | no (surface error) |
+| Max sleep per attempt | `60s` |
+| Exp backoff base | `1s`, doubled each attempt |
+
+## Disabling retries
+
+Set the per-client knob to `0`:
+
+- Go: `mobius.NewClient(..., mobius.WithRetry(0))`
+- Python: `Client(..., retry=0)`
+- TypeScript: `new Client({ ..., retry: 0 })`
+
+With retries disabled, every 429 surfaces as `RateLimitError`, immediately.
+
+## What the server expects
+
+The backend assumes well-behaved clients will sleep per `Retry-After` before
+the next request. A client that ignores `Retry-After` and retries
+aggressively will just get more 429s — the bucket doesn't refill
+mid-window. The SDK retry layer exists precisely so customers don't have to
+think about this.

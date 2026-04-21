@@ -6,6 +6,7 @@ import {
   DEFAULT_BASE_URL,
   LeaseLostError,
   PayloadTooLargeError,
+  RateLimitError,
   RateLimitedError,
 } from "../src/client.js";
 
@@ -140,14 +141,25 @@ test("smoke: emitJobEvents 413 raises PayloadTooLargeError", async () => {
   );
 });
 
-test("smoke: emitJobEvents 429 raises RateLimitedError", async () => {
+test("smoke: emitJobEvents 429 raises RateLimitError", async () => {
   globalThis.fetch = (async () => {
-    return new Response(null, { status: 429, headers: { "Retry-After": "2" } });
+    return new Response(null, {
+      status: 429,
+      headers: {
+        "Retry-After": "2",
+        "X-RateLimit-Scope": "key",
+        "X-RateLimit-Limit": "100",
+        "X-RateLimit-Remaining": "0",
+      },
+    });
   }) as typeof fetch;
   const client = new Client({
     baseURL: "https://api.example.invalid",
     apiKey: "mbx_test",
     project: "test-project",
+    // POST without Idempotency-Key surfaces RateLimitError immediately
+    // regardless of retry budget.
+    retry: 3,
   });
   await assert.rejects(
     () =>
@@ -157,6 +169,11 @@ test("smoke: emitJobEvents 429 raises RateLimitedError", async () => {
         type: "progress",
         payload: { pct: 10 },
       }),
-    RateLimitedError,
+    RateLimitError,
+  );
+  // RateLimitedError still exported as a backward-compat subclass.
+  assert.equal(
+    Object.getPrototypeOf(RateLimitedError.prototype).constructor.name,
+    "RateLimitError",
   );
 });

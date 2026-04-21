@@ -25,8 +25,8 @@ from .client import (
     JobEventsRequest,
     LeaseLostError,
     PayloadTooLargeError,
-    RateLimitedError,
 )
+from .errors import RateLimitError
 
 logger = logging.getLogger(__name__)
 
@@ -314,7 +314,7 @@ class Worker:
                 return
             except PayloadTooLargeError as exc:
                 logger.warning("%s", exc)
-            except RateLimitedError as exc:
+            except RateLimitError as exc:
                 logger.warning("%s", exc)
             except Exception as exc:
                 logger.warning(

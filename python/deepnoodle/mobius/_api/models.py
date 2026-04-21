@@ -30,6 +30,10 @@ class HealthResponse(BaseModel):
     )
 
 
+class ProjectID(RootModel[str]):
+    root: str = Field(..., description='Project ID.')
+
+
 class Metadata(BaseModel):
     pass
     model_config = ConfigDict(
@@ -373,9 +377,15 @@ class AuditLogListResponse(BaseModel):
     has_more: bool = Field(..., description='Whether more results are available')
 
 
+class APIKeyProjectID(BaseModel):
+    """
+    Set for project-pinned keys; omitted for org-scoped keys.
+    """
+
+
 class Scope(Enum):
     """
-    `org` for standard API keys; `system` is reserved for platform-level access.
+    `org` is the standard API key scope; `system` is reserved for platform-level access. Project-pinned versus org-level behavior is determined by `project_id`.
     """
 
     org = 'org'
@@ -394,15 +404,13 @@ class APIKey(BaseModel):
     )
     scope: Scope = Field(
         ...,
-        description='`org` for standard API keys; `system` is reserved for platform-level access.',
+        description='`org` is the standard API key scope; `system` is reserved for platform-level access. Project-pinned versus org-level behavior is determined by `project_id`.',
     )
     permissions: list[str] | None = Field(
         None,
         description='Explicit permission set granted to this key (e.g. "mobius.job.claim").',
     )
-    project_id: str | None = Field(
-        None, description='Set for project-pinned keys; empty for org-scoped keys.'
-    )
+    project_id: APIKeyProjectID | None = None
     service_account_id: str | None = Field(
         None, description='Optional service account for attribution and quota tracking.'
     )
@@ -424,7 +432,7 @@ class APIKey(BaseModel):
 
 class Scope1(Enum):
     """
-    Scope of the key: `org` for org-wide keys, `project` for project-pinned keys.
+    Scope of the key. `org` is the standard API key scope, and `system` is reserved for platform-only keys. Project-pinned versus org-level behavior is determined by `project_id`.
     """
 
     org = 'org'
@@ -443,14 +451,12 @@ class APIKeyCreateResult(BaseModel):
     )
     scope: Scope1 = Field(
         ...,
-        description='Scope of the key: `org` for org-wide keys, `project` for project-pinned keys.',
+        description='Scope of the key. `org` is the standard API key scope, and `system` is reserved for platform-only keys. Project-pinned versus org-level behavior is determined by `project_id`.',
     )
     permissions: list[str] | None = Field(
         None, description='List of permissions granted to this key.'
     )
-    project_id: str | None = Field(
-        None, description='ID of the pinned project. Null for org-scoped keys.'
-    )
+    project_id: APIKeyProjectID | None = None
     service_account_id: str | None = Field(
         None, description='ID of the service account this key belongs to.'
     )
@@ -479,20 +485,59 @@ class APIKeyListResponse(BaseModel):
 
 class Scope2(Enum):
     """
-    Key scope. Use `org` for standard API access.
+    Standard API key scope for project-pinned keys.
+    """
+
+    org = 'org'
+
+
+class CreateProjectPinnedAPIKeyRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    name: str = Field(
+        ...,
+        description='Human-readable label, unique within the org (or project for project-pinned keys).',
+    )
+    project_id: ProjectID = Field(
+        ...,
+        description='Set `project_id` to pin this key to exactly one project. When\n`project_id` is omitted, the request creates an org-level key\ninstead.\n',
+    )
+    scope: Scope2 | None = Field(
+        'org', description='Standard API key scope for project-pinned keys.'
+    )
+    permissions: list[str] | None = Field(
+        None,
+        description='Permissions to grant. Each permission must be held by the creating\ncaller — you cannot grant more than you have.\n',
+    )
+    service_account_id: str | None = Field(
+        None, description='Associate this key with a service account for attribution.'
+    )
+    expires_at: datetime | None = Field(
+        None, description='Optional hard expiry. Omit for a non-expiring key.'
+    )
+
+
+class Scope3(Enum):
+    """
+    Standard API key scope. Project-pinned versus org-level behavior is determined separately by `project_id`.
     """
 
     org = 'org'
     system = 'system'
 
 
-class CreateAPIKeyRequest(BaseModel):
+class CreateOrgOrSystemAPIKeyRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
     name: str = Field(
         ...,
         description='Human-readable label, unique within the org (or project for project-pinned keys).',
     )
-    scope: Scope2 | None = Field(
-        'org', description='Key scope. Use `org` for standard API access.'
+    scope: Scope3 | None = Field(
+        'org',
+        description='Standard API key scope. Project-pinned versus org-level behavior is determined separately by `project_id`.',
     )
     permissions: list[str] | None = Field(
         None,
@@ -916,6 +961,10 @@ class WorkflowRun(BaseModel):
     )
     external_id: str | None = Field(
         None, description='Caller-supplied idempotency key or correlation ID.'
+    )
+    cancel_requested: bool | None = Field(
+        None,
+        description='True when a cancel has been requested on this run but the run\nhas not yet reached a terminal state. Workers observe this on\ntheir next heartbeat and stop work.\n',
     )
     created_at: datetime = Field(
         ..., description='Timestamp when this run was created.'
@@ -1851,7 +1900,7 @@ class CreateTriggerRequest(BaseModel):
     )
     webhook_handle: str | None = Field(
         None,
-        description='URL-safe handle that determines the inbound receive URL. Required\nfor `webhook` triggers. Must be unique within the project.\n',
+        description='URL-safe handle that determines the inbound receive URL. Auto-derived\nfrom `name` for `webhook` triggers when omitted. Must be unique\nwithin the project.\n',
     )
     webhook_secret: str | None = Field(
         None,
@@ -3300,6 +3349,12 @@ class ToolRun(BaseModel):
     error: str | None = Field(
         None, description='Error message. Present when status is "failed".'
     )
+
+
+class CreateAPIKeyRequest(
+    RootModel[CreateProjectPinnedAPIKeyRequest | CreateOrgOrSystemAPIKeyRequest]
+):
+    root: CreateProjectPinnedAPIKeyRequest | CreateOrgOrSystemAPIKeyRequest
 
 
 class WorkflowStepBase(BaseModel):

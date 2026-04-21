@@ -182,15 +182,23 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List org-scoped API keys
-         * @description Returns all non-revoked org-level keys. Project-pinned keys are not included; use the project endpoint.
+         * List API keys
+         * @description Returns API keys for this org. When `project_id` is provided, return
+         *     only keys pinned to that project. When `project_id` is omitted, return
+         *     only org-level keys; project-pinned keys are excluded because the
+         *     request has no project-scoped context.
          */
         get: operations["listAPIKeys"];
         put?: never;
         /**
-         * Create an org-scoped API key
-         * @description Creates a key valid for any project in the org. The raw key value is
-         *     returned in `key` and is never retrievable again after this response.
+         * Create an API key
+         * @description Creates an API key for this org. Omit `project_id` to create an
+         *     org-scoped key when the caller has org-level authorization, or set
+         *     `project_id` to pin the key to exactly one project. Project-pinned
+         *     keys remain inaccessible through org-level listing and management
+         *     unless the request is explicitly scoped with the same `project_id`.
+         *     The raw key value is returned in `key` and is never retrievable again
+         *     after this response.
          */
         post: operations["createAPIKey"];
         delete?: never;
@@ -206,56 +214,19 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get an org-scoped API key */
+        /** Get an API key */
         get: operations["getAPIKey"];
         put?: never;
         post?: never;
         /**
-         * Revoke an org-scoped API key
-         * @description Permanently revokes the key. In-flight requests using this key will immediately start receiving 401.
+         * Revoke an API key
+         * @description Permanently revokes the key. In-flight requests using this key will
+         *     immediately start receiving 401. When `project_id` is provided, revoke
+         *     only a key pinned to that project. When `project_id` is omitted,
+         *     project-pinned keys are excluded because the request has no
+         *     project-scoped context.
          */
         delete: operations["revokeAPIKey"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/projects/{project}/api-keys": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List project-pinned API keys */
-        get: operations["listProjectAPIKeys"];
-        put?: never;
-        /**
-         * Create a project-pinned API key
-         * @description Creates a key scoped to this project only. The key cannot be used to
-         *     access other projects even if the permissions would otherwise allow it.
-         *     The raw key value is returned in `key` and is never retrievable again.
-         */
-        post: operations["createProjectAPIKey"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/projects/{project}/api-keys/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get a project-pinned API key */
-        get: operations["getProjectAPIKey"];
-        put?: never;
-        post?: never;
-        /** Revoke a project-pinned API key */
-        delete: operations["revokeProjectAPIKey"];
         options?: never;
         head?: never;
         patch?: never;
@@ -957,9 +928,9 @@ export interface paths {
         /**
          * Create a trigger
          * @description Creates a trigger. For `schedule` triggers, `source_config.cron` is
-         *     required. For `webhook` triggers, `webhook_handle` is required and
-         *     must be unique within the project; the `receive_url` for posting events
-         *     is returned in the response.
+         *     required. For `webhook` triggers, `webhook_handle` is auto-derived from
+         *     `name` when omitted and must be unique within the project; the
+         *     `receive_url` for posting events is returned in the response.
          */
         post: operations["createTrigger"];
         delete?: never;
@@ -1812,6 +1783,8 @@ export interface components {
             /** @description Current server status. `ok` when all dependencies are reachable. */
             status: string;
         };
+        /** @description Project ID. */
+        ProjectID: string;
         Metadata: {
             [key: string]: unknown;
         };
@@ -2075,6 +2048,8 @@ export interface components {
             /** @description Whether more results are available */
             has_more: boolean;
         };
+        /** @description Set for project-pinned keys; omitted for org-scoped keys. */
+        APIKeyProjectID: components["schemas"]["ProjectID"];
         APIKey: {
             /** @description Unique identifier for this API key. */
             id: string;
@@ -2083,14 +2058,13 @@ export interface components {
             /** @description First 8 characters of the key, used to identify it without exposing the secret. */
             key_prefix: string;
             /**
-             * @description `org` for standard API keys; `system` is reserved for platform-level access.
+             * @description `org` is the standard API key scope; `system` is reserved for platform-level access. Project-pinned versus org-level behavior is determined by `project_id`.
              * @enum {string}
              */
             scope: "org" | "system";
             /** @description Explicit permission set granted to this key (e.g. "mobius.job.claim"). */
             permissions?: string[];
-            /** @description Set for project-pinned keys; empty for org-scoped keys. */
-            project_id?: string;
+            project_id?: components["schemas"]["APIKeyProjectID"];
             /** @description Optional service account for attribution and quota tracking. */
             service_account_id?: string;
             /**
@@ -2123,14 +2097,13 @@ export interface components {
             /** @description First 8 characters of the key for identification. */
             key_prefix: string;
             /**
-             * @description Scope of the key: `org` for org-wide keys, `project` for project-pinned keys.
+             * @description Scope of the key. `org` is the standard API key scope, and `system` is reserved for platform-only keys. Project-pinned versus org-level behavior is determined by `project_id`.
              * @enum {string}
              */
             scope: "org" | "system";
             /** @description List of permissions granted to this key. */
             permissions?: string[];
-            /** @description ID of the pinned project. Null for org-scoped keys. */
-            project_id?: string;
+            project_id?: components["schemas"]["APIKeyProjectID"];
             /** @description ID of the service account this key belongs to. */
             service_account_id?: string;
             /**
@@ -2160,11 +2133,40 @@ export interface components {
             /** @description The list of results for this page. */
             items: components["schemas"]["APIKey"][];
         };
-        CreateAPIKeyRequest: {
+        CreateAPIKeyRequest: components["schemas"]["CreateProjectPinnedAPIKeyRequest"] | components["schemas"]["CreateOrgOrSystemAPIKeyRequest"];
+        CreateProjectPinnedAPIKeyRequest: {
             /** @description Human-readable label, unique within the org (or project for project-pinned keys). */
             name: string;
             /**
-             * @description Key scope. Use `org` for standard API access.
+             * @description Set `project_id` to pin this key to exactly one project. When
+             *     `project_id` is omitted, the request creates an org-level key
+             *     instead.
+             */
+            project_id: components["schemas"]["ProjectID"];
+            /**
+             * @description Standard API key scope for project-pinned keys.
+             * @default org
+             * @enum {string}
+             */
+            scope: "org";
+            /**
+             * @description Permissions to grant. Each permission must be held by the creating
+             *     caller — you cannot grant more than you have.
+             */
+            permissions?: string[];
+            /** @description Associate this key with a service account for attribution. */
+            service_account_id?: string;
+            /**
+             * Format: date-time
+             * @description Optional hard expiry. Omit for a non-expiring key.
+             */
+            expires_at?: string;
+        };
+        CreateOrgOrSystemAPIKeyRequest: {
+            /** @description Human-readable label, unique within the org (or project for project-pinned keys). */
+            name: string;
+            /**
+             * @description Standard API key scope. Project-pinned versus org-level behavior is determined separately by `project_id`.
              * @default org
              * @enum {string}
              */
@@ -2619,6 +2621,12 @@ export interface components {
             initiated_by?: string;
             /** @description Caller-supplied idempotency key or correlation ID. */
             external_id?: string;
+            /**
+             * @description True when a cancel has been requested on this run but the run
+             *     has not yet reached a terminal state. Workers observe this on
+             *     their next heartbeat and stop work.
+             */
+            cancel_requested?: boolean;
             /**
              * Format: date-time
              * @description Timestamp when this run was created.
@@ -3509,8 +3517,9 @@ export interface components {
              */
             enabled: boolean;
             /**
-             * @description URL-safe handle that determines the inbound receive URL. Required
-             *     for `webhook` triggers. Must be unique within the project.
+             * @description URL-safe handle that determines the inbound receive URL. Auto-derived
+             *     from `name` for `webhook` triggers when omitted. Must be unique
+             *     within the project.
              */
             webhook_handle?: string;
             /**
@@ -4841,6 +4850,27 @@ export interface components {
                 "application/json": components["schemas"]["ErrorResponse"];
             };
         };
+        /** @description Rate limit exceeded. Retry after the delay indicated in the `Retry-After` header. */
+        TooManyRequests: {
+            headers: {
+                /** @description Seconds to wait before retrying. */
+                "Retry-After"?: number;
+                /** @description Limit of the tightest active rate-limit bucket. */
+                "X-RateLimit-Limit"?: number;
+                /** @description Requests remaining in the tightest bucket's current window. */
+                "X-RateLimit-Remaining"?: number;
+                /** @description Unix timestamp (seconds) when the tightest bucket resets. */
+                "X-RateLimit-Reset"?: number;
+                /** @description Scope of the tightest bucket. */
+                "X-RateLimit-Scope"?: "key" | "org";
+                /** @description All active windows for the selected scope, in `limit;w=seconds` form. */
+                "X-RateLimit-Policy"?: string;
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorResponse"];
+            };
+        };
         /** @description No Content */
         NoContent: {
             headers: {
@@ -4859,6 +4889,13 @@ export interface components {
         CursorParam: string;
         /** @description Maximum number of items to return */
         LimitParam: number;
+        /**
+         * @description Optional project scope for this request. When `project_id` is
+         *     provided, the API key operation is resolved in that project's
+         *     permission context. When `project_id` is omitted, the request is
+         *     treated as org-level and project-pinned keys are excluded.
+         */
+        APIKeyProjectIDParam: components["schemas"]["ProjectID"];
         /** @description Group ID or handle. */
         GroupIDParam: string;
     };
@@ -5284,7 +5321,15 @@ export interface operations {
     };
     listAPIKeys: {
         parameters: {
-            query?: never;
+            query?: {
+                /**
+                 * @description Optional project scope for this request. When `project_id` is
+                 *     provided, the API key operation is resolved in that project's
+                 *     permission context. When `project_id` is omitted, the request is
+                 *     treated as org-level and project-pinned keys are excluded.
+                 */
+                project_id?: components["parameters"]["APIKeyProjectIDParam"];
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -5301,6 +5346,7 @@ export interface operations {
                 };
             };
             401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
         };
     };
     createAPIKey: {
@@ -5327,11 +5373,20 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
         };
     };
     getAPIKey: {
         parameters: {
-            query?: never;
+            query?: {
+                /**
+                 * @description Optional project scope for this request. When `project_id` is
+                 *     provided, the API key operation is resolved in that project's
+                 *     permission context. When `project_id` is omitted, the request is
+                 *     treated as org-level and project-pinned keys are excluded.
+                 */
+                project_id?: components["parameters"]["APIKeyProjectIDParam"];
+            };
             header?: never;
             path: {
                 /** @description Resource ID. */
@@ -5356,114 +5411,17 @@ export interface operations {
     };
     revokeAPIKey: {
         parameters: {
-            query?: never;
+            query?: {
+                /**
+                 * @description Optional project scope for this request. When `project_id` is
+                 *     provided, the API key operation is resolved in that project's
+                 *     permission context. When `project_id` is omitted, the request is
+                 *     treated as org-level and project-pinned keys are excluded.
+                 */
+                project_id?: components["parameters"]["APIKeyProjectIDParam"];
+            };
             header?: never;
             path: {
-                /** @description Resource ID. */
-                id: components["parameters"]["IDParam"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description No Content */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            401: components["responses"]["Unauthorized"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    listProjectAPIKeys: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["APIKeyListResponse"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-        };
-    };
-    createProjectAPIKey: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateAPIKeyRequest"];
-            };
-        };
-        responses: {
-            /** @description Created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["APIKeyCreateResult"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-        };
-    };
-    getProjectAPIKey: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
-                /** @description Resource ID. */
-                id: components["parameters"]["IDParam"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["APIKey"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    revokeProjectAPIKey: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
                 /** @description Resource ID. */
                 id: components["parameters"]["IDParam"];
             };
@@ -5713,6 +5671,7 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     listRuns: {
@@ -5784,6 +5743,7 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     bulkCancelRuns: {
@@ -6449,15 +6409,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description Too Many Requests */
-            429: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
+            429: components["responses"]["TooManyRequests"];
         };
     };
     createJobInteraction: {

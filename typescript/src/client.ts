@@ -5,6 +5,13 @@ import type {
   JobFenceRequest,
   JobHeartbeat,
 } from "./api/index.js";
+import {
+  DEFAULT_MAX_RETRIES,
+  RateLimitError,
+  wrapFetchWithRetry,
+} from "./retry.js";
+
+export { RateLimitError } from "./retry.js";
 
 export interface ClientOptions {
   apiKey: string;
@@ -15,6 +22,13 @@ export interface ClientOptions {
   namespace?: string;
   /** Fetch timeout in milliseconds. Defaults to 60_000. */
   timeoutMs?: number;
+  /**
+   * Number of retries for 429/503 responses. Defaults to
+   * {@link DEFAULT_MAX_RETRIES}. Set to 0 to disable retries — 429
+   * responses then surface as {@link RateLimitError} on the first attempt.
+   * See `../../docs/retries.md` for the shared retry policy.
+   */
+  retry?: number;
 }
 
 export const DEFAULT_BASE_URL = "https://api.mobiusops.ai";
@@ -35,17 +49,25 @@ export class PayloadTooLargeError extends Error {
   }
 }
 
-export class RateLimitedError extends Error {
-  constructor(
-    public readonly jobId: string,
-    public readonly retryAfter?: number,
-  ) {
-    super(
-      retryAfter != null
-        ? `custom event rate limited for job ${jobId} (retry after ${retryAfter}s)`
-        : `custom event rate limited for job ${jobId}`,
-    );
+/**
+ * Legacy per-job rate-limit error raised by {@link Client.emitJobEvents}.
+ * Subclass of {@link RateLimitError} so callers catching the newer,
+ * transport-raised {@link RateLimitError} also catch this. New code
+ * should prefer {@link RateLimitError}.
+ */
+export class RateLimitedError extends RateLimitError {
+  readonly jobId: string;
+
+  constructor(jobId: string, retryAfter?: number) {
+    super({
+      retryAfter: retryAfter ?? 0,
+      message:
+        retryAfter != null
+          ? `custom event rate limited for job ${jobId} (retry after ${retryAfter}s)`
+          : `custom event rate limited for job ${jobId}`,
+    });
     this.name = "RateLimitedError";
+    this.jobId = jobId;
   }
 }
 
@@ -73,6 +95,7 @@ export class Client {
   readonly project: string;
   private readonly headers: Record<string, string>;
   private readonly timeoutMs: number;
+  private readonly fetchFn: typeof globalThis.fetch;
 
   constructor(opts: ClientOptions) {
     this.baseURL = (opts.baseURL ?? DEFAULT_BASE_URL).replace(/\/$/, "");
@@ -82,6 +105,10 @@ export class Client {
       "Content-Type": "application/json",
     };
     this.timeoutMs = opts.timeoutMs ?? 60_000;
+    this.fetchFn = wrapFetchWithRetry(
+      (input, init) => globalThis.fetch(input, init),
+      { maxRetries: opts.retry ?? DEFAULT_MAX_RETRIES },
+    );
   }
 
   /**
@@ -123,22 +150,14 @@ export class Client {
   }
 
   async emitJobEvents(jobId: string, req: JobEventsRequest): Promise<void> {
+    // 429 responses surface as RateLimitError (thrown from the retry
+    // transport below). 409/413 are non-retryable and handled here.
     const resp = await this.request(
       `/projects/${encodeURIComponent(this.project)}/jobs/${encodeURIComponent(jobId)}/events`,
       { method: "POST", body: req },
     );
     if (resp.status === 409) throw new LeaseLostError(jobId);
     if (resp.status === 413) throw new PayloadTooLargeError(jobId);
-    if (resp.status === 429) {
-      const retryAfterHeader = resp.headers.get("Retry-After");
-      const retryAfter = retryAfterHeader
-        ? Number.parseInt(retryAfterHeader, 10)
-        : undefined;
-      throw new RateLimitedError(
-        jobId,
-        Number.isFinite(retryAfter) ? retryAfter : undefined,
-      );
-    }
   }
 
   async emitJobEvent(
@@ -172,7 +191,7 @@ export class Client {
     if (opts.body != null) {
       init.body = JSON.stringify(opts.body);
     }
-    const resp = await fetch(this.baseURL + path, init);
+    const resp = await this.fetchFn(this.baseURL + path, init);
     if (
       !resp.ok &&
       resp.status !== 204 &&
