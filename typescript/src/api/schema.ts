@@ -877,9 +877,10 @@ export interface paths {
          *     The server derives the owning run and project scope from the job,
          *     so workers do not need to pass `run_id` explicitly. Prefer this
          *     route over `POST /v1/projects/{project}/interactions` from within a
-         *     job context. The optional `topic` field overrides the server-
-         *     derived signal topic; when omitted the server derives the topic
-         *     from `step_name` or uses a default interaction topic.
+         *     job context. The optional `signal_name` field overrides the
+         *     server-derived signal name; when omitted the server derives the
+         *     signal name from `step_name` or uses a default interaction
+         *     signal name.
          */
         post: operations["createJobInteraction"];
         delete?: never;

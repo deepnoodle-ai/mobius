@@ -1720,11 +1720,13 @@ paths:
 
         route over `POST /v1/projects/{project}/interactions` from within a
 
-        job context. The optional `topic` field overrides the server-
+        job context. The optional `signal_name` field overrides the
 
-        derived signal topic; when omitted the server derives the topic
+        server-derived signal name; when omitted the server derives the
 
-        from `step_name` or uses a default interaction topic.
+        signal name from `step_name` or uses a default interaction
+
+        signal name.
 
         '
       parameters:
