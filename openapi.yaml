@@ -1566,7 +1566,7 @@ paths:
 
         cancellation request; the worker must stop processing and call
 
-        `POST /jobs/{id}/complete` with `status: failed`.
+        `POST /v1/projects/{project}/jobs/{id}/complete` with `status: failed`.
 
         '
       parameters:
@@ -2817,7 +2817,7 @@ paths:
 
         workflow side effect. Workers creating interactions from within a
 
-        job should use the job-scoped route (`POST /jobs/{id}/interactions`)
+        job should use the job-scoped route (`POST /v1/projects/{project}/jobs/{id}/interactions`)
 
         instead, which derives the run and topic automatically.
 
@@ -4914,7 +4914,7 @@ components:
         topic:
           type: string
           description: Signal topic to wait on. Must match the `name` field in POST
-            /runs/{id}/signals.
+            /v1/projects/{project}/runs/{id}/signals.
         timeout:
           type: string
           description: Maximum wait duration as a Go duration string (e.g. "24h",
@@ -5993,7 +5993,8 @@ components:
           description: 'Recommended heartbeat interval in seconds. Workers should
             call
 
-            `POST /jobs/{id}/heartbeat` at this cadence to keep the lease
+            `POST /v1/projects/{project}/jobs/{id}/heartbeat` at this cadence to keep
+            the lease
 
             alive. Typically 30 seconds.
 
@@ -6791,7 +6792,8 @@ components:
           description: 'Timestamp of the worker''s most recent job claim poll. Updated
             on
 
-            every `POST /jobs/claim` call regardless of whether a job was
+            every `POST /v1/projects/{project}/jobs/claim` call regardless of whether
+            a job was
 
             returned. Used to compute `stale`.
 

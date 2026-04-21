@@ -803,7 +803,7 @@ class WorkflowWaitSignalConfig(BaseModel):
     )
     topic: str = Field(
         ...,
-        description='Signal topic to wait on. Must match the `name` field in POST /runs/{id}/signals.',
+        description='Signal topic to wait on. Must match the `name` field in POST /v1/projects/{project}/runs/{id}/signals.',
     )
     timeout: str = Field(
         ...,
@@ -1387,7 +1387,7 @@ class JobClaim(BaseModel):
     queue: str = Field(..., description='Queue name the job was claimed from.')
     heartbeat_interval_seconds: int | None = Field(
         None,
-        description='Recommended heartbeat interval in seconds. Workers should call\n`POST /jobs/{id}/heartbeat` at this cadence to keep the lease\nalive. Typically 30 seconds.\n',
+        description='Recommended heartbeat interval in seconds. Workers should call\n`POST /v1/projects/{project}/jobs/{id}/heartbeat` at this cadence to keep the lease\nalive. Typically 30 seconds.\n',
     )
 
 
@@ -1926,7 +1926,7 @@ class Worker(BaseModel):
     )
     last_seen_at: datetime | None = Field(
         None,
-        description="Timestamp of the worker's most recent job claim poll. Updated on\nevery `POST /jobs/claim` call regardless of whether a job was\nreturned. Used to compute `stale`.\n",
+        description="Timestamp of the worker's most recent job claim poll. Updated on\nevery `POST /v1/projects/{project}/jobs/claim` call regardless of whether a job was\nreturned. Used to compute `stale`.\n",
     )
     capabilities: list[str] | None = Field(
         None,

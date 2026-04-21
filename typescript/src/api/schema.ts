@@ -786,7 +786,7 @@ export interface paths {
          *
          *     When `directives.should_cancel` is true, the run has received a
          *     cancellation request; the worker must stop processing and call
-         *     `POST /jobs/{id}/complete` with `status: failed`.
+         *     `POST /v1/projects/{project}/jobs/{id}/complete` with `status: failed`.
          */
         post: operations["heartbeatJob"];
         delete?: never;
@@ -1360,7 +1360,7 @@ export interface paths {
          *     automatically delivers a signal that resumes the suspended run.
          *     Omit both for a standalone interaction that completes with no
          *     workflow side effect. Workers creating interactions from within a
-         *     job should use the job-scoped route (`POST /jobs/{id}/interactions`)
+         *     job should use the job-scoped route (`POST /v1/projects/{project}/jobs/{id}/interactions`)
          *     instead, which derives the run and topic automatically.
          */
         post: operations["createInteraction"];
@@ -2417,7 +2417,7 @@ export interface components {
         };
         /** @description Suspends the run until a signal with the matching topic arrives. */
         WorkflowWaitSignalConfig: {
-            /** @description Signal topic to wait on. Must match the `name` field in POST /runs/{id}/signals. */
+            /** @description Signal topic to wait on. Must match the `name` field in POST /v1/projects/{project}/runs/{id}/signals. */
             topic: string;
             /** @description Maximum wait duration as a Go duration string (e.g. "24h", "30m"). */
             timeout: string;
@@ -3071,7 +3071,7 @@ export interface components {
             queue: string;
             /**
              * @description Recommended heartbeat interval in seconds. Workers should call
-             *     `POST /jobs/{id}/heartbeat` at this cadence to keep the lease
+             *     `POST /v1/projects/{project}/jobs/{id}/heartbeat` at this cadence to keep the lease
              *     alive. Typically 30 seconds.
              */
             heartbeat_interval_seconds?: number;
@@ -3548,7 +3548,7 @@ export interface components {
             /**
              * Format: date-time
              * @description Timestamp of the worker's most recent job claim poll. Updated on
-             *     every `POST /jobs/claim` call regardless of whether a job was
+             *     every `POST /v1/projects/{project}/jobs/claim` call regardless of whether a job was
              *     returned. Used to compute `stale`.
              */
             last_seen_at?: string;

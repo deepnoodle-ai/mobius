@@ -2375,7 +2375,7 @@ type JobClaim struct {
 	Attempt int `json:"attempt"`
 
 	// HeartbeatIntervalSeconds Recommended heartbeat interval in seconds. Workers should call
-	// `POST /jobs/{id}/heartbeat` at this cadence to keep the lease
+	// `POST /v1/projects/{project}/jobs/{id}/heartbeat` at this cadence to keep the lease
 	// alive. Typically 30 seconds.
 	HeartbeatIntervalSeconds *int `json:"heartbeat_interval_seconds,omitempty"`
 
@@ -3273,7 +3273,7 @@ type Worker struct {
 	Capabilities *[]string `json:"capabilities,omitempty"`
 
 	// LastSeenAt Timestamp of the worker's most recent job claim poll. Updated on
-	// every `POST /jobs/claim` call regardless of whether a job was
+	// every `POST /v1/projects/{project}/jobs/claim` call regardless of whether a job was
 	// returned. Used to compute `stale`.
 	LastSeenAt *time.Time `json:"last_seen_at,omitempty"`
 
@@ -3948,7 +3948,7 @@ type WorkflowWaitSignalConfig struct {
 	// Timeout Maximum wait duration as a Go duration string (e.g. "24h", "30m").
 	Timeout string `json:"timeout"`
 
-	// Topic Signal topic to wait on. Must match the `name` field in POST /runs/{id}/signals.
+	// Topic Signal topic to wait on. Must match the `name` field in POST /v1/projects/{project}/runs/{id}/signals.
 	Topic string `json:"topic"`
 }
 
