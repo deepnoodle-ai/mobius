@@ -90,7 +90,7 @@ func registerChannelsCommands(app *cli.App) {
 		})
 
 	channelsGrp.Command("get-message").
-		Description("Get a specific message").
+		Description("Get a channel message").
 		Args("id", "message-id").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {

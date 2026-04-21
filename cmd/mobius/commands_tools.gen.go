@@ -18,7 +18,7 @@ func registerToolsCommands(app *cli.App) {
 	toolsGrp := app.Group("tools")
 	toolsGrp.Alias("tool")
 	toolsGrp.Command("get-run").
-		Description("Poll for the result of an async tool run").
+		Description("Get an async tool run result").
 		Args("handle", "run-id").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -34,11 +34,12 @@ func registerToolsCommands(app *cli.App) {
 		})
 
 	toolsGrp.Command("list").
-		Description("List tool-published workflows").
+		Description("List workflow tools").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
-			resp, err := client.ListToolsWithResponse(ctx.Context())
+			p0 := ctx.String("project")
+			resp, err := client.ListToolsWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
 			}

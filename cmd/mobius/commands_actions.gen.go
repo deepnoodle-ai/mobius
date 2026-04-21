@@ -18,7 +18,7 @@ func registerActionsCommands(app *cli.App) {
 	actionsGrp := app.Group("actions")
 	actionsGrp.Alias("action")
 	actionsGrp.Command("create").
-		Description("Create an action in the project").
+		Description("Create an action").
 		Flags(
 			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin)"),
 		).
@@ -83,7 +83,7 @@ func registerActionsCommands(app *cli.App) {
 		})
 
 	actionsGrp.Command("list").
-		Description("List actions in the project").
+		Description("List actions").
 		Flags(
 			cli.String("cursor", "").Help("cursor"),
 			cli.Int("limit", "").Help("limit"),
@@ -109,7 +109,7 @@ func registerActionsCommands(app *cli.App) {
 		})
 
 	actionsGrp.Command("list-actions").
-		Description("List platform and project actions available in the project").
+		Description("List the action catalog").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()

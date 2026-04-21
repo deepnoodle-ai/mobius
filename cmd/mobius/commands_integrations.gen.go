@@ -38,7 +38,7 @@ func registerIntegrationsCommands(app *cli.App) {
 		})
 
 	integrationsGrp.Command("create").
-		Description("Create an integration in the project").
+		Description("Create an integration").
 		Flags(
 			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin)"),
 		).
@@ -73,7 +73,7 @@ func registerIntegrationsCommands(app *cli.App) {
 		})
 
 	integrationsGrp.Command("get").
-		Description("Get an integration by id").
+		Description("Get an integration").
 		Args("id").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -88,7 +88,7 @@ func registerIntegrationsCommands(app *cli.App) {
 		})
 
 	integrationsGrp.Command("list").
-		Description("List integrations in the project").
+		Description("List integrations").
 		Flags(
 			cli.String("provider", "").Help("provider"),
 			cli.String("status", "").Help("status"),

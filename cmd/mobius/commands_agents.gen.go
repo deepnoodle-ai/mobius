@@ -38,7 +38,7 @@ func registerAgentsCommands(app *cli.App) {
 		})
 
 	agentsGrp.Command("create-session").
-		Description("Create an agent session").
+		Description("Register a new agent session").
 		Args("id").
 		Flags(
 			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin)"),
@@ -75,7 +75,7 @@ func registerAgentsCommands(app *cli.App) {
 		})
 
 	agentsGrp.Command("disconnect-session").
-		Description("Disconnect an agent session").
+		Description("Mark an agent session as disconnected").
 		Args("session-id").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -120,7 +120,7 @@ func registerAgentsCommands(app *cli.App) {
 		})
 
 	agentsGrp.Command("heartbeat-agent-session").
-		Description("Heartbeat an agent session").
+		Description("Refresh an agent session heartbeat").
 		Args("session-id").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {

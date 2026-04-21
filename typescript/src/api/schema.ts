@@ -11,10 +11,19 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List channels */
+        /**
+         * List channels
+         * @description Returns channels in the project, optionally filtered by kind or visibility.
+         */
         get: operations["listChannels"];
         put?: never;
-        /** Create a channel */
+        /**
+         * Create a channel
+         * @description Creates a new channel or DM thread. The channel `name` must be
+         *     URL-safe and unique within the project — it is immutable after
+         *     creation. The creator is automatically added as an admin member.
+         *     Supply `member_ids` to seed initial membership atomically.
+         */
         post: operations["createChannel"];
         delete?: never;
         options?: never;
@@ -33,11 +42,18 @@ export interface paths {
         get: operations["getChannel"];
         put?: never;
         post?: never;
-        /** Delete a channel */
+        /**
+         * Delete a channel
+         * @description Hard-deletes the channel and its message history.
+         */
         delete: operations["deleteChannel"];
         options?: never;
         head?: never;
-        /** Update a channel */
+        /**
+         * Update a channel
+         * @description Updates `display_name`, `topic`, `private`, or `archived_at`. The
+         *     `name` (handle) is immutable and cannot be changed after creation.
+         */
         patch: operations["updateChannel"];
         trace?: never;
     };
@@ -48,10 +64,16 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List channel members */
+        /**
+         * List channel members
+         * @description Returns the current live membership of the channel.
+         */
         get: operations["listChannelMembers"];
         put?: never;
-        /** Add a member to a channel */
+        /**
+         * Add a member to a channel
+         * @description Adds a user or agent to the channel. Returns 409 if already a member.
+         */
         post: operations["addChannelMember"];
         delete?: never;
         options?: never;
@@ -83,10 +105,20 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List messages in a channel */
+        /**
+         * List messages in a channel
+         * @description Returns messages in reverse chronological order (newest first).
+         *     Use `reply_to` to fetch a thread. Use `cursor` for pagination.
+         */
         get: operations["listChannelMessages"];
         put?: never;
-        /** Send a message to a channel */
+        /**
+         * Send a message to a channel
+         * @description Posts a message to the channel. For agent-sent messages, supply
+         *     `sender_agent_id` (and optionally `sender_session_id`) to attribute
+         *     the message to the agent rather than the authenticated user.
+         *     Content is Markdown. Use `reply_to` for threading.
+         */
         post: operations["sendChannelMessage"];
         delete?: never;
         options?: never;
@@ -101,14 +133,17 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get a specific message */
+        /** Get a channel message */
         get: operations["getChannelMessage"];
         put?: never;
         post?: never;
         delete?: never;
         options?: never;
         head?: never;
-        /** Update a channel message */
+        /**
+         * Update a channel message
+         * @description Updates content, metadata, or pinned state of a message. Sets `edited_at`.
+         */
         patch: operations["updateChannelMessage"];
         trace?: never;
     };
@@ -119,7 +154,17 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List audit log entries */
+        /**
+         * List audit log entries
+         * @description Returns an immutable, append-only log of create/update/delete actions
+         *     performed against org resources. Entries record both the durable actor
+         *     identity (service account or user) and the credential used, enabling
+         *     attribution even when keys are later revoked.
+         *
+         *     Combine `actor_id` + `resource_type` to audit a specific identity's
+         *     writes to a resource class. Use `created_after` / `created_before` for
+         *     time-bounded compliance exports.
+         */
         get: operations["listAuditLogs"];
         put?: never;
         post?: never;
@@ -136,10 +181,17 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List API keys */
+        /**
+         * List org-scoped API keys
+         * @description Returns all non-revoked org-level keys. Project-pinned keys are not included; use the project endpoint.
+         */
         get: operations["listAPIKeys"];
         put?: never;
-        /** Create an API key */
+        /**
+         * Create an org-scoped API key
+         * @description Creates a key valid for any project in the org. The raw key value is
+         *     returned in `key` and is never retrievable again after this response.
+         */
         post: operations["createAPIKey"];
         delete?: never;
         options?: never;
@@ -154,11 +206,14 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get an API key */
+        /** Get an org-scoped API key */
         get: operations["getAPIKey"];
         put?: never;
         post?: never;
-        /** Revoke an API key */
+        /**
+         * Revoke an org-scoped API key
+         * @description Permanently revokes the key. In-flight requests using this key will immediately start receiving 401.
+         */
         delete: operations["revokeAPIKey"];
         options?: never;
         head?: never;
@@ -175,7 +230,12 @@ export interface paths {
         /** List project-pinned API keys */
         get: operations["listProjectAPIKeys"];
         put?: never;
-        /** Create a project-pinned API key */
+        /**
+         * Create a project-pinned API key
+         * @description Creates a key scoped to this project only. The key cannot be used to
+         *     access other projects even if the permissions would otherwise allow it.
+         *     The raw key value is returned in `key` and is never retrievable again.
+         */
         post: operations["createProjectAPIKey"];
         delete?: never;
         options?: never;
@@ -208,10 +268,19 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List workflow definitions */
+        /**
+         * List workflow definitions
+         * @description Returns workflow definitions with their latest version number. Spec is not included in list responses; use getWorkflow for the full spec.
+         */
         get: operations["listWorkflows"];
         put?: never;
-        /** Create a workflow definition */
+        /**
+         * Create a workflow definition
+         * @description Creates a workflow definition with an initial version (version 1). The
+         *     `handle` is auto-derived from `name` if omitted and must be unique within
+         *     the org. Every call to `updateWorkflow` with a new `spec` creates a new
+         *     version; version numbers are monotonically increasing.
+         */
         post: operations["createWorkflow"];
         delete?: never;
         options?: never;
@@ -226,15 +295,25 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get a workflow definition (with its latest version spec) */
+        /** Get a workflow definition */
         get: operations["getWorkflow"];
         put?: never;
         post?: never;
-        /** Delete a workflow definition */
+        /**
+         * Delete a workflow definition
+         * @description Hard-deletes the definition and all its versions. In-flight runs are not affected.
+         */
         delete: operations["deleteWorkflow"];
         options?: never;
         head?: never;
-        /** Update a workflow definition (new spec creates a new version) */
+        /**
+         * Update a workflow definition
+         * @description Updating `spec` atomically creates a new immutable version (version N+1)
+         *     and advances `latest_version`. Runs always execute the version they were
+         *     started with; updating the definition does not affect running instances.
+         *     Updating `name`, `description`, or `published_as_tool` without a `spec`
+         *     does not create a new version.
+         */
         patch: operations["updateWorkflow"];
         trace?: never;
     };
@@ -245,7 +324,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List versions of a workflow definition */
+        /**
+         * List versions of a workflow definition
+         * @description Returns all versions newest-first. Pass `include_spec=true` to include the full workflow spec for each version.
+         */
         get: operations["listWorkflowVersions"];
         put?: never;
         post?: never;
@@ -262,12 +344,18 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List runs for a workflow definition */
+        /**
+         * List runs for a workflow definition
+         * @description Returns runs for a specific workflow definition, newest first. Includes all statuses unless filtered.
+         */
         get: operations["listWorkflowRuns"];
         put?: never;
         /**
-         * Start a new workflow run (enqueue)
-         * @description Enqueues a workflow run.
+         * Start a new workflow run against a saved definition
+         * @description Enqueues a run using the latest version of the specified workflow
+         *     definition. Equivalent to POST /projects/{project}/runs with
+         *     `definition_id` set to this workflow's ID. The `spec` field is
+         *     forbidden on this path-bound endpoint.
          */
         post: operations["startWorkflowRun"];
         delete?: never;
@@ -284,7 +372,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List workflow runs in a project
+         * List workflow runs
          * @description Supports cursor-based pagination and keyset filtering by
          *     status, workflow type, queue, parent run, and
          *     initiator. Returns `{data, next_cursor?}`; pass `next_cursor`
@@ -318,9 +406,10 @@ export interface paths {
         put?: never;
         /**
          * Request cancellation for a batch of runs
-         * @description Sets `cancel_requested` on every run in the request body.
-         *     Per-run errors are reported inline so callers can see
-         *     partial success.
+         * @description Sets `cancel_requested` on every listed run. Workers receive
+         *     `directives.should_cancel: true` on their next heartbeat and are
+         *     expected to stop cooperatively. Per-run errors are reported inline;
+         *     the response always returns 200 even on partial failures.
          */
         post: operations["bulkCancelRuns"];
         delete?: never;
@@ -340,8 +429,10 @@ export interface paths {
         put?: never;
         /**
          * Re-enqueue a batch of failed runs
-         * @description Flips every listed failed run back to queued with its
-         *     error message cleared. Per-run errors are reported inline.
+         * @description Flips every listed run from `failed` back to `queued`, clearing
+         *     the error message. Only runs in terminal `failed` status can be
+         *     retried; runs in other states produce per-run errors. Per-run errors
+         *     are reported inline; the response always returns 200 on partial failures.
          */
         post: operations["bulkRetryRuns"];
         delete?: never;
@@ -357,7 +448,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get a workflow run (including spec and run state blobs) */
+        /** Get a workflow run */
         get: operations["getRun"];
         put?: never;
         post?: never;
@@ -374,7 +465,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get the append-only action log for a run */
+        /** List action log entries for a run */
         get: operations["getRunActionLog"];
         put?: never;
         post?: never;
@@ -391,7 +482,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get workflow jobs for a run */
+        /** List jobs for a run */
         get: operations["getRunJobs"];
         put?: never;
         post?: never;
@@ -463,7 +554,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Flip a suspended run back to queued */
+        /**
+         * Resume a suspended run
+         * @description Transitions the run from `suspended` back to `queued` so the next worker poll picks it up.
+         */
         post: operations["resumeRun"];
         delete?: never;
         options?: never;
@@ -526,10 +620,19 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List actions in the project */
+        /**
+         * List actions
+         * @description Returns project-owned actions only; use `/catalog` for all available actions including platform integrations.
+         */
         get: operations["listActions"];
         put?: never;
-        /** Create an action in the project */
+        /**
+         * Create an action
+         * @description Creates a project-scoped action. `name` is the stable identifier used
+         *     in workflow step definitions and must be unique within the project.
+         *     A signing secret is generated automatically and returned in the response;
+         *     this is the only time the raw secret is exposed — store it securely.
+         */
         post: operations["createAction"];
         delete?: never;
         options?: never;
@@ -548,11 +651,20 @@ export interface paths {
         get: operations["getAction"];
         put?: never;
         post?: never;
-        /** Delete an action */
+        /**
+         * Delete an action
+         * @description Rejected with 409 if any workflow step currently references this action
+         *     by name (`ErrActionInUse`). Remove all references before deleting.
+         */
         delete: operations["deleteAction"];
         options?: never;
         head?: never;
-        /** Update an action */
+        /**
+         * Update an action
+         * @description Patches action metadata and schemas. All fields are optional; omitted
+         *     fields are unchanged. Updating `annotations` replaces the entire
+         *     annotations object — pass `null` to clear all annotation flags.
+         */
         patch: operations["updateAction"];
         trace?: never;
     };
@@ -565,7 +677,14 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Rotate an action signing secret */
+        /**
+         * Rotate an action signing secret
+         * @description Generates a new HMAC-SHA256 signing secret for the action. The previous
+         *     secret is retained as `previous_signing_secret` for a brief grace period
+         *     (typically minutes) so in-flight requests signed with the old key are
+         *     not immediately rejected. Store the returned secret — it cannot be
+         *     retrieved again.
+         */
         post: operations["rotateActionSecret"];
         delete?: never;
         options?: never;
@@ -580,7 +699,14 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List action invocation audit records */
+        /**
+         * List action invocation audit records
+         * @description Returns per-invocation records for all action executions in the project.
+         *     Each record captures the action name, input parameters, output summary,
+         *     final status, error details, and retry count. Filter by `run_id` to
+         *     inspect all action calls within a single workflow run, or by
+         *     `action_name` for cross-run analysis.
+         */
         get: operations["listActionAuditLog"];
         put?: never;
         post?: never;
@@ -597,7 +723,14 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List platform and project actions available in the project */
+        /**
+         * List the action catalog
+         * @description Returns the full catalog of actions available to this project: project-owned
+         *     actions plus platform-provided integration actions (Slack, GitHub, etc.).
+         *     The `available` flag indicates whether the action can currently be invoked —
+         *     false if a required integration is not connected or the caller lacks
+         *     permissions.
+         */
         get: operations["listCatalogActions"];
         put?: never;
         post?: never;
@@ -614,7 +747,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get one catalog action by name */
+        /**
+         * Get one catalog action by name
+         * @description Returns availability status, schemas, and metadata for a single catalog entry.
+         */
         get: operations["getCatalogAction"];
         put?: never;
         post?: never;
@@ -638,10 +774,16 @@ export interface paths {
          * @description Atomically claims the next pending workflow job whose queue name is
          *     in the worker's `queues` subscription and whose action is in the
          *     worker's `actions` filter when provided. If no job is immediately
-         *     available and
-         *     `wait_seconds > 0`, the server holds the request open for up
-         *     to `wait_seconds` (capped at 30). Returns 204 when the poll
+         *     available and `wait_seconds > 0`, the server holds the request open
+         *     for up to `wait_seconds` (capped at 30). Returns 204 when the poll
          *     window closes empty.
+         *
+         *     Each successful call also registers or refreshes the worker in the
+         *     worker registry (used by `GET /projects/{project}/workers`), so no
+         *     separate registration step is needed.
+         *
+         *     The returned `JobClaim` includes the `heartbeat_interval_seconds`
+         *     the worker should use for subsequent heartbeat calls.
          */
         post: operations["claimJob"];
         delete?: never;
@@ -661,9 +803,19 @@ export interface paths {
         put?: never;
         /**
          * Refresh the lease on a claimed workflow job
-         * @description Returns a small JSON envelope rather than 204 so the server can
-         *     attach directives (cancel signals, configuration changes, etc.)
-         *     to the heartbeat response without another round of API churn.
+         * @description Extends the worker's lease on the job and returns server directives.
+         *     Must include the `worker_id` + `attempt` fence from the original
+         *     claim — a stale fence (e.g., from a previous attempt) is rejected
+         *     with 409.
+         *
+         *     Returns a small JSON envelope rather than 204 so the server can
+         *     attach directives (e.g., `should_cancel`) without an additional
+         *     round trip. Workers should call this at the interval specified in
+         *     `JobClaim.heartbeat_interval_seconds` (recommended: 30s).
+         *
+         *     When `directives.should_cancel` is true, the run has received a
+         *     cancellation request; the worker must stop processing and call
+         *     `POST /jobs/{id}/complete` with `status: failed`.
          */
         post: operations["heartbeatJob"];
         delete?: never;
@@ -681,7 +833,22 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Report terminal status for a claimed workflow job */
+        /**
+         * Report terminal status for a claimed workflow job
+         * @description Marks the job as completed or failed and advances workflow
+         *     progression. Must include the `worker_id` + `attempt` fence from
+         *     the claim — a stale fence is rejected with 409.
+         *
+         *     On `status: completed`, `result_b64` (if provided) is base64-
+         *     decoded and stored as the job's output bytes, which the workflow
+         *     engine may pass as input to downstream steps.
+         *
+         *     On `status: failed`, the workflow engine checks the step's retry
+         *     configuration. If `attempt < max_attempts`, a new job is created
+         *     with `attempt + 1`; otherwise the run is transitioned to `failed`.
+         *     Use `error_type` and `error_message` to distinguish retryable
+         *     failures from permanent ones in observability tooling.
+         */
         post: operations["completeJob"];
         delete?: never;
         options?: never;
@@ -715,8 +882,7 @@ export interface paths {
          *
          *     Validation is atomic: if any event in the batch is invalid, the
          *     whole request is rejected and nothing is published. Successful
-         *     batches return a `data` array of results in the same order as
-         *     the request.
+         *     batches return 204.
          */
         post: operations["emitJobEvents"];
         delete?: never;
@@ -737,8 +903,12 @@ export interface paths {
         /**
          * Create a human-in-the-loop interaction from a claimed workflow job
          * @description Job-scoped form of interaction creation for the step-claim runtime.
-         *     The job is used to derive the owning run and enforce project
-         *     scoping before creating the interaction.
+         *     The server derives the owning run and project scope from the job,
+         *     so workers do not need to pass `run_id` explicitly. Prefer this
+         *     route over `POST /projects/{project}/interactions` from within a
+         *     job context. The optional `topic` field overrides the server-
+         *     derived signal topic; when omitted the server derives the topic
+         *     from `step_name` or uses a default interaction topic.
          */
         post: operations["createJobInteraction"];
         delete?: never;
@@ -756,7 +926,14 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Execute one server-side action for a claimed workflow job */
+        /**
+         * Execute one server-side action for a claimed workflow job
+         * @description Executes a named action in the context of the currently claimed job.
+         *     The action must be registered in the project or catalog. The
+         *     `dry_run` flag invokes the action without side effects when the
+         *     action supports it. Results are returned synchronously; for long-
+         *     running actions use `timeout_seconds` to extend the deadline.
+         */
         post: operations["runJobAction"];
         delete?: never;
         options?: never;
@@ -771,10 +948,19 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List triggers in the project */
+        /**
+         * List triggers
+         * @description Returns all triggers for the project, optionally filtered by kind or enabled state.
+         */
         get: operations["listTriggers"];
         put?: never;
-        /** Create a trigger */
+        /**
+         * Create a trigger
+         * @description Creates a trigger. For `schedule` triggers, `source_config.cron` is
+         *     required. For `webhook` triggers, `webhook_handle` is required and
+         *     must be unique within the project; the `receive_url` for posting events
+         *     is returned in the response.
+         */
         post: operations["createTrigger"];
         delete?: never;
         options?: never;
@@ -789,15 +975,21 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get a trigger by id */
+        /** Get a trigger */
         get: operations["getTrigger"];
         put?: never;
         post?: never;
-        /** Delete a trigger */
+        /**
+         * Delete a trigger
+         * @description Hard-deletes the trigger and its fire history. In-flight runs started by this trigger are not affected.
+         */
         delete: operations["deleteTrigger"];
         options?: never;
         head?: never;
-        /** Update a trigger */
+        /**
+         * Update a trigger
+         * @description All fields are optional; omitted fields are unchanged.
+         */
         patch: operations["updateTrigger"];
         trace?: never;
     };
@@ -808,7 +1000,12 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List fire history for a trigger */
+        /**
+         * List fire history for a trigger
+         * @description Returns a paginated history of trigger fires newest-first. Each entry
+         *     records whether the fire succeeded, was skipped (e.g. by `forbid`
+         *     concurrency policy), or failed, along with the resulting run ID.
+         */
         get: operations["listTriggerFires"];
         put?: never;
         post?: never;
@@ -825,7 +1022,14 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List recently seen workers in the project */
+        /**
+         * List workers
+         * @description Returns workers that have polled for jobs within the project. Each
+         *     worker's `stale` flag is computed at read time: if `last_seen_at`
+         *     is older than 2 minutes (or absent), the worker is considered stale.
+         *     Stale workers are retained for display but will not receive new job
+         *     claims.
+         */
         get: operations["listWorkers"];
         put?: never;
         post?: never;
@@ -842,10 +1046,18 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List projects in the org */
+        /**
+         * List projects
+         * @description Returns up to 100 projects. Use `search` for prefix-match filtering by name or handle.
+         */
         get: operations["listProjects"];
         put?: never;
-        /** Create a project */
+        /**
+         * Create a project
+         * @description Creates a project within the authenticated org. If `handle` is omitted
+         *     it is auto-derived from `name` (lowercased, spaces replaced with
+         *     hyphens). Returns 409 if the handle already exists in the org.
+         */
         post: operations["createProject"];
         delete?: never;
         options?: never;
@@ -860,15 +1072,27 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get a project by id */
+        /**
+         * Get a project
+         * @description Requires the `project.read` permission for the project.
+         */
         get: operations["getProject"];
         put?: never;
         post?: never;
-        /** Delete a project */
+        /**
+         * Delete a project
+         * @description Permanently deletes the project and all child resources (workflows, runs,
+         *     jobs, triggers, webhooks, groups, interactions, actions, agents, service
+         *     accounts). This operation is irreversible.
+         */
         delete: operations["deleteProject"];
         options?: never;
         head?: never;
-        /** Update a project */
+        /**
+         * Update a project
+         * @description Updates `name` and/or `description`. The project handle is immutable
+         *     and cannot be changed after creation.
+         */
         patch: operations["updateProject"];
         trace?: never;
     };
@@ -881,15 +1105,17 @@ export interface paths {
         };
         /**
          * List webhooks
-         * @description Lists the managed webhook endpoints in the project. Each webhook is an
-         *     inbound endpoint hosted by Mobius.
+         * @description Returns all outgoing webhook subscriptions for the project.
          */
         get: operations["listWebhooks"];
         put?: never;
         /**
-         * Create webhook
-         * @description Creates a managed inbound webhook endpoint for the project and returns
-         *     its `receive_url`.
+         * Create a webhook
+         * @description Creates a new outgoing webhook subscription. Webhook names must be
+         *     unique within the project. Returns 409 if the name already exists.
+         *
+         *     The signing `secret` (if provided) is stored in plaintext — treat
+         *     it as a shared secret and rotate it via `PATCH` if compromised.
          */
         post: operations["createWebhook"];
         delete?: never;
@@ -905,29 +1131,28 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /**
-         * Get webhook
-         * @description Returns one managed inbound webhook endpoint by ID.
-         */
+        /** Get a webhook */
         get: operations["getWebhook"];
         put?: never;
         post?: never;
         /**
-         * Delete webhook
-         * @description Deletes a managed inbound webhook endpoint and its configuration.
+         * Delete a webhook
+         * @description Deletes the webhook and its delivery history.
          */
         delete: operations["deleteWebhook"];
         options?: never;
         head?: never;
         /**
-         * Update webhook
-         * @description Updates a managed inbound webhook endpoint. This can rename the webhook,
-         *     enable or disable it, or rotate its shared secret.
+         * Update a webhook
+         * @description Updates the webhook URL, event subscriptions, enabled state, or
+         *     signing secret. Setting `secret` to an empty string clears the
+         *     current secret and disables signing. Omitting `secret` leaves the
+         *     current value unchanged.
          */
         patch: operations["updateWebhook"];
         trace?: never;
     };
-    "/projects/{project}/webhooks/{id}/events": {
+    "/projects/{project}/webhooks/{id}/deliveries": {
         parameters: {
             query?: never;
             header?: never;
@@ -935,11 +1160,14 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List webhook events
-         * @description Lists inbound requests previously received by the managed webhook
-         *     endpoint.
+         * List webhook deliveries
+         * @description Lists the delivery history for a webhook, newest first. Each entry
+         *     records the event type, current status, attempt count, and any last
+         *     error message. Deliveries are retried up to 10 times (5xx, 408,
+         *     429 are retryable; other 4xx are not). A delivery transitions to
+         *     `failed` only after exhausting all retry attempts.
          */
-        get: operations["listWebhookEvents"];
+        get: operations["listWebhookDeliveries"];
         put?: never;
         post?: never;
         delete?: never;
@@ -955,10 +1183,15 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List integrations in the project */
+        /** List integrations */
         get: operations["listIntegrations"];
         put?: never;
-        /** Create an integration in the project */
+        /**
+         * Create an integration
+         * @description Creates a new integration record. The `provider` + `name` pair must
+         *     be unique within the project. Returns 400 if validation fails (e.g.,
+         *     missing required fields).
+         */
         post: operations["createIntegration"];
         delete?: never;
         options?: never;
@@ -973,12 +1206,21 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get an integration by id */
+        /** Get an integration */
         get: operations["getIntegration"];
-        /** Update an integration */
+        /**
+         * Update an integration
+         * @description Replaces the integration's `name`, `config`, and/or `status`. Use
+         *     `status: inactive` to disable an integration without deleting it.
+         *     Use `status: active` to re-enable. The `provider` field is
+         *     immutable after creation.
+         */
         put: operations["updateIntegration"];
         post?: never;
-        /** Delete an integration */
+        /**
+         * Delete an integration
+         * @description Hard-deletes the integration record and its stored config.
+         */
         delete: operations["deleteIntegration"];
         options?: never;
         head?: never;
@@ -996,10 +1238,13 @@ export interface paths {
         put?: never;
         /**
          * Copy an integration from another project
-         * @description Clones an integration from another project within the same org
-         *     into this project. The encrypted credential blob and config are
-         *     preserved; the (provider, name) pair must be unique within this
-         *     project or a different `name` must be supplied.
+         * @description Clones an integration from another project within the same org into
+         *     this project. The full `config` blob is copied as-is. The source
+         *     and destination projects must both belong to the same org.
+         *
+         *     The `(provider, name)` pair must be unique in the destination project;
+         *     supply a different `name` to avoid conflicts with an existing
+         *     integration of the same provider and name.
          */
         post: operations["copyIntegration"];
         delete?: never;
@@ -1015,7 +1260,13 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get operational metrics for a project */
+        /**
+         * Get operational metrics for a project
+         * @description Returns a snapshot of current execution health for the project.
+         *     All rate and duration metrics are computed over a rolling window
+         *     (default: 60 minutes). P95 step duration is computed from the
+         *     40 most recent completed jobs.
+         */
         get: operations["getProjectMetrics"];
         put?: never;
         post?: never;
@@ -1032,10 +1283,18 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List roles */
+        /**
+         * List roles
+         * @description Returns system-defined roles plus custom roles for the org. Use `project_id` to narrow results to project-scoped roles.
+         */
         get: operations["listRoles"];
         put?: never;
-        /** Create a custom role */
+        /**
+         * Create a role
+         * @description Creates a custom role for the org. Supply `project_id` to scope the
+         *     role to a specific project. Roles with an empty `project_id` are
+         *     org-wide and can be assigned across all projects.
+         */
         post: operations["createRole"];
         delete?: never;
         options?: never;
@@ -1054,11 +1313,18 @@ export interface paths {
         get: operations["getRole"];
         put?: never;
         post?: never;
-        /** Delete a custom role */
+        /**
+         * Delete a role
+         * @description Hard-deletes the role and all its assignments. System-defined roles cannot be deleted.
+         */
         delete: operations["deleteRole"];
         options?: never;
         head?: never;
-        /** Update a custom role */
+        /**
+         * Update a role
+         * @description Updates name, description, or permissions of a custom role. System-defined
+         *     roles (system_defined=true) cannot be updated and return 403.
+         */
         patch: operations["updateRole"];
         trace?: never;
     };
@@ -1069,10 +1335,19 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List role assignments */
+        /**
+         * List role assignments
+         * @description Returns assignments optionally filtered by actor, role, or project scope.
+         */
         get: operations["listRoleAssignments"];
         put?: never;
-        /** Create a role assignment */
+        /**
+         * Assign a role to an actor
+         * @description Binds a role to a user or service account. Supply `project_id` to create
+         *     a project-scoped assignment; omit it for an org-wide assignment.
+         *     The assignment records the creating actor in `granted_by_actor_type` /
+         *     `granted_by_actor_id` for audit purposes.
+         */
         post: operations["createRoleAssignment"];
         delete?: never;
         options?: never;
@@ -1090,7 +1365,7 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        /** Delete a role assignment */
+        /** Remove a role assignment */
         delete: operations["deleteRoleAssignment"];
         options?: never;
         head?: never;
@@ -1107,7 +1382,16 @@ export interface paths {
         /** List interactions */
         get: operations["listInteractions"];
         put?: never;
-        /** Create an interaction explicitly */
+        /**
+         * Create an interaction
+         * @description Creates a standalone or run-backed interaction. When `run_id` is
+         *     provided, `topic` is also required and completing the interaction
+         *     automatically delivers a signal that resumes the suspended run.
+         *     Omit both for a standalone interaction that completes with no
+         *     workflow side effect. Workers creating interactions from within a
+         *     job should use the job-scoped route (`POST /jobs/{id}/interactions`)
+         *     instead, which derives the run and topic automatically.
+         */
         post: operations["createInteraction"];
         delete?: never;
         options?: never;
@@ -1189,134 +1473,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/projects/{project}/integrations/slack/connect": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Start Slack connection flow
-         * @description Generates a signed state token and returns the Slack OAuth authorize URL.
-         *     The caller should redirect the user's browser to the returned URL.
-         *     The resulting integration is owned by the specified project.
-         */
-        post: operations["startSlackInstall"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/projects/{project}/integrations/slack/disconnect": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Disconnect Slack integration
-         * @description Revokes the Slack bot token and deletes the project's Slack integration.
-         *     Clears active alert state for the project.
-         */
-        post: operations["disconnectSlack"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/provider/slack/oauth/callback": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Slack OAuth callback
-         * @description Handles the Slack OAuth redirect. Validates state, exchanges the code
-         *     for a bot token, and upserts the Slack integration for the org.
-         *     Redirects to the Slack settings page on success.
-         */
-        get: operations["slackOAuthCallback"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/provider/slack/events": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Slack Events API webhook
-         * @description Receives Slack Events API callbacks (URL verification, app_uninstalled,
-         *     tokens_revoked). Requires valid Slack request signature.
-         */
-        post: operations["handleSlackEvents"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/provider/slack/interactions": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Slack interactive component webhook
-         * @description Receives Slack interactive payloads (block_actions, view_submission).
-         *     Requires valid Slack request signature.
-         */
-        post: operations["handleSlackInteract"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/provider/slack/commands": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Slack slash command webhook
-         * @description Receives /mobius slash command payloads.
-         *     Requires valid Slack request signature.
-         */
-        post: operations["handleSlackCommands"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/projects/{project}/groups": {
         parameters: {
             query?: never;
@@ -1324,10 +1480,17 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List groups in a project */
+        /**
+         * List groups
+         * @description Returns groups with live member counts (queried separately from the group record).
+         */
         get: operations["listGroups"];
         put?: never;
-        /** Create a group */
+        /**
+         * Create a group
+         * @description Creates a group within the project. The `handle` is auto-derived from
+         *     `name` if omitted. Returns 409 if the handle already exists in the project.
+         */
         post: operations["createGroup"];
         delete?: never;
         options?: never;
@@ -1342,18 +1505,24 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get a group with member count */
+        /** Get a group */
         get: operations["getGroup"];
         put?: never;
         post?: never;
         /**
          * Delete a group
-         * @description Rejected if any pending interaction targets this group.
+         * @description Rejected with 400 if any pending interaction currently targets this
+         *     group. Resolve or expire those interactions before deleting.
          */
         delete: operations["deleteGroup"];
         options?: never;
         head?: never;
-        /** Update a group */
+        /**
+         * Update a group
+         * @description Updates name, description, or routing policy. Handle is immutable after
+         *     creation. Changing `routing_policy` only affects future interactions —
+         *     in-flight interactions retain the policy that was snapshotted at creation.
+         */
         patch: operations["updateGroup"];
         trace?: never;
     };
@@ -1364,10 +1533,16 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List members of a group */
+        /**
+         * List members of a group
+         * @description Returns the current live membership, which may differ from membership snapshots in existing interactions.
+         */
         get: operations["listGroupMembers"];
         put?: never;
-        /** Add a member to a group */
+        /**
+         * Add a member to a group
+         * @description The user must be an org member. Returns 409 if already a member.
+         */
         post: operations["addGroupMember"];
         delete?: never;
         options?: never;
@@ -1385,7 +1560,10 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        /** Remove a member from a group */
+        /**
+         * Remove a member from a group
+         * @description Does not affect the member snapshot in existing interactions.
+         */
         delete: operations["removeGroupMember"];
         options?: never;
         head?: never;
@@ -1416,10 +1594,18 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List agents */
+        /**
+         * List agents
+         * @description Returns agents with computed presence. Filter by service_account_id to find all agents owned by a specific identity.
+         */
         get: operations["listAgents"];
         put?: never;
-        /** Create an agent */
+        /**
+         * Create an agent
+         * @description Creates an agent bound to `service_account_id`. A service account can
+         *     back multiple agents, but each agent belongs to exactly one service
+         *     account for the lifetime of the agent.
+         */
         post: operations["createAgent"];
         delete?: never;
         options?: never;
@@ -1438,11 +1624,19 @@ export interface paths {
         get: operations["getAgent"];
         put?: never;
         post?: never;
-        /** Delete an agent */
+        /**
+         * Delete an agent
+         * @description Hard-deletes the agent and all associated sessions. In-flight jobs claiming this agent are not automatically cancelled.
+         */
         delete: operations["deleteAgent"];
         options?: never;
         head?: never;
-        /** Update an agent */
+        /**
+         * Update an agent
+         * @description Updates mutable agent fields. The backing `service_account_id` cannot
+         *     be changed after creation. Setting `status` to `inactive` prevents
+         *     the agent from claiming new jobs but does not terminate active sessions.
+         */
         patch: operations["updateAgent"];
         trace?: never;
     };
@@ -1453,10 +1647,21 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List sessions for an agent */
+        /**
+         * List sessions for an agent
+         * @description Returns sessions newest-first. The agent's `presence` is derived from
+         *     the most recent 20 sessions across all transports: `online` if any
+         *     connected session has a fresh heartbeat, `stale` if heartbeats are
+         *     overdue, `offline` otherwise.
+         */
         get: operations["listAgentSessions"];
         put?: never;
-        /** Create an agent session */
+        /**
+         * Register a new agent session
+         * @description Called by a worker at startup to register a live connection. `transport`
+         *     identifies the connection mechanism (e.g. "sse", "polling"). The session
+         *     transitions to `connected` and should be kept alive via heartbeats.
+         */
         post: operations["createAgentSession"];
         delete?: never;
         options?: never;
@@ -1490,7 +1695,12 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Heartbeat an agent session */
+        /**
+         * Refresh an agent session heartbeat
+         * @description Updates `last_seen_at` on the session and keeps the agent's computed
+         *     presence as `online`. Workers should call this at a regular interval
+         *     (typically every 30s). Sessions that miss heartbeats become `stale`.
+         */
         post: operations["heartbeatAgentSession"];
         delete?: never;
         options?: never;
@@ -1507,7 +1717,12 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Disconnect an agent session */
+        /**
+         * Mark an agent session as disconnected
+         * @description Explicitly closes a session, setting status to `disconnected` and
+         *     recording `disconnected_at`. Prefer this over letting sessions go stale
+         *     on graceful shutdown.
+         */
         post: operations["disconnectAgentSession"];
         delete?: never;
         options?: never;
@@ -1515,7 +1730,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/tools": {
+    "/projects/{project}/tools": {
         parameters: {
             query?: never;
             header?: never;
@@ -1523,11 +1738,11 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List tool-published workflows
+         * List workflow tools
          * @description Returns all workflow definitions that have been published as tools
-         *     for the authenticated org. Each entry includes the tool name,
-         *     description, and JSON Schema for the input — compatible with the
-         *     Anthropic and OpenAI tool use APIs.
+         *     for the project. Each entry includes the tool name, description, and
+         *     JSON Schema for the input — compatible with the Anthropic and OpenAI
+         *     tool use APIs.
          */
         get: operations["listTools"];
         put?: never;
@@ -1570,7 +1785,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Poll for the result of an async tool run */
+        /** Get an async tool run result */
         get: operations["getToolRun"];
         put?: never;
         post?: never;
@@ -1585,6 +1800,7 @@ export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
         ErrorResponse: {
+            /** @description Error detail. */
             error: {
                 /** @description Machine-readable error code */
                 code: string;
@@ -1593,166 +1809,224 @@ export interface components {
             };
         };
         HealthResponse: {
+            /** @description Current server status. `ok` when all dependencies are reachable. */
             status: string;
         };
         Metadata: {
             [key: string]: unknown;
         };
-        /** @enum {string} */
+        /**
+         * @description Whether the message was sent by a human org member or an agent worker.
+         * @enum {string}
+         */
         ChannelMessageSenderType: "member" | "agent";
         Channel: {
+            /** @description Unique identifier for this channel. */
             id: string;
-            /** @description Channel handle (unique within project) */
+            /**
+             * @description URL-safe channel handle, unique within the project. Immutable
+             *     after creation.
+             */
             name: string;
-            /** @description Human-facing display name */
+            /** @description Human-facing display name shown in the UI. */
             display_name: string;
-            /** @description Channel topic or description */
+            /** @description Optional topic or description shown at the top of the channel. */
             topic?: string;
             /**
-             * @description Channel type
+             * @description `channel` — persistent named room.
+             *     `dm` — direct-message thread, typically between a small fixed set of participants.
              * @enum {string}
              */
             kind: "dm" | "channel";
-            /** @description Whether the channel is private */
+            /** @description When true, the channel is invite-only and not visible in public listings. */
             private: boolean;
-            /** @description ID of the user who created the channel */
+            /** @description User ID of the org member who created the channel. */
             created_by: string;
             /**
              * Format: date-time
-             * @description Timestamp when the channel was archived
+             * @description Set when the channel is archived. Archived channels are hidden in
+             *     the UI but their message history remains accessible.
              */
             archived_at?: string | null;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Timestamp when this channel was created.
+             */
             created_at: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Timestamp when this channel was last updated.
+             */
             updated_at: string;
         };
         ChannelListResponse: {
+            /** @description The list of results for this page. */
             items: components["schemas"]["Channel"][];
+            /** @description Whether additional pages are available. */
             has_more?: boolean;
+            /** @description Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false. */
             next_cursor?: string;
         };
         ChannelMember: {
+            /** @description Unique identifier for this membership record. */
             id: string;
+            /** @description ID of the channel this membership belongs to. */
             channel_id: string;
+            /** @description ID of the user or agent who is a member. */
             user_id: string;
             /**
-             * @description Member's role in the channel
+             * @description `admin` — can update channel settings and manage members.
+             *     `member` — can post messages and view history.
+             *     Creators are automatically assigned `admin`.
              * @enum {string}
              */
             role: "member" | "admin";
-            /** @description Last message read by this member */
+            /** @description ID of the last message this member has read (used for unread badge counts). */
             last_read_message_id?: string | null;
-            /** @description Whether notifications are muted */
+            /** @description When true, notifications for this channel are suppressed for this member. */
             muted?: boolean;
-            /** @description Whether the member has starred this channel */
+            /** @description Whether this member has starred the channel for quick access. */
             starred?: boolean;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Timestamp when this member joined the channel.
+             */
             joined_at: string;
         };
         ChannelMemberListResponse: {
+            /** @description The list of results for this page. */
             items: components["schemas"]["ChannelMember"][];
+            /** @description Whether additional pages are available. */
             has_more?: boolean;
+            /** @description Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false. */
             next_cursor?: string;
         };
         ChannelMessage: {
+            /** @description Unique identifier for this message. */
             id: string;
+            /** @description ID of the channel this message was posted in. */
             channel_id: string;
             sender_type: components["schemas"]["ChannelMessageSenderType"];
-            /** @description ID of the message sender (user or agent) */
+            /** @description User ID (for `member`) or agent ID (for `agent`) of the message sender. */
             sender_id: string;
-            /** @description Live agent session that sent the message when applicable */
+            /** @description Live agent session that posted the message, when applicable. */
             sender_session_id?: string | null;
             /**
-             * @description Rendering layout mode
+             * @description Rendering hint for the UI.
+             *     `message` — standard chat bubble.
+             *     `notice` — system/informational notice (no attribution).
+             *     `card` — structured card layout.
              * @enum {string}
              */
             display?: "message" | "notice" | "card";
-            /** @description Dot-projectd message type (e.g. user.message, ai.response) */
+            /**
+             * @description Dot-namespaced message type identifier, e.g. `user.message`,
+             *     `ai.response`. Used for filtering and display logic.
+             */
             type: string;
-            /** @description Message content (markdown) */
+            /** @description Message body in Markdown. */
             content: string;
-            /** @description ID of the message this is a reply to (threading) */
+            /** @description ID of the parent message this reply belongs to (threading). */
             reply_to?: string | null;
             metadata?: components["schemas"]["Metadata"];
-            /** @description Whether this message is pinned */
+            /** @description Whether this message is pinned in the channel. */
             pinned?: boolean;
-            /** @description ID of user who pinned this message */
+            /** @description User ID of the member who pinned this message. */
             pinned_by?: string | null;
             /**
              * Format: date-time
-             * @description When the message was last edited
+             * @description Set when the message content has been updated after initial send.
              */
             edited_at?: string | null;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Timestamp when this message was posted.
+             */
             created_at: string;
         };
         ChannelMessageListResponse: {
+            /** @description The list of results for this page. */
             items: components["schemas"]["ChannelMessage"][];
+            /** @description Whether additional pages are available. */
             has_more?: boolean;
+            /** @description Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false. */
             next_cursor?: string;
         };
         CreateChannelRequest: {
-            /** @description Channel handle (unique, immutable) */
+            /**
+             * @description URL-safe handle, unique within the project. Immutable after
+             *     creation — choose carefully.
+             */
             name: string;
-            /** @description Human-facing display name */
+            /** @description Human-facing display name shown in the UI. */
             display_name: string;
-            /** @description Channel topic or description */
+            /** @description Optional channel topic or description. */
             topic?: string;
             /**
-             * @description Channel type
+             * @description Channel kind. Cannot be changed after creation.
              * @enum {string}
              */
             kind: "dm" | "channel";
             /**
-             * @description Whether the channel is private (invite-only)
+             * @description When true, the channel is invite-only.
              * @default false
              */
             private: boolean;
-            /** @description Initial member IDs to add to the channel */
+            /**
+             * @description Optional list of user or agent IDs to add as members at creation
+             *     time. All receive the `member` role; the creator is added as
+             *     `admin` separately.
+             */
             member_ids?: string[];
         };
         UpdateChannelRequest: {
+            /** @description Updated display name. */
             display_name?: string;
+            /** @description Updated topic or description. */
             topic?: string;
+            /** @description Toggle invite-only visibility. */
             private?: boolean;
         };
         AddChannelMemberRequest: {
-            /** @description User or agent ID to add */
+            /** @description User or agent ID to add to the channel. */
             user_id: string;
             /**
+             * @description Role to assign the new member.
              * @default member
              * @enum {string}
              */
             role: "member" | "admin";
         };
         SendChannelMessageRequest: {
-            /** @description Durable agent identity to attribute the message to. */
+            /**
+             * @description Durable agent identity to attribute the message to. When set,
+             *     `sender_type` on the resulting message is `agent`.
+             */
             sender_agent_id?: string;
-            /** @description Live agent session to attribute the message to. */
+            /** @description Live agent session to associate with the message. */
             sender_session_id?: string;
-            /** @description Message content (markdown) */
+            /** @description Message body in Markdown. */
             content: string;
             /**
-             * @description Rendering layout mode
+             * @description Rendering hint for the UI.
              * @default message
              * @enum {string}
              */
             display: "message" | "notice" | "card";
             /**
-             * @description Dot-projectd message type
+             * @description Dot-namespaced message type identifier.
              * @default user.message
              */
             type: string;
-            /** @description Parent message ID for threading */
+            /** @description Parent message ID for threading (creates a reply). */
             reply_to?: string;
             metadata?: components["schemas"]["Metadata"];
         };
         UpdateChannelMessageRequest: {
-            /** @description Updated message content (markdown) */
+            /** @description Updated Markdown content. Sets `edited_at` on the message. */
             content?: string;
             metadata?: components["schemas"]["Metadata"];
-            /** @description Whether this message is pinned */
+            /** @description Pin or unpin the message. Sets/clears `pinned_by`. */
             pinned?: boolean;
         };
         AuditLogEntry: {
@@ -1794,6 +2068,7 @@ export interface components {
             created_at: string;
         };
         AuditLogListResponse: {
+            /** @description The list of results for this page. */
             items?: components["schemas"]["AuditLogEntry"][];
             /** @description Cursor for fetching next page of results */
             next_cursor?: string;
@@ -1801,95 +2076,171 @@ export interface components {
             has_more: boolean;
         };
         APIKey: {
+            /** @description Unique identifier for this API key. */
             id: string;
+            /** @description Human-readable label, unique within the org (or org+project for project-pinned keys). */
             name: string;
-            /** @description First 8 characters of the key for identification */
+            /** @description First 8 characters of the key, used to identify it without exposing the secret. */
             key_prefix: string;
-            /** @enum {string} */
+            /**
+             * @description `org` for standard API keys; `system` is reserved for platform-level access.
+             * @enum {string}
+             */
             scope: "org" | "system";
+            /** @description Explicit permission set granted to this key (e.g. "mobius.job.claim"). */
             permissions?: string[];
+            /** @description Set for project-pinned keys; empty for org-scoped keys. */
             project_id?: string;
+            /** @description Optional service account for attribution and quota tracking. */
             service_account_id?: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Hard expiry timestamp. Requests using an expired key receive 401.
+             */
             expires_at?: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Timestamp of the most recent authenticated request using this key.
+             */
             last_used_at?: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Timestamp when this key was created.
+             */
             created_at: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Timestamp when this key was last updated.
+             */
             updated_at: string;
         };
+        /** @description Returned only on key creation. Contains the raw `key` value which is not retrievable after this response. */
         APIKeyCreateResult: {
+            /** @description Unique identifier for the created API key. */
             id: string;
+            /** @description Human-readable name for the key. */
             name: string;
-            /** @description First 8 characters of the key for identification */
+            /** @description First 8 characters of the key for identification. */
             key_prefix: string;
-            /** @enum {string} */
+            /**
+             * @description Scope of the key: `org` for org-wide keys, `project` for project-pinned keys.
+             * @enum {string}
+             */
             scope: "org" | "system";
+            /** @description List of permissions granted to this key. */
             permissions?: string[];
+            /** @description ID of the pinned project. Null for org-scoped keys. */
             project_id?: string;
+            /** @description ID of the service account this key belongs to. */
             service_account_id?: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Timestamp when this key expires. Null if it does not expire.
+             */
             expires_at?: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Timestamp of the most recent authenticated request using this key.
+             */
             last_used_at?: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Timestamp when this key was created.
+             */
             created_at: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Timestamp when this key was last updated.
+             */
             updated_at: string;
-            /** @description The raw API key (shown only once) */
+            /** @description The raw API key. Returned only once at creation — store it securely immediately. */
             key: string;
         };
         APIKeyListResponse: {
+            /** @description The list of results for this page. */
             items: components["schemas"]["APIKey"][];
         };
         CreateAPIKeyRequest: {
+            /** @description Human-readable label, unique within the org (or project for project-pinned keys). */
             name: string;
             /**
+             * @description Key scope. Use `org` for standard API access.
              * @default org
              * @enum {string}
              */
             scope: "org" | "system";
+            /**
+             * @description Permissions to grant. Each permission must be held by the creating
+             *     caller — you cannot grant more than you have.
+             */
             permissions?: string[];
+            /** @description Associate this key with a service account for attribution. */
             service_account_id?: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Optional hard expiry. Omit for a non-expiring key.
+             */
             expires_at?: string;
         };
         AuthContext: {
+            /** @description Resolved user ID for this request (may be a service account ID for API-key auth). */
             user_id: string;
+            /** @description Org ID resolved from the authentication credential. */
             org_id?: string;
-            /** @description Org member role (owner, admin, member) — empty for API-key auth */
+            /** @description Org member role (owner, admin, member) — empty for API-key auth. */
             role?: string;
-            /** @description How the caller authenticated (clerk, api_key, cli_token) */
+            /** @description How the caller authenticated: `clerk` (browser JWT), `api_key`, or `cli_token`. */
             auth_type: string;
+            /** @description True for Mobius platform admins only; not an org-level flag. */
             is_admin: boolean;
         };
         ConfirmDeviceCodeRequest: {
+            /** @description The user code displayed in the CLI during the device authorization flow. */
             user_code: string;
+            /** @description Optional label to identify this credential in the CLI credentials list. */
             label?: string;
         };
         ConfirmDeviceCodeResult: {
+            /** @description True when the device code was successfully confirmed and a CLI credential has been issued. */
             confirmed: boolean;
         };
         /** @enum {string} */
         CLICredentialStatus: "active" | "revoked";
         CLICredential: {
+            /** @description Unique identifier for this credential. */
             id: string;
+            /** @description ID of the organization this credential is scoped to. */
             org_id: string;
+            /** @description ID of the user who authorized this credential. */
             user_id: string;
+            /** @description Human-readable label identifying this credential. */
             label: string;
+            /** @description First few characters of the token, shown for identification without exposing the secret. */
             token_prefix: string;
             status: components["schemas"]["CLICredentialStatus"];
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Timestamp when this credential was created.
+             */
             created_at: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Timestamp when this credential was last updated.
+             */
             updated_at: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Timestamp of the most recent authenticated request using this credential.
+             */
             last_used_at?: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Timestamp when this credential expires. Null if it does not expire.
+             */
             expires_at?: string;
         };
         CLICredentialListResponse: {
+            /** @description The list of credentials issued to the current user. */
             items: components["schemas"]["CLICredential"][];
         };
         /**
@@ -1903,39 +2254,63 @@ export interface components {
         WorkflowSpec: {
             /** @description Workflow name. */
             name: string;
+            /** @description Optional description of the workflow's purpose. */
             description?: string;
             /** @description Step name to start execution from. Defaults to the first step. */
             start_at?: string;
+            /** @description Declared input parameters accepted by this workflow. */
             inputs?: components["schemas"]["WorkflowInput"][];
+            /** @description Declared output values produced by this workflow. */
             outputs?: components["schemas"]["WorkflowOutput"][];
             /** @description Initial workflow state. */
             state?: {
                 [key: string]: unknown;
             };
+            /** @description Ordered list of steps that make up this workflow. */
             steps: components["schemas"]["WorkflowStep"][];
         };
         WorkflowInput: {
+            /** @description Input parameter name referenced in step expressions. */
             name: string;
+            /** @description Data type of the input (e.g. string, integer, boolean, object). */
             type: string;
+            /** @description Human-readable description of this input parameter. */
             description?: string;
             /** @description Optional default value. */
             default?: unknown;
         };
         WorkflowOutput: {
+            /** @description Output name exposed to callers and downstream steps. */
             name: string;
+            /** @description State variable name whose value is mapped to this output. */
             variable: string;
             /** @description Defaults to `main` when omitted. */
             branch?: string;
+            /** @description Human-readable description of this output value. */
             description?: string;
         };
         /** @description A workflow step. Exactly one step shape should be used. */
         WorkflowStep: components["schemas"]["WorkflowExecutableStep"] | components["schemas"]["WorkflowJoinStep"] | components["schemas"]["WorkflowWaitSignalStep"] | components["schemas"]["WorkflowSleepStep"] | components["schemas"]["WorkflowPauseStep"] | components["schemas"]["WorkflowInteractionStep"];
         WorkflowStepBase: {
+            /** @description Unique step name within the workflow, used for routing and logging. */
             name: string;
+            /** @description Optional human-readable description of what this step does. */
             description?: string;
+            /** @description Outbound edges controlling which step executes after this one. */
             next?: components["schemas"]["WorkflowEdge"][];
             edge_matching_strategy?: components["schemas"]["WorkflowEdgeMatchingStrategy"];
             each?: components["schemas"]["WorkflowEach"];
+            layout?: components["schemas"]["WorkflowStepLayout"];
+        };
+        /**
+         * @description Optional presentation hint for the visual editor. Ignored by the
+         *     execution engine; when absent, editors auto-lay out the step.
+         */
+        WorkflowStepLayout: {
+            /** @description Horizontal position of the step in the editor canvas. */
+            x?: number;
+            /** @description Vertical position of the step in the editor canvas. */
+            y?: number;
         };
         /**
          * @example {
@@ -1954,11 +2329,15 @@ export interface components {
              */
             action: string;
             action_kind?: components["schemas"]["WorkflowActionKind"];
+            /** @description State variable name where the action result is stored. */
             store?: string;
+            /** @description Input parameters passed to the action, supporting expression interpolation. */
             parameters?: {
                 [key: string]: unknown;
             };
+            /** @description Retry policies applied when the action fails. */
             retry?: components["schemas"]["WorkflowRetry"][];
+            /** @description Error catch clauses that redirect execution on specific failures. */
             catch?: components["schemas"]["WorkflowCatch"][];
         };
         WorkflowJoinStep: components["schemas"]["WorkflowStepBase"] & {
@@ -1985,45 +2364,66 @@ export interface components {
         /** @enum {string} */
         WorkflowEdgeMatchingStrategy: "all" | "first";
         WorkflowEdge: {
+            /** @description Name of the step to transition to. */
             step: string;
+            /** @description Expression that must evaluate to true for this edge to be followed. */
             condition?: string;
+            /** @description Branch name assigned to parallel execution started by this edge. */
             branch?: string;
         };
         WorkflowEach: {
             /** @description Expression or literal collection to iterate over. */
             items: unknown;
+            /** @description Variable name bound to the current iteration element. */
             as?: string;
         };
         WorkflowRetry: {
+            /** @description Error class names this policy applies to. Retries all errors when omitted. */
             error_equals?: string[];
+            /** @description Maximum number of retry attempts. Zero disables retries. */
             max_retries?: number;
             /** @description Go duration string. */
             base_delay?: string;
             /** @description Go duration string. */
             max_delay?: string;
+            /** @description Exponential backoff multiplier applied to the delay after each attempt. */
             backoff_rate?: number;
-            /** @enum {string} */
+            /**
+             * @description Jitter strategy to apply to the computed delay: NONE or FULL.
+             * @enum {string}
+             */
             jitter_strategy?: "NONE" | "FULL";
             /** @description Go duration string. */
             timeout?: string;
         };
         WorkflowCatch: {
+            /** @description Error class names this catch clause handles. */
             error_equals: string[];
+            /** @description Step name to transition to when this clause is matched. */
             next: string;
+            /** @description State variable name where the caught error is stored. */
             store?: string;
         };
+        /** @description Waits for one or more parallel branches to complete before proceeding. */
         WorkflowJoinConfig: {
+            /** @description Branch names to wait for. Defaults to all branches if omitted. */
             branches?: string[];
+            /** @description Minimum number of branches that must complete. Defaults to all listed branches. */
             count?: number;
+            /** @description Maps branch names to variable names for storing per-branch results. */
             branch_mappings?: {
                 [key: string]: string;
             };
         };
+        /** @description Suspends the run until a signal with the matching topic arrives. */
         WorkflowWaitSignalConfig: {
+            /** @description Signal topic to wait on. Must match the `name` field in POST /runs/{id}/signals. */
             topic: string;
-            /** @description Go duration string. */
+            /** @description Maximum wait duration as a Go duration string (e.g. "24h", "30m"). */
             timeout: string;
+            /** @description Variable name to store the signal payload in after resumption. */
             store?: string;
+            /** @description Step name to transition to if the timeout elapses without a signal. Fails the run if omitted. */
             on_timeout?: string;
         };
         WorkflowSleepConfig: {
@@ -2031,12 +2431,18 @@ export interface components {
             duration: string;
         };
         WorkflowPauseConfig: {
+            /** @description Optional human-readable reason displayed when the run is paused. */
             reason?: string;
         };
         WorkflowInteractionConfig: {
-            /** @enum {string} */
+            /**
+             * @description Interaction kind: approval requires a yes/no decision, review requests acknowledgement, input collects free-form data.
+             * @enum {string}
+             */
             type: "approval" | "review" | "input";
+            /** @description Prompt message shown to the interaction recipient. */
             message: string;
+            /** @description Arbitrary key-value context passed alongside the interaction for rendering. */
             context?: {
                 [key: string]: unknown;
             };
@@ -2051,7 +2457,10 @@ export interface components {
          *     intentionally portable across web, email, and agent experiences.
          */
         WorkflowInteractionSpec: {
-            /** @enum {string} */
+            /**
+             * @description UI rendering mode: confirm shows yes/no, select and multi_select show option lists, input shows a text field.
+             * @enum {string}
+             */
             mode: "confirm" | "select" | "multi_select" | "input";
             /** @description Required for `select` and `multi_select` modes. */
             options?: components["schemas"]["WorkflowInteractionOption"][];
@@ -2069,66 +2478,110 @@ export interface components {
             multiline?: boolean;
         };
         WorkflowInteractionOption: {
+            /** @description Machine-readable option value stored in the interaction response. */
             value: string;
+            /** @description Human-readable option label displayed to the recipient. */
             label: string;
+            /** @description Optional supplementary text shown alongside the option. */
             description?: string;
         };
         WorkflowInteractionTarget: {
-            /** @enum {string} */
+            /**
+             * @description Whether the target is an individual user or a group.
+             * @enum {string}
+             */
             type: "user" | "group";
+            /** @description ID of the target user or group. */
             id: string;
+            /** @description When true, all group members must respond before the interaction completes. */
             require_all?: boolean;
         };
         WorkflowDefinition: {
+            /** @description Unique identifier for this workflow definition. */
             id: string;
+            /** @description Human-readable workflow name. */
             name: string;
+            /** @description URL-safe slug, unique within the org. Used to reference this workflow in triggers and tools. */
             handle: string;
+            /** @description Optional description of the workflow's purpose. */
             description?: string;
+            /** @description The current highest version number. Starts at 1 and increments with each spec update. */
             latest_version: number;
             /** @description When true, this workflow is exposed as a callable tool via /api/tools. */
             published_as_tool?: boolean;
             spec?: components["schemas"]["WorkflowSpec"];
+            /** @description User ID of the org member who created this workflow definition. */
             created_by: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Timestamp when this workflow definition was created.
+             */
             created_at: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Timestamp when this workflow definition was last updated.
+             */
             updated_at: string;
         };
         WorkflowDefinitionListResponse: {
+            /** @description The list of results for this page. */
             items?: components["schemas"]["WorkflowDefinition"][];
+            /** @description Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false. */
             next_cursor?: string;
+            /** @description Whether additional pages are available. */
             has_more: boolean;
         };
         CreateWorkflowRequest: {
+            /** @description Human-readable workflow name, unique within the project. */
             name: string;
+            /** @description URL-safe handle for this workflow. Auto-derived from name if omitted. */
             handle?: string;
+            /** @description Optional description of the workflow's purpose. */
             description?: string;
             /** @description When true, expose this workflow as a callable tool via /api/tools. */
             published_as_tool?: boolean;
             spec: components["schemas"]["WorkflowSpec"];
         };
         UpdateWorkflowRequest: {
+            /** @description Replacement human-readable workflow name. */
             name?: string;
+            /** @description Replacement description. Omit to leave unchanged. */
             description?: string;
             /** @description When true, expose this workflow as a callable tool via /api/tools. */
             published_as_tool?: boolean;
             spec?: components["schemas"]["WorkflowSpec"];
         };
         WorkflowVersion: {
+            /** @description Unique identifier for this workflow version. */
+            id: string;
+            /** @description Monotonically increasing version number. Starts at 1. */
             version: number;
             spec?: components["schemas"]["WorkflowSpec"];
+            /** @description User ID of the org member who created this version. */
             created_by: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Timestamp when this version was created.
+             */
             created_at: string;
         };
         WorkflowVersionListResponse: {
+            /** @description The list of workflow versions, newest first. */
             items: components["schemas"]["WorkflowVersion"][];
         };
-        /** @enum {string} */
+        /**
+         * @description Run lifecycle: `queued` → `running` → `completed` | `failed` | `suspended`.
+         *     A `suspended` run is waiting on a signal or interaction; it resumes
+         *     automatically when the signal is delivered or the interaction is responded to.
+         * @enum {string}
+         */
         WorkflowRunStatus: "queued" | "running" | "completed" | "failed" | "suspended";
         WorkflowRun: {
+            /** @description Unique identifier for this run. */
             id: string;
+            /** @description Queue this run was enqueued on. */
             queue?: string;
+            /** @description ID of the parent run, when this is a child run spawned by a fan-out step. */
             parent_run_id?: string;
             /**
              * @description ID of the workflow definition this run was started from.
@@ -2143,37 +2596,52 @@ export interface components {
              *     `definition_id == ""`.
              */
             ephemeral?: boolean;
+            /** @description Name of the workflow as recorded at run creation time. */
             workflow_name: string;
             status: components["schemas"]["WorkflowRunStatus"];
+            /** @description Retry attempt number (1-based). Increments each time the run is retried. */
             attempt: number;
+            /** @description Input values provided when the run was started. */
             inputs?: {
                 [key: string]: unknown;
             };
+            /** @description Caller-supplied string metadata attached to the run. */
             metadata?: {
                 [key: string]: string;
             };
+            /** @description Error message from the most recent failure. Present when status is failed. */
             error_message?: string;
+            /** @description Type of the actor that started this run (user, service_account, system). */
             actor_type?: string;
+            /** @description ID of the actor that started this run. */
             actor_id?: string;
+            /** @description Human-readable label for the initiator (e.g. trigger name, API key name). */
             initiated_by?: string;
+            /** @description Caller-supplied idempotency key or correlation ID. */
             external_id?: string;
-            group?: string;
             /**
-             * @description Outbound customer callback URL intended for terminal run
-             *     notifications. The value is persisted on the run, but callback
-             *     delivery is not yet active.
+             * Format: date-time
+             * @description Timestamp when this run was created.
              */
-            callback_url?: string;
-            /** Format: date-time */
             created_at: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Timestamp when a worker first claimed this run.
+             */
             started_at?: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Timestamp when this run reached a terminal state.
+             */
             completed_at?: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Timestamp when this run was last updated.
+             */
             updated_at: string;
         };
         WorkflowRunListResponse: {
+            /** @description The list of results for this page. */
             items?: components["schemas"]["WorkflowRun"][];
             /** @description True when more pages are available. */
             has_more: boolean;
@@ -2187,6 +2655,7 @@ export interface components {
             spec?: components["schemas"]["WorkflowSpec"];
             /** @description Base64-encoded terminal result blob */
             result_b64?: string;
+            /** @description Jobs spawned by this run. */
             jobs?: components["schemas"]["Job"][];
         };
         /**
@@ -2207,302 +2676,501 @@ export interface components {
             spec?: components["schemas"]["WorkflowSpec"];
             /** @description Queue name to enqueue the run on. Defaults to "default". */
             queue?: string;
-            /**
-             * @description Outbound customer callback URL intended for terminal run
-             *     notifications. If set, Mobius stores this value on the run for
-             *     future callback delivery, but terminal-status callback delivery is
-             *     not yet active.
-             */
-            callback_url?: string;
+            /** @description Input values to pass to the workflow. Must conform to the workflow's declared input schema. */
             inputs?: {
                 [key: string]: unknown;
             };
+            /** @description Caller-supplied string metadata attached to the run for filtering and display. */
             metadata?: {
                 [key: string]: string;
             };
+            /** @description Caller-supplied idempotency key or correlation ID attached to the run. */
             external_id?: string;
-            group?: string;
         };
         ActionLogEntry: {
+            /** @description Unique identifier for this action log entry. */
             id: string;
+            /** @description Action name that was executed. */
             action: string;
+            /** @description Workflow step name that produced this action log entry. */
             step_name: string;
+            /** @description Execution branch this entry belongs to. */
             branch_id: string;
+            /** @description Input parameters that were passed to the action. */
             parameters?: {
                 [key: string]: unknown;
             };
+            /** @description Output returned by the action. Present on success. */
             result?: {
                 [key: string]: unknown;
             };
+            /** @description Error message when the action failed. */
             error?: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Timestamp when the action execution started.
+             */
             started_at: string;
+            /** @description Elapsed time in milliseconds from start to completion. */
             duration_ms: number;
         };
         ActionLogListResponse: {
+            /** @description The list of action log entries for this run. */
             items: components["schemas"]["ActionLogEntry"][];
         };
+        /** @description A claimable unit of work derived from a single workflow step execution. */
         Job: {
+            /** @description Unique identifier for this job. */
             id: string;
+            /** @description The workflow run this job belongs to. */
             run_id: string;
+            /** @description Set when this job is a child of a fan-out (each) step. */
             parent_job_id?: string;
+            /** @description Opaque identifier for the execution path within the run (used for fan-out deduplication). */
             path_id?: string;
+            /** @description Workflow step name this job was created for. */
             step_name: string;
+            /** @description Action name the worker must execute to complete this job. */
             action: string;
+            /** @description Queue the job was placed in. Workers subscribe to queues to receive jobs. */
             queue: string;
+            /** @description Resolved input parameters to pass to the action. */
             parameters?: {
                 [key: string]: unknown;
             };
+            /** @description Job lifecycle: pending → claimed → completed | failed. */
             status: string;
+            /** @description Worker ID that claimed this job. */
             claimed_by?: string;
+            /** @description Agent ID the claiming worker is acting on behalf of. */
             agent_id?: string;
+            /** @description Agent session ID provided during the claim. */
             agent_session_id?: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Timestamp when this job was claimed by a worker.
+             */
             claimed_at?: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Timestamp of the most recent heartbeat. Used to detect stale claims.
+             */
             heartbeat_at?: string;
+            /** @description Current attempt number (1-based). Increments on each retry. */
             attempt: number;
+            /** @description Maximum number of attempts before the job is permanently failed. */
             max_attempts: number;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Earliest time at which this job may be claimed.
+             */
             scheduled_at: string;
+            /** @description Error detail from the most recent failed attempt. */
             last_error?: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Timestamp when this job was created.
+             */
             created_at: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Timestamp when this job was last updated.
+             */
             updated_at: string;
         };
         JobListResponse: {
+            /** @description The list of jobs for this run. */
             items: components["schemas"]["Job"][];
         };
         SendRunSignalRequest: {
             /** @description Signal topic (e.g. "approval", "webhook"). */
             name: string;
+            /** @description Arbitrary payload delivered to the waiting step when the signal is received. */
             payload?: {
                 [key: string]: unknown;
             };
         };
         RunSignal: {
+            /** @description Unique identifier for this signal. */
             id: string;
+            /** @description ID of the run this signal was delivered to. */
             run_id: string;
+            /** @description Signal topic name matching the wait_signal step's topic. */
             name: string;
         };
         BulkRunRequest: {
+            /** @description IDs of the runs to operate on. */
             run_ids: string[];
         };
         BulkRunResult: {
+            /** @description IDs of runs that were successfully processed. */
             succeeded: string[];
             /** @description Map of run_id -> error message for per-run failures. */
             failures?: {
                 [key: string]: string;
             };
         };
+        /**
+         * @description Hints that describe the safe-use properties of the action. Used by the
+         *     engine and tooling to decide retry behavior, dry-run eligibility, etc.
+         */
         ActionAnnotations: {
+            /** @description The action produces the same result when called with the same inputs; safe to retry automatically. */
             idempotent?: boolean;
+            /** @description The action has irreversible side effects (deletion, financial transactions, etc.). Surfaced as a warning in UI. */
             destructive?: boolean;
+            /** @description The action has no side effects; safe to call in dry-run scenarios. */
             read_only?: boolean;
         };
         CreateActionRequest: {
+            /**
+             * @description Project-scoped identifier used in workflow step definitions.
+             *     Lowercase alphanumeric + hyphens, e.g. "send-email". Must be
+             *     unique within the project. Cannot start with "mobius." (reserved prefix).
+             */
             name: string;
+            /** @description Human-readable display name shown in the UI and catalog. */
             title?: string;
+            /** @description Markdown-safe description of what the action does. */
             description?: string;
-            /** Format: uri */
+            /**
+             * Format: uri
+             * @description HTTP/HTTPS URL Mobius will POST to when invoking the action.
+             */
             endpoint_url: string;
+            /** @description JSON Schema describing the expected input parameters. */
             input_schema?: {
                 [key: string]: unknown;
             };
+            /** @description JSON Schema describing the expected output shape. */
             output_schema?: {
                 [key: string]: unknown;
             };
             annotations?: components["schemas"]["ActionAnnotations"];
         };
         UpdateActionRequest: {
+            /** @description Replacement display title. */
             title?: string;
+            /** @description Replacement Markdown description. */
             description?: string;
-            /** Format: uri */
+            /**
+             * Format: uri
+             * @description Replacement endpoint URL.
+             */
             endpoint_url?: string;
+            /** @description Replacement JSON Schema for inputs. Replaces the existing schema. */
             input_schema?: {
                 [key: string]: unknown;
             };
+            /** @description Replacement JSON Schema for outputs. Replaces the existing schema. */
             output_schema?: {
                 [key: string]: unknown;
             };
+            /** @description Pass null to clear all annotation flags. */
             annotations?: components["schemas"]["ActionAnnotations"];
         };
         Action: {
+            /** @description Unique identifier for this action. */
             id: string;
+            /** @description ID of the organization this action belongs to. */
             org_id: string;
+            /** @description Project-scoped stable identifier used in workflow step definitions. */
             name: string;
+            /** @description Human-readable display title for the action. */
             title?: string;
+            /** @description Markdown description of what the action does. */
             description?: string;
-            /** Format: uri */
+            /**
+             * Format: uri
+             * @description HTTP/HTTPS URL Mobius POSTs to when invoking this action.
+             */
             endpoint_url: string;
+            /** @description JSON Schema describing expected input parameters. */
             input_schema?: {
                 [key: string]: unknown;
             };
+            /** @description JSON Schema describing the expected output shape. */
             output_schema?: {
                 [key: string]: unknown;
             };
             annotations?: components["schemas"]["ActionAnnotations"];
+            /**
+             * @description Raw HMAC-SHA256 signing secret. Only populated on create and rotate
+             *     responses; null on all other reads. Store this value securely on
+             *     first receipt — it cannot be retrieved again.
+             */
             signing_secret?: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Timestamp when this action was created.
+             */
             created_at: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Timestamp when this action was last updated.
+             */
             updated_at: string;
         };
         ActionListResponse: {
+            /** @description The list of results for this page. */
             items?: components["schemas"]["Action"][];
+            /** @description Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false. */
             next_cursor?: string;
+            /** @description Whether additional pages are available. */
             has_more: boolean;
         };
         RotateSecretResult: {
+            /** @description The new raw signing secret. Store it immediately — this is the only time it is returned. */
             signing_secret: string;
         };
         ActionCatalogEntry: {
+            /** @description Action name as used in workflow step definitions. */
             name: string;
+            /** @description Human-readable display title for the action. */
             title?: string;
+            /** @description Markdown description of what the action does. */
             description?: string;
+            /** @description Integration slug this action belongs to (e.g. "slack"), if platform-provided. */
             integration?: string;
+            /**
+             * @description Origin of this action: "project" for project-owned actions, or the
+             *     integration slug for platform-provided actions.
+             */
             source: string;
+            /**
+             * @description Whether this action can currently be invoked. False if the required
+             *     integration is not connected or the caller lacks permission.
+             */
             available: boolean;
             annotations?: components["schemas"]["ActionAnnotations"];
+            /** @description JSON Schema describing expected input parameters. */
             input_schema?: {
                 [key: string]: unknown;
             };
+            /** @description JSON Schema describing the expected output shape. */
             output_schema?: {
                 [key: string]: unknown;
             };
-            /** Format: uri */
+            /**
+             * Format: uri
+             * @description Endpoint URL (populated for project-owned actions only).
+             */
             endpoint_url?: string;
         };
         ActionCatalogListResponse: {
+            /** @description The full list of catalog entries. */
             items: components["schemas"]["ActionCatalogEntry"][];
         };
         ActionAuditLogEntry: {
+            /** @description Unique identifier for this audit log entry. */
             id: string;
+            /** @description Workflow run that triggered this invocation, if run-backed. */
             run_id?: string;
+            /** @description Workflow step name that triggered this invocation. */
             step_name?: string;
+            /** @description Name of the action that was invoked. */
             action_name: string;
+            /** @description Invocation source ("workflow", "direct", etc.). */
             source: string;
+            /** @description Input parameters passed to the action. */
             parameters?: {
                 [key: string]: unknown;
             };
+            /** @description Truncated or summarized action output for audit purposes. */
             output_summary?: {
                 [key: string]: unknown;
             };
+            /** @description Terminal invocation status ("success", "failed", etc.). */
             status: string;
+            /** @description Number of retry attempts before this terminal status was reached. */
             retry_count: number;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Timestamp when this invocation started.
+             */
             started_at: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Timestamp when this invocation completed.
+             */
             finished_at: string;
+            /** @description Machine-readable error classification when status is "failed". */
             error_type?: string;
+            /** @description Human-readable error detail when status is "failed". */
             error_message?: string;
         };
         ActionAuditLogListResponse: {
+            /** @description The list of results for this page. */
             items?: components["schemas"]["ActionAuditLogEntry"][];
+            /** @description Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false. */
             next_cursor?: string;
+            /** @description Whether additional pages are available. */
             has_more: boolean;
         };
         JobClaimRequest: {
+            /**
+             * @description Caller-assigned stable identifier for this worker process. Used
+             *     as the lease fence and for worker registry tracking.
+             */
             worker_id: string;
             /** @description Durable agent identity the worker is acting on behalf of. */
             agent_id?: string;
             /** @description Live agent session the worker is acting on behalf of. */
             agent_session_id?: string;
+            /** @description Optional human-readable name shown in the worker list. */
             worker_name?: string;
+            /** @description Optional version string shown in the worker list. */
             worker_version?: string;
             /**
-             * @description Queue names the worker subscribes to. When empty the
-             *     worker claims from any queue in the org. Runs default
-             *     to the "default" queue when not specified.
+             * @description Queue names the worker subscribes to. When empty the worker
+             *     claims from any queue in the project. Workflow runs default
+             *     to the "default" queue when not otherwise specified.
              */
             queues?: string[];
-            /** @description Action names this worker can execute. */
+            /**
+             * @description Action names this worker can execute. When provided, only jobs
+             *     whose `action` is in this list are returned. When empty, action
+             *     filtering is skipped.
+             */
             actions?: string[];
             /**
-             * @description How long to hold the request open waiting for a job to
-             *     surface. 0 returns immediately.
+             * @description How long to hold the request open waiting for a job to surface.
+             *     0 returns immediately. Capped at 30 by the server.
              */
             wait_seconds?: number;
         };
         JobClaim: {
+            /** @description Job ID — use as the `{id}` path parameter for heartbeat, complete, and events. */
             job_id: string;
+            /** @description Parent workflow run ID. */
             run_id: string;
+            /** @description Handle of the workflow definition that owns this run. */
             workflow_name: string;
+            /** @description Step label from the workflow spec — used for UI and interaction topic derivation. */
             step_name: string;
+            /** @description Action name the worker must execute for this step. */
             action: string;
+            /** @description Agent that should execute this job, when the step is agent-targeted. */
             agent_id?: string;
+            /** @description Agent session the job was routed to, when applicable. */
             agent_session_id?: string;
+            /** @description Input parameters for this step, resolved from the workflow spec and prior step outputs. */
             parameters: {
                 [key: string]: unknown;
             };
+            /**
+             * @description 1-based attempt counter. Incremented on each automatic retry.
+             *     Include in the fence for all subsequent heartbeat and complete calls.
+             */
             attempt: number;
+            /** @description Queue name the job was claimed from. */
             queue: string;
+            /**
+             * @description Recommended heartbeat interval in seconds. Workers should call
+             *     `POST /jobs/{id}/heartbeat` at this cadence to keep the lease
+             *     alive. Typically 30 seconds.
+             */
             heartbeat_interval_seconds?: number;
         };
         JobHeartbeatDirectives: {
             /**
-             * @description When true the worker must stop processing and complete with status failed.
+             * @description When true, the run has received a cancellation request. The
+             *     worker must stop processing immediately and call complete with
+             *     `status: failed`.
              * @default false
              */
             should_cancel: boolean;
         };
         JobHeartbeat: {
+            /** @description True when the lease was successfully refreshed. */
             ok: boolean;
             directives: components["schemas"]["JobHeartbeatDirectives"];
         };
         JobFenceRequest: {
+            /** @description Must match the `worker_id` from the original claim. */
             worker_id: string;
+            /** @description Must match the `attempt` from the original claim. */
             attempt: number;
         };
         JobCompleteRequest: {
+            /** @description Must match the `worker_id` from the original claim. */
             worker_id: string;
+            /** @description Must match the `attempt` from the original claim. */
             attempt: number;
-            /** @enum {string} */
+            /**
+             * @description Terminal status for this job attempt. `failed` triggers the
+             *     workflow engine's retry logic if `attempt < max_attempts`.
+             * @enum {string}
+             */
             status: "completed" | "failed";
+            /**
+             * @description Base64-encoded (standard encoding) bytes representing the job's
+             *     output. The workflow engine decodes this and may pass it as input
+             *     to downstream steps. Omit if the step produces no output.
+             */
             result_b64?: string;
+            /**
+             * @description Short error class identifier (e.g. "TimeoutError"). Used for
+             *     observability and retry classification. Only relevant when
+             *     `status: failed`.
+             */
             error_type?: string;
+            /** @description Human-readable error detail. Only relevant for failed status. */
             error_message?: string;
         };
         RunActionRequest: {
+            /** @description Input parameters passed to the action handler. */
             parameters?: {
                 [key: string]: unknown;
             };
+            /** @description Override the default action execution timeout. */
             timeout_seconds?: number;
+            /**
+             * @description When true, invokes the action without side effects. Only
+             *     effective for actions that support dry-run mode.
+             */
             dry_run?: boolean;
         };
         RunActionResult: {
+            /** @description Free-form output returned by the action handler. */
             output: {
                 [key: string]: unknown;
             } | unknown[] | string | number | boolean;
         };
         /**
-         * @description Fenced batch of custom run events published by the worker
-         *     holding a job's lease. The fence is per-request: every event in
-         *     `events` is published under the same `worker_id` + `attempt`.
+         * @description Fenced batch of custom run events published by the worker holding
+         *     a job's lease. The fence is per-request: every event in `events`
+         *     is published under the same `worker_id` + `attempt` pair.
          */
         JobEventsRequest: {
+            /** @description Must match the `worker_id` from the original claim. */
             worker_id: string;
+            /** @description Must match the `attempt` from the original claim. */
             attempt: number;
+            /** @description The batch of events to publish. All events are validated atomically. */
             events: components["schemas"]["JobEventEntry"][];
         };
         JobEventEntry: {
             /**
              * @description Caller-chosen event type identifier. The `mobius.` prefix is
-             *     reserved for server-emitted well-known kinds.
+             *     reserved for server-emitted well-known kinds and is rejected
+             *     with 400.
              */
             type: string;
             /**
-             * @description Free-form JSON payload. Bounded by the server-side byte
-             *     limit (default 16 KiB); oversize events are rejected with
-             *     413.
+             * @description Free-form JSON payload. Bounded by the server-side byte limit
+             *     (default 16 KiB per event); oversize payloads are rejected
+             *     with 413.
              */
             payload: {
                 [key: string]: unknown;
             };
         };
         ActorRef: {
-            /** @enum {string} */
+            /**
+             * @description Actor type: `user` or `service_account`.
+             * @enum {string}
+             */
             type: "member" | "agent" | "group";
             /** @description User ID for member; queue name for agent; group ID/handle for group */
             id: string;
@@ -2517,8 +3185,11 @@ export interface components {
         InteractionSpecMode: "confirm" | "select" | "multi_select" | "input";
         /** @description Selectable option for `select` and `multi_select` modes. */
         InteractionOption: {
+            /** @description Machine-readable value submitted when this option is chosen. */
             value: string;
+            /** @description Human-readable label displayed for this option. */
             label: string;
+            /** @description Optional additional context shown beneath the label. */
             description?: string;
         };
         /**
@@ -2553,6 +3224,7 @@ export interface components {
         CreateJobInteractionRequest: {
             target_actor: components["schemas"]["ActorRef"];
             type: components["schemas"]["InteractionType"];
+            /** @description Message shown to the responder. */
             message: string;
             /**
              * @description Optional signal topic override. When omitted, the server derives
@@ -2561,6 +3233,7 @@ export interface components {
             topic?: string;
             /** @description Optional workflow step label for UI/debugging context */
             step_name?: string;
+            /** @description Additional key-value context surfaced in the UI alongside the message. */
             context?: {
                 [key: string]: unknown;
             };
@@ -2578,7 +3251,10 @@ export interface components {
              *     the caller is responsible for setting expires_at directly.
              */
             timeout?: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Timestamp after which this interaction expires.
+             */
             expires_at?: string;
         };
         /** @description Free-form JSON payload supplied by the responder. */
@@ -2587,6 +3263,7 @@ export interface components {
         } | unknown[] | string | number | boolean;
         InteractionResponse: {
             value: components["schemas"]["InteractionValue"];
+            /** @description Optional free-text comment from the responder. */
             comment?: string | null;
             /**
              * Format: date-time
@@ -2595,24 +3272,35 @@ export interface components {
             at: string;
         };
         InteractionPartialResponse: {
+            /** @description ID of the user who submitted this partial response. */
             user_id: string;
             value: components["schemas"]["InteractionValue"];
+            /** @description Optional free-text comment from this responder. */
             comment?: string | null;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Timestamp when this response was submitted.
+             */
             responded_at: string;
         };
         Interaction: {
+            /** @description Unique identifier for this interaction. */
             id: string;
+            /** @description ID of the organization this interaction belongs to. */
             org_id: string;
             /** @description Originating workflow run when the interaction is run-backed. */
             run_id?: string | null;
             /** @description Signal topic used to resume the originating run when run-backed. */
             topic?: string | null;
             type: components["schemas"]["InteractionType"];
-            /** @enum {string} */
+            /**
+             * @description Current status of the interaction.
+             * @enum {string}
+             */
             status: "pending" | "completed" | "expired";
             /** @description Human-readable message shown to the responder */
             message?: string | null;
+            /** @description Additional key-value context surfaced in the UI alongside the message. */
             context?: {
                 [key: string]: unknown;
             } | null;
@@ -2620,13 +3308,25 @@ export interface components {
             target_actor: components["schemas"]["ActorRef"];
             responder_actor?: components["schemas"]["ActorRef"];
             response?: components["schemas"]["InteractionResponse"];
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Timestamp when this interaction expires if not responded to.
+             */
             expires_at?: string | null;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Timestamp when the interaction received a terminal response.
+             */
             completed_at?: string | null;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Timestamp when this interaction was created.
+             */
             created_at: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Timestamp when this interaction was last updated.
+             */
             updated_at: string;
             /** @description Resolved group ID (set when target_actor.type = group) */
             target_group_id?: string | null;
@@ -2641,329 +3341,704 @@ export interface components {
             require_all?: boolean;
             /** @description User ID of the member who claimed this interaction (first_responder only) */
             claimed_by?: string | null;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Timestamp when a first-responder member claimed this interaction.
+             */
             claimed_at?: string | null;
             /** @description Per-member responses for all_members routing */
             partial_responses?: components["schemas"]["InteractionPartialResponse"][] | null;
         };
-        /** @enum {string} */
+        /**
+         * @description Determines the event source and required `source_config` shape.
+         * @enum {string}
+         */
         TriggerKind: "schedule" | "webhook" | "event";
-        /** @enum {string} */
+        /**
+         * @description Controls overlapping runs from the same trigger:
+         *     - `allow` — start new runs unconditionally.
+         *     - `forbid` — skip the new fire if a run from this trigger is still active.
+         *     - `replace` — cancel the active run before starting a new one.
+         * @enum {string}
+         */
         ConcurrencyPolicy: "allow" | "forbid" | "replace";
-        /** @enum {string} */
+        /**
+         * @description `skipped` means the fire was suppressed by the concurrency policy or a target condition evaluated to false.
+         * @enum {string}
+         */
         TriggerFireStatus: "success" | "failed" | "skipped";
+        /** @description A workflow to start when this trigger fires. */
         TriggerTarget: {
+            /** @description ID of the workflow definition to run. */
             workflow_id: string;
+            /**
+             * @description Expression evaluated against the event payload. The target is
+             *     skipped if this evaluates to false. Omit to always run.
+             */
             condition?: string;
+            /**
+             * @description Maps workflow input names to JSONPath expressions evaluated against
+             *     the event payload. Example: `{"user_id": "$.event.actor.id"}`.
+             */
             input_mapping?: {
                 [key: string]: string;
             };
         };
         Trigger: {
+            /** @description Unique identifier for this trigger. */
             id: string;
+            /** @description ID of the organization this trigger belongs to. */
             org_id: string;
+            /** @description Human-readable trigger name, unique within the project. */
             name: string;
             kind: components["schemas"]["TriggerKind"];
+            /**
+             * @description Kind-specific source configuration. For `schedule`: `{"cron": "0 * * * *"}`.
+             *     For `webhook` and `event`: contains event type filters.
+             */
             source_config?: {
                 [key: string]: unknown;
             };
+            /** @description Additional payload filters applied before targets are evaluated. */
             filter_config?: {
                 [key: string]: unknown;
             };
+            /** @description Workflows to start when this trigger fires. */
             targets?: components["schemas"]["TriggerTarget"][];
             concurrency_policy: components["schemas"]["ConcurrencyPolicy"];
+            /** @description When false, the trigger is paused and will not fire. */
             enabled: boolean;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Timestamp of the most recent fire attempt.
+             */
             last_fire_at?: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Computed next scheduled fire time (schedule triggers only).
+             */
             next_fire_at?: string;
+            /** @description URL-safe handle for the inbound receive endpoint (webhook triggers only). Unique within the project. */
+            webhook_handle?: string;
+            /** @description Full URL for posting inbound events (webhook triggers only). Computed from `webhook_handle`. */
+            readonly receive_url?: string;
+            /** @description User ID of the org member who created this trigger. */
             created_by?: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Timestamp when this trigger was created.
+             */
             created_at: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Timestamp when this trigger was last updated.
+             */
             updated_at: string;
         };
         TriggerListResponse: {
+            /** @description The list of results for this page. */
             items?: components["schemas"]["Trigger"][];
+            /** @description Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false. */
             next_cursor?: string;
+            /** @description Whether additional pages are available. */
             has_more: boolean;
         };
+        /** @description A single trigger fire event and its outcome. */
         TriggerFire: {
+            /** @description Unique identifier for this fire record. */
             id: string;
+            /** @description ID of the organization this trigger belongs to. */
             org_id: string;
+            /** @description ID of the project this trigger belongs to. */
+            project_id: string;
+            /** @description ID of the trigger that fired. */
             trigger_id: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description When the trigger was scheduled to fire (schedule triggers only).
+             */
             scheduled_at?: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description When the fire was actually processed.
+             */
             fired_at: string;
+            /** @description Workflow run created by this fire. Absent when status is `skipped` or `failed` before run creation. */
             run_id?: string;
             status: components["schemas"]["TriggerFireStatus"];
+            /** @description Error detail when status is `failed`. */
             error?: string;
+            /** @description Deduplication key used to prevent duplicate fires for the same scheduled slot. */
             dedup_key?: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Timestamp when this fire record was created.
+             */
             created_at: string;
         };
         TriggerFireListResponse: {
+            /** @description The list of results for this page. */
             items?: components["schemas"]["TriggerFire"][];
+            /** @description Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false. */
             next_cursor?: string;
+            /** @description Whether additional pages are available. */
             has_more: boolean;
         };
         CreateTriggerRequest: {
+            /** @description Human-readable trigger name, unique within the project. */
             name: string;
             kind: components["schemas"]["TriggerKind"];
+            /**
+             * @description Kind-specific configuration. Required for `schedule` triggers:
+             *     `{"cron": "0 9 * * 1-5"}`. For `event` triggers: event type and
+             *     filter expressions.
+             */
             source_config?: {
                 [key: string]: unknown;
             };
+            /** @description Additional payload filters evaluated before targets. */
             filter_config?: {
                 [key: string]: unknown;
             };
+            /** @description Workflows to start when this trigger fires. */
             targets?: components["schemas"]["TriggerTarget"][];
             concurrency_policy?: components["schemas"]["ConcurrencyPolicy"];
-            enabled?: boolean;
+            /**
+             * @description Whether the trigger starts enabled. Defaults to true.
+             * @default true
+             */
+            enabled: boolean;
+            /**
+             * @description URL-safe handle that determines the inbound receive URL. Required
+             *     for `webhook` triggers. Must be unique within the project.
+             */
+            webhook_handle?: string;
+            /**
+             * @description Optional HMAC-SHA256 secret for verifying inbound webhook payloads.
+             *     When set, Mobius validates the `X-Mobius-Signature` header on
+             *     incoming requests.
+             */
+            webhook_secret?: string;
         };
         UpdateTriggerRequest: {
+            /** @description Replacement human-readable name. */
             name?: string;
+            /** @description Replacement kind-specific source configuration. */
             source_config?: {
                 [key: string]: unknown;
             };
+            /** @description Replacement payload filter configuration. */
             filter_config?: {
                 [key: string]: unknown;
             };
+            /** @description Replaces the entire targets array. */
             targets?: components["schemas"]["TriggerTarget"][];
             concurrency_policy?: components["schemas"]["ConcurrencyPolicy"];
+            /** @description Set to false to pause the trigger without deleting it. */
             enabled?: boolean;
+            /** @description Changing this changes the `receive_url`; update any upstream integrations. */
+            webhook_handle?: string;
+            /** @description Replace or clear the inbound signature verification secret. */
+            webhook_secret?: string;
         };
         Worker: {
+            /** @description Caller-assigned stable identifier for this worker process. */
             worker_id: string;
+            /** @description Optional human-readable name supplied in the claim request. */
             name?: string;
+            /** @description Optional version string supplied in the claim request. */
             version?: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Timestamp of the worker's most recent job claim poll. Updated on
+             *     every `POST /jobs/claim` call regardless of whether a job was
+             *     returned. Used to compute `stale`.
+             */
             last_seen_at?: string;
+            /** @description Reserved for future capability-based job routing. Not currently used for filtering. */
             capabilities?: string[];
+            /**
+             * @description True when `last_seen_at` is older than 2 minutes or absent.
+             *     Computed at read time, not stored.
+             */
             stale: boolean;
         };
         WorkerListResponse: {
+            /** @description The list of recently seen workers. */
             items: components["schemas"]["Worker"][];
         };
         Project: {
+            /** @description Unique identifier for this project. */
             id: string;
+            /** @description Human-readable project name. */
             name: string;
+            /**
+             * @description URL-safe slug used as a path segment in all project-scoped API routes.
+             *     Unique within the org. Immutable after creation.
+             */
             handle: string;
+            /** @description Optional human-readable description. */
             description?: string;
+            /** @description User ID of the org member who created this project. */
             created_by?: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Timestamp when this project was created.
+             */
             created_at: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Timestamp when this project was last updated.
+             */
             updated_at: string;
         };
         ProjectListResponse: {
+            /** @description The list of results for this page. */
             items: components["schemas"]["Project"][];
         };
         CreateProjectRequest: {
+            /** @description Human-readable project name. */
             name: string;
+            /**
+             * @description URL-safe slug for API routes. Auto-derived from name if omitted.
+             *     Must be unique within the org. Cannot be changed after creation.
+             */
             handle?: string;
+            /** @description Optional human-readable description. */
             description?: string;
         };
         UpdateProjectRequest: {
+            /** @description Replacement human-readable name. */
             name?: string;
+            /** @description Replacement description. */
             description?: string;
         };
-        /** @enum {string} */
-        WebhookEventStatus: "pending" | "acknowledged" | "failed" | "expired";
-        /** @description A managed inbound webhook endpoint hosted by Mobius. */
+        /**
+         * @description `pending` — queued, not yet attempted.
+         *     `processing` — currently being delivered.
+         *     `delivered` — recipient returned 2xx.
+         *     `failed` — all retry attempts exhausted.
+         * @enum {string}
+         */
+        WebhookDeliveryStatus: "pending" | "processing" | "delivered" | "failed";
+        /**
+         * @description A project-level outgoing webhook subscription. When a subscribed
+         *     event fires, Mobius POSTs the event payload to `url`.
+         */
         Webhook: {
+            /** @description Unique identifier for this webhook. */
             id: string;
+            /** @description ID of the organization this webhook belongs to. */
             org_id: string;
+            /** @description ID of the project this webhook belongs to. */
+            project_id: string;
+            /** @description Human-readable name, unique within the project. */
             name: string;
-            /** @description Immutable URL-safe identifier used in the receive endpoint */
-            handle: string;
-            /** @description Full URL that external systems POST to when sending inbound webhook events to Mobius. */
-            receive_url: string;
+            /** @description The customer endpoint Mobius POSTs event payloads to. */
+            url: string;
+            /**
+             * @description Subscribed event types. Use dot notation (`run.completed`,
+             *     `run.failed`) or wildcards (`run.*` for all run events).
+             */
+            events: string[];
+            /** @description When false, matching events are not delivered. */
             enabled: boolean;
+            /** @description User ID of the org member who created this webhook. */
             created_by?: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Timestamp when this webhook was created.
+             */
             created_at: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Timestamp when this webhook was last updated.
+             */
             updated_at: string;
         };
         WebhookListResponse: {
+            /** @description The list of results for this page. */
             items?: components["schemas"]["Webhook"][];
+            /** @description Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false. */
             next_cursor?: string;
+            /** @description Whether additional pages are available. */
             has_more: boolean;
         };
-        /** @description One inbound HTTP request received by a managed webhook endpoint. */
-        WebhookEvent: {
+        /**
+         * @description One delivery record for a webhook event. The daemon claims pending
+         *     rows, POSTs the payload, and transitions to `delivered` or retries
+         *     on failure. A delivery reaches `failed` only after exhausting all
+         *     10 retry attempts.
+         */
+        WebhookDelivery: {
+            /** @description Unique identifier for this delivery record. */
             id: string;
-            org_id: string;
+            /** @description ID of the webhook this delivery belongs to. */
             webhook_id: string;
-            payload?: {
-                [key: string]: unknown;
-            };
-            status: components["schemas"]["WebhookEventStatus"];
-            /** Format: date-time */
-            received_at: string;
-            /** Format: date-time */
-            acknowledged_at?: string;
-            /** Format: date-time */
-            expires_at?: string;
+            /** @description ID of the organization this delivery belongs to. */
+            org_id: string;
+            /** @description Run that triggered the event, when applicable. */
+            run_id?: string;
+            /** @description The event type that triggered this delivery (e.g. `run.completed`). */
+            event_type: string;
+            status: components["schemas"]["WebhookDeliveryStatus"];
+            /** @description Number of delivery attempts made so far. Max 10. */
+            attempts: number;
+            /** @description Error message from the most recent failed attempt. */
+            last_error?: string;
+            /**
+             * Format: date-time
+             * @description Timestamp when this delivery was first attempted.
+             */
+            created_at: string;
+            /**
+             * Format: date-time
+             * @description Timestamp of the successful delivery. Absent until delivered.
+             */
+            delivered_at?: string;
         };
-        WebhookEventListResponse: {
-            items?: components["schemas"]["WebhookEvent"][];
+        WebhookDeliveryListResponse: {
+            /** @description The list of results for this page. */
+            items?: components["schemas"]["WebhookDelivery"][];
+            /** @description Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false. */
             next_cursor?: string;
+            /** @description Whether additional pages are available. */
             has_more: boolean;
         };
         CreateWebhookRequest: {
+            /** @description Human-readable name, unique within the project. */
             name: string;
-            /** @description URL-safe handle; auto-generated from name if omitted */
-            handle?: string;
-            /** @description Shared secret associated with the webhook. Stored as a hash and not returned after creation. */
+            /** @description The endpoint Mobius will POST event payloads to. */
+            url: string;
+            /**
+             * @description Optional shared secret. When set, Mobius signs each POST body
+             *     with HMAC-SHA256 and includes `X-Mobius-Signature: sha256=<hex>`
+             *     in the request headers.
+             */
             secret?: string;
-            enabled?: boolean;
+            /**
+             * @description Event types to subscribe to. Use wildcards for broad
+             *     subscriptions, e.g. `["run.*"]` for all run events.
+             */
+            events: string[];
+            /**
+             * @description Whether the webhook starts enabled. Defaults to true.
+             * @default true
+             */
+            enabled: boolean;
         };
         UpdateWebhookRequest: {
+            /** @description Replacement human-readable name. */
             name?: string;
-            /** @description Replace or clear the webhook's shared secret */
+            /** @description Replacement endpoint URL. */
+            url?: string;
+            /**
+             * @description Replace the current signing secret. Set to empty string to
+             *     disable signing. Omit to leave the current secret unchanged.
+             */
             secret?: string;
+            /** @description Replacement event subscriptions. Replaces the entire current list. */
+            events?: string[];
+            /** @description Set to false to disable delivery without deleting the webhook. */
             enabled?: boolean;
         };
-        /** @enum {string} */
+        /**
+         * @description `active` — integration is enabled and usable by workflows.
+         *     `inactive` — manually disabled; no automatic expiry behavior.
+         *     `expired` — token/credential has expired (e.g., OAuth token not refreshed).
+         * @enum {string}
+         */
         IntegrationStatus: "active" | "inactive" | "expired";
         Integration: {
+            /** @description Unique identifier for this integration. */
             id: string;
+            /** @description ID of the organization this integration belongs to. */
             org_id: string;
+            /** @description Human-readable name, unique per `(project, provider)` tuple. */
             name: string;
+            /**
+             * @description Free-form provider identifier (e.g. `openai`, `slack`, `github`).
+             *     Immutable after creation.
+             */
             provider: string;
+            /**
+             * @description Provider-specific credential and configuration blob stored as
+             *     JSON. The shape is provider-defined.
+             */
             config?: {
                 [key: string]: unknown;
             };
             status: components["schemas"]["IntegrationStatus"];
+            /** @description User ID of the org member who created this integration. */
             created_by?: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Timestamp when this integration was created.
+             */
             created_at: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Timestamp when this integration was last updated.
+             */
             updated_at: string;
         };
         IntegrationListResponse: {
+            /** @description The list of results for this page. */
             items?: components["schemas"]["Integration"][];
+            /** @description Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false. */
             next_cursor?: string;
+            /** @description Whether additional pages are available. */
             has_more: boolean;
         };
         CreateIntegrationRequest: {
+            /** @description Human-readable name. Must be unique per `(project, provider)` tuple. */
             name: string;
+            /** @description Provider identifier string (e.g. `openai`, `github`). Immutable after creation. */
             provider: string;
+            /** @description Sensitive credentials (API keys, tokens, secrets). Stored encrypted and never returned in API responses. */
+            credentials?: {
+                [key: string]: unknown;
+            };
+            /** @description Non-sensitive provider-specific settings (e.g. default bucket, from address). */
             config?: {
                 [key: string]: unknown;
             };
         };
         UpdateIntegrationRequest: {
+            /** @description Updated display name. */
             name?: string;
+            /** @description Replacement credentials blob (full replace). Stored encrypted and never returned in API responses. */
+            credentials?: {
+                [key: string]: unknown;
+            };
+            /** @description Replacement config blob (full replace, not merge). */
             config?: {
                 [key: string]: unknown;
             };
             status?: components["schemas"]["IntegrationStatus"];
         };
         CopyIntegrationRequest: {
-            /** @description ID of the project the integration is copied from. */
+            /** @description ID of the source project. Must be in the same org. */
             source_project_id: string;
-            /** @description ID of the integration to copy. */
+            /** @description ID of the integration to copy from the source project. */
             source_integration_id: string;
-            /** @description Optional new name for the copied integration. Defaults to the source name. */
+            /**
+             * @description Name for the copied integration in the destination project.
+             *     Defaults to the source integration's name. Required if the
+             *     source name conflicts with an existing `(provider, name)` in
+             *     this project.
+             */
             name?: string;
         };
         BillingSubscription: {
+            /** @description Unique identifier for this subscription. */
             id: string;
+            /** @description ID of the organization this subscription belongs to. */
             org_id: string;
+            /**
+             * @description Active plan: `trial`, `free`, `pro`, or `business`. New orgs
+             *     start on `trial`; the plan downgrades to `free` when the trial
+             *     expires.
+             */
             plan_type: string;
+            /**
+             * @description Stripe subscription status: `active`, `trialing`, `past_due`,
+             *     `canceled`, `unpaid`, or `incomplete`.
+             */
             status: string;
+            /** @description Number of licensed seats included in the subscription. */
             seat_count: number;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Start of the current billing period.
+             */
             current_period_start: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description End of the current billing period. Usage resets at this timestamp.
+             */
             current_period_end: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description When the trial period expires. Only set for `trial` plan.
+             */
             trial_ends_at?: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description When the post-expiry grace period ends. During grace, the org
+             *     retains access but is prompted to upgrade.
+             */
             grace_ends_at?: string;
+            /** @description Days remaining in the trial. 0 when the trial has ended. */
             trial_days_remaining: number;
+            /** @description True when fewer than 7 days remain in the trial period. */
             trial_warning: boolean;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Maximum usage credits allowed per billing period. Workflow
+             *     execution is blocked when this cap is reached.
+             */
             monthly_credit_cap: number;
+            /**
+             * @description Maximum number of job steps allowed per individual workflow run.
+             *     Default: 10,000 (pro/trial), 50,000 (business).
+             */
             per_run_step_cap: number;
+            /**
+             * @description Percentage levels (1–100) of `monthly_credit_cap` at which usage
+             *     alert notifications are sent. Up to `max_alert_thresholds` from
+             *     the plan.
+             */
             alert_thresholds_percent: number[];
+            /** @description When true, the subscription will not renew at `current_period_end`. */
             cancel_at_period_end: boolean;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Timestamp when this subscription was created.
+             */
             created_at: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Timestamp when this subscription was last updated.
+             */
             updated_at: string;
         };
         BillingPlan: {
+            /** @description Plan name — `trial`, `pro`, or `business`. */
             plan_type: string;
+            /** @description Monthly price in cents (USD). */
             price_cents: number;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Usage credits included in the base price.
+             */
             included_credits: number;
+            /** @description Maximum org members on this plan. 0 means unlimited. */
             seat_limit: number;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Default `monthly_credit_cap` applied to new subscriptions on this plan.
+             */
             default_monthly_credit_cap: number;
+            /** @description Default `per_run_step_cap` applied to new subscriptions on this plan. */
             default_per_run_step_cap: number;
+            /** @description Maximum number of alert thresholds configurable on this plan. */
             max_alert_thresholds: number;
+            /** @description Trial period length in days. 0 for plans without a trial. */
             trial_days: number;
+            /** @description When true, a payment method is required to start this plan. */
             credit_card_required: boolean;
         };
         BillingPlanListResponse: {
+            /** @description The list of available plans. */
             items: components["schemas"]["BillingPlan"][];
         };
         BillingUsageKeySummary: {
+            /** @description The API key responsible for this usage. */
             api_key_id: string;
+            /** @description Number of usage records attributed to this key in the current period. */
             count: number;
         };
         BillingUsageSummary: {
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Start of the current billing period.
+             */
             current_period_start: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description End of the current billing period.
+             */
             current_period_end: string;
+            /** @description Total usage credits consumed in the current billing period. */
             current_usage: number;
+            /** @description Included credits from the plan before overage applies. */
             included_limit: number;
+            /** @description Number of usage records that exceed the included limit. */
             overage_calls: number;
+            /** @description Estimated overage cost in cents for the current period. */
             overage_cost: number;
+            /** @description Usage breakdown by resource category (e.g. `run`, `job`). */
             by_category: {
                 [key: string]: number;
             };
+            /** @description Per-API-key usage breakdown for cost attribution. */
             by_api_key: components["schemas"]["BillingUsageKeySummary"][];
         };
         Invoice: {
+            /** @description Stripe invoice ID. */
             id: string;
+            /** @description Stripe invoice status (`draft`, `open`, `paid`, `void`, `uncollectible`). */
             status: string;
+            /** @description ISO 4217 currency code (e.g. `usd`). */
             currency: string;
+            /** @description Total amount due in the smallest currency unit (e.g. cents). */
             amount_due: number;
+            /** @description Amount already paid against this invoice. */
             amount_paid: number;
-            /** Format: uri */
+            /**
+             * Format: uri
+             * @description Stripe-hosted invoice page URL for the customer.
+             */
             hosted_invoice_url?: string;
-            /** Format: uri */
+            /**
+             * Format: uri
+             * @description Direct link to the invoice PDF.
+             */
             invoice_pdf?: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Timestamp when this invoice was created by Stripe.
+             */
             created_at: string;
         };
         InvoiceListResponse: {
+            /** @description The list of recent invoices, newest first. */
             items: components["schemas"]["Invoice"][];
         };
         CreateCheckoutRequest: {
-            /** Format: uri */
+            /**
+             * Format: uri
+             * @description URL Stripe redirects to after a successful checkout.
+             */
             success_url: string;
-            /** Format: uri */
+            /**
+             * Format: uri
+             * @description URL Stripe redirects to when the user cancels checkout.
+             */
             cancel_url: string;
         };
         CreatePortalRequest: {
-            /** Format: uri */
+            /**
+             * Format: uri
+             * @description URL Stripe redirects to after the user exits the customer portal.
+             */
             return_url: string;
         };
         BillingURLResult: {
-            /** Format: uri */
+            /**
+             * Format: uri
+             * @description Stripe-hosted URL to redirect the user's browser to.
+             */
             url: string;
         };
         UpdateBillingLimitsRequest: {
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description New monthly credit ceiling. When reached, workflow execution is
+             *     blocked until the next billing period.
+             */
             monthly_credit_cap?: number;
+            /**
+             * @description Maximum job steps per workflow run. Prevents runaway runs from
+             *     consuming unbounded credits.
+             */
             per_run_step_cap?: number;
+            /**
+             * @description Replacement list of alert threshold percentages (1–100). Replaces
+             *     the full existing list. Must not exceed the plan's
+             *     `max_alert_thresholds`.
+             */
             alert_thresholds_percent?: number[];
         };
         OnboardingStatus: {
@@ -2981,180 +4056,331 @@ export interface components {
             org_name: string;
         };
         ProjectMetrics: {
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Timestamp when this metrics snapshot was computed.
+             */
             generated_at: string;
+            /** @description Rolling window width used for rate and failure metrics. Default is 60 minutes. */
             window_minutes: number;
-            /** Format: double */
+            /**
+             * Format: double
+             * @description Average number of new workflow runs started per minute within the window.
+             */
             runs_per_minute: number;
+            /** @description Total number of workflow runs started within the window. */
             total_runs_window: number;
-            /** Format: double */
+            /**
+             * Format: double
+             * @description Fraction of completed runs that ended in `failed` status within
+             *     the window. Range 0.0–1.0.
+             */
             failure_rate: number;
-            /** Format: double */
+            /**
+             * Format: double
+             * @description Mean wall-clock duration of completed runs within the window,
+             *     in seconds.
+             */
             avg_run_seconds: number;
-            /** Format: double */
+            /**
+             * Format: double
+             * @description 95th-percentile job duration (claim time to terminal state)
+             *     computed across the 40 most recent completed jobs, in seconds.
+             *     Use this to detect slow or stuck steps.
+             */
             p95_step_seconds: number;
+            /** @description Number of jobs currently in `pending` state waiting to be claimed. */
             queue_depth: number;
+            /** @description Number of workflow runs currently in `running` or `suspended` state. */
             running_count: number;
+            /** @description Number of workers whose `last_seen_at` is within the 2-minute staleness threshold. */
             active_workers: number;
+            /** @description Number of workers whose `last_seen_at` has exceeded the 2-minute staleness threshold. */
             stale_workers: number;
+            /**
+             * @description Map of workflow run status → count across all runs in the project
+             *     (not windowed). Includes all terminal and in-progress statuses.
+             */
             status_breakdown: {
                 [key: string]: number;
             };
         };
         PreviewPermissionsRequest: {
-            /** @description Role name to assign by default to service accounts without existing assignments. */
+            /**
+             * @description Role name assigned as a fallback to service accounts that have no
+             *     explicit assignment at the time of preview.
+             */
             service_account_default_role?: string;
         };
         EnablePermissionsRequest: {
-            /** @description Fallback role name for service accounts when assignments are omitted. */
+            /**
+             * @description Fallback role name for service accounts with no existing assignment.
+             *     Applied only to service accounts not covered by the `assignments` list.
+             */
             service_account_default_role?: string;
+            /** @description Explicit role assignments to create as part of the enable operation. */
             assignments?: components["schemas"]["PermissionsAssignmentInput"][];
         };
         PermissionsAssignmentInput: {
-            /** @enum {string} */
+            /**
+             * @description Actor type: `user` or `service_account`.
+             * @enum {string}
+             */
             actor_type: "user" | "service_account";
+            /** @description ID of the user or service account. */
             actor_id: string;
+            /** @description Mutually exclusive with `role_name`. */
             role_id?: string;
+            /** @description Resolved to a role ID server-side. Mutually exclusive with `role_id`. */
             role_name?: string;
+            /** @description Scope this assignment to a project. Omit for org-wide. */
             project_id?: string;
         };
         PermissionsAssignmentProposal: {
-            /** @enum {string} */
+            /**
+             * @description Actor type: `user` or `service_account`.
+             * @enum {string}
+             */
             actor_type: "user" | "service_account";
+            /** @description ID of the user or service account. */
             actor_id: string;
+            /** @description ID of the role that would be assigned. */
             role_id: string;
+            /** @description Name of the role that would be assigned. */
             role_name: string;
+            /** @description Project scope for the assignment. Null for org-wide assignments. */
             project_id?: string;
         };
+        /** @description Current or proposed permissions state, including the full set of role assignments. */
         PermissionsPlan: {
+            /** @description Whether enforcement is currently (or will be after enable) active. */
             permissions_enabled: boolean;
+            /** @description The set of role assignments that will be created on enable. */
             assignments: components["schemas"]["PermissionsAssignmentProposal"][];
         };
         PermissionsState: {
+            /** @description Whether enforcement is currently active for the org. */
             permissions_enabled: boolean;
         };
         Role: {
+            /** @description Unique identifier for this role. */
             id: string;
+            /** @description Owning org. Empty for system-defined roles. */
             org_id?: string;
+            /** @description Scoping project. Empty for org-wide roles. */
             project_id?: string;
+            /** @description Human-readable role name, unique within org+project scope. */
             name: string;
+            /** @description Optional human-readable description of what this role grants. */
             description: string;
+            /** @description Permission strings granted by this role (e.g. "mobius.job.claim"). */
             permissions: string[];
+            /** @description True for built-in platform roles that cannot be modified or deleted. */
             system_defined: boolean;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Timestamp when this role was created.
+             */
             created_at: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Timestamp when this role was last updated.
+             */
             updated_at: string;
         };
         RoleAssignment: {
+            /** @description Unique identifier for this role assignment. */
             id: string;
+            /** @description ID of the organization this assignment belongs to. */
             org_id: string;
-            /** @enum {string} */
+            /**
+             * @description Type of actor this assignment applies to: `user` or `service_account`.
+             * @enum {string}
+             */
             actor_type: "user" | "service_account";
+            /** @description User ID or service account ID receiving the role. */
             actor_id: string;
+            /** @description ID of the assigned role. */
             role_id: string;
+            /** @description Name of the assigned role. */
             role_name: string;
+            /** @description Set for project-scoped assignments; empty for org-wide. */
             project_id?: string;
+            /** @description Actor type of the caller who created this assignment. */
             granted_by_actor_type?: string;
+            /** @description Actor ID of the caller who created this assignment. */
             granted_by_actor_id?: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Timestamp when this assignment was created.
+             */
             created_at: string;
         };
         RoleListResponse: {
+            /** @description The list of results for this page. */
             items: components["schemas"]["Role"][];
         };
         RoleAssignmentListResponse: {
+            /** @description The list of results for this page. */
             items: components["schemas"]["RoleAssignment"][];
         };
         CreateRoleRequest: {
+            /** @description Scope the role to a project. Omit for an org-wide role. */
             project_id?: string;
+            /** @description Unique name within the org+project scope. */
             name: string;
+            /** @description Optional human-readable description of what this role grants. */
             description?: string;
+            /** @description Permission strings to include (e.g. "mobius.workflow.create"). */
             permissions: string[];
         };
         UpdateRoleRequest: {
+            /** @description Scope to change this role to. Cannot change an org-scoped role to project-scoped after creation. */
             project_id?: string;
+            /** @description Replacement role name. */
             name?: string;
+            /** @description Replacement description. */
             description?: string;
+            /** @description Replaces the existing permissions array entirely. */
             permissions?: string[];
         };
         CreateRoleAssignmentRequest: {
-            /** @enum {string} */
+            /**
+             * @description Type of actor to assign the role to: `user` or `service_account`.
+             * @enum {string}
+             */
             actor_type: "user" | "service_account";
+            /** @description User ID or service account ID to assign the role to. */
             actor_id: string;
+            /** @description Mutually exclusive with `role_name`. */
             role_id?: string;
+            /** @description Resolved to a role ID server-side. Mutually exclusive with `role_id`. */
             role_name?: string;
+            /** @description Scope this assignment to a project. Omit for org-wide assignment. */
             project_id?: string;
         };
         User: {
+            /** @description Clerk user ID. Stable and globally unique across all orgs. */
             id: string;
+            /** @description Primary email address from Clerk. */
             email: string;
+            /** @description User's first name from their Clerk profile. */
             first_name?: string;
+            /** @description User's last name from their Clerk profile. */
             last_name?: string;
+            /** @description Profile avatar URL from Clerk (may be a Gravatar or uploaded image). */
             avatar_url?: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description When the user record was first mirrored into Mobius.
+             */
             created_at: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Timestamp when this user record was last synced from Clerk.
+             */
             updated_at: string;
         };
         Org: {
+            /** @description Unique identifier for this organization. */
             id: string;
+            /** @description Human-readable org name. */
             name: string;
+            /** @description URL-safe slug used in API routes and display. Unique across all orgs. */
             handle: string;
+            /** @description Arbitrary key-value metadata stored alongside the org. */
             metadata?: {
                 [key: string]: unknown;
             };
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Timestamp when this organization was created.
+             */
             created_at: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Timestamp when this organization was last updated.
+             */
             updated_at: string;
         };
         OrgListResponse: {
+            /** @description The list of results for this page. */
             items: components["schemas"]["Org"][];
+            /** @description Whether additional pages are available. */
             has_more?: boolean;
+            /** @description Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false. */
             next_cursor?: string;
         };
         CreateOrgRequest: {
+            /** @description Human-readable organization name. */
             name: string;
+            /** @description URL-safe slug. Must be globally unique across all orgs. */
             handle: string;
+            /** @description Arbitrary metadata to attach to the organization. */
             metadata?: {
                 [key: string]: unknown;
             };
         };
         UpdateOrgRequest: {
+            /** @description Must be non-empty if provided. */
             name?: string;
+            /** @description Must be non-empty if provided. Changing the handle affects all API route URLs for this org. */
             handle?: string;
+            /** @description Replacement metadata. */
             metadata?: {
                 [key: string]: unknown;
             };
         };
         OrgMember: {
+            /** @description Unique identifier for this membership record. */
             id: string;
+            /** @description ID of the organization. */
             org_id: string;
+            /** @description ID of the user who is a member. */
             user_id: string;
-            /** @enum {string} */
+            /**
+             * @description `owner` has full control including org deletion; `admin` can manage members and settings; `member` has read-only org access.
+             * @enum {string}
+             */
             role: "owner" | "admin" | "member";
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Timestamp when this member joined.
+             */
             created_at: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Timestamp when this membership was last updated.
+             */
             updated_at: string;
             user?: components["schemas"]["User"];
         };
         OrgMemberListResponse: {
+            /** @description The list of results for this page. */
             items: components["schemas"]["OrgMember"][];
+            /** @description Whether additional pages are available. */
             has_more?: boolean;
+            /** @description Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false. */
             next_cursor?: string;
         };
         AddOrgMemberRequest: {
+            /** @description Clerk user ID of the user to add. */
             user_id: string;
-            /** @enum {string} */
+            /**
+             * @description Role to assign the new member: `owner`, `admin`, or `member`.
+             * @enum {string}
+             */
             role: "owner" | "admin" | "member";
         };
         UpdateOrgMemberRoleRequest: {
-            /** @enum {string} */
+            /**
+             * @description New role to assign: `owner`, `admin`, or `member`.
+             * @enum {string}
+             */
             role: "owner" | "admin" | "member";
         };
         InteractionListResponse: {
+            /** @description The list of results for this page. */
             items: components["schemas"]["Interaction"][];
         };
         /**
@@ -3165,12 +4391,15 @@ export interface components {
          *     so the server can derive the owning run from the claimed job context.
          */
         CreateInteractionRequest: {
+            /** @description ID of the workflow run to resume when this interaction is completed. */
             run_id?: string | null;
             /** @description Signal topic the interaction will complete against when run-backed. */
             topic?: string | null;
             target_actor: components["schemas"]["ActorRef"];
             type: components["schemas"]["InteractionType"];
+            /** @description Message shown to the responder describing what response is needed. */
             message: string;
+            /** @description Additional key-value context surfaced in the UI alongside the message. */
             context?: {
                 [key: string]: unknown;
             };
@@ -3182,11 +4411,15 @@ export interface components {
              * @default false
              */
             require_all: boolean;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Timestamp after which this interaction expires if not responded to.
+             */
             expires_at?: string;
         };
         RespondToInteractionRequest: {
             value?: components["schemas"]["InteractionValue"];
+            /** @description Optional free-text comment accompanying the response. */
             comment?: string;
         };
         SlackInstall: {
@@ -3194,192 +4427,319 @@ export interface components {
             authorize_url: string;
         };
         Group: {
+            /** @description Unique identifier for this group. */
             id: string;
+            /** @description ID of the organization this group belongs to. */
             org_id: string;
-            /** @description URL-safe identifier, unique within the project */
+            /** @description URL-safe identifier, unique within the project. Immutable after creation. */
             handle: string;
-            /** @description Human-readable display name */
+            /** @description Human-readable display name. */
             name: string;
+            /** @description Optional human-readable description. */
             description?: string;
             /**
-             * @description How interactions are dispatched to members
+             * @description How interactions targeting this group collect responses.
+             *     `first_responder`: first member to claim or respond wins.
+             *     `all_members`: every snapshotted member must respond.
              * @enum {string}
              */
             routing_policy: "first_responder" | "all_members";
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Timestamp when this group was created.
+             */
             created_at: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Timestamp when this group was last updated.
+             */
             updated_at: string;
         };
         GroupListResponse: {
+            /** @description The list of results for this page. */
             items: components["schemas"]["Group"][];
         };
         GroupWithCount: components["schemas"]["Group"] & {
-            /** @description Current number of members */
+            /** @description Current live member count. May differ from interaction membership snapshots. */
             member_count: number;
         };
         GroupWithCountListResponse: {
+            /** @description The list of results for this page. */
             items: components["schemas"]["GroupWithCount"][];
+            /** @description Whether additional pages are available. */
             has_more?: boolean;
+            /** @description Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false. */
             next_cursor?: string;
         };
         GroupMember: {
+            /** @description Unique identifier for this membership record. */
             id: string;
+            /** @description ID of the group this membership belongs to. */
             group_id: string;
+            /** @description ID of the organization this group belongs to. */
             org_id: string;
+            /** @description ID of the user who is a member. */
             user_id: string;
+            /** @description User ID of the org member who added this person to the group. */
             added_by?: string | null;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Timestamp when this member was added to the group.
+             */
             added_at: string;
         };
         GroupMemberListResponse: {
+            /** @description The list of results for this page. */
             items: components["schemas"]["GroupMember"][];
+            /** @description Whether additional pages are available. */
             has_more?: boolean;
+            /** @description Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false. */
             next_cursor?: string;
         };
         CreateGroupRequest: {
-            /** @description URL-safe handle. Auto-derived from name if omitted. */
+            /** @description URL-safe handle, unique within the project. Auto-derived from name if omitted. */
             handle?: string;
-            /** @description Display name (1-64 chars) */
+            /** @description Display name (1–64 chars). */
             name: string;
+            /** @description Optional human-readable description. */
             description?: string;
             /**
+             * @description How responses are collected from group members. Defaults to `first_responder`.
              * @default first_responder
              * @enum {string}
              */
             routing_policy: "first_responder" | "all_members";
         };
         UpdateGroupRequest: {
+            /** @description Replacement human-readable name. */
             name?: string;
+            /** @description Replacement description. */
             description?: string;
-            /** @enum {string} */
+            /**
+             * @description Affects future interactions only; in-flight interactions retain the snapshotted policy.
+             * @enum {string}
+             */
             routing_policy?: "first_responder" | "all_members";
         };
         AddGroupMemberRequest: {
-            /** @description Org member user ID to add */
+            /** @description Org member user ID to add. Must be a current org member. */
             user_id: string;
         };
-        /** @enum {string} */
+        /**
+         * @description Administrative status. Inactive agents cannot claim new jobs.
+         * @enum {string}
+         */
         AgentStatus: "active" | "inactive";
-        /** @enum {string} */
+        /**
+         * @description Computed from the most recent 20 sessions. `online` means a connected
+         *     session with a fresh heartbeat; `stale` means heartbeats are overdue;
+         *     `offline` means no connected sessions.
+         * @enum {string}
+         */
         AgentPresence: "online" | "offline" | "stale";
         /** @enum {string} */
         AgentSessionStatus: "connected" | "disconnected" | "stale";
         Agent: {
+            /** @description Unique identifier for this agent. */
             id: string;
+            /** @description ID of the organization this agent belongs to. */
             org_id: string;
+            /** @description The service account whose credentials this agent uses to authenticate. Immutable after creation. */
             service_account_id: string;
+            /** @description Unique name within the project, used for targeting in job claims. */
             name: string;
+            /** @description Human-readable label shown in the UI. */
             display_name: string;
+            /** @description Optional human-readable description. */
             description?: string;
+            /** @description Freeform agent classification for tooling and filtering (e.g. "llm", "rpa"). */
             kind?: string;
+            /** @description Arbitrary capability map used by orchestrators to select suitable agents. */
             capabilities?: {
                 [key: string]: unknown;
             };
+            /** @description Agent-specific configuration blob stored and returned opaquely. */
             config?: {
                 [key: string]: unknown;
             };
             status: components["schemas"]["AgentStatus"];
             presence: components["schemas"]["AgentPresence"];
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Timestamp when this agent was created.
+             */
             created_at: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Timestamp when this agent was last updated.
+             */
             updated_at: string;
         };
         AgentSession: {
+            /** @description Unique identifier for this session. */
             id: string;
+            /** @description ID of the organization this session belongs to. */
             org_id: string;
+            /** @description ID of the agent this session belongs to. */
             agent_id: string;
             status: components["schemas"]["AgentSessionStatus"];
+            /** @description Connection mechanism identifier (e.g. "sse", "polling"). */
             transport: string;
+            /** @description Caller-supplied metadata (e.g. hostname, version, region). */
             metadata?: {
                 [key: string]: unknown;
             };
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Timestamp when this session was established.
+             */
             connected_at?: string | null;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Timestamp of the most recent heartbeat.
+             */
             last_seen_at?: string | null;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Timestamp when this session was closed. Null while connected.
+             */
             disconnected_at?: string | null;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Timestamp when this session record was created.
+             */
             created_at: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Timestamp when this session was last updated.
+             */
             updated_at: string;
         };
         AgentListResponse: {
+            /** @description The list of results for this page. */
             items: components["schemas"]["Agent"][];
         };
         AgentSessionListResponse: {
+            /** @description The list of results for this page. */
             items: components["schemas"]["AgentSession"][];
         };
         CreateAgentRequest: {
+            /** @description Service account that backs this agent. Must belong to the same org. */
             service_account_id: string;
+            /** @description Project-scoped unique identifier for this agent. */
             name: string;
+            /** @description Human-readable label shown in the UI. */
             display_name?: string;
+            /** @description Optional human-readable description. */
             description?: string;
+            /** @description Freeform classification (e.g. "llm", "rpa", "integration"). */
             kind?: string;
+            /** @description Arbitrary capability map used by orchestrators to select suitable agents. */
             capabilities?: {
                 [key: string]: unknown;
             };
+            /** @description Agent-specific configuration stored and returned opaquely. */
             config?: {
                 [key: string]: unknown;
             };
         };
         UpdateAgentRequest: {
+            /** @description Replacement human-readable label. */
             display_name?: string;
+            /** @description Replacement description. */
             description?: string;
+            /** @description Replacement freeform agent classification (e.g. `llm`, `rpa`). */
             kind?: string;
+            /** @description Replacement capability map. */
             capabilities?: {
                 [key: string]: unknown;
             };
+            /** @description Replacement configuration blob. */
             config?: {
                 [key: string]: unknown;
             };
             status?: components["schemas"]["AgentStatus"];
         };
         CreateAgentSessionRequest: {
+            /** @description Connection mechanism identifier (e.g. "sse", "polling"). */
             transport: string;
+            /** @description Optional metadata such as hostname, SDK version, or region. */
             metadata?: {
                 [key: string]: unknown;
             };
         };
-        /** @enum {string} */
+        /**
+         * @description `disabled` blocks authentication and job claims but preserves the record and its assignments.
+         * @enum {string}
+         */
         ServiceAccountStatus: "active" | "disabled";
         ServiceAccount: {
+            /** @description Unique identifier for this service account. */
             id: string;
+            /** @description ID of the organization this service account belongs to. */
             org_id: string;
+            /** @description Stable machine-readable identifier, unique within the project. Immutable after creation. */
             name: string;
+            /** @description Human-readable label shown in the UI. */
             display_name: string;
+            /** @description Optional human-readable description. */
             description?: string;
             status: components["schemas"]["ServiceAccountStatus"];
+            /** @description Optional org member responsible for this service account. */
             owner_user_id?: string;
+            /** @description Arbitrary key-value metadata. Subject to size and nesting depth limits. */
             metadata?: {
                 [key: string]: unknown;
             };
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Timestamp when this service account was created.
+             */
             created_at: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Timestamp when this service account was last updated.
+             */
             updated_at: string;
         };
         ServiceAccountListResponse: {
+            /** @description The list of results for this page. */
             items: components["schemas"]["ServiceAccount"][];
         };
         CreateServiceAccountRequest: {
+            /** @description Stable machine-readable identifier, unique within the project. */
             name: string;
+            /** @description Human-readable label shown in the UI. */
             display_name?: string;
+            /** @description Optional human-readable description. */
             description?: string;
+            /** @description Org member responsible for this service account. */
             owner_user_id?: string;
+            /** @description Arbitrary metadata to attach to the service account. */
             metadata?: {
                 [key: string]: unknown;
             };
+            /**
+             * @description Role to assign at creation time. Mutually exclusive with `role_name`.
+             *     Requires `permission.manage`. The role must belong to this project
+             *     or be org-scoped (project_id empty).
+             */
             role_id?: string;
+            /**
+             * @description Role name to assign at creation time (resolved to a role ID server-side).
+             *     Mutually exclusive with `role_id`. Requires `permission.manage`.
+             */
             role_name?: string;
         };
         UpdateServiceAccountRequest: {
+            /** @description Replacement human-readable label. */
             display_name?: string;
+            /** @description Replacement description. */
             description?: string;
             status?: components["schemas"]["ServiceAccountStatus"];
+            /** @description ID of the org member responsible for this service account. */
             owner_user_id?: string;
+            /** @description Replacement metadata. */
             metadata?: {
                 [key: string]: unknown;
             };
@@ -3395,6 +4755,7 @@ export interface components {
             };
         };
         ToolDefinitionListResponse: {
+            /** @description The list of published workflow tools. */
             items: components["schemas"]["ToolDefinition"][];
         };
         ToolRunRequest: {
@@ -3471,6 +4832,15 @@ export interface components {
                 "application/json": components["schemas"]["ErrorResponse"];
             };
         };
+        /** @description Forbidden */
+        Forbidden: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorResponse"];
+            };
+        };
         /** @description No Content */
         NoContent: {
             headers: {
@@ -3482,12 +4852,14 @@ export interface components {
     parameters: {
         /** @description Project handle (unique per organization) */
         ProjectHandleParam: string;
+        /** @description Resource ID. */
         IDParam: string;
         ActionNameParam: string;
         /** @description Cursor for pagination (opaque string from previous response) */
         CursorParam: string;
         /** @description Maximum number of items to return */
         LimitParam: number;
+        /** @description Group ID or handle. */
         GroupIDParam: string;
     };
     requestBodies: never;
@@ -3499,9 +4871,9 @@ export interface operations {
     listChannels: {
         parameters: {
             query?: {
-                /** @description Filter by channel kind */
+                /** @description Filter by channel kind. */
                 kind?: "dm" | "channel";
-                /** @description Filter by private flag */
+                /** @description Filter by private flag. */
                 private?: boolean;
                 /** @description Cursor for pagination (opaque string from previous response) */
                 cursor?: components["parameters"]["CursorParam"];
@@ -3565,6 +4937,7 @@ export interface operations {
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -3591,6 +4964,7 @@ export interface operations {
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -3615,6 +4989,7 @@ export interface operations {
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -3651,6 +5026,7 @@ export interface operations {
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -3677,6 +5053,7 @@ export interface operations {
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -3708,7 +5085,9 @@ export interface operations {
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
                 id: components["parameters"]["IDParam"];
+                /** @description User or agent ID of the member to remove. */
                 userId: string;
             };
             cookie?: never;
@@ -3729,11 +5108,11 @@ export interface operations {
     listChannelMessages: {
         parameters: {
             query?: {
-                /** @description Filter by sender */
+                /** @description Filter by sender user or agent ID. */
                 sender_id?: string;
-                /** @description Filter to replies of a specific message */
+                /** @description Return only replies to this message ID (thread view). */
                 reply_to?: string;
-                /** @description Filter by pinned status */
+                /** @description Filter by pinned status. */
                 pinned?: boolean;
                 /** @description Cursor for pagination (opaque string from previous response) */
                 cursor?: components["parameters"]["CursorParam"];
@@ -3744,6 +5123,7 @@ export interface operations {
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -3770,6 +5150,7 @@ export interface operations {
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -3801,7 +5182,9 @@ export interface operations {
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
                 id: components["parameters"]["IDParam"];
+                /** @description ID of the channel message. */
                 messageId: string;
             };
             cookie?: never;
@@ -3828,7 +5211,9 @@ export interface operations {
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
                 id: components["parameters"]["IDParam"];
+                /** @description ID of the channel message. */
                 messageId: string;
             };
             cookie?: never;
@@ -3949,6 +5334,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description Resource ID. */
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -3973,6 +5359,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description Resource ID. */
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -4050,6 +5437,7 @@ export interface operations {
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -4076,6 +5464,7 @@ export interface operations {
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -4096,7 +5485,9 @@ export interface operations {
     listWorkflows: {
         parameters: {
             query?: {
+                /** @description Opaque pagination cursor returned from the previous response. */
                 cursor?: string;
+                /** @description Maximum number of results to return per page. */
                 limit?: number;
             };
             header?: never;
@@ -4159,6 +5550,7 @@ export interface operations {
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -4185,6 +5577,7 @@ export interface operations {
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -4209,6 +5602,7 @@ export interface operations {
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -4243,6 +5637,7 @@ export interface operations {
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -4269,6 +5664,7 @@ export interface operations {
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -4294,6 +5690,7 @@ export interface operations {
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -4321,13 +5718,18 @@ export interface operations {
     listRuns: {
         parameters: {
             query?: {
+                /** @description Filter by run status. */
                 status?: components["schemas"]["WorkflowRunStatus"];
+                /** @description Filter by workflow type name. */
                 workflow_type?: string;
+                /** @description Filter by queue name. */
                 queue?: string;
+                /** @description Filter to child runs of the specified parent run. */
                 parent_run_id?: string;
+                /** @description Filter by the initiator label (e.g. trigger name, API key name). */
                 initiated_by?: string;
+                /** @description Filter by caller-supplied external ID or correlation key. */
                 external_id?: string;
-                group?: string;
                 /** @description Cursor for pagination (opaque string from previous response) */
                 cursor?: components["parameters"]["CursorParam"];
                 /** @description Maximum number of items to return */
@@ -4449,6 +5851,7 @@ export interface operations {
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -4475,6 +5878,7 @@ export interface operations {
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -4501,6 +5905,7 @@ export interface operations {
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -4554,6 +5959,7 @@ export interface operations {
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -4578,6 +5984,7 @@ export interface operations {
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -4602,6 +6009,7 @@ export interface operations {
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -4636,6 +6044,7 @@ export interface operations {
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -4823,8 +6232,11 @@ export interface operations {
                 cursor?: components["parameters"]["CursorParam"];
                 /** @description Maximum number of items to return */
                 limit?: components["parameters"]["LimitParam"];
+                /** @description Filter to invocations from a specific workflow run. */
                 run_id?: string;
+                /** @description Filter to invocations of a specific action. */
                 action_name?: string;
+                /** @description Filter by terminal status (e.g. "success", "failed"). */
                 status?: string;
             };
             header?: never;
@@ -4943,6 +6355,7 @@ export interface operations {
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -4974,6 +6387,7 @@ export interface operations {
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -5004,6 +6418,7 @@ export interface operations {
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -5052,6 +6467,7 @@ export interface operations {
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -5084,6 +6500,7 @@ export interface operations {
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
                 id: components["parameters"]["IDParam"];
                 actionName: components["parameters"]["ActionNameParam"];
             };
@@ -5112,9 +6529,13 @@ export interface operations {
     listTriggers: {
         parameters: {
             query?: {
+                /** @description Filter by trigger kind. */
                 kind?: components["schemas"]["TriggerKind"];
+                /** @description Filter to enabled or disabled triggers. */
                 enabled?: boolean;
+                /** @description Opaque pagination cursor returned from the previous response. */
                 cursor?: string;
+                /** @description Maximum number of results to return per page. */
                 limit?: number;
             };
             header?: never;
@@ -5176,6 +6597,7 @@ export interface operations {
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -5202,6 +6624,7 @@ export interface operations {
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -5226,6 +6649,7 @@ export interface operations {
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -5253,14 +6677,18 @@ export interface operations {
     listTriggerFires: {
         parameters: {
             query?: {
+                /** @description Filter by fire outcome. */
                 status?: components["schemas"]["TriggerFireStatus"];
+                /** @description Opaque pagination cursor returned from the previous response. */
                 cursor?: string;
+                /** @description Maximum number of results to return per page. */
                 limit?: number;
             };
             header?: never;
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -5308,6 +6736,7 @@ export interface operations {
     listProjects: {
         parameters: {
             query?: {
+                /** @description Prefix-match filter applied to project name and handle. */
                 search?: string;
             };
             header?: never;
@@ -5360,6 +6789,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description Resource ID. */
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -5384,6 +6814,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description Resource ID. */
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -5406,6 +6837,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description Resource ID. */
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -5433,8 +6865,11 @@ export interface operations {
     listWebhooks: {
         parameters: {
             query?: {
+                /** @description Filter by enabled/disabled state. */
                 enabled?: boolean;
+                /** @description Opaque pagination cursor returned from the previous response. */
                 cursor?: string;
+                /** @description Maximum number of results to return per page. */
                 limit?: number;
             };
             header?: never;
@@ -5497,6 +6932,7 @@ export interface operations {
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -5523,6 +6959,7 @@ export interface operations {
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -5547,6 +6984,7 @@ export interface operations {
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -5571,17 +7009,19 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
-    listWebhookEvents: {
+    listWebhookDeliveries: {
         parameters: {
             query?: {
-                status?: components["schemas"]["WebhookEventStatus"];
+                /** @description Opaque pagination cursor returned from the previous response. */
                 cursor?: string;
+                /** @description Maximum number of results to return per page. */
                 limit?: number;
             };
             header?: never;
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -5594,7 +7034,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["WebhookEventListResponse"];
+                    "application/json": components["schemas"]["WebhookDeliveryListResponse"];
                 };
             };
             401: components["responses"]["Unauthorized"];
@@ -5604,9 +7044,13 @@ export interface operations {
     listIntegrations: {
         parameters: {
             query?: {
+                /** @description Filter by provider string (exact match). */
                 provider?: string;
+                /** @description Filter by integration status. */
                 status?: components["schemas"]["IntegrationStatus"];
+                /** @description Opaque pagination cursor returned from the previous response. */
                 cursor?: string;
+                /** @description Maximum number of results to return per page. */
                 limit?: number;
             };
             header?: never;
@@ -5666,6 +7110,7 @@ export interface operations {
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -5692,6 +7137,7 @@ export interface operations {
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -5723,6 +7169,7 @@ export interface operations {
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -5798,7 +7245,9 @@ export interface operations {
     listRoles: {
         parameters: {
             query?: {
+                /** @description Maximum number of results to return per page. */
                 limit?: number;
+                /** @description Filter to roles scoped to a specific project. */
                 project_id?: string;
             };
             header?: never;
@@ -5817,13 +7266,7 @@ export interface operations {
                 };
             };
             401: components["responses"]["Unauthorized"];
-            /** @description Forbidden */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
+            403: components["responses"]["Forbidden"];
         };
     };
     createRole: {
@@ -5850,23 +7293,19 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
-            /** @description Forbidden */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
+            403: components["responses"]["Forbidden"];
             409: components["responses"]["Conflict"];
         };
     };
     getRole: {
         parameters: {
             query?: {
+                /** @description Provide to resolve a project-scoped role. */
                 project_id?: string;
             };
             header?: never;
             path: {
+                /** @description Resource ID. */
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -5883,23 +7322,19 @@ export interface operations {
                 };
             };
             401: components["responses"]["Unauthorized"];
-            /** @description Forbidden */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
+            403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
         };
     };
     deleteRole: {
         parameters: {
             query?: {
+                /** @description Scope to change this role to. Cannot change an org-scoped role to project-scoped after creation. */
                 project_id?: string;
             };
             header?: never;
             path: {
+                /** @description Resource ID. */
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -5914,23 +7349,19 @@ export interface operations {
                 content?: never;
             };
             401: components["responses"]["Unauthorized"];
-            /** @description Forbidden */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
+            403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
         };
     };
     updateRole: {
         parameters: {
             query?: {
+                /** @description Scope to change this role to. Cannot change an org-scoped role to project-scoped after creation. */
                 project_id?: string;
             };
             header?: never;
             path: {
+                /** @description Resource ID. */
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -5952,13 +7383,7 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
-            /** @description Forbidden */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
+            403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
         };
@@ -5966,9 +7391,13 @@ export interface operations {
     listRoleAssignments: {
         parameters: {
             query?: {
+                /** @description Filter by the type of actor receiving the assignment. */
                 actor_type?: "user" | "service_account";
+                /** @description Filter to assignments for a specific actor. */
                 actor_id?: string;
+                /** @description Filter to assignments for a specific role. */
                 role_id?: string;
+                /** @description Filter to project-scoped assignments for this project. */
                 project_id?: string;
             };
             header?: never;
@@ -5987,13 +7416,7 @@ export interface operations {
                 };
             };
             401: components["responses"]["Unauthorized"];
-            /** @description Forbidden */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
+            403: components["responses"]["Forbidden"];
         };
     };
     createRoleAssignment: {
@@ -6020,13 +7443,7 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
-            /** @description Forbidden */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
+            403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
         };
@@ -6036,6 +7453,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description Resource ID. */
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -6050,13 +7468,7 @@ export interface operations {
                 content?: never;
             };
             401: components["responses"]["Unauthorized"];
-            /** @description Forbidden */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
+            403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
         };
     };
@@ -6136,6 +7548,7 @@ export interface operations {
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -6162,6 +7575,7 @@ export interface operations {
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -6194,6 +7608,7 @@ export interface operations {
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -6221,6 +7636,7 @@ export interface operations {
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -6239,158 +7655,6 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
-        };
-    };
-    startSlackInstall: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SlackInstall"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-        };
-    };
-    disconnectSlack: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description No Content */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            401: components["responses"]["Unauthorized"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    slackOAuthCallback: {
-        parameters: {
-            query?: {
-                code?: string;
-                state?: string;
-                error?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OAuth callback handled without redirect */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Redirect to settings page */
-            302: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            400: components["responses"]["BadRequest"];
-        };
-    };
-    handleSlackEvents: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Invalid signature */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    handleSlackInteract: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Invalid signature */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    handleSlackCommands: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Invalid signature */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
         };
     };
     listGroups: {
@@ -6459,6 +7723,7 @@ export interface operations {
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
+                /** @description Group ID or handle. */
                 groupId: components["parameters"]["GroupIDParam"];
             };
             cookie?: never;
@@ -6485,6 +7750,7 @@ export interface operations {
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
+                /** @description Group ID or handle. */
                 groupId: components["parameters"]["GroupIDParam"];
             };
             cookie?: never;
@@ -6510,6 +7776,7 @@ export interface operations {
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
+                /** @description Group ID or handle. */
                 groupId: components["parameters"]["GroupIDParam"];
             };
             cookie?: never;
@@ -6546,6 +7813,7 @@ export interface operations {
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
+                /** @description Group ID or handle. */
                 groupId: components["parameters"]["GroupIDParam"];
             };
             cookie?: never;
@@ -6572,6 +7840,7 @@ export interface operations {
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
+                /** @description Group ID or handle. */
                 groupId: components["parameters"]["GroupIDParam"];
             };
             cookie?: never;
@@ -6604,7 +7873,9 @@ export interface operations {
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
+                /** @description Group ID or handle. */
                 groupId: components["parameters"]["GroupIDParam"];
+                /** @description User ID of the member to remove. */
                 userId: string;
             };
             cookie?: never;
@@ -6629,6 +7900,7 @@ export interface operations {
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
+                /** @description User ID of the org member. */
                 userId: string;
             };
             cookie?: never;
@@ -6650,7 +7922,9 @@ export interface operations {
     listAgents: {
         parameters: {
             query?: {
+                /** @description Filter to agents backed by this service account. */
                 service_account_id?: string;
+                /** @description Filter by administrative status (active/inactive), independent of presence. */
                 status?: components["schemas"]["AgentStatus"];
                 /** @description Maximum number of items to return */
                 limit?: components["parameters"]["LimitParam"];
@@ -6715,6 +7989,7 @@ export interface operations {
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -6741,6 +8016,7 @@ export interface operations {
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -6765,6 +8041,7 @@ export interface operations {
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -6792,7 +8069,9 @@ export interface operations {
     listAgentSessions: {
         parameters: {
             query?: {
+                /** @description Filter by session status. */
                 status?: components["schemas"]["AgentSessionStatus"];
+                /** @description Filter by transport type (e.g. "sse", "polling"). */
                 transport?: string;
                 /** @description Maximum number of items to return */
                 limit?: components["parameters"]["LimitParam"];
@@ -6801,6 +8080,7 @@ export interface operations {
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -6827,6 +8107,7 @@ export interface operations {
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
                 id: components["parameters"]["IDParam"];
             };
             cookie?: never;
@@ -6858,6 +8139,7 @@ export interface operations {
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
+                /** @description ID of the agent session. */
                 sessionId: string;
             };
             cookie?: never;
@@ -6884,6 +8166,7 @@ export interface operations {
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
+                /** @description ID of the agent session. */
                 sessionId: string;
             };
             cookie?: never;
@@ -6910,6 +8193,7 @@ export interface operations {
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
+                /** @description ID of the agent session. */
                 sessionId: string;
             };
             cookie?: never;
@@ -6933,7 +8217,10 @@ export interface operations {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+            };
             cookie?: never;
         };
         requestBody?: never;
@@ -6948,6 +8235,7 @@ export interface operations {
                 };
             };
             401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
         };
     };
     runTool: {
@@ -6957,6 +8245,7 @@ export interface operations {
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
+                /** @description Workflow handle identifying the tool to invoke. */
                 handle: string;
             };
             cookie?: never;
@@ -6997,7 +8286,9 @@ export interface operations {
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
+                /** @description Workflow handle identifying the tool. */
                 handle: string;
+                /** @description ID of the tool run to poll. */
                 runId: string;
             };
             cookie?: never;

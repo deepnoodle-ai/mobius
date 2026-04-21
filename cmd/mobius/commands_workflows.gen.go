@@ -53,7 +53,7 @@ func registerWorkflowsCommands(app *cli.App) {
 		})
 
 	workflowsGrp.Command("get").
-		Description("Get a workflow definition (with its latest version spec)").
+		Description("Get a workflow definition").
 		Args("id").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -132,7 +132,7 @@ func registerWorkflowsCommands(app *cli.App) {
 		})
 
 	workflowsGrp.Command("start-workflow-run").
-		Description("Start a new workflow run (enqueue)").
+		Description("Start a new workflow run against a saved definition").
 		Args("id").
 		Flags(
 			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin)"),
@@ -154,7 +154,7 @@ func registerWorkflowsCommands(app *cli.App) {
 		})
 
 	workflowsGrp.Command("update").
-		Description("Update a workflow definition (new spec creates a new version)").
+		Description("Update a workflow definition").
 		Args("id").
 		Flags(
 			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin)"),

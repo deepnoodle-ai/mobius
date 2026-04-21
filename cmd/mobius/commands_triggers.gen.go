@@ -53,7 +53,7 @@ func registerTriggersCommands(app *cli.App) {
 		})
 
 	triggersGrp.Command("get").
-		Description("Get a trigger by id").
+		Description("Get a trigger").
 		Args("id").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -68,7 +68,7 @@ func registerTriggersCommands(app *cli.App) {
 		})
 
 	triggersGrp.Command("list").
-		Description("List triggers in the project").
+		Description("List triggers").
 		Flags(
 			cli.String("kind", "").Help("kind"),
 			cli.Bool("enabled", "").Help("enabled"),

@@ -11,16 +11,23 @@ from pydantic import AnyUrl, BaseModel, ConfigDict, Field, RootModel
 
 
 class Error(BaseModel):
+    """
+    Error detail.
+    """
+
     code: str = Field(..., description='Machine-readable error code')
     message: str = Field(..., description='Human-readable error message')
 
 
 class ErrorResponse(BaseModel):
-    error: Error
+    error: Error = Field(..., description='Error detail.')
 
 
 class HealthResponse(BaseModel):
-    status: str
+    status: str = Field(
+        ...,
+        description='Current server status. `ok` when all dependencies are reachable.',
+    )
 
 
 class Metadata(BaseModel):
@@ -31,13 +38,19 @@ class Metadata(BaseModel):
 
 
 class ChannelMessageSenderType(Enum):
+    """
+    Whether the message was sent by a human org member or an agent worker.
+    """
+
     member = 'member'
     agent = 'agent'
 
 
 class Kind(Enum):
     """
-    Channel type
+    `channel` — persistent named room.
+    `dm` — direct-message thread, typically between a small fixed set of participants.
+
     """
 
     dm = 'dm'
@@ -45,29 +58,58 @@ class Kind(Enum):
 
 
 class Channel(BaseModel):
-    id: str
-    name: str = Field(..., description='Channel handle (unique within project)')
-    display_name: str = Field(..., description='Human-facing display name')
-    topic: str | None = Field(None, description='Channel topic or description')
-    kind: Kind = Field(..., description='Channel type')
-    private: bool = Field(..., description='Whether the channel is private')
-    created_by: str = Field(..., description='ID of the user who created the channel')
-    archived_at: datetime | None = Field(
-        None, description='Timestamp when the channel was archived'
+    id: str = Field(..., description='Unique identifier for this channel.')
+    name: str = Field(
+        ...,
+        description='URL-safe channel handle, unique within the project. Immutable\nafter creation.\n',
     )
-    created_at: datetime
-    updated_at: datetime
+    display_name: str = Field(
+        ..., description='Human-facing display name shown in the UI.'
+    )
+    topic: str | None = Field(
+        None,
+        description='Optional topic or description shown at the top of the channel.',
+    )
+    kind: Kind = Field(
+        ...,
+        description='`channel` — persistent named room.\n`dm` — direct-message thread, typically between a small fixed set of participants.\n',
+    )
+    private: bool = Field(
+        ...,
+        description='When true, the channel is invite-only and not visible in public listings.',
+    )
+    created_by: str = Field(
+        ..., description='User ID of the org member who created the channel.'
+    )
+    archived_at: datetime | None = Field(
+        None,
+        description='Set when the channel is archived. Archived channels are hidden in\nthe UI but their message history remains accessible.\n',
+    )
+    created_at: datetime = Field(
+        ..., description='Timestamp when this channel was created.'
+    )
+    updated_at: datetime = Field(
+        ..., description='Timestamp when this channel was last updated.'
+    )
 
 
 class ChannelListResponse(BaseModel):
-    items: list[Channel]
-    has_more: bool | None = None
-    next_cursor: str | None = None
+    items: list[Channel] = Field(..., description='The list of results for this page.')
+    has_more: bool | None = Field(
+        None, description='Whether additional pages are available.'
+    )
+    next_cursor: str | None = Field(
+        None,
+        description='Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.',
+    )
 
 
 class Role(Enum):
     """
-    Member's role in the channel
+    `admin` — can update channel settings and manage members.
+    `member` — can post messages and view history.
+    Creators are automatically assigned `admin`.
+
     """
 
     member = 'member'
@@ -75,29 +117,52 @@ class Role(Enum):
 
 
 class ChannelMember(BaseModel):
-    id: str
-    channel_id: str
-    user_id: str
-    role: Role = Field(..., description="Member's role in the channel")
+    id: str = Field(..., description='Unique identifier for this membership record.')
+    channel_id: str = Field(
+        ..., description='ID of the channel this membership belongs to.'
+    )
+    user_id: str = Field(..., description='ID of the user or agent who is a member.')
+    role: Role = Field(
+        ...,
+        description='`admin` — can update channel settings and manage members.\n`member` — can post messages and view history.\nCreators are automatically assigned `admin`.\n',
+    )
     last_read_message_id: str | None = Field(
-        None, description='Last message read by this member'
+        None,
+        description='ID of the last message this member has read (used for unread badge counts).',
     )
-    muted: bool | None = Field(None, description='Whether notifications are muted')
+    muted: bool | None = Field(
+        None,
+        description='When true, notifications for this channel are suppressed for this member.',
+    )
     starred: bool | None = Field(
-        None, description='Whether the member has starred this channel'
+        None,
+        description='Whether this member has starred the channel for quick access.',
     )
-    joined_at: datetime
+    joined_at: datetime = Field(
+        ..., description='Timestamp when this member joined the channel.'
+    )
 
 
 class ChannelMemberListResponse(BaseModel):
-    items: list[ChannelMember]
-    has_more: bool | None = None
-    next_cursor: str | None = None
+    items: list[ChannelMember] = Field(
+        ..., description='The list of results for this page.'
+    )
+    has_more: bool | None = Field(
+        None, description='Whether additional pages are available.'
+    )
+    next_cursor: str | None = Field(
+        None,
+        description='Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.',
+    )
 
 
 class Display(Enum):
     """
-    Rendering layout mode
+    Rendering hint for the UI.
+    `message` — standard chat bubble.
+    `notice` — system/informational notice (no attribution).
+    `card` — structured card layout.
+
     """
 
     message = 'message'
@@ -106,85 +171,150 @@ class Display(Enum):
 
 
 class ChannelMessage(BaseModel):
-    id: str
-    channel_id: str
+    id: str = Field(..., description='Unique identifier for this message.')
+    channel_id: str = Field(
+        ..., description='ID of the channel this message was posted in.'
+    )
     sender_type: ChannelMessageSenderType
-    sender_id: str = Field(..., description='ID of the message sender (user or agent)')
+    sender_id: str = Field(
+        ...,
+        description='User ID (for `member`) or agent ID (for `agent`) of the message sender.',
+    )
     sender_session_id: str | None = Field(
-        None, description='Live agent session that sent the message when applicable'
+        None, description='Live agent session that posted the message, when applicable.'
     )
-    display: Display | None = Field(None, description='Rendering layout mode')
+    display: Display | None = Field(
+        None,
+        description='Rendering hint for the UI.\n`message` — standard chat bubble.\n`notice` — system/informational notice (no attribution).\n`card` — structured card layout.\n',
+    )
     type: str = Field(
-        ..., description='Dot-projectd message type (e.g. user.message, ai.response)'
+        ...,
+        description='Dot-namespaced message type identifier, e.g. `user.message`,\n`ai.response`. Used for filtering and display logic.\n',
     )
-    content: str = Field(..., description='Message content (markdown)')
+    content: str = Field(..., description='Message body in Markdown.')
     reply_to: str | None = Field(
-        None, description='ID of the message this is a reply to (threading)'
+        None, description='ID of the parent message this reply belongs to (threading).'
     )
     metadata: Metadata | None = None
-    pinned: bool | None = Field(None, description='Whether this message is pinned')
+    pinned: bool | None = Field(
+        None, description='Whether this message is pinned in the channel.'
+    )
     pinned_by: str | None = Field(
-        None, description='ID of user who pinned this message'
+        None, description='User ID of the member who pinned this message.'
     )
     edited_at: datetime | None = Field(
-        None, description='When the message was last edited'
+        None,
+        description='Set when the message content has been updated after initial send.',
     )
-    created_at: datetime
+    created_at: datetime = Field(
+        ..., description='Timestamp when this message was posted.'
+    )
 
 
 class ChannelMessageListResponse(BaseModel):
-    items: list[ChannelMessage]
-    has_more: bool | None = None
-    next_cursor: str | None = None
+    items: list[ChannelMessage] = Field(
+        ..., description='The list of results for this page.'
+    )
+    has_more: bool | None = Field(
+        None, description='Whether additional pages are available.'
+    )
+    next_cursor: str | None = Field(
+        None,
+        description='Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.',
+    )
+
+
+class Kind1(Enum):
+    """
+    Channel kind. Cannot be changed after creation.
+    """
+
+    dm = 'dm'
+    channel = 'channel'
 
 
 class CreateChannelRequest(BaseModel):
-    name: str = Field(..., description='Channel handle (unique, immutable)')
-    display_name: str = Field(..., description='Human-facing display name')
-    topic: str | None = Field(None, description='Channel topic or description')
-    kind: Kind = Field(..., description='Channel type')
+    name: str = Field(
+        ...,
+        description='URL-safe handle, unique within the project. Immutable after\ncreation — choose carefully.\n',
+    )
+    display_name: str = Field(
+        ..., description='Human-facing display name shown in the UI.'
+    )
+    topic: str | None = Field(
+        None, description='Optional channel topic or description.'
+    )
+    kind: Kind1 = Field(
+        ..., description='Channel kind. Cannot be changed after creation.'
+    )
     private: bool | None = Field(
-        False, description='Whether the channel is private (invite-only)'
+        False, description='When true, the channel is invite-only.'
     )
     member_ids: list[str] | None = Field(
-        None, description='Initial member IDs to add to the channel'
+        None,
+        description='Optional list of user or agent IDs to add as members at creation\ntime. All receive the `member` role; the creator is added as\n`admin` separately.\n',
     )
 
 
 class UpdateChannelRequest(BaseModel):
-    display_name: str | None = None
-    topic: str | None = None
-    private: bool | None = None
+    display_name: str | None = Field(None, description='Updated display name.')
+    topic: str | None = Field(None, description='Updated topic or description.')
+    private: bool | None = Field(None, description='Toggle invite-only visibility.')
 
 
 class Role1(Enum):
+    """
+    Role to assign the new member.
+    """
+
     member = 'member'
     admin = 'admin'
 
 
 class AddChannelMemberRequest(BaseModel):
-    user_id: str = Field(..., description='User or agent ID to add')
-    role: Role1 | None = 'member'
+    user_id: str = Field(..., description='User or agent ID to add to the channel.')
+    role: Role1 | None = Field('member', description='Role to assign the new member.')
+
+
+class Display1(Enum):
+    """
+    Rendering hint for the UI.
+    """
+
+    message = 'message'
+    notice = 'notice'
+    card = 'card'
 
 
 class SendChannelMessageRequest(BaseModel):
     sender_agent_id: str | None = Field(
-        None, description='Durable agent identity to attribute the message to.'
+        None,
+        description='Durable agent identity to attribute the message to. When set,\n`sender_type` on the resulting message is `agent`.\n',
     )
     sender_session_id: str | None = Field(
-        None, description='Live agent session to attribute the message to.'
+        None, description='Live agent session to associate with the message.'
     )
-    content: str = Field(..., description='Message content (markdown)')
-    display: Display | None = Field('message', description='Rendering layout mode')
-    type: str | None = Field('user.message', description='Dot-projectd message type')
-    reply_to: str | None = Field(None, description='Parent message ID for threading')
+    content: str = Field(..., description='Message body in Markdown.')
+    display: Display1 | None = Field(
+        'message', description='Rendering hint for the UI.'
+    )
+    type: str | None = Field(
+        'user.message', description='Dot-namespaced message type identifier.'
+    )
+    reply_to: str | None = Field(
+        None, description='Parent message ID for threading (creates a reply).'
+    )
     metadata: Metadata | None = None
 
 
 class UpdateChannelMessageRequest(BaseModel):
-    content: str | None = Field(None, description='Updated message content (markdown)')
+    content: str | None = Field(
+        None, description='Updated Markdown content. Sets `edited_at` on the message.'
+    )
     metadata: Metadata | None = None
-    pinned: bool | None = Field(None, description='Whether this message is pinned')
+    pinned: bool | None = Field(
+        None, description='Pin or unpin the message. Sets/clears `pinned_by`.'
+    )
 
 
 class Action(Enum):
@@ -234,7 +364,9 @@ class AuditLogEntry(BaseModel):
 
 
 class AuditLogListResponse(BaseModel):
-    items: list[AuditLogEntry] | None = None
+    items: list[AuditLogEntry] | None = Field(
+        None, description='The list of results for this page.'
+    )
     next_cursor: str | None = Field(
         None, description='Cursor for fetching next page of results'
     )
@@ -242,75 +374,175 @@ class AuditLogListResponse(BaseModel):
 
 
 class Scope(Enum):
+    """
+    `org` for standard API keys; `system` is reserved for platform-level access.
+    """
+
     org = 'org'
     system = 'system'
 
 
 class APIKey(BaseModel):
-    id: str
-    name: str
-    key_prefix: str = Field(
-        ..., description='First 8 characters of the key for identification'
+    id: str = Field(..., description='Unique identifier for this API key.')
+    name: str = Field(
+        ...,
+        description='Human-readable label, unique within the org (or org+project for project-pinned keys).',
     )
-    scope: Scope
-    permissions: list[str] | None = None
-    project_id: str | None = None
-    service_account_id: str | None = None
-    expires_at: datetime | None = None
-    last_used_at: datetime | None = None
-    created_at: datetime
-    updated_at: datetime
+    key_prefix: str = Field(
+        ...,
+        description='First 8 characters of the key, used to identify it without exposing the secret.',
+    )
+    scope: Scope = Field(
+        ...,
+        description='`org` for standard API keys; `system` is reserved for platform-level access.',
+    )
+    permissions: list[str] | None = Field(
+        None,
+        description='Explicit permission set granted to this key (e.g. "mobius.job.claim").',
+    )
+    project_id: str | None = Field(
+        None, description='Set for project-pinned keys; empty for org-scoped keys.'
+    )
+    service_account_id: str | None = Field(
+        None, description='Optional service account for attribution and quota tracking.'
+    )
+    expires_at: datetime | None = Field(
+        None,
+        description='Hard expiry timestamp. Requests using an expired key receive 401.',
+    )
+    last_used_at: datetime | None = Field(
+        None,
+        description='Timestamp of the most recent authenticated request using this key.',
+    )
+    created_at: datetime = Field(
+        ..., description='Timestamp when this key was created.'
+    )
+    updated_at: datetime = Field(
+        ..., description='Timestamp when this key was last updated.'
+    )
+
+
+class Scope1(Enum):
+    """
+    Scope of the key: `org` for org-wide keys, `project` for project-pinned keys.
+    """
+
+    org = 'org'
+    system = 'system'
 
 
 class APIKeyCreateResult(BaseModel):
-    id: str
-    name: str
+    """
+    Returned only on key creation. Contains the raw `key` value which is not retrievable after this response.
+    """
+
+    id: str = Field(..., description='Unique identifier for the created API key.')
+    name: str = Field(..., description='Human-readable name for the key.')
     key_prefix: str = Field(
-        ..., description='First 8 characters of the key for identification'
+        ..., description='First 8 characters of the key for identification.'
     )
-    scope: Scope
-    permissions: list[str] | None = None
-    project_id: str | None = None
-    service_account_id: str | None = None
-    expires_at: datetime | None = None
-    last_used_at: datetime | None = None
-    created_at: datetime
-    updated_at: datetime
-    key: str = Field(..., description='The raw API key (shown only once)')
+    scope: Scope1 = Field(
+        ...,
+        description='Scope of the key: `org` for org-wide keys, `project` for project-pinned keys.',
+    )
+    permissions: list[str] | None = Field(
+        None, description='List of permissions granted to this key.'
+    )
+    project_id: str | None = Field(
+        None, description='ID of the pinned project. Null for org-scoped keys.'
+    )
+    service_account_id: str | None = Field(
+        None, description='ID of the service account this key belongs to.'
+    )
+    expires_at: datetime | None = Field(
+        None, description='Timestamp when this key expires. Null if it does not expire.'
+    )
+    last_used_at: datetime | None = Field(
+        None,
+        description='Timestamp of the most recent authenticated request using this key.',
+    )
+    created_at: datetime = Field(
+        ..., description='Timestamp when this key was created.'
+    )
+    updated_at: datetime = Field(
+        ..., description='Timestamp when this key was last updated.'
+    )
+    key: str = Field(
+        ...,
+        description='The raw API key. Returned only once at creation — store it securely immediately.',
+    )
 
 
 class APIKeyListResponse(BaseModel):
-    items: list[APIKey]
+    items: list[APIKey] = Field(..., description='The list of results for this page.')
+
+
+class Scope2(Enum):
+    """
+    Key scope. Use `org` for standard API access.
+    """
+
+    org = 'org'
+    system = 'system'
 
 
 class CreateAPIKeyRequest(BaseModel):
-    name: str
-    scope: Scope | None = 'org'
-    permissions: list[str] | None = None
-    service_account_id: str | None = None
-    expires_at: datetime | None = None
+    name: str = Field(
+        ...,
+        description='Human-readable label, unique within the org (or project for project-pinned keys).',
+    )
+    scope: Scope2 | None = Field(
+        'org', description='Key scope. Use `org` for standard API access.'
+    )
+    permissions: list[str] | None = Field(
+        None,
+        description='Permissions to grant. Each permission must be held by the creating\ncaller — you cannot grant more than you have.\n',
+    )
+    service_account_id: str | None = Field(
+        None, description='Associate this key with a service account for attribution.'
+    )
+    expires_at: datetime | None = Field(
+        None, description='Optional hard expiry. Omit for a non-expiring key.'
+    )
 
 
 class AuthContext(BaseModel):
-    user_id: str
-    org_id: str | None = None
+    user_id: str = Field(
+        ...,
+        description='Resolved user ID for this request (may be a service account ID for API-key auth).',
+    )
+    org_id: str | None = Field(
+        None, description='Org ID resolved from the authentication credential.'
+    )
     role: str | None = Field(
         None,
-        description='Org member role (owner, admin, member) — empty for API-key auth',
+        description='Org member role (owner, admin, member) — empty for API-key auth.',
     )
     auth_type: str = Field(
-        ..., description='How the caller authenticated (clerk, api_key, cli_token)'
+        ...,
+        description='How the caller authenticated: `clerk` (browser JWT), `api_key`, or `cli_token`.',
     )
-    is_admin: bool
+    is_admin: bool = Field(
+        ..., description='True for Mobius platform admins only; not an org-level flag.'
+    )
 
 
 class ConfirmDeviceCodeRequest(BaseModel):
-    user_code: str
-    label: str | None = None
+    user_code: str = Field(
+        ...,
+        description='The user code displayed in the CLI during the device authorization flow.',
+    )
+    label: str | None = Field(
+        None,
+        description='Optional label to identify this credential in the CLI credentials list.',
+    )
 
 
 class ConfirmDeviceCodeResult(BaseModel):
-    confirmed: bool
+    confirmed: bool = Field(
+        ...,
+        description='True when the device code was successfully confirmed and a CLI credential has been issued.',
+    )
 
 
 class CLICredentialStatus(Enum):
@@ -319,29 +551,57 @@ class CLICredentialStatus(Enum):
 
 
 class CLICredential(BaseModel):
-    id: str
-    org_id: str
-    user_id: str
-    label: str
-    token_prefix: str
+    id: str = Field(..., description='Unique identifier for this credential.')
+    org_id: str = Field(
+        ..., description='ID of the organization this credential is scoped to.'
+    )
+    user_id: str = Field(
+        ..., description='ID of the user who authorized this credential.'
+    )
+    label: str = Field(
+        ..., description='Human-readable label identifying this credential.'
+    )
+    token_prefix: str = Field(
+        ...,
+        description='First few characters of the token, shown for identification without exposing the secret.',
+    )
     status: CLICredentialStatus
-    created_at: datetime
-    updated_at: datetime
-    last_used_at: datetime | None = None
-    expires_at: datetime | None = None
+    created_at: datetime = Field(
+        ..., description='Timestamp when this credential was created.'
+    )
+    updated_at: datetime = Field(
+        ..., description='Timestamp when this credential was last updated.'
+    )
+    last_used_at: datetime | None = Field(
+        None,
+        description='Timestamp of the most recent authenticated request using this credential.',
+    )
+    expires_at: datetime | None = Field(
+        None,
+        description='Timestamp when this credential expires. Null if it does not expire.',
+    )
 
 
 class CLICredentialListResponse(BaseModel):
-    items: list[CLICredential]
+    items: list[CLICredential] = Field(
+        ..., description='The list of credentials issued to the current user.'
+    )
 
 
 class WorkflowInput(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    name: str
-    type: str
-    description: str | None = None
+    name: str = Field(
+        ..., description='Input parameter name referenced in step expressions.'
+    )
+    type: str = Field(
+        ...,
+        description='Data type of the input (e.g. string, integer, boolean, object).',
+    )
+    description: str | None = Field(
+        None, description='Human-readable description of this input parameter.'
+    )
     default: Any | None = Field(None, description='Optional default value.')
 
 
@@ -349,10 +609,31 @@ class WorkflowOutput(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    name: str
-    variable: str
+    name: str = Field(
+        ..., description='Output name exposed to callers and downstream steps.'
+    )
+    variable: str = Field(
+        ..., description='State variable name whose value is mapped to this output.'
+    )
     branch: str | None = Field(None, description='Defaults to `main` when omitted.')
-    description: str | None = None
+    description: str | None = Field(
+        None, description='Human-readable description of this output value.'
+    )
+
+
+class WorkflowStepLayout(BaseModel):
+    """
+    Optional presentation hint for the visual editor. Ignored by the
+    execution engine; when absent, editors auto-lay out the step.
+
+    """
+
+    x: float | None = Field(
+        None, description='Horizontal position of the step in the editor canvas.'
+    )
+    y: float | None = Field(
+        None, description='Vertical position of the step in the editor canvas.'
+    )
 
 
 class WorkflowActionKind(Enum):
@@ -375,9 +656,15 @@ class WorkflowEdge(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    step: str
-    condition: str | None = None
-    branch: str | None = None
+    step: str = Field(..., description='Name of the step to transition to.')
+    condition: str | None = Field(
+        None,
+        description='Expression that must evaluate to true for this edge to be followed.',
+    )
+    branch: str | None = Field(
+        None,
+        description='Branch name assigned to parallel execution started by this edge.',
+    )
 
 
 class WorkflowEach(BaseModel):
@@ -387,10 +674,18 @@ class WorkflowEach(BaseModel):
     items: Any = Field(
         ..., description='Expression or literal collection to iterate over.'
     )
-    as_: str | None = Field(None, alias='as')
+    as_: str | None = Field(
+        None,
+        alias='as',
+        description='Variable name bound to the current iteration element.',
+    )
 
 
 class JitterStrategy(Enum):
+    """
+    Jitter strategy to apply to the computed delay: NONE or FULL.
+    """
+
     NONE = 'NONE'
     FULL = 'FULL'
 
@@ -399,12 +694,25 @@ class WorkflowRetry(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    error_equals: list[str] | None = None
-    max_retries: int | None = Field(None, ge=0)
+    error_equals: list[str] | None = Field(
+        None,
+        description='Error class names this policy applies to. Retries all errors when omitted.',
+    )
+    max_retries: int | None = Field(
+        None,
+        description='Maximum number of retry attempts. Zero disables retries.',
+        ge=0,
+    )
     base_delay: str | None = Field(None, description='Go duration string.')
     max_delay: str | None = Field(None, description='Go duration string.')
-    backoff_rate: float | None = None
-    jitter_strategy: JitterStrategy | None = None
+    backoff_rate: float | None = Field(
+        None,
+        description='Exponential backoff multiplier applied to the delay after each attempt.',
+    )
+    jitter_strategy: JitterStrategy | None = Field(
+        None,
+        description='Jitter strategy to apply to the computed delay: NONE or FULL.',
+    )
     timeout: str | None = Field(None, description='Go duration string.')
 
 
@@ -412,25 +720,61 @@ class WorkflowCatch(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    error_equals: list[str]
-    next: str
-    store: str | None = None
+    error_equals: list[str] = Field(
+        ..., description='Error class names this catch clause handles.'
+    )
+    next: str = Field(
+        ..., description='Step name to transition to when this clause is matched.'
+    )
+    store: str | None = Field(
+        None, description='State variable name where the caught error is stored.'
+    )
 
 
 class WorkflowJoinConfig(BaseModel):
-    branches: list[str] | None = None
-    count: int | None = Field(None, ge=0)
-    branch_mappings: dict[str, str] | None = None
+    """
+    Waits for one or more parallel branches to complete before proceeding.
+    """
+
+    branches: list[str] | None = Field(
+        None,
+        description='Branch names to wait for. Defaults to all branches if omitted.',
+    )
+    count: int | None = Field(
+        None,
+        description='Minimum number of branches that must complete. Defaults to all listed branches.',
+        ge=0,
+    )
+    branch_mappings: dict[str, str] | None = Field(
+        None,
+        description='Maps branch names to variable names for storing per-branch results.',
+    )
 
 
 class WorkflowWaitSignalConfig(BaseModel):
+    """
+    Suspends the run until a signal with the matching topic arrives.
+    """
+
     model_config = ConfigDict(
         extra='forbid',
     )
-    topic: str
-    timeout: str = Field(..., description='Go duration string.')
-    store: str | None = None
-    on_timeout: str | None = None
+    topic: str = Field(
+        ...,
+        description='Signal topic to wait on. Must match the `name` field in POST /runs/{id}/signals.',
+    )
+    timeout: str = Field(
+        ...,
+        description='Maximum wait duration as a Go duration string (e.g. "24h", "30m").',
+    )
+    store: str | None = Field(
+        None,
+        description='Variable name to store the signal payload in after resumption.',
+    )
+    on_timeout: str | None = Field(
+        None,
+        description='Step name to transition to if the timeout elapses without a signal. Fails the run if omitted.',
+    )
 
 
 class WorkflowSleepConfig(BaseModel):
@@ -444,16 +788,27 @@ class WorkflowPauseConfig(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    reason: str | None = None
+    reason: str | None = Field(
+        None,
+        description='Optional human-readable reason displayed when the run is paused.',
+    )
 
 
 class Type(Enum):
+    """
+    Interaction kind: approval requires a yes/no decision, review requests acknowledgement, input collects free-form data.
+    """
+
     approval = 'approval'
     review = 'review'
     input = 'input'
 
 
 class Mode(Enum):
+    """
+    UI rendering mode: confirm shows yes/no, select and multi_select show option lists, input shows a text field.
+    """
+
     confirm = 'confirm'
     select = 'select'
     multi_select = 'multi_select'
@@ -464,12 +819,23 @@ class WorkflowInteractionOption(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    value: str
-    label: str
-    description: str | None = None
+    value: str = Field(
+        ...,
+        description='Machine-readable option value stored in the interaction response.',
+    )
+    label: str = Field(
+        ..., description='Human-readable option label displayed to the recipient.'
+    )
+    description: str | None = Field(
+        None, description='Optional supplementary text shown alongside the option.'
+    )
 
 
 class Type1(Enum):
+    """
+    Whether the target is an individual user or a group.
+    """
+
     user = 'user'
     group = 'group'
 
@@ -478,12 +844,24 @@ class WorkflowInteractionTarget(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    type: Type1
-    id: str
-    require_all: bool | None = None
+    type: Type1 = Field(
+        ..., description='Whether the target is an individual user or a group.'
+    )
+    id: str = Field(..., description='ID of the target user or group.')
+    require_all: bool | None = Field(
+        None,
+        description='When true, all group members must respond before the interaction completes.',
+    )
 
 
 class WorkflowRunStatus(Enum):
+    """
+    Run lifecycle: `queued` → `running` → `completed` | `failed` | `suspended`.
+    A `suspended` run is waiting on a signal or interaction; it resumes
+    automatically when the signal is delivered or the interaction is responded to.
+
+    """
+
     queued = 'queued'
     running = 'running'
     completed = 'completed'
@@ -492,9 +870,12 @@ class WorkflowRunStatus(Enum):
 
 
 class WorkflowRun(BaseModel):
-    id: str
-    queue: str | None = None
-    parent_run_id: str | None = None
+    id: str = Field(..., description='Unique identifier for this run.')
+    queue: str | None = Field(None, description='Queue this run was enqueued on.')
+    parent_run_id: str | None = Field(
+        None,
+        description='ID of the parent run, when this is a child run spawned by a fan-out step.',
+    )
     definition_id: str | None = Field(
         None,
         description='ID of the workflow definition this run was started from.\nEmpty for ephemeral runs started from an inline spec.\n',
@@ -504,29 +885,56 @@ class WorkflowRun(BaseModel):
         None,
         description='True when the run was started from an inline spec rather\nthan a saved workflow definition. Equivalent to\n`definition_id == ""`.\n',
     )
-    workflow_name: str
-    status: WorkflowRunStatus
-    attempt: int
-    inputs: dict[str, Any] | None = None
-    metadata: dict[str, str] | None = None
-    error_message: str | None = None
-    actor_type: str | None = None
-    actor_id: str | None = None
-    initiated_by: str | None = None
-    external_id: str | None = None
-    group: str | None = None
-    callback_url: str | None = Field(
-        None,
-        description='Outbound customer callback URL intended for terminal run\nnotifications. The value is persisted on the run, but callback\ndelivery is not yet active.\n',
+    workflow_name: str = Field(
+        ..., description='Name of the workflow as recorded at run creation time.'
     )
-    created_at: datetime
-    started_at: datetime | None = None
-    completed_at: datetime | None = None
-    updated_at: datetime
+    status: WorkflowRunStatus
+    attempt: int = Field(
+        ...,
+        description='Retry attempt number (1-based). Increments each time the run is retried.',
+    )
+    inputs: dict[str, Any] | None = Field(
+        None, description='Input values provided when the run was started.'
+    )
+    metadata: dict[str, str] | None = Field(
+        None, description='Caller-supplied string metadata attached to the run.'
+    )
+    error_message: str | None = Field(
+        None,
+        description='Error message from the most recent failure. Present when status is failed.',
+    )
+    actor_type: str | None = Field(
+        None,
+        description='Type of the actor that started this run (user, service_account, system).',
+    )
+    actor_id: str | None = Field(
+        None, description='ID of the actor that started this run.'
+    )
+    initiated_by: str | None = Field(
+        None,
+        description='Human-readable label for the initiator (e.g. trigger name, API key name).',
+    )
+    external_id: str | None = Field(
+        None, description='Caller-supplied idempotency key or correlation ID.'
+    )
+    created_at: datetime = Field(
+        ..., description='Timestamp when this run was created.'
+    )
+    started_at: datetime | None = Field(
+        None, description='Timestamp when a worker first claimed this run.'
+    )
+    completed_at: datetime | None = Field(
+        None, description='Timestamp when this run reached a terminal state.'
+    )
+    updated_at: datetime = Field(
+        ..., description='Timestamp when this run was last updated.'
+    )
 
 
 class WorkflowRunListResponse(BaseModel):
-    items: list[WorkflowRun] | None = None
+    items: list[WorkflowRun] | None = Field(
+        None, description='The list of results for this page.'
+    )
     has_more: bool = Field(..., description='True when more pages are available.')
     next_cursor: str | None = Field(
         None,
@@ -535,261 +943,513 @@ class WorkflowRunListResponse(BaseModel):
 
 
 class ActionLogEntry(BaseModel):
-    id: str
-    action: str
-    step_name: str
-    branch_id: str
-    parameters: dict[str, Any] | None = None
-    result: dict[str, Any] | None = None
-    error: str | None = None
-    started_at: datetime
-    duration_ms: int
+    id: str = Field(..., description='Unique identifier for this action log entry.')
+    action: str = Field(..., description='Action name that was executed.')
+    step_name: str = Field(
+        ..., description='Workflow step name that produced this action log entry.'
+    )
+    branch_id: str = Field(..., description='Execution branch this entry belongs to.')
+    parameters: dict[str, Any] | None = Field(
+        None, description='Input parameters that were passed to the action.'
+    )
+    result: dict[str, Any] | None = Field(
+        None, description='Output returned by the action. Present on success.'
+    )
+    error: str | None = Field(None, description='Error message when the action failed.')
+    started_at: datetime = Field(
+        ..., description='Timestamp when the action execution started.'
+    )
+    duration_ms: int = Field(
+        ..., description='Elapsed time in milliseconds from start to completion.'
+    )
 
 
 class ActionLogListResponse(BaseModel):
-    items: list[ActionLogEntry]
+    items: list[ActionLogEntry] = Field(
+        ..., description='The list of action log entries for this run.'
+    )
 
 
 class Job(BaseModel):
-    id: str
-    run_id: str
-    parent_job_id: str | None = None
-    path_id: str | None = None
-    step_name: str
-    action: str
-    queue: str
-    parameters: dict[str, Any] | None = None
-    status: str
-    claimed_by: str | None = None
-    agent_id: str | None = None
-    agent_session_id: str | None = None
-    claimed_at: datetime | None = None
-    heartbeat_at: datetime | None = None
-    attempt: int
-    max_attempts: int
-    scheduled_at: datetime
-    last_error: str | None = None
-    created_at: datetime
-    updated_at: datetime
+    """
+    A claimable unit of work derived from a single workflow step execution.
+    """
+
+    id: str = Field(..., description='Unique identifier for this job.')
+    run_id: str = Field(..., description='The workflow run this job belongs to.')
+    parent_job_id: str | None = Field(
+        None, description='Set when this job is a child of a fan-out (each) step.'
+    )
+    path_id: str | None = Field(
+        None,
+        description='Opaque identifier for the execution path within the run (used for fan-out deduplication).',
+    )
+    step_name: str = Field(
+        ..., description='Workflow step name this job was created for.'
+    )
+    action: str = Field(
+        ..., description='Action name the worker must execute to complete this job.'
+    )
+    queue: str = Field(
+        ...,
+        description='Queue the job was placed in. Workers subscribe to queues to receive jobs.',
+    )
+    parameters: dict[str, Any] | None = Field(
+        None, description='Resolved input parameters to pass to the action.'
+    )
+    status: str = Field(
+        ..., description='Job lifecycle: pending → claimed → completed | failed.'
+    )
+    claimed_by: str | None = Field(None, description='Worker ID that claimed this job.')
+    agent_id: str | None = Field(
+        None, description='Agent ID the claiming worker is acting on behalf of.'
+    )
+    agent_session_id: str | None = Field(
+        None, description='Agent session ID provided during the claim.'
+    )
+    claimed_at: datetime | None = Field(
+        None, description='Timestamp when this job was claimed by a worker.'
+    )
+    heartbeat_at: datetime | None = Field(
+        None,
+        description='Timestamp of the most recent heartbeat. Used to detect stale claims.',
+    )
+    attempt: int = Field(
+        ..., description='Current attempt number (1-based). Increments on each retry.'
+    )
+    max_attempts: int = Field(
+        ...,
+        description='Maximum number of attempts before the job is permanently failed.',
+    )
+    scheduled_at: datetime = Field(
+        ..., description='Earliest time at which this job may be claimed.'
+    )
+    last_error: str | None = Field(
+        None, description='Error detail from the most recent failed attempt.'
+    )
+    created_at: datetime = Field(
+        ..., description='Timestamp when this job was created.'
+    )
+    updated_at: datetime = Field(
+        ..., description='Timestamp when this job was last updated.'
+    )
 
 
 class JobListResponse(BaseModel):
-    items: list[Job]
+    items: list[Job] = Field(..., description='The list of jobs for this run.')
 
 
 class SendRunSignalRequest(BaseModel):
     name: str = Field(..., description='Signal topic (e.g. "approval", "webhook").')
-    payload: dict[str, Any] | None = None
+    payload: dict[str, Any] | None = Field(
+        None,
+        description='Arbitrary payload delivered to the waiting step when the signal is received.',
+    )
 
 
 class RunSignal(BaseModel):
-    id: str
-    run_id: str
-    name: str
+    id: str = Field(..., description='Unique identifier for this signal.')
+    run_id: str = Field(..., description='ID of the run this signal was delivered to.')
+    name: str = Field(
+        ..., description="Signal topic name matching the wait_signal step's topic."
+    )
 
 
 class BulkRunRequest(BaseModel):
-    run_ids: list[str]
+    run_ids: list[str] = Field(..., description='IDs of the runs to operate on.')
 
 
 class BulkRunResult(BaseModel):
-    succeeded: list[str]
+    succeeded: list[str] = Field(
+        ..., description='IDs of runs that were successfully processed.'
+    )
     failures: dict[str, str] | None = Field(
         None, description='Map of run_id -> error message for per-run failures.'
     )
 
 
 class ActionAnnotations(BaseModel):
-    idempotent: bool | None = None
-    destructive: bool | None = None
-    read_only: bool | None = None
+    """
+    Hints that describe the safe-use properties of the action. Used by the
+    engine and tooling to decide retry behavior, dry-run eligibility, etc.
+
+    """
+
+    idempotent: bool | None = Field(
+        None,
+        description='The action produces the same result when called with the same inputs; safe to retry automatically.',
+    )
+    destructive: bool | None = Field(
+        None,
+        description='The action has irreversible side effects (deletion, financial transactions, etc.). Surfaced as a warning in UI.',
+    )
+    read_only: bool | None = Field(
+        None,
+        description='The action has no side effects; safe to call in dry-run scenarios.',
+    )
 
 
 class CreateActionRequest(BaseModel):
-    name: str
-    title: str | None = None
-    description: str | None = None
-    endpoint_url: AnyUrl
-    input_schema: dict[str, Any] | None = None
-    output_schema: dict[str, Any] | None = None
+    name: str = Field(
+        ...,
+        description='Project-scoped identifier used in workflow step definitions.\nLowercase alphanumeric + hyphens, e.g. "send-email". Must be\nunique within the project. Cannot start with "mobius." (reserved prefix).\n',
+    )
+    title: str | None = Field(
+        None, description='Human-readable display name shown in the UI and catalog.'
+    )
+    description: str | None = Field(
+        None, description='Markdown-safe description of what the action does.'
+    )
+    endpoint_url: AnyUrl = Field(
+        ..., description='HTTP/HTTPS URL Mobius will POST to when invoking the action.'
+    )
+    input_schema: dict[str, Any] | None = Field(
+        None, description='JSON Schema describing the expected input parameters.'
+    )
+    output_schema: dict[str, Any] | None = Field(
+        None, description='JSON Schema describing the expected output shape.'
+    )
     annotations: ActionAnnotations | None = None
 
 
 class UpdateActionRequest(BaseModel):
-    title: str | None = None
-    description: str | None = None
-    endpoint_url: AnyUrl | None = None
-    input_schema: dict[str, Any] | None = None
-    output_schema: dict[str, Any] | None = None
-    annotations: ActionAnnotations | None = None
+    title: str | None = Field(None, description='Replacement display title.')
+    description: str | None = Field(
+        None, description='Replacement Markdown description.'
+    )
+    endpoint_url: AnyUrl | None = Field(None, description='Replacement endpoint URL.')
+    input_schema: dict[str, Any] | None = Field(
+        None,
+        description='Replacement JSON Schema for inputs. Replaces the existing schema.',
+    )
+    output_schema: dict[str, Any] | None = Field(
+        None,
+        description='Replacement JSON Schema for outputs. Replaces the existing schema.',
+    )
+    annotations: ActionAnnotations | None = Field(
+        None, description='Pass null to clear all annotation flags.'
+    )
 
 
 class Action1(BaseModel):
-    id: str
-    org_id: str
-    name: str
-    title: str | None = None
-    description: str | None = None
-    endpoint_url: AnyUrl
-    input_schema: dict[str, Any] | None = None
-    output_schema: dict[str, Any] | None = None
+    id: str = Field(..., description='Unique identifier for this action.')
+    org_id: str = Field(
+        ..., description='ID of the organization this action belongs to.'
+    )
+    name: str = Field(
+        ...,
+        description='Project-scoped stable identifier used in workflow step definitions.',
+    )
+    title: str | None = Field(
+        None, description='Human-readable display title for the action.'
+    )
+    description: str | None = Field(
+        None, description='Markdown description of what the action does.'
+    )
+    endpoint_url: AnyUrl = Field(
+        ..., description='HTTP/HTTPS URL Mobius POSTs to when invoking this action.'
+    )
+    input_schema: dict[str, Any] | None = Field(
+        None, description='JSON Schema describing expected input parameters.'
+    )
+    output_schema: dict[str, Any] | None = Field(
+        None, description='JSON Schema describing the expected output shape.'
+    )
     annotations: ActionAnnotations | None = None
-    signing_secret: str | None = None
-    created_at: datetime
-    updated_at: datetime
+    signing_secret: str | None = Field(
+        None,
+        description='Raw HMAC-SHA256 signing secret. Only populated on create and rotate\nresponses; null on all other reads. Store this value securely on\nfirst receipt — it cannot be retrieved again.\n',
+    )
+    created_at: datetime = Field(
+        ..., description='Timestamp when this action was created.'
+    )
+    updated_at: datetime = Field(
+        ..., description='Timestamp when this action was last updated.'
+    )
 
 
 class ActionListResponse(BaseModel):
-    items: list[Action1] | None = None
-    next_cursor: str | None = None
-    has_more: bool
+    items: list[Action1] | None = Field(
+        None, description='The list of results for this page.'
+    )
+    next_cursor: str | None = Field(
+        None,
+        description='Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.',
+    )
+    has_more: bool = Field(..., description='Whether additional pages are available.')
 
 
 class RotateSecretResult(BaseModel):
-    signing_secret: str
+    signing_secret: str = Field(
+        ...,
+        description='The new raw signing secret. Store it immediately — this is the only time it is returned.',
+    )
 
 
 class ActionCatalogEntry(BaseModel):
-    name: str
-    title: str | None = None
-    description: str | None = None
-    integration: str | None = None
-    source: str
-    available: bool
+    name: str = Field(
+        ..., description='Action name as used in workflow step definitions.'
+    )
+    title: str | None = Field(
+        None, description='Human-readable display title for the action.'
+    )
+    description: str | None = Field(
+        None, description='Markdown description of what the action does.'
+    )
+    integration: str | None = Field(
+        None,
+        description='Integration slug this action belongs to (e.g. "slack"), if platform-provided.',
+    )
+    source: str = Field(
+        ...,
+        description='Origin of this action: "project" for project-owned actions, or the\nintegration slug for platform-provided actions.\n',
+    )
+    available: bool = Field(
+        ...,
+        description='Whether this action can currently be invoked. False if the required\nintegration is not connected or the caller lacks permission.\n',
+    )
     annotations: ActionAnnotations | None = None
-    input_schema: dict[str, Any] | None = None
-    output_schema: dict[str, Any] | None = None
-    endpoint_url: AnyUrl | None = None
+    input_schema: dict[str, Any] | None = Field(
+        None, description='JSON Schema describing expected input parameters.'
+    )
+    output_schema: dict[str, Any] | None = Field(
+        None, description='JSON Schema describing the expected output shape.'
+    )
+    endpoint_url: AnyUrl | None = Field(
+        None, description='Endpoint URL (populated for project-owned actions only).'
+    )
 
 
 class ActionCatalogListResponse(BaseModel):
-    items: list[ActionCatalogEntry]
+    items: list[ActionCatalogEntry] = Field(
+        ..., description='The full list of catalog entries.'
+    )
 
 
 class ActionAuditLogEntry(BaseModel):
-    id: str
-    run_id: str | None = None
-    step_name: str | None = None
-    action_name: str
-    source: str
-    parameters: dict[str, Any] | None = None
-    output_summary: dict[str, Any] | None = None
-    status: str
-    retry_count: int
-    started_at: datetime
-    finished_at: datetime
-    error_type: str | None = None
-    error_message: str | None = None
+    id: str = Field(..., description='Unique identifier for this audit log entry.')
+    run_id: str | None = Field(
+        None, description='Workflow run that triggered this invocation, if run-backed.'
+    )
+    step_name: str | None = Field(
+        None, description='Workflow step name that triggered this invocation.'
+    )
+    action_name: str = Field(..., description='Name of the action that was invoked.')
+    source: str = Field(
+        ..., description='Invocation source ("workflow", "direct", etc.).'
+    )
+    parameters: dict[str, Any] | None = Field(
+        None, description='Input parameters passed to the action.'
+    )
+    output_summary: dict[str, Any] | None = Field(
+        None, description='Truncated or summarized action output for audit purposes.'
+    )
+    status: str = Field(
+        ..., description='Terminal invocation status ("success", "failed", etc.).'
+    )
+    retry_count: int = Field(
+        ...,
+        description='Number of retry attempts before this terminal status was reached.',
+    )
+    started_at: datetime = Field(
+        ..., description='Timestamp when this invocation started.'
+    )
+    finished_at: datetime = Field(
+        ..., description='Timestamp when this invocation completed.'
+    )
+    error_type: str | None = Field(
+        None,
+        description='Machine-readable error classification when status is "failed".',
+    )
+    error_message: str | None = Field(
+        None, description='Human-readable error detail when status is "failed".'
+    )
 
 
 class ActionAuditLogListResponse(BaseModel):
-    items: list[ActionAuditLogEntry] | None = None
-    next_cursor: str | None = None
-    has_more: bool
+    items: list[ActionAuditLogEntry] | None = Field(
+        None, description='The list of results for this page.'
+    )
+    next_cursor: str | None = Field(
+        None,
+        description='Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.',
+    )
+    has_more: bool = Field(..., description='Whether additional pages are available.')
 
 
 class JobClaimRequest(BaseModel):
-    worker_id: str
+    worker_id: str = Field(
+        ...,
+        description='Caller-assigned stable identifier for this worker process. Used\nas the lease fence and for worker registry tracking.\n',
+    )
     agent_id: str | None = Field(
         None, description='Durable agent identity the worker is acting on behalf of.'
     )
     agent_session_id: str | None = Field(
         None, description='Live agent session the worker is acting on behalf of.'
     )
-    worker_name: str | None = None
-    worker_version: str | None = None
+    worker_name: str | None = Field(
+        None, description='Optional human-readable name shown in the worker list.'
+    )
+    worker_version: str | None = Field(
+        None, description='Optional version string shown in the worker list.'
+    )
     queues: list[str] | None = Field(
         None,
-        description='Queue names the worker subscribes to. When empty the\nworker claims from any queue in the org. Runs default\nto the "default" queue when not specified.\n',
+        description='Queue names the worker subscribes to. When empty the worker\nclaims from any queue in the project. Workflow runs default\nto the "default" queue when not otherwise specified.\n',
     )
     actions: list[str] | None = Field(
-        None, description='Action names this worker can execute.'
+        None,
+        description='Action names this worker can execute. When provided, only jobs\nwhose `action` is in this list are returned. When empty, action\nfiltering is skipped.\n',
     )
     wait_seconds: int | None = Field(
         None,
-        description='How long to hold the request open waiting for a job to\nsurface. 0 returns immediately.\n',
+        description='How long to hold the request open waiting for a job to surface.\n0 returns immediately. Capped at 30 by the server.\n',
         ge=0,
         le=30,
     )
 
 
 class JobClaim(BaseModel):
-    job_id: str
-    run_id: str
-    workflow_name: str
-    step_name: str
-    action: str
-    agent_id: str | None = None
-    agent_session_id: str | None = None
-    parameters: dict[str, Any]
-    attempt: int
-    queue: str
-    heartbeat_interval_seconds: int | None = None
+    job_id: str = Field(
+        ...,
+        description='Job ID — use as the `{id}` path parameter for heartbeat, complete, and events.',
+    )
+    run_id: str = Field(..., description='Parent workflow run ID.')
+    workflow_name: str = Field(
+        ..., description='Handle of the workflow definition that owns this run.'
+    )
+    step_name: str = Field(
+        ...,
+        description='Step label from the workflow spec — used for UI and interaction topic derivation.',
+    )
+    action: str = Field(
+        ..., description='Action name the worker must execute for this step.'
+    )
+    agent_id: str | None = Field(
+        None,
+        description='Agent that should execute this job, when the step is agent-targeted.',
+    )
+    agent_session_id: str | None = Field(
+        None, description='Agent session the job was routed to, when applicable.'
+    )
+    parameters: dict[str, Any] = Field(
+        ...,
+        description='Input parameters for this step, resolved from the workflow spec and prior step outputs.',
+    )
+    attempt: int = Field(
+        ...,
+        description='1-based attempt counter. Incremented on each automatic retry.\nInclude in the fence for all subsequent heartbeat and complete calls.\n',
+    )
+    queue: str = Field(..., description='Queue name the job was claimed from.')
+    heartbeat_interval_seconds: int | None = Field(
+        None,
+        description='Recommended heartbeat interval in seconds. Workers should call\n`POST /jobs/{id}/heartbeat` at this cadence to keep the lease\nalive. Typically 30 seconds.\n',
+    )
 
 
 class JobHeartbeatDirectives(BaseModel):
     should_cancel: bool | None = Field(
         False,
-        description='When true the worker must stop processing and complete with status failed.',
+        description='When true, the run has received a cancellation request. The\nworker must stop processing immediately and call complete with\n`status: failed`.\n',
     )
 
 
 class JobHeartbeat(BaseModel):
-    ok: bool
+    ok: bool = Field(..., description='True when the lease was successfully refreshed.')
     directives: JobHeartbeatDirectives
 
 
 class JobFenceRequest(BaseModel):
-    worker_id: str
-    attempt: int
+    worker_id: str = Field(
+        ..., description='Must match the `worker_id` from the original claim.'
+    )
+    attempt: int = Field(
+        ..., description='Must match the `attempt` from the original claim.'
+    )
 
 
 class Status(Enum):
+    """
+    Terminal status for this job attempt. `failed` triggers the
+    workflow engine's retry logic if `attempt < max_attempts`.
+
+    """
+
     completed = 'completed'
     failed = 'failed'
 
 
 class JobCompleteRequest(BaseModel):
-    worker_id: str
-    attempt: int
-    status: Status
-    result_b64: str | None = None
-    error_type: str | None = None
-    error_message: str | None = None
+    worker_id: str = Field(
+        ..., description='Must match the `worker_id` from the original claim.'
+    )
+    attempt: int = Field(
+        ..., description='Must match the `attempt` from the original claim.'
+    )
+    status: Status = Field(
+        ...,
+        description="Terminal status for this job attempt. `failed` triggers the\nworkflow engine's retry logic if `attempt < max_attempts`.\n",
+    )
+    result_b64: str | None = Field(
+        None,
+        description="Base64-encoded (standard encoding) bytes representing the job's\noutput. The workflow engine decodes this and may pass it as input\nto downstream steps. Omit if the step produces no output.\n",
+    )
+    error_type: str | None = Field(
+        None,
+        description='Short error class identifier (e.g. "TimeoutError"). Used for\nobservability and retry classification. Only relevant when\n`status: failed`.\n',
+    )
+    error_message: str | None = Field(
+        None,
+        description='Human-readable error detail. Only relevant for failed status.',
+    )
 
 
 class RunActionRequest(BaseModel):
-    parameters: dict[str, Any] | None = None
-    timeout_seconds: int | None = Field(None, ge=0)
-    dry_run: bool | None = None
+    parameters: dict[str, Any] | None = Field(
+        None, description='Input parameters passed to the action handler.'
+    )
+    timeout_seconds: int | None = Field(
+        None, description='Override the default action execution timeout.', ge=0
+    )
+    dry_run: bool | None = Field(
+        None,
+        description='When true, invokes the action without side effects. Only\neffective for actions that support dry-run mode.\n',
+    )
 
 
 class RunActionResult(BaseModel):
-    output: dict[str, Any] | list | str | float | int | bool
+    output: dict[str, Any] | list | str | float | int | bool = Field(
+        ..., description='Free-form output returned by the action handler.'
+    )
 
 
 class JobEventEntry(BaseModel):
     type: str = Field(
         ...,
-        description='Caller-chosen event type identifier. The `mobius.` prefix is\nreserved for server-emitted well-known kinds.\n',
+        description='Caller-chosen event type identifier. The `mobius.` prefix is\nreserved for server-emitted well-known kinds and is rejected\nwith 400.\n',
         max_length=64,
         min_length=1,
         pattern='^[a-zA-Z0-9_.-]+$',
     )
     payload: dict[str, Any] = Field(
         ...,
-        description='Free-form JSON payload. Bounded by the server-side byte\nlimit (default 16 KiB); oversize events are rejected with\n413.\n',
+        description='Free-form JSON payload. Bounded by the server-side byte limit\n(default 16 KiB per event); oversize payloads are rejected\nwith 413.\n',
     )
 
 
 class Type2(Enum):
+    """
+    Actor type: `user` or `service_account`.
+    """
+
     member = 'member'
     agent = 'agent'
     group = 'group'
 
 
 class ActorRef(BaseModel):
-    type: Type2
+    type: Type2 = Field(..., description='Actor type: `user` or `service_account`.')
     id: str = Field(
         ...,
         description='User ID for member; queue name for agent; group ID/handle for group',
@@ -823,9 +1483,15 @@ class InteractionOption(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    value: str
-    label: str
-    description: str | None = None
+    value: str = Field(
+        ..., description='Machine-readable value submitted when this option is chosen.'
+    )
+    label: str = Field(
+        ..., description='Human-readable label displayed for this option.'
+    )
+    description: str | None = Field(
+        None, description='Optional additional context shown beneath the label.'
+    )
 
 
 class InteractionSpec(BaseModel):
@@ -875,7 +1541,7 @@ class CreateJobInteractionRequest(BaseModel):
 
     target_actor: ActorRef
     type: InteractionType
-    message: str
+    message: str = Field(..., description='Message shown to the responder.')
     topic: str | None = Field(
         None,
         description='Optional signal topic override. When omitted, the server derives\nthe topic from step_name or falls back to a default interaction topic.\n',
@@ -883,7 +1549,10 @@ class CreateJobInteractionRequest(BaseModel):
     step_name: str | None = Field(
         None, description='Optional workflow step label for UI/debugging context'
     )
-    context: dict[str, Any] | None = None
+    context: dict[str, Any] | None = Field(
+        None,
+        description='Additional key-value context surfaced in the UI alongside the message.',
+    )
     spec: InteractionSpec | None = None
     require_all: bool | None = Field(
         False,
@@ -893,7 +1562,9 @@ class CreateJobInteractionRequest(BaseModel):
         None,
         description='Optional duration string (e.g. "24h", "30m") specifying how long\nthe interaction should remain open before expiring. When absent\nthe caller is responsible for setting expires_at directly.\n',
     )
-    expires_at: datetime | None = None
+    expires_at: datetime | None = Field(
+        None, description='Timestamp after which this interaction expires.'
+    )
 
 
 class InteractionValue(RootModel[dict[str, Any] | list | str | float | int | bool]):
@@ -904,18 +1575,30 @@ class InteractionValue(RootModel[dict[str, Any] | list | str | float | int | boo
 
 class InteractionResponse(BaseModel):
     value: InteractionValue
-    comment: str | None = None
+    comment: str | None = Field(
+        None, description='Optional free-text comment from the responder.'
+    )
     at: datetime = Field(..., description='When the response was submitted')
 
 
 class InteractionPartialResponse(BaseModel):
-    user_id: str
+    user_id: str = Field(
+        ..., description='ID of the user who submitted this partial response.'
+    )
     value: InteractionValue
-    comment: str | None = None
-    responded_at: datetime
+    comment: str | None = Field(
+        None, description='Optional free-text comment from this responder.'
+    )
+    responded_at: datetime = Field(
+        ..., description='Timestamp when this response was submitted.'
+    )
 
 
 class Status1(Enum):
+    """
+    Current status of the interaction.
+    """
+
     pending = 'pending'
     completed = 'completed'
     expired = 'expired'
@@ -931,8 +1614,10 @@ class RoutingPolicySnapshot(Enum):
 
 
 class Interaction(BaseModel):
-    id: str
-    org_id: str
+    id: str = Field(..., description='Unique identifier for this interaction.')
+    org_id: str = Field(
+        ..., description='ID of the organization this interaction belongs to.'
+    )
     run_id: str | None = Field(
         None, description='Originating workflow run when the interaction is run-backed.'
     )
@@ -941,19 +1626,30 @@ class Interaction(BaseModel):
         description='Signal topic used to resume the originating run when run-backed.',
     )
     type: InteractionType
-    status: Status1
+    status: Status1 = Field(..., description='Current status of the interaction.')
     message: str | None = Field(
         None, description='Human-readable message shown to the responder'
     )
-    context: dict[str, Any] | None = None
+    context: dict[str, Any] | None = Field(
+        None,
+        description='Additional key-value context surfaced in the UI alongside the message.',
+    )
     spec: InteractionSpec | None = None
     target_actor: ActorRef
     responder_actor: ActorRef | None = None
     response: InteractionResponse | None = None
-    expires_at: datetime | None = None
-    completed_at: datetime | None = None
-    created_at: datetime
-    updated_at: datetime
+    expires_at: datetime | None = Field(
+        None, description='Timestamp when this interaction expires if not responded to.'
+    )
+    completed_at: datetime | None = Field(
+        None, description='Timestamp when the interaction received a terminal response.'
+    )
+    created_at: datetime = Field(
+        ..., description='Timestamp when this interaction was created.'
+    )
+    updated_at: datetime = Field(
+        ..., description='Timestamp when this interaction was last updated.'
+    )
     target_group_id: str | None = Field(
         None, description='Resolved group ID (set when target_actor.type = group)'
     )
@@ -971,345 +1667,732 @@ class Interaction(BaseModel):
         None,
         description='User ID of the member who claimed this interaction (first_responder only)',
     )
-    claimed_at: datetime | None = None
+    claimed_at: datetime | None = Field(
+        None,
+        description='Timestamp when a first-responder member claimed this interaction.',
+    )
     partial_responses: list[InteractionPartialResponse] | None = Field(
         None, description='Per-member responses for all_members routing'
     )
 
 
 class TriggerKind(Enum):
+    """
+    Determines the event source and required `source_config` shape.
+    """
+
     schedule = 'schedule'
     webhook = 'webhook'
     event = 'event'
 
 
 class ConcurrencyPolicy(Enum):
+    """
+    Controls overlapping runs from the same trigger:
+    - `allow` — start new runs unconditionally.
+    - `forbid` — skip the new fire if a run from this trigger is still active.
+    - `replace` — cancel the active run before starting a new one.
+
+    """
+
     allow = 'allow'
     forbid = 'forbid'
     replace = 'replace'
 
 
 class TriggerFireStatus(Enum):
+    """
+    `skipped` means the fire was suppressed by the concurrency policy or a target condition evaluated to false.
+    """
+
     success = 'success'
     failed = 'failed'
     skipped = 'skipped'
 
 
 class TriggerTarget(BaseModel):
-    workflow_id: str
-    condition: str | None = None
-    input_mapping: dict[str, str] | None = None
+    """
+    A workflow to start when this trigger fires.
+    """
+
+    workflow_id: str = Field(..., description='ID of the workflow definition to run.')
+    condition: str | None = Field(
+        None,
+        description='Expression evaluated against the event payload. The target is\nskipped if this evaluates to false. Omit to always run.\n',
+    )
+    input_mapping: dict[str, str] | None = Field(
+        None,
+        description='Maps workflow input names to JSONPath expressions evaluated against\nthe event payload. Example: `{"user_id": "$.event.actor.id"}`.\n',
+    )
 
 
 class Trigger(BaseModel):
-    id: str
-    org_id: str
-    name: str
+    id: str = Field(..., description='Unique identifier for this trigger.')
+    org_id: str = Field(
+        ..., description='ID of the organization this trigger belongs to.'
+    )
+    name: str = Field(
+        ..., description='Human-readable trigger name, unique within the project.'
+    )
     kind: TriggerKind
-    source_config: dict[str, Any] | None = None
-    filter_config: dict[str, Any] | None = None
-    targets: list[TriggerTarget] | None = None
+    source_config: dict[str, Any] | None = Field(
+        None,
+        description='Kind-specific source configuration. For `schedule`: `{"cron": "0 * * * *"}`.\nFor `webhook` and `event`: contains event type filters.\n',
+    )
+    filter_config: dict[str, Any] | None = Field(
+        None,
+        description='Additional payload filters applied before targets are evaluated.',
+    )
+    targets: list[TriggerTarget] | None = Field(
+        None, description='Workflows to start when this trigger fires.'
+    )
     concurrency_policy: ConcurrencyPolicy
-    enabled: bool
-    last_fire_at: datetime | None = None
-    next_fire_at: datetime | None = None
-    created_by: str | None = None
-    created_at: datetime
-    updated_at: datetime
+    enabled: bool = Field(
+        ..., description='When false, the trigger is paused and will not fire.'
+    )
+    last_fire_at: datetime | None = Field(
+        None, description='Timestamp of the most recent fire attempt.'
+    )
+    next_fire_at: datetime | None = Field(
+        None, description='Computed next scheduled fire time (schedule triggers only).'
+    )
+    webhook_handle: str | None = Field(
+        None,
+        description='URL-safe handle for the inbound receive endpoint (webhook triggers only). Unique within the project.',
+    )
+    receive_url: str | None = Field(
+        None,
+        description='Full URL for posting inbound events (webhook triggers only). Computed from `webhook_handle`.',
+    )
+    created_by: str | None = Field(
+        None, description='User ID of the org member who created this trigger.'
+    )
+    created_at: datetime = Field(
+        ..., description='Timestamp when this trigger was created.'
+    )
+    updated_at: datetime = Field(
+        ..., description='Timestamp when this trigger was last updated.'
+    )
 
 
 class TriggerListResponse(BaseModel):
-    items: list[Trigger] | None = None
-    next_cursor: str | None = None
-    has_more: bool
+    items: list[Trigger] | None = Field(
+        None, description='The list of results for this page.'
+    )
+    next_cursor: str | None = Field(
+        None,
+        description='Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.',
+    )
+    has_more: bool = Field(..., description='Whether additional pages are available.')
 
 
 class TriggerFire(BaseModel):
-    id: str
-    org_id: str
-    trigger_id: str
-    scheduled_at: datetime | None = None
-    fired_at: datetime
-    run_id: str | None = None
+    """
+    A single trigger fire event and its outcome.
+    """
+
+    id: str = Field(..., description='Unique identifier for this fire record.')
+    org_id: str = Field(
+        ..., description='ID of the organization this trigger belongs to.'
+    )
+    project_id: str = Field(
+        ..., description='ID of the project this trigger belongs to.'
+    )
+    trigger_id: str = Field(..., description='ID of the trigger that fired.')
+    scheduled_at: datetime | None = Field(
+        None,
+        description='When the trigger was scheduled to fire (schedule triggers only).',
+    )
+    fired_at: datetime = Field(..., description='When the fire was actually processed.')
+    run_id: str | None = Field(
+        None,
+        description='Workflow run created by this fire. Absent when status is `skipped` or `failed` before run creation.',
+    )
     status: TriggerFireStatus
-    error: str | None = None
-    dedup_key: str | None = None
-    created_at: datetime
+    error: str | None = Field(None, description='Error detail when status is `failed`.')
+    dedup_key: str | None = Field(
+        None,
+        description='Deduplication key used to prevent duplicate fires for the same scheduled slot.',
+    )
+    created_at: datetime = Field(
+        ..., description='Timestamp when this fire record was created.'
+    )
 
 
 class TriggerFireListResponse(BaseModel):
-    items: list[TriggerFire] | None = None
-    next_cursor: str | None = None
-    has_more: bool
+    items: list[TriggerFire] | None = Field(
+        None, description='The list of results for this page.'
+    )
+    next_cursor: str | None = Field(
+        None,
+        description='Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.',
+    )
+    has_more: bool = Field(..., description='Whether additional pages are available.')
 
 
 class CreateTriggerRequest(BaseModel):
-    name: str
+    name: str = Field(
+        ..., description='Human-readable trigger name, unique within the project.'
+    )
     kind: TriggerKind
-    source_config: dict[str, Any] | None = None
-    filter_config: dict[str, Any] | None = None
-    targets: list[TriggerTarget] | None = None
+    source_config: dict[str, Any] | None = Field(
+        None,
+        description='Kind-specific configuration. Required for `schedule` triggers:\n`{"cron": "0 9 * * 1-5"}`. For `event` triggers: event type and\nfilter expressions.\n',
+    )
+    filter_config: dict[str, Any] | None = Field(
+        None, description='Additional payload filters evaluated before targets.'
+    )
+    targets: list[TriggerTarget] | None = Field(
+        None, description='Workflows to start when this trigger fires.'
+    )
     concurrency_policy: ConcurrencyPolicy | None = None
-    enabled: bool | None = None
+    enabled: bool | None = Field(
+        True, description='Whether the trigger starts enabled. Defaults to true.'
+    )
+    webhook_handle: str | None = Field(
+        None,
+        description='URL-safe handle that determines the inbound receive URL. Required\nfor `webhook` triggers. Must be unique within the project.\n',
+    )
+    webhook_secret: str | None = Field(
+        None,
+        description='Optional HMAC-SHA256 secret for verifying inbound webhook payloads.\nWhen set, Mobius validates the `X-Mobius-Signature` header on\nincoming requests.\n',
+    )
 
 
 class UpdateTriggerRequest(BaseModel):
-    name: str | None = None
-    source_config: dict[str, Any] | None = None
-    filter_config: dict[str, Any] | None = None
-    targets: list[TriggerTarget] | None = None
+    name: str | None = Field(None, description='Replacement human-readable name.')
+    source_config: dict[str, Any] | None = Field(
+        None, description='Replacement kind-specific source configuration.'
+    )
+    filter_config: dict[str, Any] | None = Field(
+        None, description='Replacement payload filter configuration.'
+    )
+    targets: list[TriggerTarget] | None = Field(
+        None, description='Replaces the entire targets array.'
+    )
     concurrency_policy: ConcurrencyPolicy | None = None
-    enabled: bool | None = None
+    enabled: bool | None = Field(
+        None, description='Set to false to pause the trigger without deleting it.'
+    )
+    webhook_handle: str | None = Field(
+        None,
+        description='Changing this changes the `receive_url`; update any upstream integrations.',
+    )
+    webhook_secret: str | None = Field(
+        None, description='Replace or clear the inbound signature verification secret.'
+    )
 
 
 class Worker(BaseModel):
-    worker_id: str
-    name: str | None = None
-    version: str | None = None
-    last_seen_at: datetime | None = None
-    capabilities: list[str] | None = None
-    stale: bool
+    worker_id: str = Field(
+        ..., description='Caller-assigned stable identifier for this worker process.'
+    )
+    name: str | None = Field(
+        None, description='Optional human-readable name supplied in the claim request.'
+    )
+    version: str | None = Field(
+        None, description='Optional version string supplied in the claim request.'
+    )
+    last_seen_at: datetime | None = Field(
+        None,
+        description="Timestamp of the worker's most recent job claim poll. Updated on\nevery `POST /jobs/claim` call regardless of whether a job was\nreturned. Used to compute `stale`.\n",
+    )
+    capabilities: list[str] | None = Field(
+        None,
+        description='Reserved for future capability-based job routing. Not currently used for filtering.',
+    )
+    stale: bool = Field(
+        ...,
+        description='True when `last_seen_at` is older than 2 minutes or absent.\nComputed at read time, not stored.\n',
+    )
 
 
 class WorkerListResponse(BaseModel):
-    items: list[Worker]
+    items: list[Worker] = Field(..., description='The list of recently seen workers.')
 
 
 class Project(BaseModel):
-    id: str
-    name: str
-    handle: str
-    description: str | None = None
-    created_by: str | None = None
-    created_at: datetime
-    updated_at: datetime
+    id: str = Field(..., description='Unique identifier for this project.')
+    name: str = Field(..., description='Human-readable project name.')
+    handle: str = Field(
+        ...,
+        description='URL-safe slug used as a path segment in all project-scoped API routes.\nUnique within the org. Immutable after creation.\n',
+    )
+    description: str | None = Field(
+        None, description='Optional human-readable description.'
+    )
+    created_by: str | None = Field(
+        None, description='User ID of the org member who created this project.'
+    )
+    created_at: datetime = Field(
+        ..., description='Timestamp when this project was created.'
+    )
+    updated_at: datetime = Field(
+        ..., description='Timestamp when this project was last updated.'
+    )
 
 
 class ProjectListResponse(BaseModel):
-    items: list[Project]
+    items: list[Project] = Field(..., description='The list of results for this page.')
 
 
 class CreateProjectRequest(BaseModel):
-    name: str
-    handle: str | None = None
-    description: str | None = None
+    name: str = Field(..., description='Human-readable project name.')
+    handle: str | None = Field(
+        None,
+        description='URL-safe slug for API routes. Auto-derived from name if omitted.\nMust be unique within the org. Cannot be changed after creation.\n',
+    )
+    description: str | None = Field(
+        None, description='Optional human-readable description.'
+    )
 
 
 class UpdateProjectRequest(BaseModel):
-    name: str | None = None
-    description: str | None = None
+    name: str | None = Field(None, description='Replacement human-readable name.')
+    description: str | None = Field(None, description='Replacement description.')
 
 
-class WebhookEventStatus(Enum):
+class WebhookDeliveryStatus(Enum):
+    """
+    `pending` — queued, not yet attempted.
+    `processing` — currently being delivered.
+    `delivered` — recipient returned 2xx.
+    `failed` — all retry attempts exhausted.
+
+    """
+
     pending = 'pending'
-    acknowledged = 'acknowledged'
+    processing = 'processing'
+    delivered = 'delivered'
     failed = 'failed'
-    expired = 'expired'
 
 
 class Webhook(BaseModel):
     """
-    A managed inbound webhook endpoint hosted by Mobius.
+    A project-level outgoing webhook subscription. When a subscribed
+    event fires, Mobius POSTs the event payload to `url`.
 
     """
 
-    id: str
-    org_id: str
-    name: str
-    handle: str = Field(
-        ..., description='Immutable URL-safe identifier used in the receive endpoint'
+    id: str = Field(..., description='Unique identifier for this webhook.')
+    org_id: str = Field(
+        ..., description='ID of the organization this webhook belongs to.'
     )
-    receive_url: str = Field(
+    project_id: str = Field(
+        ..., description='ID of the project this webhook belongs to.'
+    )
+    name: str = Field(
+        ..., description='Human-readable name, unique within the project.'
+    )
+    url: str = Field(
+        ..., description='The customer endpoint Mobius POSTs event payloads to.'
+    )
+    events: list[str] = Field(
         ...,
-        description='Full URL that external systems POST to when sending inbound webhook events to Mobius.',
+        description='Subscribed event types. Use dot notation (`run.completed`,\n`run.failed`) or wildcards (`run.*` for all run events).\n',
     )
-    enabled: bool
-    created_by: str | None = None
-    created_at: datetime
-    updated_at: datetime
+    enabled: bool = Field(
+        ..., description='When false, matching events are not delivered.'
+    )
+    created_by: str | None = Field(
+        None, description='User ID of the org member who created this webhook.'
+    )
+    created_at: datetime = Field(
+        ..., description='Timestamp when this webhook was created.'
+    )
+    updated_at: datetime = Field(
+        ..., description='Timestamp when this webhook was last updated.'
+    )
 
 
 class WebhookListResponse(BaseModel):
-    items: list[Webhook] | None = None
-    next_cursor: str | None = None
-    has_more: bool
+    items: list[Webhook] | None = Field(
+        None, description='The list of results for this page.'
+    )
+    next_cursor: str | None = Field(
+        None,
+        description='Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.',
+    )
+    has_more: bool = Field(..., description='Whether additional pages are available.')
 
 
-class WebhookEvent(BaseModel):
+class WebhookDelivery(BaseModel):
     """
-    One inbound HTTP request received by a managed webhook endpoint.
+    One delivery record for a webhook event. The daemon claims pending
+    rows, POSTs the payload, and transitions to `delivered` or retries
+    on failure. A delivery reaches `failed` only after exhausting all
+    10 retry attempts.
 
     """
 
-    id: str
-    org_id: str
-    webhook_id: str
-    payload: dict[str, Any] | None = None
-    status: WebhookEventStatus
-    received_at: datetime
-    acknowledged_at: datetime | None = None
-    expires_at: datetime | None = None
+    id: str = Field(..., description='Unique identifier for this delivery record.')
+    webhook_id: str = Field(
+        ..., description='ID of the webhook this delivery belongs to.'
+    )
+    org_id: str = Field(
+        ..., description='ID of the organization this delivery belongs to.'
+    )
+    run_id: str | None = Field(
+        None, description='Run that triggered the event, when applicable.'
+    )
+    event_type: str = Field(
+        ...,
+        description='The event type that triggered this delivery (e.g. `run.completed`).',
+    )
+    status: WebhookDeliveryStatus
+    attempts: int = Field(
+        ..., description='Number of delivery attempts made so far. Max 10.'
+    )
+    last_error: str | None = Field(
+        None, description='Error message from the most recent failed attempt.'
+    )
+    created_at: datetime = Field(
+        ..., description='Timestamp when this delivery was first attempted.'
+    )
+    delivered_at: datetime | None = Field(
+        None,
+        description='Timestamp of the successful delivery. Absent until delivered.',
+    )
 
 
-class WebhookEventListResponse(BaseModel):
-    items: list[WebhookEvent] | None = None
-    next_cursor: str | None = None
-    has_more: bool
+class WebhookDeliveryListResponse(BaseModel):
+    items: list[WebhookDelivery] | None = Field(
+        None, description='The list of results for this page.'
+    )
+    next_cursor: str | None = Field(
+        None,
+        description='Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.',
+    )
+    has_more: bool = Field(..., description='Whether additional pages are available.')
 
 
 class CreateWebhookRequest(BaseModel):
-    name: str
-    handle: str | None = Field(
-        None, description='URL-safe handle; auto-generated from name if omitted'
+    name: str = Field(
+        ..., description='Human-readable name, unique within the project.'
+    )
+    url: str = Field(
+        ..., description='The endpoint Mobius will POST event payloads to.'
     )
     secret: str | None = Field(
         None,
-        description='Shared secret associated with the webhook. Stored as a hash and not returned after creation.',
+        description='Optional shared secret. When set, Mobius signs each POST body\nwith HMAC-SHA256 and includes `X-Mobius-Signature: sha256=<hex>`\nin the request headers.\n',
     )
-    enabled: bool | None = None
+    events: list[str] = Field(
+        ...,
+        description='Event types to subscribe to. Use wildcards for broad\nsubscriptions, e.g. `["run.*"]` for all run events.\n',
+    )
+    enabled: bool | None = Field(
+        True, description='Whether the webhook starts enabled. Defaults to true.'
+    )
 
 
 class UpdateWebhookRequest(BaseModel):
-    name: str | None = None
+    name: str | None = Field(None, description='Replacement human-readable name.')
+    url: str | None = Field(None, description='Replacement endpoint URL.')
     secret: str | None = Field(
-        None, description="Replace or clear the webhook's shared secret"
+        None,
+        description='Replace the current signing secret. Set to empty string to\ndisable signing. Omit to leave the current secret unchanged.\n',
     )
-    enabled: bool | None = None
+    events: list[str] | None = Field(
+        None,
+        description='Replacement event subscriptions. Replaces the entire current list.',
+    )
+    enabled: bool | None = Field(
+        None,
+        description='Set to false to disable delivery without deleting the webhook.',
+    )
 
 
 class IntegrationStatus(Enum):
+    """
+    `active` — integration is enabled and usable by workflows.
+    `inactive` — manually disabled; no automatic expiry behavior.
+    `expired` — token/credential has expired (e.g., OAuth token not refreshed).
+
+    """
+
     active = 'active'
     inactive = 'inactive'
     expired = 'expired'
 
 
 class Integration(BaseModel):
-    id: str
-    org_id: str
-    name: str
-    provider: str
-    config: dict[str, Any] | None = None
+    id: str = Field(..., description='Unique identifier for this integration.')
+    org_id: str = Field(
+        ..., description='ID of the organization this integration belongs to.'
+    )
+    name: str = Field(
+        ..., description='Human-readable name, unique per `(project, provider)` tuple.'
+    )
+    provider: str = Field(
+        ...,
+        description='Free-form provider identifier (e.g. `openai`, `slack`, `github`).\nImmutable after creation.\n',
+    )
+    config: dict[str, Any] | None = Field(
+        None,
+        description='Provider-specific credential and configuration blob stored as\nJSON. The shape is provider-defined.\n',
+    )
     status: IntegrationStatus
-    created_by: str | None = None
-    created_at: datetime
-    updated_at: datetime
+    created_by: str | None = Field(
+        None, description='User ID of the org member who created this integration.'
+    )
+    created_at: datetime = Field(
+        ..., description='Timestamp when this integration was created.'
+    )
+    updated_at: datetime = Field(
+        ..., description='Timestamp when this integration was last updated.'
+    )
 
 
 class IntegrationListResponse(BaseModel):
-    items: list[Integration] | None = None
-    next_cursor: str | None = None
-    has_more: bool
+    items: list[Integration] | None = Field(
+        None, description='The list of results for this page.'
+    )
+    next_cursor: str | None = Field(
+        None,
+        description='Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.',
+    )
+    has_more: bool = Field(..., description='Whether additional pages are available.')
 
 
 class CreateIntegrationRequest(BaseModel):
-    name: str
-    provider: str
-    config: dict[str, Any] | None = None
+    name: str = Field(
+        ...,
+        description='Human-readable name. Must be unique per `(project, provider)` tuple.',
+    )
+    provider: str = Field(
+        ...,
+        description='Provider identifier string (e.g. `openai`, `github`). Immutable after creation.',
+    )
+    credentials: dict[str, Any] | None = Field(
+        None,
+        description='Sensitive credentials (API keys, tokens, secrets). Stored encrypted and never returned in API responses.',
+    )
+    config: dict[str, Any] | None = Field(
+        None,
+        description='Non-sensitive provider-specific settings (e.g. default bucket, from address).',
+    )
 
 
 class UpdateIntegrationRequest(BaseModel):
-    name: str | None = None
-    config: dict[str, Any] | None = None
+    name: str | None = Field(None, description='Updated display name.')
+    credentials: dict[str, Any] | None = Field(
+        None,
+        description='Replacement credentials blob (full replace). Stored encrypted and never returned in API responses.',
+    )
+    config: dict[str, Any] | None = Field(
+        None, description='Replacement config blob (full replace, not merge).'
+    )
     status: IntegrationStatus | None = None
 
 
 class CopyIntegrationRequest(BaseModel):
     source_project_id: str = Field(
-        ..., description='ID of the project the integration is copied from.'
+        ..., description='ID of the source project. Must be in the same org.'
     )
     source_integration_id: str = Field(
-        ..., description='ID of the integration to copy.'
+        ..., description='ID of the integration to copy from the source project.'
     )
     name: str | None = Field(
         None,
-        description='Optional new name for the copied integration. Defaults to the source name.',
+        description="Name for the copied integration in the destination project.\nDefaults to the source integration's name. Required if the\nsource name conflicts with an existing `(provider, name)` in\nthis project.\n",
     )
 
 
 class BillingSubscription(BaseModel):
-    id: str
-    org_id: str
-    plan_type: str
-    status: str
-    seat_count: int
-    current_period_start: datetime
-    current_period_end: datetime
-    trial_ends_at: datetime | None = None
-    grace_ends_at: datetime | None = None
-    trial_days_remaining: int
-    trial_warning: bool
-    monthly_credit_cap: int
-    per_run_step_cap: int
-    alert_thresholds_percent: list[int]
-    cancel_at_period_end: bool
-    created_at: datetime
-    updated_at: datetime
+    id: str = Field(..., description='Unique identifier for this subscription.')
+    org_id: str = Field(
+        ..., description='ID of the organization this subscription belongs to.'
+    )
+    plan_type: str = Field(
+        ...,
+        description='Active plan: `trial`, `free`, `pro`, or `business`. New orgs\nstart on `trial`; the plan downgrades to `free` when the trial\nexpires.\n',
+    )
+    status: str = Field(
+        ...,
+        description='Stripe subscription status: `active`, `trialing`, `past_due`,\n`canceled`, `unpaid`, or `incomplete`.\n',
+    )
+    seat_count: int = Field(
+        ..., description='Number of licensed seats included in the subscription.'
+    )
+    current_period_start: datetime = Field(
+        ..., description='Start of the current billing period.'
+    )
+    current_period_end: datetime = Field(
+        ...,
+        description='End of the current billing period. Usage resets at this timestamp.',
+    )
+    trial_ends_at: datetime | None = Field(
+        None, description='When the trial period expires. Only set for `trial` plan.'
+    )
+    grace_ends_at: datetime | None = Field(
+        None,
+        description='When the post-expiry grace period ends. During grace, the org\nretains access but is prompted to upgrade.\n',
+    )
+    trial_days_remaining: int = Field(
+        ..., description='Days remaining in the trial. 0 when the trial has ended.'
+    )
+    trial_warning: bool = Field(
+        ..., description='True when fewer than 7 days remain in the trial period.'
+    )
+    monthly_credit_cap: int = Field(
+        ...,
+        description='Maximum usage credits allowed per billing period. Workflow\nexecution is blocked when this cap is reached.\n',
+    )
+    per_run_step_cap: int = Field(
+        ...,
+        description='Maximum number of job steps allowed per individual workflow run.\nDefault: 10,000 (pro/trial), 50,000 (business).\n',
+    )
+    alert_thresholds_percent: list[int] = Field(
+        ...,
+        description='Percentage levels (1–100) of `monthly_credit_cap` at which usage\nalert notifications are sent. Up to `max_alert_thresholds` from\nthe plan.\n',
+    )
+    cancel_at_period_end: bool = Field(
+        ...,
+        description='When true, the subscription will not renew at `current_period_end`.',
+    )
+    created_at: datetime = Field(
+        ..., description='Timestamp when this subscription was created.'
+    )
+    updated_at: datetime = Field(
+        ..., description='Timestamp when this subscription was last updated.'
+    )
 
 
 class BillingPlan(BaseModel):
-    plan_type: str
-    price_cents: int
-    included_credits: int
-    seat_limit: int
-    default_monthly_credit_cap: int
-    default_per_run_step_cap: int
-    max_alert_thresholds: int
-    trial_days: int
-    credit_card_required: bool
+    plan_type: str = Field(
+        ..., description='Plan name — `trial`, `pro`, or `business`.'
+    )
+    price_cents: int = Field(..., description='Monthly price in cents (USD).')
+    included_credits: int = Field(
+        ..., description='Usage credits included in the base price.'
+    )
+    seat_limit: int = Field(
+        ..., description='Maximum org members on this plan. 0 means unlimited.'
+    )
+    default_monthly_credit_cap: int = Field(
+        ...,
+        description='Default `monthly_credit_cap` applied to new subscriptions on this plan.',
+    )
+    default_per_run_step_cap: int = Field(
+        ...,
+        description='Default `per_run_step_cap` applied to new subscriptions on this plan.',
+    )
+    max_alert_thresholds: int = Field(
+        ..., description='Maximum number of alert thresholds configurable on this plan.'
+    )
+    trial_days: int = Field(
+        ..., description='Trial period length in days. 0 for plans without a trial.'
+    )
+    credit_card_required: bool = Field(
+        ..., description='When true, a payment method is required to start this plan.'
+    )
 
 
 class BillingPlanListResponse(BaseModel):
-    items: list[BillingPlan]
+    items: list[BillingPlan] = Field(..., description='The list of available plans.')
 
 
 class BillingUsageKeySummary(BaseModel):
-    api_key_id: str
-    count: int
+    api_key_id: str = Field(..., description='The API key responsible for this usage.')
+    count: int = Field(
+        ...,
+        description='Number of usage records attributed to this key in the current period.',
+    )
 
 
 class BillingUsageSummary(BaseModel):
-    current_period_start: datetime
-    current_period_end: datetime
-    current_usage: int
-    included_limit: int
-    overage_calls: int
-    overage_cost: int
-    by_category: dict[str, int]
-    by_api_key: list[BillingUsageKeySummary]
+    current_period_start: datetime = Field(
+        ..., description='Start of the current billing period.'
+    )
+    current_period_end: datetime = Field(
+        ..., description='End of the current billing period.'
+    )
+    current_usage: int = Field(
+        ..., description='Total usage credits consumed in the current billing period.'
+    )
+    included_limit: int = Field(
+        ..., description='Included credits from the plan before overage applies.'
+    )
+    overage_calls: int = Field(
+        ..., description='Number of usage records that exceed the included limit.'
+    )
+    overage_cost: int = Field(
+        ..., description='Estimated overage cost in cents for the current period.'
+    )
+    by_category: dict[str, int] = Field(
+        ..., description='Usage breakdown by resource category (e.g. `run`, `job`).'
+    )
+    by_api_key: list[BillingUsageKeySummary] = Field(
+        ..., description='Per-API-key usage breakdown for cost attribution.'
+    )
 
 
 class Invoice(BaseModel):
-    id: str
-    status: str
-    currency: str
-    amount_due: int
-    amount_paid: int
-    hosted_invoice_url: AnyUrl | None = None
-    invoice_pdf: AnyUrl | None = None
-    created_at: datetime
+    id: str = Field(..., description='Stripe invoice ID.')
+    status: str = Field(
+        ...,
+        description='Stripe invoice status (`draft`, `open`, `paid`, `void`, `uncollectible`).',
+    )
+    currency: str = Field(..., description='ISO 4217 currency code (e.g. `usd`).')
+    amount_due: int = Field(
+        ..., description='Total amount due in the smallest currency unit (e.g. cents).'
+    )
+    amount_paid: int = Field(
+        ..., description='Amount already paid against this invoice.'
+    )
+    hosted_invoice_url: AnyUrl | None = Field(
+        None, description='Stripe-hosted invoice page URL for the customer.'
+    )
+    invoice_pdf: AnyUrl | None = Field(
+        None, description='Direct link to the invoice PDF.'
+    )
+    created_at: datetime = Field(
+        ..., description='Timestamp when this invoice was created by Stripe.'
+    )
 
 
 class InvoiceListResponse(BaseModel):
-    items: list[Invoice]
+    items: list[Invoice] = Field(
+        ..., description='The list of recent invoices, newest first.'
+    )
 
 
 class CreateCheckoutRequest(BaseModel):
-    success_url: AnyUrl
-    cancel_url: AnyUrl
+    success_url: AnyUrl = Field(
+        ..., description='URL Stripe redirects to after a successful checkout.'
+    )
+    cancel_url: AnyUrl = Field(
+        ..., description='URL Stripe redirects to when the user cancels checkout.'
+    )
 
 
 class CreatePortalRequest(BaseModel):
-    return_url: AnyUrl
+    return_url: AnyUrl = Field(
+        ...,
+        description='URL Stripe redirects to after the user exits the customer portal.',
+    )
 
 
 class BillingURLResult(BaseModel):
-    url: AnyUrl
+    url: AnyUrl = Field(
+        ..., description="Stripe-hosted URL to redirect the user's browser to."
+    )
 
 
 class UpdateBillingLimitsRequest(BaseModel):
-    monthly_credit_cap: int | None = None
-    per_run_step_cap: int | None = None
-    alert_thresholds_percent: list[int] | None = None
+    monthly_credit_cap: int | None = Field(
+        None,
+        description='New monthly credit ceiling. When reached, workflow execution is\nblocked until the next billing period.\n',
+    )
+    per_run_step_cap: int | None = Field(
+        None,
+        description='Maximum job steps per workflow run. Prevents runaway runs from\nconsuming unbounded credits.\n',
+    )
+    alert_thresholds_percent: list[int] | None = Field(
+        None,
+        description="Replacement list of alert threshold percentages (1–100). Replaces\nthe full existing list. Must not exceed the plan's\n`max_alert_thresholds`.\n",
+    )
 
 
 class OnboardingStatus(BaseModel):
@@ -1331,182 +2414,400 @@ class OnboardingResult(BaseModel):
 
 
 class ProjectMetrics(BaseModel):
-    generated_at: datetime
-    window_minutes: int
-    runs_per_minute: float
-    total_runs_window: int
-    failure_rate: float
-    avg_run_seconds: float
-    p95_step_seconds: float
-    queue_depth: int
-    running_count: int
-    active_workers: int
-    stale_workers: int
-    status_breakdown: dict[str, int]
+    generated_at: datetime = Field(
+        ..., description='Timestamp when this metrics snapshot was computed.'
+    )
+    window_minutes: int = Field(
+        ...,
+        description='Rolling window width used for rate and failure metrics. Default is 60 minutes.',
+    )
+    runs_per_minute: float = Field(
+        ...,
+        description='Average number of new workflow runs started per minute within the window.',
+    )
+    total_runs_window: int = Field(
+        ..., description='Total number of workflow runs started within the window.'
+    )
+    failure_rate: float = Field(
+        ...,
+        description='Fraction of completed runs that ended in `failed` status within\nthe window. Range 0.0–1.0.\n',
+    )
+    avg_run_seconds: float = Field(
+        ...,
+        description='Mean wall-clock duration of completed runs within the window,\nin seconds.\n',
+    )
+    p95_step_seconds: float = Field(
+        ...,
+        description='95th-percentile job duration (claim time to terminal state)\ncomputed across the 40 most recent completed jobs, in seconds.\nUse this to detect slow or stuck steps.\n',
+    )
+    queue_depth: int = Field(
+        ...,
+        description='Number of jobs currently in `pending` state waiting to be claimed.',
+    )
+    running_count: int = Field(
+        ...,
+        description='Number of workflow runs currently in `running` or `suspended` state.',
+    )
+    active_workers: int = Field(
+        ...,
+        description='Number of workers whose `last_seen_at` is within the 2-minute staleness threshold.',
+    )
+    stale_workers: int = Field(
+        ...,
+        description='Number of workers whose `last_seen_at` has exceeded the 2-minute staleness threshold.',
+    )
+    status_breakdown: dict[str, int] = Field(
+        ...,
+        description='Map of workflow run status → count across all runs in the project\n(not windowed). Includes all terminal and in-progress statuses.\n',
+    )
 
 
 class PreviewPermissionsRequest(BaseModel):
     service_account_default_role: str | None = Field(
         None,
-        description='Role name to assign by default to service accounts without existing assignments.',
+        description='Role name assigned as a fallback to service accounts that have no\nexplicit assignment at the time of preview.\n',
     )
 
 
 class ActorType(Enum):
+    """
+    Actor type: `user` or `service_account`.
+    """
+
     user = 'user'
     service_account = 'service_account'
 
 
 class PermissionsAssignmentInput(BaseModel):
-    actor_type: ActorType
-    actor_id: str
-    role_id: str | None = None
-    role_name: str | None = None
-    project_id: str | None = None
+    actor_type: ActorType = Field(
+        ..., description='Actor type: `user` or `service_account`.'
+    )
+    actor_id: str = Field(..., description='ID of the user or service account.')
+    role_id: str | None = Field(
+        None, description='Mutually exclusive with `role_name`.'
+    )
+    role_name: str | None = Field(
+        None,
+        description='Resolved to a role ID server-side. Mutually exclusive with `role_id`.',
+    )
+    project_id: str | None = Field(
+        None, description='Scope this assignment to a project. Omit for org-wide.'
+    )
 
 
 class PermissionsAssignmentProposal(BaseModel):
-    actor_type: ActorType
-    actor_id: str
-    role_id: str
-    role_name: str
-    project_id: str | None = None
+    actor_type: ActorType = Field(
+        ..., description='Actor type: `user` or `service_account`.'
+    )
+    actor_id: str = Field(..., description='ID of the user or service account.')
+    role_id: str = Field(..., description='ID of the role that would be assigned.')
+    role_name: str = Field(..., description='Name of the role that would be assigned.')
+    project_id: str | None = Field(
+        None,
+        description='Project scope for the assignment. Null for org-wide assignments.',
+    )
 
 
 class PermissionsPlan(BaseModel):
-    permissions_enabled: bool
-    assignments: list[PermissionsAssignmentProposal]
+    """
+    Current or proposed permissions state, including the full set of role assignments.
+    """
+
+    permissions_enabled: bool = Field(
+        ...,
+        description='Whether enforcement is currently (or will be after enable) active.',
+    )
+    assignments: list[PermissionsAssignmentProposal] = Field(
+        ..., description='The set of role assignments that will be created on enable.'
+    )
 
 
 class PermissionsState(BaseModel):
-    permissions_enabled: bool
+    permissions_enabled: bool = Field(
+        ..., description='Whether enforcement is currently active for the org.'
+    )
 
 
 class Role2(BaseModel):
-    id: str
-    org_id: str | None = None
-    project_id: str | None = None
-    name: str
-    description: str
-    permissions: list[str]
-    system_defined: bool
-    created_at: datetime
-    updated_at: datetime
+    id: str = Field(..., description='Unique identifier for this role.')
+    org_id: str | None = Field(
+        None, description='Owning org. Empty for system-defined roles.'
+    )
+    project_id: str | None = Field(
+        None, description='Scoping project. Empty for org-wide roles.'
+    )
+    name: str = Field(
+        ..., description='Human-readable role name, unique within org+project scope.'
+    )
+    description: str = Field(
+        ..., description='Optional human-readable description of what this role grants.'
+    )
+    permissions: list[str] = Field(
+        ...,
+        description='Permission strings granted by this role (e.g. "mobius.job.claim").',
+    )
+    system_defined: bool = Field(
+        ...,
+        description='True for built-in platform roles that cannot be modified or deleted.',
+    )
+    created_at: datetime = Field(
+        ..., description='Timestamp when this role was created.'
+    )
+    updated_at: datetime = Field(
+        ..., description='Timestamp when this role was last updated.'
+    )
+
+
+class ActorType2(Enum):
+    """
+    Type of actor this assignment applies to: `user` or `service_account`.
+    """
+
+    user = 'user'
+    service_account = 'service_account'
 
 
 class RoleAssignment(BaseModel):
-    id: str
-    org_id: str
-    actor_type: ActorType
-    actor_id: str
-    role_id: str
-    role_name: str
-    project_id: str | None = None
-    granted_by_actor_type: str | None = None
-    granted_by_actor_id: str | None = None
-    created_at: datetime
+    id: str = Field(..., description='Unique identifier for this role assignment.')
+    org_id: str = Field(
+        ..., description='ID of the organization this assignment belongs to.'
+    )
+    actor_type: ActorType2 = Field(
+        ...,
+        description='Type of actor this assignment applies to: `user` or `service_account`.',
+    )
+    actor_id: str = Field(
+        ..., description='User ID or service account ID receiving the role.'
+    )
+    role_id: str = Field(..., description='ID of the assigned role.')
+    role_name: str = Field(..., description='Name of the assigned role.')
+    project_id: str | None = Field(
+        None, description='Set for project-scoped assignments; empty for org-wide.'
+    )
+    granted_by_actor_type: str | None = Field(
+        None, description='Actor type of the caller who created this assignment.'
+    )
+    granted_by_actor_id: str | None = Field(
+        None, description='Actor ID of the caller who created this assignment.'
+    )
+    created_at: datetime = Field(
+        ..., description='Timestamp when this assignment was created.'
+    )
 
 
 class RoleListResponse(BaseModel):
-    items: list[Role2]
+    items: list[Role2] = Field(..., description='The list of results for this page.')
 
 
 class RoleAssignmentListResponse(BaseModel):
-    items: list[RoleAssignment]
+    items: list[RoleAssignment] = Field(
+        ..., description='The list of results for this page.'
+    )
 
 
 class CreateRoleRequest(BaseModel):
-    project_id: str | None = None
-    name: str
-    description: str | None = None
-    permissions: list[str]
+    project_id: str | None = Field(
+        None, description='Scope the role to a project. Omit for an org-wide role.'
+    )
+    name: str = Field(..., description='Unique name within the org+project scope.')
+    description: str | None = Field(
+        None,
+        description='Optional human-readable description of what this role grants.',
+    )
+    permissions: list[str] = Field(
+        ...,
+        description='Permission strings to include (e.g. "mobius.workflow.create").',
+    )
 
 
 class UpdateRoleRequest(BaseModel):
-    project_id: str | None = None
-    name: str | None = None
-    description: str | None = None
-    permissions: list[str] | None = None
+    project_id: str | None = Field(
+        None,
+        description='Scope to change this role to. Cannot change an org-scoped role to project-scoped after creation.',
+    )
+    name: str | None = Field(None, description='Replacement role name.')
+    description: str | None = Field(None, description='Replacement description.')
+    permissions: list[str] | None = Field(
+        None, description='Replaces the existing permissions array entirely.'
+    )
+
+
+class ActorType3(Enum):
+    """
+    Type of actor to assign the role to: `user` or `service_account`.
+    """
+
+    user = 'user'
+    service_account = 'service_account'
 
 
 class CreateRoleAssignmentRequest(BaseModel):
-    actor_type: ActorType
-    actor_id: str
-    role_id: str | None = None
-    role_name: str | None = None
-    project_id: str | None = None
+    actor_type: ActorType3 = Field(
+        ...,
+        description='Type of actor to assign the role to: `user` or `service_account`.',
+    )
+    actor_id: str = Field(
+        ..., description='User ID or service account ID to assign the role to.'
+    )
+    role_id: str | None = Field(
+        None, description='Mutually exclusive with `role_name`.'
+    )
+    role_name: str | None = Field(
+        None,
+        description='Resolved to a role ID server-side. Mutually exclusive with `role_id`.',
+    )
+    project_id: str | None = Field(
+        None,
+        description='Scope this assignment to a project. Omit for org-wide assignment.',
+    )
 
 
 class User(BaseModel):
-    id: str
-    email: str
-    first_name: str | None = None
-    last_name: str | None = None
-    avatar_url: str | None = None
-    created_at: datetime
-    updated_at: datetime
+    id: str = Field(
+        ..., description='Clerk user ID. Stable and globally unique across all orgs.'
+    )
+    email: str = Field(..., description='Primary email address from Clerk.')
+    first_name: str | None = Field(
+        None, description="User's first name from their Clerk profile."
+    )
+    last_name: str | None = Field(
+        None, description="User's last name from their Clerk profile."
+    )
+    avatar_url: str | None = Field(
+        None,
+        description='Profile avatar URL from Clerk (may be a Gravatar or uploaded image).',
+    )
+    created_at: datetime = Field(
+        ..., description='When the user record was first mirrored into Mobius.'
+    )
+    updated_at: datetime = Field(
+        ..., description='Timestamp when this user record was last synced from Clerk.'
+    )
 
 
 class Org(BaseModel):
-    id: str
-    name: str
-    handle: str
-    metadata: dict[str, Any] | None = None
-    created_at: datetime
-    updated_at: datetime
+    id: str = Field(..., description='Unique identifier for this organization.')
+    name: str = Field(..., description='Human-readable org name.')
+    handle: str = Field(
+        ...,
+        description='URL-safe slug used in API routes and display. Unique across all orgs.',
+    )
+    metadata: dict[str, Any] | None = Field(
+        None, description='Arbitrary key-value metadata stored alongside the org.'
+    )
+    created_at: datetime = Field(
+        ..., description='Timestamp when this organization was created.'
+    )
+    updated_at: datetime = Field(
+        ..., description='Timestamp when this organization was last updated.'
+    )
 
 
 class OrgListResponse(BaseModel):
-    items: list[Org]
-    has_more: bool | None = None
-    next_cursor: str | None = None
+    items: list[Org] = Field(..., description='The list of results for this page.')
+    has_more: bool | None = Field(
+        None, description='Whether additional pages are available.'
+    )
+    next_cursor: str | None = Field(
+        None,
+        description='Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.',
+    )
 
 
 class CreateOrgRequest(BaseModel):
-    name: str
-    handle: str
-    metadata: dict[str, Any] | None = None
+    name: str = Field(..., description='Human-readable organization name.')
+    handle: str = Field(
+        ..., description='URL-safe slug. Must be globally unique across all orgs.'
+    )
+    metadata: dict[str, Any] | None = Field(
+        None, description='Arbitrary metadata to attach to the organization.'
+    )
 
 
 class UpdateOrgRequest(BaseModel):
-    name: str | None = None
-    handle: str | None = None
-    metadata: dict[str, Any] | None = None
+    name: str | None = Field(None, description='Must be non-empty if provided.')
+    handle: str | None = Field(
+        None,
+        description='Must be non-empty if provided. Changing the handle affects all API route URLs for this org.',
+    )
+    metadata: dict[str, Any] | None = Field(None, description='Replacement metadata.')
 
 
 class Role3(Enum):
+    """
+    `owner` has full control including org deletion; `admin` can manage members and settings; `member` has read-only org access.
+    """
+
     owner = 'owner'
     admin = 'admin'
     member = 'member'
 
 
 class OrgMember(BaseModel):
-    id: str
-    org_id: str
-    user_id: str
-    role: Role3
-    created_at: datetime
-    updated_at: datetime
+    id: str = Field(..., description='Unique identifier for this membership record.')
+    org_id: str = Field(..., description='ID of the organization.')
+    user_id: str = Field(..., description='ID of the user who is a member.')
+    role: Role3 = Field(
+        ...,
+        description='`owner` has full control including org deletion; `admin` can manage members and settings; `member` has read-only org access.',
+    )
+    created_at: datetime = Field(..., description='Timestamp when this member joined.')
+    updated_at: datetime = Field(
+        ..., description='Timestamp when this membership was last updated.'
+    )
     user: User | None = None
 
 
 class OrgMemberListResponse(BaseModel):
-    items: list[OrgMember]
-    has_more: bool | None = None
-    next_cursor: str | None = None
+    items: list[OrgMember] = Field(
+        ..., description='The list of results for this page.'
+    )
+    has_more: bool | None = Field(
+        None, description='Whether additional pages are available.'
+    )
+    next_cursor: str | None = Field(
+        None,
+        description='Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.',
+    )
+
+
+class Role4(Enum):
+    """
+    Role to assign the new member: `owner`, `admin`, or `member`.
+    """
+
+    owner = 'owner'
+    admin = 'admin'
+    member = 'member'
 
 
 class AddOrgMemberRequest(BaseModel):
-    user_id: str
-    role: Role3
+    user_id: str = Field(..., description='Clerk user ID of the user to add.')
+    role: Role4 = Field(
+        ..., description='Role to assign the new member: `owner`, `admin`, or `member`.'
+    )
+
+
+class Role5(Enum):
+    """
+    New role to assign: `owner`, `admin`, or `member`.
+    """
+
+    owner = 'owner'
+    admin = 'admin'
+    member = 'member'
 
 
 class UpdateOrgMemberRoleRequest(BaseModel):
-    role: Role3
+    role: Role5 = Field(
+        ..., description='New role to assign: `owner`, `admin`, or `member`.'
+    )
 
 
 class InteractionListResponse(BaseModel):
-    items: list[Interaction]
+    items: list[Interaction] = Field(
+        ..., description='The list of results for this page.'
+    )
 
 
 class CreateInteractionRequest(BaseModel):
@@ -1519,26 +2820,40 @@ class CreateInteractionRequest(BaseModel):
 
     """
 
-    run_id: str | None = None
+    run_id: str | None = Field(
+        None,
+        description='ID of the workflow run to resume when this interaction is completed.',
+    )
     topic: str | None = Field(
         None,
         description='Signal topic the interaction will complete against when run-backed.',
     )
     target_actor: ActorRef
     type: InteractionType
-    message: str
-    context: dict[str, Any] | None = None
+    message: str = Field(
+        ...,
+        description='Message shown to the responder describing what response is needed.',
+    )
+    context: dict[str, Any] | None = Field(
+        None,
+        description='Additional key-value context surfaced in the UI alongside the message.',
+    )
     spec: InteractionSpec | None = None
     require_all: bool | None = Field(
         False,
         description='When target_actor.type is "group", setting require_all=true\nmeans all snapshotted group members must respond before the\ninteraction is considered complete. Ignored for non-group targets.\n',
     )
-    expires_at: datetime | None = None
+    expires_at: datetime | None = Field(
+        None,
+        description='Timestamp after which this interaction expires if not responded to.',
+    )
 
 
 class RespondToInteractionRequest(BaseModel):
     value: InteractionValue | None = None
-    comment: str | None = None
+    comment: str | None = Field(
+        None, description='Optional free-text comment accompanying the response.'
+    )
 
 
 class SlackInstall(BaseModel):
@@ -1549,7 +2864,10 @@ class SlackInstall(BaseModel):
 
 class RoutingPolicy(Enum):
     """
-    How interactions are dispatched to members
+    How interactions targeting this group collect responses.
+    `first_responder`: first member to claim or respond wins.
+    `all_members`: every snapshotted member must respond.
+
     """
 
     first_responder = 'first_responder'
@@ -1557,79 +2875,150 @@ class RoutingPolicy(Enum):
 
 
 class Group(BaseModel):
-    id: str
-    org_id: str
+    id: str = Field(..., description='Unique identifier for this group.')
+    org_id: str = Field(
+        ..., description='ID of the organization this group belongs to.'
+    )
     handle: str = Field(
-        ..., description='URL-safe identifier, unique within the project'
+        ...,
+        description='URL-safe identifier, unique within the project. Immutable after creation.',
     )
-    name: str = Field(..., description='Human-readable display name')
-    description: str | None = None
+    name: str = Field(..., description='Human-readable display name.')
+    description: str | None = Field(
+        None, description='Optional human-readable description.'
+    )
     routing_policy: RoutingPolicy = Field(
-        ..., description='How interactions are dispatched to members'
+        ...,
+        description='How interactions targeting this group collect responses.\n`first_responder`: first member to claim or respond wins.\n`all_members`: every snapshotted member must respond.\n',
     )
-    created_at: datetime
-    updated_at: datetime
+    created_at: datetime = Field(
+        ..., description='Timestamp when this group was created.'
+    )
+    updated_at: datetime = Field(
+        ..., description='Timestamp when this group was last updated.'
+    )
 
 
 class GroupListResponse(BaseModel):
-    items: list[Group]
+    items: list[Group] = Field(..., description='The list of results for this page.')
 
 
 class GroupWithCount(Group):
-    member_count: int = Field(..., description='Current number of members')
+    member_count: int = Field(
+        ...,
+        description='Current live member count. May differ from interaction membership snapshots.',
+    )
 
 
 class GroupWithCountListResponse(BaseModel):
-    items: list[GroupWithCount]
-    has_more: bool | None = None
-    next_cursor: str | None = None
+    items: list[GroupWithCount] = Field(
+        ..., description='The list of results for this page.'
+    )
+    has_more: bool | None = Field(
+        None, description='Whether additional pages are available.'
+    )
+    next_cursor: str | None = Field(
+        None,
+        description='Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.',
+    )
 
 
 class GroupMember(BaseModel):
-    id: str
-    group_id: str
-    org_id: str
-    user_id: str
-    added_by: str | None = None
-    added_at: datetime
+    id: str = Field(..., description='Unique identifier for this membership record.')
+    group_id: str = Field(
+        ..., description='ID of the group this membership belongs to.'
+    )
+    org_id: str = Field(
+        ..., description='ID of the organization this group belongs to.'
+    )
+    user_id: str = Field(..., description='ID of the user who is a member.')
+    added_by: str | None = Field(
+        None,
+        description='User ID of the org member who added this person to the group.',
+    )
+    added_at: datetime = Field(
+        ..., description='Timestamp when this member was added to the group.'
+    )
 
 
 class GroupMemberListResponse(BaseModel):
-    items: list[GroupMember]
-    has_more: bool | None = None
-    next_cursor: str | None = None
+    items: list[GroupMember] = Field(
+        ..., description='The list of results for this page.'
+    )
+    has_more: bool | None = Field(
+        None, description='Whether additional pages are available.'
+    )
+    next_cursor: str | None = Field(
+        None,
+        description='Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.',
+    )
 
 
 class RoutingPolicy1(Enum):
+    """
+    How responses are collected from group members. Defaults to `first_responder`.
+    """
+
     first_responder = 'first_responder'
     all_members = 'all_members'
 
 
 class CreateGroupRequest(BaseModel):
     handle: str | None = Field(
-        None, description='URL-safe handle. Auto-derived from name if omitted.'
+        None,
+        description='URL-safe handle, unique within the project. Auto-derived from name if omitted.',
     )
-    name: str = Field(..., description='Display name (1-64 chars)')
-    description: str | None = None
-    routing_policy: RoutingPolicy1 | None = 'first_responder'
+    name: str = Field(..., description='Display name (1–64 chars).')
+    description: str | None = Field(
+        None, description='Optional human-readable description.'
+    )
+    routing_policy: RoutingPolicy1 | None = Field(
+        'first_responder',
+        description='How responses are collected from group members. Defaults to `first_responder`.',
+    )
+
+
+class RoutingPolicy2(Enum):
+    """
+    Affects future interactions only; in-flight interactions retain the snapshotted policy.
+    """
+
+    first_responder = 'first_responder'
+    all_members = 'all_members'
 
 
 class UpdateGroupRequest(BaseModel):
-    name: str | None = None
-    description: str | None = None
-    routing_policy: RoutingPolicy1 | None = 'first_responder'
+    name: str | None = Field(None, description='Replacement human-readable name.')
+    description: str | None = Field(None, description='Replacement description.')
+    routing_policy: RoutingPolicy2 | None = Field(
+        None,
+        description='Affects future interactions only; in-flight interactions retain the snapshotted policy.',
+    )
 
 
 class AddGroupMemberRequest(BaseModel):
-    user_id: str = Field(..., description='Org member user ID to add')
+    user_id: str = Field(
+        ..., description='Org member user ID to add. Must be a current org member.'
+    )
 
 
 class AgentStatus(Enum):
+    """
+    Administrative status. Inactive agents cannot claim new jobs.
+    """
+
     active = 'active'
     inactive = 'inactive'
 
 
 class AgentPresence(Enum):
+    """
+    Computed from the most recent 20 sessions. `online` means a connected
+    session with a fresh heartbeat; `stale` means heartbeats are overdue;
+    `offline` means no connected sessions.
+
+    """
+
     online = 'online'
     offline = 'offline'
     stale = 'stale'
@@ -1642,105 +3031,219 @@ class AgentSessionStatus(Enum):
 
 
 class Agent(BaseModel):
-    id: str
-    org_id: str
-    service_account_id: str
-    name: str
-    display_name: str
-    description: str | None = None
-    kind: str | None = None
-    capabilities: dict[str, Any] | None = None
-    config: dict[str, Any] | None = None
+    id: str = Field(..., description='Unique identifier for this agent.')
+    org_id: str = Field(
+        ..., description='ID of the organization this agent belongs to.'
+    )
+    service_account_id: str = Field(
+        ...,
+        description='The service account whose credentials this agent uses to authenticate. Immutable after creation.',
+    )
+    name: str = Field(
+        ...,
+        description='Unique name within the project, used for targeting in job claims.',
+    )
+    display_name: str = Field(..., description='Human-readable label shown in the UI.')
+    description: str | None = Field(
+        None, description='Optional human-readable description.'
+    )
+    kind: str | None = Field(
+        None,
+        description='Freeform agent classification for tooling and filtering (e.g. "llm", "rpa").',
+    )
+    capabilities: dict[str, Any] | None = Field(
+        None,
+        description='Arbitrary capability map used by orchestrators to select suitable agents.',
+    )
+    config: dict[str, Any] | None = Field(
+        None,
+        description='Agent-specific configuration blob stored and returned opaquely.',
+    )
     status: AgentStatus
     presence: AgentPresence
-    created_at: datetime
-    updated_at: datetime
+    created_at: datetime = Field(
+        ..., description='Timestamp when this agent was created.'
+    )
+    updated_at: datetime = Field(
+        ..., description='Timestamp when this agent was last updated.'
+    )
 
 
 class AgentSession(BaseModel):
-    id: str
-    org_id: str
-    agent_id: str
+    id: str = Field(..., description='Unique identifier for this session.')
+    org_id: str = Field(
+        ..., description='ID of the organization this session belongs to.'
+    )
+    agent_id: str = Field(..., description='ID of the agent this session belongs to.')
     status: AgentSessionStatus
-    transport: str
-    metadata: dict[str, Any] | None = None
-    connected_at: datetime | None = None
-    last_seen_at: datetime | None = None
-    disconnected_at: datetime | None = None
-    created_at: datetime
-    updated_at: datetime
+    transport: str = Field(
+        ..., description='Connection mechanism identifier (e.g. "sse", "polling").'
+    )
+    metadata: dict[str, Any] | None = Field(
+        None, description='Caller-supplied metadata (e.g. hostname, version, region).'
+    )
+    connected_at: datetime | None = Field(
+        None, description='Timestamp when this session was established.'
+    )
+    last_seen_at: datetime | None = Field(
+        None, description='Timestamp of the most recent heartbeat.'
+    )
+    disconnected_at: datetime | None = Field(
+        None,
+        description='Timestamp when this session was closed. Null while connected.',
+    )
+    created_at: datetime = Field(
+        ..., description='Timestamp when this session record was created.'
+    )
+    updated_at: datetime = Field(
+        ..., description='Timestamp when this session was last updated.'
+    )
 
 
 class AgentListResponse(BaseModel):
-    items: list[Agent]
+    items: list[Agent] = Field(..., description='The list of results for this page.')
 
 
 class AgentSessionListResponse(BaseModel):
-    items: list[AgentSession]
+    items: list[AgentSession] = Field(
+        ..., description='The list of results for this page.'
+    )
 
 
 class CreateAgentRequest(BaseModel):
-    service_account_id: str
-    name: str
-    display_name: str | None = None
-    description: str | None = None
-    kind: str | None = None
-    capabilities: dict[str, Any] | None = None
-    config: dict[str, Any] | None = None
+    service_account_id: str = Field(
+        ...,
+        description='Service account that backs this agent. Must belong to the same org.',
+    )
+    name: str = Field(
+        ..., description='Project-scoped unique identifier for this agent.'
+    )
+    display_name: str | None = Field(
+        None, description='Human-readable label shown in the UI.'
+    )
+    description: str | None = Field(
+        None, description='Optional human-readable description.'
+    )
+    kind: str | None = Field(
+        None, description='Freeform classification (e.g. "llm", "rpa", "integration").'
+    )
+    capabilities: dict[str, Any] | None = Field(
+        None,
+        description='Arbitrary capability map used by orchestrators to select suitable agents.',
+    )
+    config: dict[str, Any] | None = Field(
+        None, description='Agent-specific configuration stored and returned opaquely.'
+    )
 
 
 class UpdateAgentRequest(BaseModel):
-    display_name: str | None = None
-    description: str | None = None
-    kind: str | None = None
-    capabilities: dict[str, Any] | None = None
-    config: dict[str, Any] | None = None
+    display_name: str | None = Field(
+        None, description='Replacement human-readable label.'
+    )
+    description: str | None = Field(None, description='Replacement description.')
+    kind: str | None = Field(
+        None,
+        description='Replacement freeform agent classification (e.g. `llm`, `rpa`).',
+    )
+    capabilities: dict[str, Any] | None = Field(
+        None, description='Replacement capability map.'
+    )
+    config: dict[str, Any] | None = Field(
+        None, description='Replacement configuration blob.'
+    )
     status: AgentStatus | None = None
 
 
 class CreateAgentSessionRequest(BaseModel):
-    transport: str
-    metadata: dict[str, Any] | None = None
+    transport: str = Field(
+        ..., description='Connection mechanism identifier (e.g. "sse", "polling").'
+    )
+    metadata: dict[str, Any] | None = Field(
+        None, description='Optional metadata such as hostname, SDK version, or region.'
+    )
 
 
 class ServiceAccountStatus(Enum):
+    """
+    `disabled` blocks authentication and job claims but preserves the record and its assignments.
+    """
+
     active = 'active'
     disabled = 'disabled'
 
 
 class ServiceAccount(BaseModel):
-    id: str
-    org_id: str
-    name: str
-    display_name: str
-    description: str | None = None
+    id: str = Field(..., description='Unique identifier for this service account.')
+    org_id: str = Field(
+        ..., description='ID of the organization this service account belongs to.'
+    )
+    name: str = Field(
+        ...,
+        description='Stable machine-readable identifier, unique within the project. Immutable after creation.',
+    )
+    display_name: str = Field(..., description='Human-readable label shown in the UI.')
+    description: str | None = Field(
+        None, description='Optional human-readable description.'
+    )
     status: ServiceAccountStatus
-    owner_user_id: str | None = None
-    metadata: dict[str, Any] | None = None
-    created_at: datetime
-    updated_at: datetime
+    owner_user_id: str | None = Field(
+        None, description='Optional org member responsible for this service account.'
+    )
+    metadata: dict[str, Any] | None = Field(
+        None,
+        description='Arbitrary key-value metadata. Subject to size and nesting depth limits.',
+    )
+    created_at: datetime = Field(
+        ..., description='Timestamp when this service account was created.'
+    )
+    updated_at: datetime = Field(
+        ..., description='Timestamp when this service account was last updated.'
+    )
 
 
 class ServiceAccountListResponse(BaseModel):
-    items: list[ServiceAccount]
+    items: list[ServiceAccount] = Field(
+        ..., description='The list of results for this page.'
+    )
 
 
 class CreateServiceAccountRequest(BaseModel):
-    name: str
-    display_name: str | None = None
-    description: str | None = None
-    owner_user_id: str | None = None
-    metadata: dict[str, Any] | None = None
-    role_id: str | None = None
-    role_name: str | None = None
+    name: str = Field(
+        ...,
+        description='Stable machine-readable identifier, unique within the project.',
+    )
+    display_name: str | None = Field(
+        None, description='Human-readable label shown in the UI.'
+    )
+    description: str | None = Field(
+        None, description='Optional human-readable description.'
+    )
+    owner_user_id: str | None = Field(
+        None, description='Org member responsible for this service account.'
+    )
+    metadata: dict[str, Any] | None = Field(
+        None, description='Arbitrary metadata to attach to the service account.'
+    )
+    role_id: str | None = Field(
+        None,
+        description='Role to assign at creation time. Mutually exclusive with `role_name`.\nRequires `permission.manage`. The role must belong to this project\nor be org-scoped (project_id empty).\n',
+    )
+    role_name: str | None = Field(
+        None,
+        description='Role name to assign at creation time (resolved to a role ID server-side).\nMutually exclusive with `role_id`. Requires `permission.manage`.\n',
+    )
 
 
 class UpdateServiceAccountRequest(BaseModel):
-    display_name: str | None = None
-    description: str | None = None
+    display_name: str | None = Field(
+        None, description='Replacement human-readable label.'
+    )
+    description: str | None = Field(None, description='Replacement description.')
     status: ServiceAccountStatus | None = None
-    owner_user_id: str | None = None
-    metadata: dict[str, Any] | None = None
+    owner_user_id: str | None = Field(
+        None, description='ID of the org member responsible for this service account.'
+    )
+    metadata: dict[str, Any] | None = Field(None, description='Replacement metadata.')
 
 
 class ToolDefinition(BaseModel):
@@ -1757,7 +3260,9 @@ class ToolDefinition(BaseModel):
 
 
 class ToolDefinitionListResponse(BaseModel):
-    items: list[ToolDefinition]
+    items: list[ToolDefinition] = Field(
+        ..., description='The list of published workflow tools.'
+    )
 
 
 class ToolRunRequest(BaseModel):
@@ -1798,11 +3303,20 @@ class ToolRun(BaseModel):
 
 
 class WorkflowStepBase(BaseModel):
-    name: str
-    description: str | None = None
-    next: list[WorkflowEdge] | None = None
+    name: str = Field(
+        ...,
+        description='Unique step name within the workflow, used for routing and logging.',
+    )
+    description: str | None = Field(
+        None, description='Optional human-readable description of what this step does.'
+    )
+    next: list[WorkflowEdge] | None = Field(
+        None,
+        description='Outbound edges controlling which step executes after this one.',
+    )
     edge_matching_strategy: WorkflowEdgeMatchingStrategy | None = None
     each: WorkflowEach | None = None
+    layout: WorkflowStepLayout | None = None
 
 
 class WorkflowExecutableStep(WorkflowStepBase):
@@ -1811,10 +3325,20 @@ class WorkflowExecutableStep(WorkflowStepBase):
         description='Canonical executable-step field.\nWhen `action_kind` is omitted, the engine treats this as a worker action.\nUse `action_kind: server` for Mobius-managed server actions.\n',
     )
     action_kind: WorkflowActionKind | None = None
-    store: str | None = None
-    parameters: dict[str, Any] | None = None
-    retry: list[WorkflowRetry] | None = None
-    catch: list[WorkflowCatch] | None = None
+    store: str | None = Field(
+        None, description='State variable name where the action result is stored.'
+    )
+    parameters: dict[str, Any] | None = Field(
+        None,
+        description='Input parameters passed to the action, supporting expression interpolation.',
+    )
+    retry: list[WorkflowRetry] | None = Field(
+        None, description='Retry policies applied when the action fails.'
+    )
+    catch: list[WorkflowCatch] | None = Field(
+        None,
+        description='Error catch clauses that redirect execution on specific failures.',
+    )
 
 
 class WorkflowJoinStep(WorkflowStepBase):
@@ -1844,7 +3368,10 @@ class WorkflowInteractionSpec(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    mode: Mode
+    mode: Mode = Field(
+        ...,
+        description='UI rendering mode: confirm shows yes/no, select and multi_select show option lists, input shows a text field.',
+    )
     options: list[WorkflowInteractionOption] | None = Field(
         None, description='Required for `select` and `multi_select` modes.'
     )
@@ -1870,32 +3397,52 @@ class WorkflowInteractionSpec(BaseModel):
 
 class JobEventsRequest(BaseModel):
     """
-    Fenced batch of custom run events published by the worker
-    holding a job's lease. The fence is per-request: every event in
-    `events` is published under the same `worker_id` + `attempt`.
+    Fenced batch of custom run events published by the worker holding
+    a job's lease. The fence is per-request: every event in `events`
+    is published under the same `worker_id` + `attempt` pair.
 
     """
 
-    worker_id: str
-    attempt: int
-    events: list[JobEventEntry] = Field(..., max_length=100, min_length=1)
+    worker_id: str = Field(
+        ..., description='Must match the `worker_id` from the original claim.'
+    )
+    attempt: int = Field(
+        ..., description='Must match the `attempt` from the original claim.'
+    )
+    events: list[JobEventEntry] = Field(
+        ...,
+        description='The batch of events to publish. All events are validated atomically.',
+        max_length=100,
+        min_length=1,
+    )
 
 
 class EnablePermissionsRequest(BaseModel):
     service_account_default_role: str | None = Field(
         None,
-        description='Fallback role name for service accounts when assignments are omitted.',
+        description='Fallback role name for service accounts with no existing assignment.\nApplied only to service accounts not covered by the `assignments` list.\n',
     )
-    assignments: list[PermissionsAssignmentInput] | None = None
+    assignments: list[PermissionsAssignmentInput] | None = Field(
+        None,
+        description='Explicit role assignments to create as part of the enable operation.',
+    )
 
 
 class WorkflowInteractionConfig(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    type: Type
-    message: str
-    context: dict[str, Any] | None = None
+    type: Type = Field(
+        ...,
+        description='Interaction kind: approval requires a yes/no decision, review requests acknowledgement, input collects free-form data.',
+    )
+    message: str = Field(
+        ..., description='Prompt message shown to the interaction recipient.'
+    )
+    context: dict[str, Any] | None = Field(
+        None,
+        description='Arbitrary key-value context passed alongside the interaction for rendering.',
+    )
     spec: WorkflowInteractionSpec | None = None
     timeout: str = Field(..., description='Go duration string.')
     target: WorkflowInteractionTarget
@@ -1942,43 +3489,78 @@ class WorkflowSpec(BaseModel):
         extra='forbid',
     )
     name: str = Field(..., description='Workflow name.')
-    description: str | None = None
+    description: str | None = Field(
+        None, description="Optional description of the workflow's purpose."
+    )
     start_at: str | None = Field(
         None,
         description='Step name to start execution from. Defaults to the first step.',
     )
-    inputs: list[WorkflowInput] | None = None
-    outputs: list[WorkflowOutput] | None = None
+    inputs: list[WorkflowInput] | None = Field(
+        None, description='Declared input parameters accepted by this workflow.'
+    )
+    outputs: list[WorkflowOutput] | None = Field(
+        None, description='Declared output values produced by this workflow.'
+    )
     state: dict[str, Any] | None = Field(None, description='Initial workflow state.')
-    steps: list[WorkflowStep]
+    steps: list[WorkflowStep] = Field(
+        ..., description='Ordered list of steps that make up this workflow.'
+    )
 
 
 class WorkflowDefinition(BaseModel):
-    id: str
-    name: str
-    handle: str
-    description: str | None = None
-    latest_version: int
+    id: str = Field(..., description='Unique identifier for this workflow definition.')
+    name: str = Field(..., description='Human-readable workflow name.')
+    handle: str = Field(
+        ...,
+        description='URL-safe slug, unique within the org. Used to reference this workflow in triggers and tools.',
+    )
+    description: str | None = Field(
+        None, description="Optional description of the workflow's purpose."
+    )
+    latest_version: int = Field(
+        ...,
+        description='The current highest version number. Starts at 1 and increments with each spec update.',
+    )
     published_as_tool: bool | None = Field(
         None,
         description='When true, this workflow is exposed as a callable tool via /api/tools.',
     )
     spec: WorkflowSpec | None = None
-    created_by: str
-    created_at: datetime
-    updated_at: datetime
+    created_by: str = Field(
+        ...,
+        description='User ID of the org member who created this workflow definition.',
+    )
+    created_at: datetime = Field(
+        ..., description='Timestamp when this workflow definition was created.'
+    )
+    updated_at: datetime = Field(
+        ..., description='Timestamp when this workflow definition was last updated.'
+    )
 
 
 class WorkflowDefinitionListResponse(BaseModel):
-    items: list[WorkflowDefinition] | None = None
-    next_cursor: str | None = None
-    has_more: bool
+    items: list[WorkflowDefinition] | None = Field(
+        None, description='The list of results for this page.'
+    )
+    next_cursor: str | None = Field(
+        None,
+        description='Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.',
+    )
+    has_more: bool = Field(..., description='Whether additional pages are available.')
 
 
 class CreateWorkflowRequest(BaseModel):
-    name: str
-    handle: str | None = None
-    description: str | None = None
+    name: str = Field(
+        ..., description='Human-readable workflow name, unique within the project.'
+    )
+    handle: str | None = Field(
+        None,
+        description='URL-safe handle for this workflow. Auto-derived from name if omitted.',
+    )
+    description: str | None = Field(
+        None, description="Optional description of the workflow's purpose."
+    )
     published_as_tool: bool | None = Field(
         None,
         description='When true, expose this workflow as a callable tool via /api/tools.',
@@ -1987,8 +3569,12 @@ class CreateWorkflowRequest(BaseModel):
 
 
 class UpdateWorkflowRequest(BaseModel):
-    name: str | None = None
-    description: str | None = None
+    name: str | None = Field(
+        None, description='Replacement human-readable workflow name.'
+    )
+    description: str | None = Field(
+        None, description='Replacement description. Omit to leave unchanged.'
+    )
     published_as_tool: bool | None = Field(
         None,
         description='When true, expose this workflow as a callable tool via /api/tools.',
@@ -1997,14 +3583,23 @@ class UpdateWorkflowRequest(BaseModel):
 
 
 class WorkflowVersion(BaseModel):
-    version: int
+    id: str = Field(..., description='Unique identifier for this workflow version.')
+    version: int = Field(
+        ..., description='Monotonically increasing version number. Starts at 1.'
+    )
     spec: WorkflowSpec | None = None
-    created_by: str
-    created_at: datetime
+    created_by: str = Field(
+        ..., description='User ID of the org member who created this version.'
+    )
+    created_at: datetime = Field(
+        ..., description='Timestamp when this version was created.'
+    )
 
 
 class WorkflowVersionListResponse(BaseModel):
-    items: list[WorkflowVersion]
+    items: list[WorkflowVersion] = Field(
+        ..., description='The list of workflow versions, newest first.'
+    )
 
 
 class WorkflowRunDetail(WorkflowRun):
@@ -2012,7 +3607,7 @@ class WorkflowRunDetail(WorkflowRun):
     result_b64: str | None = Field(
         None, description='Base64-encoded terminal result blob'
     )
-    jobs: list[Job] | None = None
+    jobs: list[Job] | None = Field(None, description='Jobs spawned by this run.')
 
 
 class StartRunRequest(BaseModel):
@@ -2034,11 +3629,15 @@ class StartRunRequest(BaseModel):
     queue: str | None = Field(
         None, description='Queue name to enqueue the run on. Defaults to "default".\n'
     )
-    callback_url: str | None = Field(
+    inputs: dict[str, Any] | None = Field(
         None,
-        description='Outbound customer callback URL intended for terminal run\nnotifications. If set, Mobius stores this value on the run for\nfuture callback delivery, but terminal-status callback delivery is\nnot yet active.\n',
+        description="Input values to pass to the workflow. Must conform to the workflow's declared input schema.",
     )
-    inputs: dict[str, Any] | None = None
-    metadata: dict[str, str] | None = None
-    external_id: str | None = None
-    group: str | None = None
+    metadata: dict[str, str] | None = Field(
+        None,
+        description='Caller-supplied string metadata attached to the run for filtering and display.',
+    )
+    external_id: str | None = Field(
+        None,
+        description='Caller-supplied idempotency key or correlation ID attached to the run.',
+    )

@@ -51,7 +51,7 @@ func registerProjectsCommands(app *cli.App) {
 		})
 
 	projectsGrp.Command("get").
-		Description("Get a project by id").
+		Description("Get a project").
 		Args("id").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -65,7 +65,7 @@ func registerProjectsCommands(app *cli.App) {
 		})
 
 	projectsGrp.Command("list").
-		Description("List projects in the org").
+		Description("List projects").
 		Flags(
 			cli.String("search", "").Help("search"),
 		).
