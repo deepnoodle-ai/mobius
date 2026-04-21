@@ -372,7 +372,11 @@ func runAuthList(ctx *cli.Context) error {
 		{Title: "LABEL"},
 		{Title: "LAST USED"},
 	}, &sel).Rows(rows)
-	return tui.Fprint(ctx.Stdout(), view)
+	if err := tui.Fprint(ctx.Stdout(), view); err != nil {
+		return err
+	}
+	ctx.Println("")
+	return nil
 }
 
 func runAuthRevoke(ctx *cli.Context) error {
