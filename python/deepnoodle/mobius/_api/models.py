@@ -1364,7 +1364,7 @@ class JobClaim(BaseModel):
     )
     step_name: str = Field(
         ...,
-        description='Step label from the workflow spec — used for UI and interaction topic derivation.',
+        description='Step label from the workflow spec — used for UI and for deriving the interaction signal name when a worker creates a run-backed interaction without an explicit signal_name.',
     )
     action: str = Field(
         ..., description='Action name the worker must execute for this step.'

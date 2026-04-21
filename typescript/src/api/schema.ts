@@ -3052,7 +3052,7 @@ export interface components {
             run_id: string;
             /** @description Handle of the workflow definition that owns this run. */
             workflow_name: string;
-            /** @description Step label from the workflow spec — used for UI and interaction topic derivation. */
+            /** @description Step label from the workflow spec — used for UI and for deriving the interaction signal name when a worker creates a run-backed interaction without an explicit signal_name. */
             step_name: string;
             /** @description Action name the worker must execute for this step. */
             action: string;

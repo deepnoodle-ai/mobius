@@ -5966,8 +5966,9 @@ components:
           description: Handle of the workflow definition that owns this run.
         step_name:
           type: string
-          description: Step label from the workflow spec — used for UI and interaction
-            topic derivation.
+          description: Step label from the workflow spec — used for UI and for
+            deriving the interaction signal name when a worker creates a
+            run-backed interaction without an explicit signal_name.
         action:
           type: string
           description: Action name the worker must execute for this step.
@@ -8153,6 +8154,9 @@ components:
       - type
       - target_actor
       - message
+      dependencies:
+        run_id:
+        - signal_name
       description: 'Creates an interaction directly. When `run_id` is provided,
 
         `signal_name` is also required and the interaction is linked to that
