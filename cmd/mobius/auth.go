@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/deepnoodle-ai/wonton/cli"
+	"github.com/deepnoodle-ai/wonton/tui"
 
 	"github.com/deepnoodle-ai/mobius/internal/authstore"
 	"github.com/deepnoodle-ai/mobius/mobius"
@@ -354,15 +355,24 @@ func runAuthList(ctx *cli.Context) error {
 		ctx.Println("No CLI credentials.")
 		return nil
 	}
-	ctx.Printf("%-28s  %-8s  %-32s  %s\n", "ID", "STATUS", "LABEL", "LAST USED")
+	rows := make([][]string, 0, len(result.Items))
 	for _, c := range result.Items {
 		lastUsed := "never"
 		if c.LastUsedAt != nil {
 			lastUsed = c.LastUsedAt.Format(time.RFC3339)
 		}
-		ctx.Printf("%-28s  %-8s  %-32s  %s\n", c.Id, c.Status, truncate(c.Label, 32), lastUsed)
+		rows = append(rows, []string{c.Id, c.Status, c.Label, lastUsed})
 	}
-	return nil
+	// Non-interactive print: -1 means "no row selected" so the table
+	// doesn't reverse-video the first row.
+	sel := -1
+	view := tui.Table([]tui.TableColumn{
+		{Title: "ID"},
+		{Title: "STATUS"},
+		{Title: "LABEL"},
+		{Title: "LAST USED"},
+	}, &sel).Rows(rows)
+	return tui.Fprint(ctx.Stdout(), view)
 }
 
 func runAuthRevoke(ctx *cli.Context) error {
@@ -474,13 +484,6 @@ func defaultDeviceLabel() string {
 	default:
 		return "mobius CLI"
 	}
-}
-
-func truncate(s string, n int) string {
-	if len(s) <= n {
-		return s
-	}
-	return s[:n-1] + "…"
 }
 
 func firstNonEmpty(vals ...string) string {
