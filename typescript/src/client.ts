@@ -120,7 +120,7 @@ export class Client {
     signal?: AbortSignal,
   ): Promise<JobClaim | null> {
     const resp = await this.request(
-      `/projects/${encodeURIComponent(this.project)}/jobs/claim`,
+      `/v1/projects/${encodeURIComponent(this.project)}/jobs/claim`,
       { method: "POST", body: req, signal },
     );
     if (resp.status === 204) return null;
@@ -133,7 +133,7 @@ export class Client {
     req: JobFenceRequest,
   ): Promise<JobHeartbeat> {
     const resp = await this.request(
-      `/projects/${encodeURIComponent(this.project)}/jobs/${encodeURIComponent(jobId)}/heartbeat`,
+      `/v1/projects/${encodeURIComponent(this.project)}/jobs/${encodeURIComponent(jobId)}/heartbeat`,
       { method: "POST", body: req },
     );
     if (resp.status === 409) throw new LeaseLostError(jobId);
@@ -143,7 +143,7 @@ export class Client {
   /** Report the terminal status of a claimed job. */
   async completeJob(jobId: string, req: JobCompleteRequest): Promise<void> {
     const resp = await this.request(
-      `/projects/${encodeURIComponent(this.project)}/jobs/${encodeURIComponent(jobId)}/complete`,
+      `/v1/projects/${encodeURIComponent(this.project)}/jobs/${encodeURIComponent(jobId)}/complete`,
       { method: "POST", body: req },
     );
     if (resp.status === 409) throw new LeaseLostError(jobId);
@@ -153,7 +153,7 @@ export class Client {
     // 429 responses surface as RateLimitError (thrown from the retry
     // transport below). 409/413 are non-retryable and handled here.
     const resp = await this.request(
-      `/projects/${encodeURIComponent(this.project)}/jobs/${encodeURIComponent(jobId)}/events`,
+      `/v1/projects/${encodeURIComponent(this.project)}/jobs/${encodeURIComponent(jobId)}/events`,
       { method: "POST", body: req },
     );
     if (resp.status === 409) throw new LeaseLostError(jobId);

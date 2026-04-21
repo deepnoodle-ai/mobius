@@ -48,7 +48,7 @@ test("smoke: defaults to the production API host", async () => {
 
   assert.equal(
     requestedURL,
-    `${DEFAULT_BASE_URL}/projects/test-project/jobs/claim`,
+    `${DEFAULT_BASE_URL}/v1/projects/test-project/jobs/claim`,
   );
 });
 
@@ -122,7 +122,7 @@ test("smoke: emitJobEvent posts to project events endpoint", async () => {
 
   assert.equal(
     requestedURL,
-    "https://api.example.invalid/projects/test-project/jobs/job_1/events",
+    "https://api.example.invalid/v1/projects/test-project/jobs/job_1/events",
   );
   assert.match(requestBody, /"type":"scrape\.page_done"/);
 });

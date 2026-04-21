@@ -47,7 +47,7 @@ tags:
 - name: tools
   x-displayName: Tools
 paths:
-  /projects/{project}/channels:
+  /v1/projects/{project}/channels:
     post:
       operationId: createChannel
       tags:
@@ -114,7 +114,7 @@ paths:
                 $ref: '#/components/schemas/ChannelListResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
-  /projects/{project}/channels/{id}:
+  /v1/projects/{project}/channels/{id}:
     get:
       operationId: getChannel
       tags:
@@ -183,7 +183,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /projects/{project}/channels/{id}/members:
+  /v1/projects/{project}/channels/{id}/members:
     get:
       operationId: listChannelMembers
       tags:
@@ -234,7 +234,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /projects/{project}/channels/{id}/members/{userId}:
+  /v1/projects/{project}/channels/{id}/members/{userId}:
     delete:
       operationId: removeChannelMember
       tags:
@@ -256,7 +256,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /projects/{project}/channels/{id}/messages:
+  /v1/projects/{project}/channels/{id}/messages:
     get:
       operationId: listChannelMessages
       tags:
@@ -334,7 +334,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /projects/{project}/channels/{id}/messages/{messageId}:
+  /v1/projects/{project}/channels/{id}/messages/{messageId}:
     get:
       operationId: getChannelMessage
       tags:
@@ -394,7 +394,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /audit-logs:
+  /v1/audit-logs:
     get:
       operationId: listAuditLogs
       tags:
@@ -476,7 +476,7 @@ paths:
                 $ref: '#/components/schemas/AuditLogListResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
-  /api-keys:
+  /v1/api-keys:
     post:
       operationId: createAPIKey
       tags:
@@ -544,7 +544,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /api-keys/{id}:
+  /v1/api-keys/{id}:
     get:
       operationId: getAPIKey
       tags:
@@ -591,7 +591,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /projects/{project}/workflows:
+  /v1/projects/{project}/workflows:
     get:
       operationId: listWorkflows
       tags:
@@ -662,7 +662,7 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
-  /projects/{project}/workflows/{id}:
+  /v1/projects/{project}/workflows/{id}:
     get:
       operationId: getWorkflow
       tags:
@@ -738,7 +738,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /projects/{project}/workflows/{id}/versions:
+  /v1/projects/{project}/workflows/{id}/versions:
     get:
       operationId: listWorkflowVersions
       tags:
@@ -766,7 +766,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /projects/{project}/workflows/{id}/runs:
+  /v1/projects/{project}/workflows/{id}/runs:
     get:
       operationId: listWorkflowRuns
       tags:
@@ -795,7 +795,7 @@ paths:
       summary: Start a new workflow run against a saved definition
       description: 'Enqueues a run using the latest version of the specified workflow
 
-        definition. Equivalent to POST /projects/{project}/runs with
+        definition. Equivalent to POST /v1/projects/{project}/runs with
 
         `definition_id` set to this workflow''s ID. The `spec` field is
 
@@ -826,7 +826,7 @@ paths:
           $ref: '#/components/responses/NotFound'
         '429':
           $ref: '#/components/responses/TooManyRequests'
-  /projects/{project}/runs:
+  /v1/projects/{project}/runs:
     post:
       operationId: startRun
       tags:
@@ -923,7 +923,7 @@ paths:
                 $ref: '#/components/schemas/WorkflowRunListResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
-  /projects/{project}/runs/cancellations:
+  /v1/projects/{project}/runs/cancellations:
     post:
       operationId: bulkCancelRuns
       tags:
@@ -957,7 +957,7 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
-  /projects/{project}/runs/retries:
+  /v1/projects/{project}/runs/retries:
     post:
       operationId: bulkRetryRuns
       tags:
@@ -991,7 +991,7 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
-  /projects/{project}/runs/{id}:
+  /v1/projects/{project}/runs/{id}:
     get:
       operationId: getRun
       tags:
@@ -1011,7 +1011,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /projects/{project}/runs/{id}/action-log:
+  /v1/projects/{project}/runs/{id}/action-log:
     get:
       operationId: getRunActionLog
       tags:
@@ -1031,7 +1031,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /projects/{project}/runs/{id}/jobs:
+  /v1/projects/{project}/runs/{id}/jobs:
     get:
       operationId: getRunJobs
       tags:
@@ -1051,7 +1051,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /projects/{project}/runs/events:
+  /v1/projects/{project}/runs/events:
     get:
       operationId: streamProjectRunEvents
       tags:
@@ -1098,7 +1098,7 @@ paths:
                 type: string
         '401':
           $ref: '#/components/responses/Unauthorized'
-  /projects/{project}/runs/{id}/cancellations:
+  /v1/projects/{project}/runs/{id}/cancellations:
     post:
       operationId: cancelRun
       tags:
@@ -1121,7 +1121,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /projects/{project}/runs/{id}/resumptions:
+  /v1/projects/{project}/runs/{id}/resumptions:
     post:
       operationId: resumeRun
       tags:
@@ -1139,7 +1139,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /projects/{project}/runs/{id}/signals:
+  /v1/projects/{project}/runs/{id}/signals:
     post:
       operationId: sendRunSignal
       tags:
@@ -1178,13 +1178,13 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /projects/{project}/runs/{id}/events:
+  /v1/projects/{project}/runs/{id}/events:
     get:
       operationId: streamRunEvents
       tags:
       - runs
       summary: Subscribe to a stream of events for a single run (SSE)
-      description: 'Same envelope as `/projects/{project}/runs/events` but filtered
+      description: 'Same envelope as `/v1/projects/{project}/runs/events` but filtered
         to a single run.
 
         The server writes one seed `run_updated` frame on connection
@@ -1216,7 +1216,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /projects/{project}/actions:
+  /v1/projects/{project}/actions:
     get:
       operationId: listActions
       tags:
@@ -1273,7 +1273,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '409':
           $ref: '#/components/responses/Conflict'
-  /projects/{project}/actions/{actionName}:
+  /v1/projects/{project}/actions/{actionName}:
     get:
       operationId: getAction
       tags:
@@ -1351,7 +1351,7 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
-  /projects/{project}/actions/{actionName}/secret/rotate:
+  /v1/projects/{project}/actions/{actionName}/secret/rotate:
     post:
       operationId: rotateActionSecret
       tags:
@@ -1383,7 +1383,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /projects/{project}/action-audit-log:
+  /v1/projects/{project}/action-audit-log:
     get:
       operationId: listActionAuditLog
       tags:
@@ -1431,7 +1431,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /projects/{project}/actions/catalog:
+  /v1/projects/{project}/actions/catalog:
     get:
       operationId: listCatalogActions
       tags:
@@ -1461,7 +1461,7 @@ paths:
                 $ref: '#/components/schemas/ActionCatalogListResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
-  /projects/{project}/actions/catalog/{actionName}:
+  /v1/projects/{project}/actions/catalog/{actionName}:
     get:
       operationId: getCatalogAction
       tags:
@@ -1483,7 +1483,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /projects/{project}/jobs/claim:
+  /v1/projects/{project}/jobs/claim:
     post:
       operationId: claimJob
       tags:
@@ -1505,7 +1505,7 @@ paths:
 
         Each successful call also registers or refreshes the worker in the
 
-        worker registry (used by `GET /projects/{project}/workers`), so no
+        worker registry (used by `GET /v1/projects/{project}/workers`), so no
 
         separate registration step is needed.
 
@@ -1538,7 +1538,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /projects/{project}/jobs/{id}/heartbeat:
+  /v1/projects/{project}/jobs/{id}/heartbeat:
     post:
       operationId: heartbeatJob
       tags:
@@ -1566,7 +1566,7 @@ paths:
 
         cancellation request; the worker must stop processing and call
 
-        `POST /jobs/{id}/complete` with `status: failed`.
+        `POST /v1/projects/{project}/jobs/{id}/complete` with `status: failed`.
 
         '
       parameters:
@@ -1591,7 +1591,7 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
-  /projects/{project}/jobs/{id}/complete:
+  /v1/projects/{project}/jobs/{id}/complete:
     post:
       operationId: completeJob
       tags:
@@ -1642,7 +1642,7 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
-  /projects/{project}/jobs/{id}/events:
+  /v1/projects/{project}/jobs/{id}/events:
     post:
       operationId: emitJobEvents
       tags:
@@ -1706,7 +1706,7 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '429':
           $ref: '#/components/responses/TooManyRequests'
-  /projects/{project}/jobs/{id}/interactions:
+  /v1/projects/{project}/jobs/{id}/interactions:
     post:
       operationId: createJobInteraction
       tags:
@@ -1718,7 +1718,7 @@ paths:
 
         so workers do not need to pass `run_id` explicitly. Prefer this
 
-        route over `POST /projects/{project}/interactions` from within a
+        route over `POST /v1/projects/{project}/interactions` from within a
 
         job context. The optional `topic` field overrides the server-
 
@@ -1751,7 +1751,7 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
-  /projects/{project}/jobs/{id}/actions/{actionName}:
+  /v1/projects/{project}/jobs/{id}/actions/{actionName}:
     post:
       operationId: runJobAction
       tags:
@@ -1792,7 +1792,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /projects/{project}/triggers:
+  /v1/projects/{project}/triggers:
     get:
       operationId: listTriggers
       tags:
@@ -1871,7 +1871,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /projects/{project}/triggers/{id}:
+  /v1/projects/{project}/triggers/{id}:
     get:
       operationId: getTrigger
       tags:
@@ -1936,7 +1936,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /projects/{project}/triggers/{id}/fires:
+  /v1/projects/{project}/triggers/{id}/fires:
     get:
       operationId: listTriggerFires
       tags:
@@ -1981,7 +1981,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /projects/{project}/workers:
+  /v1/projects/{project}/workers:
     get:
       operationId: listWorkers
       tags:
@@ -2012,7 +2012,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /projects:
+  /v1/projects:
     get:
       operationId: listProjects
       tags:
@@ -2067,7 +2067,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '409':
           $ref: '#/components/responses/Conflict'
-  /projects/{id}:
+  /v1/projects/{id}:
     get:
       operationId: getProject
       tags:
@@ -2140,7 +2140,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /projects/{project}/webhooks:
+  /v1/projects/{project}/webhooks:
     get:
       operationId: listWebhooks
       tags:
@@ -2216,7 +2216,7 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
-  /projects/{project}/webhooks/{id}:
+  /v1/projects/{project}/webhooks/{id}:
     get:
       operationId: getWebhook
       tags:
@@ -2288,7 +2288,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /projects/{project}/webhooks/{id}/deliveries:
+  /v1/projects/{project}/webhooks/{id}/deliveries:
     get:
       operationId: listWebhookDeliveries
       tags:
@@ -2331,7 +2331,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /projects/{project}/integrations:
+  /v1/projects/{project}/integrations:
     get:
       operationId: listIntegrations
       tags:
@@ -2402,7 +2402,7 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
-  /projects/{project}/integrations/{id}:
+  /v1/projects/{project}/integrations/{id}:
     get:
       operationId: getIntegration
       tags:
@@ -2475,7 +2475,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /projects/{project}/integrations/copy:
+  /v1/projects/{project}/integrations/copy:
     post:
       operationId: copyIntegration
       tags:
@@ -2517,7 +2517,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /projects/{project}/metrics:
+  /v1/projects/{project}/metrics:
     get:
       operationId: getProjectMetrics
       tags:
@@ -2545,7 +2545,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /roles:
+  /v1/roles:
     get:
       operationId: listRoles
       tags:
@@ -2611,7 +2611,7 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '409':
           $ref: '#/components/responses/Conflict'
-  /roles/{id}:
+  /v1/roles/{id}:
     get:
       operationId: getRole
       tags:
@@ -2702,7 +2702,7 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-  /role-assignments:
+  /v1/role-assignments:
     get:
       operationId: listRoleAssignments
       tags:
@@ -2783,7 +2783,7 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
-  /role-assignments/{id}:
+  /v1/role-assignments/{id}:
     delete:
       operationId: deleteRoleAssignment
       tags:
@@ -2800,7 +2800,7 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-  /projects/{project}/interactions:
+  /v1/projects/{project}/interactions:
     post:
       operationId: createInteraction
       tags:
@@ -2817,7 +2817,7 @@ paths:
 
         workflow side effect. Workers creating interactions from within a
 
-        job should use the job-scoped route (`POST /jobs/{id}/interactions`)
+        job should use the job-scoped route (`POST /v1/projects/{project}/jobs/{id}/interactions`)
 
         instead, which derives the run and topic automatically.
 
@@ -2895,7 +2895,7 @@ paths:
                 $ref: '#/components/schemas/InteractionListResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
-  /projects/{project}/interactions/{id}:
+  /v1/projects/{project}/interactions/{id}:
     get:
       operationId: getInteraction
       tags:
@@ -2915,7 +2915,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /projects/{project}/interactions/{id}/respond:
+  /v1/projects/{project}/interactions/{id}/respond:
     post:
       operationId: respondToInteraction
       tags:
@@ -2955,7 +2955,7 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
-  /projects/{project}/interactions/{id}/claim:
+  /v1/projects/{project}/interactions/{id}/claim:
     post:
       operationId: claimInteraction
       tags:
@@ -2977,7 +2977,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /projects/{project}/interactions/{id}/release:
+  /v1/projects/{project}/interactions/{id}/release:
     post:
       operationId: releaseInteraction
       tags:
@@ -2999,7 +2999,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /projects/{project}/groups:
+  /v1/projects/{project}/groups:
     post:
       operationId: createGroup
       tags:
@@ -3052,7 +3052,7 @@ paths:
                 $ref: '#/components/schemas/GroupWithCountListResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
-  /projects/{project}/groups/{groupId}:
+  /v1/projects/{project}/groups/{groupId}:
     get:
       operationId: getGroup
       tags:
@@ -3130,7 +3130,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /projects/{project}/groups/{groupId}/members:
+  /v1/projects/{project}/groups/{groupId}/members:
     get:
       operationId: listGroupMembers
       tags:
@@ -3184,7 +3184,7 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
-  /projects/{project}/groups/{groupId}/members/{userId}:
+  /v1/projects/{project}/groups/{groupId}/members/{userId}:
     delete:
       operationId: removeGroupMember
       tags:
@@ -3207,7 +3207,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /projects/{project}/members/{userId}/groups:
+  /v1/projects/{project}/members/{userId}/groups:
     get:
       operationId: listMemberGroups
       tags:
@@ -3230,7 +3230,7 @@ paths:
                 $ref: '#/components/schemas/GroupListResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
-  /projects/{project}/agents:
+  /v1/projects/{project}/agents:
     post:
       operationId: createAgent
       tags:
@@ -3299,7 +3299,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /projects/{project}/agents/{id}:
+  /v1/projects/{project}/agents/{id}:
     get:
       operationId: getAgent
       tags:
@@ -3371,7 +3371,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /projects/{project}/agents/{id}/sessions:
+  /v1/projects/{project}/agents/{id}/sessions:
     post:
       operationId: createAgentSession
       tags:
@@ -3446,7 +3446,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /projects/{project}/agents/sessions/{sessionId}:
+  /v1/projects/{project}/agents/sessions/{sessionId}:
     get:
       operationId: getAgentSession
       tags:
@@ -3471,7 +3471,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /projects/{project}/agents/sessions/{sessionId}/heartbeat:
+  /v1/projects/{project}/agents/sessions/{sessionId}/heartbeat:
     post:
       operationId: heartbeatAgentSession
       tags:
@@ -3503,7 +3503,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /projects/{project}/agents/sessions/{sessionId}/disconnect:
+  /v1/projects/{project}/agents/sessions/{sessionId}/disconnect:
     post:
       operationId: disconnectAgentSession
       tags:
@@ -3536,7 +3536,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /projects/{project}/tools:
+  /v1/projects/{project}/tools:
     get:
       operationId: listTools
       tags:
@@ -3564,7 +3564,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /projects/{project}/tools/{handle}/runs:
+  /v1/projects/{project}/tools/{handle}/runs:
     post:
       operationId: runTool
       tags:
@@ -3581,7 +3581,7 @@ paths:
 
         `status: pending` so the caller can switch to polling via
 
-        `GET /projects/{project}/tools/{handle}/runs/{run_id}`.
+        `GET /v1/projects/{project}/tools/{handle}/runs/{run_id}`.
 
         '
       parameters:
@@ -3617,7 +3617,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /projects/{project}/tools/{handle}/runs/{runId}:
+  /v1/projects/{project}/tools/{handle}/runs/{runId}:
     get:
       operationId: getToolRun
       tags:
@@ -4522,7 +4522,6 @@ components:
       type: object
       required:
       - id
-      - org_id
       - user_id
       - label
       - token_prefix
@@ -4533,9 +4532,6 @@ components:
         id:
           type: string
           description: Unique identifier for this credential.
-        org_id:
-          type: string
-          description: ID of the organization this credential is scoped to.
         user_id:
           type: string
           description: ID of the user who authorized this credential.
@@ -4918,7 +4914,7 @@ components:
         topic:
           type: string
           description: Signal topic to wait on. Must match the `name` field in POST
-            /runs/{id}/signals.
+            /v1/projects/{project}/runs/{id}/signals.
         timeout:
           type: string
           description: Maximum wait duration as a Go duration string (e.g. "24h",
@@ -5352,11 +5348,11 @@ components:
 
         `spec` — they are mutually exclusive. When both are absent on
 
-        the path-less `POST /projects/{project}/runs` endpoint, or when both
+        the path-less `POST /v1/projects/{project}/runs` endpoint, or when both
 
         are present, the request is rejected with 400. On the
 
-        definition-bound endpoint (`POST /projects/{project}/workflows/{id}/runs`)
+        definition-bound endpoint (`POST /v1/projects/{project}/workflows/{id}/runs`)
 
         `definition_id` is implied by the path and `spec` is forbidden.
 
@@ -5677,7 +5673,6 @@ components:
       type: object
       required:
       - id
-      - org_id
       - name
       - endpoint_url
       - created_at
@@ -5686,9 +5681,6 @@ components:
         id:
           type: string
           description: Unique identifier for this action.
-        org_id:
-          type: string
-          description: ID of the organization this action belongs to.
         name:
           type: string
           description: Project-scoped stable identifier used in workflow step definitions.
@@ -6001,7 +5993,8 @@ components:
           description: 'Recommended heartbeat interval in seconds. Workers should
             call
 
-            `POST /jobs/{id}/heartbeat` at this cadence to keep the lease
+            `POST /v1/projects/{project}/jobs/{id}/heartbeat` at this cadence to keep
+            the lease
 
             alive. Typically 30 seconds.
 
@@ -6388,7 +6381,6 @@ components:
       type: object
       required:
       - id
-      - org_id
       - type
       - status
       - target_actor
@@ -6398,9 +6390,6 @@ components:
         id:
           type: string
           description: Unique identifier for this interaction.
-        org_id:
-          type: string
-          description: ID of the organization this interaction belongs to.
         run_id:
           type: string
           nullable: true
@@ -6553,7 +6542,6 @@ components:
       type: object
       required:
       - id
-      - org_id
       - name
       - kind
       - concurrency_policy
@@ -6564,9 +6552,6 @@ components:
         id:
           type: string
           description: Unique identifier for this trigger.
-        org_id:
-          type: string
-          description: ID of the organization this trigger belongs to.
         name:
           type: string
           description: Human-readable trigger name, unique within the project.
@@ -6645,8 +6630,6 @@ components:
       type: object
       required:
       - id
-      - org_id
-      - project_id
       - trigger_id
       - fired_at
       - status
@@ -6656,12 +6639,6 @@ components:
         id:
           type: string
           description: Unique identifier for this fire record.
-        org_id:
-          type: string
-          description: ID of the organization this trigger belongs to.
-        project_id:
-          type: string
-          description: ID of the project this trigger belongs to.
         trigger_id:
           type: string
           description: ID of the trigger that fired.
@@ -6815,7 +6792,8 @@ components:
           description: 'Timestamp of the worker''s most recent job claim poll. Updated
             on
 
-            every `POST /jobs/claim` call regardless of whether a job was
+            every `POST /v1/projects/{project}/jobs/claim` call regardless of whether
+            a job was
 
             returned. Used to compute `stale`.
 
@@ -6937,8 +6915,6 @@ components:
       type: object
       required:
       - id
-      - org_id
-      - project_id
       - name
       - url
       - events
@@ -6954,12 +6930,6 @@ components:
         id:
           type: string
           description: Unique identifier for this webhook.
-        org_id:
-          type: string
-          description: ID of the organization this webhook belongs to.
-        project_id:
-          type: string
-          description: ID of the project this webhook belongs to.
         name:
           type: string
           description: Human-readable name, unique within the project.
@@ -7011,7 +6981,6 @@ components:
       required:
       - id
       - webhook_id
-      - org_id
       - event_type
       - status
       - attempts
@@ -7032,9 +7001,6 @@ components:
         webhook_id:
           type: string
           description: ID of the webhook this delivery belongs to.
-        org_id:
-          type: string
-          description: ID of the organization this delivery belongs to.
         run_id:
           type: string
           description: Run that triggered the event, when applicable.
@@ -7151,7 +7117,6 @@ components:
       type: object
       required:
       - id
-      - org_id
       - name
       - provider
       - status
@@ -7161,9 +7126,6 @@ components:
         id:
           type: string
           description: Unique identifier for this integration.
-        org_id:
-          type: string
-          description: ID of the organization this integration belongs to.
         name:
           type: string
           description: Human-readable name, unique per `(project, provider)` tuple.
@@ -7282,7 +7244,6 @@ components:
       type: object
       required:
       - id
-      - org_id
       - plan_type
       - status
       - seat_count
@@ -7300,9 +7261,6 @@ components:
         id:
           type: string
           description: Unique identifier for this subscription.
-        org_id:
-          type: string
-          description: ID of the organization this subscription belongs to.
         plan_type:
           type: string
           description: 'Active plan: `trial`, `free`, `pro`, or `business`. New orgs
@@ -7833,9 +7791,6 @@ components:
         id:
           type: string
           description: Unique identifier for this role.
-        org_id:
-          type: string
-          description: Owning org. Empty for system-defined roles.
         project_id:
           type: string
           description: Scoping project. Empty for org-wide roles.
@@ -7866,7 +7821,6 @@ components:
       type: object
       required:
       - id
-      - org_id
       - actor_type
       - actor_id
       - role_id
@@ -7876,9 +7830,6 @@ components:
         id:
           type: string
           description: Unique identifier for this role assignment.
-        org_id:
-          type: string
-          description: ID of the organization this assignment belongs to.
         actor_type:
           type: string
           enum:
@@ -8104,7 +8055,6 @@ components:
       type: object
       required:
       - id
-      - org_id
       - user_id
       - role
       - created_at
@@ -8113,9 +8063,6 @@ components:
         id:
           type: string
           description: Unique identifier for this membership record.
-        org_id:
-          type: string
-          description: ID of the organization.
         user_id:
           type: string
           description: ID of the user who is a member.
@@ -8269,7 +8216,6 @@ components:
       type: object
       required:
       - id
-      - org_id
       - handle
       - name
       - routing_policy
@@ -8279,9 +8225,6 @@ components:
         id:
           type: string
           description: Unique identifier for this group.
-        org_id:
-          type: string
-          description: ID of the organization this group belongs to.
         handle:
           type: string
           description: URL-safe identifier, unique within the project. Immutable after
@@ -8355,7 +8298,6 @@ components:
       required:
       - id
       - group_id
-      - org_id
       - user_id
       - added_at
       properties:
@@ -8365,9 +8307,6 @@ components:
         group_id:
           type: string
           description: ID of the group this membership belongs to.
-        org_id:
-          type: string
-          description: ID of the organization this group belongs to.
         user_id:
           type: string
           description: ID of the user who is a member.
@@ -8472,7 +8411,6 @@ components:
       type: object
       required:
       - id
-      - org_id
       - service_account_id
       - name
       - display_name
@@ -8484,9 +8422,6 @@ components:
         id:
           type: string
           description: Unique identifier for this agent.
-        org_id:
-          type: string
-          description: ID of the organization this agent belongs to.
         service_account_id:
           type: string
           description: The service account whose credentials this agent uses to authenticate.
@@ -8529,7 +8464,6 @@ components:
       type: object
       required:
       - id
-      - org_id
       - agent_id
       - status
       - transport
@@ -8539,9 +8473,6 @@ components:
         id:
           type: string
           description: Unique identifier for this session.
-        org_id:
-          type: string
-          description: ID of the organization this session belongs to.
         agent_id:
           type: string
           description: ID of the agent this session belongs to.
@@ -8673,7 +8604,6 @@ components:
       type: object
       required:
       - id
-      - org_id
       - name
       - display_name
       - status
@@ -8683,9 +8613,6 @@ components:
         id:
           type: string
           description: Unique identifier for this service account.
-        org_id:
-          type: string
-          description: ID of the organization this service account belongs to.
         name:
           type: string
           description: Stable machine-readable identifier, unique within the project.

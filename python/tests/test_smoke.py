@@ -117,7 +117,7 @@ def test_emit_job_event_posts_to_project_events_endpoint() -> None:
         payload={"url": "https://example.com"},
     )
 
-    assert seen["path"] == "/projects/test-project/jobs/task_1/events"
+    assert seen["path"] == "/v1/projects/test-project/jobs/task_1/events"
     assert '"type":"scrape.page_done"' in str(seen["body"])
     assert '"attempt":2' in str(seen["body"])
 

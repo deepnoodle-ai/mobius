@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Any
+from urllib.parse import quote
 
 import httpx
 from pydantic import BaseModel
@@ -136,8 +137,9 @@ class Client:
     # --- Runtime API ---------------------------------------------------------
 
     def claim_job(self, req: JobClaimRequest) -> JobClaim | None:
+        project = quote(self.namespace, safe="")
         resp = self._http.post(
-            f"/projects/{self.namespace}/jobs/claim",
+            f"/v1/projects/{project}/jobs/claim",
             json=_dump(req),
         )
         if resp.status_code == 204:
@@ -148,8 +150,10 @@ class Client:
     def heartbeat_job(
         self, job_id: str, req: JobFenceRequest
     ) -> JobHeartbeat:
+        project = quote(self.namespace, safe="")
+        job = quote(job_id, safe="")
         resp = self._http.post(
-            f"/projects/{self.namespace}/jobs/{job_id}/heartbeat",
+            f"/v1/projects/{project}/jobs/{job}/heartbeat",
             json=_dump(req),
         )
         if resp.status_code == 409:
@@ -158,8 +162,10 @@ class Client:
         return JobHeartbeat.model_validate(resp.json())
 
     def complete_job(self, job_id: str, req: JobCompleteRequest) -> None:
+        project = quote(self.namespace, safe="")
+        job = quote(job_id, safe="")
         resp = self._http.post(
-            f"/projects/{self.namespace}/jobs/{job_id}/complete",
+            f"/v1/projects/{project}/jobs/{job}/complete",
             json=_dump(req),
         )
         if resp.status_code == 409:
@@ -167,8 +173,10 @@ class Client:
         resp.raise_for_status()
 
     def emit_job_events(self, job_id: str, req: JobEventsRequest) -> None:
+        project = quote(self.namespace, safe="")
+        job = quote(job_id, safe="")
         resp = self._http.post(
-            f"/projects/{self.namespace}/jobs/{job_id}/events",
+            f"/v1/projects/{project}/jobs/{job}/events",
             json=_dump(req),
         )
         if resp.status_code == 409:
