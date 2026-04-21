@@ -1364,7 +1364,7 @@ class JobClaim(BaseModel):
     )
     step_name: str = Field(
         ...,
-        description='Step label from the workflow spec — used for UI and interaction topic derivation.',
+        description='Step name from the workflow spec — used for UI and interaction topic derivation.',
     )
     action: str = Field(
         ..., description='Action name the worker must execute for this step.'
@@ -2833,11 +2833,11 @@ class CreateInteractionRequest(BaseModel):
 
     run_id: str | None = Field(
         None,
-        description='ID of the workflow run to resume when this interaction is completed.',
+        description='ID of the workflow run to resume when this interaction is completed. Provide together with `signal_name` for run-backed interactions; omit or null both fields for standalone interactions.',
     )
     signal_name: str | None = Field(
         None,
-        description='Signal name the interaction will complete against when run-backed.',
+        description='Signal name the interaction will complete against when run-backed. Provide together with `run_id` for run-backed interactions; omit or null both fields for standalone interactions.',
     )
     target_actor: ActorRef
     type: InteractionType

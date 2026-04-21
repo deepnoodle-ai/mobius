@@ -331,32 +331,26 @@ type cliCredentialListResponse struct {
 	Items []cliCredential `json:"items"`
 }
 
-// runAuthList lists the CLI credentials the authenticated user has minted
-// across devices. This hits an authenticated endpoint, so it uses the
-// resolved client (saved credential or explicit key).
-func runAuthList(ctx *cli.Context) error {
-	if !hasAuth(ctx) {
-		return errLoginRequired()
-	}
+func fetchCLICredentials(ctx *cli.Context) ([]cliCredential, error) {
 	resp, err := authAPIGet(ctx, "/v1/auth/cli-credentials")
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("list CLI credentials: HTTP %d: %s", resp.StatusCode, string(body))
+		return nil, fmt.Errorf("list CLI credentials: HTTP %d: %s", resp.StatusCode, string(body))
 	}
 	var result cliCredentialListResponse
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return fmt.Errorf("list CLI credentials: decode: %w", err)
+		return nil, fmt.Errorf("list CLI credentials: decode: %w", err)
 	}
-	if len(result.Items) == 0 {
-		ctx.Println("No CLI credentials.")
-		return nil
-	}
-	rows := make([][]string, 0, len(result.Items))
-	for _, c := range result.Items {
+	return result.Items, nil
+}
+
+func printCLICredentials(ctx *cli.Context, creds []cliCredential) error {
+	rows := make([][]string, 0, len(creds))
+	for _, c := range creds {
 		lastUsed := "never"
 		if c.LastUsedAt != nil {
 			lastUsed = c.LastUsedAt.Format(time.RFC3339)
@@ -379,18 +373,42 @@ func runAuthList(ctx *cli.Context) error {
 	return nil
 }
 
+// runAuthList lists the CLI credentials the authenticated user has minted
+// across devices. This hits an authenticated endpoint, so it uses the
+// resolved client (saved credential or explicit key).
+func runAuthList(ctx *cli.Context) error {
+	if !hasAuth(ctx) {
+		return errLoginRequired()
+	}
+	creds, err := fetchCLICredentials(ctx)
+	if err != nil {
+		return err
+	}
+	if len(creds) == 0 {
+		ctx.Println("No CLI credentials.")
+		return nil
+	}
+	return printCLICredentials(ctx, creds)
+}
+
 func runAuthRevoke(ctx *cli.Context) error {
 	if !hasAuth(ctx) {
 		return errLoginRequired()
 	}
 	id := ctx.Arg(0)
 	if id == "" {
-		// No ID given: show the list so the caller can discover what
-		// to pass, instead of dead-ending on "missing required argument".
-		if err := runAuthList(ctx); err != nil {
+		creds, err := fetchCLICredentials(ctx)
+		if err != nil {
 			return err
 		}
-		ctx.Println("")
+		if len(creds) == 0 {
+			ctx.Println("No CLI credentials to revoke.")
+			return nil
+		}
+		ctx.Println("Specify a credential ID to revoke. Available credentials:")
+		if err := printCLICredentials(ctx, creds); err != nil {
+			return err
+		}
 		return errors.New("specify a credential ID to revoke: `mobius auth revoke <id>`")
 	}
 	req, err := http.NewRequestWithContext(ctx.Context(), http.MethodDelete, authAPIURL(ctx, "/v1/auth/cli-credentials/"+id), nil)
