@@ -327,7 +327,7 @@ type cliCredential struct {
 }
 
 type cliCredentialListResponse struct {
-	Data []cliCredential `json:"data"`
+	Items []cliCredential `json:"items"`
 }
 
 // runAuthList lists the CLI credentials the authenticated user has minted
@@ -350,12 +350,12 @@ func runAuthList(ctx *cli.Context) error {
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return fmt.Errorf("list CLI credentials: decode: %w", err)
 	}
-	if len(result.Data) == 0 {
+	if len(result.Items) == 0 {
 		ctx.Println("No CLI credentials.")
 		return nil
 	}
 	ctx.Printf("%-28s  %-8s  %-32s  %s\n", "ID", "STATUS", "LABEL", "LAST USED")
-	for _, c := range result.Data {
+	for _, c := range result.Items {
 		lastUsed := "never"
 		if c.LastUsedAt != nil {
 			lastUsed = c.LastUsedAt.Format(time.RFC3339)
