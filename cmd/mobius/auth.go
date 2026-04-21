@@ -338,7 +338,7 @@ func runAuthList(ctx *cli.Context) error {
 	if !hasAuth(ctx) {
 		return errLoginRequired()
 	}
-	resp, err := authAPIGet(ctx, "/v1/cli-credentials")
+	resp, err := authAPIGet(ctx, "/v1/auth/cli-credentials")
 	if err != nil {
 		return err
 	}
@@ -393,7 +393,7 @@ func runAuthRevoke(ctx *cli.Context) error {
 		ctx.Println("")
 		return errors.New("specify a credential ID to revoke: `mobius auth revoke <id>`")
 	}
-	req, err := http.NewRequestWithContext(ctx.Context(), http.MethodDelete, authAPIURL(ctx, "/v1/cli-credentials/"+id), nil)
+	req, err := http.NewRequestWithContext(ctx.Context(), http.MethodDelete, authAPIURL(ctx, "/v1/auth/cli-credentials/"+id), nil)
 	if err != nil {
 		return err
 	}

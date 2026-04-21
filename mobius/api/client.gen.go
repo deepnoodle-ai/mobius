@@ -2394,7 +2394,7 @@ type JobClaim struct {
 	// RunId Parent workflow run ID.
 	RunId string `json:"run_id"`
 
-	// StepName Step label from the workflow spec — used for UI and for deriving the interaction signal name when a worker creates a run-backed interaction without an explicit signal_name.
+	// StepName Step label from the workflow spec — used for UI and interaction topic derivation.
 	StepName string `json:"step_name"`
 
 	// WorkflowName Handle of the workflow definition that owns this run.

@@ -877,10 +877,9 @@ export interface paths {
          *     The server derives the owning run and project scope from the job,
          *     so workers do not need to pass `run_id` explicitly. Prefer this
          *     route over `POST /v1/projects/{project}/interactions` from within a
-         *     job context. The optional `signal_name` field overrides the
-         *     server-derived signal name; when omitted the server derives the
-         *     signal name from `step_name` or uses a default interaction
-         *     signal name.
+         *     job context. The optional `topic` field overrides the server-
+         *     derived signal topic; when omitted the server derives the topic
+         *     from `step_name` or uses a default interaction topic.
          */
         post: operations["createJobInteraction"];
         delete?: never;
@@ -3052,7 +3051,7 @@ export interface components {
             run_id: string;
             /** @description Handle of the workflow definition that owns this run. */
             workflow_name: string;
-            /** @description Step label from the workflow spec — used for UI and for deriving the interaction signal name when a worker creates a run-backed interaction without an explicit signal_name. */
+            /** @description Step label from the workflow spec — used for UI and interaction topic derivation. */
             step_name: string;
             /** @description Action name the worker must execute for this step. */
             action: string;
