@@ -75,7 +75,7 @@ func registerGroupsCommands(app *cli.App) {
 		})
 
 	groupsGrp.Command("get").
-		Description("Get a group with member count").
+		Description("Get a group").
 		Args("group-id").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -90,7 +90,7 @@ func registerGroupsCommands(app *cli.App) {
 		})
 
 	groupsGrp.Command("list").
-		Description("List groups in a project").
+		Description("List groups").
 		Flags(
 			cli.String("cursor", "").Help("cursor"),
 			cli.Int("limit", "").Help("limit"),

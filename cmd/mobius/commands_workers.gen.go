@@ -16,7 +16,7 @@ func registerWorkersCommands(app *cli.App) {
 	workersGrp := app.Group("workers")
 	workersGrp.Alias("worker")
 	workersGrp.Command("list").
-		Description("List recently seen workers in the project").
+		Description("List workers").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()

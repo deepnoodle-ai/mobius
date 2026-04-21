@@ -18,7 +18,7 @@ func registerRolesCommands(app *cli.App) {
 	rolesGrp := app.Group("roles")
 	rolesGrp.Alias("role")
 	rolesGrp.Command("create").
-		Description("Create a custom role").
+		Description("Create a role").
 		Flags(
 			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin)"),
 		).
@@ -37,7 +37,7 @@ func registerRolesCommands(app *cli.App) {
 		})
 
 	rolesGrp.Command("create-assignment").
-		Description("Create a role assignment").
+		Description("Assign a role to an actor").
 		Flags(
 			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin)"),
 		).
@@ -56,7 +56,7 @@ func registerRolesCommands(app *cli.App) {
 		})
 
 	rolesGrp.Command("delete").
-		Description("Delete a custom role").
+		Description("Delete a role").
 		Args("id").
 		Flags(
 			cli.String("project-id", "").Help("project-id"),
@@ -78,7 +78,7 @@ func registerRolesCommands(app *cli.App) {
 		})
 
 	rolesGrp.Command("delete-assignment").
-		Description("Delete a role assignment").
+		Description("Remove a role assignment").
 		Args("id").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -174,7 +174,7 @@ func registerRolesCommands(app *cli.App) {
 		})
 
 	rolesGrp.Command("update").
-		Description("Update a custom role").
+		Description("Update a role").
 		Args("id").
 		Flags(
 			cli.String("project-id", "").Help("project-id"),

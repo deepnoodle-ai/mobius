@@ -73,7 +73,7 @@ func registerRunsCommands(app *cli.App) {
 		})
 
 	runsGrp.Command("get").
-		Description("Get a workflow run (including spec and run state blobs)").
+		Description("Get a workflow run").
 		Args("id").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -88,7 +88,7 @@ func registerRunsCommands(app *cli.App) {
 		})
 
 	runsGrp.Command("get-action-log").
-		Description("Get the append-only action log for a run").
+		Description("List action log entries for a run").
 		Args("id").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -103,7 +103,7 @@ func registerRunsCommands(app *cli.App) {
 		})
 
 	runsGrp.Command("get-jobs").
-		Description("Get workflow jobs for a run").
+		Description("List jobs for a run").
 		Args("id").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -118,7 +118,7 @@ func registerRunsCommands(app *cli.App) {
 		})
 
 	runsGrp.Command("list").
-		Description("List workflow runs in a project").
+		Description("List workflow runs").
 		Flags(
 			cli.String("status", "").Help("status"),
 			cli.String("workflow-type", "").Help("workflow-type"),
@@ -126,7 +126,6 @@ func registerRunsCommands(app *cli.App) {
 			cli.String("parent-run-id", "").Help("parent-run-id"),
 			cli.String("initiated-by", "").Help("initiated-by"),
 			cli.String("external-id", "").Help("external-id"),
-			cli.String("group", "").Help("group"),
 			cli.String("cursor", "").Help("cursor"),
 			cli.Int("limit", "").Help("limit"),
 		).
@@ -159,10 +158,6 @@ func registerRunsCommands(app *cli.App) {
 				v := ctx.String("external-id")
 				params.ExternalId = &v
 			}
-			if ctx.IsSet("group") {
-				v := ctx.String("group")
-				params.Group = &v
-			}
 			if ctx.IsSet("cursor") {
 				v := api.CursorParam(ctx.String("cursor"))
 				params.Cursor = &v
@@ -179,7 +174,7 @@ func registerRunsCommands(app *cli.App) {
 		})
 
 	runsGrp.Command("resume-run").
-		Description("Flip a suspended run back to queued").
+		Description("Resume a suspended run").
 		Args("id").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {

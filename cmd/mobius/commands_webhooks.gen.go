@@ -18,7 +18,7 @@ func registerWebhooksCommands(app *cli.App) {
 	webhooksGrp := app.Group("webhooks")
 	webhooksGrp.Alias("webhook")
 	webhooksGrp.Command("create").
-		Description("Create webhook").
+		Description("Create a webhook").
 		Flags(
 			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin)"),
 		).
@@ -38,7 +38,7 @@ func registerWebhooksCommands(app *cli.App) {
 		})
 
 	webhooksGrp.Command("delete").
-		Description("Delete webhook").
+		Description("Delete a webhook").
 		Args("id").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -53,7 +53,7 @@ func registerWebhooksCommands(app *cli.App) {
 		})
 
 	webhooksGrp.Command("get").
-		Description("Get webhook").
+		Description("Get a webhook").
 		Args("id").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -98,11 +98,10 @@ func registerWebhooksCommands(app *cli.App) {
 			return printResponse(ctx, resp.StatusCode(), resp.Body)
 		})
 
-	webhooksGrp.Command("list-events").
-		Description("List webhook events").
+	webhooksGrp.Command("list-deliveries").
+		Description("List webhook deliveries").
 		Args("id").
 		Flags(
-			cli.String("status", "").Help("status"),
 			cli.String("cursor", "").Help("cursor"),
 			cli.Int("limit", "").Help("limit"),
 		).
@@ -111,11 +110,7 @@ func registerWebhooksCommands(app *cli.App) {
 			client := clientFromContext(ctx).RawClient()
 			p0 := ctx.String("project")
 			p1 := ctx.Arg(0)
-			params := &api.ListWebhookEventsParams{}
-			if ctx.IsSet("status") {
-				v := api.WebhookEventStatus(ctx.String("status"))
-				params.Status = &v
-			}
+			params := &api.ListWebhookDeliveriesParams{}
 			if ctx.IsSet("cursor") {
 				v := ctx.String("cursor")
 				params.Cursor = &v
@@ -124,7 +119,7 @@ func registerWebhooksCommands(app *cli.App) {
 				v := ctx.Int("limit")
 				params.Limit = &v
 			}
-			resp, err := client.ListWebhookEventsWithResponse(ctx.Context(), p0, p1, params)
+			resp, err := client.ListWebhookDeliveriesWithResponse(ctx.Context(), p0, p1, params)
 			if err != nil {
 				return err
 			}
@@ -132,7 +127,7 @@ func registerWebhooksCommands(app *cli.App) {
 		})
 
 	webhooksGrp.Command("update").
-		Description("Update webhook").
+		Description("Update a webhook").
 		Args("id").
 		Flags(
 			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin)"),

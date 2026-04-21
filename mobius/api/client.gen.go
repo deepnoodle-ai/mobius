@@ -626,24 +626,24 @@ func (e UpdateGroupRequestRoutingPolicy) Valid() bool {
 	}
 }
 
-// Defines values for WebhookEventStatus.
+// Defines values for WebhookDeliveryStatus.
 const (
-	WebhookEventStatusAcknowledged WebhookEventStatus = "acknowledged"
-	WebhookEventStatusExpired      WebhookEventStatus = "expired"
-	WebhookEventStatusFailed       WebhookEventStatus = "failed"
-	WebhookEventStatusPending      WebhookEventStatus = "pending"
+	WebhookDeliveryStatusDelivered  WebhookDeliveryStatus = "delivered"
+	WebhookDeliveryStatusFailed     WebhookDeliveryStatus = "failed"
+	WebhookDeliveryStatusPending    WebhookDeliveryStatus = "pending"
+	WebhookDeliveryStatusProcessing WebhookDeliveryStatus = "processing"
 )
 
-// Valid indicates whether the value is a known member of the WebhookEventStatus enum.
-func (e WebhookEventStatus) Valid() bool {
+// Valid indicates whether the value is a known member of the WebhookDeliveryStatus enum.
+func (e WebhookDeliveryStatus) Valid() bool {
 	switch e {
-	case WebhookEventStatusAcknowledged:
+	case WebhookDeliveryStatusDelivered:
 		return true
-	case WebhookEventStatusExpired:
+	case WebhookDeliveryStatusFailed:
 		return true
-	case WebhookEventStatusFailed:
+	case WebhookDeliveryStatusPending:
 		return true
-	case WebhookEventStatusPending:
+	case WebhookDeliveryStatusProcessing:
 		return true
 	default:
 		return false
@@ -874,219 +874,419 @@ func (e ListRoleAssignmentsParamsActorType) Valid() bool {
 
 // APIKey defines model for APIKey.
 type APIKey struct {
-	CreatedAt time.Time  `json:"created_at"`
-	ExpiresAt *time.Time `json:"expires_at,omitempty"`
-	Id        string     `json:"id"`
+	// CreatedAt Timestamp when this key was created.
+	CreatedAt time.Time `json:"created_at"`
 
-	// KeyPrefix First 8 characters of the key for identification
-	KeyPrefix        string      `json:"key_prefix"`
-	LastUsedAt       *time.Time  `json:"last_used_at,omitempty"`
-	Name             string      `json:"name"`
-	Permissions      *[]string   `json:"permissions,omitempty"`
-	ProjectId        *string     `json:"project_id,omitempty"`
-	Scope            APIKeyScope `json:"scope"`
-	ServiceAccountId *string     `json:"service_account_id,omitempty"`
-	UpdatedAt        time.Time   `json:"updated_at"`
+	// ExpiresAt Hard expiry timestamp. Requests using an expired key receive 401.
+	ExpiresAt *time.Time `json:"expires_at,omitempty"`
+
+	// Id Unique identifier for this API key.
+	Id string `json:"id"`
+
+	// KeyPrefix First 8 characters of the key, used to identify it without exposing the secret.
+	KeyPrefix string `json:"key_prefix"`
+
+	// LastUsedAt Timestamp of the most recent authenticated request using this key.
+	LastUsedAt *time.Time `json:"last_used_at,omitempty"`
+
+	// Name Human-readable label, unique within the org (or org+project for project-pinned keys).
+	Name string `json:"name"`
+
+	// Permissions Explicit permission set granted to this key (e.g. "mobius.job.claim").
+	Permissions *[]string `json:"permissions,omitempty"`
+
+	// ProjectId Set for project-pinned keys; empty for org-scoped keys.
+	ProjectId *string `json:"project_id,omitempty"`
+
+	// Scope `org` for standard API keys; `system` is reserved for platform-level access.
+	Scope APIKeyScope `json:"scope"`
+
+	// ServiceAccountId Optional service account for attribution and quota tracking.
+	ServiceAccountId *string `json:"service_account_id,omitempty"`
+
+	// UpdatedAt Timestamp when this key was last updated.
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
-// APIKeyScope defines model for APIKey.Scope.
+// APIKeyScope `org` for standard API keys; `system` is reserved for platform-level access.
 type APIKeyScope string
 
-// APIKeyCreateResult defines model for APIKeyCreateResult.
+// APIKeyCreateResult Returned only on key creation. Contains the raw `key` value which is not retrievable after this response.
 type APIKeyCreateResult struct {
-	CreatedAt time.Time  `json:"created_at"`
-	ExpiresAt *time.Time `json:"expires_at,omitempty"`
-	Id        string     `json:"id"`
+	// CreatedAt Timestamp when this key was created.
+	CreatedAt time.Time `json:"created_at"`
 
-	// Key The raw API key (shown only once)
+	// ExpiresAt Timestamp when this key expires. Null if it does not expire.
+	ExpiresAt *time.Time `json:"expires_at,omitempty"`
+
+	// Id Unique identifier for the created API key.
+	Id string `json:"id"`
+
+	// Key The raw API key. Returned only once at creation — store it securely immediately.
 	Key string `json:"key"`
 
-	// KeyPrefix First 8 characters of the key for identification
-	KeyPrefix        string                  `json:"key_prefix"`
-	LastUsedAt       *time.Time              `json:"last_used_at,omitempty"`
-	Name             string                  `json:"name"`
-	Permissions      *[]string               `json:"permissions,omitempty"`
-	ProjectId        *string                 `json:"project_id,omitempty"`
-	Scope            APIKeyCreateResultScope `json:"scope"`
-	ServiceAccountId *string                 `json:"service_account_id,omitempty"`
-	UpdatedAt        time.Time               `json:"updated_at"`
+	// KeyPrefix First 8 characters of the key for identification.
+	KeyPrefix string `json:"key_prefix"`
+
+	// LastUsedAt Timestamp of the most recent authenticated request using this key.
+	LastUsedAt *time.Time `json:"last_used_at,omitempty"`
+
+	// Name Human-readable name for the key.
+	Name string `json:"name"`
+
+	// Permissions List of permissions granted to this key.
+	Permissions *[]string `json:"permissions,omitempty"`
+
+	// ProjectId ID of the pinned project. Null for org-scoped keys.
+	ProjectId *string `json:"project_id,omitempty"`
+
+	// Scope Scope of the key: `org` for org-wide keys, `project` for project-pinned keys.
+	Scope APIKeyCreateResultScope `json:"scope"`
+
+	// ServiceAccountId ID of the service account this key belongs to.
+	ServiceAccountId *string `json:"service_account_id,omitempty"`
+
+	// UpdatedAt Timestamp when this key was last updated.
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
-// APIKeyCreateResultScope defines model for APIKeyCreateResult.Scope.
+// APIKeyCreateResultScope Scope of the key: `org` for org-wide keys, `project` for project-pinned keys.
 type APIKeyCreateResultScope string
 
 // APIKeyListResponse defines model for APIKeyListResponse.
 type APIKeyListResponse struct {
+	// Items The list of results for this page.
 	Items []APIKey `json:"items"`
 }
 
 // Action defines model for Action.
 type Action struct {
-	Annotations   *ActionAnnotations      `json:"annotations,omitempty"`
-	CreatedAt     time.Time               `json:"created_at"`
-	Description   *string                 `json:"description,omitempty"`
-	EndpointUrl   string                  `json:"endpoint_url"`
-	Id            string                  `json:"id"`
-	InputSchema   *map[string]interface{} `json:"input_schema,omitempty"`
-	Name          string                  `json:"name"`
-	OrgId         string                  `json:"org_id"`
-	OutputSchema  *map[string]interface{} `json:"output_schema,omitempty"`
-	SigningSecret *string                 `json:"signing_secret,omitempty"`
-	Title         *string                 `json:"title,omitempty"`
-	UpdatedAt     time.Time               `json:"updated_at"`
+	// Annotations Hints that describe the safe-use properties of the action. Used by the
+	// engine and tooling to decide retry behavior, dry-run eligibility, etc.
+	Annotations *ActionAnnotations `json:"annotations,omitempty"`
+
+	// CreatedAt Timestamp when this action was created.
+	CreatedAt time.Time `json:"created_at"`
+
+	// Description Markdown description of what the action does.
+	Description *string `json:"description,omitempty"`
+
+	// EndpointUrl HTTP/HTTPS URL Mobius POSTs to when invoking this action.
+	EndpointUrl string `json:"endpoint_url"`
+
+	// Id Unique identifier for this action.
+	Id string `json:"id"`
+
+	// InputSchema JSON Schema describing expected input parameters.
+	InputSchema *map[string]interface{} `json:"input_schema,omitempty"`
+
+	// Name Project-scoped stable identifier used in workflow step definitions.
+	Name string `json:"name"`
+
+	// OrgId ID of the organization this action belongs to.
+	OrgId string `json:"org_id"`
+
+	// OutputSchema JSON Schema describing the expected output shape.
+	OutputSchema *map[string]interface{} `json:"output_schema,omitempty"`
+
+	// SigningSecret Raw HMAC-SHA256 signing secret. Only populated on create and rotate
+	// responses; null on all other reads. Store this value securely on
+	// first receipt — it cannot be retrieved again.
+	SigningSecret *string `json:"signing_secret,omitempty"`
+
+	// Title Human-readable display title for the action.
+	Title *string `json:"title,omitempty"`
+
+	// UpdatedAt Timestamp when this action was last updated.
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
-// ActionAnnotations defines model for ActionAnnotations.
+// ActionAnnotations Hints that describe the safe-use properties of the action. Used by the
+// engine and tooling to decide retry behavior, dry-run eligibility, etc.
 type ActionAnnotations struct {
+	// Destructive The action has irreversible side effects (deletion, financial transactions, etc.). Surfaced as a warning in UI.
 	Destructive *bool `json:"destructive,omitempty"`
-	Idempotent  *bool `json:"idempotent,omitempty"`
-	ReadOnly    *bool `json:"read_only,omitempty"`
+
+	// Idempotent The action produces the same result when called with the same inputs; safe to retry automatically.
+	Idempotent *bool `json:"idempotent,omitempty"`
+
+	// ReadOnly The action has no side effects; safe to call in dry-run scenarios.
+	ReadOnly *bool `json:"read_only,omitempty"`
 }
 
 // ActionAuditLogEntry defines model for ActionAuditLogEntry.
 type ActionAuditLogEntry struct {
-	ActionName    string                  `json:"action_name"`
-	ErrorMessage  *string                 `json:"error_message,omitempty"`
-	ErrorType     *string                 `json:"error_type,omitempty"`
-	FinishedAt    time.Time               `json:"finished_at"`
-	Id            string                  `json:"id"`
+	// ActionName Name of the action that was invoked.
+	ActionName string `json:"action_name"`
+
+	// ErrorMessage Human-readable error detail when status is "failed".
+	ErrorMessage *string `json:"error_message,omitempty"`
+
+	// ErrorType Machine-readable error classification when status is "failed".
+	ErrorType *string `json:"error_type,omitempty"`
+
+	// FinishedAt Timestamp when this invocation completed.
+	FinishedAt time.Time `json:"finished_at"`
+
+	// Id Unique identifier for this audit log entry.
+	Id string `json:"id"`
+
+	// OutputSummary Truncated or summarized action output for audit purposes.
 	OutputSummary *map[string]interface{} `json:"output_summary,omitempty"`
-	Parameters    *map[string]interface{} `json:"parameters,omitempty"`
-	RetryCount    int                     `json:"retry_count"`
-	RunId         *string                 `json:"run_id,omitempty"`
-	Source        string                  `json:"source"`
-	StartedAt     time.Time               `json:"started_at"`
-	Status        string                  `json:"status"`
-	StepName      *string                 `json:"step_name,omitempty"`
+
+	// Parameters Input parameters passed to the action.
+	Parameters *map[string]interface{} `json:"parameters,omitempty"`
+
+	// RetryCount Number of retry attempts before this terminal status was reached.
+	RetryCount int `json:"retry_count"`
+
+	// RunId Workflow run that triggered this invocation, if run-backed.
+	RunId *string `json:"run_id,omitempty"`
+
+	// Source Invocation source ("workflow", "direct", etc.).
+	Source string `json:"source"`
+
+	// StartedAt Timestamp when this invocation started.
+	StartedAt time.Time `json:"started_at"`
+
+	// Status Terminal invocation status ("success", "failed", etc.).
+	Status string `json:"status"`
+
+	// StepName Workflow step name that triggered this invocation.
+	StepName *string `json:"step_name,omitempty"`
 }
 
 // ActionAuditLogListResponse defines model for ActionAuditLogListResponse.
 type ActionAuditLogListResponse struct {
-	HasMore    bool                   `json:"has_more"`
-	Items      *[]ActionAuditLogEntry `json:"items,omitempty"`
-	NextCursor *string                `json:"next_cursor,omitempty"`
+	// HasMore Whether additional pages are available.
+	HasMore bool `json:"has_more"`
+
+	// Items The list of results for this page.
+	Items *[]ActionAuditLogEntry `json:"items,omitempty"`
+
+	// NextCursor Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.
+	NextCursor *string `json:"next_cursor,omitempty"`
 }
 
 // ActionCatalogEntry defines model for ActionCatalogEntry.
 type ActionCatalogEntry struct {
-	Annotations  *ActionAnnotations      `json:"annotations,omitempty"`
-	Available    bool                    `json:"available"`
-	Description  *string                 `json:"description,omitempty"`
-	EndpointUrl  *string                 `json:"endpoint_url,omitempty"`
-	InputSchema  *map[string]interface{} `json:"input_schema,omitempty"`
-	Integration  *string                 `json:"integration,omitempty"`
-	Name         string                  `json:"name"`
+	// Annotations Hints that describe the safe-use properties of the action. Used by the
+	// engine and tooling to decide retry behavior, dry-run eligibility, etc.
+	Annotations *ActionAnnotations `json:"annotations,omitempty"`
+
+	// Available Whether this action can currently be invoked. False if the required
+	// integration is not connected or the caller lacks permission.
+	Available bool `json:"available"`
+
+	// Description Markdown description of what the action does.
+	Description *string `json:"description,omitempty"`
+
+	// EndpointUrl Endpoint URL (populated for project-owned actions only).
+	EndpointUrl *string `json:"endpoint_url,omitempty"`
+
+	// InputSchema JSON Schema describing expected input parameters.
+	InputSchema *map[string]interface{} `json:"input_schema,omitempty"`
+
+	// Integration Integration slug this action belongs to (e.g. "slack"), if platform-provided.
+	Integration *string `json:"integration,omitempty"`
+
+	// Name Action name as used in workflow step definitions.
+	Name string `json:"name"`
+
+	// OutputSchema JSON Schema describing the expected output shape.
 	OutputSchema *map[string]interface{} `json:"output_schema,omitempty"`
-	Source       string                  `json:"source"`
-	Title        *string                 `json:"title,omitempty"`
+
+	// Source Origin of this action: "project" for project-owned actions, or the
+	// integration slug for platform-provided actions.
+	Source string `json:"source"`
+
+	// Title Human-readable display title for the action.
+	Title *string `json:"title,omitempty"`
 }
 
 // ActionCatalogListResponse defines model for ActionCatalogListResponse.
 type ActionCatalogListResponse struct {
+	// Items The full list of catalog entries.
 	Items []ActionCatalogEntry `json:"items"`
 }
 
 // ActionListResponse defines model for ActionListResponse.
 type ActionListResponse struct {
-	HasMore    bool      `json:"has_more"`
-	Items      *[]Action `json:"items,omitempty"`
-	NextCursor *string   `json:"next_cursor,omitempty"`
+	// HasMore Whether additional pages are available.
+	HasMore bool `json:"has_more"`
+
+	// Items The list of results for this page.
+	Items *[]Action `json:"items,omitempty"`
+
+	// NextCursor Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.
+	NextCursor *string `json:"next_cursor,omitempty"`
 }
 
 // ActionLogEntry defines model for ActionLogEntry.
 type ActionLogEntry struct {
-	Action     string                  `json:"action"`
-	BranchId   string                  `json:"branch_id"`
-	DurationMs int                     `json:"duration_ms"`
-	Error      *string                 `json:"error,omitempty"`
-	Id         string                  `json:"id"`
+	// Action Action name that was executed.
+	Action string `json:"action"`
+
+	// BranchId Execution branch this entry belongs to.
+	BranchId string `json:"branch_id"`
+
+	// DurationMs Elapsed time in milliseconds from start to completion.
+	DurationMs int `json:"duration_ms"`
+
+	// Error Error message when the action failed.
+	Error *string `json:"error,omitempty"`
+
+	// Id Unique identifier for this action log entry.
+	Id string `json:"id"`
+
+	// Parameters Input parameters that were passed to the action.
 	Parameters *map[string]interface{} `json:"parameters,omitempty"`
-	Result     *map[string]interface{} `json:"result,omitempty"`
-	StartedAt  time.Time               `json:"started_at"`
-	StepName   string                  `json:"step_name"`
+
+	// Result Output returned by the action. Present on success.
+	Result *map[string]interface{} `json:"result,omitempty"`
+
+	// StartedAt Timestamp when the action execution started.
+	StartedAt time.Time `json:"started_at"`
+
+	// StepName Workflow step name that produced this action log entry.
+	StepName string `json:"step_name"`
 }
 
 // ActionLogListResponse defines model for ActionLogListResponse.
 type ActionLogListResponse struct {
+	// Items The list of action log entries for this run.
 	Items []ActionLogEntry `json:"items"`
 }
 
 // ActorRef defines model for ActorRef.
 type ActorRef struct {
 	// Id User ID for member; queue name for agent; group ID/handle for group
-	Id   string       `json:"id"`
+	Id string `json:"id"`
+
+	// Type Actor type: `user` or `service_account`.
 	Type ActorRefType `json:"type"`
 }
 
-// ActorRefType defines model for ActorRef.Type.
+// ActorRefType Actor type: `user` or `service_account`.
 type ActorRefType string
 
 // AddChannelMemberRequest defines model for AddChannelMemberRequest.
 type AddChannelMemberRequest struct {
+	// Role Role to assign the new member.
 	Role *AddChannelMemberRequestRole `json:"role,omitempty"`
 
-	// UserId User or agent ID to add
+	// UserId User or agent ID to add to the channel.
 	UserId string `json:"user_id"`
 }
 
-// AddChannelMemberRequestRole defines model for AddChannelMemberRequest.Role.
+// AddChannelMemberRequestRole Role to assign the new member.
 type AddChannelMemberRequestRole string
 
 // AddGroupMemberRequest defines model for AddGroupMemberRequest.
 type AddGroupMemberRequest struct {
-	// UserId Org member user ID to add
+	// UserId Org member user ID to add. Must be a current org member.
 	UserId string `json:"user_id"`
 }
 
 // Agent defines model for Agent.
 type Agent struct {
-	Capabilities     *map[string]interface{} `json:"capabilities,omitempty"`
-	Config           *map[string]interface{} `json:"config,omitempty"`
-	CreatedAt        time.Time               `json:"created_at"`
-	Description      *string                 `json:"description,omitempty"`
-	DisplayName      string                  `json:"display_name"`
-	Id               string                  `json:"id"`
-	Kind             *string                 `json:"kind,omitempty"`
-	Name             string                  `json:"name"`
-	OrgId            string                  `json:"org_id"`
-	Presence         AgentPresence           `json:"presence"`
-	ServiceAccountId string                  `json:"service_account_id"`
-	Status           AgentStatus             `json:"status"`
-	UpdatedAt        time.Time               `json:"updated_at"`
+	// Capabilities Arbitrary capability map used by orchestrators to select suitable agents.
+	Capabilities *map[string]interface{} `json:"capabilities,omitempty"`
+
+	// Config Agent-specific configuration blob stored and returned opaquely.
+	Config *map[string]interface{} `json:"config,omitempty"`
+
+	// CreatedAt Timestamp when this agent was created.
+	CreatedAt time.Time `json:"created_at"`
+
+	// Description Optional human-readable description.
+	Description *string `json:"description,omitempty"`
+
+	// DisplayName Human-readable label shown in the UI.
+	DisplayName string `json:"display_name"`
+
+	// Id Unique identifier for this agent.
+	Id string `json:"id"`
+
+	// Kind Freeform agent classification for tooling and filtering (e.g. "llm", "rpa").
+	Kind *string `json:"kind,omitempty"`
+
+	// Name Unique name within the project, used for targeting in job claims.
+	Name string `json:"name"`
+
+	// OrgId ID of the organization this agent belongs to.
+	OrgId string `json:"org_id"`
+
+	// Presence Computed from the most recent 20 sessions. `online` means a connected
+	// session with a fresh heartbeat; `stale` means heartbeats are overdue;
+	// `offline` means no connected sessions.
+	Presence AgentPresence `json:"presence"`
+
+	// ServiceAccountId The service account whose credentials this agent uses to authenticate. Immutable after creation.
+	ServiceAccountId string `json:"service_account_id"`
+
+	// Status Administrative status. Inactive agents cannot claim new jobs.
+	Status AgentStatus `json:"status"`
+
+	// UpdatedAt Timestamp when this agent was last updated.
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 // AgentListResponse defines model for AgentListResponse.
 type AgentListResponse struct {
+	// Items The list of results for this page.
 	Items []Agent `json:"items"`
 }
 
-// AgentPresence defines model for AgentPresence.
+// AgentPresence Computed from the most recent 20 sessions. `online` means a connected
+// session with a fresh heartbeat; `stale` means heartbeats are overdue;
+// `offline` means no connected sessions.
 type AgentPresence string
 
 // AgentSession defines model for AgentSession.
 type AgentSession struct {
-	AgentId        string                  `json:"agent_id"`
-	ConnectedAt    *time.Time              `json:"connected_at,omitempty"`
-	CreatedAt      time.Time               `json:"created_at"`
-	DisconnectedAt *time.Time              `json:"disconnected_at,omitempty"`
-	Id             string                  `json:"id"`
-	LastSeenAt     *time.Time              `json:"last_seen_at,omitempty"`
-	Metadata       *map[string]interface{} `json:"metadata,omitempty"`
-	OrgId          string                  `json:"org_id"`
-	Status         AgentSessionStatus      `json:"status"`
-	Transport      string                  `json:"transport"`
-	UpdatedAt      time.Time               `json:"updated_at"`
+	// AgentId ID of the agent this session belongs to.
+	AgentId string `json:"agent_id"`
+
+	// ConnectedAt Timestamp when this session was established.
+	ConnectedAt *time.Time `json:"connected_at,omitempty"`
+
+	// CreatedAt Timestamp when this session record was created.
+	CreatedAt time.Time `json:"created_at"`
+
+	// DisconnectedAt Timestamp when this session was closed. Null while connected.
+	DisconnectedAt *time.Time `json:"disconnected_at,omitempty"`
+
+	// Id Unique identifier for this session.
+	Id string `json:"id"`
+
+	// LastSeenAt Timestamp of the most recent heartbeat.
+	LastSeenAt *time.Time `json:"last_seen_at,omitempty"`
+
+	// Metadata Caller-supplied metadata (e.g. hostname, version, region).
+	Metadata *map[string]interface{} `json:"metadata,omitempty"`
+
+	// OrgId ID of the organization this session belongs to.
+	OrgId  string             `json:"org_id"`
+	Status AgentSessionStatus `json:"status"`
+
+	// Transport Connection mechanism identifier (e.g. "sse", "polling").
+	Transport string `json:"transport"`
+
+	// UpdatedAt Timestamp when this session was last updated.
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 // AgentSessionListResponse defines model for AgentSessionListResponse.
 type AgentSessionListResponse struct {
+	// Items The list of results for this page.
 	Items []AgentSession `json:"items"`
 }
 
 // AgentSessionStatus defines model for AgentSessionStatus.
 type AgentSessionStatus string
 
-// AgentStatus defines model for AgentStatus.
+// AgentStatus Administrative status. Inactive agents cannot claim new jobs.
 type AgentStatus string
 
 // AuditLogEntry defines model for AuditLogEntry.
@@ -1140,8 +1340,10 @@ type AuditLogEntryAction string
 // AuditLogListResponse defines model for AuditLogListResponse.
 type AuditLogListResponse struct {
 	// HasMore Whether more results are available
-	HasMore bool             `json:"has_more"`
-	Items   *[]AuditLogEntry `json:"items,omitempty"`
+	HasMore bool `json:"has_more"`
+
+	// Items The list of results for this page.
+	Items *[]AuditLogEntry `json:"items,omitempty"`
 
 	// NextCursor Cursor for fetching next page of results
 	NextCursor *string `json:"next_cursor,omitempty"`
@@ -1149,231 +1351,346 @@ type AuditLogListResponse struct {
 
 // BulkRunRequest defines model for BulkRunRequest.
 type BulkRunRequest struct {
+	// RunIds IDs of the runs to operate on.
 	RunIds []string `json:"run_ids"`
 }
 
 // BulkRunResult defines model for BulkRunResult.
 type BulkRunResult struct {
 	// Failures Map of run_id -> error message for per-run failures.
-	Failures  *map[string]string `json:"failures,omitempty"`
-	Succeeded []string           `json:"succeeded"`
+	Failures *map[string]string `json:"failures,omitempty"`
+
+	// Succeeded IDs of runs that were successfully processed.
+	Succeeded []string `json:"succeeded"`
 }
 
 // Channel defines model for Channel.
 type Channel struct {
-	// ArchivedAt Timestamp when the channel was archived
+	// ArchivedAt Set when the channel is archived. Archived channels are hidden in
+	// the UI but their message history remains accessible.
 	ArchivedAt *time.Time `json:"archived_at,omitempty"`
-	CreatedAt  time.Time  `json:"created_at"`
 
-	// CreatedBy ID of the user who created the channel
+	// CreatedAt Timestamp when this channel was created.
+	CreatedAt time.Time `json:"created_at"`
+
+	// CreatedBy User ID of the org member who created the channel.
 	CreatedBy string `json:"created_by"`
 
-	// DisplayName Human-facing display name
+	// DisplayName Human-facing display name shown in the UI.
 	DisplayName string `json:"display_name"`
-	Id          string `json:"id"`
 
-	// Kind Channel type
+	// Id Unique identifier for this channel.
+	Id string `json:"id"`
+
+	// Kind `channel` — persistent named room.
+	// `dm` — direct-message thread, typically between a small fixed set of participants.
 	Kind ChannelKind `json:"kind"`
 
-	// Name Channel handle (unique within project)
+	// Name URL-safe channel handle, unique within the project. Immutable
+	// after creation.
 	Name string `json:"name"`
 
-	// Private Whether the channel is private
+	// Private When true, the channel is invite-only and not visible in public listings.
 	Private bool `json:"private"`
 
-	// Topic Channel topic or description
-	Topic     *string   `json:"topic,omitempty"`
+	// Topic Optional topic or description shown at the top of the channel.
+	Topic *string `json:"topic,omitempty"`
+
+	// UpdatedAt Timestamp when this channel was last updated.
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-// ChannelKind Channel type
+// ChannelKind `channel` — persistent named room.
+// `dm` — direct-message thread, typically between a small fixed set of participants.
 type ChannelKind string
 
 // ChannelListResponse defines model for ChannelListResponse.
 type ChannelListResponse struct {
-	HasMore    *bool     `json:"has_more,omitempty"`
-	Items      []Channel `json:"items"`
-	NextCursor *string   `json:"next_cursor,omitempty"`
+	// HasMore Whether additional pages are available.
+	HasMore *bool `json:"has_more,omitempty"`
+
+	// Items The list of results for this page.
+	Items []Channel `json:"items"`
+
+	// NextCursor Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.
+	NextCursor *string `json:"next_cursor,omitempty"`
 }
 
 // ChannelMember defines model for ChannelMember.
 type ChannelMember struct {
-	ChannelId string    `json:"channel_id"`
-	Id        string    `json:"id"`
-	JoinedAt  time.Time `json:"joined_at"`
+	// ChannelId ID of the channel this membership belongs to.
+	ChannelId string `json:"channel_id"`
 
-	// LastReadMessageId Last message read by this member
+	// Id Unique identifier for this membership record.
+	Id string `json:"id"`
+
+	// JoinedAt Timestamp when this member joined the channel.
+	JoinedAt time.Time `json:"joined_at"`
+
+	// LastReadMessageId ID of the last message this member has read (used for unread badge counts).
 	LastReadMessageId *string `json:"last_read_message_id,omitempty"`
 
-	// Muted Whether notifications are muted
+	// Muted When true, notifications for this channel are suppressed for this member.
 	Muted *bool `json:"muted,omitempty"`
 
-	// Role Member's role in the channel
+	// Role `admin` — can update channel settings and manage members.
+	// `member` — can post messages and view history.
+	// Creators are automatically assigned `admin`.
 	Role ChannelMemberRole `json:"role"`
 
-	// Starred Whether the member has starred this channel
-	Starred *bool  `json:"starred,omitempty"`
-	UserId  string `json:"user_id"`
+	// Starred Whether this member has starred the channel for quick access.
+	Starred *bool `json:"starred,omitempty"`
+
+	// UserId ID of the user or agent who is a member.
+	UserId string `json:"user_id"`
 }
 
-// ChannelMemberRole Member's role in the channel
+// ChannelMemberRole `admin` — can update channel settings and manage members.
+// `member` — can post messages and view history.
+// Creators are automatically assigned `admin`.
 type ChannelMemberRole string
 
 // ChannelMemberListResponse defines model for ChannelMemberListResponse.
 type ChannelMemberListResponse struct {
-	HasMore    *bool           `json:"has_more,omitempty"`
-	Items      []ChannelMember `json:"items"`
-	NextCursor *string         `json:"next_cursor,omitempty"`
+	// HasMore Whether additional pages are available.
+	HasMore *bool `json:"has_more,omitempty"`
+
+	// Items The list of results for this page.
+	Items []ChannelMember `json:"items"`
+
+	// NextCursor Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.
+	NextCursor *string `json:"next_cursor,omitempty"`
 }
 
 // ChannelMessage defines model for ChannelMessage.
 type ChannelMessage struct {
+	// ChannelId ID of the channel this message was posted in.
 	ChannelId string `json:"channel_id"`
 
-	// Content Message content (markdown)
-	Content   string    `json:"content"`
+	// Content Message body in Markdown.
+	Content string `json:"content"`
+
+	// CreatedAt Timestamp when this message was posted.
 	CreatedAt time.Time `json:"created_at"`
 
-	// Display Rendering layout mode
+	// Display Rendering hint for the UI.
+	// `message` — standard chat bubble.
+	// `notice` — system/informational notice (no attribution).
+	// `card` — structured card layout.
 	Display *ChannelMessageDisplay `json:"display,omitempty"`
 
-	// EditedAt When the message was last edited
+	// EditedAt Set when the message content has been updated after initial send.
 	EditedAt *time.Time `json:"edited_at,omitempty"`
-	Id       string     `json:"id"`
-	Metadata *Metadata  `json:"metadata,omitempty"`
 
-	// Pinned Whether this message is pinned
+	// Id Unique identifier for this message.
+	Id       string    `json:"id"`
+	Metadata *Metadata `json:"metadata,omitempty"`
+
+	// Pinned Whether this message is pinned in the channel.
 	Pinned *bool `json:"pinned,omitempty"`
 
-	// PinnedBy ID of user who pinned this message
+	// PinnedBy User ID of the member who pinned this message.
 	PinnedBy *string `json:"pinned_by,omitempty"`
 
-	// ReplyTo ID of the message this is a reply to (threading)
+	// ReplyTo ID of the parent message this reply belongs to (threading).
 	ReplyTo *string `json:"reply_to,omitempty"`
 
-	// SenderId ID of the message sender (user or agent)
+	// SenderId User ID (for `member`) or agent ID (for `agent`) of the message sender.
 	SenderId string `json:"sender_id"`
 
-	// SenderSessionId Live agent session that sent the message when applicable
-	SenderSessionId *string                  `json:"sender_session_id,omitempty"`
-	SenderType      ChannelMessageSenderType `json:"sender_type"`
+	// SenderSessionId Live agent session that posted the message, when applicable.
+	SenderSessionId *string `json:"sender_session_id,omitempty"`
 
-	// Type Dot-projectd message type (e.g. user.message, ai.response)
+	// SenderType Whether the message was sent by a human org member or an agent worker.
+	SenderType ChannelMessageSenderType `json:"sender_type"`
+
+	// Type Dot-namespaced message type identifier, e.g. `user.message`,
+	// `ai.response`. Used for filtering and display logic.
 	Type string `json:"type"`
 }
 
-// ChannelMessageDisplay Rendering layout mode
+// ChannelMessageDisplay Rendering hint for the UI.
+// `message` — standard chat bubble.
+// `notice` — system/informational notice (no attribution).
+// `card` — structured card layout.
 type ChannelMessageDisplay string
 
 // ChannelMessageListResponse defines model for ChannelMessageListResponse.
 type ChannelMessageListResponse struct {
-	HasMore    *bool            `json:"has_more,omitempty"`
-	Items      []ChannelMessage `json:"items"`
-	NextCursor *string          `json:"next_cursor,omitempty"`
+	// HasMore Whether additional pages are available.
+	HasMore *bool `json:"has_more,omitempty"`
+
+	// Items The list of results for this page.
+	Items []ChannelMessage `json:"items"`
+
+	// NextCursor Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.
+	NextCursor *string `json:"next_cursor,omitempty"`
 }
 
-// ChannelMessageSenderType defines model for ChannelMessageSenderType.
+// ChannelMessageSenderType Whether the message was sent by a human org member or an agent worker.
 type ChannelMessageSenderType string
 
-// ConcurrencyPolicy defines model for ConcurrencyPolicy.
+// ConcurrencyPolicy Controls overlapping runs from the same trigger:
+// - `allow` — start new runs unconditionally.
+// - `forbid` — skip the new fire if a run from this trigger is still active.
+// - `replace` — cancel the active run before starting a new one.
 type ConcurrencyPolicy string
 
 // CopyIntegrationRequest defines model for CopyIntegrationRequest.
 type CopyIntegrationRequest struct {
-	// Name Optional new name for the copied integration. Defaults to the source name.
+	// Name Name for the copied integration in the destination project.
+	// Defaults to the source integration's name. Required if the
+	// source name conflicts with an existing `(provider, name)` in
+	// this project.
 	Name *string `json:"name,omitempty"`
 
-	// SourceIntegrationId ID of the integration to copy.
+	// SourceIntegrationId ID of the integration to copy from the source project.
 	SourceIntegrationId string `json:"source_integration_id"`
 
-	// SourceProjectId ID of the project the integration is copied from.
+	// SourceProjectId ID of the source project. Must be in the same org.
 	SourceProjectId string `json:"source_project_id"`
 }
 
 // CreateAPIKeyRequest defines model for CreateAPIKeyRequest.
 type CreateAPIKeyRequest struct {
-	ExpiresAt        *time.Time                `json:"expires_at,omitempty"`
-	Name             string                    `json:"name"`
-	Permissions      *[]string                 `json:"permissions,omitempty"`
-	Scope            *CreateAPIKeyRequestScope `json:"scope,omitempty"`
-	ServiceAccountId *string                   `json:"service_account_id,omitempty"`
+	// ExpiresAt Optional hard expiry. Omit for a non-expiring key.
+	ExpiresAt *time.Time `json:"expires_at,omitempty"`
+
+	// Name Human-readable label, unique within the org (or project for project-pinned keys).
+	Name string `json:"name"`
+
+	// Permissions Permissions to grant. Each permission must be held by the creating
+	// caller — you cannot grant more than you have.
+	Permissions *[]string `json:"permissions,omitempty"`
+
+	// Scope Key scope. Use `org` for standard API access.
+	Scope *CreateAPIKeyRequestScope `json:"scope,omitempty"`
+
+	// ServiceAccountId Associate this key with a service account for attribution.
+	ServiceAccountId *string `json:"service_account_id,omitempty"`
 }
 
-// CreateAPIKeyRequestScope defines model for CreateAPIKeyRequest.Scope.
+// CreateAPIKeyRequestScope Key scope. Use `org` for standard API access.
 type CreateAPIKeyRequestScope string
 
 // CreateActionRequest defines model for CreateActionRequest.
 type CreateActionRequest struct {
-	Annotations  *ActionAnnotations      `json:"annotations,omitempty"`
-	Description  *string                 `json:"description,omitempty"`
-	EndpointUrl  string                  `json:"endpoint_url"`
-	InputSchema  *map[string]interface{} `json:"input_schema,omitempty"`
-	Name         string                  `json:"name"`
+	// Annotations Hints that describe the safe-use properties of the action. Used by the
+	// engine and tooling to decide retry behavior, dry-run eligibility, etc.
+	Annotations *ActionAnnotations `json:"annotations,omitempty"`
+
+	// Description Markdown-safe description of what the action does.
+	Description *string `json:"description,omitempty"`
+
+	// EndpointUrl HTTP/HTTPS URL Mobius will POST to when invoking the action.
+	EndpointUrl string `json:"endpoint_url"`
+
+	// InputSchema JSON Schema describing the expected input parameters.
+	InputSchema *map[string]interface{} `json:"input_schema,omitempty"`
+
+	// Name Project-scoped identifier used in workflow step definitions.
+	// Lowercase alphanumeric + hyphens, e.g. "send-email". Must be
+	// unique within the project. Cannot start with "mobius." (reserved prefix).
+	Name string `json:"name"`
+
+	// OutputSchema JSON Schema describing the expected output shape.
 	OutputSchema *map[string]interface{} `json:"output_schema,omitempty"`
-	Title        *string                 `json:"title,omitempty"`
+
+	// Title Human-readable display name shown in the UI and catalog.
+	Title *string `json:"title,omitempty"`
 }
 
 // CreateAgentRequest defines model for CreateAgentRequest.
 type CreateAgentRequest struct {
-	Capabilities     *map[string]interface{} `json:"capabilities,omitempty"`
-	Config           *map[string]interface{} `json:"config,omitempty"`
-	Description      *string                 `json:"description,omitempty"`
-	DisplayName      *string                 `json:"display_name,omitempty"`
-	Kind             *string                 `json:"kind,omitempty"`
-	Name             string                  `json:"name"`
-	ServiceAccountId string                  `json:"service_account_id"`
+	// Capabilities Arbitrary capability map used by orchestrators to select suitable agents.
+	Capabilities *map[string]interface{} `json:"capabilities,omitempty"`
+
+	// Config Agent-specific configuration stored and returned opaquely.
+	Config *map[string]interface{} `json:"config,omitempty"`
+
+	// Description Optional human-readable description.
+	Description *string `json:"description,omitempty"`
+
+	// DisplayName Human-readable label shown in the UI.
+	DisplayName *string `json:"display_name,omitempty"`
+
+	// Kind Freeform classification (e.g. "llm", "rpa", "integration").
+	Kind *string `json:"kind,omitempty"`
+
+	// Name Project-scoped unique identifier for this agent.
+	Name string `json:"name"`
+
+	// ServiceAccountId Service account that backs this agent. Must belong to the same org.
+	ServiceAccountId string `json:"service_account_id"`
 }
 
 // CreateAgentSessionRequest defines model for CreateAgentSessionRequest.
 type CreateAgentSessionRequest struct {
-	Metadata  *map[string]interface{} `json:"metadata,omitempty"`
-	Transport string                  `json:"transport"`
+	// Metadata Optional metadata such as hostname, SDK version, or region.
+	Metadata *map[string]interface{} `json:"metadata,omitempty"`
+
+	// Transport Connection mechanism identifier (e.g. "sse", "polling").
+	Transport string `json:"transport"`
 }
 
 // CreateChannelRequest defines model for CreateChannelRequest.
 type CreateChannelRequest struct {
-	// DisplayName Human-facing display name
+	// DisplayName Human-facing display name shown in the UI.
 	DisplayName string `json:"display_name"`
 
-	// Kind Channel type
+	// Kind Channel kind. Cannot be changed after creation.
 	Kind CreateChannelRequestKind `json:"kind"`
 
-	// MemberIds Initial member IDs to add to the channel
+	// MemberIds Optional list of user or agent IDs to add as members at creation
+	// time. All receive the `member` role; the creator is added as
+	// `admin` separately.
 	MemberIds *[]string `json:"member_ids,omitempty"`
 
-	// Name Channel handle (unique, immutable)
+	// Name URL-safe handle, unique within the project. Immutable after
+	// creation — choose carefully.
 	Name string `json:"name"`
 
-	// Private Whether the channel is private (invite-only)
+	// Private When true, the channel is invite-only.
 	Private *bool `json:"private,omitempty"`
 
-	// Topic Channel topic or description
+	// Topic Optional channel topic or description.
 	Topic *string `json:"topic,omitempty"`
 }
 
-// CreateChannelRequestKind Channel type
+// CreateChannelRequestKind Channel kind. Cannot be changed after creation.
 type CreateChannelRequestKind string
 
 // CreateGroupRequest defines model for CreateGroupRequest.
 type CreateGroupRequest struct {
+	// Description Optional human-readable description.
 	Description *string `json:"description,omitempty"`
 
-	// Handle URL-safe handle. Auto-derived from name if omitted.
+	// Handle URL-safe handle, unique within the project. Auto-derived from name if omitted.
 	Handle *string `json:"handle,omitempty"`
 
-	// Name Display name (1-64 chars)
-	Name          string                           `json:"name"`
+	// Name Display name (1–64 chars).
+	Name string `json:"name"`
+
+	// RoutingPolicy How responses are collected from group members. Defaults to `first_responder`.
 	RoutingPolicy *CreateGroupRequestRoutingPolicy `json:"routing_policy,omitempty"`
 }
 
-// CreateGroupRequestRoutingPolicy defines model for CreateGroupRequest.RoutingPolicy.
+// CreateGroupRequestRoutingPolicy How responses are collected from group members. Defaults to `first_responder`.
 type CreateGroupRequestRoutingPolicy string
 
 // CreateIntegrationRequest defines model for CreateIntegrationRequest.
 type CreateIntegrationRequest struct {
-	Config   *map[string]interface{} `json:"config,omitempty"`
-	Name     string                  `json:"name"`
-	Provider string                  `json:"provider"`
+	// Config Non-sensitive provider-specific settings (e.g. default bucket, from address).
+	Config *map[string]interface{} `json:"config,omitempty"`
+
+	// Credentials Sensitive credentials (API keys, tokens, secrets). Stored encrypted and never returned in API responses.
+	Credentials *map[string]interface{} `json:"credentials,omitempty"`
+
+	// Name Human-readable name. Must be unique per `(project, provider)` tuple.
+	Name string `json:"name"`
+
+	// Provider Provider identifier string (e.g. `openai`, `github`). Immutable after creation.
+	Provider string `json:"provider"`
 }
 
 // CreateInteractionRequest Creates an interaction directly. When `run_id` is provided, `topic` is
@@ -1382,15 +1699,22 @@ type CreateIntegrationRequest struct {
 // resume side effect. For worker/job usage, prefer the job-scoped route
 // so the server can derive the owning run from the claimed job context.
 type CreateInteractionRequest struct {
-	Context   *map[string]interface{} `json:"context,omitempty"`
-	ExpiresAt *time.Time              `json:"expires_at,omitempty"`
-	Message   string                  `json:"message"`
+	// Context Additional key-value context surfaced in the UI alongside the message.
+	Context *map[string]interface{} `json:"context,omitempty"`
+
+	// ExpiresAt Timestamp after which this interaction expires if not responded to.
+	ExpiresAt *time.Time `json:"expires_at,omitempty"`
+
+	// Message Message shown to the responder describing what response is needed.
+	Message string `json:"message"`
 
 	// RequireAll When target_actor.type is "group", setting require_all=true
 	// means all snapshotted group members must respond before the
 	// interaction is considered complete. Ignored for non-group targets.
-	RequireAll *bool   `json:"require_all,omitempty"`
-	RunId      *string `json:"run_id,omitempty"`
+	RequireAll *bool `json:"require_all,omitempty"`
+
+	// RunId ID of the workflow run to resume when this interaction is completed.
+	RunId *string `json:"run_id,omitempty"`
 
 	// Spec Declarative dialog contract for rendering and validating an interaction.
 	// `type` defines the semantic intent; `mode` defines the input affordance.
@@ -1409,9 +1733,14 @@ type CreateInteractionRequest struct {
 // CreateJobInteractionRequest Creates an interaction from a claimed job context. The server derives
 // the owning run from the job and may derive the topic when omitted.
 type CreateJobInteractionRequest struct {
-	Context   *map[string]interface{} `json:"context,omitempty"`
-	ExpiresAt *time.Time              `json:"expires_at,omitempty"`
-	Message   string                  `json:"message"`
+	// Context Additional key-value context surfaced in the UI alongside the message.
+	Context *map[string]interface{} `json:"context,omitempty"`
+
+	// ExpiresAt Timestamp after which this interaction expires.
+	ExpiresAt *time.Time `json:"expires_at,omitempty"`
+
+	// Message Message shown to the responder.
+	Message string `json:"message"`
 
 	// RequireAll When target_actor.type is "group", setting require_all=true
 	// means all snapshotted group members must respond before the
@@ -1443,59 +1772,122 @@ type CreateJobInteractionRequest struct {
 
 // CreateProjectRequest defines model for CreateProjectRequest.
 type CreateProjectRequest struct {
+	// Description Optional human-readable description.
 	Description *string `json:"description,omitempty"`
-	Handle      *string `json:"handle,omitempty"`
-	Name        string  `json:"name"`
+
+	// Handle URL-safe slug for API routes. Auto-derived from name if omitted.
+	// Must be unique within the org. Cannot be changed after creation.
+	Handle *string `json:"handle,omitempty"`
+
+	// Name Human-readable project name.
+	Name string `json:"name"`
 }
 
 // CreateRoleAssignmentRequest defines model for CreateRoleAssignmentRequest.
 type CreateRoleAssignmentRequest struct {
-	ActorId   string                               `json:"actor_id"`
+	// ActorId User ID or service account ID to assign the role to.
+	ActorId string `json:"actor_id"`
+
+	// ActorType Type of actor to assign the role to: `user` or `service_account`.
 	ActorType CreateRoleAssignmentRequestActorType `json:"actor_type"`
-	ProjectId *string                              `json:"project_id,omitempty"`
-	RoleId    *string                              `json:"role_id,omitempty"`
-	RoleName  *string                              `json:"role_name,omitempty"`
+
+	// ProjectId Scope this assignment to a project. Omit for org-wide assignment.
+	ProjectId *string `json:"project_id,omitempty"`
+
+	// RoleId Mutually exclusive with `role_name`.
+	RoleId *string `json:"role_id,omitempty"`
+
+	// RoleName Resolved to a role ID server-side. Mutually exclusive with `role_id`.
+	RoleName *string `json:"role_name,omitempty"`
 }
 
-// CreateRoleAssignmentRequestActorType defines model for CreateRoleAssignmentRequest.ActorType.
+// CreateRoleAssignmentRequestActorType Type of actor to assign the role to: `user` or `service_account`.
 type CreateRoleAssignmentRequestActorType string
 
 // CreateRoleRequest defines model for CreateRoleRequest.
 type CreateRoleRequest struct {
-	Description *string  `json:"description,omitempty"`
-	Name        string   `json:"name"`
+	// Description Optional human-readable description of what this role grants.
+	Description *string `json:"description,omitempty"`
+
+	// Name Unique name within the org+project scope.
+	Name string `json:"name"`
+
+	// Permissions Permission strings to include (e.g. "mobius.workflow.create").
 	Permissions []string `json:"permissions"`
-	ProjectId   *string  `json:"project_id,omitempty"`
+
+	// ProjectId Scope the role to a project. Omit for an org-wide role.
+	ProjectId *string `json:"project_id,omitempty"`
 }
 
 // CreateTriggerRequest defines model for CreateTriggerRequest.
 type CreateTriggerRequest struct {
-	ConcurrencyPolicy *ConcurrencyPolicy      `json:"concurrency_policy,omitempty"`
-	Enabled           *bool                   `json:"enabled,omitempty"`
-	FilterConfig      *map[string]interface{} `json:"filter_config,omitempty"`
-	Kind              TriggerKind             `json:"kind"`
-	Name              string                  `json:"name"`
-	SourceConfig      *map[string]interface{} `json:"source_config,omitempty"`
-	Targets           *[]TriggerTarget        `json:"targets,omitempty"`
+	// ConcurrencyPolicy Controls overlapping runs from the same trigger:
+	// - `allow` — start new runs unconditionally.
+	// - `forbid` — skip the new fire if a run from this trigger is still active.
+	// - `replace` — cancel the active run before starting a new one.
+	ConcurrencyPolicy *ConcurrencyPolicy `json:"concurrency_policy,omitempty"`
+
+	// Enabled Whether the trigger starts enabled. Defaults to true.
+	Enabled *bool `json:"enabled,omitempty"`
+
+	// FilterConfig Additional payload filters evaluated before targets.
+	FilterConfig *map[string]interface{} `json:"filter_config,omitempty"`
+
+	// Kind Determines the event source and required `source_config` shape.
+	Kind TriggerKind `json:"kind"`
+
+	// Name Human-readable trigger name, unique within the project.
+	Name string `json:"name"`
+
+	// SourceConfig Kind-specific configuration. Required for `schedule` triggers:
+	// `{"cron": "0 9 * * 1-5"}`. For `event` triggers: event type and
+	// filter expressions.
+	SourceConfig *map[string]interface{} `json:"source_config,omitempty"`
+
+	// Targets Workflows to start when this trigger fires.
+	Targets *[]TriggerTarget `json:"targets,omitempty"`
+
+	// WebhookHandle URL-safe handle that determines the inbound receive URL. Required
+	// for `webhook` triggers. Must be unique within the project.
+	WebhookHandle *string `json:"webhook_handle,omitempty"`
+
+	// WebhookSecret Optional HMAC-SHA256 secret for verifying inbound webhook payloads.
+	// When set, Mobius validates the `X-Mobius-Signature` header on
+	// incoming requests.
+	WebhookSecret *string `json:"webhook_secret,omitempty"`
 }
 
 // CreateWebhookRequest defines model for CreateWebhookRequest.
 type CreateWebhookRequest struct {
+	// Enabled Whether the webhook starts enabled. Defaults to true.
 	Enabled *bool `json:"enabled,omitempty"`
 
-	// Handle URL-safe handle; auto-generated from name if omitted
-	Handle *string `json:"handle,omitempty"`
-	Name   string  `json:"name"`
+	// Events Event types to subscribe to. Use wildcards for broad
+	// subscriptions, e.g. `["run.*"]` for all run events.
+	Events []string `json:"events"`
 
-	// Secret Shared secret associated with the webhook. Stored as a hash and not returned after creation.
+	// Name Human-readable name, unique within the project.
+	Name string `json:"name"`
+
+	// Secret Optional shared secret. When set, Mobius signs each POST body
+	// with HMAC-SHA256 and includes `X-Mobius-Signature: sha256=<hex>`
+	// in the request headers.
 	Secret *string `json:"secret,omitempty"`
+
+	// Url The endpoint Mobius will POST event payloads to.
+	Url string `json:"url"`
 }
 
 // CreateWorkflowRequest defines model for CreateWorkflowRequest.
 type CreateWorkflowRequest struct {
+	// Description Optional description of the workflow's purpose.
 	Description *string `json:"description,omitempty"`
-	Handle      *string `json:"handle,omitempty"`
-	Name        string  `json:"name"`
+
+	// Handle URL-safe handle for this workflow. Auto-derived from name if omitted.
+	Handle *string `json:"handle,omitempty"`
+
+	// Name Human-readable workflow name, unique within the project.
+	Name string `json:"name"`
 
 	// PublishedAsTool When true, expose this workflow as a callable tool via /api/tools.
 	PublishedAsTool *bool `json:"published_as_tool,omitempty"`
@@ -1511,6 +1903,7 @@ type CreateWorkflowRequest struct {
 
 // ErrorResponse defines model for ErrorResponse.
 type ErrorResponse struct {
+	// Error Error detail.
 	Error struct {
 		// Code Machine-readable error code
 		Code string `json:"code"`
@@ -1522,116 +1915,205 @@ type ErrorResponse struct {
 
 // Group defines model for Group.
 type Group struct {
-	CreatedAt   time.Time `json:"created_at"`
-	Description *string   `json:"description,omitempty"`
+	// CreatedAt Timestamp when this group was created.
+	CreatedAt time.Time `json:"created_at"`
 
-	// Handle URL-safe identifier, unique within the project
+	// Description Optional human-readable description.
+	Description *string `json:"description,omitempty"`
+
+	// Handle URL-safe identifier, unique within the project. Immutable after creation.
 	Handle string `json:"handle"`
-	Id     string `json:"id"`
 
-	// Name Human-readable display name
-	Name  string `json:"name"`
+	// Id Unique identifier for this group.
+	Id string `json:"id"`
+
+	// Name Human-readable display name.
+	Name string `json:"name"`
+
+	// OrgId ID of the organization this group belongs to.
 	OrgId string `json:"org_id"`
 
-	// RoutingPolicy How interactions are dispatched to members
+	// RoutingPolicy How interactions targeting this group collect responses.
+	// `first_responder`: first member to claim or respond wins.
+	// `all_members`: every snapshotted member must respond.
 	RoutingPolicy GroupRoutingPolicy `json:"routing_policy"`
-	UpdatedAt     time.Time          `json:"updated_at"`
+
+	// UpdatedAt Timestamp when this group was last updated.
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
-// GroupRoutingPolicy How interactions are dispatched to members
+// GroupRoutingPolicy How interactions targeting this group collect responses.
+// `first_responder`: first member to claim or respond wins.
+// `all_members`: every snapshotted member must respond.
 type GroupRoutingPolicy string
 
 // GroupListResponse defines model for GroupListResponse.
 type GroupListResponse struct {
+	// Items The list of results for this page.
 	Items []Group `json:"items"`
 }
 
 // GroupMember defines model for GroupMember.
 type GroupMember struct {
+	// AddedAt Timestamp when this member was added to the group.
 	AddedAt time.Time `json:"added_at"`
-	AddedBy *string   `json:"added_by,omitempty"`
-	GroupId string    `json:"group_id"`
-	Id      string    `json:"id"`
-	OrgId   string    `json:"org_id"`
-	UserId  string    `json:"user_id"`
+
+	// AddedBy User ID of the org member who added this person to the group.
+	AddedBy *string `json:"added_by,omitempty"`
+
+	// GroupId ID of the group this membership belongs to.
+	GroupId string `json:"group_id"`
+
+	// Id Unique identifier for this membership record.
+	Id string `json:"id"`
+
+	// OrgId ID of the organization this group belongs to.
+	OrgId string `json:"org_id"`
+
+	// UserId ID of the user who is a member.
+	UserId string `json:"user_id"`
 }
 
 // GroupMemberListResponse defines model for GroupMemberListResponse.
 type GroupMemberListResponse struct {
-	HasMore    *bool         `json:"has_more,omitempty"`
-	Items      []GroupMember `json:"items"`
-	NextCursor *string       `json:"next_cursor,omitempty"`
+	// HasMore Whether additional pages are available.
+	HasMore *bool `json:"has_more,omitempty"`
+
+	// Items The list of results for this page.
+	Items []GroupMember `json:"items"`
+
+	// NextCursor Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.
+	NextCursor *string `json:"next_cursor,omitempty"`
 }
 
 // GroupWithCount defines model for GroupWithCount.
 type GroupWithCount struct {
-	CreatedAt   time.Time `json:"created_at"`
-	Description *string   `json:"description,omitempty"`
+	// CreatedAt Timestamp when this group was created.
+	CreatedAt time.Time `json:"created_at"`
 
-	// Handle URL-safe identifier, unique within the project
+	// Description Optional human-readable description.
+	Description *string `json:"description,omitempty"`
+
+	// Handle URL-safe identifier, unique within the project. Immutable after creation.
 	Handle string `json:"handle"`
-	Id     string `json:"id"`
 
-	// MemberCount Current number of members
+	// Id Unique identifier for this group.
+	Id string `json:"id"`
+
+	// MemberCount Current live member count. May differ from interaction membership snapshots.
 	MemberCount int `json:"member_count"`
 
-	// Name Human-readable display name
-	Name  string `json:"name"`
+	// Name Human-readable display name.
+	Name string `json:"name"`
+
+	// OrgId ID of the organization this group belongs to.
 	OrgId string `json:"org_id"`
 
-	// RoutingPolicy How interactions are dispatched to members
+	// RoutingPolicy How interactions targeting this group collect responses.
+	// `first_responder`: first member to claim or respond wins.
+	// `all_members`: every snapshotted member must respond.
 	RoutingPolicy GroupWithCountRoutingPolicy `json:"routing_policy"`
-	UpdatedAt     time.Time                   `json:"updated_at"`
+
+	// UpdatedAt Timestamp when this group was last updated.
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
-// GroupWithCountRoutingPolicy How interactions are dispatched to members
+// GroupWithCountRoutingPolicy How interactions targeting this group collect responses.
+// `first_responder`: first member to claim or respond wins.
+// `all_members`: every snapshotted member must respond.
 type GroupWithCountRoutingPolicy string
 
 // GroupWithCountListResponse defines model for GroupWithCountListResponse.
 type GroupWithCountListResponse struct {
-	HasMore    *bool            `json:"has_more,omitempty"`
-	Items      []GroupWithCount `json:"items"`
-	NextCursor *string          `json:"next_cursor,omitempty"`
+	// HasMore Whether additional pages are available.
+	HasMore *bool `json:"has_more,omitempty"`
+
+	// Items The list of results for this page.
+	Items []GroupWithCount `json:"items"`
+
+	// NextCursor Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.
+	NextCursor *string `json:"next_cursor,omitempty"`
 }
 
 // Integration defines model for Integration.
 type Integration struct {
-	Config    *map[string]interface{} `json:"config,omitempty"`
-	CreatedAt time.Time               `json:"created_at"`
-	CreatedBy *string                 `json:"created_by,omitempty"`
-	Id        string                  `json:"id"`
-	Name      string                  `json:"name"`
-	OrgId     string                  `json:"org_id"`
-	Provider  string                  `json:"provider"`
-	Status    IntegrationStatus       `json:"status"`
-	UpdatedAt time.Time               `json:"updated_at"`
+	// Config Provider-specific credential and configuration blob stored as
+	// JSON. The shape is provider-defined.
+	Config *map[string]interface{} `json:"config,omitempty"`
+
+	// CreatedAt Timestamp when this integration was created.
+	CreatedAt time.Time `json:"created_at"`
+
+	// CreatedBy User ID of the org member who created this integration.
+	CreatedBy *string `json:"created_by,omitempty"`
+
+	// Id Unique identifier for this integration.
+	Id string `json:"id"`
+
+	// Name Human-readable name, unique per `(project, provider)` tuple.
+	Name string `json:"name"`
+
+	// OrgId ID of the organization this integration belongs to.
+	OrgId string `json:"org_id"`
+
+	// Provider Free-form provider identifier (e.g. `openai`, `slack`, `github`).
+	// Immutable after creation.
+	Provider string `json:"provider"`
+
+	// Status `active` — integration is enabled and usable by workflows.
+	// `inactive` — manually disabled; no automatic expiry behavior.
+	// `expired` — token/credential has expired (e.g., OAuth token not refreshed).
+	Status IntegrationStatus `json:"status"`
+
+	// UpdatedAt Timestamp when this integration was last updated.
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 // IntegrationListResponse defines model for IntegrationListResponse.
 type IntegrationListResponse struct {
-	HasMore    bool           `json:"has_more"`
-	Items      *[]Integration `json:"items,omitempty"`
-	NextCursor *string        `json:"next_cursor,omitempty"`
+	// HasMore Whether additional pages are available.
+	HasMore bool `json:"has_more"`
+
+	// Items The list of results for this page.
+	Items *[]Integration `json:"items,omitempty"`
+
+	// NextCursor Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.
+	NextCursor *string `json:"next_cursor,omitempty"`
 }
 
-// IntegrationStatus defines model for IntegrationStatus.
+// IntegrationStatus `active` — integration is enabled and usable by workflows.
+// `inactive` — manually disabled; no automatic expiry behavior.
+// `expired` — token/credential has expired (e.g., OAuth token not refreshed).
 type IntegrationStatus string
 
 // Interaction defines model for Interaction.
 type Interaction struct {
+	// ClaimedAt Timestamp when a first-responder member claimed this interaction.
 	ClaimedAt *time.Time `json:"claimed_at,omitempty"`
 
 	// ClaimedBy User ID of the member who claimed this interaction (first_responder only)
-	ClaimedBy   *string                 `json:"claimed_by,omitempty"`
-	CompletedAt *time.Time              `json:"completed_at,omitempty"`
-	Context     *map[string]interface{} `json:"context,omitempty"`
-	CreatedAt   time.Time               `json:"created_at"`
-	ExpiresAt   *time.Time              `json:"expires_at,omitempty"`
-	Id          string                  `json:"id"`
+	ClaimedBy *string `json:"claimed_by,omitempty"`
+
+	// CompletedAt Timestamp when the interaction received a terminal response.
+	CompletedAt *time.Time `json:"completed_at,omitempty"`
+
+	// Context Additional key-value context surfaced in the UI alongside the message.
+	Context *map[string]interface{} `json:"context,omitempty"`
+
+	// CreatedAt Timestamp when this interaction was created.
+	CreatedAt time.Time `json:"created_at"`
+
+	// ExpiresAt Timestamp when this interaction expires if not responded to.
+	ExpiresAt *time.Time `json:"expires_at,omitempty"`
+
+	// Id Unique identifier for this interaction.
+	Id string `json:"id"`
 
 	// Message Human-readable message shown to the responder
 	Message *string `json:"message,omitempty"`
-	OrgId   string  `json:"org_id"`
+
+	// OrgId ID of the organization this interaction belongs to.
+	OrgId string `json:"org_id"`
 
 	// PartialResponses Per-member responses for all_members routing
 	PartialResponses *[]InteractionPartialResponse `json:"partial_responses,omitempty"`
@@ -1653,7 +2135,9 @@ type Interaction struct {
 	// - `approval` requires `mode = confirm`
 	// - `review` requires `mode = select`
 	// - `input` supports `input`, `select`, or `multi_select`
-	Spec        *InteractionSpec  `json:"spec,omitempty"`
+	Spec *InteractionSpec `json:"spec,omitempty"`
+
+	// Status Current status of the interaction.
 	Status      InteractionStatus `json:"status"`
 	TargetActor ActorRef          `json:"target_actor"`
 
@@ -1664,34 +2148,47 @@ type Interaction struct {
 	TargetMemberSnapshot *[]string `json:"target_member_snapshot,omitempty"`
 
 	// Topic Signal topic used to resume the originating run when run-backed.
-	Topic     *string         `json:"topic,omitempty"`
-	Type      InteractionType `json:"type"`
-	UpdatedAt time.Time       `json:"updated_at"`
+	Topic *string         `json:"topic,omitempty"`
+	Type  InteractionType `json:"type"`
+
+	// UpdatedAt Timestamp when this interaction was last updated.
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 // InteractionRoutingPolicySnapshot Group routing policy captured at creation time
 type InteractionRoutingPolicySnapshot string
 
-// InteractionStatus defines model for Interaction.Status.
+// InteractionStatus Current status of the interaction.
 type InteractionStatus string
 
 // InteractionListResponse defines model for InteractionListResponse.
 type InteractionListResponse struct {
+	// Items The list of results for this page.
 	Items []Interaction `json:"items"`
 }
 
 // InteractionOption Selectable option for `select` and `multi_select` modes.
 type InteractionOption struct {
+	// Description Optional additional context shown beneath the label.
 	Description *string `json:"description,omitempty"`
-	Label       string  `json:"label"`
-	Value       string  `json:"value"`
+
+	// Label Human-readable label displayed for this option.
+	Label string `json:"label"`
+
+	// Value Machine-readable value submitted when this option is chosen.
+	Value string `json:"value"`
 }
 
 // InteractionPartialResponse defines model for InteractionPartialResponse.
 type InteractionPartialResponse struct {
-	Comment     *string   `json:"comment,omitempty"`
+	// Comment Optional free-text comment from this responder.
+	Comment *string `json:"comment,omitempty"`
+
+	// RespondedAt Timestamp when this response was submitted.
 	RespondedAt time.Time `json:"responded_at"`
-	UserId      string    `json:"user_id"`
+
+	// UserId ID of the user who submitted this partial response.
+	UserId string `json:"user_id"`
 
 	// Value Free-form JSON payload supplied by the responder.
 	Value InteractionValue `json:"value"`
@@ -1700,8 +2197,10 @@ type InteractionPartialResponse struct {
 // InteractionResponse defines model for InteractionResponse.
 type InteractionResponse struct {
 	// At When the response was submitted
-	At      time.Time `json:"at"`
-	Comment *string   `json:"comment,omitempty"`
+	At time.Time `json:"at"`
+
+	// Comment Optional free-text comment from the responder.
+	Comment *string `json:"comment,omitempty"`
 
 	// Value Free-form JSON payload supplied by the responder.
 	Value InteractionValue `json:"value"`
@@ -1770,48 +2269,113 @@ type InteractionValue4 = int
 // InteractionValue5 defines model for .
 type InteractionValue5 = bool
 
-// Job defines model for Job.
+// Job A claimable unit of work derived from a single workflow step execution.
 type Job struct {
-	Action         string                  `json:"action"`
-	AgentId        *string                 `json:"agent_id,omitempty"`
-	AgentSessionId *string                 `json:"agent_session_id,omitempty"`
-	Attempt        int                     `json:"attempt"`
-	ClaimedAt      *time.Time              `json:"claimed_at,omitempty"`
-	ClaimedBy      *string                 `json:"claimed_by,omitempty"`
-	CreatedAt      time.Time               `json:"created_at"`
-	HeartbeatAt    *time.Time              `json:"heartbeat_at,omitempty"`
-	Id             string                  `json:"id"`
-	LastError      *string                 `json:"last_error,omitempty"`
-	MaxAttempts    int                     `json:"max_attempts"`
-	Parameters     *map[string]interface{} `json:"parameters,omitempty"`
-	ParentJobId    *string                 `json:"parent_job_id,omitempty"`
-	PathId         *string                 `json:"path_id,omitempty"`
-	Queue          string                  `json:"queue"`
-	RunId          string                  `json:"run_id"`
-	ScheduledAt    time.Time               `json:"scheduled_at"`
-	Status         string                  `json:"status"`
-	StepName       string                  `json:"step_name"`
-	UpdatedAt      time.Time               `json:"updated_at"`
+	// Action Action name the worker must execute to complete this job.
+	Action string `json:"action"`
+
+	// AgentId Agent ID the claiming worker is acting on behalf of.
+	AgentId *string `json:"agent_id,omitempty"`
+
+	// AgentSessionId Agent session ID provided during the claim.
+	AgentSessionId *string `json:"agent_session_id,omitempty"`
+
+	// Attempt Current attempt number (1-based). Increments on each retry.
+	Attempt int `json:"attempt"`
+
+	// ClaimedAt Timestamp when this job was claimed by a worker.
+	ClaimedAt *time.Time `json:"claimed_at,omitempty"`
+
+	// ClaimedBy Worker ID that claimed this job.
+	ClaimedBy *string `json:"claimed_by,omitempty"`
+
+	// CreatedAt Timestamp when this job was created.
+	CreatedAt time.Time `json:"created_at"`
+
+	// HeartbeatAt Timestamp of the most recent heartbeat. Used to detect stale claims.
+	HeartbeatAt *time.Time `json:"heartbeat_at,omitempty"`
+
+	// Id Unique identifier for this job.
+	Id string `json:"id"`
+
+	// LastError Error detail from the most recent failed attempt.
+	LastError *string `json:"last_error,omitempty"`
+
+	// MaxAttempts Maximum number of attempts before the job is permanently failed.
+	MaxAttempts int `json:"max_attempts"`
+
+	// Parameters Resolved input parameters to pass to the action.
+	Parameters *map[string]interface{} `json:"parameters,omitempty"`
+
+	// ParentJobId Set when this job is a child of a fan-out (each) step.
+	ParentJobId *string `json:"parent_job_id,omitempty"`
+
+	// PathId Opaque identifier for the execution path within the run (used for fan-out deduplication).
+	PathId *string `json:"path_id,omitempty"`
+
+	// Queue Queue the job was placed in. Workers subscribe to queues to receive jobs.
+	Queue string `json:"queue"`
+
+	// RunId The workflow run this job belongs to.
+	RunId string `json:"run_id"`
+
+	// ScheduledAt Earliest time at which this job may be claimed.
+	ScheduledAt time.Time `json:"scheduled_at"`
+
+	// Status Job lifecycle: pending → claimed → completed | failed.
+	Status string `json:"status"`
+
+	// StepName Workflow step name this job was created for.
+	StepName string `json:"step_name"`
+
+	// UpdatedAt Timestamp when this job was last updated.
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 // JobClaim defines model for JobClaim.
 type JobClaim struct {
-	Action                   string                 `json:"action"`
-	AgentId                  *string                `json:"agent_id,omitempty"`
-	AgentSessionId           *string                `json:"agent_session_id,omitempty"`
-	Attempt                  int                    `json:"attempt"`
-	HeartbeatIntervalSeconds *int                   `json:"heartbeat_interval_seconds,omitempty"`
-	JobId                    string                 `json:"job_id"`
-	Parameters               map[string]interface{} `json:"parameters"`
-	Queue                    string                 `json:"queue"`
-	RunId                    string                 `json:"run_id"`
-	StepName                 string                 `json:"step_name"`
-	WorkflowName             string                 `json:"workflow_name"`
+	// Action Action name the worker must execute for this step.
+	Action string `json:"action"`
+
+	// AgentId Agent that should execute this job, when the step is agent-targeted.
+	AgentId *string `json:"agent_id,omitempty"`
+
+	// AgentSessionId Agent session the job was routed to, when applicable.
+	AgentSessionId *string `json:"agent_session_id,omitempty"`
+
+	// Attempt 1-based attempt counter. Incremented on each automatic retry.
+	// Include in the fence for all subsequent heartbeat and complete calls.
+	Attempt int `json:"attempt"`
+
+	// HeartbeatIntervalSeconds Recommended heartbeat interval in seconds. Workers should call
+	// `POST /jobs/{id}/heartbeat` at this cadence to keep the lease
+	// alive. Typically 30 seconds.
+	HeartbeatIntervalSeconds *int `json:"heartbeat_interval_seconds,omitempty"`
+
+	// JobId Job ID — use as the `{id}` path parameter for heartbeat, complete, and events.
+	JobId string `json:"job_id"`
+
+	// Parameters Input parameters for this step, resolved from the workflow spec and prior step outputs.
+	Parameters map[string]interface{} `json:"parameters"`
+
+	// Queue Queue name the job was claimed from.
+	Queue string `json:"queue"`
+
+	// RunId Parent workflow run ID.
+	RunId string `json:"run_id"`
+
+	// StepName Step label from the workflow spec — used for UI and interaction topic derivation.
+	StepName string `json:"step_name"`
+
+	// WorkflowName Handle of the workflow definition that owns this run.
+	WorkflowName string `json:"workflow_name"`
 }
 
 // JobClaimRequest defines model for JobClaimRequest.
 type JobClaimRequest struct {
-	// Actions Action names this worker can execute.
+	// Actions Action names this worker can execute. When provided, only jobs
+	// whose `action` is in this list are returned. When empty, action
+	// filtering is skipped.
 	Actions *[]string `json:"actions,omitempty"`
 
 	// AgentId Durable agent identity the worker is acting on behalf of.
@@ -1820,73 +2384,111 @@ type JobClaimRequest struct {
 	// AgentSessionId Live agent session the worker is acting on behalf of.
 	AgentSessionId *string `json:"agent_session_id,omitempty"`
 
-	// Queues Queue names the worker subscribes to. When empty the
-	// worker claims from any queue in the org. Runs default
-	// to the "default" queue when not specified.
+	// Queues Queue names the worker subscribes to. When empty the worker
+	// claims from any queue in the project. Workflow runs default
+	// to the "default" queue when not otherwise specified.
 	Queues *[]string `json:"queues,omitempty"`
 
-	// WaitSeconds How long to hold the request open waiting for a job to
-	// surface. 0 returns immediately.
-	WaitSeconds   *int    `json:"wait_seconds,omitempty"`
-	WorkerId      string  `json:"worker_id"`
-	WorkerName    *string `json:"worker_name,omitempty"`
+	// WaitSeconds How long to hold the request open waiting for a job to surface.
+	// 0 returns immediately. Capped at 30 by the server.
+	WaitSeconds *int `json:"wait_seconds,omitempty"`
+
+	// WorkerId Caller-assigned stable identifier for this worker process. Used
+	// as the lease fence and for worker registry tracking.
+	WorkerId string `json:"worker_id"`
+
+	// WorkerName Optional human-readable name shown in the worker list.
+	WorkerName *string `json:"worker_name,omitempty"`
+
+	// WorkerVersion Optional version string shown in the worker list.
 	WorkerVersion *string `json:"worker_version,omitempty"`
 }
 
 // JobCompleteRequest defines model for JobCompleteRequest.
 type JobCompleteRequest struct {
-	Attempt      int                      `json:"attempt"`
-	ErrorMessage *string                  `json:"error_message,omitempty"`
-	ErrorType    *string                  `json:"error_type,omitempty"`
-	ResultB64    *string                  `json:"result_b64,omitempty"`
-	Status       JobCompleteRequestStatus `json:"status"`
-	WorkerId     string                   `json:"worker_id"`
+	// Attempt Must match the `attempt` from the original claim.
+	Attempt int `json:"attempt"`
+
+	// ErrorMessage Human-readable error detail. Only relevant for failed status.
+	ErrorMessage *string `json:"error_message,omitempty"`
+
+	// ErrorType Short error class identifier (e.g. "TimeoutError"). Used for
+	// observability and retry classification. Only relevant when
+	// `status: failed`.
+	ErrorType *string `json:"error_type,omitempty"`
+
+	// ResultB64 Base64-encoded (standard encoding) bytes representing the job's
+	// output. The workflow engine decodes this and may pass it as input
+	// to downstream steps. Omit if the step produces no output.
+	ResultB64 *string `json:"result_b64,omitempty"`
+
+	// Status Terminal status for this job attempt. `failed` triggers the
+	// workflow engine's retry logic if `attempt < max_attempts`.
+	Status JobCompleteRequestStatus `json:"status"`
+
+	// WorkerId Must match the `worker_id` from the original claim.
+	WorkerId string `json:"worker_id"`
 }
 
-// JobCompleteRequestStatus defines model for JobCompleteRequest.Status.
+// JobCompleteRequestStatus Terminal status for this job attempt. `failed` triggers the
+// workflow engine's retry logic if `attempt < max_attempts`.
 type JobCompleteRequestStatus string
 
 // JobEventEntry defines model for JobEventEntry.
 type JobEventEntry struct {
-	// Payload Free-form JSON payload. Bounded by the server-side byte
-	// limit (default 16 KiB); oversize events are rejected with
-	// 413.
+	// Payload Free-form JSON payload. Bounded by the server-side byte limit
+	// (default 16 KiB per event); oversize payloads are rejected
+	// with 413.
 	Payload map[string]interface{} `json:"payload"`
 
 	// Type Caller-chosen event type identifier. The `mobius.` prefix is
-	// reserved for server-emitted well-known kinds.
+	// reserved for server-emitted well-known kinds and is rejected
+	// with 400.
 	Type string `json:"type"`
 }
 
-// JobEventsRequest Fenced batch of custom run events published by the worker
-// holding a job's lease. The fence is per-request: every event in
-// `events` is published under the same `worker_id` + `attempt`.
+// JobEventsRequest Fenced batch of custom run events published by the worker holding
+// a job's lease. The fence is per-request: every event in `events`
+// is published under the same `worker_id` + `attempt` pair.
 type JobEventsRequest struct {
-	Attempt  int             `json:"attempt"`
-	Events   []JobEventEntry `json:"events"`
-	WorkerId string          `json:"worker_id"`
+	// Attempt Must match the `attempt` from the original claim.
+	Attempt int `json:"attempt"`
+
+	// Events The batch of events to publish. All events are validated atomically.
+	Events []JobEventEntry `json:"events"`
+
+	// WorkerId Must match the `worker_id` from the original claim.
+	WorkerId string `json:"worker_id"`
 }
 
 // JobFenceRequest defines model for JobFenceRequest.
 type JobFenceRequest struct {
-	Attempt  int    `json:"attempt"`
+	// Attempt Must match the `attempt` from the original claim.
+	Attempt int `json:"attempt"`
+
+	// WorkerId Must match the `worker_id` from the original claim.
 	WorkerId string `json:"worker_id"`
 }
 
 // JobHeartbeat defines model for JobHeartbeat.
 type JobHeartbeat struct {
 	Directives JobHeartbeatDirectives `json:"directives"`
-	Ok         bool                   `json:"ok"`
+
+	// Ok True when the lease was successfully refreshed.
+	Ok bool `json:"ok"`
 }
 
 // JobHeartbeatDirectives defines model for JobHeartbeatDirectives.
 type JobHeartbeatDirectives struct {
-	// ShouldCancel When true the worker must stop processing and complete with status failed.
+	// ShouldCancel When true, the run has received a cancellation request. The
+	// worker must stop processing immediately and call complete with
+	// `status: failed`.
 	ShouldCancel *bool `json:"should_cancel,omitempty"`
 }
 
 // JobListResponse defines model for JobListResponse.
 type JobListResponse struct {
+	// Items The list of jobs for this run.
 	Items []Job `json:"items"`
 }
 
@@ -1895,38 +2497,82 @@ type Metadata map[string]interface{}
 
 // Project defines model for Project.
 type Project struct {
-	CreatedAt   time.Time `json:"created_at"`
-	CreatedBy   *string   `json:"created_by,omitempty"`
-	Description *string   `json:"description,omitempty"`
-	Handle      string    `json:"handle"`
-	Id          string    `json:"id"`
-	Name        string    `json:"name"`
-	UpdatedAt   time.Time `json:"updated_at"`
+	// CreatedAt Timestamp when this project was created.
+	CreatedAt time.Time `json:"created_at"`
+
+	// CreatedBy User ID of the org member who created this project.
+	CreatedBy *string `json:"created_by,omitempty"`
+
+	// Description Optional human-readable description.
+	Description *string `json:"description,omitempty"`
+
+	// Handle URL-safe slug used as a path segment in all project-scoped API routes.
+	// Unique within the org. Immutable after creation.
+	Handle string `json:"handle"`
+
+	// Id Unique identifier for this project.
+	Id string `json:"id"`
+
+	// Name Human-readable project name.
+	Name string `json:"name"`
+
+	// UpdatedAt Timestamp when this project was last updated.
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 // ProjectListResponse defines model for ProjectListResponse.
 type ProjectListResponse struct {
+	// Items The list of results for this page.
 	Items []Project `json:"items"`
 }
 
 // ProjectMetrics defines model for ProjectMetrics.
 type ProjectMetrics struct {
-	ActiveWorkers   int            `json:"active_workers"`
-	AvgRunSeconds   float64        `json:"avg_run_seconds"`
-	FailureRate     float64        `json:"failure_rate"`
-	GeneratedAt     time.Time      `json:"generated_at"`
-	P95StepSeconds  float64        `json:"p95_step_seconds"`
-	QueueDepth      int            `json:"queue_depth"`
-	RunningCount    int            `json:"running_count"`
-	RunsPerMinute   float64        `json:"runs_per_minute"`
-	StaleWorkers    int            `json:"stale_workers"`
+	// ActiveWorkers Number of workers whose `last_seen_at` is within the 2-minute staleness threshold.
+	ActiveWorkers int `json:"active_workers"`
+
+	// AvgRunSeconds Mean wall-clock duration of completed runs within the window,
+	// in seconds.
+	AvgRunSeconds float64 `json:"avg_run_seconds"`
+
+	// FailureRate Fraction of completed runs that ended in `failed` status within
+	// the window. Range 0.0–1.0.
+	FailureRate float64 `json:"failure_rate"`
+
+	// GeneratedAt Timestamp when this metrics snapshot was computed.
+	GeneratedAt time.Time `json:"generated_at"`
+
+	// P95StepSeconds 95th-percentile job duration (claim time to terminal state)
+	// computed across the 40 most recent completed jobs, in seconds.
+	// Use this to detect slow or stuck steps.
+	P95StepSeconds float64 `json:"p95_step_seconds"`
+
+	// QueueDepth Number of jobs currently in `pending` state waiting to be claimed.
+	QueueDepth int `json:"queue_depth"`
+
+	// RunningCount Number of workflow runs currently in `running` or `suspended` state.
+	RunningCount int `json:"running_count"`
+
+	// RunsPerMinute Average number of new workflow runs started per minute within the window.
+	RunsPerMinute float64 `json:"runs_per_minute"`
+
+	// StaleWorkers Number of workers whose `last_seen_at` has exceeded the 2-minute staleness threshold.
+	StaleWorkers int `json:"stale_workers"`
+
+	// StatusBreakdown Map of workflow run status → count across all runs in the project
+	// (not windowed). Includes all terminal and in-progress statuses.
 	StatusBreakdown map[string]int `json:"status_breakdown"`
-	TotalRunsWindow int            `json:"total_runs_window"`
-	WindowMinutes   int            `json:"window_minutes"`
+
+	// TotalRunsWindow Total number of workflow runs started within the window.
+	TotalRunsWindow int `json:"total_runs_window"`
+
+	// WindowMinutes Rolling window width used for rate and failure metrics. Default is 60 minutes.
+	WindowMinutes int `json:"window_minutes"`
 }
 
 // RespondToInteractionRequest defines model for RespondToInteractionRequest.
 type RespondToInteractionRequest struct {
+	// Comment Optional free-text comment accompanying the response.
 	Comment *string `json:"comment,omitempty"`
 
 	// Value Free-form JSON payload supplied by the responder.
@@ -1935,58 +2581,104 @@ type RespondToInteractionRequest struct {
 
 // Role defines model for Role.
 type Role struct {
-	CreatedAt     time.Time `json:"created_at"`
-	Description   string    `json:"description"`
-	Id            string    `json:"id"`
-	Name          string    `json:"name"`
-	OrgId         *string   `json:"org_id,omitempty"`
-	Permissions   []string  `json:"permissions"`
-	ProjectId     *string   `json:"project_id,omitempty"`
-	SystemDefined bool      `json:"system_defined"`
-	UpdatedAt     time.Time `json:"updated_at"`
+	// CreatedAt Timestamp when this role was created.
+	CreatedAt time.Time `json:"created_at"`
+
+	// Description Optional human-readable description of what this role grants.
+	Description string `json:"description"`
+
+	// Id Unique identifier for this role.
+	Id string `json:"id"`
+
+	// Name Human-readable role name, unique within org+project scope.
+	Name string `json:"name"`
+
+	// OrgId Owning org. Empty for system-defined roles.
+	OrgId *string `json:"org_id,omitempty"`
+
+	// Permissions Permission strings granted by this role (e.g. "mobius.job.claim").
+	Permissions []string `json:"permissions"`
+
+	// ProjectId Scoping project. Empty for org-wide roles.
+	ProjectId *string `json:"project_id,omitempty"`
+
+	// SystemDefined True for built-in platform roles that cannot be modified or deleted.
+	SystemDefined bool `json:"system_defined"`
+
+	// UpdatedAt Timestamp when this role was last updated.
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 // RoleAssignment defines model for RoleAssignment.
 type RoleAssignment struct {
-	ActorId            string                  `json:"actor_id"`
-	ActorType          RoleAssignmentActorType `json:"actor_type"`
-	CreatedAt          time.Time               `json:"created_at"`
-	GrantedByActorId   *string                 `json:"granted_by_actor_id,omitempty"`
-	GrantedByActorType *string                 `json:"granted_by_actor_type,omitempty"`
-	Id                 string                  `json:"id"`
-	OrgId              string                  `json:"org_id"`
-	ProjectId          *string                 `json:"project_id,omitempty"`
-	RoleId             string                  `json:"role_id"`
-	RoleName           string                  `json:"role_name"`
+	// ActorId User ID or service account ID receiving the role.
+	ActorId string `json:"actor_id"`
+
+	// ActorType Type of actor this assignment applies to: `user` or `service_account`.
+	ActorType RoleAssignmentActorType `json:"actor_type"`
+
+	// CreatedAt Timestamp when this assignment was created.
+	CreatedAt time.Time `json:"created_at"`
+
+	// GrantedByActorId Actor ID of the caller who created this assignment.
+	GrantedByActorId *string `json:"granted_by_actor_id,omitempty"`
+
+	// GrantedByActorType Actor type of the caller who created this assignment.
+	GrantedByActorType *string `json:"granted_by_actor_type,omitempty"`
+
+	// Id Unique identifier for this role assignment.
+	Id string `json:"id"`
+
+	// OrgId ID of the organization this assignment belongs to.
+	OrgId string `json:"org_id"`
+
+	// ProjectId Set for project-scoped assignments; empty for org-wide.
+	ProjectId *string `json:"project_id,omitempty"`
+
+	// RoleId ID of the assigned role.
+	RoleId string `json:"role_id"`
+
+	// RoleName Name of the assigned role.
+	RoleName string `json:"role_name"`
 }
 
-// RoleAssignmentActorType defines model for RoleAssignment.ActorType.
+// RoleAssignmentActorType Type of actor this assignment applies to: `user` or `service_account`.
 type RoleAssignmentActorType string
 
 // RoleAssignmentListResponse defines model for RoleAssignmentListResponse.
 type RoleAssignmentListResponse struct {
+	// Items The list of results for this page.
 	Items []RoleAssignment `json:"items"`
 }
 
 // RoleListResponse defines model for RoleListResponse.
 type RoleListResponse struct {
+	// Items The list of results for this page.
 	Items []Role `json:"items"`
 }
 
 // RotateSecretResult defines model for RotateSecretResult.
 type RotateSecretResult struct {
+	// SigningSecret The new raw signing secret. Store it immediately — this is the only time it is returned.
 	SigningSecret string `json:"signing_secret"`
 }
 
 // RunActionRequest defines model for RunActionRequest.
 type RunActionRequest struct {
-	DryRun         *bool                   `json:"dry_run,omitempty"`
-	Parameters     *map[string]interface{} `json:"parameters,omitempty"`
-	TimeoutSeconds *int                    `json:"timeout_seconds,omitempty"`
+	// DryRun When true, invokes the action without side effects. Only
+	// effective for actions that support dry-run mode.
+	DryRun *bool `json:"dry_run,omitempty"`
+
+	// Parameters Input parameters passed to the action handler.
+	Parameters *map[string]interface{} `json:"parameters,omitempty"`
+
+	// TimeoutSeconds Override the default action execution timeout.
+	TimeoutSeconds *int `json:"timeout_seconds,omitempty"`
 }
 
 // RunActionResult defines model for RunActionResult.
 type RunActionResult struct {
+	// Output Free-form output returned by the action handler.
 	Output RunActionResult_Output `json:"output"`
 }
 
@@ -2008,54 +2700,56 @@ type RunActionResultOutput4 = int
 // RunActionResultOutput5 defines model for .
 type RunActionResultOutput5 = bool
 
-// RunActionResult_Output defines model for RunActionResult.Output.
+// RunActionResult_Output Free-form output returned by the action handler.
 type RunActionResult_Output struct {
 	union json.RawMessage
 }
 
 // RunSignal defines model for RunSignal.
 type RunSignal struct {
-	Id    string `json:"id"`
-	Name  string `json:"name"`
+	// Id Unique identifier for this signal.
+	Id string `json:"id"`
+
+	// Name Signal topic name matching the wait_signal step's topic.
+	Name string `json:"name"`
+
+	// RunId ID of the run this signal was delivered to.
 	RunId string `json:"run_id"`
 }
 
 // SendChannelMessageRequest defines model for SendChannelMessageRequest.
 type SendChannelMessageRequest struct {
-	// Content Message content (markdown)
+	// Content Message body in Markdown.
 	Content string `json:"content"`
 
-	// Display Rendering layout mode
+	// Display Rendering hint for the UI.
 	Display  *SendChannelMessageRequestDisplay `json:"display,omitempty"`
 	Metadata *Metadata                         `json:"metadata,omitempty"`
 
-	// ReplyTo Parent message ID for threading
+	// ReplyTo Parent message ID for threading (creates a reply).
 	ReplyTo *string `json:"reply_to,omitempty"`
 
-	// SenderAgentId Durable agent identity to attribute the message to.
+	// SenderAgentId Durable agent identity to attribute the message to. When set,
+	// `sender_type` on the resulting message is `agent`.
 	SenderAgentId *string `json:"sender_agent_id,omitempty"`
 
-	// SenderSessionId Live agent session to attribute the message to.
+	// SenderSessionId Live agent session to associate with the message.
 	SenderSessionId *string `json:"sender_session_id,omitempty"`
 
-	// Type Dot-projectd message type
+	// Type Dot-namespaced message type identifier.
 	Type *string `json:"type,omitempty"`
 }
 
-// SendChannelMessageRequestDisplay Rendering layout mode
+// SendChannelMessageRequestDisplay Rendering hint for the UI.
 type SendChannelMessageRequestDisplay string
 
 // SendRunSignalRequest defines model for SendRunSignalRequest.
 type SendRunSignalRequest struct {
 	// Name Signal topic (e.g. "approval", "webhook").
-	Name    string                  `json:"name"`
-	Payload *map[string]interface{} `json:"payload,omitempty"`
-}
+	Name string `json:"name"`
 
-// SlackInstall defines model for SlackInstall.
-type SlackInstall struct {
-	// AuthorizeUrl The Slack OAuth authorize URL to redirect the user to.
-	AuthorizeUrl string `json:"authorize_url"`
+	// Payload Arbitrary payload delivered to the waiting step when the signal is received.
+	Payload *map[string]interface{} `json:"payload,omitempty"`
 }
 
 // StartRunRequest Start a workflow run. Provide exactly one of `definition_id` or
@@ -2065,20 +2759,19 @@ type SlackInstall struct {
 // definition-bound endpoint (`POST /projects/{project}/workflows/{id}/runs`)
 // `definition_id` is implied by the path and `spec` is forbidden.
 type StartRunRequest struct {
-	// CallbackUrl Outbound customer callback URL intended for terminal run
-	// notifications. If set, Mobius stores this value on the run for
-	// future callback delivery, but terminal-status callback delivery is
-	// not yet active.
-	CallbackUrl *string `json:"callback_url,omitempty"`
-
 	// DefinitionId ID of an existing workflow definition to run. Mutually
 	// exclusive with `spec`. On the definition-bound path this is
 	// ignored (the path segment wins) but must not conflict.
-	DefinitionId *string                 `json:"definition_id,omitempty"`
-	ExternalId   *string                 `json:"external_id,omitempty"`
-	Group        *string                 `json:"group,omitempty"`
-	Inputs       *map[string]interface{} `json:"inputs,omitempty"`
-	Metadata     *map[string]string      `json:"metadata,omitempty"`
+	DefinitionId *string `json:"definition_id,omitempty"`
+
+	// ExternalId Caller-supplied idempotency key or correlation ID attached to the run.
+	ExternalId *string `json:"external_id,omitempty"`
+
+	// Inputs Input values to pass to the workflow. Must conform to the workflow's declared input schema.
+	Inputs *map[string]interface{} `json:"inputs,omitempty"`
+
+	// Metadata Caller-supplied string metadata attached to the run for filtering and display.
+	Metadata *map[string]string `json:"metadata,omitempty"`
 
 	// Queue Queue name to enqueue the run on. Defaults to "default".
 	Queue *string `json:"queue,omitempty"`
@@ -2106,6 +2799,7 @@ type ToolDefinition struct {
 
 // ToolDefinitionListResponse defines model for ToolDefinitionListResponse.
 type ToolDefinitionListResponse struct {
+	// Items The list of published workflow tools.
 	Items []ToolDefinition `json:"items"`
 }
 
@@ -2140,154 +2834,316 @@ type ToolRunRequest struct {
 
 // Trigger defines model for Trigger.
 type Trigger struct {
-	ConcurrencyPolicy ConcurrencyPolicy       `json:"concurrency_policy"`
-	CreatedAt         time.Time               `json:"created_at"`
-	CreatedBy         *string                 `json:"created_by,omitempty"`
-	Enabled           bool                    `json:"enabled"`
-	FilterConfig      *map[string]interface{} `json:"filter_config,omitempty"`
-	Id                string                  `json:"id"`
-	Kind              TriggerKind             `json:"kind"`
-	LastFireAt        *time.Time              `json:"last_fire_at,omitempty"`
-	Name              string                  `json:"name"`
-	NextFireAt        *time.Time              `json:"next_fire_at,omitempty"`
-	OrgId             string                  `json:"org_id"`
-	SourceConfig      *map[string]interface{} `json:"source_config,omitempty"`
-	Targets           *[]TriggerTarget        `json:"targets,omitempty"`
-	UpdatedAt         time.Time               `json:"updated_at"`
+	// ConcurrencyPolicy Controls overlapping runs from the same trigger:
+	// - `allow` — start new runs unconditionally.
+	// - `forbid` — skip the new fire if a run from this trigger is still active.
+	// - `replace` — cancel the active run before starting a new one.
+	ConcurrencyPolicy ConcurrencyPolicy `json:"concurrency_policy"`
+
+	// CreatedAt Timestamp when this trigger was created.
+	CreatedAt time.Time `json:"created_at"`
+
+	// CreatedBy User ID of the org member who created this trigger.
+	CreatedBy *string `json:"created_by,omitempty"`
+
+	// Enabled When false, the trigger is paused and will not fire.
+	Enabled bool `json:"enabled"`
+
+	// FilterConfig Additional payload filters applied before targets are evaluated.
+	FilterConfig *map[string]interface{} `json:"filter_config,omitempty"`
+
+	// Id Unique identifier for this trigger.
+	Id string `json:"id"`
+
+	// Kind Determines the event source and required `source_config` shape.
+	Kind TriggerKind `json:"kind"`
+
+	// LastFireAt Timestamp of the most recent fire attempt.
+	LastFireAt *time.Time `json:"last_fire_at,omitempty"`
+
+	// Name Human-readable trigger name, unique within the project.
+	Name string `json:"name"`
+
+	// NextFireAt Computed next scheduled fire time (schedule triggers only).
+	NextFireAt *time.Time `json:"next_fire_at,omitempty"`
+
+	// OrgId ID of the organization this trigger belongs to.
+	OrgId string `json:"org_id"`
+
+	// ReceiveUrl Full URL for posting inbound events (webhook triggers only). Computed from `webhook_handle`.
+	ReceiveUrl *string `json:"receive_url,omitempty"`
+
+	// SourceConfig Kind-specific source configuration. For `schedule`: `{"cron": "0 * * * *"}`.
+	// For `webhook` and `event`: contains event type filters.
+	SourceConfig *map[string]interface{} `json:"source_config,omitempty"`
+
+	// Targets Workflows to start when this trigger fires.
+	Targets *[]TriggerTarget `json:"targets,omitempty"`
+
+	// UpdatedAt Timestamp when this trigger was last updated.
+	UpdatedAt time.Time `json:"updated_at"`
+
+	// WebhookHandle URL-safe handle for the inbound receive endpoint (webhook triggers only). Unique within the project.
+	WebhookHandle *string `json:"webhook_handle,omitempty"`
 }
 
-// TriggerFire defines model for TriggerFire.
+// TriggerFire A single trigger fire event and its outcome.
 type TriggerFire struct {
-	CreatedAt   time.Time         `json:"created_at"`
-	DedupKey    *string           `json:"dedup_key,omitempty"`
-	Error       *string           `json:"error,omitempty"`
-	FiredAt     time.Time         `json:"fired_at"`
-	Id          string            `json:"id"`
-	OrgId       string            `json:"org_id"`
-	RunId       *string           `json:"run_id,omitempty"`
-	ScheduledAt *time.Time        `json:"scheduled_at,omitempty"`
-	Status      TriggerFireStatus `json:"status"`
-	TriggerId   string            `json:"trigger_id"`
+	// CreatedAt Timestamp when this fire record was created.
+	CreatedAt time.Time `json:"created_at"`
+
+	// DedupKey Deduplication key used to prevent duplicate fires for the same scheduled slot.
+	DedupKey *string `json:"dedup_key,omitempty"`
+
+	// Error Error detail when status is `failed`.
+	Error *string `json:"error,omitempty"`
+
+	// FiredAt When the fire was actually processed.
+	FiredAt time.Time `json:"fired_at"`
+
+	// Id Unique identifier for this fire record.
+	Id string `json:"id"`
+
+	// OrgId ID of the organization this trigger belongs to.
+	OrgId string `json:"org_id"`
+
+	// ProjectId ID of the project this trigger belongs to.
+	ProjectId string `json:"project_id"`
+
+	// RunId Workflow run created by this fire. Absent when status is `skipped` or `failed` before run creation.
+	RunId *string `json:"run_id,omitempty"`
+
+	// ScheduledAt When the trigger was scheduled to fire (schedule triggers only).
+	ScheduledAt *time.Time `json:"scheduled_at,omitempty"`
+
+	// Status `skipped` means the fire was suppressed by the concurrency policy or a target condition evaluated to false.
+	Status TriggerFireStatus `json:"status"`
+
+	// TriggerId ID of the trigger that fired.
+	TriggerId string `json:"trigger_id"`
 }
 
 // TriggerFireListResponse defines model for TriggerFireListResponse.
 type TriggerFireListResponse struct {
-	HasMore    bool           `json:"has_more"`
-	Items      *[]TriggerFire `json:"items,omitempty"`
-	NextCursor *string        `json:"next_cursor,omitempty"`
+	// HasMore Whether additional pages are available.
+	HasMore bool `json:"has_more"`
+
+	// Items The list of results for this page.
+	Items *[]TriggerFire `json:"items,omitempty"`
+
+	// NextCursor Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.
+	NextCursor *string `json:"next_cursor,omitempty"`
 }
 
-// TriggerFireStatus defines model for TriggerFireStatus.
+// TriggerFireStatus `skipped` means the fire was suppressed by the concurrency policy or a target condition evaluated to false.
 type TriggerFireStatus string
 
-// TriggerKind defines model for TriggerKind.
+// TriggerKind Determines the event source and required `source_config` shape.
 type TriggerKind string
 
 // TriggerListResponse defines model for TriggerListResponse.
 type TriggerListResponse struct {
-	HasMore    bool       `json:"has_more"`
-	Items      *[]Trigger `json:"items,omitempty"`
-	NextCursor *string    `json:"next_cursor,omitempty"`
+	// HasMore Whether additional pages are available.
+	HasMore bool `json:"has_more"`
+
+	// Items The list of results for this page.
+	Items *[]Trigger `json:"items,omitempty"`
+
+	// NextCursor Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.
+	NextCursor *string `json:"next_cursor,omitempty"`
 }
 
-// TriggerTarget defines model for TriggerTarget.
+// TriggerTarget A workflow to start when this trigger fires.
 type TriggerTarget struct {
-	Condition    *string            `json:"condition,omitempty"`
+	// Condition Expression evaluated against the event payload. The target is
+	// skipped if this evaluates to false. Omit to always run.
+	Condition *string `json:"condition,omitempty"`
+
+	// InputMapping Maps workflow input names to JSONPath expressions evaluated against
+	// the event payload. Example: `{"user_id": "$.event.actor.id"}`.
 	InputMapping *map[string]string `json:"input_mapping,omitempty"`
-	WorkflowId   string             `json:"workflow_id"`
+
+	// WorkflowId ID of the workflow definition to run.
+	WorkflowId string `json:"workflow_id"`
 }
 
 // UpdateActionRequest defines model for UpdateActionRequest.
 type UpdateActionRequest struct {
-	Annotations  *ActionAnnotations      `json:"annotations,omitempty"`
-	Description  *string                 `json:"description,omitempty"`
-	EndpointUrl  *string                 `json:"endpoint_url,omitempty"`
-	InputSchema  *map[string]interface{} `json:"input_schema,omitempty"`
+	// Annotations Hints that describe the safe-use properties of the action. Used by the
+	// engine and tooling to decide retry behavior, dry-run eligibility, etc.
+	Annotations *ActionAnnotations `json:"annotations,omitempty"`
+
+	// Description Replacement Markdown description.
+	Description *string `json:"description,omitempty"`
+
+	// EndpointUrl Replacement endpoint URL.
+	EndpointUrl *string `json:"endpoint_url,omitempty"`
+
+	// InputSchema Replacement JSON Schema for inputs. Replaces the existing schema.
+	InputSchema *map[string]interface{} `json:"input_schema,omitempty"`
+
+	// OutputSchema Replacement JSON Schema for outputs. Replaces the existing schema.
 	OutputSchema *map[string]interface{} `json:"output_schema,omitempty"`
-	Title        *string                 `json:"title,omitempty"`
+
+	// Title Replacement display title.
+	Title *string `json:"title,omitempty"`
 }
 
 // UpdateAgentRequest defines model for UpdateAgentRequest.
 type UpdateAgentRequest struct {
+	// Capabilities Replacement capability map.
 	Capabilities *map[string]interface{} `json:"capabilities,omitempty"`
-	Config       *map[string]interface{} `json:"config,omitempty"`
-	Description  *string                 `json:"description,omitempty"`
-	DisplayName  *string                 `json:"display_name,omitempty"`
-	Kind         *string                 `json:"kind,omitempty"`
-	Status       *AgentStatus            `json:"status,omitempty"`
+
+	// Config Replacement configuration blob.
+	Config *map[string]interface{} `json:"config,omitempty"`
+
+	// Description Replacement description.
+	Description *string `json:"description,omitempty"`
+
+	// DisplayName Replacement human-readable label.
+	DisplayName *string `json:"display_name,omitempty"`
+
+	// Kind Replacement freeform agent classification (e.g. `llm`, `rpa`).
+	Kind *string `json:"kind,omitempty"`
+
+	// Status Administrative status. Inactive agents cannot claim new jobs.
+	Status *AgentStatus `json:"status,omitempty"`
 }
 
 // UpdateChannelMessageRequest defines model for UpdateChannelMessageRequest.
 type UpdateChannelMessageRequest struct {
-	// Content Updated message content (markdown)
+	// Content Updated Markdown content. Sets `edited_at` on the message.
 	Content  *string   `json:"content,omitempty"`
 	Metadata *Metadata `json:"metadata,omitempty"`
 
-	// Pinned Whether this message is pinned
+	// Pinned Pin or unpin the message. Sets/clears `pinned_by`.
 	Pinned *bool `json:"pinned,omitempty"`
 }
 
 // UpdateChannelRequest defines model for UpdateChannelRequest.
 type UpdateChannelRequest struct {
+	// DisplayName Updated display name.
 	DisplayName *string `json:"display_name,omitempty"`
-	Private     *bool   `json:"private,omitempty"`
-	Topic       *string `json:"topic,omitempty"`
+
+	// Private Toggle invite-only visibility.
+	Private *bool `json:"private,omitempty"`
+
+	// Topic Updated topic or description.
+	Topic *string `json:"topic,omitempty"`
 }
 
 // UpdateGroupRequest defines model for UpdateGroupRequest.
 type UpdateGroupRequest struct {
-	Description   *string                          `json:"description,omitempty"`
-	Name          *string                          `json:"name,omitempty"`
+	// Description Replacement description.
+	Description *string `json:"description,omitempty"`
+
+	// Name Replacement human-readable name.
+	Name *string `json:"name,omitempty"`
+
+	// RoutingPolicy Affects future interactions only; in-flight interactions retain the snapshotted policy.
 	RoutingPolicy *UpdateGroupRequestRoutingPolicy `json:"routing_policy,omitempty"`
 }
 
-// UpdateGroupRequestRoutingPolicy defines model for UpdateGroupRequest.RoutingPolicy.
+// UpdateGroupRequestRoutingPolicy Affects future interactions only; in-flight interactions retain the snapshotted policy.
 type UpdateGroupRequestRoutingPolicy string
 
 // UpdateIntegrationRequest defines model for UpdateIntegrationRequest.
 type UpdateIntegrationRequest struct {
+	// Config Replacement config blob (full replace, not merge).
 	Config *map[string]interface{} `json:"config,omitempty"`
-	Name   *string                 `json:"name,omitempty"`
-	Status *IntegrationStatus      `json:"status,omitempty"`
+
+	// Credentials Replacement credentials blob (full replace). Stored encrypted and never returned in API responses.
+	Credentials *map[string]interface{} `json:"credentials,omitempty"`
+
+	// Name Updated display name.
+	Name *string `json:"name,omitempty"`
+
+	// Status `active` — integration is enabled and usable by workflows.
+	// `inactive` — manually disabled; no automatic expiry behavior.
+	// `expired` — token/credential has expired (e.g., OAuth token not refreshed).
+	Status *IntegrationStatus `json:"status,omitempty"`
 }
 
 // UpdateProjectRequest defines model for UpdateProjectRequest.
 type UpdateProjectRequest struct {
+	// Description Replacement description.
 	Description *string `json:"description,omitempty"`
-	Name        *string `json:"name,omitempty"`
+
+	// Name Replacement human-readable name.
+	Name *string `json:"name,omitempty"`
 }
 
 // UpdateRoleRequest defines model for UpdateRoleRequest.
 type UpdateRoleRequest struct {
-	Description *string   `json:"description,omitempty"`
-	Name        *string   `json:"name,omitempty"`
+	// Description Replacement description.
+	Description *string `json:"description,omitempty"`
+
+	// Name Replacement role name.
+	Name *string `json:"name,omitempty"`
+
+	// Permissions Replaces the existing permissions array entirely.
 	Permissions *[]string `json:"permissions,omitempty"`
-	ProjectId   *string   `json:"project_id,omitempty"`
+
+	// ProjectId Scope to change this role to. Cannot change an org-scoped role to project-scoped after creation.
+	ProjectId *string `json:"project_id,omitempty"`
 }
 
 // UpdateTriggerRequest defines model for UpdateTriggerRequest.
 type UpdateTriggerRequest struct {
-	ConcurrencyPolicy *ConcurrencyPolicy      `json:"concurrency_policy,omitempty"`
-	Enabled           *bool                   `json:"enabled,omitempty"`
-	FilterConfig      *map[string]interface{} `json:"filter_config,omitempty"`
-	Name              *string                 `json:"name,omitempty"`
-	SourceConfig      *map[string]interface{} `json:"source_config,omitempty"`
-	Targets           *[]TriggerTarget        `json:"targets,omitempty"`
+	// ConcurrencyPolicy Controls overlapping runs from the same trigger:
+	// - `allow` — start new runs unconditionally.
+	// - `forbid` — skip the new fire if a run from this trigger is still active.
+	// - `replace` — cancel the active run before starting a new one.
+	ConcurrencyPolicy *ConcurrencyPolicy `json:"concurrency_policy,omitempty"`
+
+	// Enabled Set to false to pause the trigger without deleting it.
+	Enabled *bool `json:"enabled,omitempty"`
+
+	// FilterConfig Replacement payload filter configuration.
+	FilterConfig *map[string]interface{} `json:"filter_config,omitempty"`
+
+	// Name Replacement human-readable name.
+	Name *string `json:"name,omitempty"`
+
+	// SourceConfig Replacement kind-specific source configuration.
+	SourceConfig *map[string]interface{} `json:"source_config,omitempty"`
+
+	// Targets Replaces the entire targets array.
+	Targets *[]TriggerTarget `json:"targets,omitempty"`
+
+	// WebhookHandle Changing this changes the `receive_url`; update any upstream integrations.
+	WebhookHandle *string `json:"webhook_handle,omitempty"`
+
+	// WebhookSecret Replace or clear the inbound signature verification secret.
+	WebhookSecret *string `json:"webhook_secret,omitempty"`
 }
 
 // UpdateWebhookRequest defines model for UpdateWebhookRequest.
 type UpdateWebhookRequest struct {
-	Enabled *bool   `json:"enabled,omitempty"`
-	Name    *string `json:"name,omitempty"`
+	// Enabled Set to false to disable delivery without deleting the webhook.
+	Enabled *bool `json:"enabled,omitempty"`
 
-	// Secret Replace or clear the webhook's shared secret
+	// Events Replacement event subscriptions. Replaces the entire current list.
+	Events *[]string `json:"events,omitempty"`
+
+	// Name Replacement human-readable name.
+	Name *string `json:"name,omitempty"`
+
+	// Secret Replace the current signing secret. Set to empty string to
+	// disable signing. Omit to leave the current secret unchanged.
 	Secret *string `json:"secret,omitempty"`
+
+	// Url Replacement endpoint URL.
+	Url *string `json:"url,omitempty"`
 }
 
 // UpdateWorkflowRequest defines model for UpdateWorkflowRequest.
 type UpdateWorkflowRequest struct {
+	// Description Replacement description. Omit to leave unchanged.
 	Description *string `json:"description,omitempty"`
-	Name        *string `json:"name,omitempty"`
+
+	// Name Replacement human-readable workflow name.
+	Name *string `json:"name,omitempty"`
 
 	// PublishedAsTool When true, expose this workflow as a callable tool via /api/tools.
 	PublishedAsTool *bool `json:"published_as_tool,omitempty"`
@@ -2301,64 +3157,137 @@ type UpdateWorkflowRequest struct {
 	Spec *WorkflowSpec `json:"spec,omitempty"`
 }
 
-// Webhook A managed inbound webhook endpoint hosted by Mobius.
+// Webhook A project-level outgoing webhook subscription. When a subscribed
+// event fires, Mobius POSTs the event payload to `url`.
 type Webhook struct {
+	// CreatedAt Timestamp when this webhook was created.
 	CreatedAt time.Time `json:"created_at"`
-	CreatedBy *string   `json:"created_by,omitempty"`
-	Enabled   bool      `json:"enabled"`
 
-	// Handle Immutable URL-safe identifier used in the receive endpoint
-	Handle string `json:"handle"`
-	Id     string `json:"id"`
-	Name   string `json:"name"`
-	OrgId  string `json:"org_id"`
+	// CreatedBy User ID of the org member who created this webhook.
+	CreatedBy *string `json:"created_by,omitempty"`
 
-	// ReceiveUrl Full URL that external systems POST to when sending inbound webhook events to Mobius.
-	ReceiveUrl string    `json:"receive_url"`
-	UpdatedAt  time.Time `json:"updated_at"`
+	// Enabled When false, matching events are not delivered.
+	Enabled bool `json:"enabled"`
+
+	// Events Subscribed event types. Use dot notation (`run.completed`,
+	// `run.failed`) or wildcards (`run.*` for all run events).
+	Events []string `json:"events"`
+
+	// Id Unique identifier for this webhook.
+	Id string `json:"id"`
+
+	// Name Human-readable name, unique within the project.
+	Name string `json:"name"`
+
+	// OrgId ID of the organization this webhook belongs to.
+	OrgId string `json:"org_id"`
+
+	// ProjectId ID of the project this webhook belongs to.
+	ProjectId string `json:"project_id"`
+
+	// UpdatedAt Timestamp when this webhook was last updated.
+	UpdatedAt time.Time `json:"updated_at"`
+
+	// Url The customer endpoint Mobius POSTs event payloads to.
+	Url string `json:"url"`
 }
 
-// WebhookEvent One inbound HTTP request received by a managed webhook endpoint.
-type WebhookEvent struct {
-	AcknowledgedAt *time.Time              `json:"acknowledged_at,omitempty"`
-	ExpiresAt      *time.Time              `json:"expires_at,omitempty"`
-	Id             string                  `json:"id"`
-	OrgId          string                  `json:"org_id"`
-	Payload        *map[string]interface{} `json:"payload,omitempty"`
-	ReceivedAt     time.Time               `json:"received_at"`
-	Status         WebhookEventStatus      `json:"status"`
-	WebhookId      string                  `json:"webhook_id"`
+// WebhookDelivery One delivery record for a webhook event. The daemon claims pending
+// rows, POSTs the payload, and transitions to `delivered` or retries
+// on failure. A delivery reaches `failed` only after exhausting all
+// 10 retry attempts.
+type WebhookDelivery struct {
+	// Attempts Number of delivery attempts made so far. Max 10.
+	Attempts int `json:"attempts"`
+
+	// CreatedAt Timestamp when this delivery was first attempted.
+	CreatedAt time.Time `json:"created_at"`
+
+	// DeliveredAt Timestamp of the successful delivery. Absent until delivered.
+	DeliveredAt *time.Time `json:"delivered_at,omitempty"`
+
+	// EventType The event type that triggered this delivery (e.g. `run.completed`).
+	EventType string `json:"event_type"`
+
+	// Id Unique identifier for this delivery record.
+	Id string `json:"id"`
+
+	// LastError Error message from the most recent failed attempt.
+	LastError *string `json:"last_error,omitempty"`
+
+	// OrgId ID of the organization this delivery belongs to.
+	OrgId string `json:"org_id"`
+
+	// RunId Run that triggered the event, when applicable.
+	RunId *string `json:"run_id,omitempty"`
+
+	// Status `pending` — queued, not yet attempted.
+	// `processing` — currently being delivered.
+	// `delivered` — recipient returned 2xx.
+	// `failed` — all retry attempts exhausted.
+	Status WebhookDeliveryStatus `json:"status"`
+
+	// WebhookId ID of the webhook this delivery belongs to.
+	WebhookId string `json:"webhook_id"`
 }
 
-// WebhookEventListResponse defines model for WebhookEventListResponse.
-type WebhookEventListResponse struct {
-	HasMore    bool            `json:"has_more"`
-	Items      *[]WebhookEvent `json:"items,omitempty"`
-	NextCursor *string         `json:"next_cursor,omitempty"`
+// WebhookDeliveryListResponse defines model for WebhookDeliveryListResponse.
+type WebhookDeliveryListResponse struct {
+	// HasMore Whether additional pages are available.
+	HasMore bool `json:"has_more"`
+
+	// Items The list of results for this page.
+	Items *[]WebhookDelivery `json:"items,omitempty"`
+
+	// NextCursor Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.
+	NextCursor *string `json:"next_cursor,omitempty"`
 }
 
-// WebhookEventStatus defines model for WebhookEventStatus.
-type WebhookEventStatus string
+// WebhookDeliveryStatus `pending` — queued, not yet attempted.
+// `processing` — currently being delivered.
+// `delivered` — recipient returned 2xx.
+// `failed` — all retry attempts exhausted.
+type WebhookDeliveryStatus string
 
 // WebhookListResponse defines model for WebhookListResponse.
 type WebhookListResponse struct {
-	HasMore    bool       `json:"has_more"`
-	Items      *[]Webhook `json:"items,omitempty"`
-	NextCursor *string    `json:"next_cursor,omitempty"`
+	// HasMore Whether additional pages are available.
+	HasMore bool `json:"has_more"`
+
+	// Items The list of results for this page.
+	Items *[]Webhook `json:"items,omitempty"`
+
+	// NextCursor Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.
+	NextCursor *string `json:"next_cursor,omitempty"`
 }
 
 // Worker defines model for Worker.
 type Worker struct {
-	Capabilities *[]string  `json:"capabilities,omitempty"`
-	LastSeenAt   *time.Time `json:"last_seen_at,omitempty"`
-	Name         *string    `json:"name,omitempty"`
-	Stale        bool       `json:"stale"`
-	Version      *string    `json:"version,omitempty"`
-	WorkerId     string     `json:"worker_id"`
+	// Capabilities Reserved for future capability-based job routing. Not currently used for filtering.
+	Capabilities *[]string `json:"capabilities,omitempty"`
+
+	// LastSeenAt Timestamp of the worker's most recent job claim poll. Updated on
+	// every `POST /jobs/claim` call regardless of whether a job was
+	// returned. Used to compute `stale`.
+	LastSeenAt *time.Time `json:"last_seen_at,omitempty"`
+
+	// Name Optional human-readable name supplied in the claim request.
+	Name *string `json:"name,omitempty"`
+
+	// Stale True when `last_seen_at` is older than 2 minutes or absent.
+	// Computed at read time, not stored.
+	Stale bool `json:"stale"`
+
+	// Version Optional version string supplied in the claim request.
+	Version *string `json:"version,omitempty"`
+
+	// WorkerId Caller-assigned stable identifier for this worker process.
+	WorkerId string `json:"worker_id"`
 }
 
 // WorkerListResponse defines model for WorkerListResponse.
 type WorkerListResponse struct {
+	// Items The list of recently seen workers.
 	Items []Worker `json:"items"`
 }
 
@@ -2368,20 +3297,38 @@ type WorkflowActionKind string
 
 // WorkflowCatch defines model for WorkflowCatch.
 type WorkflowCatch struct {
+	// ErrorEquals Error class names this catch clause handles.
 	ErrorEquals []string `json:"error_equals"`
-	Next        string   `json:"next"`
-	Store       *string  `json:"store,omitempty"`
+
+	// Next Step name to transition to when this clause is matched.
+	Next string `json:"next"`
+
+	// Store State variable name where the caught error is stored.
+	Store *string `json:"store,omitempty"`
 }
 
 // WorkflowDefinition defines model for WorkflowDefinition.
 type WorkflowDefinition struct {
-	CreatedAt     time.Time `json:"created_at"`
-	CreatedBy     string    `json:"created_by"`
-	Description   *string   `json:"description,omitempty"`
-	Handle        string    `json:"handle"`
-	Id            string    `json:"id"`
-	LatestVersion int       `json:"latest_version"`
-	Name          string    `json:"name"`
+	// CreatedAt Timestamp when this workflow definition was created.
+	CreatedAt time.Time `json:"created_at"`
+
+	// CreatedBy User ID of the org member who created this workflow definition.
+	CreatedBy string `json:"created_by"`
+
+	// Description Optional description of the workflow's purpose.
+	Description *string `json:"description,omitempty"`
+
+	// Handle URL-safe slug, unique within the org. Used to reference this workflow in triggers and tools.
+	Handle string `json:"handle"`
+
+	// Id Unique identifier for this workflow definition.
+	Id string `json:"id"`
+
+	// LatestVersion The current highest version number. Starts at 1 and increments with each spec update.
+	LatestVersion int `json:"latest_version"`
+
+	// Name Human-readable workflow name.
+	Name string `json:"name"`
 
 	// PublishedAsTool When true, this workflow is exposed as a callable tool via /api/tools.
 	PublishedAsTool *bool `json:"published_as_tool,omitempty"`
@@ -2392,19 +3339,27 @@ type WorkflowDefinition struct {
 	// When `action_kind` is omitted, `action` uses worker/job semantics.
 	// Use `action_kind: "server"` for Mobius-managed server actions such as
 	// platform integrations or custom HTTP-backed actions.
-	Spec      *WorkflowSpec `json:"spec,omitempty"`
-	UpdatedAt time.Time     `json:"updated_at"`
+	Spec *WorkflowSpec `json:"spec,omitempty"`
+
+	// UpdatedAt Timestamp when this workflow definition was last updated.
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 // WorkflowDefinitionListResponse defines model for WorkflowDefinitionListResponse.
 type WorkflowDefinitionListResponse struct {
-	HasMore    bool                  `json:"has_more"`
-	Items      *[]WorkflowDefinition `json:"items,omitempty"`
-	NextCursor *string               `json:"next_cursor,omitempty"`
+	// HasMore Whether additional pages are available.
+	HasMore bool `json:"has_more"`
+
+	// Items The list of results for this page.
+	Items *[]WorkflowDefinition `json:"items,omitempty"`
+
+	// NextCursor Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.
+	NextCursor *string `json:"next_cursor,omitempty"`
 }
 
 // WorkflowEach defines model for WorkflowEach.
 type WorkflowEach struct {
+	// As Variable name bound to the current iteration element.
 	As *string `json:"as,omitempty"`
 
 	// Items Expression or literal collection to iterate over.
@@ -2413,9 +3368,14 @@ type WorkflowEach struct {
 
 // WorkflowEdge defines model for WorkflowEdge.
 type WorkflowEdge struct {
-	Branch    *string `json:"branch,omitempty"`
+	// Branch Branch name assigned to parallel execution started by this edge.
+	Branch *string `json:"branch,omitempty"`
+
+	// Condition Expression that must evaluate to true for this edge to be followed.
 	Condition *string `json:"condition,omitempty"`
-	Step      string  `json:"step"`
+
+	// Step Name of the step to transition to.
+	Step string `json:"step"`
 }
 
 // WorkflowEdgeMatchingStrategy defines model for WorkflowEdgeMatchingStrategy.
@@ -2430,31 +3390,58 @@ type WorkflowExecutableStep struct {
 
 	// ActionKind Execution mode for `action` steps.
 	// Omit for the current default of `worker`.
-	ActionKind           *WorkflowActionKind           `json:"action_kind,omitempty"`
-	Catch                *[]WorkflowCatch              `json:"catch,omitempty"`
+	ActionKind *WorkflowActionKind `json:"action_kind,omitempty"`
+
+	// Catch Error catch clauses that redirect execution on specific failures.
+	Catch *[]WorkflowCatch `json:"catch,omitempty"`
+
+	// Description Optional human-readable description of what this step does.
 	Description          *string                       `json:"description,omitempty"`
 	Each                 *WorkflowEach                 `json:"each,omitempty"`
 	EdgeMatchingStrategy *WorkflowEdgeMatchingStrategy `json:"edge_matching_strategy,omitempty"`
-	Name                 string                        `json:"name"`
-	Next                 *[]WorkflowEdge               `json:"next,omitempty"`
-	Parameters           *map[string]interface{}       `json:"parameters,omitempty"`
-	Retry                *[]WorkflowRetry              `json:"retry,omitempty"`
-	Store                *string                       `json:"store,omitempty"`
+
+	// Layout Optional presentation hint for the visual editor. Ignored by the
+	// execution engine; when absent, editors auto-lay out the step.
+	Layout *WorkflowStepLayout `json:"layout,omitempty"`
+
+	// Name Unique step name within the workflow, used for routing and logging.
+	Name string `json:"name"`
+
+	// Next Outbound edges controlling which step executes after this one.
+	Next *[]WorkflowEdge `json:"next,omitempty"`
+
+	// Parameters Input parameters passed to the action, supporting expression interpolation.
+	Parameters *map[string]interface{} `json:"parameters,omitempty"`
+
+	// Retry Retry policies applied when the action fails.
+	Retry *[]WorkflowRetry `json:"retry,omitempty"`
+
+	// Store State variable name where the action result is stored.
+	Store *string `json:"store,omitempty"`
 }
 
 // WorkflowInput defines model for WorkflowInput.
 type WorkflowInput struct {
 	// Default Optional default value.
-	Default     interface{} `json:"default,omitempty"`
-	Description *string     `json:"description,omitempty"`
-	Name        string      `json:"name"`
-	Type        string      `json:"type"`
+	Default interface{} `json:"default,omitempty"`
+
+	// Description Human-readable description of this input parameter.
+	Description *string `json:"description,omitempty"`
+
+	// Name Input parameter name referenced in step expressions.
+	Name string `json:"name"`
+
+	// Type Data type of the input (e.g. string, integer, boolean, object).
+	Type string `json:"type"`
 }
 
 // WorkflowInteractionConfig defines model for WorkflowInteractionConfig.
 type WorkflowInteractionConfig struct {
+	// Context Arbitrary key-value context passed alongside the interaction for rendering.
 	Context *map[string]interface{} `json:"context,omitempty"`
-	Message string                  `json:"message"`
+
+	// Message Prompt message shown to the interaction recipient.
+	Message string `json:"message"`
 
 	// Spec Declarative interaction UI contract embedded in a workflow definition.
 	// This mirrors the persisted interaction spec used at runtime and is
@@ -2463,18 +3450,25 @@ type WorkflowInteractionConfig struct {
 	Target WorkflowInteractionTarget `json:"target"`
 
 	// Timeout Go duration string.
-	Timeout string                        `json:"timeout"`
-	Type    WorkflowInteractionConfigType `json:"type"`
+	Timeout string `json:"timeout"`
+
+	// Type Interaction kind: approval requires a yes/no decision, review requests acknowledgement, input collects free-form data.
+	Type WorkflowInteractionConfigType `json:"type"`
 }
 
-// WorkflowInteractionConfigType defines model for WorkflowInteractionConfig.Type.
+// WorkflowInteractionConfigType Interaction kind: approval requires a yes/no decision, review requests acknowledgement, input collects free-form data.
 type WorkflowInteractionConfigType string
 
 // WorkflowInteractionOption defines model for WorkflowInteractionOption.
 type WorkflowInteractionOption struct {
+	// Description Optional supplementary text shown alongside the option.
 	Description *string `json:"description,omitempty"`
-	Label       string  `json:"label"`
-	Value       string  `json:"value"`
+
+	// Label Human-readable option label displayed to the recipient.
+	Label string `json:"label"`
+
+	// Value Machine-readable option value stored in the interaction response.
+	Value string `json:"value"`
 }
 
 // WorkflowInteractionSpec Declarative interaction UI contract embedded in a workflow definition.
@@ -2491,8 +3485,10 @@ type WorkflowInteractionSpec struct {
 	DefaultValue *string `json:"default_value,omitempty"`
 
 	// DefaultValues Default selected options for `multi_select` mode.
-	DefaultValues *[]string                   `json:"default_values,omitempty"`
-	Mode          WorkflowInteractionSpecMode `json:"mode"`
+	DefaultValues *[]string `json:"default_values,omitempty"`
+
+	// Mode UI rendering mode: confirm shows yes/no, select and multi_select show option lists, input shows a text field.
+	Mode WorkflowInteractionSpecMode `json:"mode"`
 
 	// Multiline When true, render `input` mode as a multiline text area.
 	Multiline *bool `json:"multiline,omitempty"`
@@ -2504,102 +3500,159 @@ type WorkflowInteractionSpec struct {
 	Placeholder *string `json:"placeholder,omitempty"`
 }
 
-// WorkflowInteractionSpecMode defines model for WorkflowInteractionSpec.Mode.
+// WorkflowInteractionSpecMode UI rendering mode: confirm shows yes/no, select and multi_select show option lists, input shows a text field.
 type WorkflowInteractionSpecMode string
 
 // WorkflowInteractionStep defines model for WorkflowInteractionStep.
 type WorkflowInteractionStep struct {
+	// Description Optional human-readable description of what this step does.
 	Description          *string                       `json:"description,omitempty"`
 	Each                 *WorkflowEach                 `json:"each,omitempty"`
 	EdgeMatchingStrategy *WorkflowEdgeMatchingStrategy `json:"edge_matching_strategy,omitempty"`
 	Interaction          WorkflowInteractionConfig     `json:"interaction"`
-	Name                 string                        `json:"name"`
-	Next                 *[]WorkflowEdge               `json:"next,omitempty"`
+
+	// Layout Optional presentation hint for the visual editor. Ignored by the
+	// execution engine; when absent, editors auto-lay out the step.
+	Layout *WorkflowStepLayout `json:"layout,omitempty"`
+
+	// Name Unique step name within the workflow, used for routing and logging.
+	Name string `json:"name"`
+
+	// Next Outbound edges controlling which step executes after this one.
+	Next *[]WorkflowEdge `json:"next,omitempty"`
 }
 
 // WorkflowInteractionTarget defines model for WorkflowInteractionTarget.
 type WorkflowInteractionTarget struct {
-	Id         string                        `json:"id"`
-	RequireAll *bool                         `json:"require_all,omitempty"`
-	Type       WorkflowInteractionTargetType `json:"type"`
+	// Id ID of the target user or group.
+	Id string `json:"id"`
+
+	// RequireAll When true, all group members must respond before the interaction completes.
+	RequireAll *bool `json:"require_all,omitempty"`
+
+	// Type Whether the target is an individual user or a group.
+	Type WorkflowInteractionTargetType `json:"type"`
 }
 
-// WorkflowInteractionTargetType defines model for WorkflowInteractionTarget.Type.
+// WorkflowInteractionTargetType Whether the target is an individual user or a group.
 type WorkflowInteractionTargetType string
 
-// WorkflowJoinConfig defines model for WorkflowJoinConfig.
+// WorkflowJoinConfig Waits for one or more parallel branches to complete before proceeding.
 type WorkflowJoinConfig struct {
+	// BranchMappings Maps branch names to variable names for storing per-branch results.
 	BranchMappings *map[string]string `json:"branch_mappings,omitempty"`
-	Branches       *[]string          `json:"branches,omitempty"`
-	Count          *int               `json:"count,omitempty"`
+
+	// Branches Branch names to wait for. Defaults to all branches if omitted.
+	Branches *[]string `json:"branches,omitempty"`
+
+	// Count Minimum number of branches that must complete. Defaults to all listed branches.
+	Count *int `json:"count,omitempty"`
 }
 
 // WorkflowJoinStep defines model for WorkflowJoinStep.
 type WorkflowJoinStep struct {
+	// Description Optional human-readable description of what this step does.
 	Description          *string                       `json:"description,omitempty"`
 	Each                 *WorkflowEach                 `json:"each,omitempty"`
 	EdgeMatchingStrategy *WorkflowEdgeMatchingStrategy `json:"edge_matching_strategy,omitempty"`
-	Join                 WorkflowJoinConfig            `json:"join"`
-	Name                 string                        `json:"name"`
-	Next                 *[]WorkflowEdge               `json:"next,omitempty"`
+
+	// Join Waits for one or more parallel branches to complete before proceeding.
+	Join WorkflowJoinConfig `json:"join"`
+
+	// Layout Optional presentation hint for the visual editor. Ignored by the
+	// execution engine; when absent, editors auto-lay out the step.
+	Layout *WorkflowStepLayout `json:"layout,omitempty"`
+
+	// Name Unique step name within the workflow, used for routing and logging.
+	Name string `json:"name"`
+
+	// Next Outbound edges controlling which step executes after this one.
+	Next *[]WorkflowEdge `json:"next,omitempty"`
 }
 
 // WorkflowOutput defines model for WorkflowOutput.
 type WorkflowOutput struct {
 	// Branch Defaults to `main` when omitted.
-	Branch      *string `json:"branch,omitempty"`
+	Branch *string `json:"branch,omitempty"`
+
+	// Description Human-readable description of this output value.
 	Description *string `json:"description,omitempty"`
-	Name        string  `json:"name"`
-	Variable    string  `json:"variable"`
+
+	// Name Output name exposed to callers and downstream steps.
+	Name string `json:"name"`
+
+	// Variable State variable name whose value is mapped to this output.
+	Variable string `json:"variable"`
 }
 
 // WorkflowPauseConfig defines model for WorkflowPauseConfig.
 type WorkflowPauseConfig struct {
+	// Reason Optional human-readable reason displayed when the run is paused.
 	Reason *string `json:"reason,omitempty"`
 }
 
 // WorkflowPauseStep defines model for WorkflowPauseStep.
 type WorkflowPauseStep struct {
+	// Description Optional human-readable description of what this step does.
 	Description          *string                       `json:"description,omitempty"`
 	Each                 *WorkflowEach                 `json:"each,omitempty"`
 	EdgeMatchingStrategy *WorkflowEdgeMatchingStrategy `json:"edge_matching_strategy,omitempty"`
-	Name                 string                        `json:"name"`
-	Next                 *[]WorkflowEdge               `json:"next,omitempty"`
-	Pause                WorkflowPauseConfig           `json:"pause"`
+
+	// Layout Optional presentation hint for the visual editor. Ignored by the
+	// execution engine; when absent, editors auto-lay out the step.
+	Layout *WorkflowStepLayout `json:"layout,omitempty"`
+
+	// Name Unique step name within the workflow, used for routing and logging.
+	Name string `json:"name"`
+
+	// Next Outbound edges controlling which step executes after this one.
+	Next  *[]WorkflowEdge     `json:"next,omitempty"`
+	Pause WorkflowPauseConfig `json:"pause"`
 }
 
 // WorkflowRetry defines model for WorkflowRetry.
 type WorkflowRetry struct {
+	// BackoffRate Exponential backoff multiplier applied to the delay after each attempt.
 	BackoffRate *float32 `json:"backoff_rate,omitempty"`
 
 	// BaseDelay Go duration string.
-	BaseDelay      *string                      `json:"base_delay,omitempty"`
-	ErrorEquals    *[]string                    `json:"error_equals,omitempty"`
+	BaseDelay *string `json:"base_delay,omitempty"`
+
+	// ErrorEquals Error class names this policy applies to. Retries all errors when omitted.
+	ErrorEquals *[]string `json:"error_equals,omitempty"`
+
+	// JitterStrategy Jitter strategy to apply to the computed delay: NONE or FULL.
 	JitterStrategy *WorkflowRetryJitterStrategy `json:"jitter_strategy,omitempty"`
 
 	// MaxDelay Go duration string.
-	MaxDelay   *string `json:"max_delay,omitempty"`
-	MaxRetries *int    `json:"max_retries,omitempty"`
+	MaxDelay *string `json:"max_delay,omitempty"`
+
+	// MaxRetries Maximum number of retry attempts. Zero disables retries.
+	MaxRetries *int `json:"max_retries,omitempty"`
 
 	// Timeout Go duration string.
 	Timeout *string `json:"timeout,omitempty"`
 }
 
-// WorkflowRetryJitterStrategy defines model for WorkflowRetry.JitterStrategy.
+// WorkflowRetryJitterStrategy Jitter strategy to apply to the computed delay: NONE or FULL.
 type WorkflowRetryJitterStrategy string
 
 // WorkflowRun defines model for WorkflowRun.
 type WorkflowRun struct {
-	ActorId   *string `json:"actor_id,omitempty"`
-	ActorType *string `json:"actor_type,omitempty"`
-	Attempt   int     `json:"attempt"`
+	// ActorId ID of the actor that started this run.
+	ActorId *string `json:"actor_id,omitempty"`
 
-	// CallbackUrl Outbound customer callback URL intended for terminal run
-	// notifications. The value is persisted on the run, but callback
-	// delivery is not yet active.
-	CallbackUrl *string    `json:"callback_url,omitempty"`
+	// ActorType Type of the actor that started this run (user, service_account, system).
+	ActorType *string `json:"actor_type,omitempty"`
+
+	// Attempt Retry attempt number (1-based). Increments each time the run is retried.
+	Attempt int `json:"attempt"`
+
+	// CompletedAt Timestamp when this run reached a terminal state.
 	CompletedAt *time.Time `json:"completed_at,omitempty"`
-	CreatedAt   time.Time  `json:"created_at"`
+
+	// CreatedAt Timestamp when this run was created.
+	CreatedAt time.Time `json:"created_at"`
 
 	// DefinitionId ID of the workflow definition this run was started from.
 	// Empty for ephemeral runs started from an inline spec.
@@ -2611,34 +3664,63 @@ type WorkflowRun struct {
 	// Ephemeral True when the run was started from an inline spec rather
 	// than a saved workflow definition. Equivalent to
 	// `definition_id == ""`.
-	Ephemeral    *bool                   `json:"ephemeral,omitempty"`
-	ErrorMessage *string                 `json:"error_message,omitempty"`
-	ExternalId   *string                 `json:"external_id,omitempty"`
-	Group        *string                 `json:"group,omitempty"`
-	Id           string                  `json:"id"`
-	InitiatedBy  *string                 `json:"initiated_by,omitempty"`
-	Inputs       *map[string]interface{} `json:"inputs,omitempty"`
-	Metadata     *map[string]string      `json:"metadata,omitempty"`
-	ParentRunId  *string                 `json:"parent_run_id,omitempty"`
-	Queue        *string                 `json:"queue,omitempty"`
-	StartedAt    *time.Time              `json:"started_at,omitempty"`
-	Status       WorkflowRunStatus       `json:"status"`
-	UpdatedAt    time.Time               `json:"updated_at"`
-	WorkflowName string                  `json:"workflow_name"`
+	Ephemeral *bool `json:"ephemeral,omitempty"`
+
+	// ErrorMessage Error message from the most recent failure. Present when status is failed.
+	ErrorMessage *string `json:"error_message,omitempty"`
+
+	// ExternalId Caller-supplied idempotency key or correlation ID.
+	ExternalId *string `json:"external_id,omitempty"`
+
+	// Id Unique identifier for this run.
+	Id string `json:"id"`
+
+	// InitiatedBy Human-readable label for the initiator (e.g. trigger name, API key name).
+	InitiatedBy *string `json:"initiated_by,omitempty"`
+
+	// Inputs Input values provided when the run was started.
+	Inputs *map[string]interface{} `json:"inputs,omitempty"`
+
+	// Metadata Caller-supplied string metadata attached to the run.
+	Metadata *map[string]string `json:"metadata,omitempty"`
+
+	// ParentRunId ID of the parent run, when this is a child run spawned by a fan-out step.
+	ParentRunId *string `json:"parent_run_id,omitempty"`
+
+	// Queue Queue this run was enqueued on.
+	Queue *string `json:"queue,omitempty"`
+
+	// StartedAt Timestamp when a worker first claimed this run.
+	StartedAt *time.Time `json:"started_at,omitempty"`
+
+	// Status Run lifecycle: `queued` → `running` → `completed` | `failed` | `suspended`.
+	// A `suspended` run is waiting on a signal or interaction; it resumes
+	// automatically when the signal is delivered or the interaction is responded to.
+	Status WorkflowRunStatus `json:"status"`
+
+	// UpdatedAt Timestamp when this run was last updated.
+	UpdatedAt time.Time `json:"updated_at"`
+
+	// WorkflowName Name of the workflow as recorded at run creation time.
+	WorkflowName string `json:"workflow_name"`
 }
 
 // WorkflowRunDetail defines model for WorkflowRunDetail.
 type WorkflowRunDetail struct {
-	ActorId   *string `json:"actor_id,omitempty"`
-	ActorType *string `json:"actor_type,omitempty"`
-	Attempt   int     `json:"attempt"`
+	// ActorId ID of the actor that started this run.
+	ActorId *string `json:"actor_id,omitempty"`
 
-	// CallbackUrl Outbound customer callback URL intended for terminal run
-	// notifications. The value is persisted on the run, but callback
-	// delivery is not yet active.
-	CallbackUrl *string    `json:"callback_url,omitempty"`
+	// ActorType Type of the actor that started this run (user, service_account, system).
+	ActorType *string `json:"actor_type,omitempty"`
+
+	// Attempt Retry attempt number (1-based). Increments each time the run is retried.
+	Attempt int `json:"attempt"`
+
+	// CompletedAt Timestamp when this run reached a terminal state.
 	CompletedAt *time.Time `json:"completed_at,omitempty"`
-	CreatedAt   time.Time  `json:"created_at"`
+
+	// CreatedAt Timestamp when this run was created.
+	CreatedAt time.Time `json:"created_at"`
 
 	// DefinitionId ID of the workflow definition this run was started from.
 	// Empty for ephemeral runs started from an inline spec.
@@ -2650,17 +3732,34 @@ type WorkflowRunDetail struct {
 	// Ephemeral True when the run was started from an inline spec rather
 	// than a saved workflow definition. Equivalent to
 	// `definition_id == ""`.
-	Ephemeral    *bool                   `json:"ephemeral,omitempty"`
-	ErrorMessage *string                 `json:"error_message,omitempty"`
-	ExternalId   *string                 `json:"external_id,omitempty"`
-	Group        *string                 `json:"group,omitempty"`
-	Id           string                  `json:"id"`
-	InitiatedBy  *string                 `json:"initiated_by,omitempty"`
-	Inputs       *map[string]interface{} `json:"inputs,omitempty"`
-	Jobs         *[]Job                  `json:"jobs,omitempty"`
-	Metadata     *map[string]string      `json:"metadata,omitempty"`
-	ParentRunId  *string                 `json:"parent_run_id,omitempty"`
-	Queue        *string                 `json:"queue,omitempty"`
+	Ephemeral *bool `json:"ephemeral,omitempty"`
+
+	// ErrorMessage Error message from the most recent failure. Present when status is failed.
+	ErrorMessage *string `json:"error_message,omitempty"`
+
+	// ExternalId Caller-supplied idempotency key or correlation ID.
+	ExternalId *string `json:"external_id,omitempty"`
+
+	// Id Unique identifier for this run.
+	Id string `json:"id"`
+
+	// InitiatedBy Human-readable label for the initiator (e.g. trigger name, API key name).
+	InitiatedBy *string `json:"initiated_by,omitempty"`
+
+	// Inputs Input values provided when the run was started.
+	Inputs *map[string]interface{} `json:"inputs,omitempty"`
+
+	// Jobs Jobs spawned by this run.
+	Jobs *[]Job `json:"jobs,omitempty"`
+
+	// Metadata Caller-supplied string metadata attached to the run.
+	Metadata *map[string]string `json:"metadata,omitempty"`
+
+	// ParentRunId ID of the parent run, when this is a child run spawned by a fan-out step.
+	ParentRunId *string `json:"parent_run_id,omitempty"`
+
+	// Queue Queue this run was enqueued on.
+	Queue *string `json:"queue,omitempty"`
 
 	// ResultB64 Base64-encoded terminal result blob
 	ResultB64 *string `json:"result_b64,omitempty"`
@@ -2671,25 +3770,39 @@ type WorkflowRunDetail struct {
 	// When `action_kind` is omitted, `action` uses worker/job semantics.
 	// Use `action_kind: "server"` for Mobius-managed server actions such as
 	// platform integrations or custom HTTP-backed actions.
-	Spec         *WorkflowSpec     `json:"spec,omitempty"`
-	StartedAt    *time.Time        `json:"started_at,omitempty"`
-	Status       WorkflowRunStatus `json:"status"`
-	UpdatedAt    time.Time         `json:"updated_at"`
-	WorkflowName string            `json:"workflow_name"`
+	Spec *WorkflowSpec `json:"spec,omitempty"`
+
+	// StartedAt Timestamp when a worker first claimed this run.
+	StartedAt *time.Time `json:"started_at,omitempty"`
+
+	// Status Run lifecycle: `queued` → `running` → `completed` | `failed` | `suspended`.
+	// A `suspended` run is waiting on a signal or interaction; it resumes
+	// automatically when the signal is delivered or the interaction is responded to.
+	Status WorkflowRunStatus `json:"status"`
+
+	// UpdatedAt Timestamp when this run was last updated.
+	UpdatedAt time.Time `json:"updated_at"`
+
+	// WorkflowName Name of the workflow as recorded at run creation time.
+	WorkflowName string `json:"workflow_name"`
 }
 
 // WorkflowRunListResponse defines model for WorkflowRunListResponse.
 type WorkflowRunListResponse struct {
 	// HasMore True when more pages are available.
-	HasMore bool           `json:"has_more"`
-	Items   *[]WorkflowRun `json:"items,omitempty"`
+	HasMore bool `json:"has_more"`
+
+	// Items The list of results for this page.
+	Items *[]WorkflowRun `json:"items,omitempty"`
 
 	// NextCursor Opaque cursor for fetching the next page. Present only when
 	// has_more is true.
 	NextCursor *string `json:"next_cursor,omitempty"`
 }
 
-// WorkflowRunStatus defines model for WorkflowRunStatus.
+// WorkflowRunStatus Run lifecycle: `queued` → `running` → `completed` | `failed` | `suspended`.
+// A `suspended` run is waiting on a signal or interaction; it resumes
+// automatically when the signal is delivered or the interaction is responded to.
 type WorkflowRunStatus string
 
 // WorkflowSleepConfig defines model for WorkflowSleepConfig.
@@ -2700,12 +3813,21 @@ type WorkflowSleepConfig struct {
 
 // WorkflowSleepStep defines model for WorkflowSleepStep.
 type WorkflowSleepStep struct {
+	// Description Optional human-readable description of what this step does.
 	Description          *string                       `json:"description,omitempty"`
 	Each                 *WorkflowEach                 `json:"each,omitempty"`
 	EdgeMatchingStrategy *WorkflowEdgeMatchingStrategy `json:"edge_matching_strategy,omitempty"`
-	Name                 string                        `json:"name"`
-	Next                 *[]WorkflowEdge               `json:"next,omitempty"`
-	Sleep                WorkflowSleepConfig           `json:"sleep"`
+
+	// Layout Optional presentation hint for the visual editor. Ignored by the
+	// execution engine; when absent, editors auto-lay out the step.
+	Layout *WorkflowStepLayout `json:"layout,omitempty"`
+
+	// Name Unique step name within the workflow, used for routing and logging.
+	Name string `json:"name"`
+
+	// Next Outbound edges controlling which step executes after this one.
+	Next  *[]WorkflowEdge     `json:"next,omitempty"`
+	Sleep WorkflowSleepConfig `json:"sleep"`
 }
 
 // WorkflowSpec Workflow definition shaped like `workflow.Options`.
@@ -2715,11 +3837,16 @@ type WorkflowSleepStep struct {
 // Use `action_kind: "server"` for Mobius-managed server actions such as
 // platform integrations or custom HTTP-backed actions.
 type WorkflowSpec struct {
-	Description *string          `json:"description,omitempty"`
-	Inputs      *[]WorkflowInput `json:"inputs,omitempty"`
+	// Description Optional description of the workflow's purpose.
+	Description *string `json:"description,omitempty"`
+
+	// Inputs Declared input parameters accepted by this workflow.
+	Inputs *[]WorkflowInput `json:"inputs,omitempty"`
 
 	// Name Workflow name.
-	Name    string            `json:"name"`
+	Name string `json:"name"`
+
+	// Outputs Declared output values produced by this workflow.
 	Outputs *[]WorkflowOutput `json:"outputs,omitempty"`
 
 	// StartAt Step name to start execution from. Defaults to the first step.
@@ -2727,7 +3854,9 @@ type WorkflowSpec struct {
 
 	// State Initial workflow state.
 	State *map[string]interface{} `json:"state,omitempty"`
-	Steps []WorkflowStep          `json:"steps"`
+
+	// Steps Ordered list of steps that make up this workflow.
+	Steps []WorkflowStep `json:"steps"`
 }
 
 // WorkflowStep A workflow step. Exactly one step shape should be used.
@@ -2737,17 +3866,42 @@ type WorkflowStep struct {
 
 // WorkflowStepBase defines model for WorkflowStepBase.
 type WorkflowStepBase struct {
+	// Description Optional human-readable description of what this step does.
 	Description          *string                       `json:"description,omitempty"`
 	Each                 *WorkflowEach                 `json:"each,omitempty"`
 	EdgeMatchingStrategy *WorkflowEdgeMatchingStrategy `json:"edge_matching_strategy,omitempty"`
-	Name                 string                        `json:"name"`
-	Next                 *[]WorkflowEdge               `json:"next,omitempty"`
+
+	// Layout Optional presentation hint for the visual editor. Ignored by the
+	// execution engine; when absent, editors auto-lay out the step.
+	Layout *WorkflowStepLayout `json:"layout,omitempty"`
+
+	// Name Unique step name within the workflow, used for routing and logging.
+	Name string `json:"name"`
+
+	// Next Outbound edges controlling which step executes after this one.
+	Next *[]WorkflowEdge `json:"next,omitempty"`
+}
+
+// WorkflowStepLayout Optional presentation hint for the visual editor. Ignored by the
+// execution engine; when absent, editors auto-lay out the step.
+type WorkflowStepLayout struct {
+	// X Horizontal position of the step in the editor canvas.
+	X *float32 `json:"x,omitempty"`
+
+	// Y Vertical position of the step in the editor canvas.
+	Y *float32 `json:"y,omitempty"`
 }
 
 // WorkflowVersion defines model for WorkflowVersion.
 type WorkflowVersion struct {
+	// CreatedAt Timestamp when this version was created.
 	CreatedAt time.Time `json:"created_at"`
-	CreatedBy string    `json:"created_by"`
+
+	// CreatedBy User ID of the org member who created this version.
+	CreatedBy string `json:"created_by"`
+
+	// Id Unique identifier for this workflow version.
+	Id string `json:"id"`
 
 	// Spec Workflow definition shaped like `workflow.Options`.
 	//
@@ -2755,33 +3909,52 @@ type WorkflowVersion struct {
 	// When `action_kind` is omitted, `action` uses worker/job semantics.
 	// Use `action_kind: "server"` for Mobius-managed server actions such as
 	// platform integrations or custom HTTP-backed actions.
-	Spec    *WorkflowSpec `json:"spec,omitempty"`
-	Version int           `json:"version"`
+	Spec *WorkflowSpec `json:"spec,omitempty"`
+
+	// Version Monotonically increasing version number. Starts at 1.
+	Version int `json:"version"`
 }
 
 // WorkflowVersionListResponse defines model for WorkflowVersionListResponse.
 type WorkflowVersionListResponse struct {
+	// Items The list of workflow versions, newest first.
 	Items []WorkflowVersion `json:"items"`
 }
 
-// WorkflowWaitSignalConfig defines model for WorkflowWaitSignalConfig.
+// WorkflowWaitSignalConfig Suspends the run until a signal with the matching topic arrives.
 type WorkflowWaitSignalConfig struct {
+	// OnTimeout Step name to transition to if the timeout elapses without a signal. Fails the run if omitted.
 	OnTimeout *string `json:"on_timeout,omitempty"`
-	Store     *string `json:"store,omitempty"`
 
-	// Timeout Go duration string.
+	// Store Variable name to store the signal payload in after resumption.
+	Store *string `json:"store,omitempty"`
+
+	// Timeout Maximum wait duration as a Go duration string (e.g. "24h", "30m").
 	Timeout string `json:"timeout"`
-	Topic   string `json:"topic"`
+
+	// Topic Signal topic to wait on. Must match the `name` field in POST /runs/{id}/signals.
+	Topic string `json:"topic"`
 }
 
 // WorkflowWaitSignalStep defines model for WorkflowWaitSignalStep.
 type WorkflowWaitSignalStep struct {
+	// Description Optional human-readable description of what this step does.
 	Description          *string                       `json:"description,omitempty"`
 	Each                 *WorkflowEach                 `json:"each,omitempty"`
 	EdgeMatchingStrategy *WorkflowEdgeMatchingStrategy `json:"edge_matching_strategy,omitempty"`
-	Name                 string                        `json:"name"`
-	Next                 *[]WorkflowEdge               `json:"next,omitempty"`
-	WaitSignal           WorkflowWaitSignalConfig      `json:"wait_signal"`
+
+	// Layout Optional presentation hint for the visual editor. Ignored by the
+	// execution engine; when absent, editors auto-lay out the step.
+	Layout *WorkflowStepLayout `json:"layout,omitempty"`
+
+	// Name Unique step name within the workflow, used for routing and logging.
+	Name string `json:"name"`
+
+	// Next Outbound edges controlling which step executes after this one.
+	Next *[]WorkflowEdge `json:"next,omitempty"`
+
+	// WaitSignal Suspends the run until a signal with the matching topic arrives.
+	WaitSignal WorkflowWaitSignalConfig `json:"wait_signal"`
 }
 
 // ActionNameParam defines model for ActionNameParam.
@@ -2807,6 +3980,9 @@ type BadRequest = ErrorResponse
 
 // Conflict defines model for Conflict.
 type Conflict = ErrorResponse
+
+// Forbidden defines model for Forbidden.
+type Forbidden = ErrorResponse
 
 // NotFound defines model for NotFound.
 type NotFound = ErrorResponse
@@ -2852,6 +4028,7 @@ type ListAuditLogsParams struct {
 
 // ListProjectsParams defines parameters for ListProjects.
 type ListProjectsParams struct {
+	// Search Prefix-match filter applied to project name and handle.
 	Search *string `form:"search,omitempty" json:"search,omitempty"`
 }
 
@@ -2861,10 +4038,16 @@ type ListActionAuditLogParams struct {
 	Cursor *CursorParam `form:"cursor,omitempty" json:"cursor,omitempty"`
 
 	// Limit Maximum number of items to return
-	Limit      *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
-	RunId      *string     `form:"run_id,omitempty" json:"run_id,omitempty"`
-	ActionName *string     `form:"action_name,omitempty" json:"action_name,omitempty"`
-	Status     *string     `form:"status,omitempty" json:"status,omitempty"`
+	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// RunId Filter to invocations from a specific workflow run.
+	RunId *string `form:"run_id,omitempty" json:"run_id,omitempty"`
+
+	// ActionName Filter to invocations of a specific action.
+	ActionName *string `form:"action_name,omitempty" json:"action_name,omitempty"`
+
+	// Status Filter by terminal status (e.g. "success", "failed").
+	Status *string `form:"status,omitempty" json:"status,omitempty"`
 }
 
 // ListActionsParams defines parameters for ListActions.
@@ -2878,8 +4061,11 @@ type ListActionsParams struct {
 
 // ListAgentsParams defines parameters for ListAgents.
 type ListAgentsParams struct {
-	ServiceAccountId *string      `form:"service_account_id,omitempty" json:"service_account_id,omitempty"`
-	Status           *AgentStatus `form:"status,omitempty" json:"status,omitempty"`
+	// ServiceAccountId Filter to agents backed by this service account.
+	ServiceAccountId *string `form:"service_account_id,omitempty" json:"service_account_id,omitempty"`
+
+	// Status Filter by administrative status (active/inactive), independent of presence.
+	Status *AgentStatus `form:"status,omitempty" json:"status,omitempty"`
 
 	// Limit Maximum number of items to return
 	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
@@ -2887,8 +4073,11 @@ type ListAgentsParams struct {
 
 // ListAgentSessionsParams defines parameters for ListAgentSessions.
 type ListAgentSessionsParams struct {
-	Status    *AgentSessionStatus `form:"status,omitempty" json:"status,omitempty"`
-	Transport *string             `form:"transport,omitempty" json:"transport,omitempty"`
+	// Status Filter by session status.
+	Status *AgentSessionStatus `form:"status,omitempty" json:"status,omitempty"`
+
+	// Transport Filter by transport type (e.g. "sse", "polling").
+	Transport *string `form:"transport,omitempty" json:"transport,omitempty"`
 
 	// Limit Maximum number of items to return
 	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
@@ -2896,10 +4085,10 @@ type ListAgentSessionsParams struct {
 
 // ListChannelsParams defines parameters for ListChannels.
 type ListChannelsParams struct {
-	// Kind Filter by channel kind
+	// Kind Filter by channel kind.
 	Kind *ListChannelsParamsKind `form:"kind,omitempty" json:"kind,omitempty"`
 
-	// Private Filter by private flag
+	// Private Filter by private flag.
 	Private *bool `form:"private,omitempty" json:"private,omitempty"`
 
 	// Cursor Cursor for pagination (opaque string from previous response)
@@ -2923,13 +4112,13 @@ type ListChannelMembersParams struct {
 
 // ListChannelMessagesParams defines parameters for ListChannelMessages.
 type ListChannelMessagesParams struct {
-	// SenderId Filter by sender
+	// SenderId Filter by sender user or agent ID.
 	SenderId *string `form:"sender_id,omitempty" json:"sender_id,omitempty"`
 
-	// ReplyTo Filter to replies of a specific message
+	// ReplyTo Return only replies to this message ID (thread view).
 	ReplyTo *string `form:"reply_to,omitempty" json:"reply_to,omitempty"`
 
-	// Pinned Filter by pinned status
+	// Pinned Filter by pinned status.
 	Pinned *bool `form:"pinned,omitempty" json:"pinned,omitempty"`
 
 	// Cursor Cursor for pagination (opaque string from previous response)
@@ -2959,10 +4148,17 @@ type ListGroupMembersParams struct {
 
 // ListIntegrationsParams defines parameters for ListIntegrations.
 type ListIntegrationsParams struct {
-	Provider *string            `form:"provider,omitempty" json:"provider,omitempty"`
-	Status   *IntegrationStatus `form:"status,omitempty" json:"status,omitempty"`
-	Cursor   *string            `form:"cursor,omitempty" json:"cursor,omitempty"`
-	Limit    *int               `form:"limit,omitempty" json:"limit,omitempty"`
+	// Provider Filter by provider string (exact match).
+	Provider *string `form:"provider,omitempty" json:"provider,omitempty"`
+
+	// Status Filter by integration status.
+	Status *IntegrationStatus `form:"status,omitempty" json:"status,omitempty"`
+
+	// Cursor Opaque pagination cursor returned from the previous response.
+	Cursor *string `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Limit Maximum number of results to return per page.
+	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
 // ListInteractionsParams defines parameters for ListInteractions.
@@ -2997,13 +4193,23 @@ type ListInteractionsParamsTargetActorType string
 
 // ListRunsParams defines parameters for ListRuns.
 type ListRunsParams struct {
-	Status       *WorkflowRunStatus `form:"status,omitempty" json:"status,omitempty"`
-	WorkflowType *string            `form:"workflow_type,omitempty" json:"workflow_type,omitempty"`
-	Queue        *string            `form:"queue,omitempty" json:"queue,omitempty"`
-	ParentRunId  *string            `form:"parent_run_id,omitempty" json:"parent_run_id,omitempty"`
-	InitiatedBy  *string            `form:"initiated_by,omitempty" json:"initiated_by,omitempty"`
-	ExternalId   *string            `form:"external_id,omitempty" json:"external_id,omitempty"`
-	Group        *string            `form:"group,omitempty" json:"group,omitempty"`
+	// Status Filter by run status.
+	Status *WorkflowRunStatus `form:"status,omitempty" json:"status,omitempty"`
+
+	// WorkflowType Filter by workflow type name.
+	WorkflowType *string `form:"workflow_type,omitempty" json:"workflow_type,omitempty"`
+
+	// Queue Filter by queue name.
+	Queue *string `form:"queue,omitempty" json:"queue,omitempty"`
+
+	// ParentRunId Filter to child runs of the specified parent run.
+	ParentRunId *string `form:"parent_run_id,omitempty" json:"parent_run_id,omitempty"`
+
+	// InitiatedBy Filter by the initiator label (e.g. trigger name, API key name).
+	InitiatedBy *string `form:"initiated_by,omitempty" json:"initiated_by,omitempty"`
+
+	// ExternalId Filter by caller-supplied external ID or correlation key.
+	ExternalId *string `form:"external_id,omitempty" json:"external_id,omitempty"`
 
 	// Cursor Cursor for pagination (opaque string from previous response)
 	Cursor *CursorParam `form:"cursor,omitempty" json:"cursor,omitempty"`
@@ -3026,37 +4232,59 @@ type StreamRunEventsParams struct {
 
 // ListTriggersParams defines parameters for ListTriggers.
 type ListTriggersParams struct {
-	Kind    *TriggerKind `form:"kind,omitempty" json:"kind,omitempty"`
-	Enabled *bool        `form:"enabled,omitempty" json:"enabled,omitempty"`
-	Cursor  *string      `form:"cursor,omitempty" json:"cursor,omitempty"`
-	Limit   *int         `form:"limit,omitempty" json:"limit,omitempty"`
+	// Kind Filter by trigger kind.
+	Kind *TriggerKind `form:"kind,omitempty" json:"kind,omitempty"`
+
+	// Enabled Filter to enabled or disabled triggers.
+	Enabled *bool `form:"enabled,omitempty" json:"enabled,omitempty"`
+
+	// Cursor Opaque pagination cursor returned from the previous response.
+	Cursor *string `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Limit Maximum number of results to return per page.
+	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
 // ListTriggerFiresParams defines parameters for ListTriggerFires.
 type ListTriggerFiresParams struct {
+	// Status Filter by fire outcome.
 	Status *TriggerFireStatus `form:"status,omitempty" json:"status,omitempty"`
-	Cursor *string            `form:"cursor,omitempty" json:"cursor,omitempty"`
-	Limit  *int               `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Cursor Opaque pagination cursor returned from the previous response.
+	Cursor *string `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Limit Maximum number of results to return per page.
+	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
 // ListWebhooksParams defines parameters for ListWebhooks.
 type ListWebhooksParams struct {
-	Enabled *bool   `form:"enabled,omitempty" json:"enabled,omitempty"`
-	Cursor  *string `form:"cursor,omitempty" json:"cursor,omitempty"`
-	Limit   *int    `form:"limit,omitempty" json:"limit,omitempty"`
+	// Enabled Filter by enabled/disabled state.
+	Enabled *bool `form:"enabled,omitempty" json:"enabled,omitempty"`
+
+	// Cursor Opaque pagination cursor returned from the previous response.
+	Cursor *string `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Limit Maximum number of results to return per page.
+	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
-// ListWebhookEventsParams defines parameters for ListWebhookEvents.
-type ListWebhookEventsParams struct {
-	Status *WebhookEventStatus `form:"status,omitempty" json:"status,omitempty"`
-	Cursor *string             `form:"cursor,omitempty" json:"cursor,omitempty"`
-	Limit  *int                `form:"limit,omitempty" json:"limit,omitempty"`
+// ListWebhookDeliveriesParams defines parameters for ListWebhookDeliveries.
+type ListWebhookDeliveriesParams struct {
+	// Cursor Opaque pagination cursor returned from the previous response.
+	Cursor *string `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Limit Maximum number of results to return per page.
+	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
 // ListWorkflowsParams defines parameters for ListWorkflows.
 type ListWorkflowsParams struct {
+	// Cursor Opaque pagination cursor returned from the previous response.
 	Cursor *string `form:"cursor,omitempty" json:"cursor,omitempty"`
-	Limit  *int    `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Limit Maximum number of results to return per page.
+	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
 // ListWorkflowVersionsParams defines parameters for ListWorkflowVersions.
@@ -3065,19 +4293,19 @@ type ListWorkflowVersionsParams struct {
 	IncludeSpec *bool `form:"include_spec,omitempty" json:"include_spec,omitempty"`
 }
 
-// SlackOAuthCallbackParams defines parameters for SlackOAuthCallback.
-type SlackOAuthCallbackParams struct {
-	Code  *string `form:"code,omitempty" json:"code,omitempty"`
-	State *string `form:"state,omitempty" json:"state,omitempty"`
-	Error *string `form:"error,omitempty" json:"error,omitempty"`
-}
-
 // ListRoleAssignmentsParams defines parameters for ListRoleAssignments.
 type ListRoleAssignmentsParams struct {
+	// ActorType Filter by the type of actor receiving the assignment.
 	ActorType *ListRoleAssignmentsParamsActorType `form:"actor_type,omitempty" json:"actor_type,omitempty"`
-	ActorId   *string                             `form:"actor_id,omitempty" json:"actor_id,omitempty"`
-	RoleId    *string                             `form:"role_id,omitempty" json:"role_id,omitempty"`
-	ProjectId *string                             `form:"project_id,omitempty" json:"project_id,omitempty"`
+
+	// ActorId Filter to assignments for a specific actor.
+	ActorId *string `form:"actor_id,omitempty" json:"actor_id,omitempty"`
+
+	// RoleId Filter to assignments for a specific role.
+	RoleId *string `form:"role_id,omitempty" json:"role_id,omitempty"`
+
+	// ProjectId Filter to project-scoped assignments for this project.
+	ProjectId *string `form:"project_id,omitempty" json:"project_id,omitempty"`
 }
 
 // ListRoleAssignmentsParamsActorType defines parameters for ListRoleAssignments.
@@ -3085,22 +4313,28 @@ type ListRoleAssignmentsParamsActorType string
 
 // ListRolesParams defines parameters for ListRoles.
 type ListRolesParams struct {
-	Limit     *int    `form:"limit,omitempty" json:"limit,omitempty"`
+	// Limit Maximum number of results to return per page.
+	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// ProjectId Filter to roles scoped to a specific project.
 	ProjectId *string `form:"project_id,omitempty" json:"project_id,omitempty"`
 }
 
 // DeleteRoleParams defines parameters for DeleteRole.
 type DeleteRoleParams struct {
+	// ProjectId Scope to change this role to. Cannot change an org-scoped role to project-scoped after creation.
 	ProjectId *string `form:"project_id,omitempty" json:"project_id,omitempty"`
 }
 
 // GetRoleParams defines parameters for GetRole.
 type GetRoleParams struct {
+	// ProjectId Provide to resolve a project-scoped role.
 	ProjectId *string `form:"project_id,omitempty" json:"project_id,omitempty"`
 }
 
 // UpdateRoleParams defines parameters for UpdateRole.
 type UpdateRoleParams struct {
+	// ProjectId Scope to change this role to. Cannot change an org-scoped role to project-scoped after creation.
 	ProjectId *string `form:"project_id,omitempty" json:"project_id,omitempty"`
 }
 
@@ -4010,12 +5244,6 @@ type ClientInterface interface {
 
 	CopyIntegration(ctx context.Context, project ProjectHandleParam, body CopyIntegrationJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// StartSlackInstall request
-	StartSlackInstall(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// DisconnectSlack request
-	DisconnectSlack(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*http.Response, error)
-
 	// DeleteIntegration request
 	DeleteIntegration(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -4129,6 +5357,9 @@ type ClientInterface interface {
 
 	SendRunSignal(ctx context.Context, project ProjectHandleParam, id IDParam, body SendRunSignalJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ListTools request
+	ListTools(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// RunToolWithBody request with any body
 	RunToolWithBody(ctx context.Context, project ProjectHandleParam, handle string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -4178,8 +5409,8 @@ type ClientInterface interface {
 
 	UpdateWebhook(ctx context.Context, project ProjectHandleParam, id IDParam, body UpdateWebhookJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListWebhookEvents request
-	ListWebhookEvents(ctx context.Context, project ProjectHandleParam, id IDParam, params *ListWebhookEventsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// ListWebhookDeliveries request
+	ListWebhookDeliveries(ctx context.Context, project ProjectHandleParam, id IDParam, params *ListWebhookDeliveriesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListWorkers request
 	ListWorkers(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -4214,18 +5445,6 @@ type ClientInterface interface {
 	// ListWorkflowVersions request
 	ListWorkflowVersions(ctx context.Context, project ProjectHandleParam, id IDParam, params *ListWorkflowVersionsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// HandleSlackCommands request
-	HandleSlackCommands(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// HandleSlackEvents request
-	HandleSlackEvents(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// HandleSlackInteract request
-	HandleSlackInteract(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// SlackOAuthCallback request
-	SlackOAuthCallback(ctx context.Context, params *SlackOAuthCallbackParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
 	// ListRoleAssignments request
 	ListRoleAssignments(ctx context.Context, params *ListRoleAssignmentsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -4255,9 +5474,6 @@ type ClientInterface interface {
 	UpdateRoleWithBody(ctx context.Context, id IDParam, params *UpdateRoleParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	UpdateRole(ctx context.Context, id IDParam, params *UpdateRoleParams, body UpdateRoleJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// ListTools request
-	ListTools(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
 func (c *Client) ListAPIKeys(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -5160,30 +6376,6 @@ func (c *Client) CopyIntegration(ctx context.Context, project ProjectHandleParam
 	return c.Client.Do(req)
 }
 
-func (c *Client) StartSlackInstall(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewStartSlackInstallRequest(c.Server, project)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) DisconnectSlack(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDisconnectSlackRequest(c.Server, project)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
 func (c *Client) DeleteIntegration(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewDeleteIntegrationRequest(c.Server, project, id)
 	if err != nil {
@@ -5688,6 +6880,18 @@ func (c *Client) SendRunSignal(ctx context.Context, project ProjectHandleParam, 
 	return c.Client.Do(req)
 }
 
+func (c *Client) ListTools(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListToolsRequest(c.Server, project)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) RunToolWithBody(ctx context.Context, project ProjectHandleParam, handle string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewRunToolRequestWithBody(c.Server, project, handle, contentType, body)
 	if err != nil {
@@ -5904,8 +7108,8 @@ func (c *Client) UpdateWebhook(ctx context.Context, project ProjectHandleParam, 
 	return c.Client.Do(req)
 }
 
-func (c *Client) ListWebhookEvents(ctx context.Context, project ProjectHandleParam, id IDParam, params *ListWebhookEventsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListWebhookEventsRequest(c.Server, project, id, params)
+func (c *Client) ListWebhookDeliveries(ctx context.Context, project ProjectHandleParam, id IDParam, params *ListWebhookDeliveriesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListWebhookDeliveriesRequest(c.Server, project, id, params)
 	if err != nil {
 		return nil, err
 	}
@@ -6060,54 +7264,6 @@ func (c *Client) ListWorkflowVersions(ctx context.Context, project ProjectHandle
 	return c.Client.Do(req)
 }
 
-func (c *Client) HandleSlackCommands(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewHandleSlackCommandsRequest(c.Server)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) HandleSlackEvents(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewHandleSlackEventsRequest(c.Server)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) HandleSlackInteract(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewHandleSlackInteractRequest(c.Server)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) SlackOAuthCallback(ctx context.Context, params *SlackOAuthCallbackParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewSlackOAuthCallbackRequest(c.Server, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
 func (c *Client) ListRoleAssignments(ctx context.Context, params *ListRoleAssignmentsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListRoleAssignmentsRequest(c.Server, params)
 	if err != nil {
@@ -6230,18 +7386,6 @@ func (c *Client) UpdateRoleWithBody(ctx context.Context, id IDParam, params *Upd
 
 func (c *Client) UpdateRole(ctx context.Context, id IDParam, params *UpdateRoleParams, body UpdateRoleJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewUpdateRoleRequest(c.Server, id, params, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) ListTools(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListToolsRequest(c.Server)
 	if err != nil {
 		return nil, err
 	}
@@ -9389,74 +10533,6 @@ func NewCopyIntegrationRequestWithBody(server string, project ProjectHandleParam
 	return req, nil
 }
 
-// NewStartSlackInstallRequest generates requests for StartSlackInstall
-func NewStartSlackInstallRequest(server string, project ProjectHandleParam) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/projects/%s/integrations/slack/connect", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("POST", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewDisconnectSlackRequest generates requests for DisconnectSlack
-func NewDisconnectSlackRequest(server string, project ProjectHandleParam) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/projects/%s/integrations/slack/disconnect", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("POST", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
 // NewDeleteIntegrationRequest generates requests for DeleteIntegration
 func NewDeleteIntegrationRequest(server string, project ProjectHandleParam, id IDParam) (*http.Request, error) {
 	var err error
@@ -10493,22 +11569,6 @@ func NewListRunsRequest(server string, project ProjectHandleParam, params *ListR
 
 		}
 
-		if params.Group != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "group", *params.Group, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-				return nil, err
-			} else {
-				for k, v := range parsed {
-					for _, v2 := range v {
-						queryValues.Add(k, v2)
-					}
-				}
-			}
-
-		}
-
 		if params.Cursor != nil {
 
 			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "cursor", *params.Cursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
@@ -11067,6 +12127,40 @@ func NewSendRunSignalRequestWithBody(server string, project ProjectHandleParam, 
 	}
 
 	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewListToolsRequest generates requests for ListTools
+func NewListToolsRequest(server string, project ProjectHandleParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/projects/%s/tools", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
 
 	return req, nil
 }
@@ -11826,8 +12920,8 @@ func NewUpdateWebhookRequestWithBody(server string, project ProjectHandleParam, 
 	return req, nil
 }
 
-// NewListWebhookEventsRequest generates requests for ListWebhookEvents
-func NewListWebhookEventsRequest(server string, project ProjectHandleParam, id IDParam, params *ListWebhookEventsParams) (*http.Request, error) {
+// NewListWebhookDeliveriesRequest generates requests for ListWebhookDeliveries
+func NewListWebhookDeliveriesRequest(server string, project ProjectHandleParam, id IDParam, params *ListWebhookDeliveriesParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -11849,7 +12943,7 @@ func NewListWebhookEventsRequest(server string, project ProjectHandleParam, id I
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/webhooks/%s/events", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/projects/%s/webhooks/%s/deliveries", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -11861,22 +12955,6 @@ func NewListWebhookEventsRequest(server string, project ProjectHandleParam, id I
 
 	if params != nil {
 		queryValues := queryURL.Query()
-
-		if params.Status != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "status", *params.Status, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-				return nil, err
-			} else {
-				for k, v := range parsed {
-					for _, v2 := range v {
-						queryValues.Add(k, v2)
-					}
-				}
-			}
-
-		}
 
 		if params.Cursor != nil {
 
@@ -12368,168 +13446,6 @@ func NewListWorkflowVersionsRequest(server string, project ProjectHandleParam, i
 	return req, nil
 }
 
-// NewHandleSlackCommandsRequest generates requests for HandleSlackCommands
-func NewHandleSlackCommandsRequest(server string) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/provider/slack/commands")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("POST", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewHandleSlackEventsRequest generates requests for HandleSlackEvents
-func NewHandleSlackEventsRequest(server string) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/provider/slack/events")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("POST", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewHandleSlackInteractRequest generates requests for HandleSlackInteract
-func NewHandleSlackInteractRequest(server string) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/provider/slack/interactions")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("POST", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewSlackOAuthCallbackRequest generates requests for SlackOAuthCallback
-func NewSlackOAuthCallbackRequest(server string, params *SlackOAuthCallbackParams) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/provider/slack/oauth/callback")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		queryValues := queryURL.Query()
-
-		if params.Code != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "code", *params.Code, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-				return nil, err
-			} else {
-				for k, v := range parsed {
-					for _, v2 := range v {
-						queryValues.Add(k, v2)
-					}
-				}
-			}
-
-		}
-
-		if params.State != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "state", *params.State, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-				return nil, err
-			} else {
-				for k, v := range parsed {
-					for _, v2 := range v {
-						queryValues.Add(k, v2)
-					}
-				}
-			}
-
-		}
-
-		if params.Error != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "error", *params.Error, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-				return nil, err
-			} else {
-				for k, v := range parsed {
-					for _, v2 := range v {
-						queryValues.Add(k, v2)
-					}
-				}
-			}
-
-		}
-
-		queryURL.RawQuery = queryValues.Encode()
-	}
-
-	req, err := http.NewRequest("GET", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
 // NewListRoleAssignmentsRequest generates requests for ListRoleAssignments
 func NewListRoleAssignmentsRequest(server string, params *ListRoleAssignmentsParams) (*http.Request, error) {
 	var err error
@@ -12987,33 +13903,6 @@ func NewUpdateRoleRequestWithBody(server string, id IDParam, params *UpdateRoleP
 	return req, nil
 }
 
-// NewListToolsRequest generates requests for ListTools
-func NewListToolsRequest(server string) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/tools")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("GET", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
 func (c *Client) applyEditors(ctx context.Context, req *http.Request, additionalEditors []RequestEditorFn) error {
 	for _, r := range c.RequestEditors {
 		if err := r(ctx, req); err != nil {
@@ -13263,12 +14152,6 @@ type ClientWithResponsesInterface interface {
 
 	CopyIntegrationWithResponse(ctx context.Context, project ProjectHandleParam, body CopyIntegrationJSONRequestBody, reqEditors ...RequestEditorFn) (*CopyIntegrationResponse, error)
 
-	// StartSlackInstallWithResponse request
-	StartSlackInstallWithResponse(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*StartSlackInstallResponse, error)
-
-	// DisconnectSlackWithResponse request
-	DisconnectSlackWithResponse(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*DisconnectSlackResponse, error)
-
 	// DeleteIntegrationWithResponse request
 	DeleteIntegrationWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*DeleteIntegrationResponse, error)
 
@@ -13382,6 +14265,9 @@ type ClientWithResponsesInterface interface {
 
 	SendRunSignalWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body SendRunSignalJSONRequestBody, reqEditors ...RequestEditorFn) (*SendRunSignalResponse, error)
 
+	// ListToolsWithResponse request
+	ListToolsWithResponse(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*ListToolsResponse, error)
+
 	// RunToolWithBodyWithResponse request with any body
 	RunToolWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, handle string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RunToolResponse, error)
 
@@ -13431,8 +14317,8 @@ type ClientWithResponsesInterface interface {
 
 	UpdateWebhookWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body UpdateWebhookJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateWebhookResponse, error)
 
-	// ListWebhookEventsWithResponse request
-	ListWebhookEventsWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, params *ListWebhookEventsParams, reqEditors ...RequestEditorFn) (*ListWebhookEventsResponse, error)
+	// ListWebhookDeliveriesWithResponse request
+	ListWebhookDeliveriesWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, params *ListWebhookDeliveriesParams, reqEditors ...RequestEditorFn) (*ListWebhookDeliveriesResponse, error)
 
 	// ListWorkersWithResponse request
 	ListWorkersWithResponse(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*ListWorkersResponse, error)
@@ -13467,18 +14353,6 @@ type ClientWithResponsesInterface interface {
 	// ListWorkflowVersionsWithResponse request
 	ListWorkflowVersionsWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, params *ListWorkflowVersionsParams, reqEditors ...RequestEditorFn) (*ListWorkflowVersionsResponse, error)
 
-	// HandleSlackCommandsWithResponse request
-	HandleSlackCommandsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*HandleSlackCommandsResponse, error)
-
-	// HandleSlackEventsWithResponse request
-	HandleSlackEventsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*HandleSlackEventsResponse, error)
-
-	// HandleSlackInteractWithResponse request
-	HandleSlackInteractWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*HandleSlackInteractResponse, error)
-
-	// SlackOAuthCallbackWithResponse request
-	SlackOAuthCallbackWithResponse(ctx context.Context, params *SlackOAuthCallbackParams, reqEditors ...RequestEditorFn) (*SlackOAuthCallbackResponse, error)
-
 	// ListRoleAssignmentsWithResponse request
 	ListRoleAssignmentsWithResponse(ctx context.Context, params *ListRoleAssignmentsParams, reqEditors ...RequestEditorFn) (*ListRoleAssignmentsResponse, error)
 
@@ -13508,9 +14382,6 @@ type ClientWithResponsesInterface interface {
 	UpdateRoleWithBodyWithResponse(ctx context.Context, id IDParam, params *UpdateRoleParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateRoleResponse, error)
 
 	UpdateRoleWithResponse(ctx context.Context, id IDParam, params *UpdateRoleParams, body UpdateRoleJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateRoleResponse, error)
-
-	// ListToolsWithResponse request
-	ListToolsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListToolsResponse, error)
 }
 
 type ListAPIKeysResponse struct {
@@ -14858,52 +15729,6 @@ func (r CopyIntegrationResponse) StatusCode() int {
 	return 0
 }
 
-type StartSlackInstallResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *SlackInstall
-	JSON401      *Unauthorized
-}
-
-// Status returns HTTPResponse.Status
-func (r StartSlackInstallResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r StartSlackInstallResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type DisconnectSlackResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON401      *Unauthorized
-	JSON404      *NotFound
-}
-
-// Status returns HTTPResponse.Status
-func (r DisconnectSlackResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r DisconnectSlackResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
 type DeleteIntegrationResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -15608,6 +16433,30 @@ func (r SendRunSignalResponse) StatusCode() int {
 	return 0
 }
 
+type ListToolsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ToolDefinitionListResponse
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r ListToolsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListToolsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type RunToolResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -15925,16 +16774,16 @@ func (r UpdateWebhookResponse) StatusCode() int {
 	return 0
 }
 
-type ListWebhookEventsResponse struct {
+type ListWebhookDeliveriesResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *WebhookEventListResponse
+	JSON200      *WebhookDeliveryListResponse
 	JSON401      *Unauthorized
 	JSON404      *NotFound
 }
 
 // Status returns HTTPResponse.Status
-func (r ListWebhookEventsResponse) Status() string {
+func (r ListWebhookDeliveriesResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -15942,7 +16791,7 @@ func (r ListWebhookEventsResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r ListWebhookEventsResponse) StatusCode() int {
+func (r ListWebhookDeliveriesResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -16167,96 +17016,12 @@ func (r ListWorkflowVersionsResponse) StatusCode() int {
 	return 0
 }
 
-type HandleSlackCommandsResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-}
-
-// Status returns HTTPResponse.Status
-func (r HandleSlackCommandsResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r HandleSlackCommandsResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type HandleSlackEventsResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-}
-
-// Status returns HTTPResponse.Status
-func (r HandleSlackEventsResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r HandleSlackEventsResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type HandleSlackInteractResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-}
-
-// Status returns HTTPResponse.Status
-func (r HandleSlackInteractResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r HandleSlackInteractResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type SlackOAuthCallbackResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON400      *BadRequest
-}
-
-// Status returns HTTPResponse.Status
-func (r SlackOAuthCallbackResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r SlackOAuthCallbackResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
 type ListRoleAssignmentsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *RoleAssignmentListResponse
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 }
 
 // Status returns HTTPResponse.Status
@@ -16281,6 +17046,7 @@ type CreateRoleAssignmentResponse struct {
 	JSON201      *RoleAssignment
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 	JSON409      *Conflict
 }
@@ -16305,6 +17071,7 @@ type DeleteRoleAssignmentResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -16329,6 +17096,7 @@ type ListRolesResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *RoleListResponse
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 }
 
 // Status returns HTTPResponse.Status
@@ -16353,6 +17121,7 @@ type CreateRoleResponse struct {
 	JSON201      *Role
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON409      *Conflict
 }
 
@@ -16376,6 +17145,7 @@ type DeleteRoleResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -16400,6 +17170,7 @@ type GetRoleResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *Role
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -16425,6 +17196,7 @@ type UpdateRoleResponse struct {
 	JSON200      *Role
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 	JSON409      *Conflict
 }
@@ -16439,29 +17211,6 @@ func (r UpdateRoleResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r UpdateRoleResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type ListToolsResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *ToolDefinitionListResponse
-	JSON401      *Unauthorized
-}
-
-// Status returns HTTPResponse.Status
-func (r ListToolsResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ListToolsResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -17124,24 +17873,6 @@ func (c *ClientWithResponses) CopyIntegrationWithResponse(ctx context.Context, p
 	return ParseCopyIntegrationResponse(rsp)
 }
 
-// StartSlackInstallWithResponse request returning *StartSlackInstallResponse
-func (c *ClientWithResponses) StartSlackInstallWithResponse(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*StartSlackInstallResponse, error) {
-	rsp, err := c.StartSlackInstall(ctx, project, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseStartSlackInstallResponse(rsp)
-}
-
-// DisconnectSlackWithResponse request returning *DisconnectSlackResponse
-func (c *ClientWithResponses) DisconnectSlackWithResponse(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*DisconnectSlackResponse, error) {
-	rsp, err := c.DisconnectSlack(ctx, project, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseDisconnectSlackResponse(rsp)
-}
-
 // DeleteIntegrationWithResponse request returning *DeleteIntegrationResponse
 func (c *ClientWithResponses) DeleteIntegrationWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*DeleteIntegrationResponse, error) {
 	rsp, err := c.DeleteIntegration(ctx, project, id, reqEditors...)
@@ -17507,6 +18238,15 @@ func (c *ClientWithResponses) SendRunSignalWithResponse(ctx context.Context, pro
 	return ParseSendRunSignalResponse(rsp)
 }
 
+// ListToolsWithResponse request returning *ListToolsResponse
+func (c *ClientWithResponses) ListToolsWithResponse(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*ListToolsResponse, error) {
+	rsp, err := c.ListTools(ctx, project, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListToolsResponse(rsp)
+}
+
 // RunToolWithBodyWithResponse request with arbitrary body returning *RunToolResponse
 func (c *ClientWithResponses) RunToolWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, handle string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RunToolResponse, error) {
 	rsp, err := c.RunToolWithBody(ctx, project, handle, contentType, body, reqEditors...)
@@ -17664,13 +18404,13 @@ func (c *ClientWithResponses) UpdateWebhookWithResponse(ctx context.Context, pro
 	return ParseUpdateWebhookResponse(rsp)
 }
 
-// ListWebhookEventsWithResponse request returning *ListWebhookEventsResponse
-func (c *ClientWithResponses) ListWebhookEventsWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, params *ListWebhookEventsParams, reqEditors ...RequestEditorFn) (*ListWebhookEventsResponse, error) {
-	rsp, err := c.ListWebhookEvents(ctx, project, id, params, reqEditors...)
+// ListWebhookDeliveriesWithResponse request returning *ListWebhookDeliveriesResponse
+func (c *ClientWithResponses) ListWebhookDeliveriesWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, params *ListWebhookDeliveriesParams, reqEditors ...RequestEditorFn) (*ListWebhookDeliveriesResponse, error) {
+	rsp, err := c.ListWebhookDeliveries(ctx, project, id, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseListWebhookEventsResponse(rsp)
+	return ParseListWebhookDeliveriesResponse(rsp)
 }
 
 // ListWorkersWithResponse request returning *ListWorkersResponse
@@ -17778,42 +18518,6 @@ func (c *ClientWithResponses) ListWorkflowVersionsWithResponse(ctx context.Conte
 	return ParseListWorkflowVersionsResponse(rsp)
 }
 
-// HandleSlackCommandsWithResponse request returning *HandleSlackCommandsResponse
-func (c *ClientWithResponses) HandleSlackCommandsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*HandleSlackCommandsResponse, error) {
-	rsp, err := c.HandleSlackCommands(ctx, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseHandleSlackCommandsResponse(rsp)
-}
-
-// HandleSlackEventsWithResponse request returning *HandleSlackEventsResponse
-func (c *ClientWithResponses) HandleSlackEventsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*HandleSlackEventsResponse, error) {
-	rsp, err := c.HandleSlackEvents(ctx, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseHandleSlackEventsResponse(rsp)
-}
-
-// HandleSlackInteractWithResponse request returning *HandleSlackInteractResponse
-func (c *ClientWithResponses) HandleSlackInteractWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*HandleSlackInteractResponse, error) {
-	rsp, err := c.HandleSlackInteract(ctx, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseHandleSlackInteractResponse(rsp)
-}
-
-// SlackOAuthCallbackWithResponse request returning *SlackOAuthCallbackResponse
-func (c *ClientWithResponses) SlackOAuthCallbackWithResponse(ctx context.Context, params *SlackOAuthCallbackParams, reqEditors ...RequestEditorFn) (*SlackOAuthCallbackResponse, error) {
-	rsp, err := c.SlackOAuthCallback(ctx, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseSlackOAuthCallbackResponse(rsp)
-}
-
 // ListRoleAssignmentsWithResponse request returning *ListRoleAssignmentsResponse
 func (c *ClientWithResponses) ListRoleAssignmentsWithResponse(ctx context.Context, params *ListRoleAssignmentsParams, reqEditors ...RequestEditorFn) (*ListRoleAssignmentsResponse, error) {
 	rsp, err := c.ListRoleAssignments(ctx, params, reqEditors...)
@@ -17908,15 +18612,6 @@ func (c *ClientWithResponses) UpdateRoleWithResponse(ctx context.Context, id IDP
 		return nil, err
 	}
 	return ParseUpdateRoleResponse(rsp)
-}
-
-// ListToolsWithResponse request returning *ListToolsResponse
-func (c *ClientWithResponses) ListToolsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListToolsResponse, error) {
-	rsp, err := c.ListTools(ctx, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseListToolsResponse(rsp)
 }
 
 // ParseListAPIKeysResponse parses an HTTP response from a ListAPIKeysWithResponse call
@@ -20166,72 +20861,6 @@ func ParseCopyIntegrationResponse(rsp *http.Response) (*CopyIntegrationResponse,
 	return response, nil
 }
 
-// ParseStartSlackInstallResponse parses an HTTP response from a StartSlackInstallWithResponse call
-func ParseStartSlackInstallResponse(rsp *http.Response) (*StartSlackInstallResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &StartSlackInstallResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest SlackInstall
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseDisconnectSlackResponse parses an HTTP response from a DisconnectSlackWithResponse call
-func ParseDisconnectSlackResponse(rsp *http.Response) (*DisconnectSlackResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &DisconnectSlackResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
 // ParseDeleteIntegrationResponse parses an HTTP response from a DeleteIntegrationWithResponse call
 func ParseDeleteIntegrationResponse(rsp *http.Response) (*DeleteIntegrationResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -21448,6 +22077,46 @@ func ParseSendRunSignalResponse(rsp *http.Response) (*SendRunSignalResponse, err
 	return response, nil
 }
 
+// ParseListToolsResponse parses an HTTP response from a ListToolsWithResponse call
+func ParseListToolsResponse(rsp *http.Response) (*ListToolsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListToolsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ToolDefinitionListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseRunToolResponse parses an HTTP response from a RunToolWithResponse call
 func ParseRunToolResponse(rsp *http.Response) (*RunToolResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -22003,22 +22672,22 @@ func ParseUpdateWebhookResponse(rsp *http.Response) (*UpdateWebhookResponse, err
 	return response, nil
 }
 
-// ParseListWebhookEventsResponse parses an HTTP response from a ListWebhookEventsWithResponse call
-func ParseListWebhookEventsResponse(rsp *http.Response) (*ListWebhookEventsResponse, error) {
+// ParseListWebhookDeliveriesResponse parses an HTTP response from a ListWebhookDeliveriesWithResponse call
+func ParseListWebhookDeliveriesResponse(rsp *http.Response) (*ListWebhookDeliveriesResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &ListWebhookEventsResponse{
+	response := &ListWebhookDeliveriesResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest WebhookEventListResponse
+		var dest WebhookDeliveryListResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -22417,80 +23086,6 @@ func ParseListWorkflowVersionsResponse(rsp *http.Response) (*ListWorkflowVersion
 	return response, nil
 }
 
-// ParseHandleSlackCommandsResponse parses an HTTP response from a HandleSlackCommandsWithResponse call
-func ParseHandleSlackCommandsResponse(rsp *http.Response) (*HandleSlackCommandsResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &HandleSlackCommandsResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	return response, nil
-}
-
-// ParseHandleSlackEventsResponse parses an HTTP response from a HandleSlackEventsWithResponse call
-func ParseHandleSlackEventsResponse(rsp *http.Response) (*HandleSlackEventsResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &HandleSlackEventsResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	return response, nil
-}
-
-// ParseHandleSlackInteractResponse parses an HTTP response from a HandleSlackInteractWithResponse call
-func ParseHandleSlackInteractResponse(rsp *http.Response) (*HandleSlackInteractResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &HandleSlackInteractResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	return response, nil
-}
-
-// ParseSlackOAuthCallbackResponse parses an HTTP response from a SlackOAuthCallbackWithResponse call
-func ParseSlackOAuthCallbackResponse(rsp *http.Response) (*SlackOAuthCallbackResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &SlackOAuthCallbackResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest BadRequest
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	}
-
-	return response, nil
-}
-
 // ParseListRoleAssignmentsResponse parses an HTTP response from a ListRoleAssignmentsWithResponse call
 func ParseListRoleAssignmentsResponse(rsp *http.Response) (*ListRoleAssignmentsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -22518,6 +23113,13 @@ func ParseListRoleAssignmentsResponse(rsp *http.Response) (*ListRoleAssignmentsR
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	}
 
@@ -22559,6 +23161,13 @@ func ParseCreateRoleAssignmentResponse(rsp *http.Response) (*CreateRoleAssignmen
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -22598,6 +23207,13 @@ func ParseDeleteRoleAssignmentResponse(rsp *http.Response) (*DeleteRoleAssignmen
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
@@ -22639,6 +23255,13 @@ func ParseListRolesResponse(rsp *http.Response) (*ListRolesResponse, error) {
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	}
 
 	return response, nil
@@ -22679,6 +23302,13 @@ func ParseCreateRoleResponse(rsp *http.Response) (*CreateRoleResponse, error) {
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
 		var dest Conflict
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -22711,6 +23341,13 @@ func ParseDeleteRoleResponse(rsp *http.Response) (*DeleteRoleResponse, error) {
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
@@ -22751,6 +23388,13 @@ func ParseGetRoleResponse(rsp *http.Response) (*GetRoleResponse, error) {
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
@@ -22799,6 +23443,13 @@ func ParseUpdateRoleResponse(rsp *http.Response) (*UpdateRoleResponse, error) {
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -22812,39 +23463,6 @@ func ParseUpdateRoleResponse(rsp *http.Response) (*UpdateRoleResponse, error) {
 			return nil, err
 		}
 		response.JSON409 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseListToolsResponse parses an HTTP response from a ListToolsWithResponse call
-func ParseListToolsResponse(rsp *http.Response) (*ListToolsResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ListToolsResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest ToolDefinitionListResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
 
 	}
 

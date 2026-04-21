@@ -33,7 +33,6 @@ func registerGeneratedCommands(app *cli.App) {
 	registerProjectsCommands(app)
 	registerRolesCommands(app)
 	registerRunsCommands(app)
-	registerSlackCommands(app)
 	registerToolsCommands(app)
 	registerTriggersCommands(app)
 	registerWebhooksCommands(app)

@@ -38,7 +38,7 @@ func registerApiKeysCommands(app *cli.App) {
 		})
 
 	apiKeysGrp.Command("create-key").
-		Description("Create an API key").
+		Description("Create an org-scoped API key").
 		Flags(
 			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin)"),
 		).
@@ -72,7 +72,7 @@ func registerApiKeysCommands(app *cli.App) {
 		})
 
 	apiKeysGrp.Command("get-key").
-		Description("Get an API key").
+		Description("Get an org-scoped API key").
 		Args("id").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -99,7 +99,7 @@ func registerApiKeysCommands(app *cli.App) {
 		})
 
 	apiKeysGrp.Command("list-keys").
-		Description("List API keys").
+		Description("List org-scoped API keys").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			client := clientFromContext(ctx).RawClient()
@@ -126,7 +126,7 @@ func registerApiKeysCommands(app *cli.App) {
 		})
 
 	apiKeysGrp.Command("revoke-key").
-		Description("Revoke an API key").
+		Description("Revoke an org-scoped API key").
 		Args("id").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {

@@ -33,7 +33,7 @@ func registerInteractionsCommands(app *cli.App) {
 		})
 
 	interactionsGrp.Command("create").
-		Description("Create an interaction explicitly").
+		Description("Create an interaction").
 		Flags(
 			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin)"),
 		).
