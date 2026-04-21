@@ -1001,9 +1001,6 @@ type Action struct {
 	// Name Project-scoped stable identifier used in workflow step definitions.
 	Name string `json:"name"`
 
-	// OrgId ID of the organization this action belongs to.
-	OrgId string `json:"org_id"`
-
 	// OutputSchema JSON Schema describing the expected output shape.
 	OutputSchema *map[string]interface{} `json:"output_schema,omitempty"`
 
@@ -1232,9 +1229,6 @@ type Agent struct {
 	// Name Unique name within the project, used for targeting in job claims.
 	Name string `json:"name"`
 
-	// OrgId ID of the organization this agent belongs to.
-	OrgId string `json:"org_id"`
-
 	// Presence Computed from the most recent 20 sessions. `online` means a connected
 	// session with a fresh heartbeat; `stale` means heartbeats are overdue;
 	// `offline` means no connected sessions.
@@ -1283,10 +1277,7 @@ type AgentSession struct {
 
 	// Metadata Caller-supplied metadata (e.g. hostname, version, region).
 	Metadata *map[string]interface{} `json:"metadata,omitempty"`
-
-	// OrgId ID of the organization this session belongs to.
-	OrgId  string             `json:"org_id"`
-	Status AgentSessionStatus `json:"status"`
+	Status   AgentSessionStatus      `json:"status"`
 
 	// Transport Connection mechanism identifier (e.g. "sse", "polling").
 	Transport string `json:"transport"`
@@ -1981,9 +1972,6 @@ type Group struct {
 	// Name Human-readable display name.
 	Name string `json:"name"`
 
-	// OrgId ID of the organization this group belongs to.
-	OrgId string `json:"org_id"`
-
 	// RoutingPolicy How interactions targeting this group collect responses.
 	// `first_responder`: first member to claim or respond wins.
 	// `all_members`: every snapshotted member must respond.
@@ -2017,9 +2005,6 @@ type GroupMember struct {
 
 	// Id Unique identifier for this membership record.
 	Id string `json:"id"`
-
-	// OrgId ID of the organization this group belongs to.
-	OrgId string `json:"org_id"`
 
 	// UserId ID of the user who is a member.
 	UserId string `json:"user_id"`
@@ -2056,9 +2041,6 @@ type GroupWithCount struct {
 
 	// Name Human-readable display name.
 	Name string `json:"name"`
-
-	// OrgId ID of the organization this group belongs to.
-	OrgId string `json:"org_id"`
 
 	// RoutingPolicy How interactions targeting this group collect responses.
 	// `first_responder`: first member to claim or respond wins.
@@ -2103,9 +2085,6 @@ type Integration struct {
 
 	// Name Human-readable name, unique per `(project, provider)` tuple.
 	Name string `json:"name"`
-
-	// OrgId ID of the organization this integration belongs to.
-	OrgId string `json:"org_id"`
 
 	// Provider Free-form provider identifier (e.g. `openai`, `slack`, `github`).
 	// Immutable after creation.
@@ -2162,9 +2141,6 @@ type Interaction struct {
 
 	// Message Human-readable message shown to the responder
 	Message *string `json:"message,omitempty"`
-
-	// OrgId ID of the organization this interaction belongs to.
-	OrgId string `json:"org_id"`
 
 	// PartialResponses Per-member responses for all_members routing
 	PartialResponses *[]InteractionPartialResponse `json:"partial_responses,omitempty"`
@@ -2647,9 +2623,6 @@ type Role struct {
 	// Name Human-readable role name, unique within org+project scope.
 	Name string `json:"name"`
 
-	// OrgId Owning org. Empty for system-defined roles.
-	OrgId *string `json:"org_id,omitempty"`
-
 	// Permissions Permission strings granted by this role (e.g. "mobius.job.claim").
 	Permissions []string `json:"permissions"`
 
@@ -2682,9 +2655,6 @@ type RoleAssignment struct {
 
 	// Id Unique identifier for this role assignment.
 	Id string `json:"id"`
-
-	// OrgId ID of the organization this assignment belongs to.
-	OrgId string `json:"org_id"`
 
 	// ProjectId Set for project-scoped assignments; empty for org-wide.
 	ProjectId *string `json:"project_id,omitempty"`
@@ -2808,9 +2778,9 @@ type SendRunSignalRequest struct {
 
 // StartRunRequest Start a workflow run. Provide exactly one of `definition_id` or
 // `spec` — they are mutually exclusive. When both are absent on
-// the path-less `POST /projects/{project}/runs` endpoint, or when both
+// the path-less `POST /v1/projects/{project}/runs` endpoint, or when both
 // are present, the request is rejected with 400. On the
-// definition-bound endpoint (`POST /projects/{project}/workflows/{id}/runs`)
+// definition-bound endpoint (`POST /v1/projects/{project}/workflows/{id}/runs`)
 // `definition_id` is implied by the path and `spec` is forbidden.
 type StartRunRequest struct {
 	// DefinitionId ID of an existing workflow definition to run. Mutually
@@ -2921,9 +2891,6 @@ type Trigger struct {
 	// NextFireAt Computed next scheduled fire time (schedule triggers only).
 	NextFireAt *time.Time `json:"next_fire_at,omitempty"`
 
-	// OrgId ID of the organization this trigger belongs to.
-	OrgId string `json:"org_id"`
-
 	// ReceiveUrl Full URL for posting inbound events (webhook triggers only). Computed from `webhook_handle`.
 	ReceiveUrl *string `json:"receive_url,omitempty"`
 
@@ -2957,12 +2924,6 @@ type TriggerFire struct {
 
 	// Id Unique identifier for this fire record.
 	Id string `json:"id"`
-
-	// OrgId ID of the organization this trigger belongs to.
-	OrgId string `json:"org_id"`
-
-	// ProjectId ID of the project this trigger belongs to.
-	ProjectId string `json:"project_id"`
 
 	// RunId Workflow run created by this fire. Absent when status is `skipped` or `failed` before run creation.
 	RunId *string `json:"run_id,omitempty"`
@@ -3233,12 +3194,6 @@ type Webhook struct {
 	// Name Human-readable name, unique within the project.
 	Name string `json:"name"`
 
-	// OrgId ID of the organization this webhook belongs to.
-	OrgId string `json:"org_id"`
-
-	// ProjectId ID of the project this webhook belongs to.
-	ProjectId string `json:"project_id"`
-
 	// UpdatedAt Timestamp when this webhook was last updated.
 	UpdatedAt time.Time `json:"updated_at"`
 
@@ -3268,9 +3223,6 @@ type WebhookDelivery struct {
 
 	// LastError Error message from the most recent failed attempt.
 	LastError *string `json:"last_error,omitempty"`
-
-	// OrgId ID of the organization this delivery belongs to.
-	OrgId string `json:"org_id"`
 
 	// RunId Run that triggered the event, when applicable.
 	RunId *string `json:"run_id,omitempty"`
@@ -7487,7 +7439,7 @@ func NewListAPIKeysRequest(server string, params *ListAPIKeysParams) (*http.Requ
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/api-keys")
+	operationPath := fmt.Sprintf("/v1/api-keys")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -7547,7 +7499,7 @@ func NewCreateAPIKeyRequestWithBody(server string, contentType string, body io.R
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/api-keys")
+	operationPath := fmt.Sprintf("/v1/api-keys")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -7583,7 +7535,7 @@ func NewRevokeAPIKeyRequest(server string, id IDParam, params *RevokeAPIKeyParam
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/api-keys/%s", pathParam0)
+	operationPath := fmt.Sprintf("/v1/api-keys/%s", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -7639,7 +7591,7 @@ func NewGetAPIKeyRequest(server string, id IDParam, params *GetAPIKeyParams) (*h
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/api-keys/%s", pathParam0)
+	operationPath := fmt.Sprintf("/v1/api-keys/%s", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -7688,7 +7640,7 @@ func NewListAuditLogsRequest(server string, params *ListAuditLogsParams) (*http.
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/audit-logs")
+	operationPath := fmt.Sprintf("/v1/audit-logs")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -7897,7 +7849,7 @@ func NewListProjectsRequest(server string, params *ListProjectsParams) (*http.Re
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects")
+	operationPath := fmt.Sprintf("/v1/projects")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -7957,7 +7909,7 @@ func NewCreateProjectRequestWithBody(server string, contentType string, body io.
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects")
+	operationPath := fmt.Sprintf("/v1/projects")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -7993,7 +7945,7 @@ func NewDeleteProjectRequest(server string, id IDParam) (*http.Request, error) {
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s", pathParam0)
+	operationPath := fmt.Sprintf("/v1/projects/%s", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -8027,7 +7979,7 @@ func NewGetProjectRequest(server string, id IDParam) (*http.Request, error) {
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s", pathParam0)
+	operationPath := fmt.Sprintf("/v1/projects/%s", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -8072,7 +8024,7 @@ func NewUpdateProjectRequestWithBody(server string, id IDParam, contentType stri
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s", pathParam0)
+	operationPath := fmt.Sprintf("/v1/projects/%s", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -8108,7 +8060,7 @@ func NewListActionAuditLogRequest(server string, project ProjectHandleParam, par
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/action-audit-log", pathParam0)
+	operationPath := fmt.Sprintf("/v1/projects/%s/action-audit-log", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -8228,7 +8180,7 @@ func NewListActionsRequest(server string, project ProjectHandleParam, params *Li
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/actions", pathParam0)
+	operationPath := fmt.Sprintf("/v1/projects/%s/actions", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -8311,7 +8263,7 @@ func NewCreateActionRequestWithBody(server string, project ProjectHandleParam, c
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/actions", pathParam0)
+	operationPath := fmt.Sprintf("/v1/projects/%s/actions", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -8347,7 +8299,7 @@ func NewListCatalogActionsRequest(server string, project ProjectHandleParam) (*h
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/actions/catalog", pathParam0)
+	operationPath := fmt.Sprintf("/v1/projects/%s/actions/catalog", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -8388,7 +8340,7 @@ func NewGetCatalogActionRequest(server string, project ProjectHandleParam, actio
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/actions/catalog/%s", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v1/projects/%s/actions/catalog/%s", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -8429,7 +8381,7 @@ func NewDeleteActionRequest(server string, project ProjectHandleParam, actionNam
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/actions/%s", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v1/projects/%s/actions/%s", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -8470,7 +8422,7 @@ func NewGetActionRequest(server string, project ProjectHandleParam, actionName A
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/actions/%s", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v1/projects/%s/actions/%s", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -8522,7 +8474,7 @@ func NewUpdateActionRequestWithBody(server string, project ProjectHandleParam, a
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/actions/%s", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v1/projects/%s/actions/%s", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -8565,7 +8517,7 @@ func NewRotateActionSecretRequest(server string, project ProjectHandleParam, act
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/actions/%s/secret/rotate", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v1/projects/%s/actions/%s/secret/rotate", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -8599,7 +8551,7 @@ func NewListAgentsRequest(server string, project ProjectHandleParam, params *Lis
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/agents", pathParam0)
+	operationPath := fmt.Sprintf("/v1/projects/%s/agents", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -8698,7 +8650,7 @@ func NewCreateAgentRequestWithBody(server string, project ProjectHandleParam, co
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/agents", pathParam0)
+	operationPath := fmt.Sprintf("/v1/projects/%s/agents", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -8741,7 +8693,7 @@ func NewGetAgentSessionRequest(server string, project ProjectHandleParam, sessio
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/agents/sessions/%s", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v1/projects/%s/agents/sessions/%s", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -8782,7 +8734,7 @@ func NewDisconnectAgentSessionRequest(server string, project ProjectHandleParam,
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/agents/sessions/%s/disconnect", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v1/projects/%s/agents/sessions/%s/disconnect", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -8823,7 +8775,7 @@ func NewHeartbeatAgentSessionRequest(server string, project ProjectHandleParam, 
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/agents/sessions/%s/heartbeat", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v1/projects/%s/agents/sessions/%s/heartbeat", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -8864,7 +8816,7 @@ func NewDeleteAgentRequest(server string, project ProjectHandleParam, id IDParam
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/agents/%s", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v1/projects/%s/agents/%s", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -8905,7 +8857,7 @@ func NewGetAgentRequest(server string, project ProjectHandleParam, id IDParam) (
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/agents/%s", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v1/projects/%s/agents/%s", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -8957,7 +8909,7 @@ func NewUpdateAgentRequestWithBody(server string, project ProjectHandleParam, id
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/agents/%s", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v1/projects/%s/agents/%s", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -9000,7 +8952,7 @@ func NewListAgentSessionsRequest(server string, project ProjectHandleParam, id I
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/agents/%s/sessions", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v1/projects/%s/agents/%s/sessions", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -9106,7 +9058,7 @@ func NewCreateAgentSessionRequestWithBody(server string, project ProjectHandlePa
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/agents/%s/sessions", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v1/projects/%s/agents/%s/sessions", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -9142,7 +9094,7 @@ func NewListChannelsRequest(server string, project ProjectHandleParam, params *L
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/channels", pathParam0)
+	operationPath := fmt.Sprintf("/v1/projects/%s/channels", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -9257,7 +9209,7 @@ func NewCreateChannelRequestWithBody(server string, project ProjectHandleParam, 
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/channels", pathParam0)
+	operationPath := fmt.Sprintf("/v1/projects/%s/channels", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -9300,7 +9252,7 @@ func NewDeleteChannelRequest(server string, project ProjectHandleParam, id IDPar
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/channels/%s", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v1/projects/%s/channels/%s", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -9341,7 +9293,7 @@ func NewGetChannelRequest(server string, project ProjectHandleParam, id IDParam)
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/channels/%s", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v1/projects/%s/channels/%s", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -9393,7 +9345,7 @@ func NewUpdateChannelRequestWithBody(server string, project ProjectHandleParam, 
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/channels/%s", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v1/projects/%s/channels/%s", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -9436,7 +9388,7 @@ func NewListChannelMembersRequest(server string, project ProjectHandleParam, id 
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/channels/%s/members", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v1/projects/%s/channels/%s/members", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -9526,7 +9478,7 @@ func NewAddChannelMemberRequestWithBody(server string, project ProjectHandlePara
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/channels/%s/members", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v1/projects/%s/channels/%s/members", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -9576,7 +9528,7 @@ func NewRemoveChannelMemberRequest(server string, project ProjectHandleParam, id
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/channels/%s/members/%s", pathParam0, pathParam1, pathParam2)
+	operationPath := fmt.Sprintf("/v1/projects/%s/channels/%s/members/%s", pathParam0, pathParam1, pathParam2)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -9617,7 +9569,7 @@ func NewListChannelMessagesRequest(server string, project ProjectHandleParam, id
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/channels/%s/messages", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v1/projects/%s/channels/%s/messages", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -9755,7 +9707,7 @@ func NewSendChannelMessageRequestWithBody(server string, project ProjectHandlePa
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/channels/%s/messages", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v1/projects/%s/channels/%s/messages", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -9805,7 +9757,7 @@ func NewGetChannelMessageRequest(server string, project ProjectHandleParam, id I
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/channels/%s/messages/%s", pathParam0, pathParam1, pathParam2)
+	operationPath := fmt.Sprintf("/v1/projects/%s/channels/%s/messages/%s", pathParam0, pathParam1, pathParam2)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -9864,7 +9816,7 @@ func NewUpdateChannelMessageRequestWithBody(server string, project ProjectHandle
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/channels/%s/messages/%s", pathParam0, pathParam1, pathParam2)
+	operationPath := fmt.Sprintf("/v1/projects/%s/channels/%s/messages/%s", pathParam0, pathParam1, pathParam2)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -9900,7 +9852,7 @@ func NewListGroupsRequest(server string, project ProjectHandleParam, params *Lis
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/groups", pathParam0)
+	operationPath := fmt.Sprintf("/v1/projects/%s/groups", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -9983,7 +9935,7 @@ func NewCreateGroupRequestWithBody(server string, project ProjectHandleParam, co
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/groups", pathParam0)
+	operationPath := fmt.Sprintf("/v1/projects/%s/groups", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -10026,7 +9978,7 @@ func NewDeleteGroupRequest(server string, project ProjectHandleParam, groupId Gr
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/groups/%s", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v1/projects/%s/groups/%s", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -10067,7 +10019,7 @@ func NewGetGroupRequest(server string, project ProjectHandleParam, groupId Group
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/groups/%s", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v1/projects/%s/groups/%s", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -10119,7 +10071,7 @@ func NewUpdateGroupRequestWithBody(server string, project ProjectHandleParam, gr
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/groups/%s", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v1/projects/%s/groups/%s", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -10162,7 +10114,7 @@ func NewListGroupMembersRequest(server string, project ProjectHandleParam, group
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/groups/%s/members", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v1/projects/%s/groups/%s/members", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -10252,7 +10204,7 @@ func NewAddGroupMemberRequestWithBody(server string, project ProjectHandleParam,
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/groups/%s/members", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v1/projects/%s/groups/%s/members", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -10302,7 +10254,7 @@ func NewRemoveGroupMemberRequest(server string, project ProjectHandleParam, grou
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/groups/%s/members/%s", pathParam0, pathParam1, pathParam2)
+	operationPath := fmt.Sprintf("/v1/projects/%s/groups/%s/members/%s", pathParam0, pathParam1, pathParam2)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -10336,7 +10288,7 @@ func NewListIntegrationsRequest(server string, project ProjectHandleParam, param
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/integrations", pathParam0)
+	operationPath := fmt.Sprintf("/v1/projects/%s/integrations", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -10451,7 +10403,7 @@ func NewCreateIntegrationRequestWithBody(server string, project ProjectHandlePar
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/integrations", pathParam0)
+	operationPath := fmt.Sprintf("/v1/projects/%s/integrations", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -10498,7 +10450,7 @@ func NewCopyIntegrationRequestWithBody(server string, project ProjectHandleParam
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/integrations/copy", pathParam0)
+	operationPath := fmt.Sprintf("/v1/projects/%s/integrations/copy", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -10541,7 +10493,7 @@ func NewDeleteIntegrationRequest(server string, project ProjectHandleParam, id I
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/integrations/%s", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v1/projects/%s/integrations/%s", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -10582,7 +10534,7 @@ func NewGetIntegrationRequest(server string, project ProjectHandleParam, id IDPa
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/integrations/%s", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v1/projects/%s/integrations/%s", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -10634,7 +10586,7 @@ func NewUpdateIntegrationRequestWithBody(server string, project ProjectHandlePar
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/integrations/%s", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v1/projects/%s/integrations/%s", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -10670,7 +10622,7 @@ func NewListInteractionsRequest(server string, project ProjectHandleParam, param
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/interactions", pathParam0)
+	operationPath := fmt.Sprintf("/v1/projects/%s/interactions", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -10833,7 +10785,7 @@ func NewCreateInteractionRequestWithBody(server string, project ProjectHandlePar
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/interactions", pathParam0)
+	operationPath := fmt.Sprintf("/v1/projects/%s/interactions", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -10876,7 +10828,7 @@ func NewGetInteractionRequest(server string, project ProjectHandleParam, id IDPa
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/interactions/%s", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v1/projects/%s/interactions/%s", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -10917,7 +10869,7 @@ func NewClaimInteractionRequest(server string, project ProjectHandleParam, id ID
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/interactions/%s/claim", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v1/projects/%s/interactions/%s/claim", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -10958,7 +10910,7 @@ func NewReleaseInteractionRequest(server string, project ProjectHandleParam, id 
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/interactions/%s/release", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v1/projects/%s/interactions/%s/release", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -11010,7 +10962,7 @@ func NewRespondToInteractionRequestWithBody(server string, project ProjectHandle
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/interactions/%s/respond", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v1/projects/%s/interactions/%s/respond", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -11057,7 +11009,7 @@ func NewClaimJobRequestWithBody(server string, project ProjectHandleParam, conte
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/jobs/claim", pathParam0)
+	operationPath := fmt.Sprintf("/v1/projects/%s/jobs/claim", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -11118,7 +11070,7 @@ func NewRunJobActionRequestWithBody(server string, project ProjectHandleParam, i
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/jobs/%s/actions/%s", pathParam0, pathParam1, pathParam2)
+	operationPath := fmt.Sprintf("/v1/projects/%s/jobs/%s/actions/%s", pathParam0, pathParam1, pathParam2)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -11172,7 +11124,7 @@ func NewCompleteJobRequestWithBody(server string, project ProjectHandleParam, id
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/jobs/%s/complete", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v1/projects/%s/jobs/%s/complete", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -11226,7 +11178,7 @@ func NewEmitJobEventsRequestWithBody(server string, project ProjectHandleParam, 
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/jobs/%s/events", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v1/projects/%s/jobs/%s/events", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -11280,7 +11232,7 @@ func NewHeartbeatJobRequestWithBody(server string, project ProjectHandleParam, i
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/jobs/%s/heartbeat", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v1/projects/%s/jobs/%s/heartbeat", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -11334,7 +11286,7 @@ func NewCreateJobInteractionRequestWithBody(server string, project ProjectHandle
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/jobs/%s/interactions", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v1/projects/%s/jobs/%s/interactions", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -11377,7 +11329,7 @@ func NewListMemberGroupsRequest(server string, project ProjectHandleParam, userI
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/members/%s/groups", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v1/projects/%s/members/%s/groups", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -11411,7 +11363,7 @@ func NewGetProjectMetricsRequest(server string, project ProjectHandleParam) (*ht
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/metrics", pathParam0)
+	operationPath := fmt.Sprintf("/v1/projects/%s/metrics", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -11445,7 +11397,7 @@ func NewListRunsRequest(server string, project ProjectHandleParam, params *ListR
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/runs", pathParam0)
+	operationPath := fmt.Sprintf("/v1/projects/%s/runs", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -11624,7 +11576,7 @@ func NewStartRunRequestWithBody(server string, project ProjectHandleParam, conte
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/runs", pathParam0)
+	operationPath := fmt.Sprintf("/v1/projects/%s/runs", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -11671,7 +11623,7 @@ func NewBulkCancelRunsRequestWithBody(server string, project ProjectHandleParam,
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/runs/cancellations", pathParam0)
+	operationPath := fmt.Sprintf("/v1/projects/%s/runs/cancellations", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -11707,7 +11659,7 @@ func NewStreamProjectRunEventsRequest(server string, project ProjectHandleParam,
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/runs/events", pathParam0)
+	operationPath := fmt.Sprintf("/v1/projects/%s/runs/events", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -11774,7 +11726,7 @@ func NewBulkRetryRunsRequestWithBody(server string, project ProjectHandleParam, 
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/runs/retries", pathParam0)
+	operationPath := fmt.Sprintf("/v1/projects/%s/runs/retries", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -11817,7 +11769,7 @@ func NewGetRunRequest(server string, project ProjectHandleParam, id IDParam) (*h
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/runs/%s", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v1/projects/%s/runs/%s", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -11858,7 +11810,7 @@ func NewGetRunActionLogRequest(server string, project ProjectHandleParam, id IDP
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/runs/%s/action-log", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v1/projects/%s/runs/%s/action-log", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -11899,7 +11851,7 @@ func NewCancelRunRequest(server string, project ProjectHandleParam, id IDParam) 
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/runs/%s/cancellations", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v1/projects/%s/runs/%s/cancellations", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -11940,7 +11892,7 @@ func NewStreamRunEventsRequest(server string, project ProjectHandleParam, id IDP
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/runs/%s/events", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v1/projects/%s/runs/%s/events", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -12003,7 +11955,7 @@ func NewGetRunJobsRequest(server string, project ProjectHandleParam, id IDParam)
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/runs/%s/jobs", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v1/projects/%s/runs/%s/jobs", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -12044,7 +11996,7 @@ func NewResumeRunRequest(server string, project ProjectHandleParam, id IDParam) 
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/runs/%s/resumptions", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v1/projects/%s/runs/%s/resumptions", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -12096,7 +12048,7 @@ func NewSendRunSignalRequestWithBody(server string, project ProjectHandleParam, 
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/runs/%s/signals", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v1/projects/%s/runs/%s/signals", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -12132,7 +12084,7 @@ func NewListToolsRequest(server string, project ProjectHandleParam) (*http.Reque
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/tools", pathParam0)
+	operationPath := fmt.Sprintf("/v1/projects/%s/tools", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -12184,7 +12136,7 @@ func NewRunToolRequestWithBody(server string, project ProjectHandleParam, handle
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/tools/%s/runs", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v1/projects/%s/tools/%s/runs", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -12234,7 +12186,7 @@ func NewGetToolRunRequest(server string, project ProjectHandleParam, handle stri
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/tools/%s/runs/%s", pathParam0, pathParam1, pathParam2)
+	operationPath := fmt.Sprintf("/v1/projects/%s/tools/%s/runs/%s", pathParam0, pathParam1, pathParam2)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -12268,7 +12220,7 @@ func NewListTriggersRequest(server string, project ProjectHandleParam, params *L
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/triggers", pathParam0)
+	operationPath := fmt.Sprintf("/v1/projects/%s/triggers", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -12383,7 +12335,7 @@ func NewCreateTriggerRequestWithBody(server string, project ProjectHandleParam, 
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/triggers", pathParam0)
+	operationPath := fmt.Sprintf("/v1/projects/%s/triggers", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -12426,7 +12378,7 @@ func NewDeleteTriggerRequest(server string, project ProjectHandleParam, id IDPar
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/triggers/%s", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v1/projects/%s/triggers/%s", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -12467,7 +12419,7 @@ func NewGetTriggerRequest(server string, project ProjectHandleParam, id IDParam)
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/triggers/%s", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v1/projects/%s/triggers/%s", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -12519,7 +12471,7 @@ func NewUpdateTriggerRequestWithBody(server string, project ProjectHandleParam, 
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/triggers/%s", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v1/projects/%s/triggers/%s", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -12562,7 +12514,7 @@ func NewListTriggerFiresRequest(server string, project ProjectHandleParam, id ID
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/triggers/%s/fires", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v1/projects/%s/triggers/%s/fires", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -12650,7 +12602,7 @@ func NewListWebhooksRequest(server string, project ProjectHandleParam, params *L
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/webhooks", pathParam0)
+	operationPath := fmt.Sprintf("/v1/projects/%s/webhooks", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -12749,7 +12701,7 @@ func NewCreateWebhookRequestWithBody(server string, project ProjectHandleParam, 
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/webhooks", pathParam0)
+	operationPath := fmt.Sprintf("/v1/projects/%s/webhooks", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -12792,7 +12744,7 @@ func NewDeleteWebhookRequest(server string, project ProjectHandleParam, id IDPar
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/webhooks/%s", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v1/projects/%s/webhooks/%s", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -12833,7 +12785,7 @@ func NewGetWebhookRequest(server string, project ProjectHandleParam, id IDParam)
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/webhooks/%s", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v1/projects/%s/webhooks/%s", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -12885,7 +12837,7 @@ func NewUpdateWebhookRequestWithBody(server string, project ProjectHandleParam, 
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/webhooks/%s", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v1/projects/%s/webhooks/%s", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -12928,7 +12880,7 @@ func NewListWebhookDeliveriesRequest(server string, project ProjectHandleParam, 
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/webhooks/%s/deliveries", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v1/projects/%s/webhooks/%s/deliveries", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -13000,7 +12952,7 @@ func NewListWorkersRequest(server string, project ProjectHandleParam) (*http.Req
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/workers", pathParam0)
+	operationPath := fmt.Sprintf("/v1/projects/%s/workers", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -13034,7 +12986,7 @@ func NewListWorkflowsRequest(server string, project ProjectHandleParam, params *
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/workflows", pathParam0)
+	operationPath := fmt.Sprintf("/v1/projects/%s/workflows", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -13117,7 +13069,7 @@ func NewCreateWorkflowRequestWithBody(server string, project ProjectHandleParam,
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/workflows", pathParam0)
+	operationPath := fmt.Sprintf("/v1/projects/%s/workflows", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -13160,7 +13112,7 @@ func NewDeleteWorkflowRequest(server string, project ProjectHandleParam, id IDPa
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/workflows/%s", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v1/projects/%s/workflows/%s", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -13201,7 +13153,7 @@ func NewGetWorkflowRequest(server string, project ProjectHandleParam, id IDParam
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/workflows/%s", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v1/projects/%s/workflows/%s", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -13253,7 +13205,7 @@ func NewUpdateWorkflowRequestWithBody(server string, project ProjectHandleParam,
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/workflows/%s", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v1/projects/%s/workflows/%s", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -13296,7 +13248,7 @@ func NewListWorkflowRunsRequest(server string, project ProjectHandleParam, id ID
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/workflows/%s/runs", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v1/projects/%s/workflows/%s/runs", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -13348,7 +13300,7 @@ func NewStartWorkflowRunRequestWithBody(server string, project ProjectHandlePara
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/workflows/%s/runs", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v1/projects/%s/workflows/%s/runs", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -13391,7 +13343,7 @@ func NewListWorkflowVersionsRequest(server string, project ProjectHandleParam, i
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/projects/%s/workflows/%s/versions", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v1/projects/%s/workflows/%s/versions", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -13440,7 +13392,7 @@ func NewListRoleAssignmentsRequest(server string, params *ListRoleAssignmentsPar
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/role-assignments")
+	operationPath := fmt.Sprintf("/v1/role-assignments")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -13548,7 +13500,7 @@ func NewCreateRoleAssignmentRequestWithBody(server string, contentType string, b
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/role-assignments")
+	operationPath := fmt.Sprintf("/v1/role-assignments")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -13584,7 +13536,7 @@ func NewDeleteRoleAssignmentRequest(server string, id IDParam) (*http.Request, e
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/role-assignments/%s", pathParam0)
+	operationPath := fmt.Sprintf("/v1/role-assignments/%s", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -13611,7 +13563,7 @@ func NewListRolesRequest(server string, params *ListRolesParams) (*http.Request,
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/roles")
+	operationPath := fmt.Sprintf("/v1/roles")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -13687,7 +13639,7 @@ func NewCreateRoleRequestWithBody(server string, contentType string, body io.Rea
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/roles")
+	operationPath := fmt.Sprintf("/v1/roles")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -13723,7 +13675,7 @@ func NewDeleteRoleRequest(server string, id IDParam, params *DeleteRoleParams) (
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/roles/%s", pathParam0)
+	operationPath := fmt.Sprintf("/v1/roles/%s", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -13779,7 +13731,7 @@ func NewGetRoleRequest(server string, id IDParam, params *GetRoleParams) (*http.
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/roles/%s", pathParam0)
+	operationPath := fmt.Sprintf("/v1/roles/%s", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -13846,7 +13798,7 @@ func NewUpdateRoleRequestWithBody(server string, id IDParam, params *UpdateRoleP
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/roles/%s", pathParam0)
+	operationPath := fmt.Sprintf("/v1/roles/%s", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}

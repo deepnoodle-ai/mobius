@@ -597,9 +597,6 @@ class CLICredentialStatus(Enum):
 
 class CLICredential(BaseModel):
     id: str = Field(..., description='Unique identifier for this credential.')
-    org_id: str = Field(
-        ..., description='ID of the organization this credential is scoped to.'
-    )
     user_id: str = Field(
         ..., description='ID of the user who authorized this credential.'
     )
@@ -1182,9 +1179,6 @@ class UpdateActionRequest(BaseModel):
 
 class Action1(BaseModel):
     id: str = Field(..., description='Unique identifier for this action.')
-    org_id: str = Field(
-        ..., description='ID of the organization this action belongs to.'
-    )
     name: str = Field(
         ...,
         description='Project-scoped stable identifier used in workflow step definitions.',
@@ -1664,9 +1658,6 @@ class RoutingPolicySnapshot(Enum):
 
 class Interaction(BaseModel):
     id: str = Field(..., description='Unique identifier for this interaction.')
-    org_id: str = Field(
-        ..., description='ID of the organization this interaction belongs to.'
-    )
     run_id: str | None = Field(
         None, description='Originating workflow run when the interaction is run-backed.'
     )
@@ -1777,9 +1768,6 @@ class TriggerTarget(BaseModel):
 
 class Trigger(BaseModel):
     id: str = Field(..., description='Unique identifier for this trigger.')
-    org_id: str = Field(
-        ..., description='ID of the organization this trigger belongs to.'
-    )
     name: str = Field(
         ..., description='Human-readable trigger name, unique within the project.'
     )
@@ -1841,12 +1829,6 @@ class TriggerFire(BaseModel):
     """
 
     id: str = Field(..., description='Unique identifier for this fire record.')
-    org_id: str = Field(
-        ..., description='ID of the organization this trigger belongs to.'
-    )
-    project_id: str = Field(
-        ..., description='ID of the project this trigger belongs to.'
-    )
     trigger_id: str = Field(..., description='ID of the trigger that fired.')
     scheduled_at: datetime | None = Field(
         None,
@@ -2024,12 +2006,6 @@ class Webhook(BaseModel):
     """
 
     id: str = Field(..., description='Unique identifier for this webhook.')
-    org_id: str = Field(
-        ..., description='ID of the organization this webhook belongs to.'
-    )
-    project_id: str = Field(
-        ..., description='ID of the project this webhook belongs to.'
-    )
     name: str = Field(
         ..., description='Human-readable name, unique within the project.'
     )
@@ -2077,9 +2053,6 @@ class WebhookDelivery(BaseModel):
     id: str = Field(..., description='Unique identifier for this delivery record.')
     webhook_id: str = Field(
         ..., description='ID of the webhook this delivery belongs to.'
-    )
-    org_id: str = Field(
-        ..., description='ID of the organization this delivery belongs to.'
     )
     run_id: str | None = Field(
         None, description='Run that triggered the event, when applicable.'
@@ -2167,9 +2140,6 @@ class IntegrationStatus(Enum):
 
 class Integration(BaseModel):
     id: str = Field(..., description='Unique identifier for this integration.')
-    org_id: str = Field(
-        ..., description='ID of the organization this integration belongs to.'
-    )
     name: str = Field(
         ..., description='Human-readable name, unique per `(project, provider)` tuple.'
     )
@@ -2250,9 +2220,6 @@ class CopyIntegrationRequest(BaseModel):
 
 class BillingSubscription(BaseModel):
     id: str = Field(..., description='Unique identifier for this subscription.')
-    org_id: str = Field(
-        ..., description='ID of the organization this subscription belongs to.'
-    )
     plan_type: str = Field(
         ...,
         description='Active plan: `trial`, `free`, `pro`, or `business`. New orgs\nstart on `trial`; the plan downgrades to `free` when the trial\nexpires.\n',
@@ -2579,9 +2546,6 @@ class PermissionsState(BaseModel):
 
 class Role2(BaseModel):
     id: str = Field(..., description='Unique identifier for this role.')
-    org_id: str | None = Field(
-        None, description='Owning org. Empty for system-defined roles.'
-    )
     project_id: str | None = Field(
         None, description='Scoping project. Empty for org-wide roles.'
     )
@@ -2618,9 +2582,6 @@ class ActorType2(Enum):
 
 class RoleAssignment(BaseModel):
     id: str = Field(..., description='Unique identifier for this role assignment.')
-    org_id: str = Field(
-        ..., description='ID of the organization this assignment belongs to.'
-    )
     actor_type: ActorType2 = Field(
         ...,
         description='Type of actor this assignment applies to: `user` or `service_account`.',
@@ -2794,7 +2755,6 @@ class Role3(Enum):
 
 class OrgMember(BaseModel):
     id: str = Field(..., description='Unique identifier for this membership record.')
-    org_id: str = Field(..., description='ID of the organization.')
     user_id: str = Field(..., description='ID of the user who is a member.')
     role: Role3 = Field(
         ...,
@@ -2925,9 +2885,6 @@ class RoutingPolicy(Enum):
 
 class Group(BaseModel):
     id: str = Field(..., description='Unique identifier for this group.')
-    org_id: str = Field(
-        ..., description='ID of the organization this group belongs to.'
-    )
     handle: str = Field(
         ...,
         description='URL-safe identifier, unique within the project. Immutable after creation.',
@@ -2976,9 +2933,6 @@ class GroupMember(BaseModel):
     id: str = Field(..., description='Unique identifier for this membership record.')
     group_id: str = Field(
         ..., description='ID of the group this membership belongs to.'
-    )
-    org_id: str = Field(
-        ..., description='ID of the organization this group belongs to.'
     )
     user_id: str = Field(..., description='ID of the user who is a member.')
     added_by: str | None = Field(
@@ -3081,9 +3035,6 @@ class AgentSessionStatus(Enum):
 
 class Agent(BaseModel):
     id: str = Field(..., description='Unique identifier for this agent.')
-    org_id: str = Field(
-        ..., description='ID of the organization this agent belongs to.'
-    )
     service_account_id: str = Field(
         ...,
         description='The service account whose credentials this agent uses to authenticate. Immutable after creation.',
@@ -3120,9 +3071,6 @@ class Agent(BaseModel):
 
 class AgentSession(BaseModel):
     id: str = Field(..., description='Unique identifier for this session.')
-    org_id: str = Field(
-        ..., description='ID of the organization this session belongs to.'
-    )
     agent_id: str = Field(..., description='ID of the agent this session belongs to.')
     status: AgentSessionStatus
     transport: str = Field(
@@ -3223,9 +3171,6 @@ class ServiceAccountStatus(Enum):
 
 class ServiceAccount(BaseModel):
     id: str = Field(..., description='Unique identifier for this service account.')
-    org_id: str = Field(
-        ..., description='ID of the organization this service account belongs to.'
-    )
     name: str = Field(
         ...,
         description='Stable machine-readable identifier, unique within the project. Immutable after creation.',
@@ -3669,9 +3614,9 @@ class StartRunRequest(BaseModel):
     """
     Start a workflow run. Provide exactly one of `definition_id` or
     `spec` — they are mutually exclusive. When both are absent on
-    the path-less `POST /projects/{project}/runs` endpoint, or when both
+    the path-less `POST /v1/projects/{project}/runs` endpoint, or when both
     are present, the request is rejected with 400. On the
-    definition-bound endpoint (`POST /projects/{project}/workflows/{id}/runs`)
+    definition-bound endpoint (`POST /v1/projects/{project}/workflows/{id}/runs`)
     `definition_id` is implied by the path and `spec` is forbidden.
 
     """

@@ -76,7 +76,7 @@ func TestNewClient_WithBaseURLOverride(t *testing.T) {
 func TestRuntimeClaim_Job(t *testing.T) {
 	claimBody := `{"job_id":"job_1","run_id":"run_1","workflow_name":"hello","step_name":"greet","action":"print","parameters":{"msg":"hi"},"attempt":1,"queue":"default","heartbeat_interval_seconds":15}`
 	h := newRecorder(t, map[string]stubResponse{
-		"/projects/test-project/jobs/claim": {status: 200, body: claimBody},
+		"/v1/projects/test-project/jobs/claim": {status: 200, body: claimBody},
 	})
 	c, _ := newTestClient(t, h)
 
@@ -92,10 +92,10 @@ func TestRuntimeClaim_Job(t *testing.T) {
 	assert.Equal(t, job.StepName, "greet")
 	assert.Equal(t, job.WorkerID, "w1")
 	assert.Equal(t, job.HeartbeatInterval, 15*time.Second)
-	assert.Equal(t, h.lastHeader["/projects/test-project/jobs/claim"].Get("Authorization"), "Bearer mbx_test")
+	assert.Equal(t, h.lastHeader["/v1/projects/test-project/jobs/claim"].Get("Authorization"), "Bearer mbx_test")
 
 	var sent map[string]any
-	_ = json.Unmarshal(h.lastBody["/projects/test-project/jobs/claim"], &sent)
+	_ = json.Unmarshal(h.lastBody["/v1/projects/test-project/jobs/claim"], &sent)
 	assert.Equal(t, sent["worker_id"], "w1")
 	assert.Equal(t, sent["worker_name"], "name")
 	acts, _ := sent["actions"].([]any)
@@ -105,7 +105,7 @@ func TestRuntimeClaim_Job(t *testing.T) {
 
 func TestRuntimeClaim_Empty(t *testing.T) {
 	h := newRecorder(t, map[string]stubResponse{
-		"/projects/test-project/jobs/claim": {status: 204, body: ""},
+		"/v1/projects/test-project/jobs/claim": {status: 204, body: ""},
 	})
 	c, _ := newTestClient(t, h)
 	job, err := c.runtimeClaim(context.Background(), WorkerConfig{WorkerID: "w1", PollWaitSeconds: 1})
@@ -115,7 +115,7 @@ func TestRuntimeClaim_Empty(t *testing.T) {
 
 func TestRuntimeHeartbeat_Directives(t *testing.T) {
 	h := newRecorder(t, map[string]stubResponse{
-		"/projects/test-project/jobs/": {status: 200, body: `{"ok":true,"directives":{"should_cancel":true}}`},
+		"/v1/projects/test-project/jobs/": {status: 200, body: `{"ok":true,"directives":{"should_cancel":true}}`},
 	})
 	c, _ := newTestClient(t, h)
 	job := &runtimeJob{JobID: "job_1", Attempt: 1, WorkerID: "w1"}
@@ -128,7 +128,7 @@ func TestRuntimeHeartbeat_Directives(t *testing.T) {
 
 func TestRuntimeHeartbeat_LeaseLost(t *testing.T) {
 	h := newRecorder(t, map[string]stubResponse{
-		"/projects/test-project/jobs/": {status: 409, body: ""},
+		"/v1/projects/test-project/jobs/": {status: 409, body: ""},
 	})
 	c, _ := newTestClient(t, h)
 	_, err := c.runtimeHeartbeat(context.Background(), &runtimeJob{JobID: "job_1", Attempt: 1, WorkerID: "w1"})
@@ -137,7 +137,7 @@ func TestRuntimeHeartbeat_LeaseLost(t *testing.T) {
 
 func TestRuntimeCompleteSuccess(t *testing.T) {
 	h := newRecorder(t, map[string]stubResponse{
-		"/projects/test-project/jobs/": {status: 204, body: ""},
+		"/v1/projects/test-project/jobs/": {status: 204, body: ""},
 	})
 	c, _ := newTestClient(t, h)
 	job := &runtimeJob{JobID: "job_1", Attempt: 1, WorkerID: "w1"}
@@ -145,14 +145,14 @@ func TestRuntimeCompleteSuccess(t *testing.T) {
 	assert.NoError(t, err)
 
 	var sent map[string]any
-	_ = json.Unmarshal(h.lastBody["/projects/test-project/jobs/"], &sent)
+	_ = json.Unmarshal(h.lastBody["/v1/projects/test-project/jobs/"], &sent)
 	assert.Equal(t, sent["status"], "completed")
 	assert.NotNil(t, sent["result_b64"])
 }
 
 func TestRuntimeCompleteFailure_LeaseLost(t *testing.T) {
 	h := newRecorder(t, map[string]stubResponse{
-		"/projects/test-project/jobs/": {status: 409, body: ""},
+		"/v1/projects/test-project/jobs/": {status: 409, body: ""},
 	})
 	c, _ := newTestClient(t, h)
 	err := c.runtimeCompleteFailure(context.Background(), &runtimeJob{JobID: "job_1", Attempt: 1, WorkerID: "w1"}, "Error", "boom")
@@ -161,14 +161,14 @@ func TestRuntimeCompleteFailure_LeaseLost(t *testing.T) {
 
 func TestRuntimeCompleteFailure_Body(t *testing.T) {
 	h := newRecorder(t, map[string]stubResponse{
-		"/projects/test-project/jobs/": {status: 204, body: ""},
+		"/v1/projects/test-project/jobs/": {status: 204, body: ""},
 	})
 	c, _ := newTestClient(t, h)
 	err := c.runtimeCompleteFailure(context.Background(), &runtimeJob{JobID: "job_1", Attempt: 2, WorkerID: "w1"}, "Timeout", "deadline exceeded")
 	assert.NoError(t, err)
 
 	var sent map[string]any
-	_ = json.Unmarshal(h.lastBody["/projects/test-project/jobs/"], &sent)
+	_ = json.Unmarshal(h.lastBody["/v1/projects/test-project/jobs/"], &sent)
 	assert.Equal(t, sent["status"], "failed")
 	assert.Equal(t, sent["error_type"], "Timeout")
 	assert.Equal(t, sent["error_message"], "deadline exceeded")
@@ -176,7 +176,7 @@ func TestRuntimeCompleteFailure_Body(t *testing.T) {
 
 func TestRuntimeEmitEvents(t *testing.T) {
 	h := newRecorder(t, map[string]stubResponse{
-		"/projects/test-project/jobs/job_1/events": {status: 204, body: ""},
+		"/v1/projects/test-project/jobs/job_1/events": {status: 204, body: ""},
 	})
 	c, _ := newTestClient(t, h)
 	job := &runtimeJob{JobID: "job_1", Attempt: 1, WorkerID: "w1"}
@@ -186,7 +186,7 @@ func TestRuntimeEmitEvents(t *testing.T) {
 	assert.NoError(t, err)
 
 	var sent map[string]any
-	_ = json.Unmarshal(h.lastBody["/projects/test-project/jobs/job_1/events"], &sent)
+	_ = json.Unmarshal(h.lastBody["/v1/projects/test-project/jobs/job_1/events"], &sent)
 	assert.Equal(t, sent["worker_id"], "w1")
 	assert.Equal(t, sent["attempt"], float64(1))
 	events, _ := sent["events"].([]any)
@@ -197,8 +197,8 @@ func TestRuntimeEmitEvents(t *testing.T) {
 
 func TestWorkerExecuteJob_EmitsCustomEvents(t *testing.T) {
 	h := newRecorder(t, map[string]stubResponse{
-		"/projects/test-project/jobs/job_1/complete": {status: 204, body: ""},
-		"/projects/test-project/jobs/job_1/events":   {status: 204, body: ""},
+		"/v1/projects/test-project/jobs/job_1/complete": {status: 204, body: ""},
+		"/v1/projects/test-project/jobs/job_1/events":   {status: 204, body: ""},
 	})
 	c, _ := newTestClient(t, h)
 	w := c.NewWorker(WorkerConfig{WorkerID: "w1", EventBatchSize: 10})
@@ -222,7 +222,7 @@ func TestWorkerExecuteJob_EmitsCustomEvents(t *testing.T) {
 	})
 
 	var sent map[string]any
-	_ = json.Unmarshal(h.lastBody["/projects/test-project/jobs/job_1/events"], &sent)
+	_ = json.Unmarshal(h.lastBody["/v1/projects/test-project/jobs/job_1/events"], &sent)
 	events, _ := sent["events"].([]any)
 	assert.Len(t, events, 1)
 	first, _ := events[0].(map[string]any)

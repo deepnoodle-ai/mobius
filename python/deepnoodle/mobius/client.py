@@ -137,7 +137,7 @@ class Client:
 
     def claim_job(self, req: JobClaimRequest) -> JobClaim | None:
         resp = self._http.post(
-            f"/projects/{self.namespace}/jobs/claim",
+            f"/v1/projects/{self.namespace}/jobs/claim",
             json=_dump(req),
         )
         if resp.status_code == 204:
@@ -149,7 +149,7 @@ class Client:
         self, job_id: str, req: JobFenceRequest
     ) -> JobHeartbeat:
         resp = self._http.post(
-            f"/projects/{self.namespace}/jobs/{job_id}/heartbeat",
+            f"/v1/projects/{self.namespace}/jobs/{job_id}/heartbeat",
             json=_dump(req),
         )
         if resp.status_code == 409:
@@ -159,7 +159,7 @@ class Client:
 
     def complete_job(self, job_id: str, req: JobCompleteRequest) -> None:
         resp = self._http.post(
-            f"/projects/{self.namespace}/jobs/{job_id}/complete",
+            f"/v1/projects/{self.namespace}/jobs/{job_id}/complete",
             json=_dump(req),
         )
         if resp.status_code == 409:
@@ -168,7 +168,7 @@ class Client:
 
     def emit_job_events(self, job_id: str, req: JobEventsRequest) -> None:
         resp = self._http.post(
-            f"/projects/{self.namespace}/jobs/{job_id}/events",
+            f"/v1/projects/{self.namespace}/jobs/{job_id}/events",
             json=_dump(req),
         )
         if resp.status_code == 409:

@@ -76,7 +76,7 @@ func (c *Client) runtimeClaim(ctx context.Context, cfg WorkerConfig) (*runtimeJo
 	pollCtx, cancel := context.WithTimeout(ctx, time.Duration(cfg.PollWaitSeconds+5)*time.Second)
 	defer cancel()
 
-	resp, err := c.runtimeRequest(pollCtx, http.MethodPost, fmt.Sprintf("/projects/%s/jobs/claim", c.projectHandle), data)
+	resp, err := c.runtimeRequest(pollCtx, http.MethodPost, fmt.Sprintf("/v1/projects/%s/jobs/claim", c.projectHandle), data)
 	if err != nil {
 		return nil, fmt.Errorf("mobius: claim: %w", err)
 	}
@@ -113,7 +113,7 @@ func (c *Client) runtimeClaim(ctx context.Context, cfg WorkerConfig) (*runtimeJo
 // runtimeHeartbeat refreshes the lease on a claimed job and returns
 // any directives from the server. Returns ErrLeaseLost on 409.
 func (c *Client) runtimeHeartbeat(ctx context.Context, job *runtimeJob) (*api.JobHeartbeatDirectives, error) {
-	resp, err := c.runtimeRequest(ctx, http.MethodPost, fmt.Sprintf("/projects/%s/jobs/%s/heartbeat", c.projectHandle, job.JobID), api.JobFenceRequest{
+	resp, err := c.runtimeRequest(ctx, http.MethodPost, fmt.Sprintf("/v1/projects/%s/jobs/%s/heartbeat", c.projectHandle, job.JobID), api.JobFenceRequest{
 		WorkerId: job.WorkerID,
 		Attempt:  job.Attempt,
 	})
@@ -171,7 +171,7 @@ func (c *Client) runtimeCompleteFailure(ctx context.Context, job *runtimeJob, er
 }
 
 func (c *Client) runtimeCompleteRaw(ctx context.Context, jobID string, req api.JobCompleteRequest) error {
-	resp, err := c.runtimeRequest(ctx, http.MethodPost, fmt.Sprintf("/projects/%s/jobs/%s/complete", c.projectHandle, jobID), req)
+	resp, err := c.runtimeRequest(ctx, http.MethodPost, fmt.Sprintf("/v1/projects/%s/jobs/%s/complete", c.projectHandle, jobID), req)
 	if err != nil {
 		return fmt.Errorf("mobius: complete: %w", err)
 	}
@@ -189,7 +189,7 @@ func (c *Client) runtimeEmitEvents(ctx context.Context, job *runtimeJob, events 
 	if len(events) == 0 {
 		return nil
 	}
-	resp, err := c.runtimeRequest(ctx, http.MethodPost, fmt.Sprintf("/projects/%s/jobs/%s/events", c.projectHandle, job.JobID), jobEventsRequest{
+	resp, err := c.runtimeRequest(ctx, http.MethodPost, fmt.Sprintf("/v1/projects/%s/jobs/%s/events", c.projectHandle, job.JobID), jobEventsRequest{
 		WorkerID: job.WorkerID,
 		Attempt:  job.Attempt,
 		Events:   events,

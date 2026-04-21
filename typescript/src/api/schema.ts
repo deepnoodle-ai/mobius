@@ -4,7 +4,7 @@
  */
 
 export interface paths {
-    "/projects/{project}/channels": {
+    "/v1/projects/{project}/channels": {
         parameters: {
             query?: never;
             header?: never;
@@ -31,7 +31,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/projects/{project}/channels/{id}": {
+    "/v1/projects/{project}/channels/{id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -57,7 +57,7 @@ export interface paths {
         patch: operations["updateChannel"];
         trace?: never;
     };
-    "/projects/{project}/channels/{id}/members": {
+    "/v1/projects/{project}/channels/{id}/members": {
         parameters: {
             query?: never;
             header?: never;
@@ -81,7 +81,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/projects/{project}/channels/{id}/members/{userId}": {
+    "/v1/projects/{project}/channels/{id}/members/{userId}": {
         parameters: {
             query?: never;
             header?: never;
@@ -98,7 +98,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/projects/{project}/channels/{id}/messages": {
+    "/v1/projects/{project}/channels/{id}/messages": {
         parameters: {
             query?: never;
             header?: never;
@@ -126,7 +126,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/projects/{project}/channels/{id}/messages/{messageId}": {
+    "/v1/projects/{project}/channels/{id}/messages/{messageId}": {
         parameters: {
             query?: never;
             header?: never;
@@ -147,7 +147,7 @@ export interface paths {
         patch: operations["updateChannelMessage"];
         trace?: never;
     };
-    "/audit-logs": {
+    "/v1/audit-logs": {
         parameters: {
             query?: never;
             header?: never;
@@ -174,7 +174,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api-keys": {
+    "/v1/api-keys": {
         parameters: {
             query?: never;
             header?: never;
@@ -207,7 +207,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api-keys/{id}": {
+    "/v1/api-keys/{id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -232,7 +232,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/projects/{project}/workflows": {
+    "/v1/projects/{project}/workflows": {
         parameters: {
             query?: never;
             header?: never;
@@ -259,7 +259,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/projects/{project}/workflows/{id}": {
+    "/v1/projects/{project}/workflows/{id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -288,7 +288,7 @@ export interface paths {
         patch: operations["updateWorkflow"];
         trace?: never;
     };
-    "/projects/{project}/workflows/{id}/versions": {
+    "/v1/projects/{project}/workflows/{id}/versions": {
         parameters: {
             query?: never;
             header?: never;
@@ -308,7 +308,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/projects/{project}/workflows/{id}/runs": {
+    "/v1/projects/{project}/workflows/{id}/runs": {
         parameters: {
             query?: never;
             header?: never;
@@ -324,7 +324,7 @@ export interface paths {
         /**
          * Start a new workflow run against a saved definition
          * @description Enqueues a run using the latest version of the specified workflow
-         *     definition. Equivalent to POST /projects/{project}/runs with
+         *     definition. Equivalent to POST /v1/projects/{project}/runs with
          *     `definition_id` set to this workflow's ID. The `spec` field is
          *     forbidden on this path-bound endpoint.
          */
@@ -335,7 +335,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/projects/{project}/runs": {
+    "/v1/projects/{project}/runs": {
         parameters: {
             query?: never;
             header?: never;
@@ -366,7 +366,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/projects/{project}/runs/cancellations": {
+    "/v1/projects/{project}/runs/cancellations": {
         parameters: {
             query?: never;
             header?: never;
@@ -389,7 +389,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/projects/{project}/runs/retries": {
+    "/v1/projects/{project}/runs/retries": {
         parameters: {
             query?: never;
             header?: never;
@@ -412,7 +412,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/projects/{project}/runs/{id}": {
+    "/v1/projects/{project}/runs/{id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -429,7 +429,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/projects/{project}/runs/{id}/action-log": {
+    "/v1/projects/{project}/runs/{id}/action-log": {
         parameters: {
             query?: never;
             header?: never;
@@ -446,7 +446,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/projects/{project}/runs/{id}/jobs": {
+    "/v1/projects/{project}/runs/{id}/jobs": {
         parameters: {
             query?: never;
             header?: never;
@@ -463,7 +463,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/projects/{project}/runs/events": {
+    "/v1/projects/{project}/runs/events": {
         parameters: {
             query?: never;
             header?: never;
@@ -494,7 +494,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/projects/{project}/runs/{id}/cancellations": {
+    "/v1/projects/{project}/runs/{id}/cancellations": {
         parameters: {
             query?: never;
             header?: never;
@@ -516,7 +516,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/projects/{project}/runs/{id}/resumptions": {
+    "/v1/projects/{project}/runs/{id}/resumptions": {
         parameters: {
             query?: never;
             header?: never;
@@ -536,7 +536,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/projects/{project}/runs/{id}/signals": {
+    "/v1/projects/{project}/runs/{id}/signals": {
         parameters: {
             query?: never;
             header?: never;
@@ -560,7 +560,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/projects/{project}/runs/{id}/events": {
+    "/v1/projects/{project}/runs/{id}/events": {
         parameters: {
             query?: never;
             header?: never;
@@ -569,7 +569,7 @@ export interface paths {
         };
         /**
          * Subscribe to a stream of events for a single run (SSE)
-         * @description Same envelope as `/projects/{project}/runs/events` but filtered to a single run.
+         * @description Same envelope as `/v1/projects/{project}/runs/events` but filtered to a single run.
          *     The server writes one seed `run_updated` frame on connection
          *     so reconnects do not miss the latest state, and supports
          *     `?since=<seq>` replay for durable events recorded since the
@@ -584,7 +584,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/projects/{project}/actions": {
+    "/v1/projects/{project}/actions": {
         parameters: {
             query?: never;
             header?: never;
@@ -611,7 +611,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/projects/{project}/actions/{actionName}": {
+    "/v1/projects/{project}/actions/{actionName}": {
         parameters: {
             query?: never;
             header?: never;
@@ -639,7 +639,7 @@ export interface paths {
         patch: operations["updateAction"];
         trace?: never;
     };
-    "/projects/{project}/actions/{actionName}/secret/rotate": {
+    "/v1/projects/{project}/actions/{actionName}/secret/rotate": {
         parameters: {
             query?: never;
             header?: never;
@@ -663,7 +663,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/projects/{project}/action-audit-log": {
+    "/v1/projects/{project}/action-audit-log": {
         parameters: {
             query?: never;
             header?: never;
@@ -687,7 +687,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/projects/{project}/actions/catalog": {
+    "/v1/projects/{project}/actions/catalog": {
         parameters: {
             query?: never;
             header?: never;
@@ -711,7 +711,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/projects/{project}/actions/catalog/{actionName}": {
+    "/v1/projects/{project}/actions/catalog/{actionName}": {
         parameters: {
             query?: never;
             header?: never;
@@ -731,7 +731,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/projects/{project}/jobs/claim": {
+    "/v1/projects/{project}/jobs/claim": {
         parameters: {
             query?: never;
             header?: never;
@@ -750,7 +750,7 @@ export interface paths {
          *     window closes empty.
          *
          *     Each successful call also registers or refreshes the worker in the
-         *     worker registry (used by `GET /projects/{project}/workers`), so no
+         *     worker registry (used by `GET /v1/projects/{project}/workers`), so no
          *     separate registration step is needed.
          *
          *     The returned `JobClaim` includes the `heartbeat_interval_seconds`
@@ -763,7 +763,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/projects/{project}/jobs/{id}/heartbeat": {
+    "/v1/projects/{project}/jobs/{id}/heartbeat": {
         parameters: {
             query?: never;
             header?: never;
@@ -795,7 +795,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/projects/{project}/jobs/{id}/complete": {
+    "/v1/projects/{project}/jobs/{id}/complete": {
         parameters: {
             query?: never;
             header?: never;
@@ -827,7 +827,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/projects/{project}/jobs/{id}/events": {
+    "/v1/projects/{project}/jobs/{id}/events": {
         parameters: {
             query?: never;
             header?: never;
@@ -862,7 +862,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/projects/{project}/jobs/{id}/interactions": {
+    "/v1/projects/{project}/jobs/{id}/interactions": {
         parameters: {
             query?: never;
             header?: never;
@@ -876,7 +876,7 @@ export interface paths {
          * @description Job-scoped form of interaction creation for the step-claim runtime.
          *     The server derives the owning run and project scope from the job,
          *     so workers do not need to pass `run_id` explicitly. Prefer this
-         *     route over `POST /projects/{project}/interactions` from within a
+         *     route over `POST /v1/projects/{project}/interactions` from within a
          *     job context. The optional `topic` field overrides the server-
          *     derived signal topic; when omitted the server derives the topic
          *     from `step_name` or uses a default interaction topic.
@@ -888,7 +888,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/projects/{project}/jobs/{id}/actions/{actionName}": {
+    "/v1/projects/{project}/jobs/{id}/actions/{actionName}": {
         parameters: {
             query?: never;
             header?: never;
@@ -912,7 +912,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/projects/{project}/triggers": {
+    "/v1/projects/{project}/triggers": {
         parameters: {
             query?: never;
             header?: never;
@@ -939,7 +939,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/projects/{project}/triggers/{id}": {
+    "/v1/projects/{project}/triggers/{id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -964,7 +964,7 @@ export interface paths {
         patch: operations["updateTrigger"];
         trace?: never;
     };
-    "/projects/{project}/triggers/{id}/fires": {
+    "/v1/projects/{project}/triggers/{id}/fires": {
         parameters: {
             query?: never;
             header?: never;
@@ -986,7 +986,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/projects/{project}/workers": {
+    "/v1/projects/{project}/workers": {
         parameters: {
             query?: never;
             header?: never;
@@ -1010,7 +1010,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/projects": {
+    "/v1/projects": {
         parameters: {
             query?: never;
             header?: never;
@@ -1036,7 +1036,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/projects/{id}": {
+    "/v1/projects/{id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -1067,7 +1067,7 @@ export interface paths {
         patch: operations["updateProject"];
         trace?: never;
     };
-    "/projects/{project}/webhooks": {
+    "/v1/projects/{project}/webhooks": {
         parameters: {
             query?: never;
             header?: never;
@@ -1095,7 +1095,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/projects/{project}/webhooks/{id}": {
+    "/v1/projects/{project}/webhooks/{id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -1123,7 +1123,7 @@ export interface paths {
         patch: operations["updateWebhook"];
         trace?: never;
     };
-    "/projects/{project}/webhooks/{id}/deliveries": {
+    "/v1/projects/{project}/webhooks/{id}/deliveries": {
         parameters: {
             query?: never;
             header?: never;
@@ -1147,7 +1147,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/projects/{project}/integrations": {
+    "/v1/projects/{project}/integrations": {
         parameters: {
             query?: never;
             header?: never;
@@ -1170,7 +1170,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/projects/{project}/integrations/{id}": {
+    "/v1/projects/{project}/integrations/{id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -1198,7 +1198,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/projects/{project}/integrations/copy": {
+    "/v1/projects/{project}/integrations/copy": {
         parameters: {
             query?: never;
             header?: never;
@@ -1224,7 +1224,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/projects/{project}/metrics": {
+    "/v1/projects/{project}/metrics": {
         parameters: {
             query?: never;
             header?: never;
@@ -1247,7 +1247,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/roles": {
+    "/v1/roles": {
         parameters: {
             query?: never;
             header?: never;
@@ -1273,7 +1273,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/roles/{id}": {
+    "/v1/roles/{id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -1299,7 +1299,7 @@ export interface paths {
         patch: operations["updateRole"];
         trace?: never;
     };
-    "/role-assignments": {
+    "/v1/role-assignments": {
         parameters: {
             query?: never;
             header?: never;
@@ -1326,7 +1326,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/role-assignments/{id}": {
+    "/v1/role-assignments/{id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -1343,7 +1343,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/projects/{project}/interactions": {
+    "/v1/projects/{project}/interactions": {
         parameters: {
             query?: never;
             header?: never;
@@ -1370,7 +1370,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/projects/{project}/interactions/{id}": {
+    "/v1/projects/{project}/interactions/{id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -1387,7 +1387,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/projects/{project}/interactions/{id}/respond": {
+    "/v1/projects/{project}/interactions/{id}/respond": {
         parameters: {
             query?: never;
             header?: never;
@@ -1410,7 +1410,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/projects/{project}/interactions/{id}/claim": {
+    "/v1/projects/{project}/interactions/{id}/claim": {
         parameters: {
             query?: never;
             header?: never;
@@ -1427,7 +1427,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/projects/{project}/interactions/{id}/release": {
+    "/v1/projects/{project}/interactions/{id}/release": {
         parameters: {
             query?: never;
             header?: never;
@@ -1444,7 +1444,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/projects/{project}/groups": {
+    "/v1/projects/{project}/groups": {
         parameters: {
             query?: never;
             header?: never;
@@ -1469,7 +1469,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/projects/{project}/groups/{groupId}": {
+    "/v1/projects/{project}/groups/{groupId}": {
         parameters: {
             query?: never;
             header?: never;
@@ -1497,7 +1497,7 @@ export interface paths {
         patch: operations["updateGroup"];
         trace?: never;
     };
-    "/projects/{project}/groups/{groupId}/members": {
+    "/v1/projects/{project}/groups/{groupId}/members": {
         parameters: {
             query?: never;
             header?: never;
@@ -1521,7 +1521,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/projects/{project}/groups/{groupId}/members/{userId}": {
+    "/v1/projects/{project}/groups/{groupId}/members/{userId}": {
         parameters: {
             query?: never;
             header?: never;
@@ -1541,7 +1541,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/projects/{project}/members/{userId}/groups": {
+    "/v1/projects/{project}/members/{userId}/groups": {
         parameters: {
             query?: never;
             header?: never;
@@ -1558,7 +1558,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/projects/{project}/agents": {
+    "/v1/projects/{project}/agents": {
         parameters: {
             query?: never;
             header?: never;
@@ -1584,7 +1584,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/projects/{project}/agents/{id}": {
+    "/v1/projects/{project}/agents/{id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -1611,7 +1611,7 @@ export interface paths {
         patch: operations["updateAgent"];
         trace?: never;
     };
-    "/projects/{project}/agents/{id}/sessions": {
+    "/v1/projects/{project}/agents/{id}/sessions": {
         parameters: {
             query?: never;
             header?: never;
@@ -1640,7 +1640,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/projects/{project}/agents/sessions/{sessionId}": {
+    "/v1/projects/{project}/agents/sessions/{sessionId}": {
         parameters: {
             query?: never;
             header?: never;
@@ -1657,7 +1657,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/projects/{project}/agents/sessions/{sessionId}/heartbeat": {
+    "/v1/projects/{project}/agents/sessions/{sessionId}/heartbeat": {
         parameters: {
             query?: never;
             header?: never;
@@ -1679,7 +1679,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/projects/{project}/agents/sessions/{sessionId}/disconnect": {
+    "/v1/projects/{project}/agents/sessions/{sessionId}/disconnect": {
         parameters: {
             query?: never;
             header?: never;
@@ -1701,7 +1701,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/projects/{project}/tools": {
+    "/v1/projects/{project}/tools": {
         parameters: {
             query?: never;
             header?: never;
@@ -1724,7 +1724,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/projects/{project}/tools/{handle}/runs": {
+    "/v1/projects/{project}/tools/{handle}/runs": {
         parameters: {
             query?: never;
             header?: never;
@@ -1740,7 +1740,7 @@ export interface paths {
          *     Returns the run output directly when the workflow completes within
          *     the timeout. On timeout the response includes the run ID and
          *     `status: pending` so the caller can switch to polling via
-         *     `GET /projects/{project}/tools/{handle}/runs/{run_id}`.
+         *     `GET /v1/projects/{project}/tools/{handle}/runs/{run_id}`.
          */
         post: operations["runTool"];
         delete?: never;
@@ -1749,7 +1749,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/projects/{project}/tools/{handle}/runs/{runId}": {
+    "/v1/projects/{project}/tools/{handle}/runs/{runId}": {
         parameters: {
             query?: never;
             header?: never;
@@ -2211,8 +2211,6 @@ export interface components {
         CLICredential: {
             /** @description Unique identifier for this credential. */
             id: string;
-            /** @description ID of the organization this credential is scoped to. */
-            org_id: string;
             /** @description ID of the user who authorized this credential. */
             user_id: string;
             /** @description Human-readable label identifying this credential. */
@@ -2669,9 +2667,9 @@ export interface components {
         /**
          * @description Start a workflow run. Provide exactly one of `definition_id` or
          *     `spec` — they are mutually exclusive. When both are absent on
-         *     the path-less `POST /projects/{project}/runs` endpoint, or when both
+         *     the path-less `POST /v1/projects/{project}/runs` endpoint, or when both
          *     are present, the request is rejected with 400. On the
-         *     definition-bound endpoint (`POST /projects/{project}/workflows/{id}/runs`)
+         *     definition-bound endpoint (`POST /v1/projects/{project}/workflows/{id}/runs`)
          *     `definition_id` is implied by the path and `spec` is forbidden.
          */
         StartRunRequest: {
@@ -2880,8 +2878,6 @@ export interface components {
         Action: {
             /** @description Unique identifier for this action. */
             id: string;
-            /** @description ID of the organization this action belongs to. */
-            org_id: string;
             /** @description Project-scoped stable identifier used in workflow step definitions. */
             name: string;
             /** @description Human-readable display title for the action. */
@@ -3294,8 +3290,6 @@ export interface components {
         Interaction: {
             /** @description Unique identifier for this interaction. */
             id: string;
-            /** @description ID of the organization this interaction belongs to. */
-            org_id: string;
             /** @description Originating workflow run when the interaction is run-backed. */
             run_id?: string | null;
             /** @description Signal topic used to resume the originating run when run-backed. */
@@ -3395,8 +3389,6 @@ export interface components {
         Trigger: {
             /** @description Unique identifier for this trigger. */
             id: string;
-            /** @description ID of the organization this trigger belongs to. */
-            org_id: string;
             /** @description Human-readable trigger name, unique within the project. */
             name: string;
             kind: components["schemas"]["TriggerKind"];
@@ -3455,10 +3447,6 @@ export interface components {
         TriggerFire: {
             /** @description Unique identifier for this fire record. */
             id: string;
-            /** @description ID of the organization this trigger belongs to. */
-            org_id: string;
-            /** @description ID of the project this trigger belongs to. */
-            project_id: string;
             /** @description ID of the trigger that fired. */
             trigger_id: string;
             /**
@@ -3637,10 +3625,6 @@ export interface components {
         Webhook: {
             /** @description Unique identifier for this webhook. */
             id: string;
-            /** @description ID of the organization this webhook belongs to. */
-            org_id: string;
-            /** @description ID of the project this webhook belongs to. */
-            project_id: string;
             /** @description Human-readable name, unique within the project. */
             name: string;
             /** @description The customer endpoint Mobius POSTs event payloads to. */
@@ -3684,8 +3668,6 @@ export interface components {
             id: string;
             /** @description ID of the webhook this delivery belongs to. */
             webhook_id: string;
-            /** @description ID of the organization this delivery belongs to. */
-            org_id: string;
             /** @description Run that triggered the event, when applicable. */
             run_id?: string;
             /** @description The event type that triggered this delivery (e.g. `run.completed`). */
@@ -3761,8 +3743,6 @@ export interface components {
         Integration: {
             /** @description Unique identifier for this integration. */
             id: string;
-            /** @description ID of the organization this integration belongs to. */
-            org_id: string;
             /** @description Human-readable name, unique per `(project, provider)` tuple. */
             name: string;
             /**
@@ -3842,8 +3822,6 @@ export interface components {
         BillingSubscription: {
             /** @description Unique identifier for this subscription. */
             id: string;
-            /** @description ID of the organization this subscription belongs to. */
-            org_id: string;
             /**
              * @description Active plan: `trial`, `free`, `pro`, or `business`. New orgs
              *     start on `trial`; the plan downgrades to `free` when the trial
@@ -4174,8 +4152,6 @@ export interface components {
         Role: {
             /** @description Unique identifier for this role. */
             id: string;
-            /** @description Owning org. Empty for system-defined roles. */
-            org_id?: string;
             /** @description Scoping project. Empty for org-wide roles. */
             project_id?: string;
             /** @description Human-readable role name, unique within org+project scope. */
@@ -4200,8 +4176,6 @@ export interface components {
         RoleAssignment: {
             /** @description Unique identifier for this role assignment. */
             id: string;
-            /** @description ID of the organization this assignment belongs to. */
-            org_id: string;
             /**
              * @description Type of actor this assignment applies to: `user` or `service_account`.
              * @enum {string}
@@ -4343,8 +4317,6 @@ export interface components {
         OrgMember: {
             /** @description Unique identifier for this membership record. */
             id: string;
-            /** @description ID of the organization. */
-            org_id: string;
             /** @description ID of the user who is a member. */
             user_id: string;
             /**
@@ -4438,8 +4410,6 @@ export interface components {
         Group: {
             /** @description Unique identifier for this group. */
             id: string;
-            /** @description ID of the organization this group belongs to. */
-            org_id: string;
             /** @description URL-safe identifier, unique within the project. Immutable after creation. */
             handle: string;
             /** @description Human-readable display name. */
@@ -4485,8 +4455,6 @@ export interface components {
             id: string;
             /** @description ID of the group this membership belongs to. */
             group_id: string;
-            /** @description ID of the organization this group belongs to. */
-            org_id: string;
             /** @description ID of the user who is a member. */
             user_id: string;
             /** @description User ID of the org member who added this person to the group. */
@@ -4551,8 +4519,6 @@ export interface components {
         Agent: {
             /** @description Unique identifier for this agent. */
             id: string;
-            /** @description ID of the organization this agent belongs to. */
-            org_id: string;
             /** @description The service account whose credentials this agent uses to authenticate. Immutable after creation. */
             service_account_id: string;
             /** @description Unique name within the project, used for targeting in job claims. */
@@ -4587,8 +4553,6 @@ export interface components {
         AgentSession: {
             /** @description Unique identifier for this session. */
             id: string;
-            /** @description ID of the organization this session belongs to. */
-            org_id: string;
             /** @description ID of the agent this session belongs to. */
             agent_id: string;
             status: components["schemas"]["AgentSessionStatus"];
@@ -4685,8 +4649,6 @@ export interface components {
         ServiceAccount: {
             /** @description Unique identifier for this service account. */
             id: string;
-            /** @description ID of the organization this service account belongs to. */
-            org_id: string;
             /** @description Stable machine-readable identifier, unique within the project. Immutable after creation. */
             name: string;
             /** @description Human-readable label shown in the UI. */

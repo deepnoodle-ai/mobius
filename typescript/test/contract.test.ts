@@ -110,7 +110,7 @@ test("contract: claim_request_minimal sent verbatim", async () => {
   } finally {
     restore();
   }
-  assert.equal(captured.last?.path, `/projects/${PROJECT}/jobs/claim`);
+  assert.equal(captured.last?.path, `/v1/projects/${PROJECT}/jobs/claim`);
   assert.equal(captured.last?.method, "POST");
   assert.deepStrictEqual(captured.last?.body, fixture);
 });
@@ -139,7 +139,7 @@ test("contract: heartbeat_job_request sent verbatim", async () => {
   }
   assert.equal(
     captured.last?.path,
-    `/projects/${PROJECT}/jobs/job_test/heartbeat`,
+    `/v1/projects/${PROJECT}/jobs/job_test/heartbeat`,
   );
   assert.deepStrictEqual(captured.last?.body, fixture);
 });
@@ -157,7 +157,7 @@ test("contract: complete_job_request_success sent verbatim", async () => {
   }
   assert.equal(
     captured.last?.path,
-    `/projects/${PROJECT}/jobs/job_test/complete`,
+    `/v1/projects/${PROJECT}/jobs/job_test/complete`,
   );
   assert.deepStrictEqual(captured.last?.body, fixture);
 });
