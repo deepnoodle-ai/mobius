@@ -25,7 +25,11 @@ func registerChannelsCommands(app *cli.App) {
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			p0 := ctx.String("project")
 			p1 := ctx.Arg(0)
 			var body api.AddChannelMemberJSONRequestBody
@@ -46,7 +50,11 @@ func registerChannelsCommands(app *cli.App) {
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			p0 := ctx.String("project")
 			var body api.CreateChannelJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
@@ -64,7 +72,11 @@ func registerChannelsCommands(app *cli.App) {
 		Args("id").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			p0 := ctx.String("project")
 			p1 := ctx.Arg(0)
 			resp, err := client.DeleteChannelWithResponse(ctx.Context(), p0, p1)
@@ -79,7 +91,11 @@ func registerChannelsCommands(app *cli.App) {
 		Args("id").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			p0 := ctx.String("project")
 			p1 := ctx.Arg(0)
 			resp, err := client.GetChannelWithResponse(ctx.Context(), p0, p1)
@@ -94,7 +110,11 @@ func registerChannelsCommands(app *cli.App) {
 		Args("id", "message-id").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			p0 := ctx.String("project")
 			p1 := ctx.Arg(0)
 			p2 := ctx.Arg(1)
@@ -115,7 +135,11 @@ func registerChannelsCommands(app *cli.App) {
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			p0 := ctx.String("project")
 			params := &api.ListChannelsParams{}
 			if ctx.IsSet("kind") {
@@ -150,7 +174,11 @@ func registerChannelsCommands(app *cli.App) {
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			p0 := ctx.String("project")
 			p1 := ctx.Arg(0)
 			params := &api.ListChannelMembersParams{}
@@ -181,7 +209,11 @@ func registerChannelsCommands(app *cli.App) {
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			p0 := ctx.String("project")
 			p1 := ctx.Arg(0)
 			params := &api.ListChannelMessagesParams{}
@@ -217,7 +249,11 @@ func registerChannelsCommands(app *cli.App) {
 		Args("id", "user-id").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			p0 := ctx.String("project")
 			p1 := ctx.Arg(0)
 			p2 := ctx.Arg(1)
@@ -236,7 +272,11 @@ func registerChannelsCommands(app *cli.App) {
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			p0 := ctx.String("project")
 			p1 := ctx.Arg(0)
 			var body api.SendChannelMessageJSONRequestBody
@@ -258,7 +298,11 @@ func registerChannelsCommands(app *cli.App) {
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			p0 := ctx.String("project")
 			p1 := ctx.Arg(0)
 			var body api.UpdateChannelJSONRequestBody
@@ -280,7 +324,11 @@ func registerChannelsCommands(app *cli.App) {
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			p0 := ctx.String("project")
 			p1 := ctx.Arg(0)
 			p2 := ctx.Arg(1)

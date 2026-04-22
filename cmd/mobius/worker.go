@@ -38,7 +38,10 @@ func registerWorkerCommand(app *cli.App) {
 				Help("Long-poll window in seconds (0-30)"),
 		).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx)
+			client, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
 			logger := newLogger(ctx.String("log-level"))
 
 			name := ctx.String("name")

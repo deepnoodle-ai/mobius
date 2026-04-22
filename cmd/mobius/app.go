@@ -48,10 +48,13 @@ func newApp() *cli.App {
 	return app
 }
 
-// clientFromContext builds a *mobius.Client from the global flags on ctx. An
-// empty --api-key is accepted here; individual subcommands that require auth
-// should declare it via RequireFlags middleware or check explicitly.
-func clientFromContext(ctx *cli.Context) *mobius.Client {
+// clientFromContext builds a *mobius.Client from the global flags on ctx.
+// An empty --api-key is accepted here; individual subcommands that require
+// auth should declare it via RequireFlags middleware or check explicitly.
+// A construction error — e.g. a conflict between --project and the handle
+// embedded in a project-pinned API key — surfaces here so the caller can
+// fail the command before any HTTP request is sent.
+func clientFromContext(ctx *cli.Context) (*mobius.Client, error) {
 	logger := newLogger(ctx.String("log-level"))
 	return mobius.NewClient(
 		mobius.WithBaseURL(ctx.String("api-url")),

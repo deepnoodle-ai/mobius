@@ -2,8 +2,11 @@ package mobius
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"net/http"
+	"regexp"
+	"strings"
 	"time"
 
 	"github.com/deepnoodle-ai/mobius/mobius/api"
@@ -39,7 +42,11 @@ type ClientConfig struct {
 type Option func(*Client)
 
 // WithAPIKey sets the API key used to authenticate all requests.
-// API keys are prefixed with "mbx_" and can be managed via the API or console.
+// Project-pinned keys are presented to the server as
+// "<handle>/mbx_<secret>" — pass the credential exactly as it was
+// issued and the client will extract the handle for URL templating,
+// so a single credential is sufficient to configure a worker. Org-
+// scoped keys ("mbx_<secret>" with no prefix) are also accepted.
 func WithAPIKey(key string) Option {
 	return func(c *Client) { c.apiKey = key }
 }
@@ -85,9 +92,21 @@ func WithProjectHandle(handle string) Option {
 	return func(c *Client) { c.projectHandle = handle }
 }
 
+// projectHandleRe matches the project-handle regex enforced by the
+// server (domain/validate.go). Extracting the handle from the
+// credential means the worker only needs one environment variable:
+// the handle is already in the token, so passing it again via
+// WithProjectHandle is redundant and will error out on conflict.
+var projectHandleRe = regexp.MustCompile(`^[a-z0-9]+(-[a-z0-9]+)*$`)
+
 // NewClient returns a Client targeting the default Mobius API host unless
-// overridden with WithBaseURL.
-func NewClient(opts ...Option) *Client {
+// overridden with WithBaseURL. Construction validates the credential
+// shape (when WithAPIKey is supplied): a "<handle>/mbx_<secret>" token
+// is split on the first slash, the handle is validated against the
+// server's handle regex, and any explicit WithProjectHandle must match
+// the embedded handle. All of these surface as an error here rather
+// than as a 403 on the first request.
+func NewClient(opts ...Option) (*Client, error) {
 	c := &Client{
 		baseURL:    DefaultBaseURL,
 		httpClient: &http.Client{Timeout: defaultHTTPTimeout},
@@ -98,6 +117,9 @@ func NewClient(opts ...Option) *Client {
 	}
 	for _, opt := range opts {
 		opt(c)
+	}
+	if err := c.resolveProjectHandleFromAPIKey(); err != nil {
+		return nil, err
 	}
 	if !c.customHTTP {
 		c.httpClient.Transport = &RetryingTransport{
@@ -116,10 +138,35 @@ func NewClient(opts ...Option) *Client {
 		}),
 	)
 	if err != nil {
-		panic("mobius: failed to create API client: " + err.Error())
+		return nil, fmt.Errorf("mobius: failed to create API client: %w", err)
 	}
 	c.ac = ac
-	return c
+	return c, nil
+}
+
+// resolveProjectHandleFromAPIKey extracts the optional "<handle>/"
+// prefix from the configured API key so the URL templater can stop
+// requiring WithProjectHandle for project-pinned credentials. The
+// apiKey itself is left untouched — the full "<handle>/mbx_<secret>"
+// string still rides on the Authorization header, and the server
+// re-runs the prefix-vs-pinned-project check as defence in depth.
+func (c *Client) resolveProjectHandleFromAPIKey() error {
+	if c.apiKey == "" {
+		return nil
+	}
+	slash := strings.IndexByte(c.apiKey, '/')
+	if slash < 0 {
+		return nil
+	}
+	handle := c.apiKey[:slash]
+	if !projectHandleRe.MatchString(handle) {
+		return fmt.Errorf("mobius: invalid project handle prefix in API key: %q", handle)
+	}
+	if c.projectHandle != "" && c.projectHandle != handle {
+		return fmt.Errorf("mobius: WithProjectHandle(%q) conflicts with the handle embedded in the API key (%q)", c.projectHandle, handle)
+	}
+	c.projectHandle = handle
+	return nil
 }
 
 // RawClient returns the underlying generated ClientWithResponses for direct access

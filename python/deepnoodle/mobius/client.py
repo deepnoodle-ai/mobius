@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from typing import Any
 from urllib.parse import quote
@@ -15,10 +16,15 @@ from ._api.models import (
     JobFenceRequest,
     JobHeartbeat,
 )
-from .errors import RateLimitError
+from .errors import AuthRevokedError, RateLimitError
 from .retry import DEFAULT_MAX_RETRIES, RetryingTransport
 
 DEFAULT_BASE_URL = "https://api.mobiusops.ai"
+
+# Mirrors the server-side handle regex in domain/validate.go so we can
+# reject malformed handles at construction time — a project-pinned
+# credential embeds the handle as "<handle>/mbx_<secret>".
+_HANDLE_RE = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
 
 
 @dataclass
@@ -114,6 +120,23 @@ class Client:
                 retry=retry,
             )
 
+        # Project-pinned credentials are issued as "<handle>/mbx_<secret>".
+        # Split the optional handle prefix so the caller can stay with a
+        # single environment variable — the handle is already in the
+        # token. The full token still rides on the Authorization header
+        # and the server re-validates prefix against the key's pinned
+        # project as defence in depth.
+        handle_in_key = _extract_handle_from_api_key(resolved.api_key)
+        if handle_in_key is not None:
+            explicit = project if project != "default" else namespace
+            if explicit and explicit != "default" and explicit != handle_in_key:
+                raise ValueError(
+                    f"project={explicit!r} conflicts with the handle embedded "
+                    f"in the API key ({handle_in_key!r})"
+                )
+            resolved.project = handle_in_key
+            resolved.namespace = handle_in_key
+
         self._opts = resolved
         transport = RetryingTransport(
             httpx.HTTPTransport(),
@@ -144,6 +167,8 @@ class Client:
         )
         if resp.status_code == 204:
             return None
+        if resp.status_code == 401:
+            raise AuthRevokedError()
         resp.raise_for_status()
         return JobClaim.model_validate(resp.json())
 
@@ -156,6 +181,8 @@ class Client:
             f"/v1/projects/{project}/jobs/{job}/heartbeat",
             json=_dump(req),
         )
+        if resp.status_code == 401:
+            raise AuthRevokedError(job_id)
         if resp.status_code == 409:
             raise LeaseLostError(job_id)
         resp.raise_for_status()
@@ -168,6 +195,8 @@ class Client:
             f"/v1/projects/{project}/jobs/{job}/complete",
             json=_dump(req),
         )
+        if resp.status_code == 401:
+            raise AuthRevokedError(job_id)
         if resp.status_code == 409:
             raise LeaseLostError(job_id)
         resp.raise_for_status()
@@ -223,3 +252,20 @@ class Client:
 
 def _dump(model: BaseModel) -> dict[str, Any]:
     return model.model_dump(mode="json", exclude_none=True)
+
+
+def _extract_handle_from_api_key(api_key: str | None) -> str | None:
+    """Return the project handle prefix from a credential, or None if absent.
+
+    Raises ValueError when the prefix is present but malformed, so a bad
+    credential fails construction instead of surfacing as a 403 later.
+    """
+    if not api_key:
+        return None
+    slash = api_key.find("/")
+    if slash < 0:
+        return None
+    handle = api_key[:slash]
+    if not _HANDLE_RE.match(handle):
+        raise ValueError(f"invalid project handle prefix in API key: {handle!r}")
+    return handle

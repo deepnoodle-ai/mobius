@@ -24,7 +24,11 @@ func registerRolesCommands(app *cli.App) {
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			var body api.CreateRoleJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -43,7 +47,11 @@ func registerRolesCommands(app *cli.App) {
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			var body api.CreateRoleAssignmentJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -63,7 +71,11 @@ func registerRolesCommands(app *cli.App) {
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			p0 := ctx.Arg(0)
 			params := &api.DeleteRoleParams{}
 			if ctx.IsSet("project-id") {
@@ -82,7 +94,11 @@ func registerRolesCommands(app *cli.App) {
 		Args("id").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			p0 := ctx.Arg(0)
 			resp, err := client.DeleteRoleAssignmentWithResponse(ctx.Context(), p0)
 			if err != nil {
@@ -99,7 +115,11 @@ func registerRolesCommands(app *cli.App) {
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			p0 := ctx.Arg(0)
 			params := &api.GetRoleParams{}
 			if ctx.IsSet("project-id") {
@@ -121,7 +141,11 @@ func registerRolesCommands(app *cli.App) {
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			params := &api.ListRolesParams{}
 			if ctx.IsSet("limit") {
 				v := ctx.Int("limit")
@@ -148,7 +172,11 @@ func registerRolesCommands(app *cli.App) {
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			params := &api.ListRoleAssignmentsParams{}
 			if ctx.IsSet("actor-type") {
 				v := api.ListRoleAssignmentsParamsActorType(ctx.String("actor-type"))
@@ -182,7 +210,11 @@ func registerRolesCommands(app *cli.App) {
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			p0 := ctx.Arg(0)
 			params := &api.UpdateRoleParams{}
 			if ctx.IsSet("project-id") {

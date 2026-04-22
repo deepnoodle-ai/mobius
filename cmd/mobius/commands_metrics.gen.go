@@ -19,7 +19,11 @@ func registerMetricsCommands(app *cli.App) {
 		Description("Get operational metrics for a project").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			p0 := ctx.String("project")
 			resp, err := client.GetProjectMetricsWithResponse(ctx.Context(), p0)
 			if err != nil {

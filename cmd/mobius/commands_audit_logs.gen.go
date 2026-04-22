@@ -32,7 +32,11 @@ func registerAuditLogsCommands(app *cli.App) {
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			params := &api.ListAuditLogsParams{}
 			if ctx.IsSet("resource-type") {
 				v := ctx.String("resource-type")

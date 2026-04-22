@@ -1,9 +1,11 @@
+import { randomUUID } from "node:crypto";
 import type {
   JobClaim,
   JobClaimRequest,
   JobCompleteRequest,
 } from "./api/index.js";
 import {
+  AuthRevokedError,
   Client,
   LeaseLostError,
   PayloadTooLargeError,
@@ -35,8 +37,15 @@ const defaultLogger: Logger = {
 };
 
 export interface WorkerConfig {
-  /** Stable, unique identifier for this worker instance. Required. */
-  workerId: string;
+  /**
+   * Stable, unique identifier for this worker instance. Optional —
+   * when omitted, the Worker constructor fills it with a per-boot
+   * UUID so two processes running the same image surface as two
+   * distinct rows on the workers page. Set explicitly only for
+   * singleton workers that want stable identity across restarts;
+   * two processes with the same override collide on one row.
+   */
+  workerId?: string;
   /** Human-readable name reported to Mobius (e.g. "billing-worker"). */
   name?: string;
   /** Version string reported to Mobius (e.g. "1.0.0"). */
@@ -111,13 +120,14 @@ export class Worker {
   private readonly logger: Logger;
   private readonly actions = new Map<string, ActionFn>();
   private abortController = new AbortController();
+  private authRevoked = false;
 
   constructor(
     private readonly client: Client,
     config: WorkerConfig,
   ) {
     this.config = {
-      workerId: config.workerId,
+      workerId: config.workerId && config.workerId !== "" ? config.workerId : randomUUID(),
       name: config.name ?? "",
       version: config.version ?? "",
       queues: config.queues ?? [],
@@ -153,6 +163,7 @@ export class Worker {
     const running = new Set<Promise<void>>();
 
     while (!combined.aborted) {
+      if (this.authRevoked) break;
       if (running.size >= this.config.concurrency) {
         await Promise.race(running);
       }
@@ -171,6 +182,11 @@ export class Worker {
         job = await this.client.claimJob(claimReq, combined);
       } catch (err) {
         if (combined.aborted) break;
+        if (err instanceof AuthRevokedError) {
+          this.logger.error("[mobius] claim rejected: credential revoked");
+          await Promise.allSettled(running);
+          throw err;
+        }
         this.logger.error("[mobius] claim error:", err);
         await sleep(2000, combined);
         continue;
@@ -189,6 +205,9 @@ export class Worker {
 
     await Promise.allSettled(running);
     this.logger.info(`[mobius] worker ${this.config.workerId} stopped`);
+    if (this.authRevoked) {
+      throw new AuthRevokedError();
+    }
   }
 
   /** Gracefully stop the worker after in-flight jobs complete. */
@@ -253,7 +272,14 @@ export class Worker {
           actionController.abort();
         }
       } catch (err) {
-        if (err instanceof LeaseLostError) {
+        if (err instanceof AuthRevokedError) {
+          this.logger.warn(
+            `[mobius] job ${jobId}: credential revoked; cancelling action`,
+          );
+          this.authRevoked = true;
+          hbLost = true;
+          actionController.abort();
+        } else if (err instanceof LeaseLostError) {
           this.logger.warn(
             `[mobius] job ${jobId}: lease lost during heartbeat`,
           );
@@ -293,6 +319,13 @@ export class Worker {
       signal.removeEventListener("abort", onAbort);
       eventer.stop();
       await eventerPromise;
+      if (err instanceof AuthRevokedError) {
+        this.logger.warn(
+          `[mobius] job ${jobId}: credential revoked during complete; worker will exit`,
+        );
+        this.authRevoked = true;
+        return;
+      }
       if (err instanceof LeaseLostError || hbLost) {
         this.logger.warn(`[mobius] job ${jobId}: lease lost — will be retried`);
         return;

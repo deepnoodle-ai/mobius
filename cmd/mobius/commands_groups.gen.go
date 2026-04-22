@@ -25,7 +25,11 @@ func registerGroupsCommands(app *cli.App) {
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			p0 := ctx.String("project")
 			p1 := ctx.Arg(0)
 			var body api.AddGroupMemberJSONRequestBody
@@ -46,7 +50,11 @@ func registerGroupsCommands(app *cli.App) {
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			p0 := ctx.String("project")
 			var body api.CreateGroupJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
@@ -64,7 +72,11 @@ func registerGroupsCommands(app *cli.App) {
 		Args("group-id").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			p0 := ctx.String("project")
 			p1 := ctx.Arg(0)
 			resp, err := client.DeleteGroupWithResponse(ctx.Context(), p0, p1)
@@ -79,7 +91,11 @@ func registerGroupsCommands(app *cli.App) {
 		Args("group-id").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			p0 := ctx.String("project")
 			p1 := ctx.Arg(0)
 			resp, err := client.GetGroupWithResponse(ctx.Context(), p0, p1)
@@ -97,7 +113,11 @@ func registerGroupsCommands(app *cli.App) {
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			p0 := ctx.String("project")
 			params := &api.ListGroupsParams{}
 			if ctx.IsSet("cursor") {
@@ -120,7 +140,11 @@ func registerGroupsCommands(app *cli.App) {
 		Args("user-id").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			p0 := ctx.String("project")
 			p1 := ctx.Arg(0)
 			resp, err := client.ListMemberGroupsWithResponse(ctx.Context(), p0, p1)
@@ -139,7 +163,11 @@ func registerGroupsCommands(app *cli.App) {
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			p0 := ctx.String("project")
 			p1 := ctx.Arg(0)
 			params := &api.ListGroupMembersParams{}
@@ -163,7 +191,11 @@ func registerGroupsCommands(app *cli.App) {
 		Args("group-id", "user-id").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			p0 := ctx.String("project")
 			p1 := ctx.Arg(0)
 			p2 := ctx.Arg(1)
@@ -182,7 +214,11 @@ func registerGroupsCommands(app *cli.App) {
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			p0 := ctx.String("project")
 			p1 := ctx.Arg(0)
 			var body api.UpdateGroupJSONRequestBody

@@ -24,7 +24,11 @@ func registerTriggersCommands(app *cli.App) {
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			p0 := ctx.String("project")
 			var body api.CreateTriggerJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
@@ -42,7 +46,11 @@ func registerTriggersCommands(app *cli.App) {
 		Args("id").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			p0 := ctx.String("project")
 			p1 := ctx.Arg(0)
 			resp, err := client.DeleteTriggerWithResponse(ctx.Context(), p0, p1)
@@ -57,7 +65,11 @@ func registerTriggersCommands(app *cli.App) {
 		Args("id").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			p0 := ctx.String("project")
 			p1 := ctx.Arg(0)
 			resp, err := client.GetTriggerWithResponse(ctx.Context(), p0, p1)
@@ -77,7 +89,11 @@ func registerTriggersCommands(app *cli.App) {
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			p0 := ctx.String("project")
 			params := &api.ListTriggersParams{}
 			if ctx.IsSet("kind") {
@@ -113,7 +129,11 @@ func registerTriggersCommands(app *cli.App) {
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			p0 := ctx.String("project")
 			p1 := ctx.Arg(0)
 			params := &api.ListTriggerFiresParams{}
@@ -144,7 +164,11 @@ func registerTriggersCommands(app *cli.App) {
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			p0 := ctx.String("project")
 			p1 := ctx.Arg(0)
 			var body api.UpdateTriggerJSONRequestBody

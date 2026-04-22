@@ -22,7 +22,11 @@ func registerInteractionsCommands(app *cli.App) {
 		Args("id").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			p0 := ctx.String("project")
 			p1 := ctx.Arg(0)
 			resp, err := client.ClaimInteractionWithResponse(ctx.Context(), p0, p1)
@@ -39,7 +43,11 @@ func registerInteractionsCommands(app *cli.App) {
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			p0 := ctx.String("project")
 			var body api.CreateInteractionJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
@@ -57,7 +65,11 @@ func registerInteractionsCommands(app *cli.App) {
 		Args("id").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			p0 := ctx.String("project")
 			p1 := ctx.Arg(0)
 			resp, err := client.GetInteractionWithResponse(ctx.Context(), p0, p1)
@@ -80,7 +92,11 @@ func registerInteractionsCommands(app *cli.App) {
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			p0 := ctx.String("project")
 			params := &api.ListInteractionsParams{}
 			if ctx.IsSet("status") {
@@ -123,7 +139,11 @@ func registerInteractionsCommands(app *cli.App) {
 		Args("id").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			p0 := ctx.String("project")
 			p1 := ctx.Arg(0)
 			resp, err := client.ReleaseInteractionWithResponse(ctx.Context(), p0, p1)
@@ -141,7 +161,11 @@ func registerInteractionsCommands(app *cli.App) {
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			p0 := ctx.String("project")
 			p1 := ctx.Arg(0)
 			var body api.RespondToInteractionJSONRequestBody

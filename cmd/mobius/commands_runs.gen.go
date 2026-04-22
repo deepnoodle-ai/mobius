@@ -24,7 +24,11 @@ func registerRunsCommands(app *cli.App) {
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			p0 := ctx.String("project")
 			var body api.BulkCancelRunsJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
@@ -44,7 +48,11 @@ func registerRunsCommands(app *cli.App) {
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			p0 := ctx.String("project")
 			var body api.BulkRetryRunsJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
@@ -62,7 +70,11 @@ func registerRunsCommands(app *cli.App) {
 		Args("id").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			p0 := ctx.String("project")
 			p1 := ctx.Arg(0)
 			resp, err := client.CancelRunWithResponse(ctx.Context(), p0, p1)
@@ -77,7 +89,11 @@ func registerRunsCommands(app *cli.App) {
 		Args("id").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			p0 := ctx.String("project")
 			p1 := ctx.Arg(0)
 			resp, err := client.GetRunWithResponse(ctx.Context(), p0, p1)
@@ -92,7 +108,11 @@ func registerRunsCommands(app *cli.App) {
 		Args("id").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			p0 := ctx.String("project")
 			p1 := ctx.Arg(0)
 			resp, err := client.GetRunActionLogWithResponse(ctx.Context(), p0, p1)
@@ -107,7 +127,11 @@ func registerRunsCommands(app *cli.App) {
 		Args("id").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			p0 := ctx.String("project")
 			p1 := ctx.Arg(0)
 			resp, err := client.GetRunJobsWithResponse(ctx.Context(), p0, p1)
@@ -131,7 +155,11 @@ func registerRunsCommands(app *cli.App) {
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			p0 := ctx.String("project")
 			params := &api.ListRunsParams{}
 			if ctx.IsSet("status") {
@@ -178,7 +206,11 @@ func registerRunsCommands(app *cli.App) {
 		Args("id").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			p0 := ctx.String("project")
 			p1 := ctx.Arg(0)
 			resp, err := client.ResumeRunWithResponse(ctx.Context(), p0, p1)
@@ -196,7 +228,11 @@ func registerRunsCommands(app *cli.App) {
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			p0 := ctx.String("project")
 			p1 := ctx.Arg(0)
 			var body api.SendRunSignalJSONRequestBody
@@ -217,7 +253,11 @@ func registerRunsCommands(app *cli.App) {
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			p0 := ctx.String("project")
 			var body api.StartRunJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
@@ -237,7 +277,11 @@ func registerRunsCommands(app *cli.App) {
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			p0 := ctx.String("project")
 			params := &api.StreamProjectRunEventsParams{}
 			if ctx.IsSet("since") {
@@ -259,7 +303,11 @@ func registerRunsCommands(app *cli.App) {
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			p0 := ctx.String("project")
 			p1 := ctx.Arg(0)
 			params := &api.StreamRunEventsParams{}

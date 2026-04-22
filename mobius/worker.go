@@ -6,13 +6,20 @@ import (
 	"fmt"
 	"log/slog"
 	"sync"
+	"sync/atomic"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 // WorkerConfig configures a Worker.
 type WorkerConfig struct {
 	// WorkerID is a stable, unique identifier for this worker instance.
-	// Required.
+	// Optional — when empty, the SDK generates a per-boot UUID so two
+	// processes running the same image surface as two distinct rows
+	// on the workers page. Set this only when you want stable identity
+	// across restarts (singleton workers); two processes with the same
+	// override collide on one row.
 	WorkerID string
 	// Name is the human-readable process name reported to Mobius
 	// (e.g. "billing-worker"). Optional but recommended for observability.
@@ -59,10 +66,20 @@ type Worker struct {
 	client   *Client
 	config   WorkerConfig
 	registry *ActionRegistry
+	// authRevoked latches the first ErrAuthRevoked observed by any
+	// background loop (heartbeat, eventer) so the top-level Run can
+	// exit non-zero after the in-flight action finishes cancelling.
+	authRevoked atomic.Bool
 }
 
-// NewWorker creates a Worker bound to the client.
+// NewWorker creates a Worker bound to the client. A missing WorkerID is
+// filled with a per-boot UUID so two processes running the same image
+// appear as two rows on the workers page — stable identity across
+// restarts requires an explicit override.
 func (c *Client) NewWorker(cfg WorkerConfig) *Worker {
+	if cfg.WorkerID == "" {
+		cfg.WorkerID = uuid.NewString()
+	}
 	if cfg.Concurrency <= 0 {
 		cfg.Concurrency = 10
 	}
@@ -86,11 +103,17 @@ func (c *Client) NewWorker(cfg WorkerConfig) *Worker {
 }
 
 // Run starts the claim–execute–heartbeat–complete loop and blocks
-// until ctx is cancelled or a fatal error occurs.
+// until ctx is cancelled or the server revokes the worker's
+// credential. Returns [ErrAuthRevoked] in the latter case so a
+// process supervisor (k8s, systemd) can restart the worker under a
+// rotated credential.
 func (w *Worker) Run(ctx context.Context) error {
 	sem := make(chan struct{}, w.config.Concurrency)
 
 	for {
+		if w.authRevoked.Load() {
+			return ErrAuthRevoked
+		}
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
@@ -102,6 +125,10 @@ func (w *Worker) Run(ctx context.Context) error {
 			<-sem
 			if ctx.Err() != nil {
 				return ctx.Err()
+			}
+			if errors.Is(err, ErrAuthRevoked) {
+				w.config.Logger.Error("claim rejected: credential revoked")
+				return ErrAuthRevoked
 			}
 			w.config.Logger.Error("claim error", "error", err)
 			select {
@@ -169,6 +196,11 @@ func (w *Worker) executeJob(ctx context.Context, job *runtimeJob) {
 	}
 
 	if err := w.client.runtimeCompleteSuccess(context.Background(), job, result); err != nil {
+		if errors.Is(err, ErrAuthRevoked) {
+			log.Warn("complete: credential revoked; worker will exit")
+			w.authRevoked.Store(true)
+			return
+		}
 		if errors.Is(err, ErrLeaseLost) {
 			log.Warn("complete: lease lost")
 			return
@@ -181,7 +213,10 @@ func (w *Worker) executeJob(ctx context.Context, job *runtimeJob) {
 
 // heartbeatLoop periodically refreshes the job lease and, on a
 // cancellation directive or lease loss, cancels the action via
-// the provided cancel func. It exits when ctx is done.
+// the provided cancel func. It exits when ctx is done. On
+// [ErrAuthRevoked] it latches the revoked flag so the outer Run
+// can return non-zero once the action finishes cancelling — the
+// credential is gone, no point trying again.
 func (w *Worker) heartbeatLoop(ctx context.Context, job *runtimeJob, cancelAction context.CancelFunc, done chan<- struct{}) {
 	defer close(done)
 
@@ -203,6 +238,12 @@ func (w *Worker) heartbeatLoop(ctx context.Context, job *runtimeJob, cancelActio
 		case <-t.C:
 			directives, err := w.client.runtimeHeartbeat(context.Background(), job)
 			if err != nil {
+				if errors.Is(err, ErrAuthRevoked) {
+					w.config.Logger.Warn("heartbeat: credential revoked; cancelling action", "job_id", job.JobID)
+					w.authRevoked.Store(true)
+					cancelAction()
+					return
+				}
 				if errors.Is(err, ErrLeaseLost) {
 					w.config.Logger.Warn("heartbeat: lease lost; cancelling action", "job_id", job.JobID)
 					cancelAction()

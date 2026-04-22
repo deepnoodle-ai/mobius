@@ -60,18 +60,42 @@ func newTestClient(t *testing.T, h http.Handler) (*Client, *httptest.Server) {
 	t.Helper()
 	srv := httptest.NewServer(h)
 	t.Cleanup(srv.Close)
-	c := NewClient(WithBaseURL(srv.URL), WithAPIKey("mbx_test"), WithProjectHandle("test-project"))
+	c, err := NewClient(WithBaseURL(srv.URL), WithAPIKey("mbx_test"), WithProjectHandle("test-project"))
+	assert.NoError(t, err)
 	return c, srv
 }
 
 func TestNewClient_DefaultBaseURL(t *testing.T) {
-	c := NewClient()
+	c, err := NewClient()
+	assert.NoError(t, err)
 	assert.Equal(t, c.baseURL, DefaultBaseURL)
 }
 
 func TestNewClient_WithBaseURLOverride(t *testing.T) {
-	c := NewClient(WithBaseURL("https://api.example.invalid"))
+	c, err := NewClient(WithBaseURL("https://api.example.invalid"))
+	assert.NoError(t, err)
 	assert.Equal(t, c.baseURL, "https://api.example.invalid")
+}
+
+// TestNewClient_ExtractsHandleFromAPIKey covers the self-contained
+// credential path: a project-pinned token "<handle>/mbx_<secret>"
+// should yield a client with projectHandle already set, and the full
+// token stays on the Authorization header so the server can validate.
+func TestNewClient_ExtractsHandleFromAPIKey(t *testing.T) {
+	c, err := NewClient(WithAPIKey("prod/mbx_secret"))
+	assert.NoError(t, err)
+	assert.Equal(t, c.projectHandle, "prod")
+	assert.Equal(t, c.apiKey, "prod/mbx_secret")
+}
+
+func TestNewClient_HandleConflictBetweenFlagAndKey(t *testing.T) {
+	_, err := NewClient(WithAPIKey("prod/mbx_secret"), WithProjectHandle("staging"))
+	assert.True(t, err != nil)
+}
+
+func TestNewClient_InvalidHandlePrefix(t *testing.T) {
+	_, err := NewClient(WithAPIKey("Not_A_Handle/mbx_secret"))
+	assert.True(t, err != nil)
 }
 
 func TestRuntimeClaim_Job(t *testing.T) {
@@ -120,7 +144,8 @@ func TestRuntimeClaim_EscapesProjectHandle(t *testing.T) {
 		_, _ = io.WriteString(w, claimBody)
 	}))
 	t.Cleanup(srv.Close)
-	c := NewClient(WithBaseURL(srv.URL), WithAPIKey("mbx_test"), WithProjectHandle(rawProject))
+	c, err := NewClient(WithBaseURL(srv.URL), WithAPIKey("mbx_test"), WithProjectHandle(rawProject))
+	assert.NoError(t, err)
 
 	cfg := WorkerConfig{WorkerID: "w1", PollWaitSeconds: 1, Actions: []string{"print"}}
 	job, err := c.runtimeClaim(context.Background(), cfg)
@@ -142,10 +167,11 @@ func TestRuntimeHeartbeat_EscapesJobID(t *testing.T) {
 		_, _ = io.WriteString(w, `{"lease_expires_at":"2026-01-01T00:00:00Z"}`)
 	}))
 	t.Cleanup(srv.Close)
-	c := NewClient(WithBaseURL(srv.URL), WithAPIKey("mbx_test"), WithProjectHandle("test-project"))
+	c, err := NewClient(WithBaseURL(srv.URL), WithAPIKey("mbx_test"), WithProjectHandle("test-project"))
+	assert.NoError(t, err)
 
 	job := &runtimeJob{JobID: rawJob, WorkerID: "w1", Attempt: 1}
-	_, err := c.runtimeHeartbeat(context.Background(), job)
+	_, err = c.runtimeHeartbeat(context.Background(), job)
 	assert.NoError(t, err)
 	assert.Equal(t, gotEscaped, wantEscaped)
 }
@@ -180,6 +206,39 @@ func TestRuntimeHeartbeat_LeaseLost(t *testing.T) {
 	c, _ := newTestClient(t, h)
 	_, err := c.runtimeHeartbeat(context.Background(), &runtimeJob{JobID: "job_1", Attempt: 1, WorkerID: "w1"})
 	assert.ErrorIs(t, err, ErrLeaseLost)
+}
+
+// TestRuntimeHeartbeat_AuthRevoked covers the 401 → ErrAuthRevoked
+// surface that the worker loop uses to detect mid-execution credential
+// revocation. The worker.heartbeatLoop latches on this and cancels
+// the action; Run returns non-zero so a process supervisor can restart
+// under a rotated credential.
+func TestRuntimeHeartbeat_AuthRevoked(t *testing.T) {
+	h := newRecorder(t, map[string]stubResponse{
+		"/v1/projects/test-project/jobs/": {status: 401, body: ""},
+	})
+	c, _ := newTestClient(t, h)
+	_, err := c.runtimeHeartbeat(context.Background(), &runtimeJob{JobID: "job_1", Attempt: 1, WorkerID: "w1"})
+	assert.ErrorIs(t, err, ErrAuthRevoked)
+}
+
+func TestRuntimeComplete_AuthRevoked(t *testing.T) {
+	h := newRecorder(t, map[string]stubResponse{
+		"/v1/projects/test-project/jobs/": {status: 401, body: ""},
+	})
+	c, _ := newTestClient(t, h)
+	err := c.runtimeCompleteSuccess(context.Background(), &runtimeJob{JobID: "job_1", Attempt: 1, WorkerID: "w1"}, nil)
+	assert.ErrorIs(t, err, ErrAuthRevoked)
+}
+
+func TestRuntimeClaim_AuthRevoked(t *testing.T) {
+	h := newRecorder(t, map[string]stubResponse{
+		"/v1/projects/test-project/jobs/claim": {status: 401, body: ""},
+	})
+	c, _ := newTestClient(t, h)
+	cfg := WorkerConfig{WorkerID: "w1", PollWaitSeconds: 1, Actions: []string{"print"}}
+	_, err := c.runtimeClaim(context.Background(), cfg)
+	assert.ErrorIs(t, err, ErrAuthRevoked)
 }
 
 func TestRuntimeCompleteSuccess(t *testing.T) {

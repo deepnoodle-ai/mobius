@@ -24,7 +24,11 @@ func registerApiKeysCommands(app *cli.App) {
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			var body api.CreateAPIKeyJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -44,7 +48,11 @@ func registerApiKeysCommands(app *cli.App) {
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			p0 := ctx.Arg(0)
 			params := &api.GetAPIKeyParams{}
 			if ctx.IsSet("project-id") {
@@ -65,7 +73,11 @@ func registerApiKeysCommands(app *cli.App) {
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			params := &api.ListAPIKeysParams{}
 			if ctx.IsSet("project-id") {
 				v := api.APIKeyProjectIDParam(ctx.String("project-id"))
@@ -86,7 +98,11 @@ func registerApiKeysCommands(app *cli.App) {
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			p0 := ctx.Arg(0)
 			params := &api.RevokeAPIKeyParams{}
 			if ctx.IsSet("project-id") {

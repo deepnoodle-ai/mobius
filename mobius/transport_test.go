@@ -367,8 +367,9 @@ func TestClient_EmitEvents_Returns_RateLimitError_WithHeaders(t *testing.T) {
 	srv := httptest.NewServer(h)
 	t.Cleanup(srv.Close)
 
-	c := NewClient(WithBaseURL(srv.URL), WithAPIKey("mbx_test"), WithProjectHandle("p1"), WithRetry(0))
-	err := c.runtimeEmitEvents(context.Background(), &runtimeJob{JobID: "j1", WorkerID: "w1", Attempt: 1}, []jobEventEntry{
+	c, err := NewClient(WithBaseURL(srv.URL), WithAPIKey("mbx_test"), WithProjectHandle("p1"), WithRetry(0))
+	assert.NoError(t, err)
+	err = c.runtimeEmitEvents(context.Background(), &runtimeJob{JobID: "j1", WorkerID: "w1", Attempt: 1}, []jobEventEntry{
 		{Type: "x", Payload: map[string]any{"k": "v"}},
 	})
 	assert.Error(t, err)

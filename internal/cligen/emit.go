@@ -524,7 +524,9 @@ func renderCommand(b *bytes.Buffer, group string, c PlannedCommand) error {
 
 	fmt.Fprintf(b, "\t\tUse(cli.RequireFlags(\"api-key\")).\n")
 	fmt.Fprintf(b, "\t\tRun(func(ctx *cli.Context) error {\n")
-	fmt.Fprintf(b, "\t\t\tclient := clientFromContext(ctx).RawClient()\n")
+	fmt.Fprintf(b, "\t\t\tmc, err := clientFromContext(ctx)\n")
+	fmt.Fprintf(b, "\t\t\tif err != nil { return err }\n")
+	fmt.Fprintf(b, "\t\t\tclient := mc.RawClient()\n")
 
 	// Collect path-param locals. Positional path params consume args in
 	// order; flag-backed ones (e.g. --project) read from their flag.

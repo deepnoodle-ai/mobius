@@ -1,5 +1,7 @@
 export {
+  AuthRevokedError,
   Client,
+  ConfigError,
   LeaseLostError,
   PayloadTooLargeError,
   RateLimitedError,

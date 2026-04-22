@@ -8,6 +8,7 @@ import queue
 import signal
 import threading
 import time
+import uuid
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from typing import Any, Callable
@@ -26,14 +27,19 @@ from .client import (
     LeaseLostError,
     PayloadTooLargeError,
 )
-from .errors import RateLimitError
+from .errors import AuthRevokedError, RateLimitError
 
 logger = logging.getLogger(__name__)
 
 
 @dataclass
 class WorkerConfig:
-    worker_id: str
+    # worker_id is optional — when empty, the Worker constructor fills
+    # it with a per-boot UUID so two processes running the same image
+    # surface as two distinct rows on the workers page. Set explicitly
+    # only for singleton workers that want stable identity across
+    # restarts; two processes with the same override collide on one row.
+    worker_id: str = ""
     name: str = ""
     version: str = ""
     queues: list[str] = field(default_factory=list)
@@ -94,16 +100,24 @@ class Worker:
 
     def __init__(self, client: Client, config: WorkerConfig) -> None:
         self._client = client
+        if not config.worker_id:
+            config.worker_id = str(uuid.uuid4())
         self._config = config
         self._actions: dict[str, ActionFunc] = {}
         self._stop_event = threading.Event()
+        self._auth_revoked = threading.Event()
 
     def register(self, name: str, fn: ActionFunc) -> None:
         """Register an action function under the given name."""
         self._actions[name] = fn
 
     def run(self) -> None:
-        """Start the claim loop. Blocks until SIGINT/SIGTERM or stop() is called."""
+        """Start the claim loop. Blocks until SIGINT/SIGTERM, stop(), or
+        an [AuthRevokedError][deepnoodle.mobius.errors.AuthRevokedError]
+        from the server — in the last case the credential is gone and
+        the process needs to restart under a rotated credential, so
+        we raise out of run() rather than silently looping.
+        """
         if threading.current_thread() is threading.main_thread():
             signal.signal(signal.SIGINT, lambda *_: self.stop())
             signal.signal(signal.SIGTERM, lambda *_: self.stop())
@@ -113,8 +127,13 @@ class Worker:
 
         with ThreadPoolExecutor(max_workers=self._config.concurrency) as pool:
             while not self._stop_event.is_set():
+                if self._auth_revoked.is_set():
+                    raise AuthRevokedError()
                 try:
                     job = self._client.claim_job(claim_req)
+                except AuthRevokedError:
+                    logger.error("claim rejected: credential revoked")
+                    raise
                 except Exception as exc:
                     logger.error("claim error: %s", exc)
                     time.sleep(2)
@@ -225,6 +244,9 @@ class Worker:
                 ),
             )
             log.info("job completed")
+        except AuthRevokedError:
+            log.warning("complete: credential revoked; worker will exit")
+            self._auth_revoked.set()
         except LeaseLostError:
             log.warning("lease lost during complete")
         except Exception as exc:
@@ -248,6 +270,14 @@ class Worker:
                     )
                     stop.set()
                     return
+            except AuthRevokedError:
+                logger.warning(
+                    "heartbeat: credential revoked for job %s; cancelling action",
+                    job.job_id,
+                )
+                self._auth_revoked.set()
+                stop.set()
+                return
             except LeaseLostError:
                 logger.warning(
                     "lease lost during heartbeat for job %s", job.job_id
