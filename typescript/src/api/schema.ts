@@ -2523,6 +2523,23 @@ export interface components {
              * @description Timestamp when this run was last updated.
              */
             updated_at: string;
+            /**
+             * Format: date-time
+             * @description Deadline at which the reaper will fail this run with
+             *     `error_type=run_timeout` if it has not reached a terminal
+             *     state. Present only when `resolved_config.timeouts.wall_clock`
+             *     resolves to a finite duration. Anchored to `created_at`.
+             */
+            wall_clock_deadline_at?: string;
+            /**
+             * @description Typed run-level failure cause. Its own vocabulary, not a
+             *     superset of the job-level `error_type`. Present when
+             *     `status=failed`.
+             * @enum {string}
+             */
+            error_type?: "run_timeout" | "run_cancelled" | "job_failed";
+            resolved_config?: components["schemas"]["ResolvedConfig"];
+            default_job_config?: components["schemas"]["ResolvedConfig"];
         };
         WorkflowRunListResponse: {
             /** @description The list of results for this page. */
@@ -2570,6 +2587,26 @@ export interface components {
             };
             /** @description Caller-supplied idempotency key or correlation ID attached to the run. */
             external_id?: string;
+            config?: components["schemas"]["ConfigInput"];
+        };
+        /**
+         * @description Hierarchical cascade config input. Shape: `{<category>: {<key>: <value>}}`.
+         *     The only category shipped in Phase 1 is `timeouts`, whose keys are
+         *     `claim`, `liveness`, `execution`, `wall_clock`. Unknown categories or
+         *     unknown keys under a known category are rejected at write time. See
+         *     PRD 035.
+         */
+        ConfigInput: {
+            [key: string]: unknown;
+        };
+        /**
+         * @description Frozen cascade resolution. Same outer shape as `ConfigInput`, but
+         *     every leaf is a `{value, source}` object where `source` is one of
+         *     `service` | `project` | `workflow` | `run` | `step`. Keys unset at
+         *     every layer are omitted. See PRD 035.
+         */
+        ResolvedConfig: {
+            [key: string]: unknown;
         };
         ActionLogEntry: {
             /** @description Unique identifier for this action log entry. */
@@ -2651,6 +2688,39 @@ export interface components {
             scheduled_at: string;
             /** @description Error detail from the most recent failed attempt. */
             last_error?: string;
+            /**
+             * Format: date-time
+             * @description Deadline at which the reaper will fail this job with
+             *     `error_type=claim_timeout` if no worker has claimed it.
+             *     Present only when `resolved_config.timeouts.claim` resolves
+             *     to a finite duration. Re-stamped whenever the job returns
+             *     to `pending`.
+             */
+            claim_deadline_at?: string;
+            /**
+             * Format: date-time
+             * @description Deadline at which the reaper will either reset (retries
+             *     remain) or fail this job with `error_type=liveness_timeout`
+             *     if the worker has not heartbeated in time. Present only
+             *     when `resolved_config.timeouts.liveness` resolves to a
+             *     finite duration and the job is claimed.
+             */
+            liveness_deadline_at?: string;
+            /**
+             * Format: date-time
+             * @description Deadline at which the reaper will fail this job with
+             *     `error_type=execution_timeout` if it has not completed. Present
+             *     only when `resolved_config.timeouts.execution` resolves to a
+             *     finite duration.
+             */
+            execution_deadline_at?: string;
+            /**
+             * @description Typed failure cause (e.g. `claim_timeout`, `liveness_timeout`,
+             *     `execution_timeout`, `run_cancelled`). Present when
+             *     `status=failed`.
+             */
+            error_type?: string;
+            resolved_config?: components["schemas"]["ResolvedConfig"];
             /**
              * Format: date-time
              * @description Timestamp when this job was created.
@@ -3548,6 +3618,12 @@ export interface components {
              * @description Timestamp when this project was last updated.
              */
             updated_at: string;
+            /**
+             * @description Project-layer cascade config, assembled from project_configs
+             *     at read time. Shape: `{<category>: {<key>: <value>}}`. Absent
+             *     when the project has no stored cascade input.
+             */
+            config?: components["schemas"]["ConfigInput"];
         };
         ProjectListResponse: {
             /** @description The list of results for this page. */
@@ -3577,6 +3653,20 @@ export interface components {
              *     loses visibility on the flip. Ignored on other transitions.
              */
             seed_existing_members?: boolean;
+            /**
+             * @description Hierarchical cascade config with PRD 035 FR-F9 PATCH semantics.
+             *     Per-category operations, applied in the order the payload is
+             *     iterated:
+             *       * `config: {}` → no-op (no categories mentioned).
+             *       * `config: {<cat>: null}` → clear that category completely.
+             *       * `config: {<cat>: {}}` → no-op on that category.
+             *       * `config: {<cat>: {...}}` → complete replacement of that
+             *         category's stored object (not a deep-merge); keys omitted
+             *         from the new object are removed.
+             *     To clear every category, issue explicit `{<cat>: null}` entries
+             *     for each category you want to clear.
+             */
+            config?: components["schemas"]["ConfigInput"];
         };
         ProjectMember: {
             /** @description Unique identifier for this membership record. */
@@ -4664,7 +4754,7 @@ export interface components {
         UpdateAgentRequest: {
             /** @description Replacement service account. Must be active and belong to the same project. */
             service_account_id?: string;
-            /** @description Replacement name. Must be unique within the project. */
+            /** @description Free-form human-readable label, 1-63 characters; must be unique within the project. */
             name?: string;
             /** @description Replacement description. */
             description?: string;

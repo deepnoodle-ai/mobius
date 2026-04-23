@@ -927,80 +927,45 @@ class WorkflowRunStatus(Enum):
     suspended = 'suspended'
 
 
-class WorkflowRun(BaseModel):
-    id: str = Field(..., description='Unique identifier for this run.')
-    queue: str | None = Field(None, description='Queue this run was enqueued on.')
-    parent_run_id: str | None = Field(
-        None,
-        description='ID of the parent run, when this is a child run spawned by a fan-out step.',
-    )
-    definition_id: str | None = Field(
-        None,
-        description='ID of the workflow definition this run was started from.\nEmpty for ephemeral runs started from an inline spec.\n',
-    )
-    definition_version: int | None = Field(None, description='Zero for ephemeral runs.')
-    ephemeral: bool | None = Field(
-        None,
-        description='True when the run was started from an inline spec rather\nthan a saved workflow definition. Equivalent to\n`definition_id == ""`.\n',
-    )
-    workflow_name: str = Field(
-        ..., description='Name of the workflow as recorded at run creation time.'
-    )
-    status: WorkflowRunStatus
-    attempt: int = Field(
-        ...,
-        description='Retry attempt number (1-based). Increments each time the run is retried.',
-    )
-    inputs: dict[str, Any] | None = Field(
-        None, description='Input values provided when the run was started.'
-    )
-    metadata: dict[str, str] | None = Field(
-        None, description='Caller-supplied string metadata attached to the run.'
-    )
-    error_message: str | None = Field(
-        None,
-        description='Error message from the most recent failure. Present when status is failed.',
-    )
-    actor_type: str | None = Field(
-        None,
-        description='Type of the actor that started this run (user, service_account, system).',
-    )
-    actor_id: str | None = Field(
-        None, description='ID of the actor that started this run.'
-    )
-    initiated_by: str | None = Field(
-        None,
-        description='Human-readable label for the initiator (e.g. trigger name, API key name).',
-    )
-    external_id: str | None = Field(
-        None, description='Caller-supplied idempotency key or correlation ID.'
-    )
-    cancel_requested: bool | None = Field(
-        None,
-        description='True when a cancel has been requested on this run but the run\nhas not yet reached a terminal state. Workers observe this on\ntheir next heartbeat and stop work.\n',
-    )
-    created_at: datetime = Field(
-        ..., description='Timestamp when this run was created.'
-    )
-    started_at: datetime | None = Field(
-        None, description='Timestamp when a worker first claimed this run.'
-    )
-    completed_at: datetime | None = Field(
-        None, description='Timestamp when this run reached a terminal state.'
-    )
-    updated_at: datetime = Field(
-        ..., description='Timestamp when this run was last updated.'
+class ErrorType(Enum):
+    """
+    Typed run-level failure cause. Its own vocabulary, not a
+    superset of the job-level `error_type`. Present when
+    `status=failed`.
+
+    """
+
+    run_timeout = 'run_timeout'
+    run_cancelled = 'run_cancelled'
+    job_failed = 'job_failed'
+
+
+class ConfigInput(BaseModel):
+    """
+    Hierarchical cascade config input. Shape: `{<category>: {<key>: <value>}}`.
+    The only category shipped in Phase 1 is `timeouts`, whose keys are
+    `claim`, `liveness`, `execution`, `wall_clock`. Unknown categories or
+    unknown keys under a known category are rejected at write time. See
+    PRD 035.
+
+    """
+
+    model_config = ConfigDict(
+        extra='allow',
     )
 
 
-class WorkflowRunListResponse(BaseModel):
-    items: list[WorkflowRun] = Field(
-        ..., description='The list of results for this page.'
-    )
-    has_more: bool = Field(..., description='True when more pages are available.')
-    next_cursor: str | None = Field(
-        None,
-        description='Opaque cursor for fetching the next page. Present only when\nhas_more is true.\n',
+class ResolvedConfig(BaseModel):
+    """
+    Frozen cascade resolution. Same outer shape as `ConfigInput`, but
+    every leaf is a `{value, source}` object where `source` is one of
+    `service` | `project` | `workflow` | `run` | `step`. Keys unset at
+    every layer are omitted. See PRD 035.
+
+    """
+
+    model_config = ConfigDict(
+        extra='allow',
     )
 
 
@@ -1089,6 +1054,23 @@ class Job(BaseModel):
     last_error: str | None = Field(
         None, description='Error detail from the most recent failed attempt.'
     )
+    claim_deadline_at: datetime | None = Field(
+        None,
+        description='Deadline at which the reaper will fail this job with\n`error_type=claim_timeout` if no worker has claimed it.\nPresent only when `resolved_config.timeouts.claim` resolves\nto a finite duration. Re-stamped whenever the job returns\nto `pending`.\n',
+    )
+    liveness_deadline_at: datetime | None = Field(
+        None,
+        description='Deadline at which the reaper will either reset (retries\nremain) or fail this job with `error_type=liveness_timeout`\nif the worker has not heartbeated in time. Present only\nwhen `resolved_config.timeouts.liveness` resolves to a\nfinite duration and the job is claimed.\n',
+    )
+    execution_deadline_at: datetime | None = Field(
+        None,
+        description='Deadline at which the reaper will fail this job with\n`error_type=execution_timeout` if it has not completed. Present\nonly when `resolved_config.timeouts.execution` resolves to a\nfinite duration.\n',
+    )
+    error_type: str | None = Field(
+        None,
+        description='Typed failure cause (e.g. `claim_timeout`, `liveness_timeout`,\n`execution_timeout`, `run_cancelled`). Present when\n`status=failed`.\n',
+    )
+    resolved_config: ResolvedConfig | None = None
     created_at: datetime = Field(
         ..., description='Timestamp when this job was created.'
     )
@@ -2076,6 +2058,10 @@ class Project(BaseModel):
     updated_at: datetime = Field(
         ..., description='Timestamp when this project was last updated.'
     )
+    config: ConfigInput | None = Field(
+        None,
+        description='Project-layer cascade config, assembled from project_configs\nat read time. Shape: `{<category>: {<key>: <value>}}`. Absent\nwhen the project has no stored cascade input.\n',
+    )
 
 
 class ProjectListResponse(BaseModel):
@@ -2101,6 +2087,10 @@ class UpdateProjectRequest(BaseModel):
     seed_existing_members: bool | None = Field(
         None,
         description='When transitioning from `org_open` to `restricted`, set true to\ninsert all current org members as project members so nobody\nloses visibility on the flip. Ignored on other transitions.\n',
+    )
+    config: ConfigInput | None = Field(
+        None,
+        description="Hierarchical cascade config with PRD 035 FR-F9 PATCH semantics.\nPer-category operations, applied in the order the payload is\niterated:\n  * `config: {}` → no-op (no categories mentioned).\n  * `config: {<cat>: null}` → clear that category completely.\n  * `config: {<cat>: {}}` → no-op on that category.\n  * `config: {<cat>: {...}}` → complete replacement of that\n    category's stored object (not a deep-merge); keys omitted\n    from the new object are removed.\nTo clear every category, issue explicit `{<cat>: null}` entries\nfor each category you want to clear.\n",
     )
 
 
@@ -3373,7 +3363,7 @@ class UpdateAgentRequest(BaseModel):
     )
     name: str | None = Field(
         None,
-        description='Replacement name. Must be unique within the project.',
+        description='Free-form human-readable label, 1-63 characters; must be unique within the project.',
         max_length=63,
         min_length=1,
     )
@@ -3627,6 +3617,93 @@ class WorkflowInteractionSpec(BaseModel):
     )
 
 
+class WorkflowRun(BaseModel):
+    id: str = Field(..., description='Unique identifier for this run.')
+    queue: str | None = Field(None, description='Queue this run was enqueued on.')
+    parent_run_id: str | None = Field(
+        None,
+        description='ID of the parent run, when this is a child run spawned by a fan-out step.',
+    )
+    definition_id: str | None = Field(
+        None,
+        description='ID of the workflow definition this run was started from.\nEmpty for ephemeral runs started from an inline spec.\n',
+    )
+    definition_version: int | None = Field(None, description='Zero for ephemeral runs.')
+    ephemeral: bool | None = Field(
+        None,
+        description='True when the run was started from an inline spec rather\nthan a saved workflow definition. Equivalent to\n`definition_id == ""`.\n',
+    )
+    workflow_name: str = Field(
+        ..., description='Name of the workflow as recorded at run creation time.'
+    )
+    status: WorkflowRunStatus
+    attempt: int = Field(
+        ...,
+        description='Retry attempt number (1-based). Increments each time the run is retried.',
+    )
+    inputs: dict[str, Any] | None = Field(
+        None, description='Input values provided when the run was started.'
+    )
+    metadata: dict[str, str] | None = Field(
+        None, description='Caller-supplied string metadata attached to the run.'
+    )
+    error_message: str | None = Field(
+        None,
+        description='Error message from the most recent failure. Present when status is failed.',
+    )
+    actor_type: str | None = Field(
+        None,
+        description='Type of the actor that started this run (user, service_account, system).',
+    )
+    actor_id: str | None = Field(
+        None, description='ID of the actor that started this run.'
+    )
+    initiated_by: str | None = Field(
+        None,
+        description='Human-readable label for the initiator (e.g. trigger name, API key name).',
+    )
+    external_id: str | None = Field(
+        None, description='Caller-supplied idempotency key or correlation ID.'
+    )
+    cancel_requested: bool | None = Field(
+        None,
+        description='True when a cancel has been requested on this run but the run\nhas not yet reached a terminal state. Workers observe this on\ntheir next heartbeat and stop work.\n',
+    )
+    created_at: datetime = Field(
+        ..., description='Timestamp when this run was created.'
+    )
+    started_at: datetime | None = Field(
+        None, description='Timestamp when a worker first claimed this run.'
+    )
+    completed_at: datetime | None = Field(
+        None, description='Timestamp when this run reached a terminal state.'
+    )
+    updated_at: datetime = Field(
+        ..., description='Timestamp when this run was last updated.'
+    )
+    wall_clock_deadline_at: datetime | None = Field(
+        None,
+        description='Deadline at which the reaper will fail this run with\n`error_type=run_timeout` if it has not reached a terminal\nstate. Present only when `resolved_config.timeouts.wall_clock`\nresolves to a finite duration. Anchored to `created_at`.\n',
+    )
+    error_type: ErrorType | None = Field(
+        None,
+        description='Typed run-level failure cause. Its own vocabulary, not a\nsuperset of the job-level `error_type`. Present when\n`status=failed`.\n',
+    )
+    resolved_config: ResolvedConfig | None = None
+    default_job_config: ResolvedConfig | None = None
+
+
+class WorkflowRunListResponse(BaseModel):
+    items: list[WorkflowRun] = Field(
+        ..., description='The list of results for this page.'
+    )
+    has_more: bool = Field(..., description='True when more pages are available.')
+    next_cursor: str | None = Field(
+        None,
+        description='Opaque cursor for fetching the next page. Present only when\nhas_more is true.\n',
+    )
+
+
 class JobEventsRequest(BaseModel):
     """
     Fenced batch of custom run events published by the worker holding
@@ -3873,3 +3950,4 @@ class StartRunRequest(BaseModel):
         None,
         description='Caller-supplied idempotency key or correlation ID attached to the run.',
     )
+    config: ConfigInput | None = None

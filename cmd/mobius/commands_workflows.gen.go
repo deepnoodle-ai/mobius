@@ -193,6 +193,7 @@ func registerWorkflowsCommands(app *cli.App) {
 		Description("Start a new workflow run against a saved definition").
 		Args("id").
 		Flags(
+			cli.String("config", "").Help("Hierarchical cascade config input. Shape: `{<category>: {<key>: <value>}}`. The only category shipped in Phase 1 is `timeouts`, whose keys are `claim`, `liveness`, `execution`, `wall_clock`. Unknown categories or unknown keys under a known category are rejected at write time. See PRD 035. (JSON)"),
 			cli.String("definition-id", "").Help("ID of an existing workflow definition to run. Mutually exclusive with `spec`. On the definition-bound path this is ignored (the path segment wins) but must not conflict."),
 			cli.String("external-id", "").Help("Caller-supplied idempotency key or correlation ID attached to the run."),
 			cli.String("inputs", "").Help("Input values to pass to the workflow. Must conform to the workflow's declared input schema. (JSON)"),
@@ -213,6 +214,11 @@ func registerWorkflowsCommands(app *cli.App) {
 			var body api.StartWorkflowRunJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
+			}
+			if ctx.IsSet("config") {
+				if err := json.Unmarshal([]byte(ctx.String("config")), &body.Config); err != nil {
+					return fmt.Errorf("--config: invalid JSON: %w", err)
+				}
 			}
 			if ctx.IsSet("definition-id") {
 				v := ctx.String("definition-id")
@@ -241,7 +247,7 @@ func registerWorkflowsCommands(app *cli.App) {
 					return fmt.Errorf("--spec: invalid JSON: %w", err)
 				}
 			}
-			if ctx.String("file") == "" && !ctx.IsSet("definition-id") && !ctx.IsSet("external-id") && !ctx.IsSet("inputs") && !ctx.IsSet("metadata") && !ctx.IsSet("queue") && !ctx.IsSet("spec") {
+			if ctx.String("file") == "" && !ctx.IsSet("config") && !ctx.IsSet("definition-id") && !ctx.IsSet("external-id") && !ctx.IsSet("inputs") && !ctx.IsSet("metadata") && !ctx.IsSet("queue") && !ctx.IsSet("spec") {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
 			resp, err := client.StartWorkflowRunWithResponse(ctx.Context(), p0, p1, body)

@@ -6890,19 +6890,14 @@ components:
             '
         config:
           $ref: '#/components/schemas/ConfigInput'
-          description: 'Hierarchical cascade config with PRD 035 FR-F9 PATCH semantics:
-
-            `config` omitted → no-op; `config: null` → clear every category;
-
-            `config: {}` → no-op; `config: {<cat>: null}` → clear just that
-
-            category; `config: {<cat>: {}}` → no-op on that category;
-
-            `config: {<cat>: {...}}` → complete replacement of that
-
-            category''s stored object (not a deep-merge).
-
-            '
+          description: "Hierarchical cascade config with PRD 035 FR-F9 PATCH semantics.\n\
+            Per-category operations, applied in the order the payload is\niterated:\n\
+            \  * `config: {}` → no-op (no categories mentioned).\n  * `config: {<cat>:\
+            \ null}` → clear that category completely.\n  * `config: {<cat>: {}}`\
+            \ → no-op on that category.\n  * `config: {<cat>: {...}}` → complete replacement\
+            \ of that\n    category's stored object (not a deep-merge); keys omitted\n\
+            \    from the new object are removed.\nTo clear every category, issue\
+            \ explicit `{<cat>: null}` entries\nfor each category you want to clear.\n"
     ProjectMember:
       type: object
       required:
