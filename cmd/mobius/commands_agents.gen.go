@@ -295,7 +295,7 @@ func registerAgentsCommands(app *cli.App) {
 			cli.String("config", "").Help("Replacement configuration blob. (JSON)"),
 			cli.String("description", "").Help("Replacement description."),
 			cli.String("kind", "").Help("Replacement freeform agent classification (e.g. `llm`, `rpa`)."),
-			cli.String("name", "").Help("Replacement name. Must be unique within the project."),
+			cli.String("name", "").Help("Free-form human-readable label, 1-63 characters; must be unique within the project."),
 			cli.String("service-account-id", "").Help("Replacement service account. Must be active and belong to the same project."),
 			cli.String("status", "").Help("Administrative status. Inactive agents cannot claim new jobs."),
 			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),

@@ -5024,6 +5024,35 @@ components:
           type: string
           format: date-time
           description: Timestamp when this run was last updated.
+        wall_clock_deadline_at:
+          type: string
+          format: date-time
+          description: 'Deadline at which the reaper will fail this run with
+
+            `error_type=run_timeout` if it has not reached a terminal
+
+            state. Present only when `resolved_config.timeouts.wall_clock`
+
+            resolves to a finite duration. Anchored to `created_at`.
+
+            '
+        error_type:
+          type: string
+          enum:
+          - run_timeout
+          - run_cancelled
+          - job_failed
+          description: 'Typed run-level failure cause. Its own vocabulary, not a
+
+            superset of the job-level `error_type`. Present when
+
+            `status=failed`.
+
+            '
+        resolved_config:
+          $ref: '#/components/schemas/ResolvedConfig'
+        default_job_config:
+          $ref: '#/components/schemas/ResolvedConfig'
     WorkflowRunListResponse:
       type: object
       required:
@@ -5107,6 +5136,36 @@ components:
           type: string
           description: Caller-supplied idempotency key or correlation ID attached
             to the run.
+        config:
+          $ref: '#/components/schemas/ConfigInput'
+    ConfigInput:
+      type: object
+      additionalProperties: true
+      description: 'Hierarchical cascade config input. Shape: `{<category>: {<key>:
+        <value>}}`.
+
+        The only category shipped in Phase 1 is `timeouts`, whose keys are
+
+        `claim`, `liveness`, `execution`, `wall_clock`. Unknown categories or
+
+        unknown keys under a known category are rejected at write time. See
+
+        PRD 035.
+
+        '
+    ResolvedConfig:
+      type: object
+      additionalProperties: true
+      description: 'Frozen cascade resolution. Same outer shape as `ConfigInput`,
+        but
+
+        every leaf is a `{value, source}` object where `source` is one of
+
+        `service` | `project` | `workflow` | `run` | `step`. Keys unset at
+
+        every layer are omitted. See PRD 035.
+
+        '
     ActionLogEntry:
       type: object
       required:
@@ -5234,6 +5293,57 @@ components:
         last_error:
           type: string
           description: Error detail from the most recent failed attempt.
+        claim_deadline_at:
+          type: string
+          format: date-time
+          description: 'Deadline at which the reaper will fail this job with
+
+            `error_type=claim_timeout` if no worker has claimed it.
+
+            Present only when `resolved_config.timeouts.claim` resolves
+
+            to a finite duration. Re-stamped whenever the job returns
+
+            to `pending`.
+
+            '
+        liveness_deadline_at:
+          type: string
+          format: date-time
+          description: 'Deadline at which the reaper will either reset (retries
+
+            remain) or fail this job with `error_type=liveness_timeout`
+
+            if the worker has not heartbeated in time. Present only
+
+            when `resolved_config.timeouts.liveness` resolves to a
+
+            finite duration and the job is claimed.
+
+            '
+        execution_deadline_at:
+          type: string
+          format: date-time
+          description: 'Deadline at which the reaper will fail this job with
+
+            `error_type=execution_timeout` if it has not completed. Present
+
+            only when `resolved_config.timeouts.execution` resolves to a
+
+            finite duration.
+
+            '
+        error_type:
+          type: string
+          description: 'Typed failure cause (e.g. `claim_timeout`, `liveness_timeout`,
+
+            `execution_timeout`, `run_cancelled`). Present when
+
+            `status=failed`.
+
+            '
+        resolved_config:
+          $ref: '#/components/schemas/ResolvedConfig'
         created_at:
           type: string
           format: date-time
@@ -6718,6 +6828,15 @@ components:
           type: string
           format: date-time
           description: Timestamp when this project was last updated.
+        config:
+          $ref: '#/components/schemas/ConfigInput'
+          description: 'Project-layer cascade config, assembled from project_configs
+
+            at read time. Shape: `{<category>: {<key>: <value>}}`. Absent
+
+            when the project has no stored cascade input.
+
+            '
     ProjectListResponse:
       type: object
       required:
@@ -6769,6 +6888,16 @@ components:
             loses visibility on the flip. Ignored on other transitions.
 
             '
+        config:
+          $ref: '#/components/schemas/ConfigInput'
+          description: "Hierarchical cascade config with PRD 035 FR-F9 PATCH semantics.\n\
+            Per-category operations, applied in the order the payload is\niterated:\n\
+            \  * `config: {}` → no-op (no categories mentioned).\n  * `config: {<cat>:\
+            \ null}` → clear that category completely.\n  * `config: {<cat>: {}}`\
+            \ → no-op on that category.\n  * `config: {<cat>: {...}}` → complete replacement\
+            \ of that\n    category's stored object (not a deep-merge); keys omitted\n\
+            \    from the new object are removed.\nTo clear every category, issue\
+            \ explicit `{<cat>: null}` entries\nfor each category you want to clear.\n"
     ProjectMember:
       type: object
       required:
@@ -8589,7 +8718,8 @@ components:
             same project.
         name:
           type: string
-          description: Replacement name. Must be unique within the project.
+          description: Free-form human-readable label, 1-63 characters; must be unique
+            within the project.
           minLength: 1
           maxLength: 63
         description:
