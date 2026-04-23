@@ -1033,7 +1033,8 @@ export interface paths {
          * Add a project member
          * @description Adds a user as a project member. The user must already be an org
          *     member. Add is idempotent — adding an existing member returns the
-         *     existing row, not a 409.
+         *     existing row with `200 OK`, not `409`. New memberships are returned
+         *     with `201 Created`.
          */
         post: operations["addProjectMember"];
         delete?: never;
@@ -1498,7 +1499,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project}/agents/sessions/{sessionId}": {
+    "/v1/projects/{project}/agents/{id}/sessions/{sessionId}": {
         parameters: {
             query?: never;
             header?: never;
@@ -1515,7 +1516,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project}/agents/sessions/{sessionId}/heartbeat": {
+    "/v1/projects/{project}/agents/{id}/sessions/{sessionId}/heartbeat": {
         parameters: {
             query?: never;
             header?: never;
@@ -1537,7 +1538,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project}/agents/sessions/{sessionId}/disconnect": {
+    "/v1/projects/{project}/agents/{id}/sessions/{sessionId}/disconnect": {
         parameters: {
             query?: never;
             header?: never;
@@ -3597,6 +3598,10 @@ export interface components {
         ProjectMemberListResponse: {
             /** @description The list of members for this project. */
             items: components["schemas"]["ProjectMember"][];
+            /** @description Whether more results are available. */
+            has_more: boolean;
+            /** @description Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false. */
+            next_cursor?: string;
         };
         AddProjectMemberRequest: {
             /** @description User ID of the org member to add to this project. */
@@ -4273,6 +4278,13 @@ export interface components {
              */
             updated_at: string;
         };
+        /**
+         * @description One of the built-in system roles. These are seeded at startup and
+         *     cannot be deleted. `Owner` and `Admin` bypass project-member
+         *     visibility for restricted projects.
+         * @enum {string}
+         */
+        SystemRoleName: "Owner" | "Admin" | "Operator" | "Worker" | "Viewer";
         Org: {
             /** @description Unique identifier for this organization. */
             id: string;
@@ -4285,11 +4297,10 @@ export interface components {
                 [key: string]: unknown;
             };
             /**
-             * @description System-role name assigned at org scope to new org members. One of
-             *     `Owner`, `Admin`, `Operator`, `Worker`, `Viewer`. Defaults to
-             *     `Operator`.
+             * @description System-role name assigned at org scope to new org members.
+             *     Defaults to `Operator`.
              */
-            default_member_role?: string;
+            default_member_role?: components["schemas"]["SystemRoleName"];
             /**
              * @description Access mode applied to newly-created projects when the caller does
              *     not pass one explicitly. Changing this only affects future
@@ -4335,11 +4346,8 @@ export interface components {
             metadata?: {
                 [key: string]: unknown;
             };
-            /**
-             * @description System-role name assigned to new org members at org scope. One of
-             *     `Owner`, `Admin`, `Operator`, `Worker`, `Viewer`.
-             */
-            default_member_role?: string;
+            /** @description System-role name assigned to new org members at org scope. */
+            default_member_role?: components["schemas"]["SystemRoleName"];
             /**
              * @description Access mode applied to newly-created projects.
              * @enum {string}
@@ -4558,7 +4566,7 @@ export interface components {
             id: string;
             /** @description The service account whose credentials this agent uses to authenticate. Can be changed via PATCH. */
             service_account_id: string;
-            /** @description Mutable unique name within the project. Use `id` for stable references and job targeting. */
+            /** @description Mutable unique name within the project. Free-form human-readable label; use `id` for stable references and job targeting. */
             name: string;
             /** @description Optional human-readable description. */
             description?: string;
@@ -4638,7 +4646,7 @@ export interface components {
              *     with the same name as the agent.
              */
             service_account_id?: string;
-            /** @description Project-scoped unique name for this agent. Must match pattern and be 1-63 characters. */
+            /** @description Project-scoped unique name for this agent. Free-form human-readable label, 1-63 characters. */
             name: string;
             /** @description Optional human-readable description. */
             description?: string;
@@ -4656,7 +4664,7 @@ export interface components {
         UpdateAgentRequest: {
             /** @description Replacement service account. Must be active and belong to the same project. */
             service_account_id?: string;
-            /** @description Replacement name. Must be unique within the project and match the agent name pattern. */
+            /** @description Replacement name. Must be unique within the project. */
             name?: string;
             /** @description Replacement description. */
             description?: string;
@@ -6803,7 +6811,12 @@ export interface operations {
     };
     listProjectMembers: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Cursor for pagination (opaque string from previous response) */
+                cursor?: components["parameters"]["CursorParam"];
+                /** @description Maximum number of items to return */
+                limit?: components["parameters"]["LimitParam"];
+            };
             header?: never;
             path: {
                 /** @description Resource ID. */
@@ -6843,6 +6856,15 @@ export interface operations {
             };
         };
         responses: {
+            /** @description OK — member already existed */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectMember"];
+                };
+            };
             /** @description Created */
             201: {
                 headers: {
@@ -7789,6 +7811,8 @@ export interface operations {
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
+                id: components["parameters"]["IDParam"];
                 /** @description ID of the agent session. */
                 sessionId: string;
             };
@@ -7816,6 +7840,8 @@ export interface operations {
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
+                id: components["parameters"]["IDParam"];
                 /** @description ID of the agent session. */
                 sessionId: string;
             };
@@ -7843,6 +7869,8 @@ export interface operations {
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
+                id: components["parameters"]["IDParam"];
                 /** @description ID of the agent session. */
                 sessionId: string;
             };

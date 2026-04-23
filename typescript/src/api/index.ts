@@ -147,6 +147,7 @@ export type ServiceAccountListResponse = components["schemas"]["ServiceAccountLi
 export type ServiceAccountStatus = components["schemas"]["ServiceAccountStatus"];
 export type SlackInstall = components["schemas"]["SlackInstall"];
 export type StartRunRequest = components["schemas"]["StartRunRequest"];
+export type SystemRoleName = components["schemas"]["SystemRoleName"];
 export type ToolDefinition = components["schemas"]["ToolDefinition"];
 export type ToolDefinitionListResponse = components["schemas"]["ToolDefinitionListResponse"];
 export type ToolRun = components["schemas"]["ToolRun"];

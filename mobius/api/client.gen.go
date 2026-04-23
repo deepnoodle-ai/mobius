@@ -1016,7 +1016,7 @@ type Agent struct {
 	// Kind Freeform agent classification for tooling and filtering (e.g. "llm", "rpa").
 	Kind *string `json:"kind,omitempty"`
 
-	// Name Mutable unique name within the project. Use `id` for stable references and job targeting.
+	// Name Mutable unique name within the project. Free-form human-readable label; use `id` for stable references and job targeting.
 	Name string `json:"name"`
 
 	// Presence Computed from the most recent 20 sessions. `online` means a connected
@@ -1364,7 +1364,7 @@ type CreateAgentRequest struct {
 	// Kind Freeform classification (e.g. "llm", "rpa", "integration").
 	Kind *string `json:"kind,omitempty"`
 
-	// Name Project-scoped unique name for this agent. Must match pattern and be 1-63 characters.
+	// Name Project-scoped unique name for this agent. Free-form human-readable label, 1-63 characters.
 	Name string `json:"name"`
 
 	// ServiceAccountId Service account that backs this agent. Must be active and belong to
@@ -2253,8 +2253,14 @@ type ProjectMember struct {
 
 // ProjectMemberListResponse defines model for ProjectMemberListResponse.
 type ProjectMemberListResponse struct {
+	// HasMore Whether more results are available.
+	HasMore bool `json:"has_more"`
+
 	// Items The list of members for this project.
 	Items []ProjectMember `json:"items"`
+
+	// NextCursor Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.
+	NextCursor *string `json:"next_cursor,omitempty"`
 }
 
 // ProjectMetrics defines model for ProjectMetrics.
@@ -2698,7 +2704,7 @@ type UpdateAgentRequest struct {
 	// Kind Replacement freeform agent classification (e.g. `llm`, `rpa`).
 	Kind *string `json:"kind,omitempty"`
 
-	// Name Replacement name. Must be unique within the project and match the agent name pattern.
+	// Name Replacement name. Must be unique within the project.
 	Name *string `json:"name,omitempty"`
 
 	// ServiceAccountId Replacement service account. Must be active and belong to the same project.
@@ -3750,6 +3756,15 @@ type ListProjectsParams struct {
 	Search *string `form:"search,omitempty" json:"search,omitempty"`
 }
 
+// ListProjectMembersParams defines parameters for ListProjectMembers.
+type ListProjectMembersParams struct {
+	// Cursor Cursor for pagination (opaque string from previous response)
+	Cursor *CursorParam `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Limit Maximum number of items to return
+	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
 // ListActionAuditLogParams defines parameters for ListActionAuditLog.
 type ListActionAuditLogParams struct {
 	// Cursor Cursor for pagination (opaque string from previous response)
@@ -4701,7 +4716,7 @@ type ClientInterface interface {
 	UpdateProject(ctx context.Context, id IDParam, body UpdateProjectJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListProjectMembers request
-	ListProjectMembers(ctx context.Context, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ListProjectMembers(ctx context.Context, id IDParam, params *ListProjectMembersParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// AddProjectMemberWithBody request with any body
 	AddProjectMemberWithBody(ctx context.Context, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -4750,15 +4765,6 @@ type ClientInterface interface {
 
 	CreateAgent(ctx context.Context, project ProjectHandleParam, body CreateAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetAgentSession request
-	GetAgentSession(ctx context.Context, project ProjectHandleParam, sessionId string, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// DisconnectAgentSession request
-	DisconnectAgentSession(ctx context.Context, project ProjectHandleParam, sessionId string, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// HeartbeatAgentSession request
-	HeartbeatAgentSession(ctx context.Context, project ProjectHandleParam, sessionId string, reqEditors ...RequestEditorFn) (*http.Response, error)
-
 	// DeleteAgent request
 	DeleteAgent(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -4777,6 +4783,15 @@ type ClientInterface interface {
 	CreateAgentSessionWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	CreateAgentSession(ctx context.Context, project ProjectHandleParam, id IDParam, body CreateAgentSessionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetAgentSession request
+	GetAgentSession(ctx context.Context, project ProjectHandleParam, id IDParam, sessionId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DisconnectAgentSession request
+	DisconnectAgentSession(ctx context.Context, project ProjectHandleParam, id IDParam, sessionId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// HeartbeatAgentSession request
+	HeartbeatAgentSession(ctx context.Context, project ProjectHandleParam, id IDParam, sessionId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListChannels request
 	ListChannels(ctx context.Context, project ProjectHandleParam, params *ListChannelsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -5158,8 +5173,8 @@ func (c *Client) UpdateProject(ctx context.Context, id IDParam, body UpdateProje
 	return c.Client.Do(req)
 }
 
-func (c *Client) ListProjectMembers(ctx context.Context, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListProjectMembersRequest(c.Server, id)
+func (c *Client) ListProjectMembers(ctx context.Context, id IDParam, params *ListProjectMembersParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListProjectMembersRequest(c.Server, id, params)
 	if err != nil {
 		return nil, err
 	}
@@ -5374,42 +5389,6 @@ func (c *Client) CreateAgent(ctx context.Context, project ProjectHandleParam, bo
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetAgentSession(ctx context.Context, project ProjectHandleParam, sessionId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetAgentSessionRequest(c.Server, project, sessionId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) DisconnectAgentSession(ctx context.Context, project ProjectHandleParam, sessionId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDisconnectAgentSessionRequest(c.Server, project, sessionId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) HeartbeatAgentSession(ctx context.Context, project ProjectHandleParam, sessionId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewHeartbeatAgentSessionRequest(c.Server, project, sessionId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
 func (c *Client) DeleteAgent(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewDeleteAgentRequest(c.Server, project, id)
 	if err != nil {
@@ -5484,6 +5463,42 @@ func (c *Client) CreateAgentSessionWithBody(ctx context.Context, project Project
 
 func (c *Client) CreateAgentSession(ctx context.Context, project ProjectHandleParam, id IDParam, body CreateAgentSessionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewCreateAgentSessionRequest(c.Server, project, id, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetAgentSession(ctx context.Context, project ProjectHandleParam, id IDParam, sessionId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetAgentSessionRequest(c.Server, project, id, sessionId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) DisconnectAgentSession(ctx context.Context, project ProjectHandleParam, id IDParam, sessionId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDisconnectAgentSessionRequest(c.Server, project, id, sessionId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) HeartbeatAgentSession(ctx context.Context, project ProjectHandleParam, id IDParam, sessionId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewHeartbeatAgentSessionRequest(c.Server, project, id, sessionId)
 	if err != nil {
 		return nil, err
 	}
@@ -7156,7 +7171,7 @@ func NewUpdateProjectRequestWithBody(server string, id IDParam, contentType stri
 }
 
 // NewListProjectMembersRequest generates requests for ListProjectMembers
-func NewListProjectMembersRequest(server string, id IDParam) (*http.Request, error) {
+func NewListProjectMembersRequest(server string, id IDParam, params *ListProjectMembersParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -7179,6 +7194,44 @@ func NewListProjectMembersRequest(server string, id IDParam) (*http.Request, err
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Cursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "cursor", *params.Cursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
 	}
 
 	req, err := http.NewRequest("GET", queryURL.String(), nil)
@@ -7903,129 +7956,6 @@ func NewCreateAgentRequestWithBody(server string, project ProjectHandleParam, co
 	return req, nil
 }
 
-// NewGetAgentSessionRequest generates requests for GetAgentSession
-func NewGetAgentSessionRequest(server string, project ProjectHandleParam, sessionId string) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "sessionId", sessionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/projects/%s/agents/sessions/%s", pathParam0, pathParam1)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("GET", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewDisconnectAgentSessionRequest generates requests for DisconnectAgentSession
-func NewDisconnectAgentSessionRequest(server string, project ProjectHandleParam, sessionId string) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "sessionId", sessionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/projects/%s/agents/sessions/%s/disconnect", pathParam0, pathParam1)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("POST", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewHeartbeatAgentSessionRequest generates requests for HeartbeatAgentSession
-func NewHeartbeatAgentSessionRequest(server string, project ProjectHandleParam, sessionId string) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "sessionId", sessionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/projects/%s/agents/sessions/%s/heartbeat", pathParam0, pathParam1)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("POST", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
 // NewDeleteAgentRequest generates requests for DeleteAgent
 func NewDeleteAgentRequest(server string, project ProjectHandleParam, id IDParam) (*http.Request, error) {
 	var err error
@@ -8307,6 +8237,150 @@ func NewCreateAgentSessionRequestWithBody(server string, project ProjectHandlePa
 	}
 
 	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetAgentSessionRequest generates requests for GetAgentSession
+func NewGetAgentSessionRequest(server string, project ProjectHandleParam, id IDParam, sessionId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam2 string
+
+	pathParam2, err = runtime.StyleParamWithOptions("simple", false, "sessionId", sessionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/agents/%s/sessions/%s", pathParam0, pathParam1, pathParam2)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewDisconnectAgentSessionRequest generates requests for DisconnectAgentSession
+func NewDisconnectAgentSessionRequest(server string, project ProjectHandleParam, id IDParam, sessionId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam2 string
+
+	pathParam2, err = runtime.StyleParamWithOptions("simple", false, "sessionId", sessionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/agents/%s/sessions/%s/disconnect", pathParam0, pathParam1, pathParam2)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewHeartbeatAgentSessionRequest generates requests for HeartbeatAgentSession
+func NewHeartbeatAgentSessionRequest(server string, project ProjectHandleParam, id IDParam, sessionId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam2 string
+
+	pathParam2, err = runtime.StyleParamWithOptions("simple", false, "sessionId", sessionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/agents/%s/sessions/%s/heartbeat", pathParam0, pathParam1, pathParam2)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
 
 	return req, nil
 }
@@ -12601,7 +12675,7 @@ type ClientWithResponsesInterface interface {
 	UpdateProjectWithResponse(ctx context.Context, id IDParam, body UpdateProjectJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateProjectResponse, error)
 
 	// ListProjectMembersWithResponse request
-	ListProjectMembersWithResponse(ctx context.Context, id IDParam, reqEditors ...RequestEditorFn) (*ListProjectMembersResponse, error)
+	ListProjectMembersWithResponse(ctx context.Context, id IDParam, params *ListProjectMembersParams, reqEditors ...RequestEditorFn) (*ListProjectMembersResponse, error)
 
 	// AddProjectMemberWithBodyWithResponse request with any body
 	AddProjectMemberWithBodyWithResponse(ctx context.Context, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AddProjectMemberResponse, error)
@@ -12650,15 +12724,6 @@ type ClientWithResponsesInterface interface {
 
 	CreateAgentWithResponse(ctx context.Context, project ProjectHandleParam, body CreateAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateAgentResponse, error)
 
-	// GetAgentSessionWithResponse request
-	GetAgentSessionWithResponse(ctx context.Context, project ProjectHandleParam, sessionId string, reqEditors ...RequestEditorFn) (*GetAgentSessionResponse, error)
-
-	// DisconnectAgentSessionWithResponse request
-	DisconnectAgentSessionWithResponse(ctx context.Context, project ProjectHandleParam, sessionId string, reqEditors ...RequestEditorFn) (*DisconnectAgentSessionResponse, error)
-
-	// HeartbeatAgentSessionWithResponse request
-	HeartbeatAgentSessionWithResponse(ctx context.Context, project ProjectHandleParam, sessionId string, reqEditors ...RequestEditorFn) (*HeartbeatAgentSessionResponse, error)
-
 	// DeleteAgentWithResponse request
 	DeleteAgentWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*DeleteAgentResponse, error)
 
@@ -12677,6 +12742,15 @@ type ClientWithResponsesInterface interface {
 	CreateAgentSessionWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateAgentSessionResponse, error)
 
 	CreateAgentSessionWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body CreateAgentSessionJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateAgentSessionResponse, error)
+
+	// GetAgentSessionWithResponse request
+	GetAgentSessionWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, sessionId string, reqEditors ...RequestEditorFn) (*GetAgentSessionResponse, error)
+
+	// DisconnectAgentSessionWithResponse request
+	DisconnectAgentSessionWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, sessionId string, reqEditors ...RequestEditorFn) (*DisconnectAgentSessionResponse, error)
+
+	// HeartbeatAgentSessionWithResponse request
+	HeartbeatAgentSessionWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, sessionId string, reqEditors ...RequestEditorFn) (*HeartbeatAgentSessionResponse, error)
 
 	// ListChannelsWithResponse request
 	ListChannelsWithResponse(ctx context.Context, project ProjectHandleParam, params *ListChannelsParams, reqEditors ...RequestEditorFn) (*ListChannelsResponse, error)
@@ -13133,6 +13207,7 @@ func (r ListProjectMembersResponse) StatusCode() int {
 type AddProjectMemberResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *ProjectMember
 	JSON201      *ProjectMember
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
@@ -13447,78 +13522,6 @@ func (r CreateAgentResponse) StatusCode() int {
 	return 0
 }
 
-type GetAgentSessionResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *AgentSession
-	JSON401      *Unauthorized
-	JSON404      *NotFound
-}
-
-// Status returns HTTPResponse.Status
-func (r GetAgentSessionResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetAgentSessionResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type DisconnectAgentSessionResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *AgentSession
-	JSON401      *Unauthorized
-	JSON404      *NotFound
-}
-
-// Status returns HTTPResponse.Status
-func (r DisconnectAgentSessionResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r DisconnectAgentSessionResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type HeartbeatAgentSessionResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *AgentSession
-	JSON401      *Unauthorized
-	JSON404      *NotFound
-}
-
-// Status returns HTTPResponse.Status
-func (r HeartbeatAgentSessionResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r HeartbeatAgentSessionResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
 type DeleteAgentResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -13635,6 +13638,78 @@ func (r CreateAgentSessionResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r CreateAgentSessionResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetAgentSessionResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *AgentSession
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r GetAgentSessionResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetAgentSessionResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type DisconnectAgentSessionResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *AgentSession
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r DisconnectAgentSessionResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DisconnectAgentSessionResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type HeartbeatAgentSessionResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *AgentSession
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r HeartbeatAgentSessionResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r HeartbeatAgentSessionResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -15533,8 +15608,8 @@ func (c *ClientWithResponses) UpdateProjectWithResponse(ctx context.Context, id 
 }
 
 // ListProjectMembersWithResponse request returning *ListProjectMembersResponse
-func (c *ClientWithResponses) ListProjectMembersWithResponse(ctx context.Context, id IDParam, reqEditors ...RequestEditorFn) (*ListProjectMembersResponse, error) {
-	rsp, err := c.ListProjectMembers(ctx, id, reqEditors...)
+func (c *ClientWithResponses) ListProjectMembersWithResponse(ctx context.Context, id IDParam, params *ListProjectMembersParams, reqEditors ...RequestEditorFn) (*ListProjectMembersResponse, error) {
+	rsp, err := c.ListProjectMembers(ctx, id, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -15690,33 +15765,6 @@ func (c *ClientWithResponses) CreateAgentWithResponse(ctx context.Context, proje
 	return ParseCreateAgentResponse(rsp)
 }
 
-// GetAgentSessionWithResponse request returning *GetAgentSessionResponse
-func (c *ClientWithResponses) GetAgentSessionWithResponse(ctx context.Context, project ProjectHandleParam, sessionId string, reqEditors ...RequestEditorFn) (*GetAgentSessionResponse, error) {
-	rsp, err := c.GetAgentSession(ctx, project, sessionId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetAgentSessionResponse(rsp)
-}
-
-// DisconnectAgentSessionWithResponse request returning *DisconnectAgentSessionResponse
-func (c *ClientWithResponses) DisconnectAgentSessionWithResponse(ctx context.Context, project ProjectHandleParam, sessionId string, reqEditors ...RequestEditorFn) (*DisconnectAgentSessionResponse, error) {
-	rsp, err := c.DisconnectAgentSession(ctx, project, sessionId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseDisconnectAgentSessionResponse(rsp)
-}
-
-// HeartbeatAgentSessionWithResponse request returning *HeartbeatAgentSessionResponse
-func (c *ClientWithResponses) HeartbeatAgentSessionWithResponse(ctx context.Context, project ProjectHandleParam, sessionId string, reqEditors ...RequestEditorFn) (*HeartbeatAgentSessionResponse, error) {
-	rsp, err := c.HeartbeatAgentSession(ctx, project, sessionId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseHeartbeatAgentSessionResponse(rsp)
-}
-
 // DeleteAgentWithResponse request returning *DeleteAgentResponse
 func (c *ClientWithResponses) DeleteAgentWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*DeleteAgentResponse, error) {
 	rsp, err := c.DeleteAgent(ctx, project, id, reqEditors...)
@@ -15776,6 +15824,33 @@ func (c *ClientWithResponses) CreateAgentSessionWithResponse(ctx context.Context
 		return nil, err
 	}
 	return ParseCreateAgentSessionResponse(rsp)
+}
+
+// GetAgentSessionWithResponse request returning *GetAgentSessionResponse
+func (c *ClientWithResponses) GetAgentSessionWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, sessionId string, reqEditors ...RequestEditorFn) (*GetAgentSessionResponse, error) {
+	rsp, err := c.GetAgentSession(ctx, project, id, sessionId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetAgentSessionResponse(rsp)
+}
+
+// DisconnectAgentSessionWithResponse request returning *DisconnectAgentSessionResponse
+func (c *ClientWithResponses) DisconnectAgentSessionWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, sessionId string, reqEditors ...RequestEditorFn) (*DisconnectAgentSessionResponse, error) {
+	rsp, err := c.DisconnectAgentSession(ctx, project, id, sessionId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDisconnectAgentSessionResponse(rsp)
+}
+
+// HeartbeatAgentSessionWithResponse request returning *HeartbeatAgentSessionResponse
+func (c *ClientWithResponses) HeartbeatAgentSessionWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, sessionId string, reqEditors ...RequestEditorFn) (*HeartbeatAgentSessionResponse, error) {
+	rsp, err := c.HeartbeatAgentSession(ctx, project, id, sessionId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseHeartbeatAgentSessionResponse(rsp)
 }
 
 // ListChannelsWithResponse request returning *ListChannelsResponse
@@ -16979,6 +17054,13 @@ func ParseAddProjectMemberResponse(rsp *http.Response) (*AddProjectMemberRespons
 	}
 
 	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ProjectMember
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
 		var dest ProjectMember
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -17520,126 +17602,6 @@ func ParseCreateAgentResponse(rsp *http.Response) (*CreateAgentResponse, error) 
 	return response, nil
 }
 
-// ParseGetAgentSessionResponse parses an HTTP response from a GetAgentSessionWithResponse call
-func ParseGetAgentSessionResponse(rsp *http.Response) (*GetAgentSessionResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetAgentSessionResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest AgentSession
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseDisconnectAgentSessionResponse parses an HTTP response from a DisconnectAgentSessionWithResponse call
-func ParseDisconnectAgentSessionResponse(rsp *http.Response) (*DisconnectAgentSessionResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &DisconnectAgentSessionResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest AgentSession
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseHeartbeatAgentSessionResponse parses an HTTP response from a HeartbeatAgentSessionWithResponse call
-func ParseHeartbeatAgentSessionResponse(rsp *http.Response) (*HeartbeatAgentSessionResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &HeartbeatAgentSessionResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest AgentSession
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
 // ParseDeleteAgentResponse parses an HTTP response from a DeleteAgentWithResponse call
 func ParseDeleteAgentResponse(rsp *http.Response) (*DeleteAgentResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -17834,6 +17796,126 @@ func ParseCreateAgentSessionResponse(rsp *http.Response) (*CreateAgentSessionRes
 			return nil, err
 		}
 		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetAgentSessionResponse parses an HTTP response from a GetAgentSessionWithResponse call
+func ParseGetAgentSessionResponse(rsp *http.Response) (*GetAgentSessionResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetAgentSessionResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest AgentSession
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDisconnectAgentSessionResponse parses an HTTP response from a DisconnectAgentSessionWithResponse call
+func ParseDisconnectAgentSessionResponse(rsp *http.Response) (*DisconnectAgentSessionResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DisconnectAgentSessionResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest AgentSession
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseHeartbeatAgentSessionResponse parses an HTTP response from a HeartbeatAgentSessionWithResponse call
+func ParseHeartbeatAgentSessionResponse(rsp *http.Response) (*HeartbeatAgentSessionResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &HeartbeatAgentSessionResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest AgentSession
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
 		var dest Unauthorized

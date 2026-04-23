@@ -2100,6 +2100,8 @@ paths:
         '
       parameters:
       - $ref: '#/components/parameters/IDParam'
+      - $ref: '#/components/parameters/CursorParam'
+      - $ref: '#/components/parameters/LimitParam'
       responses:
         '200':
           description: OK
@@ -2122,7 +2124,9 @@ paths:
 
         member. Add is idempotent — adding an existing member returns the
 
-        existing row, not a 409.
+        existing row with `200 OK`, not `409`. New memberships are returned
+
+        with `201 Created`.
 
         '
       parameters:
@@ -2134,6 +2138,12 @@ paths:
             schema:
               $ref: '#/components/schemas/AddProjectMemberRequest'
       responses:
+        '200':
+          description: OK — member already existed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectMember'
         '201':
           description: Created
           content:
@@ -3105,7 +3115,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /v1/projects/{project}/agents/sessions/{sessionId}:
+  /v1/projects/{project}/agents/{id}/sessions/{sessionId}:
     get:
       operationId: getAgentSession
       tags:
@@ -3113,6 +3123,7 @@ paths:
       summary: Get an agent session
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/IDParam'
       - name: sessionId
         in: path
         required: true
@@ -3130,7 +3141,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /v1/projects/{project}/agents/sessions/{sessionId}/heartbeat:
+  /v1/projects/{project}/agents/{id}/sessions/{sessionId}/heartbeat:
     post:
       operationId: heartbeatAgentSession
       tags:
@@ -3145,6 +3156,7 @@ paths:
         '
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/IDParam'
       - name: sessionId
         in: path
         required: true
@@ -3162,7 +3174,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /v1/projects/{project}/agents/sessions/{sessionId}/disconnect:
+  /v1/projects/{project}/agents/{id}/sessions/{sessionId}/disconnect:
     post:
       operationId: disconnectAgentSession
       tags:
@@ -3178,6 +3190,7 @@ paths:
         '
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/IDParam'
       - name: sessionId
         in: path
         required: true
@@ -3312,7 +3325,16 @@ components:
     BearerAuth:
       type: http
       scheme: bearer
-      description: API key passed as Bearer token
+      description: "Bearer credential supplied via the `Authorization: Bearer <credential>`\n\
+        header. Two credential types are accepted:\n\n- **API keys** — prefix `mbx_`.\
+        \ Issued from the dashboard or via the\n  API key endpoints. API keys with\
+        \ a project binding are scoped to\n  that project; unbound keys are org-scoped\
+        \ (\"system\"). The raw token\n  is sent as-is.\n- **CLI credentials** — prefix\
+        \ `mbc_`. Issued by the device-auth\n  flow on behalf of a user. Unpinned\
+        \ CLI credentials are org-scoped\n  and sent as the raw token. Project-pinned\
+        \ CLI credentials MUST be\n  sent with a trailing `.<project_handle>` suffix\
+        \ — e.g.\n  `mbc_abcdef….myproject`. The suffix is required: the handle is\
+        \ how\n  the server resolves the bound project.\n"
   parameters:
     ProjectHandleParam:
       name: project
@@ -6778,12 +6800,20 @@ components:
       type: object
       required:
       - items
+      - has_more
       properties:
         items:
           type: array
           description: The list of members for this project.
           items:
             $ref: '#/components/schemas/ProjectMember'
+        has_more:
+          type: boolean
+          description: Whether more results are available.
+        next_cursor:
+          type: string
+          description: Opaque cursor to pass as `cursor` on the next request. Absent
+            when `has_more` is false.
     AddProjectMemberRequest:
       type: object
       required:
@@ -7904,6 +7934,22 @@ components:
           type: string
           format: date-time
           description: Timestamp when this user record was last synced from Clerk.
+    SystemRoleName:
+      type: string
+      enum:
+      - Owner
+      - Admin
+      - Operator
+      - Worker
+      - Viewer
+      description: 'One of the built-in system roles. These are seeded at startup
+        and
+
+        cannot be deleted. `Owner` and `Admin` bypass project-member
+
+        visibility for restricted projects.
+
+        '
     Org:
       type: object
       required:
@@ -7928,13 +7974,10 @@ components:
           additionalProperties: true
           description: Arbitrary key-value metadata stored alongside the org.
         default_member_role:
-          type: string
+          $ref: '#/components/schemas/SystemRoleName'
           description: 'System-role name assigned at org scope to new org members.
-            One of
 
-            `Owner`, `Admin`, `Operator`, `Worker`, `Viewer`. Defaults to
-
-            `Operator`.
+            Defaults to `Operator`.
 
             '
         default_project_access_mode:
@@ -8006,13 +8049,8 @@ components:
           additionalProperties: true
           description: Replacement metadata.
         default_member_role:
-          type: string
-          description: 'System-role name assigned to new org members at org scope.
-            One of
-
-            `Owner`, `Admin`, `Operator`, `Worker`, `Viewer`.
-
-            '
+          $ref: '#/components/schemas/SystemRoleName'
+          description: System-role name assigned to new org members at org scope.
         default_project_access_mode:
           type: string
           enum:
@@ -8404,9 +8442,8 @@ components:
             Can be changed via PATCH.
         name:
           type: string
-          description: Mutable unique name within the project. Use `id` for stable
-            references and job targeting.
-          pattern: ^[a-z0-9]([a-z0-9_-]{0,61}[a-z0-9])?$
+          description: Mutable unique name within the project. Free-form human-readable
+            label; use `id` for stable references and job targeting.
           minLength: 1
           maxLength: 63
         description:
@@ -8523,9 +8560,8 @@ components:
             '
         name:
           type: string
-          description: Project-scoped unique name for this agent. Must match pattern
-            and be 1-63 characters.
-          pattern: ^[a-z0-9]([a-z0-9_-]{0,61}[a-z0-9])?$
+          description: Project-scoped unique name for this agent. Free-form human-readable
+            label, 1-63 characters.
           minLength: 1
           maxLength: 63
         description:
@@ -8553,9 +8589,7 @@ components:
             same project.
         name:
           type: string
-          description: Replacement name. Must be unique within the project and match
-            the agent name pattern.
-          pattern: ^[a-z0-9]([a-z0-9_-]{0,61}[a-z0-9])?$
+          description: Replacement name. Must be unique within the project.
           minLength: 1
           maxLength: 63
         description:

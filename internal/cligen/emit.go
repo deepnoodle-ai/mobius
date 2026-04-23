@@ -337,7 +337,7 @@ func commandLeaf(opID string) string {
 	verbs := []string{
 		"list", "get", "create", "update", "delete", "revoke", "rotate",
 		"cancel", "retry", "bulk", "add", "remove", "send", "claim",
-		"disconnect", "handle",
+		"disconnect", "handle", "heartbeat",
 	}
 	lo := opID
 	for _, v := range verbs {

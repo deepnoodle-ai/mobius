@@ -27,7 +27,7 @@ func registerAgentsCommands(app *cli.App) {
 			cli.String("config", "").Help("Agent-specific configuration stored and returned opaquely. (JSON)"),
 			cli.String("description", "").Help("Optional human-readable description."),
 			cli.String("kind", "").Help("Freeform classification (e.g. \"llm\", \"rpa\", \"integration\")."),
-			cli.String("name", "").Help("[required] Project-scoped unique name for this agent. Must match pattern and be 1-63 characters."),
+			cli.String("name", "").Help("[required] Project-scoped unique name for this agent. Free-form human-readable label, 1-63 characters."),
 			cli.String("service-account-id", "").Help("Service account that backs this agent. Must be active and belong to the same project. If omitted, a new service account is auto-created with the same name as the agent."),
 			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
 		).
@@ -138,7 +138,7 @@ func registerAgentsCommands(app *cli.App) {
 
 	agentsGrp.Command("disconnect-session").
 		Description("Mark an agent session as disconnected").
-		Args("session-id").
+		Args("id", "session-id").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -148,7 +148,8 @@ func registerAgentsCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := ctx.String("project")
 			p1 := ctx.Arg(0)
-			resp, err := client.DisconnectAgentSessionWithResponse(ctx.Context(), p0, p1)
+			p2 := ctx.Arg(1)
+			resp, err := client.DisconnectAgentSessionWithResponse(ctx.Context(), p0, p1, p2)
 			if err != nil {
 				return err
 			}
@@ -176,7 +177,7 @@ func registerAgentsCommands(app *cli.App) {
 
 	agentsGrp.Command("get-session").
 		Description("Get an agent session").
-		Args("session-id").
+		Args("id", "session-id").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -186,16 +187,17 @@ func registerAgentsCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := ctx.String("project")
 			p1 := ctx.Arg(0)
-			resp, err := client.GetAgentSessionWithResponse(ctx.Context(), p0, p1)
+			p2 := ctx.Arg(1)
+			resp, err := client.GetAgentSessionWithResponse(ctx.Context(), p0, p1, p2)
 			if err != nil {
 				return err
 			}
 			return printResponse(ctx, resp.StatusCode(), resp.Body)
 		})
 
-	agentsGrp.Command("heartbeat-agent-session").
+	agentsGrp.Command("heartbeat-session").
 		Description("Refresh an agent session heartbeat").
-		Args("session-id").
+		Args("id", "session-id").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -205,7 +207,8 @@ func registerAgentsCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := ctx.String("project")
 			p1 := ctx.Arg(0)
-			resp, err := client.HeartbeatAgentSessionWithResponse(ctx.Context(), p0, p1)
+			p2 := ctx.Arg(1)
+			resp, err := client.HeartbeatAgentSessionWithResponse(ctx.Context(), p0, p1, p2)
 			if err != nil {
 				return err
 			}
@@ -292,7 +295,7 @@ func registerAgentsCommands(app *cli.App) {
 			cli.String("config", "").Help("Replacement configuration blob. (JSON)"),
 			cli.String("description", "").Help("Replacement description."),
 			cli.String("kind", "").Help("Replacement freeform agent classification (e.g. `llm`, `rpa`)."),
-			cli.String("name", "").Help("Replacement name. Must be unique within the project and match the agent name pattern."),
+			cli.String("name", "").Help("Replacement name. Must be unique within the project."),
 			cli.String("service-account-id", "").Help("Replacement service account. Must be active and belong to the same project."),
 			cli.String("status", "").Help("Administrative status. Inactive agents cannot claim new jobs."),
 			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),

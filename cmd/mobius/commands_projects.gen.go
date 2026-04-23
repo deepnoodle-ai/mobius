@@ -159,6 +159,10 @@ func registerProjectsCommands(app *cli.App) {
 	projectsGrp.Command("list-members").
 		Description("List project members").
 		Args("id").
+		Flags(
+			cli.String("cursor", "").Help("cursor"),
+			cli.Int("limit", "").Help("limit"),
+		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -167,7 +171,16 @@ func registerProjectsCommands(app *cli.App) {
 			}
 			client := mc.RawClient()
 			p0 := ctx.Arg(0)
-			resp, err := client.ListProjectMembersWithResponse(ctx.Context(), p0)
+			params := &api.ListProjectMembersParams{}
+			if ctx.IsSet("cursor") {
+				v := api.CursorParam(ctx.String("cursor"))
+				params.Cursor = &v
+			}
+			if ctx.IsSet("limit") {
+				v := api.LimitParam(ctx.Int("limit"))
+				params.Limit = &v
+			}
+			resp, err := client.ListProjectMembersWithResponse(ctx.Context(), p0, params)
 			if err != nil {
 				return err
 			}
