@@ -82,9 +82,9 @@ func registerWebhooksCommands(app *cli.App) {
 	webhooksGrp.Command("list").
 		Description("List webhooks").
 		Flags(
-			cli.Bool("enabled", "").Help("enabled"),
-			cli.String("cursor", "").Help("cursor"),
-			cli.Int("limit", "").Help("limit"),
+			cli.Bool("enabled", "").Help("Filter by enabled/disabled state."),
+			cli.String("cursor", "").Help("Opaque pagination cursor returned from the previous response."),
+			cli.Int("limit", "").Help("Maximum number of results to return per page."),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -118,8 +118,8 @@ func registerWebhooksCommands(app *cli.App) {
 		Description("List webhook deliveries").
 		Args("id").
 		Flags(
-			cli.String("cursor", "").Help("cursor"),
-			cli.Int("limit", "").Help("limit"),
+			cli.String("cursor", "").Help("Opaque pagination cursor returned from the previous response."),
+			cli.Int("limit", "").Help("Maximum number of results to return per page."),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -140,6 +140,32 @@ func registerWebhooksCommands(app *cli.App) {
 				params.Limit = &v
 			}
 			resp, err := client.ListWebhookDeliveriesWithResponse(ctx.Context(), p0, p1, params)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, resp.StatusCode(), resp.Body)
+		})
+
+	webhooksGrp.Command("ping-webhook").
+		Description("Test a webhook URL").
+		Args("id").
+		Flags(
+			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin)"),
+		).
+		Use(cli.RequireFlags("api-key")).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := ctx.String("project")
+			p1 := ctx.Arg(0)
+			var body api.PingWebhookJSONRequestBody
+			if err := readJSONBody(ctx, &body); err != nil {
+				return err
+			}
+			resp, err := client.PingWebhookWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}

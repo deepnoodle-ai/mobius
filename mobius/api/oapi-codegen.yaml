@@ -4,3 +4,5 @@ generate:
   client: true
   models: true
   embedded-spec: false
+compatibility:
+  always-prefix-enum-values: true

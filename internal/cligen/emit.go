@@ -47,10 +47,11 @@ type QueryBlock struct {
 
 // QueryField is one field of a query-params struct, surfaced as a CLI flag.
 type QueryField struct {
-	GoField  string // struct field name (e.g. "Kind")
-	FlagName string // kebab-case CLI flag name (e.g. "kind")
-	ElemType string // unwrapped element type: "string", "int", "bool", or a named alias
-	Kind     string // "string", "int", "bool", "strings" (for []string), "skip"
+	GoField     string // struct field name (e.g. "Kind")
+	FlagName    string // kebab-case CLI flag name (e.g. "kind")
+	Description string // help text from the OpenAPI parameter description
+	ElemType    string // unwrapped element type: "string", "int", "bool", or a named alias
+	Kind        string // "string", "int", "bool", "strings" (for []string), "skip"
 }
 
 // BodyArg captures a typed JSON request body.
@@ -106,6 +107,15 @@ func buildPlan(client *ClientInfo, spec map[string]*SpecOp, overrides map[string
 		if !ok {
 			warns = append(warns, fmt.Sprintf("skip %s: %s", name, reason))
 			continue
+		}
+		if pc.QueryBlock != nil && op != nil {
+			for i := range pc.QueryBlock.Fields {
+				f := &pc.QueryBlock.Fields[i]
+				jsonName := strings.ReplaceAll(f.FlagName, "-", "_")
+				if desc, ok := op.ParamDescriptions[jsonName]; ok {
+					f.Description = desc
+				}
+			}
 		}
 		plan.Commands = append(plan.Commands, pc)
 	}
@@ -499,15 +509,16 @@ func renderCommand(b *bytes.Buffer, group string, c PlannedCommand) error {
 	var flags []string
 	if c.QueryBlock != nil {
 		for _, f := range c.QueryBlock.Fields {
+			help := firstNonEmpty(f.Description, f.FlagName)
 			switch f.Kind {
 			case "string":
-				flags = append(flags, fmt.Sprintf(`cli.String(%q, "").Help(%q)`, f.FlagName, f.FlagName))
+				flags = append(flags, fmt.Sprintf(`cli.String(%q, "").Help(%q)`, f.FlagName, help))
 			case "int", "int64":
-				flags = append(flags, fmt.Sprintf(`cli.Int(%q, "").Help(%q)`, f.FlagName, f.FlagName))
+				flags = append(flags, fmt.Sprintf(`cli.Int(%q, "").Help(%q)`, f.FlagName, help))
 			case "bool":
-				flags = append(flags, fmt.Sprintf(`cli.Bool(%q, "").Help(%q)`, f.FlagName, f.FlagName))
+				flags = append(flags, fmt.Sprintf(`cli.Bool(%q, "").Help(%q)`, f.FlagName, help))
 			case "strings":
-				flags = append(flags, fmt.Sprintf(`cli.Strings(%q, "").Help(%q)`, f.FlagName, f.FlagName))
+				flags = append(flags, fmt.Sprintf(`cli.Strings(%q, "").Help(%q)`, f.FlagName, help))
 			}
 		}
 	}

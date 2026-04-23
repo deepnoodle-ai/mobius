@@ -346,6 +346,10 @@ class AuditLogEntry(BaseModel):
     actor_id: str | None = Field(
         None, description='Durable actor ID that performed the action'
     )
+    actor_name: str | None = Field(
+        None,
+        description='Display name of the actor (email for users, service account name for service accounts)',
+    )
     credential_id: str | None = Field(
         None, description='Credential ID used for the request, when applicable'
     )
@@ -368,8 +372,8 @@ class AuditLogEntry(BaseModel):
 
 
 class AuditLogListResponse(BaseModel):
-    items: list[AuditLogEntry] | None = Field(
-        None, description='The list of results for this page.'
+    items: list[AuditLogEntry] = Field(
+        ..., description='The list of results for this page.'
     )
     next_cursor: str | None = Field(
         None, description='Cursor for fetching next page of results'
@@ -978,8 +982,8 @@ class WorkflowRun(BaseModel):
 
 
 class WorkflowRunListResponse(BaseModel):
-    items: list[WorkflowRun] | None = Field(
-        None, description='The list of results for this page.'
+    items: list[WorkflowRun] = Field(
+        ..., description='The list of results for this page.'
     )
     has_more: bool = Field(..., description='True when more pages are available.')
     next_cursor: str | None = Field(
@@ -1101,19 +1105,6 @@ class RunSignal(BaseModel):
     )
 
 
-class BulkRunRequest(BaseModel):
-    run_ids: list[str] = Field(..., description='IDs of the runs to operate on.')
-
-
-class BulkRunResult(BaseModel):
-    succeeded: list[str] = Field(
-        ..., description='IDs of runs that were successfully processed.'
-    )
-    failures: dict[str, str] | None = Field(
-        None, description='Map of run_id -> error message for per-run failures.'
-    )
-
-
 class ActionAnnotations(BaseModel):
     """
     Hints that describe the safe-use properties of the action. Used by the
@@ -1212,9 +1203,7 @@ class Action1(BaseModel):
 
 
 class ActionListResponse(BaseModel):
-    items: list[Action1] | None = Field(
-        None, description='The list of results for this page.'
-    )
+    items: list[Action1] = Field(..., description='The list of results for this page.')
     next_cursor: str | None = Field(
         None,
         description='Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.',
@@ -1310,8 +1299,8 @@ class ActionAuditLogEntry(BaseModel):
 
 
 class ActionAuditLogListResponse(BaseModel):
-    items: list[ActionAuditLogEntry] | None = Field(
-        None, description='The list of results for this page.'
+    items: list[ActionAuditLogEntry] = Field(
+        ..., description='The list of results for this page.'
     )
     next_cursor: str | None = Field(
         None,
@@ -1364,7 +1353,7 @@ class JobClaim(BaseModel):
     )
     step_name: str = Field(
         ...,
-        description='Step name from the workflow spec — used for UI and interaction topic derivation.',
+        description='Step label from the workflow spec — used for UI and interaction topic derivation.',
     )
     action: str = Field(
         ..., description='Action name the worker must execute for this step.'
@@ -1743,10 +1732,16 @@ class ConcurrencyPolicy(Enum):
 
 class TriggerFireStatus(Enum):
     """
-    `skipped` means the fire was suppressed by the concurrency policy or a target condition evaluated to false.
+    Outcome of a trigger activation:
+    - `success` — all enabled targets started their runs (or no targets configured).
+    - `partial_failure` — at least one target failed while others succeeded.
+    - `failed` — all targets failed, or a trigger-level error prevented any target.
+    - `skipped` — the concurrency policy suppressed the entire activation.
+
     """
 
     success = 'success'
+    partial_failure = 'partial_failure'
     failed = 'failed'
     skipped = 'skipped'
 
@@ -1756,6 +1751,10 @@ class TriggerTarget(BaseModel):
     A workflow to start when this trigger fires.
     """
 
+    id: str = Field(..., description='Unique identifier for this target.')
+    trigger_id: str = Field(
+        ..., description='ID of the trigger this target belongs to.'
+    )
     workflow_id: str = Field(..., description='ID of the workflow definition to run.')
     condition: str | None = Field(
         None,
@@ -1765,6 +1764,81 @@ class TriggerTarget(BaseModel):
         None,
         description='Maps workflow input names to JSONPath expressions evaluated against\nthe event payload. Example: `{"user_id": "$.event.actor.id"}`.\n',
     )
+    enabled: bool = Field(
+        ...,
+        description='When false, this target is paused and will not start a run when the trigger fires.',
+    )
+    created_at: datetime = Field(
+        ..., description='Timestamp when this target was created.'
+    )
+    updated_at: datetime = Field(
+        ..., description='Timestamp when this target was last updated.'
+    )
+
+
+class TriggerTargetListResponse(BaseModel):
+    items: list[TriggerTarget] = Field(
+        ..., description='The list of targets for this trigger.'
+    )
+
+
+class CreateTriggerTargetRequest(BaseModel):
+    """
+    Parameters for attaching a workflow target to a trigger.
+    """
+
+    workflow_id: str = Field(..., description='ID of the workflow definition to run.')
+    condition: str | None = Field(
+        None,
+        description='Expression evaluated against the event payload. Omit to always run.\n',
+    )
+    input_mapping: dict[str, str] | None = Field(
+        None, description='Maps workflow input names to JSONPath expressions.'
+    )
+    enabled: bool | None = Field(
+        True, description='Whether this target starts enabled. Defaults to true.'
+    )
+
+
+class UpdateTriggerTargetRequest(BaseModel):
+    """
+    Partial update for a trigger target; omitted fields are unchanged.
+    """
+
+    workflow_id: str | None = Field(
+        None, description='Replacement workflow definition ID.'
+    )
+    condition: str | None = Field(
+        None,
+        description='Replacement condition expression. Set to empty string to remove.',
+    )
+    input_mapping: dict[str, str] | None = Field(
+        None,
+        description='Replacement input mapping. Set to null to clear all mappings.',
+    )
+    enabled: bool | None = Field(
+        None, description='Set to false to pause this target without removing it.'
+    )
+
+
+class TriggerFireTargetResult(BaseModel):
+    """
+    Outcome of a single target within a trigger fire activation.
+    """
+
+    target_id: str = Field(
+        ..., description='ID of the trigger target that was evaluated.'
+    )
+    workflow_id: str = Field(
+        ...,
+        description='ID of the workflow definition that was started (or attempted).',
+    )
+    run_id: str | None = Field(
+        None,
+        description='ID of the workflow run that was created. Absent when the target failed or was skipped.',
+    )
+    status: TriggerFireStatus
+    error: str | None = Field(None, description='Error detail when status is `failed`.')
 
 
 class Trigger(BaseModel):
@@ -1782,7 +1856,7 @@ class Trigger(BaseModel):
         description='Additional payload filters applied before targets are evaluated.',
     )
     targets: list[TriggerTarget] | None = Field(
-        None, description='Workflows to start when this trigger fires.'
+        None, description='Targets attached to this trigger, populated via join.'
     )
     concurrency_policy: ConcurrencyPolicy
     enabled: bool = Field(
@@ -1814,9 +1888,7 @@ class Trigger(BaseModel):
 
 
 class TriggerListResponse(BaseModel):
-    items: list[Trigger] | None = Field(
-        None, description='The list of results for this page.'
-    )
+    items: list[Trigger] = Field(..., description='The list of results for this page.')
     next_cursor: str | None = Field(
         None,
         description='Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.',
@@ -1836,9 +1908,8 @@ class TriggerFire(BaseModel):
         description='When the trigger was scheduled to fire (schedule triggers only).',
     )
     fired_at: datetime = Field(..., description='When the fire was actually processed.')
-    run_id: str | None = Field(
-        None,
-        description='Workflow run created by this fire. Absent when status is `skipped` or `failed` before run creation.',
+    target_results: list[TriggerFireTargetResult] | None = Field(
+        None, description='Per-target outcomes for this activation.'
     )
     status: TriggerFireStatus
     error: str | None = Field(None, description='Error detail when status is `failed`.')
@@ -1852,8 +1923,8 @@ class TriggerFire(BaseModel):
 
 
 class TriggerFireListResponse(BaseModel):
-    items: list[TriggerFire] | None = Field(
-        None, description='The list of results for this page.'
+    items: list[TriggerFire] = Field(
+        ..., description='The list of results for this page.'
     )
     next_cursor: str | None = Field(
         None,
@@ -1874,8 +1945,9 @@ class CreateTriggerRequest(BaseModel):
     filter_config: dict[str, Any] | None = Field(
         None, description='Additional payload filters evaluated before targets.'
     )
-    targets: list[TriggerTarget] | None = Field(
-        None, description='Workflows to start when this trigger fires.'
+    targets: list[CreateTriggerTargetRequest] | None = Field(
+        None,
+        description='Workflows to start when this trigger fires (inline convenience; stored as sub-resources).',
     )
     concurrency_policy: ConcurrencyPolicy | None = None
     enabled: bool | None = Field(
@@ -1898,9 +1970,6 @@ class UpdateTriggerRequest(BaseModel):
     )
     filter_config: dict[str, Any] | None = Field(
         None, description='Replacement payload filter configuration.'
-    )
-    targets: list[TriggerTarget] | None = Field(
-        None, description='Replaces the entire targets array.'
     )
     concurrency_policy: ConcurrencyPolicy | None = None
     enabled: bool | None = Field(
@@ -1932,6 +2001,14 @@ class Worker(BaseModel):
     capabilities: list[str] | None = Field(
         None,
         description='Reserved for future capability-based job routing. Not currently used for filtering.',
+    )
+    service_account_id: str | None = Field(
+        None,
+        description='Service account this worker authenticated as on register/heartbeat.\nStable across credential rotation — use this to group worker rows\nby identity in the admin UI.\n',
+    )
+    api_key_id: str | None = Field(
+        None,
+        description='ID of the specific API key this worker presented on its most recent\nregister/heartbeat. Changes across credential rotations; use together\nwith `service_account_id` to see rotation progress across a fleet.\n',
     )
     stale: bool = Field(
         ...,
@@ -2126,6 +2203,29 @@ class UpdateWebhookRequest(BaseModel):
     )
 
 
+class PingWebhookRequest(BaseModel):
+    url: AnyUrl | None = Field(
+        None,
+        description="URL to test. When supplied, the ping is sent to this URL instead\nof the webhook's saved URL — use this to validate a new URL before\nsaving it. When omitted, the webhook's current saved URL is used.\n",
+    )
+
+
+class PingWebhookResult(BaseModel):
+    success: bool = Field(
+        ..., description='True if the target responded with a 2xx status code.'
+    )
+    status_code: int | None = Field(
+        None,
+        description='HTTP status code returned by the target. Absent on network error.',
+    )
+    error: str | None = Field(
+        None, description='Error message if the request could not be completed.'
+    )
+    latency_ms: int | None = Field(
+        None, description='Round-trip latency in milliseconds.'
+    )
+
+
 class IntegrationStatus(Enum):
     """
     `active` — integration is enabled and usable by workflows.
@@ -2165,8 +2265,8 @@ class Integration(BaseModel):
 
 
 class IntegrationListResponse(BaseModel):
-    items: list[Integration] | None = Field(
-        None, description='The list of results for this page.'
+    items: list[Integration] = Field(
+        ..., description='The list of results for this page.'
     )
     next_cursor: str | None = Field(
         None,
@@ -2632,11 +2732,6 @@ class CreateRoleRequest(BaseModel):
 
 
 class UpdateRoleRequest(BaseModel):
-    project_id: str | None = Field(
-        None,
-        description='Scope to change this role to. Cannot change an org-scoped role to project-scoped after creation.',
-    )
-    name: str | None = Field(None, description='Replacement role name.')
     description: str | None = Field(None, description='Replacement description.')
     permissions: list[str] | None = Field(
         None, description='Replaces the existing permissions array entirely.'
@@ -2833,11 +2928,11 @@ class CreateInteractionRequest(BaseModel):
 
     run_id: str | None = Field(
         None,
-        description='ID of the workflow run to resume when this interaction is completed. Provide together with `signal_name` for run-backed interactions; omit or null both fields for standalone interactions.',
+        description='ID of the workflow run to resume when this interaction is completed.',
     )
     signal_name: str | None = Field(
         None,
-        description='Signal name the interaction will complete against when run-backed. Provide together with `run_id` for run-backed interactions; omit or null both fields for standalone interactions.',
+        description='Signal name the interaction will complete against when run-backed.',
     )
     target_actor: ActorRef
     type: InteractionType
@@ -3039,13 +3134,15 @@ class Agent(BaseModel):
     id: str = Field(..., description='Unique identifier for this agent.')
     service_account_id: str = Field(
         ...,
-        description='The service account whose credentials this agent uses to authenticate. Immutable after creation.',
+        description='The service account whose credentials this agent uses to authenticate. Can be changed via PATCH.',
     )
     name: str = Field(
         ...,
-        description='Unique name within the project, used for targeting in job claims.',
+        description='Mutable unique name within the project. Use `id` for stable references and job targeting.',
+        max_length=63,
+        min_length=1,
+        pattern='^[a-z0-9]([a-z0-9_-]{0,61}[a-z0-9])?$',
     )
-    display_name: str = Field(..., description='Human-readable label shown in the UI.')
     description: str | None = Field(
         None, description='Optional human-readable description.'
     )
@@ -3112,13 +3209,14 @@ class AgentSessionListResponse(BaseModel):
 class CreateAgentRequest(BaseModel):
     service_account_id: str = Field(
         ...,
-        description='Service account that backs this agent. Must belong to the same org.',
+        description='Service account that backs this agent. Must be active and belong to the same project.',
     )
     name: str = Field(
-        ..., description='Project-scoped unique identifier for this agent.'
-    )
-    display_name: str | None = Field(
-        None, description='Human-readable label shown in the UI.'
+        ...,
+        description='Project-scoped unique name for this agent. Must match pattern and be 1-63 characters.',
+        max_length=63,
+        min_length=1,
+        pattern='^[a-z0-9]([a-z0-9_-]{0,61}[a-z0-9])?$',
     )
     description: str | None = Field(
         None, description='Optional human-readable description.'
@@ -3136,10 +3234,20 @@ class CreateAgentRequest(BaseModel):
 
 
 class UpdateAgentRequest(BaseModel):
-    display_name: str | None = Field(
-        None, description='Replacement human-readable label.'
+    service_account_id: str | None = Field(
+        None,
+        description='Replacement service account. Must be active and belong to the same project.',
     )
-    description: str | None = Field(None, description='Replacement description.')
+    name: str | None = Field(
+        None,
+        description='Replacement name. Must be unique within the project and match the agent name pattern.',
+        max_length=63,
+        min_length=1,
+        pattern='^[a-z0-9]([a-z0-9_-]{0,61}[a-z0-9])?$',
+    )
+    description: str | None = Field(
+        None, description='Replacement description.', max_length=500
+    )
     kind: str | None = Field(
         None,
         description='Replacement freeform agent classification (e.g. `llm`, `rpa`).',
@@ -3175,9 +3283,8 @@ class ServiceAccount(BaseModel):
     id: str = Field(..., description='Unique identifier for this service account.')
     name: str = Field(
         ...,
-        description='Stable machine-readable identifier, unique within the project. Immutable after creation.',
+        description='Human-readable name for this service account. Immutable after creation.',
     )
-    display_name: str = Field(..., description='Human-readable label shown in the UI.')
     description: str | None = Field(
         None, description='Optional human-readable description.'
     )
@@ -3206,10 +3313,7 @@ class ServiceAccountListResponse(BaseModel):
 class CreateServiceAccountRequest(BaseModel):
     name: str = Field(
         ...,
-        description='Stable machine-readable identifier, unique within the project.',
-    )
-    display_name: str | None = Field(
-        None, description='Human-readable label shown in the UI.'
+        description='Human-readable name for this service account. Immutable after creation.',
     )
     description: str | None = Field(
         None, description='Optional human-readable description.'
@@ -3220,20 +3324,14 @@ class CreateServiceAccountRequest(BaseModel):
     metadata: dict[str, Any] | None = Field(
         None, description='Arbitrary metadata to attach to the service account.'
     )
-    role_id: str | None = Field(
+    role_ids: list[str] | None = Field(
         None,
-        description='Role to assign at creation time. Mutually exclusive with `role_name`.\nRequires `permission.manage`. The role must belong to this project\nor be org-scoped (project_id empty).\n',
-    )
-    role_name: str | None = Field(
-        None,
-        description='Role name to assign at creation time (resolved to a role ID server-side).\nMutually exclusive with `role_id`. Requires `permission.manage`.\n',
+        description='One or more role IDs to assign at creation time. All assignments are\ncreated atomically with the service account. Requires `mobius.permission.manage`.\nEach role must belong to this project or be org-scoped (project_id empty).\n',
+        min_length=1,
     )
 
 
 class UpdateServiceAccountRequest(BaseModel):
-    display_name: str | None = Field(
-        None, description='Replacement human-readable label.'
-    )
     description: str | None = Field(None, description='Replacement description.')
     status: ServiceAccountStatus | None = None
     owner_user_id: str | None = Field(
@@ -3542,8 +3640,8 @@ class WorkflowDefinition(BaseModel):
 
 
 class WorkflowDefinitionListResponse(BaseModel):
-    items: list[WorkflowDefinition] | None = Field(
-        None, description='The list of results for this page.'
+    items: list[WorkflowDefinition] = Field(
+        ..., description='The list of results for this page.'
     )
     next_cursor: str | None = Field(
         None,

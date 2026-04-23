@@ -79,7 +79,7 @@ func registerProjectsCommands(app *cli.App) {
 	projectsGrp.Command("list").
 		Description("List projects").
 		Flags(
-			cli.String("search", "").Help("search"),
+			cli.String("search", "").Help("Prefix-match filter applied to project name and handle."),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {

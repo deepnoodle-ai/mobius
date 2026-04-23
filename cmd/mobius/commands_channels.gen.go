@@ -128,8 +128,8 @@ func registerChannelsCommands(app *cli.App) {
 	channelsGrp.Command("list").
 		Description("List channels").
 		Flags(
-			cli.String("kind", "").Help("kind"),
-			cli.Bool("private", "").Help("private"),
+			cli.String("kind", "").Help("Filter by channel kind."),
+			cli.Bool("private", "").Help("Filter by private flag."),
 			cli.String("cursor", "").Help("cursor"),
 			cli.Int("limit", "").Help("limit"),
 		).
@@ -201,9 +201,9 @@ func registerChannelsCommands(app *cli.App) {
 		Description("List messages in a channel").
 		Args("id").
 		Flags(
-			cli.String("sender-id", "").Help("sender-id"),
-			cli.String("reply-to", "").Help("reply-to"),
-			cli.Bool("pinned", "").Help("pinned"),
+			cli.String("sender-id", "").Help("Filter by sender user or agent ID."),
+			cli.String("reply-to", "").Help("Return only replies to this message ID (thread view)."),
+			cli.Bool("pinned", "").Help("Filter by pinned status."),
 			cli.String("cursor", "").Help("cursor"),
 			cli.Int("limit", "").Help("limit"),
 		).

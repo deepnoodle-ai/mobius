@@ -82,11 +82,11 @@ func registerInteractionsCommands(app *cli.App) {
 	interactionsGrp.Command("list").
 		Description("List interactions").
 		Flags(
-			cli.String("status", "").Help("status"),
-			cli.String("run-id", "").Help("run-id"),
-			cli.String("target-actor-type", "").Help("target-actor-type"),
-			cli.String("target-actor-id", "").Help("target-actor-id"),
-			cli.Bool("inbox", "").Help("inbox"),
+			cli.String("status", "").Help("Filter by status"),
+			cli.String("run-id", "").Help("Filter by originating run ID"),
+			cli.String("target-actor-type", "").Help("Filter by target actor type"),
+			cli.String("target-actor-id", "").Help("Filter by target actor ID"),
+			cli.Bool("inbox", "").Help("When true, returns only interactions visible to the authenticated user (direct + group membership)"),
 			cli.String("cursor", "").Help("cursor"),
 			cli.Int("limit", "").Help("limit"),
 		).

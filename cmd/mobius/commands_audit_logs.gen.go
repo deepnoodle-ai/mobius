@@ -20,13 +20,13 @@ func registerAuditLogsCommands(app *cli.App) {
 	auditLogsGrp.Command("list-logs").
 		Description("List audit log entries").
 		Flags(
-			cli.String("resource-type", "").Help("resource-type"),
-			cli.String("project-id", "").Help("project-id"),
-			cli.String("resource-id", "").Help("resource-id"),
-			cli.String("user-id", "").Help("user-id"),
-			cli.String("actor-type", "").Help("actor-type"),
-			cli.String("actor-id", "").Help("actor-id"),
-			cli.String("action", "").Help("action"),
+			cli.String("resource-type", "").Help("Filter by resource type"),
+			cli.String("project-id", "").Help("Filter by project ID"),
+			cli.String("resource-id", "").Help("Filter by resource ID"),
+			cli.String("user-id", "").Help("Filter by user ID"),
+			cli.String("actor-type", "").Help("Filter by actor type"),
+			cli.String("actor-id", "").Help("Filter by actor ID"),
+			cli.String("action", "").Help("Filter by action (create, update, delete)"),
 			cli.String("cursor", "").Help("cursor"),
 			cli.Int("limit", "").Help("limit"),
 		).

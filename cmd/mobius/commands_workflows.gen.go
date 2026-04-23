@@ -82,8 +82,8 @@ func registerWorkflowsCommands(app *cli.App) {
 	workflowsGrp.Command("list").
 		Description("List workflow definitions").
 		Flags(
-			cli.String("cursor", "").Help("cursor"),
-			cli.Int("limit", "").Help("limit"),
+			cli.String("cursor", "").Help("Opaque pagination cursor returned from the previous response."),
+			cli.Int("limit", "").Help("Maximum number of results to return per page."),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -132,7 +132,7 @@ func registerWorkflowsCommands(app *cli.App) {
 		Description("List versions of a workflow definition").
 		Args("id").
 		Flags(
-			cli.Bool("include-spec", "").Help("include-spec"),
+			cli.Bool("include-spec", "").Help("When true, include the full workflow spec for each version."),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {

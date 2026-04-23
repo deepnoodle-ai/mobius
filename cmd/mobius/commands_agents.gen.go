@@ -165,8 +165,8 @@ func registerAgentsCommands(app *cli.App) {
 	agentsGrp.Command("list").
 		Description("List agents").
 		Flags(
-			cli.String("service-account-id", "").Help("service-account-id"),
-			cli.String("status", "").Help("status"),
+			cli.String("service-account-id", "").Help("Filter to agents backed by this service account."),
+			cli.String("status", "").Help("Filter by administrative status (active/inactive), independent of presence."),
 			cli.Int("limit", "").Help("limit"),
 		).
 		Use(cli.RequireFlags("api-key")).
@@ -201,8 +201,8 @@ func registerAgentsCommands(app *cli.App) {
 		Description("List sessions for an agent").
 		Args("id").
 		Flags(
-			cli.String("status", "").Help("status"),
-			cli.String("transport", "").Help("transport"),
+			cli.String("status", "").Help("Filter by session status."),
+			cli.String("transport", "").Help("Filter by transport type (e.g. \"sse\", \"polling\")."),
 			cli.Int("limit", "").Help("limit"),
 		).
 		Use(cli.RequireFlags("api-key")).

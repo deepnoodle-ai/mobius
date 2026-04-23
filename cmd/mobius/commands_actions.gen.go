@@ -150,9 +150,9 @@ func registerActionsCommands(app *cli.App) {
 		Flags(
 			cli.String("cursor", "").Help("cursor"),
 			cli.Int("limit", "").Help("limit"),
-			cli.String("run-id", "").Help("run-id"),
-			cli.String("action-name", "").Help("action-name"),
-			cli.String("status", "").Help("status"),
+			cli.String("run-id", "").Help("Filter to invocations from a specific workflow run."),
+			cli.String("action-name", "").Help("Filter to invocations of a specific action."),
+			cli.String("status", "").Help("Filter by terminal status (e.g. \"success\", \"failed\")."),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {

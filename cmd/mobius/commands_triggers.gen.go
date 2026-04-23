@@ -41,6 +41,32 @@ func registerTriggersCommands(app *cli.App) {
 			return printResponse(ctx, resp.StatusCode(), resp.Body)
 		})
 
+	triggersGrp.Command("create-target").
+		Description("Add a target to a trigger").
+		Args("id").
+		Flags(
+			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin)"),
+		).
+		Use(cli.RequireFlags("api-key")).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := ctx.String("project")
+			p1 := ctx.Arg(0)
+			var body api.CreateTriggerTargetJSONRequestBody
+			if err := readJSONBody(ctx, &body); err != nil {
+				return err
+			}
+			resp, err := client.CreateTriggerTargetWithResponse(ctx.Context(), p0, p1, body)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, resp.StatusCode(), resp.Body)
+		})
+
 	triggersGrp.Command("delete").
 		Description("Delete a trigger").
 		Args("id").
@@ -54,6 +80,45 @@ func registerTriggersCommands(app *cli.App) {
 			p0 := ctx.String("project")
 			p1 := ctx.Arg(0)
 			resp, err := client.DeleteTriggerWithResponse(ctx.Context(), p0, p1)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, resp.StatusCode(), resp.Body)
+		})
+
+	triggersGrp.Command("delete-target").
+		Description("Remove a target from a trigger").
+		Args("id", "target-id").
+		Use(cli.RequireFlags("api-key")).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := ctx.String("project")
+			p1 := ctx.Arg(0)
+			p2 := ctx.Arg(1)
+			resp, err := client.DeleteTriggerTargetWithResponse(ctx.Context(), p0, p1, p2)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, resp.StatusCode(), resp.Body)
+		})
+
+	triggersGrp.Command("delete-trigger-targets").
+		Description("Remove all targets from a trigger").
+		Args("id").
+		Use(cli.RequireFlags("api-key")).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := ctx.String("project")
+			p1 := ctx.Arg(0)
+			resp, err := client.DeleteAllTriggerTargetsWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}
@@ -79,13 +144,33 @@ func registerTriggersCommands(app *cli.App) {
 			return printResponse(ctx, resp.StatusCode(), resp.Body)
 		})
 
+	triggersGrp.Command("get-target").
+		Description("Get a trigger target").
+		Args("id", "target-id").
+		Use(cli.RequireFlags("api-key")).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := ctx.String("project")
+			p1 := ctx.Arg(0)
+			p2 := ctx.Arg(1)
+			resp, err := client.GetTriggerTargetWithResponse(ctx.Context(), p0, p1, p2)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, resp.StatusCode(), resp.Body)
+		})
+
 	triggersGrp.Command("list").
 		Description("List triggers").
 		Flags(
-			cli.String("kind", "").Help("kind"),
-			cli.Bool("enabled", "").Help("enabled"),
-			cli.String("cursor", "").Help("cursor"),
-			cli.Int("limit", "").Help("limit"),
+			cli.String("kind", "").Help("Filter by trigger kind."),
+			cli.Bool("enabled", "").Help("Filter to enabled or disabled triggers."),
+			cli.String("cursor", "").Help("Opaque pagination cursor returned from the previous response."),
+			cli.Int("limit", "").Help("Maximum number of results to return per page."),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -123,9 +208,9 @@ func registerTriggersCommands(app *cli.App) {
 		Description("List fire history for a trigger").
 		Args("id").
 		Flags(
-			cli.String("status", "").Help("status"),
-			cli.String("cursor", "").Help("cursor"),
-			cli.Int("limit", "").Help("limit"),
+			cli.String("status", "").Help("Filter by fire outcome."),
+			cli.String("cursor", "").Help("Opaque pagination cursor returned from the previous response."),
+			cli.Int("limit", "").Help("Maximum number of results to return per page."),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -156,6 +241,25 @@ func registerTriggersCommands(app *cli.App) {
 			return printResponse(ctx, resp.StatusCode(), resp.Body)
 		})
 
+	triggersGrp.Command("list-targets").
+		Description("List targets for a trigger").
+		Args("id").
+		Use(cli.RequireFlags("api-key")).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := ctx.String("project")
+			p1 := ctx.Arg(0)
+			resp, err := client.ListTriggerTargetsWithResponse(ctx.Context(), p0, p1)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, resp.StatusCode(), resp.Body)
+		})
+
 	triggersGrp.Command("update").
 		Description("Update a trigger").
 		Args("id").
@@ -176,6 +280,33 @@ func registerTriggersCommands(app *cli.App) {
 				return err
 			}
 			resp, err := client.UpdateTriggerWithResponse(ctx.Context(), p0, p1, body)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, resp.StatusCode(), resp.Body)
+		})
+
+	triggersGrp.Command("update-target").
+		Description("Update a trigger target").
+		Args("id", "target-id").
+		Flags(
+			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin)"),
+		).
+		Use(cli.RequireFlags("api-key")).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := ctx.String("project")
+			p1 := ctx.Arg(0)
+			p2 := ctx.Arg(1)
+			var body api.UpdateTriggerTargetJSONRequestBody
+			if err := readJSONBody(ctx, &body); err != nil {
+				return err
+			}
+			resp, err := client.UpdateTriggerTargetWithResponse(ctx.Context(), p0, p1, p2, body)
 			if err != nil {
 				return err
 			}

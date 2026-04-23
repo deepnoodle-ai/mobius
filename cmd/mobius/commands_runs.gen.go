@@ -17,54 +17,6 @@ import (
 func registerRunsCommands(app *cli.App) {
 	runsGrp := app.Group("runs")
 	runsGrp.Alias("run")
-	runsGrp.Command("bulk-runs").
-		Description("Request cancellation for a batch of runs").
-		Flags(
-			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin)"),
-		).
-		Use(cli.RequireFlags("api-key")).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := ctx.String("project")
-			var body api.BulkCancelRunsJSONRequestBody
-			if err := readJSONBody(ctx, &body); err != nil {
-				return err
-			}
-			resp, err := client.BulkCancelRunsWithResponse(ctx.Context(), p0, body)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
-		})
-
-	runsGrp.Command("bulk-runs-2").
-		Description("Re-enqueue a batch of failed runs").
-		Flags(
-			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin)"),
-		).
-		Use(cli.RequireFlags("api-key")).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := ctx.String("project")
-			var body api.BulkRetryRunsJSONRequestBody
-			if err := readJSONBody(ctx, &body); err != nil {
-				return err
-			}
-			resp, err := client.BulkRetryRunsWithResponse(ctx.Context(), p0, body)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
-		})
-
 	runsGrp.Command("cancel").
 		Description("Request cancellation of an in-flight run").
 		Args("id").
@@ -103,53 +55,15 @@ func registerRunsCommands(app *cli.App) {
 			return printResponse(ctx, resp.StatusCode(), resp.Body)
 		})
 
-	runsGrp.Command("get-action-log").
-		Description("List action log entries for a run").
-		Args("id").
-		Use(cli.RequireFlags("api-key")).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := ctx.String("project")
-			p1 := ctx.Arg(0)
-			resp, err := client.GetRunActionLogWithResponse(ctx.Context(), p0, p1)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
-		})
-
-	runsGrp.Command("get-jobs").
-		Description("List jobs for a run").
-		Args("id").
-		Use(cli.RequireFlags("api-key")).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := ctx.String("project")
-			p1 := ctx.Arg(0)
-			resp, err := client.GetRunJobsWithResponse(ctx.Context(), p0, p1)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
-		})
-
 	runsGrp.Command("list").
 		Description("List workflow runs").
 		Flags(
-			cli.String("status", "").Help("status"),
-			cli.String("workflow-type", "").Help("workflow-type"),
-			cli.String("queue", "").Help("queue"),
-			cli.String("parent-run-id", "").Help("parent-run-id"),
-			cli.String("initiated-by", "").Help("initiated-by"),
-			cli.String("external-id", "").Help("external-id"),
+			cli.String("status", "").Help("Filter by run status."),
+			cli.String("workflow-type", "").Help("Filter by workflow type name."),
+			cli.String("queue", "").Help("Filter by queue name."),
+			cli.String("parent-run-id", "").Help("Filter to child runs of the specified parent run."),
+			cli.String("initiated-by", "").Help("Filter by the initiator label (e.g. trigger name, API key name)."),
+			cli.String("external-id", "").Help("Filter by caller-supplied external ID or correlation key."),
 			cli.String("cursor", "").Help("cursor"),
 			cli.Int("limit", "").Help("limit"),
 		).
@@ -201,7 +115,45 @@ func registerRunsCommands(app *cli.App) {
 			return printResponse(ctx, resp.StatusCode(), resp.Body)
 		})
 
-	runsGrp.Command("resume-run").
+	runsGrp.Command("list-action-log").
+		Description("List action log entries for a run").
+		Args("id").
+		Use(cli.RequireFlags("api-key")).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := ctx.String("project")
+			p1 := ctx.Arg(0)
+			resp, err := client.ListRunActionLogWithResponse(ctx.Context(), p0, p1)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, resp.StatusCode(), resp.Body)
+		})
+
+	runsGrp.Command("list-jobs").
+		Description("List jobs for a run").
+		Args("id").
+		Use(cli.RequireFlags("api-key")).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := ctx.String("project")
+			p1 := ctx.Arg(0)
+			resp, err := client.ListRunJobsWithResponse(ctx.Context(), p0, p1)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, resp.StatusCode(), resp.Body)
+		})
+
+	runsGrp.Command("resume").
 		Description("Resume a suspended run").
 		Args("id").
 		Use(cli.RequireFlags("api-key")).
@@ -246,7 +198,7 @@ func registerRunsCommands(app *cli.App) {
 			return printResponse(ctx, resp.StatusCode(), resp.Body)
 		})
 
-	runsGrp.Command("start-run").
+	runsGrp.Command("start").
 		Description("Start a new workflow run").
 		Flags(
 			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin)"),
@@ -273,7 +225,7 @@ func registerRunsCommands(app *cli.App) {
 	runsGrp.Command("stream-project-run-events").
 		Description("Subscribe to a project-wide stream of run events (SSE)").
 		Flags(
-			cli.Int("since", "").Help("since"),
+			cli.Int("since", "").Help("Durable event seq cursor to replay from."),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -299,7 +251,7 @@ func registerRunsCommands(app *cli.App) {
 		Description("Subscribe to a stream of events for a single run (SSE)").
 		Args("id").
 		Flags(
-			cli.Int("since", "").Help("since"),
+			cli.Int("since", "").Help("Durable event seq cursor to replay from."),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
