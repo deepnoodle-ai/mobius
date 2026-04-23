@@ -585,6 +585,10 @@ class ConfirmDeviceCodeRequest(BaseModel):
         None,
         description='Optional label to identify this credential in the CLI credentials list.',
     )
+    project_id: str | None = Field(
+        None,
+        description="Optional project ID to pin the issued CLI credential to. When set,\nthe resulting token is usable only for that project and must carry\nthe project's handle as a trailing `.<handle>` suffix.\n",
+    )
 
 
 class ConfirmDeviceCodeResult(BaseModel):
@@ -603,6 +607,14 @@ class CLICredential(BaseModel):
     id: str = Field(..., description='Unique identifier for this credential.')
     user_id: str = Field(
         ..., description='ID of the user who authorized this credential.'
+    )
+    project_id: str | None = Field(
+        None,
+        description='Project ID the credential is pinned to. Empty when the credential\nis org-scoped (usable across every project the user can access).\n',
+    )
+    project_handle: str | None = Field(
+        None,
+        description='Handle of the pinned project, echoed here so clients can format\nthe trailing `.<handle>` suffix on every request. Empty when the\ncredential is not pinned.\n',
     )
     label: str = Field(
         ..., description='Human-readable label identifying this credential.'
@@ -1959,7 +1971,7 @@ class CreateTriggerRequest(BaseModel):
         None,
         description='URL-safe handle that determines the inbound receive URL. Auto-derived\nfrom `name` for `webhook` triggers when omitted. Must be unique\nwithin the project.\n',
     )
-    webhook_secret: str | None = Field(
+    signing_secret: str | None = Field(
         None,
         description='Optional HMAC-SHA256 secret for verifying inbound webhook payloads.\nWhen set, Mobius validates the `X-Mobius-Signature` header on\nincoming requests.\n',
     )
@@ -1981,12 +1993,12 @@ class UpdateTriggerRequest(BaseModel):
         None,
         description='Changing this changes the `receive_url`; update any upstream integrations.',
     )
-    webhook_secret: str | None = Field(
+    signing_secret: str | None = Field(
         None, description='Replace or clear the inbound signature verification secret.'
     )
 
 
-class Worker(BaseModel):
+class WorkerSession(BaseModel):
     id: str = Field(
         ..., description='Caller-assigned stable identifier for this worker process.'
     )
@@ -1998,7 +2010,7 @@ class Worker(BaseModel):
     )
     last_seen_at: datetime | None = Field(
         None,
-        description="Timestamp of the worker's most recent job claim poll. Updated on\nevery `POST /v1/projects/{project}/jobs/claim` call regardless of whether a job was\nreturned. Used to compute `stale`.\n",
+        description="Timestamp of this session's most recent job claim poll. Updated on\nevery `POST /v1/projects/{project}/jobs/claim` call regardless of\nwhether a job was returned. Used to compute `stale`.\n",
     )
     capabilities: list[str] | None = Field(
         None,
@@ -2006,11 +2018,19 @@ class Worker(BaseModel):
     )
     service_account_id: str | None = Field(
         None,
-        description='Service account this worker authenticated as on register/heartbeat.\nStable across credential rotation — use this to group worker rows\nby identity in the admin UI.\n',
+        description='Service account this session authenticated as on register/heartbeat.\nSet when a machine identity is polling; mutually exclusive with\n`user_id`. Stable across credential rotation — use this to group\nsessions by identity in the admin UI.\n',
+    )
+    user_id: str | None = Field(
+        None,
+        description='User this session authenticated as on register/heartbeat. Set when\na human is polling via the CLI; mutually exclusive with\n`service_account_id`.\n',
     )
     api_key_id: str | None = Field(
         None,
-        description='ID of the specific API key this worker presented on its most recent\nregister/heartbeat. Changes across credential rotations; use together\nwith `service_account_id` to see rotation progress across a fleet.\n',
+        description='ID of the specific API key this session presented on its most\nrecent register/heartbeat. Only set for service-account-backed\nsessions; changes across credential rotations. Use together with\n`service_account_id` to see rotation progress across a fleet.\n',
+    )
+    agent_id: str | None = Field(
+        None,
+        description='Agent this session represents, when the polling process declared\nitself as a registered agent (via `agent_id` on the claim request\nor via inference from the service account). Absent for ad-hoc\nworker processes that are not tied to a declared agent.\n',
     )
     stale: bool = Field(
         ...,
@@ -2018,8 +2038,22 @@ class Worker(BaseModel):
     )
 
 
-class WorkerListResponse(BaseModel):
-    items: list[Worker] = Field(..., description='The list of recently seen workers.')
+class WorkerSessionListResponse(BaseModel):
+    items: list[WorkerSession] = Field(
+        ..., description='The list of recently seen worker sessions.'
+    )
+
+
+class ProjectAccessMode(Enum):
+    """
+    `org_open`: every org member can see and use the project, subject to
+    role assignments. `restricted`: only listed project members (and org
+    owners/admins) can see or use the project.
+
+    """
+
+    org_open = 'org_open'
+    restricted = 'restricted'
 
 
 class Project(BaseModel):
@@ -2032,6 +2066,7 @@ class Project(BaseModel):
     description: str | None = Field(
         None, description='Optional human-readable description.'
     )
+    access_mode: ProjectAccessMode
     created_by: str | None = Field(
         None, description='User ID of the org member who created this project.'
     )
@@ -2056,11 +2091,44 @@ class CreateProjectRequest(BaseModel):
     description: str | None = Field(
         None, description='Optional human-readable description.'
     )
+    access_mode: ProjectAccessMode | None = None
 
 
 class UpdateProjectRequest(BaseModel):
     name: str | None = Field(None, description='Replacement human-readable name.')
     description: str | None = Field(None, description='Replacement description.')
+    access_mode: ProjectAccessMode | None = None
+    seed_existing_members: bool | None = Field(
+        None,
+        description='When transitioning from `org_open` to `restricted`, set true to\ninsert all current org members as project members so nobody\nloses visibility on the flip. Ignored on other transitions.\n',
+    )
+
+
+class ProjectMember(BaseModel):
+    id: str = Field(..., description='Unique identifier for this membership record.')
+    project_id: str = Field(
+        ..., description='ID of the project this membership belongs to.'
+    )
+    user_id: str = Field(..., description='ID of the user who is a member.')
+    added_by_actor_type: str | None = Field(
+        None, description='Actor type of whoever added this member, if recorded.'
+    )
+    added_by_actor_id: str | None = Field(
+        None, description='Actor ID of whoever added this member, if recorded.'
+    )
+    added_at: datetime = Field(..., description='Timestamp when the member was added.')
+
+
+class ProjectMemberListResponse(BaseModel):
+    items: list[ProjectMember] = Field(
+        ..., description='The list of members for this project.'
+    )
+
+
+class AddProjectMemberRequest(BaseModel):
+    user_id: str = Field(
+        ..., description='User ID of the org member to add to this project.'
+    )
 
 
 class WebhookDeliveryStatus(Enum):
@@ -2176,9 +2244,9 @@ class CreateWebhookRequest(BaseModel):
         None,
         description='The endpoint Mobius will POST event payloads to. May be left empty\nat creation time so a candidate URL can be tested via the ping\nendpoint before it is saved; events do not fire for webhooks with\nan empty URL.\n',
     )
-    secret: str | None = Field(
+    signing_secret: str | None = Field(
         None,
-        description='Optional shared secret. When set, Mobius signs each POST body\nwith HMAC-SHA256 and includes `X-Mobius-Signature: sha256=<hex>`\nin the request headers.\n',
+        description='Optional HMAC-SHA256 secret. When set, Mobius signs each POST body\nand includes `X-Mobius-Signature: sha256=<hex>` in the request\nheaders.\n',
     )
     events: list[str] = Field(
         ...,
@@ -2193,7 +2261,7 @@ class CreateWebhookRequest(BaseModel):
 class UpdateWebhookRequest(BaseModel):
     name: str | None = Field(None, description='Replacement human-readable name.')
     url: str | None = Field(None, description='Replacement endpoint URL.')
-    secret: str | None = Field(
+    signing_secret: str | None = Field(
         None,
         description='Replace the current signing secret. Set to empty string to\ndisable signing. Omit to leave the current secret unchanged.\n',
     )
@@ -2721,10 +2789,11 @@ class RoleAssignmentListResponse(BaseModel):
 
 
 class CreateRoleRequest(BaseModel):
-    project_id: str | None = Field(
-        None, description='Scope the role to a project. Omit for an org-wide role.'
+    project_id: str = Field(
+        ...,
+        description='Project this role belongs to. Custom roles are always project-scoped.',
     )
-    name: str = Field(..., description='Unique name within the org+project scope.')
+    name: str = Field(..., description='Unique name within the project.')
     description: str | None = Field(
         None,
         description='Optional human-readable description of what this role grants.',
@@ -2795,6 +2864,18 @@ class User(BaseModel):
     )
 
 
+class DefaultProjectAccessMode(Enum):
+    """
+    Access mode applied to newly-created projects when the caller does
+    not pass one explicitly. Changing this only affects future
+    projects.
+
+    """
+
+    org_open = 'org_open'
+    restricted = 'restricted'
+
+
 class Org(BaseModel):
     id: str = Field(..., description='Unique identifier for this organization.')
     name: str = Field(..., description='Human-readable org name.')
@@ -2804,6 +2885,14 @@ class Org(BaseModel):
     )
     metadata: dict[str, Any] | None = Field(
         None, description='Arbitrary key-value metadata stored alongside the org.'
+    )
+    default_member_role: str | None = Field(
+        None,
+        description='System-role name assigned at org scope to new org members. One of\n`Owner`, `Admin`, `Operator`, `Worker`, `Viewer`. Defaults to\n`Operator`.\n',
+    )
+    default_project_access_mode: DefaultProjectAccessMode | None = Field(
+        None,
+        description='Access mode applied to newly-created projects when the caller does\nnot pass one explicitly. Changing this only affects future\nprojects.\n',
     )
     created_at: datetime = Field(
         ..., description='Timestamp when this organization was created.'
@@ -2834,6 +2923,15 @@ class CreateOrgRequest(BaseModel):
     )
 
 
+class DefaultProjectAccessMode1(Enum):
+    """
+    Access mode applied to newly-created projects.
+    """
+
+    org_open = 'org_open'
+    restricted = 'restricted'
+
+
 class UpdateOrgRequest(BaseModel):
     name: str | None = Field(None, description='Must be non-empty if provided.')
     handle: str | None = Field(
@@ -2841,16 +2939,23 @@ class UpdateOrgRequest(BaseModel):
         description='Must be non-empty if provided. Changing the handle affects all API route URLs for this org.',
     )
     metadata: dict[str, Any] | None = Field(None, description='Replacement metadata.')
+    default_member_role: str | None = Field(
+        None,
+        description='System-role name assigned to new org members at org scope. One of\n`Owner`, `Admin`, `Operator`, `Worker`, `Viewer`.\n',
+    )
+    default_project_access_mode: DefaultProjectAccessMode1 | None = Field(
+        None, description='Access mode applied to newly-created projects.'
+    )
 
 
 class Role3(Enum):
     """
-    `owner` has full control including org deletion; `admin` can manage members and settings; `member` has read-only org access.
+    `Owner` has full control including org deletion; `Admin` can manage members and settings; `Member` has read-only org access.
     """
 
-    owner = 'owner'
-    admin = 'admin'
-    member = 'member'
+    Owner = 'Owner'
+    Admin = 'Admin'
+    Member = 'Member'
 
 
 class OrgMember(BaseModel):
@@ -2858,7 +2963,7 @@ class OrgMember(BaseModel):
     user_id: str = Field(..., description='ID of the user who is a member.')
     role: Role3 = Field(
         ...,
-        description='`owner` has full control including org deletion; `admin` can manage members and settings; `member` has read-only org access.',
+        description='`Owner` has full control including org deletion; `Admin` can manage members and settings; `Member` has read-only org access.',
     )
     created_at: datetime = Field(..., description='Timestamp when this member joined.')
     updated_at: datetime = Field(
@@ -2882,34 +2987,34 @@ class OrgMemberListResponse(BaseModel):
 
 class Role4(Enum):
     """
-    Role to assign the new member: `owner`, `admin`, or `member`.
+    Role to assign the new member: `Owner`, `Admin`, or `Member`.
     """
 
-    owner = 'owner'
-    admin = 'admin'
-    member = 'member'
+    Owner = 'Owner'
+    Admin = 'Admin'
+    Member = 'Member'
 
 
 class AddOrgMemberRequest(BaseModel):
     user_id: str = Field(..., description='Clerk user ID of the user to add.')
     role: Role4 = Field(
-        ..., description='Role to assign the new member: `owner`, `admin`, or `member`.'
+        ..., description='Role to assign the new member: `Owner`, `Admin`, or `Member`.'
     )
 
 
 class Role5(Enum):
     """
-    New role to assign: `owner`, `admin`, or `member`.
+    New role to assign: `Owner`, `Admin`, or `Member`.
     """
 
-    owner = 'owner'
-    admin = 'admin'
-    member = 'member'
+    Owner = 'Owner'
+    Admin = 'Admin'
+    Member = 'Member'
 
 
 class UpdateOrgMemberRoleRequest(BaseModel):
     role: Role5 = Field(
-        ..., description='New role to assign: `owner`, `admin`, or `member`.'
+        ..., description='New role to assign: `Owner`, `Admin`, or `Member`.'
     )
 
 
@@ -3218,9 +3323,9 @@ class AgentSessionListResponse(BaseModel):
 
 
 class CreateAgentRequest(BaseModel):
-    service_account_id: str = Field(
-        ...,
-        description='Service account that backs this agent. Must be active and belong to the same project.',
+    service_account_id: str | None = Field(
+        None,
+        description='Service account that backs this agent. Must be active and belong to\nthe same project. If omitted, a new service account is auto-created\nwith the same name as the agent.\n',
     )
     name: str = Field(
         ...,

@@ -24,8 +24,8 @@ tags:
   x-displayName: Jobs
 - name: triggers
   x-displayName: Triggers
-- name: workers
-  x-displayName: Workers
+- name: worker-sessions
+  x-displayName: Worker Sessions
 - name: projects
   x-displayName: Projects
 - name: webhooks
@@ -1314,9 +1314,9 @@ paths:
         window closes empty.
 
 
-        Each successful call also registers or refreshes the worker in the
+        Each successful call also registers or refreshes the caller''s worker
 
-        worker registry (used by `GET /v1/projects/{project}/workers`), so no
+        session (used by `GET /v1/projects/{project}/worker-sessions`), so no
 
         separate registration step is needed.
 
@@ -1924,20 +1924,19 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /v1/projects/{project}/workers:
+  /v1/projects/{project}/worker-sessions:
     get:
-      operationId: listWorkers
+      operationId: listWorkerSessions
       tags:
-      - workers
-      summary: List workers
-      description: 'Returns workers that have polled for jobs within the project.
-        Each
+      - worker-sessions
+      summary: List worker sessions
+      description: 'Returns worker sessions that have polled for jobs within the project.
 
-        worker''s `stale` flag is computed at read time: if `last_seen_at`
+        Each session''s `stale` flag is computed at read time: if `last_seen_at`
 
-        is older than 2 minutes (or absent), the worker is considered stale.
+        is older than 2 minutes (or absent), the session is considered stale.
 
-        Stale workers are retained for display but will not receive new job
+        Stale sessions are retained for display but will not receive new job
 
         claims.
 
@@ -1950,7 +1949,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/WorkerListResponse'
+                $ref: '#/components/schemas/WorkerSessionListResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
@@ -2083,6 +2082,104 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
+  /v1/projects/{id}/members:
+    get:
+      operationId: listProjectMembers
+      tags:
+      - projects
+      summary: List project members
+      description: 'Returns the users listed as members of this project. Membership
+        is a
+
+        pure visibility layer: for `restricted` projects only listed members
+
+        (plus org owners/admins) can see or use the project. For `org_open`
+
+        projects, membership has no visibility effect.
+
+        '
+      parameters:
+      - $ref: '#/components/parameters/IDParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectMemberListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      operationId: addProjectMember
+      tags:
+      - projects
+      summary: Add a project member
+      description: 'Adds a user as a project member. The user must already be an org
+
+        member. Add is idempotent — adding an existing member returns the
+
+        existing row, not a 409.
+
+        '
+      parameters:
+      - $ref: '#/components/parameters/IDParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddProjectMemberRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectMember'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/projects/{id}/members/{uid}:
+    delete:
+      operationId: removeProjectMember
+      tags:
+      - projects
+      summary: Remove a project member
+      description: 'Removes a user from the project members list. On `restricted`
+
+        projects, removing the last remaining member is rejected — flip the
+
+        project to `org_open` or add another member first.
+
+        '
+      parameters:
+      - $ref: '#/components/parameters/IDParam'
+      - name: uid
+        in: path
+        required: true
+        description: User ID of the member to remove.
+        schema:
+          type: string
+      responses:
+        '204':
+          description: No Content
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /v1/projects/{project}/webhooks:
     get:
       operationId: listWebhooks
@@ -2131,9 +2228,9 @@ paths:
         unique within the project. Returns 409 if the name already exists.
 
 
-        The signing `secret` (if provided) is stored in plaintext — treat
+        Treat the `signing_secret` as a shared secret and rotate it via
 
-        it as a shared secret and rotate it via `PATCH` if compromised.
+        `PATCH` if compromised.
 
         '
       parameters:
@@ -2186,11 +2283,11 @@ paths:
       summary: Update a webhook
       description: 'Updates the webhook URL, event subscriptions, enabled state, or
 
-        signing secret. Setting `secret` to an empty string clears the
+        signing secret. Setting `signing_secret` to an empty string clears
 
-        current secret and disables signing. Omitting `secret` leaves the
+        the current secret and disables signing. Omitting `signing_secret`
 
-        current value unchanged.
+        leaves the current value unchanged.
 
         '
       parameters:
@@ -2784,12 +2881,27 @@ paths:
       tags:
       - agents
       summary: Create an agent
-      description: 'Creates an agent bound to `service_account_id`. A service account
-        can
+      description: 'Creates an agent bound to a service account. A service account
+        can back
 
-        back multiple agents. The service account can be changed after creation
+        multiple agents. The service account can be changed after creation via
 
-        via the PATCH endpoint.
+        the PATCH endpoint.
+
+
+        If `service_account_id` is omitted, a new service account is
+
+        auto-created with the same name as the agent and assigned to back it.
+
+        Auto-creation requires the caller to hold `mobius.service_account.manage`
+
+        in addition to `mobius.agent.manage`. Auto-creation fails if a service
+
+        account with that name already exists in the project; to bind an
+
+        existing service account to a new agent, pass `service_account_id`
+
+        explicitly.
 
         '
       parameters:
@@ -4062,6 +4174,16 @@ components:
           type: string
           description: Optional label to identify this credential in the CLI credentials
             list.
+        project_id:
+          type: string
+          description: 'Optional project ID to pin the issued CLI credential to. When
+            set,
+
+            the resulting token is usable only for that project and must carry
+
+            the project''s handle as a trailing `.<handle>` suffix.
+
+            '
     ConfirmDeviceCodeResult:
       type: object
       required:
@@ -4093,6 +4215,22 @@ components:
         user_id:
           type: string
           description: ID of the user who authorized this credential.
+        project_id:
+          type: string
+          description: 'Project ID the credential is pinned to. Empty when the credential
+
+            is org-scoped (usable across every project the user can access).
+
+            '
+        project_handle:
+          type: string
+          description: 'Handle of the pinned project, echoed here so clients can format
+
+            the trailing `.<handle>` suffix on every request. Empty when the
+
+            credential is not pinned.
+
+            '
         label:
           type: string
           description: Human-readable label identifying this credential.
@@ -6377,7 +6515,7 @@ components:
             within the project.
 
             '
-        webhook_secret:
+        signing_secret:
           type: string
           description: 'Optional HMAC-SHA256 secret for verifying inbound webhook
             payloads.
@@ -6410,10 +6548,10 @@ components:
           type: string
           description: Changing this changes the `receive_url`; update any upstream
             integrations.
-        webhook_secret:
+        signing_secret:
           type: string
           description: Replace or clear the inbound signature verification secret.
-    Worker:
+    WorkerSession:
       type: object
       required:
       - id
@@ -6431,13 +6569,12 @@ components:
         last_seen_at:
           type: string
           format: date-time
-          description: 'Timestamp of the worker''s most recent job claim poll. Updated
+          description: 'Timestamp of this session''s most recent job claim poll. Updated
             on
 
-            every `POST /v1/projects/{project}/jobs/claim` call regardless of whether
-            a job was
+            every `POST /v1/projects/{project}/jobs/claim` call regardless of
 
-            returned. Used to compute `stale`.
+            whether a job was returned. Used to compute `stale`.
 
             '
         capabilities:
@@ -6448,21 +6585,45 @@ components:
             used for filtering.
         service_account_id:
           type: string
-          description: 'Service account this worker authenticated as on register/heartbeat.
+          description: 'Service account this session authenticated as on register/heartbeat.
 
-            Stable across credential rotation — use this to group worker rows
+            Set when a machine identity is polling; mutually exclusive with
 
-            by identity in the admin UI.
+            `user_id`. Stable across credential rotation — use this to group
+
+            sessions by identity in the admin UI.
+
+            '
+        user_id:
+          type: string
+          description: 'User this session authenticated as on register/heartbeat.
+            Set when
+
+            a human is polling via the CLI; mutually exclusive with
+
+            `service_account_id`.
 
             '
         api_key_id:
           type: string
-          description: 'ID of the specific API key this worker presented on its most
-            recent
+          description: 'ID of the specific API key this session presented on its most
 
-            register/heartbeat. Changes across credential rotations; use together
+            recent register/heartbeat. Only set for service-account-backed
 
-            with `service_account_id` to see rotation progress across a fleet.
+            sessions; changes across credential rotations. Use together with
+
+            `service_account_id` to see rotation progress across a fleet.
+
+            '
+        agent_id:
+          type: string
+          description: 'Agent this session represents, when the polling process declared
+
+            itself as a registered agent (via `agent_id` on the claim request
+
+            or via inference from the service account). Absent for ad-hoc
+
+            worker processes that are not tied to a declared agent.
 
             '
         stale:
@@ -6472,22 +6633,36 @@ components:
             Computed at read time, not stored.
 
             '
-    WorkerListResponse:
+    WorkerSessionListResponse:
       type: object
       required:
       - items
       properties:
         items:
           type: array
-          description: The list of recently seen workers.
+          description: The list of recently seen worker sessions.
           items:
-            $ref: '#/components/schemas/Worker'
+            $ref: '#/components/schemas/WorkerSession'
+    ProjectAccessMode:
+      type: string
+      enum:
+      - org_open
+      - restricted
+      description: '`org_open`: every org member can see and use the project, subject
+        to
+
+        role assignments. `restricted`: only listed project members (and org
+
+        owners/admins) can see or use the project.
+
+        '
     Project:
       type: object
       required:
       - id
       - name
       - handle
+      - access_mode
       - created_at
       - updated_at
       properties:
@@ -6508,6 +6683,8 @@ components:
         description:
           type: string
           description: Optional human-readable description.
+        access_mode:
+          $ref: '#/components/schemas/ProjectAccessMode'
         created_by:
           type: string
           description: User ID of the org member who created this project.
@@ -6547,6 +6724,8 @@ components:
         description:
           type: string
           description: Optional human-readable description.
+        access_mode:
+          $ref: '#/components/schemas/ProjectAccessMode'
     UpdateProjectRequest:
       type: object
       properties:
@@ -6556,6 +6735,63 @@ components:
         description:
           type: string
           description: Replacement description.
+        access_mode:
+          $ref: '#/components/schemas/ProjectAccessMode'
+        seed_existing_members:
+          type: boolean
+          description: 'When transitioning from `org_open` to `restricted`, set true
+            to
+
+            insert all current org members as project members so nobody
+
+            loses visibility on the flip. Ignored on other transitions.
+
+            '
+    ProjectMember:
+      type: object
+      required:
+      - id
+      - project_id
+      - user_id
+      - added_at
+      properties:
+        id:
+          type: string
+          description: Unique identifier for this membership record.
+        project_id:
+          type: string
+          description: ID of the project this membership belongs to.
+        user_id:
+          type: string
+          description: ID of the user who is a member.
+        added_by_actor_type:
+          type: string
+          description: Actor type of whoever added this member, if recorded.
+        added_by_actor_id:
+          type: string
+          description: Actor ID of whoever added this member, if recorded.
+        added_at:
+          type: string
+          format: date-time
+          description: Timestamp when the member was added.
+    ProjectMemberListResponse:
+      type: object
+      required:
+      - items
+      properties:
+        items:
+          type: array
+          description: The list of members for this project.
+          items:
+            $ref: '#/components/schemas/ProjectMember'
+    AddProjectMemberRequest:
+      type: object
+      required:
+      - user_id
+      properties:
+        user_id:
+          type: string
+          description: User ID of the org member to add to this project.
     WebhookDeliveryStatus:
       type: string
       enum:
@@ -6722,13 +6958,14 @@ components:
             an empty URL.
 
             '
-        secret:
+        signing_secret:
           type: string
-          description: 'Optional shared secret. When set, Mobius signs each POST body
+          description: 'Optional HMAC-SHA256 secret. When set, Mobius signs each POST
+            body
 
-            with HMAC-SHA256 and includes `X-Mobius-Signature: sha256=<hex>`
+            and includes `X-Mobius-Signature: sha256=<hex>` in the request
 
-            in the request headers.
+            headers.
 
             '
         events:
@@ -6752,7 +6989,7 @@ components:
         url:
           type: string
           description: Replacement endpoint URL.
-        secret:
+        signing_secret:
           type: string
           description: 'Replace the current signing secret. Set to empty string to
 
@@ -7581,15 +7818,16 @@ components:
     CreateRoleRequest:
       type: object
       required:
+      - project_id
       - name
       - permissions
       properties:
         project_id:
           type: string
-          description: Scope the role to a project. Omit for an org-wide role.
+          description: Project this role belongs to. Custom roles are always project-scoped.
         name:
           type: string
-          description: Unique name within the org+project scope.
+          description: Unique name within the project.
         description:
           type: string
           description: Optional human-readable description of what this role grants.
@@ -7689,6 +7927,29 @@ components:
           type: object
           additionalProperties: true
           description: Arbitrary key-value metadata stored alongside the org.
+        default_member_role:
+          type: string
+          description: 'System-role name assigned at org scope to new org members.
+            One of
+
+            `Owner`, `Admin`, `Operator`, `Worker`, `Viewer`. Defaults to
+
+            `Operator`.
+
+            '
+        default_project_access_mode:
+          type: string
+          enum:
+          - org_open
+          - restricted
+          description: 'Access mode applied to newly-created projects when the caller
+            does
+
+            not pass one explicitly. Changing this only affects future
+
+            projects.
+
+            '
         created_at:
           type: string
           format: date-time
@@ -7744,6 +8005,20 @@ components:
           type: object
           additionalProperties: true
           description: Replacement metadata.
+        default_member_role:
+          type: string
+          description: 'System-role name assigned to new org members at org scope.
+            One of
+
+            `Owner`, `Admin`, `Operator`, `Worker`, `Viewer`.
+
+            '
+        default_project_access_mode:
+          type: string
+          enum:
+          - org_open
+          - restricted
+          description: Access mode applied to newly-created projects.
     OrgMember:
       type: object
       required:
@@ -7762,11 +8037,11 @@ components:
         role:
           type: string
           enum:
-          - owner
-          - admin
-          - member
-          description: '`owner` has full control including org deletion; `admin` can
-            manage members and settings; `member` has read-only org access.'
+          - Owner
+          - Admin
+          - Member
+          description: '`Owner` has full control including org deletion; `Admin` can
+            manage members and settings; `Member` has read-only org access.'
         created_at:
           type: string
           format: date-time
@@ -7806,10 +8081,10 @@ components:
         role:
           type: string
           enum:
-          - owner
-          - admin
-          - member
-          description: 'Role to assign the new member: `owner`, `admin`, or `member`.'
+          - Owner
+          - Admin
+          - Member
+          description: 'Role to assign the new member: `Owner`, `Admin`, or `Member`.'
     UpdateOrgMemberRoleRequest:
       type: object
       required:
@@ -7818,10 +8093,10 @@ components:
         role:
           type: string
           enum:
-          - owner
-          - admin
-          - member
-          description: 'New role to assign: `owner`, `admin`, or `member`.'
+          - Owner
+          - Admin
+          - Member
+          description: 'New role to assign: `Owner`, `Admin`, or `Member`.'
     InteractionListResponse:
       type: object
       required:
@@ -8234,13 +8509,18 @@ components:
     CreateAgentRequest:
       type: object
       required:
-      - service_account_id
       - name
       properties:
         service_account_id:
           type: string
-          description: Service account that backs this agent. Must be active and belong
-            to the same project.
+          description: 'Service account that backs this agent. Must be active and
+            belong to
+
+            the same project. If omitted, a new service account is auto-created
+
+            with the same name as the agent.
+
+            '
         name:
           type: string
           description: Project-scoped unique name for this agent. Must match pattern
@@ -8500,9 +8780,9 @@ x-tagGroups:
 - name: Triggers
   tags:
   - triggers
-- name: Workers
+- name: Worker Sessions
   tags:
-  - workers
+  - worker-sessions
 - name: Projects
   tags:
   - projects

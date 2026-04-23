@@ -645,8 +645,8 @@ export interface paths {
          *     for up to `wait_seconds` (capped at 30). Returns 204 when the poll
          *     window closes empty.
          *
-         *     Each successful call also registers or refreshes the worker in the
-         *     worker registry (used by `GET /v1/projects/{project}/workers`), so no
+         *     Each successful call also registers or refreshes the caller's worker
+         *     session (used by `GET /v1/projects/{project}/worker-sessions`), so no
          *     separate registration step is needed.
          *
          *     The returned `JobClaim` includes the `heartbeat_interval_seconds`
@@ -932,7 +932,7 @@ export interface paths {
         patch: operations["updateTriggerTarget"];
         trace?: never;
     };
-    "/v1/projects/{project}/workers": {
+    "/v1/projects/{project}/worker-sessions": {
         parameters: {
             query?: never;
             header?: never;
@@ -940,14 +940,14 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List workers
-         * @description Returns workers that have polled for jobs within the project. Each
-         *     worker's `stale` flag is computed at read time: if `last_seen_at`
-         *     is older than 2 minutes (or absent), the worker is considered stale.
-         *     Stale workers are retained for display but will not receive new job
+         * List worker sessions
+         * @description Returns worker sessions that have polled for jobs within the project.
+         *     Each session's `stale` flag is computed at read time: if `last_seen_at`
+         *     is older than 2 minutes (or absent), the session is considered stale.
+         *     Stale sessions are retained for display but will not receive new job
          *     claims.
          */
-        get: operations["listWorkers"];
+        get: operations["listWorkerSessions"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1013,6 +1013,57 @@ export interface paths {
         patch: operations["updateProject"];
         trace?: never;
     };
+    "/v1/projects/{id}/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List project members
+         * @description Returns the users listed as members of this project. Membership is a
+         *     pure visibility layer: for `restricted` projects only listed members
+         *     (plus org owners/admins) can see or use the project. For `org_open`
+         *     projects, membership has no visibility effect.
+         */
+        get: operations["listProjectMembers"];
+        put?: never;
+        /**
+         * Add a project member
+         * @description Adds a user as a project member. The user must already be an org
+         *     member. Add is idempotent — adding an existing member returns the
+         *     existing row, not a 409.
+         */
+        post: operations["addProjectMember"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{id}/members/{uid}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove a project member
+         * @description Removes a user from the project members list. On `restricted`
+         *     projects, removing the last remaining member is rejected — flip the
+         *     project to `org_open` or add another member first.
+         */
+        delete: operations["removeProjectMember"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/projects/{project}/webhooks": {
         parameters: {
             query?: never;
@@ -1031,8 +1082,8 @@ export interface paths {
          * @description Creates a new outgoing webhook subscription. Webhook names must be
          *     unique within the project. Returns 409 if the name already exists.
          *
-         *     The signing `secret` (if provided) is stored in plaintext — treat
-         *     it as a shared secret and rotate it via `PATCH` if compromised.
+         *     Treat the `signing_secret` as a shared secret and rotate it via
+         *     `PATCH` if compromised.
          */
         post: operations["createWebhook"];
         delete?: never;
@@ -1062,9 +1113,9 @@ export interface paths {
         /**
          * Update a webhook
          * @description Updates the webhook URL, event subscriptions, enabled state, or
-         *     signing secret. Setting `secret` to an empty string clears the
-         *     current secret and disables signing. Omitting `secret` leaves the
-         *     current value unchanged.
+         *     signing secret. Setting `signing_secret` to an empty string clears
+         *     the current secret and disables signing. Omitting `signing_secret`
+         *     leaves the current value unchanged.
          */
         patch: operations["updateWebhook"];
         trace?: never;
@@ -1373,9 +1424,17 @@ export interface paths {
         put?: never;
         /**
          * Create an agent
-         * @description Creates an agent bound to `service_account_id`. A service account can
-         *     back multiple agents. The service account can be changed after creation
-         *     via the PATCH endpoint.
+         * @description Creates an agent bound to a service account. A service account can back
+         *     multiple agents. The service account can be changed after creation via
+         *     the PATCH endpoint.
+         *
+         *     If `service_account_id` is omitted, a new service account is
+         *     auto-created with the same name as the agent and assigned to back it.
+         *     Auto-creation requires the caller to hold `mobius.service_account.manage`
+         *     in addition to `mobius.agent.manage`. Auto-creation fails if a service
+         *     account with that name already exists in the project; to bind an
+         *     existing service account to a new agent, pass `service_account_id`
+         *     explicitly.
          */
         post: operations["createAgent"];
         delete?: never;
@@ -2002,6 +2061,12 @@ export interface components {
             user_code: string;
             /** @description Optional label to identify this credential in the CLI credentials list. */
             label?: string;
+            /**
+             * @description Optional project ID to pin the issued CLI credential to. When set,
+             *     the resulting token is usable only for that project and must carry
+             *     the project's handle as a trailing `.<handle>` suffix.
+             */
+            project_id?: string;
         };
         ConfirmDeviceCodeResult: {
             /** @description True when the device code was successfully confirmed and a CLI credential has been issued. */
@@ -2014,6 +2079,17 @@ export interface components {
             id: string;
             /** @description ID of the user who authorized this credential. */
             user_id: string;
+            /**
+             * @description Project ID the credential is pinned to. Empty when the credential
+             *     is org-scoped (usable across every project the user can access).
+             */
+            project_id?: string;
+            /**
+             * @description Handle of the pinned project, echoed here so clients can format
+             *     the trailing `.<handle>` suffix on every request. Empty when the
+             *     credential is not pinned.
+             */
+            project_handle?: string;
             /** @description Human-readable label identifying this credential. */
             label: string;
             /** @description First few characters of the token, shown for identification without exposing the secret. */
@@ -3365,7 +3441,7 @@ export interface components {
              *     When set, Mobius validates the `X-Mobius-Signature` header on
              *     incoming requests.
              */
-            webhook_secret?: string;
+            signing_secret?: string;
         };
         UpdateTriggerRequest: {
             /** @description Replacement human-readable name. */
@@ -3384,9 +3460,9 @@ export interface components {
             /** @description Changing this changes the `receive_url`; update any upstream integrations. */
             webhook_handle?: string;
             /** @description Replace or clear the inbound signature verification secret. */
-            webhook_secret?: string;
+            signing_secret?: string;
         };
-        Worker: {
+        WorkerSession: {
             /** @description Caller-assigned stable identifier for this worker process. */
             id: string;
             /** @description Optional human-readable name supplied in the claim request. */
@@ -3395,35 +3471,57 @@ export interface components {
             version?: string;
             /**
              * Format: date-time
-             * @description Timestamp of the worker's most recent job claim poll. Updated on
-             *     every `POST /v1/projects/{project}/jobs/claim` call regardless of whether a job was
-             *     returned. Used to compute `stale`.
+             * @description Timestamp of this session's most recent job claim poll. Updated on
+             *     every `POST /v1/projects/{project}/jobs/claim` call regardless of
+             *     whether a job was returned. Used to compute `stale`.
              */
             last_seen_at?: string;
             /** @description Reserved for future capability-based job routing. Not currently used for filtering. */
             capabilities?: string[];
             /**
-             * @description Service account this worker authenticated as on register/heartbeat.
-             *     Stable across credential rotation — use this to group worker rows
-             *     by identity in the admin UI.
+             * @description Service account this session authenticated as on register/heartbeat.
+             *     Set when a machine identity is polling; mutually exclusive with
+             *     `user_id`. Stable across credential rotation — use this to group
+             *     sessions by identity in the admin UI.
              */
             service_account_id?: string;
             /**
-             * @description ID of the specific API key this worker presented on its most recent
-             *     register/heartbeat. Changes across credential rotations; use together
-             *     with `service_account_id` to see rotation progress across a fleet.
+             * @description User this session authenticated as on register/heartbeat. Set when
+             *     a human is polling via the CLI; mutually exclusive with
+             *     `service_account_id`.
+             */
+            user_id?: string;
+            /**
+             * @description ID of the specific API key this session presented on its most
+             *     recent register/heartbeat. Only set for service-account-backed
+             *     sessions; changes across credential rotations. Use together with
+             *     `service_account_id` to see rotation progress across a fleet.
              */
             api_key_id?: string;
+            /**
+             * @description Agent this session represents, when the polling process declared
+             *     itself as a registered agent (via `agent_id` on the claim request
+             *     or via inference from the service account). Absent for ad-hoc
+             *     worker processes that are not tied to a declared agent.
+             */
+            agent_id?: string;
             /**
              * @description True when `last_seen_at` is older than 2 minutes or absent.
              *     Computed at read time, not stored.
              */
             stale: boolean;
         };
-        WorkerListResponse: {
-            /** @description The list of recently seen workers. */
-            items: components["schemas"]["Worker"][];
+        WorkerSessionListResponse: {
+            /** @description The list of recently seen worker sessions. */
+            items: components["schemas"]["WorkerSession"][];
         };
+        /**
+         * @description `org_open`: every org member can see and use the project, subject to
+         *     role assignments. `restricted`: only listed project members (and org
+         *     owners/admins) can see or use the project.
+         * @enum {string}
+         */
+        ProjectAccessMode: "org_open" | "restricted";
         Project: {
             /** @description Unique identifier for this project. */
             id: string;
@@ -3436,6 +3534,7 @@ export interface components {
             handle: string;
             /** @description Optional human-readable description. */
             description?: string;
+            access_mode: components["schemas"]["ProjectAccessMode"];
             /** @description User ID of the org member who created this project. */
             created_by?: string;
             /**
@@ -3463,12 +3562,45 @@ export interface components {
             handle?: string;
             /** @description Optional human-readable description. */
             description?: string;
+            access_mode?: components["schemas"]["ProjectAccessMode"];
         };
         UpdateProjectRequest: {
             /** @description Replacement human-readable name. */
             name?: string;
             /** @description Replacement description. */
             description?: string;
+            access_mode?: components["schemas"]["ProjectAccessMode"];
+            /**
+             * @description When transitioning from `org_open` to `restricted`, set true to
+             *     insert all current org members as project members so nobody
+             *     loses visibility on the flip. Ignored on other transitions.
+             */
+            seed_existing_members?: boolean;
+        };
+        ProjectMember: {
+            /** @description Unique identifier for this membership record. */
+            id: string;
+            /** @description ID of the project this membership belongs to. */
+            project_id: string;
+            /** @description ID of the user who is a member. */
+            user_id: string;
+            /** @description Actor type of whoever added this member, if recorded. */
+            added_by_actor_type?: string;
+            /** @description Actor ID of whoever added this member, if recorded. */
+            added_by_actor_id?: string;
+            /**
+             * Format: date-time
+             * @description Timestamp when the member was added.
+             */
+            added_at: string;
+        };
+        ProjectMemberListResponse: {
+            /** @description The list of members for this project. */
+            items: components["schemas"]["ProjectMember"][];
+        };
+        AddProjectMemberRequest: {
+            /** @description User ID of the org member to add to this project. */
+            user_id: string;
         };
         /**
          * @description `pending` — queued, not yet attempted.
@@ -3567,11 +3699,11 @@ export interface components {
              */
             url?: string;
             /**
-             * @description Optional shared secret. When set, Mobius signs each POST body
-             *     with HMAC-SHA256 and includes `X-Mobius-Signature: sha256=<hex>`
-             *     in the request headers.
+             * @description Optional HMAC-SHA256 secret. When set, Mobius signs each POST body
+             *     and includes `X-Mobius-Signature: sha256=<hex>` in the request
+             *     headers.
              */
-            secret?: string;
+            signing_secret?: string;
             /**
              * @description Event types to subscribe to. Use wildcards for broad
              *     subscriptions, e.g. `["run.*"]` for all run events.
@@ -3589,7 +3721,7 @@ export interface components {
              * @description Replace the current signing secret. Set to empty string to
              *     disable signing. Omit to leave the current secret unchanged.
              */
-            secret?: string;
+            signing_secret?: string;
             /** @description Replacement event subscriptions. Replaces the entire current list. */
             events?: string[];
             /** @description Set to false to disable delivery without deleting the webhook. */
@@ -4089,9 +4221,9 @@ export interface components {
             items: components["schemas"]["RoleAssignment"][];
         };
         CreateRoleRequest: {
-            /** @description Scope the role to a project. Omit for an org-wide role. */
-            project_id?: string;
-            /** @description Unique name within the org+project scope. */
+            /** @description Project this role belongs to. Custom roles are always project-scoped. */
+            project_id: string;
+            /** @description Unique name within the project. */
             name: string;
             /** @description Optional human-readable description of what this role grants. */
             description?: string;
@@ -4153,6 +4285,19 @@ export interface components {
                 [key: string]: unknown;
             };
             /**
+             * @description System-role name assigned at org scope to new org members. One of
+             *     `Owner`, `Admin`, `Operator`, `Worker`, `Viewer`. Defaults to
+             *     `Operator`.
+             */
+            default_member_role?: string;
+            /**
+             * @description Access mode applied to newly-created projects when the caller does
+             *     not pass one explicitly. Changing this only affects future
+             *     projects.
+             * @enum {string}
+             */
+            default_project_access_mode?: "org_open" | "restricted";
+            /**
              * Format: date-time
              * @description Timestamp when this organization was created.
              */
@@ -4190,6 +4335,16 @@ export interface components {
             metadata?: {
                 [key: string]: unknown;
             };
+            /**
+             * @description System-role name assigned to new org members at org scope. One of
+             *     `Owner`, `Admin`, `Operator`, `Worker`, `Viewer`.
+             */
+            default_member_role?: string;
+            /**
+             * @description Access mode applied to newly-created projects.
+             * @enum {string}
+             */
+            default_project_access_mode?: "org_open" | "restricted";
         };
         OrgMember: {
             /** @description Unique identifier for this membership record. */
@@ -4197,10 +4352,10 @@ export interface components {
             /** @description ID of the user who is a member. */
             user_id: string;
             /**
-             * @description `owner` has full control including org deletion; `admin` can manage members and settings; `member` has read-only org access.
+             * @description `Owner` has full control including org deletion; `Admin` can manage members and settings; `Member` has read-only org access.
              * @enum {string}
              */
-            role: "owner" | "admin" | "member";
+            role: "Owner" | "Admin" | "Member";
             /**
              * Format: date-time
              * @description Timestamp when this member joined.
@@ -4225,17 +4380,17 @@ export interface components {
             /** @description Clerk user ID of the user to add. */
             user_id: string;
             /**
-             * @description Role to assign the new member: `owner`, `admin`, or `member`.
+             * @description Role to assign the new member: `Owner`, `Admin`, or `Member`.
              * @enum {string}
              */
-            role: "owner" | "admin" | "member";
+            role: "Owner" | "Admin" | "Member";
         };
         UpdateOrgMemberRoleRequest: {
             /**
-             * @description New role to assign: `owner`, `admin`, or `member`.
+             * @description New role to assign: `Owner`, `Admin`, or `Member`.
              * @enum {string}
              */
-            role: "owner" | "admin" | "member";
+            role: "Owner" | "Admin" | "Member";
         };
         InteractionListResponse: {
             /** @description The list of results for this page. */
@@ -4477,8 +4632,12 @@ export interface components {
             items: components["schemas"]["AgentSession"][];
         };
         CreateAgentRequest: {
-            /** @description Service account that backs this agent. Must be active and belong to the same project. */
-            service_account_id: string;
+            /**
+             * @description Service account that backs this agent. Must be active and belong to
+             *     the same project. If omitted, a new service account is auto-created
+             *     with the same name as the agent.
+             */
+            service_account_id?: string;
             /** @description Project-scoped unique name for this agent. Must match pattern and be 1-63 characters. */
             name: string;
             /** @description Optional human-readable description. */
@@ -6488,7 +6647,7 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
-    listWorkers: {
+    listWorkerSessions: {
         parameters: {
             query?: never;
             header?: never;
@@ -6506,7 +6665,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["WorkerListResponse"];
+                    "application/json": components["schemas"]["WorkerSessionListResponse"];
                 };
             };
             401: components["responses"]["Unauthorized"];
@@ -6639,6 +6798,90 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listProjectMembers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Resource ID. */
+                id: components["parameters"]["IDParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectMemberListResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    addProjectMember: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Resource ID. */
+                id: components["parameters"]["IDParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddProjectMemberRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectMember"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    removeProjectMember: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Resource ID. */
+                id: components["parameters"]["IDParam"];
+                /** @description User ID of the member to remove. */
+                uid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
         };
     };

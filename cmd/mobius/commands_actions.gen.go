@@ -8,6 +8,9 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
+
 	"github.com/deepnoodle-ai/wonton/cli"
 
 	"github.com/deepnoodle-ai/mobius/mobius/api"
@@ -15,12 +18,19 @@ import (
 
 // registerActionsCommands registers every generated subcommand in the "actions" group.
 func registerActionsCommands(app *cli.App) {
-	actionsGrp := app.Group("actions")
+	actionsGrp := app.Group("actions").Description("Custom HTTP actions called by workflow steps")
 	actionsGrp.Alias("action")
 	actionsGrp.Command("create").
 		Description("Create an action").
 		Flags(
-			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin)"),
+			cli.String("annotations", "").Help("Hints that describe the safe-use properties of the action. Used by the engine and tooling to decide retry behavior, dry-run eligibility, etc. (JSON)"),
+			cli.String("description", "").Help("Markdown-safe description of what the action does."),
+			cli.String("endpoint-url", "").Help("[required] HTTP/HTTPS URL Mobius will POST to when invoking the action."),
+			cli.String("input-schema", "").Help("JSON Schema describing the expected input parameters. (JSON)"),
+			cli.String("name", "").Help("[required] Project-scoped identifier used in workflow step definitions. Lowercase alphanumeric + hyphens, e.g. \"send-email\". Must be unique within the project. Cannot start with \"mobius.\" (reserved prefix)."),
+			cli.String("output-schema", "").Help("JSON Schema describing the expected output shape. (JSON)"),
+			cli.String("title", "").Help("Human-readable display name shown in the UI and catalog."),
+			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -33,6 +43,41 @@ func registerActionsCommands(app *cli.App) {
 			var body api.CreateActionJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
+			}
+			if ctx.IsSet("annotations") {
+				if err := json.Unmarshal([]byte(ctx.String("annotations")), &body.Annotations); err != nil {
+					return fmt.Errorf("--annotations: invalid JSON: %w", err)
+				}
+			}
+			if ctx.IsSet("description") {
+				v := ctx.String("description")
+				body.Description = &v
+			}
+			if ctx.IsSet("endpoint-url") {
+				body.EndpointUrl = ctx.String("endpoint-url")
+			}
+			if ctx.IsSet("input-schema") {
+				if err := json.Unmarshal([]byte(ctx.String("input-schema")), &body.InputSchema); err != nil {
+					return fmt.Errorf("--input-schema: invalid JSON: %w", err)
+				}
+			}
+			if ctx.IsSet("name") {
+				body.Name = ctx.String("name")
+			}
+			if ctx.IsSet("output-schema") {
+				if err := json.Unmarshal([]byte(ctx.String("output-schema")), &body.OutputSchema); err != nil {
+					return fmt.Errorf("--output-schema: invalid JSON: %w", err)
+				}
+			}
+			if ctx.IsSet("title") {
+				v := ctx.String("title")
+				body.Title = &v
+			}
+			if body.EndpointUrl == "" {
+				return fmt.Errorf("--endpoint-url is required (or supply it via --file)")
+			}
+			if body.Name == "" {
+				return fmt.Errorf("--name is required (or supply it via --file)")
 			}
 			resp, err := client.CreateActionWithResponse(ctx.Context(), p0, body)
 			if err != nil {
@@ -213,7 +258,13 @@ func registerActionsCommands(app *cli.App) {
 		Description("Update an action").
 		Args("action-name").
 		Flags(
-			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin)"),
+			cli.String("annotations", "").Help("Hints that describe the safe-use properties of the action. Used by the engine and tooling to decide retry behavior, dry-run eligibility, etc. (JSON)"),
+			cli.String("description", "").Help("Replacement Markdown description."),
+			cli.String("endpoint-url", "").Help("Replacement endpoint URL."),
+			cli.String("input-schema", "").Help("Replacement JSON Schema for inputs. Replaces the existing schema. (JSON)"),
+			cli.String("output-schema", "").Help("Replacement JSON Schema for outputs. Replaces the existing schema. (JSON)"),
+			cli.String("title", "").Help("Replacement display title."),
+			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -227,6 +278,36 @@ func registerActionsCommands(app *cli.App) {
 			var body api.UpdateActionJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
+			}
+			if ctx.IsSet("annotations") {
+				if err := json.Unmarshal([]byte(ctx.String("annotations")), &body.Annotations); err != nil {
+					return fmt.Errorf("--annotations: invalid JSON: %w", err)
+				}
+			}
+			if ctx.IsSet("description") {
+				v := ctx.String("description")
+				body.Description = &v
+			}
+			if ctx.IsSet("endpoint-url") {
+				v := ctx.String("endpoint-url")
+				body.EndpointUrl = &v
+			}
+			if ctx.IsSet("input-schema") {
+				if err := json.Unmarshal([]byte(ctx.String("input-schema")), &body.InputSchema); err != nil {
+					return fmt.Errorf("--input-schema: invalid JSON: %w", err)
+				}
+			}
+			if ctx.IsSet("output-schema") {
+				if err := json.Unmarshal([]byte(ctx.String("output-schema")), &body.OutputSchema); err != nil {
+					return fmt.Errorf("--output-schema: invalid JSON: %w", err)
+				}
+			}
+			if ctx.IsSet("title") {
+				v := ctx.String("title")
+				body.Title = &v
+			}
+			if ctx.String("file") == "" && !ctx.IsSet("annotations") && !ctx.IsSet("description") && !ctx.IsSet("endpoint-url") && !ctx.IsSet("input-schema") && !ctx.IsSet("output-schema") && !ctx.IsSet("title") {
+				return fmt.Errorf("at least one flag or --file is required")
 			}
 			resp, err := client.UpdateActionWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {

@@ -15,7 +15,7 @@ import (
 
 // registerAuditLogsCommands registers every generated subcommand in the "audit-logs" group.
 func registerAuditLogsCommands(app *cli.App) {
-	auditLogsGrp := app.Group("audit-logs")
+	auditLogsGrp := app.Group("audit-logs").Description("Organization and project audit log entries")
 	auditLogsGrp.Alias("audit-log")
 	auditLogsGrp.Command("list-logs").
 		Description("List audit log entries").

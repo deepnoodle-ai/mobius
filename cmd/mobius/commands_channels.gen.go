@@ -8,6 +8,9 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
+
 	"github.com/deepnoodle-ai/wonton/cli"
 
 	"github.com/deepnoodle-ai/mobius/mobius/api"
@@ -15,13 +18,15 @@ import (
 
 // registerChannelsCommands registers every generated subcommand in the "channels" group.
 func registerChannelsCommands(app *cli.App) {
-	channelsGrp := app.Group("channels")
+	channelsGrp := app.Group("channels").Description("Chat channels, members, and messages")
 	channelsGrp.Alias("channel")
 	channelsGrp.Command("add-member").
 		Description("Add a member to a channel").
 		Args("id").
 		Flags(
-			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin)"),
+			cli.String("role", "").Help("Role to assign the new member."),
+			cli.String("user-id", "").Help("[required] User or agent ID to add to the channel."),
+			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -36,6 +41,16 @@ func registerChannelsCommands(app *cli.App) {
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
 			}
+			if ctx.IsSet("role") {
+				v := api.AddChannelMemberRequestRole(ctx.String("role"))
+				body.Role = &v
+			}
+			if ctx.IsSet("user-id") {
+				body.UserId = ctx.String("user-id")
+			}
+			if body.UserId == "" {
+				return fmt.Errorf("--user-id is required (or supply it via --file)")
+			}
 			resp, err := client.AddChannelMemberWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
@@ -46,7 +61,13 @@ func registerChannelsCommands(app *cli.App) {
 	channelsGrp.Command("create").
 		Description("Create a channel").
 		Flags(
-			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin)"),
+			cli.String("display-name", "").Help("[required] Human-facing display name shown in the UI."),
+			cli.String("kind", "").Help("[required] Channel kind. Cannot be changed after creation."),
+			cli.Strings("member-ids", "").Help("Optional list of user or agent IDs to add as members at creation time. All receive the `member` role; the creator is added as `admin` separately."),
+			cli.String("name", "").Help("[required] URL-safe handle, unique within the project. Immutable after creation — choose carefully."),
+			cli.Bool("private", "").Help("When true, the channel is invite-only."),
+			cli.String("topic", "").Help("Optional channel topic or description."),
+			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -59,6 +80,36 @@ func registerChannelsCommands(app *cli.App) {
 			var body api.CreateChannelJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
+			}
+			if ctx.IsSet("display-name") {
+				body.DisplayName = ctx.String("display-name")
+			}
+			if ctx.IsSet("kind") {
+				body.Kind = api.CreateChannelRequestKind(ctx.String("kind"))
+			}
+			if ctx.IsSet("member-ids") {
+				v := ctx.Strings("member-ids")
+				body.MemberIds = &v
+			}
+			if ctx.IsSet("name") {
+				body.Name = ctx.String("name")
+			}
+			if ctx.IsSet("private") {
+				v := ctx.Bool("private")
+				body.Private = &v
+			}
+			if ctx.IsSet("topic") {
+				v := ctx.String("topic")
+				body.Topic = &v
+			}
+			if body.DisplayName == "" {
+				return fmt.Errorf("--display-name is required (or supply it via --file)")
+			}
+			if body.Kind == "" {
+				return fmt.Errorf("--kind is required (or supply it via --file)")
+			}
+			if body.Name == "" {
+				return fmt.Errorf("--name is required (or supply it via --file)")
 			}
 			resp, err := client.CreateChannelWithResponse(ctx.Context(), p0, body)
 			if err != nil {
@@ -268,7 +319,14 @@ func registerChannelsCommands(app *cli.App) {
 		Description("Send a message to a channel").
 		Args("id").
 		Flags(
-			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin)"),
+			cli.String("content", "").Help("[required] Message body in Markdown."),
+			cli.String("display", "").Help("Rendering hint for the UI."),
+			cli.String("metadata", "").Help("metadata (JSON)"),
+			cli.String("reply-to", "").Help("Parent message ID for threading (creates a reply)."),
+			cli.String("sender-agent-id", "").Help("Durable agent identity to attribute the message to. When set, `sender_type` on the resulting message is `agent`."),
+			cli.String("sender-session-id", "").Help("Live agent session to associate with the message."),
+			cli.String("type", "").Help("Dot-namespaced message type identifier."),
+			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -283,6 +341,37 @@ func registerChannelsCommands(app *cli.App) {
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
 			}
+			if ctx.IsSet("content") {
+				body.Content = ctx.String("content")
+			}
+			if ctx.IsSet("display") {
+				v := api.SendChannelMessageRequestDisplay(ctx.String("display"))
+				body.Display = &v
+			}
+			if ctx.IsSet("metadata") {
+				if err := json.Unmarshal([]byte(ctx.String("metadata")), &body.Metadata); err != nil {
+					return fmt.Errorf("--metadata: invalid JSON: %w", err)
+				}
+			}
+			if ctx.IsSet("reply-to") {
+				v := ctx.String("reply-to")
+				body.ReplyTo = &v
+			}
+			if ctx.IsSet("sender-agent-id") {
+				v := ctx.String("sender-agent-id")
+				body.SenderAgentId = &v
+			}
+			if ctx.IsSet("sender-session-id") {
+				v := ctx.String("sender-session-id")
+				body.SenderSessionId = &v
+			}
+			if ctx.IsSet("type") {
+				v := ctx.String("type")
+				body.Type = &v
+			}
+			if body.Content == "" {
+				return fmt.Errorf("--content is required (or supply it via --file)")
+			}
 			resp, err := client.SendChannelMessageWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
@@ -294,7 +383,10 @@ func registerChannelsCommands(app *cli.App) {
 		Description("Update a channel").
 		Args("id").
 		Flags(
-			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin)"),
+			cli.String("display-name", "").Help("Updated display name."),
+			cli.Bool("private", "").Help("Toggle invite-only visibility."),
+			cli.String("topic", "").Help("Updated topic or description."),
+			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -309,6 +401,21 @@ func registerChannelsCommands(app *cli.App) {
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
 			}
+			if ctx.IsSet("display-name") {
+				v := ctx.String("display-name")
+				body.DisplayName = &v
+			}
+			if ctx.IsSet("private") {
+				v := ctx.Bool("private")
+				body.Private = &v
+			}
+			if ctx.IsSet("topic") {
+				v := ctx.String("topic")
+				body.Topic = &v
+			}
+			if ctx.String("file") == "" && !ctx.IsSet("display-name") && !ctx.IsSet("private") && !ctx.IsSet("topic") {
+				return fmt.Errorf("at least one flag or --file is required")
+			}
 			resp, err := client.UpdateChannelWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
@@ -320,7 +427,10 @@ func registerChannelsCommands(app *cli.App) {
 		Description("Update a channel message").
 		Args("id", "message-id").
 		Flags(
-			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin)"),
+			cli.String("content", "").Help("Updated Markdown content. Sets `edited_at` on the message."),
+			cli.String("metadata", "").Help("metadata (JSON)"),
+			cli.Bool("pinned", "").Help("Pin or unpin the message. Sets/clears `pinned_by`."),
+			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -335,6 +445,22 @@ func registerChannelsCommands(app *cli.App) {
 			var body api.UpdateChannelMessageJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
+			}
+			if ctx.IsSet("content") {
+				v := ctx.String("content")
+				body.Content = &v
+			}
+			if ctx.IsSet("metadata") {
+				if err := json.Unmarshal([]byte(ctx.String("metadata")), &body.Metadata); err != nil {
+					return fmt.Errorf("--metadata: invalid JSON: %w", err)
+				}
+			}
+			if ctx.IsSet("pinned") {
+				v := ctx.Bool("pinned")
+				body.Pinned = &v
+			}
+			if ctx.String("file") == "" && !ctx.IsSet("content") && !ctx.IsSet("metadata") && !ctx.IsSet("pinned") {
+				return fmt.Errorf("at least one flag or --file is required")
 			}
 			resp, err := client.UpdateChannelMessageWithResponse(ctx.Context(), p0, p1, p2, body)
 			if err != nil {

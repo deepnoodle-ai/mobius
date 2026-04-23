@@ -19,7 +19,6 @@ func newApp() *cli.App {
 	app := cli.New("mobius").
 		Description("CLI for the Mobius workflow orchestration platform").
 		Version(cliVersion()).
-		ExpandGroups(true).
 		AddCompletionCommand()
 
 	app.GlobalFlags(

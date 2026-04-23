@@ -8,6 +8,9 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
+
 	"github.com/deepnoodle-ai/wonton/cli"
 
 	"github.com/deepnoodle-ai/mobius/mobius/api"
@@ -15,7 +18,7 @@ import (
 
 // registerToolsCommands registers every generated subcommand in the "tools" group.
 func registerToolsCommands(app *cli.App) {
-	toolsGrp := app.Group("tools")
+	toolsGrp := app.Group("tools").Description("Workflows published as callable tools")
 	toolsGrp.Alias("tool")
 	toolsGrp.Command("get-run").
 		Description("Get an async tool run result").
@@ -58,7 +61,9 @@ func registerToolsCommands(app *cli.App) {
 		Description("Invoke a workflow tool").
 		Args("handle").
 		Flags(
-			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin)"),
+			cli.String("input", "").Help("Input values matching the tool's input_schema. (JSON)"),
+			cli.Int("timeout-seconds", "").Help("How long (in seconds) to wait for synchronous completion. Default 30, max 120. If the run does not complete within this window the response is 202 with status pending."),
+			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -72,6 +77,18 @@ func registerToolsCommands(app *cli.App) {
 			var body api.RunToolJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
+			}
+			if ctx.IsSet("input") {
+				if err := json.Unmarshal([]byte(ctx.String("input")), &body.Input); err != nil {
+					return fmt.Errorf("--input: invalid JSON: %w", err)
+				}
+			}
+			if ctx.IsSet("timeout-seconds") {
+				v := ctx.Int("timeout-seconds")
+				body.TimeoutSeconds = &v
+			}
+			if ctx.String("file") == "" && !ctx.IsSet("input") && !ctx.IsSet("timeout-seconds") {
+				return fmt.Errorf("at least one flag or --file is required")
 			}
 			resp, err := client.RunToolWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {

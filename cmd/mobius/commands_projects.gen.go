@@ -8,6 +8,8 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/deepnoodle-ai/wonton/cli"
 
 	"github.com/deepnoodle-ai/mobius/mobius/api"
@@ -15,12 +17,48 @@ import (
 
 // registerProjectsCommands registers every generated subcommand in the "projects" group.
 func registerProjectsCommands(app *cli.App) {
-	projectsGrp := app.Group("projects")
+	projectsGrp := app.Group("projects").Description("Projects within the organization")
 	projectsGrp.Alias("project")
+	projectsGrp.Command("add-member").
+		Description("Add a project member").
+		Args("id").
+		Flags(
+			cli.String("user-id", "").Help("[required] User ID of the org member to add to this project."),
+			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
+		).
+		Use(cli.RequireFlags("api-key")).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := ctx.Arg(0)
+			var body api.AddProjectMemberJSONRequestBody
+			if err := readJSONBody(ctx, &body); err != nil {
+				return err
+			}
+			if ctx.IsSet("user-id") {
+				body.UserId = ctx.String("user-id")
+			}
+			if body.UserId == "" {
+				return fmt.Errorf("--user-id is required (or supply it via --file)")
+			}
+			resp, err := client.AddProjectMemberWithResponse(ctx.Context(), p0, body)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, resp.StatusCode(), resp.Body)
+		})
+
 	projectsGrp.Command("create").
 		Description("Create a project").
 		Flags(
-			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin)"),
+			cli.String("access-mode", "").Help("`org_open`: every org member can see and use the project, subject to role assignments. `restricted`: only listed project members (and org owners/admins) can see or use the project."),
+			cli.String("description", "").Help("Optional human-readable description."),
+			cli.String("handle", "").Help("URL-safe slug for API routes. Auto-derived from name if omitted. Must be unique within the org. Cannot be changed after creation."),
+			cli.String("name", "").Help("[required] Human-readable project name."),
+			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -32,6 +70,24 @@ func registerProjectsCommands(app *cli.App) {
 			var body api.CreateProjectJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
+			}
+			if ctx.IsSet("access-mode") {
+				v := api.ProjectAccessMode(ctx.String("access-mode"))
+				body.AccessMode = &v
+			}
+			if ctx.IsSet("description") {
+				v := ctx.String("description")
+				body.Description = &v
+			}
+			if ctx.IsSet("handle") {
+				v := ctx.String("handle")
+				body.Handle = &v
+			}
+			if ctx.IsSet("name") {
+				body.Name = ctx.String("name")
+			}
+			if body.Name == "" {
+				return fmt.Errorf("--name is required (or supply it via --file)")
 			}
 			resp, err := client.CreateProjectWithResponse(ctx.Context(), body)
 			if err != nil {
@@ -100,11 +156,52 @@ func registerProjectsCommands(app *cli.App) {
 			return printResponse(ctx, resp.StatusCode(), resp.Body)
 		})
 
+	projectsGrp.Command("list-members").
+		Description("List project members").
+		Args("id").
+		Use(cli.RequireFlags("api-key")).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := ctx.Arg(0)
+			resp, err := client.ListProjectMembersWithResponse(ctx.Context(), p0)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, resp.StatusCode(), resp.Body)
+		})
+
+	projectsGrp.Command("remove-member").
+		Description("Remove a project member").
+		Args("id", "uid").
+		Use(cli.RequireFlags("api-key")).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := ctx.Arg(0)
+			p1 := ctx.Arg(1)
+			resp, err := client.RemoveProjectMemberWithResponse(ctx.Context(), p0, p1)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, resp.StatusCode(), resp.Body)
+		})
+
 	projectsGrp.Command("update").
 		Description("Update a project").
 		Args("id").
 		Flags(
-			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin)"),
+			cli.String("access-mode", "").Help("`org_open`: every org member can see and use the project, subject to role assignments. `restricted`: only listed project members (and org owners/admins) can see or use the project."),
+			cli.String("description", "").Help("Replacement description."),
+			cli.String("name", "").Help("Replacement human-readable name."),
+			cli.Bool("seed-existing-members", "").Help("When transitioning from `org_open` to `restricted`, set true to insert all current org members as project members so nobody loses visibility on the flip. Ignored on other transitions."),
+			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -117,6 +214,25 @@ func registerProjectsCommands(app *cli.App) {
 			var body api.UpdateProjectJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
+			}
+			if ctx.IsSet("access-mode") {
+				v := api.ProjectAccessMode(ctx.String("access-mode"))
+				body.AccessMode = &v
+			}
+			if ctx.IsSet("description") {
+				v := ctx.String("description")
+				body.Description = &v
+			}
+			if ctx.IsSet("name") {
+				v := ctx.String("name")
+				body.Name = &v
+			}
+			if ctx.IsSet("seed-existing-members") {
+				v := ctx.Bool("seed-existing-members")
+				body.SeedExistingMembers = &v
+			}
+			if ctx.String("file") == "" && !ctx.IsSet("access-mode") && !ctx.IsSet("description") && !ctx.IsSet("name") && !ctx.IsSet("seed-existing-members") {
+				return fmt.Errorf("at least one flag or --file is required")
 			}
 			resp, err := client.UpdateProjectWithResponse(ctx.Context(), p0, body)
 			if err != nil {

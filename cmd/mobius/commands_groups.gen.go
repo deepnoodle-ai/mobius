@@ -8,6 +8,8 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/deepnoodle-ai/wonton/cli"
 
 	"github.com/deepnoodle-ai/mobius/mobius/api"
@@ -15,13 +17,14 @@ import (
 
 // registerGroupsCommands registers every generated subcommand in the "groups" group.
 func registerGroupsCommands(app *cli.App) {
-	groupsGrp := app.Group("groups")
+	groupsGrp := app.Group("groups").Description("Member groups for routing interactions")
 	groupsGrp.Alias("group")
 	groupsGrp.Command("add-member").
 		Description("Add a member to a group").
 		Args("group-id").
 		Flags(
-			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin)"),
+			cli.String("user-id", "").Help("[required] Org member user ID to add. Must be a current org member."),
+			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -36,6 +39,12 @@ func registerGroupsCommands(app *cli.App) {
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
 			}
+			if ctx.IsSet("user-id") {
+				body.UserId = ctx.String("user-id")
+			}
+			if body.UserId == "" {
+				return fmt.Errorf("--user-id is required (or supply it via --file)")
+			}
 			resp, err := client.AddGroupMemberWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
@@ -46,7 +55,11 @@ func registerGroupsCommands(app *cli.App) {
 	groupsGrp.Command("create").
 		Description("Create a group").
 		Flags(
-			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin)"),
+			cli.String("description", "").Help("Optional human-readable description."),
+			cli.String("handle", "").Help("URL-safe handle, unique within the project. Auto-derived from name if omitted."),
+			cli.String("name", "").Help("[required] Display name (1–64 chars)."),
+			cli.String("routing-policy", "").Help("How responses are collected from group members. Defaults to `first_responder`."),
+			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -59,6 +72,24 @@ func registerGroupsCommands(app *cli.App) {
 			var body api.CreateGroupJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
+			}
+			if ctx.IsSet("description") {
+				v := ctx.String("description")
+				body.Description = &v
+			}
+			if ctx.IsSet("handle") {
+				v := ctx.String("handle")
+				body.Handle = &v
+			}
+			if ctx.IsSet("name") {
+				body.Name = ctx.String("name")
+			}
+			if ctx.IsSet("routing-policy") {
+				v := api.CreateGroupRequestRoutingPolicy(ctx.String("routing-policy"))
+				body.RoutingPolicy = &v
+			}
+			if body.Name == "" {
+				return fmt.Errorf("--name is required (or supply it via --file)")
 			}
 			resp, err := client.CreateGroupWithResponse(ctx.Context(), p0, body)
 			if err != nil {
@@ -210,7 +241,10 @@ func registerGroupsCommands(app *cli.App) {
 		Description("Update a group").
 		Args("group-id").
 		Flags(
-			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin)"),
+			cli.String("description", "").Help("Replacement description."),
+			cli.String("name", "").Help("Replacement human-readable name."),
+			cli.String("routing-policy", "").Help("Affects future interactions only; in-flight interactions retain the snapshotted policy."),
+			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -224,6 +258,21 @@ func registerGroupsCommands(app *cli.App) {
 			var body api.UpdateGroupJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
+			}
+			if ctx.IsSet("description") {
+				v := ctx.String("description")
+				body.Description = &v
+			}
+			if ctx.IsSet("name") {
+				v := ctx.String("name")
+				body.Name = &v
+			}
+			if ctx.IsSet("routing-policy") {
+				v := api.UpdateGroupRequestRoutingPolicy(ctx.String("routing-policy"))
+				body.RoutingPolicy = &v
+			}
+			if ctx.String("file") == "" && !ctx.IsSet("description") && !ctx.IsSet("name") && !ctx.IsSet("routing-policy") {
+				return fmt.Errorf("at least one flag or --file is required")
 			}
 			resp, err := client.UpdateGroupWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {

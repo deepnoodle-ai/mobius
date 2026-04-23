@@ -16,6 +16,7 @@ import (
 type ClientInfo struct {
 	Methods      map[string]*Method     // keyed by Go method name (without WithResponse suffix)
 	ParamStructs map[string]*StructInfo // keyed by Go type name
+	BodyStructs  map[string]*StructInfo // keyed by JSONRequestBody alias name (e.g. "CreateProjectJSONRequestBody")
 	TypeAliases  map[string]string      // e.g. "IDParam" -> "string", "LimitParam" -> "int"
 }
 
@@ -38,11 +39,13 @@ type StructInfo struct {
 	Fields []FieldInfo
 }
 
-// FieldInfo is one field of a query-params struct.
+// FieldInfo is one field of a query-params or request-body struct.
 type FieldInfo struct {
 	GoName  string // Go field name (PascalCase)
 	Type    string // printed type expression (e.g. "*string", "*ListChannelsParamsKind")
 	JSONTag string // the first segment of the json:"..." tag (e.g. "kind")
+	Doc     string // doc-comment text (with leading field-name token stripped)
+	Omit    bool   // true if the json tag included ",omitempty"
 }
 
 // parseClient reads api/client.gen.go and extracts the information the
@@ -57,10 +60,14 @@ func parseClient(path string) (*ClientInfo, error) {
 	info := &ClientInfo{
 		Methods:      map[string]*Method{},
 		ParamStructs: map[string]*StructInfo{},
+		BodyStructs:  map[string]*StructInfo{},
 		TypeAliases:  map[string]string{},
 	}
 
-	// First pass: type decls (aliases and structs).
+	// First pass: type decls. Collect aliases and every struct by name so that
+	// a second pass can resolve JSONRequestBody aliases to their underlying
+	// request struct.
+	allStructs := map[string]*StructInfo{}
 	for _, decl := range file.Decls {
 		gd, ok := decl.(*ast.GenDecl)
 		if !ok || gd.Tok != token.TYPE {
@@ -74,9 +81,6 @@ func parseClient(path string) (*ClientInfo, error) {
 				//      "type ListChannelsParamsKind string" (named defined type)
 				info.TypeAliases[ts.Name.Name] = t.Name
 			case *ast.StructType:
-				if !strings.HasSuffix(ts.Name.Name, "Params") {
-					continue
-				}
 				si := &StructInfo{Name: ts.Name.Name}
 				for _, f := range t.Fields.List {
 					if len(f.Names) == 0 {
@@ -86,17 +90,34 @@ func parseClient(path string) (*ClientInfo, error) {
 					if err != nil {
 						return nil, err
 					}
-					jsonTag := jsonTagKey(f.Tag)
+					jsonTag, omit := jsonTagKey(f.Tag)
+					doc := fieldDoc(f)
 					for _, n := range f.Names {
 						si.Fields = append(si.Fields, FieldInfo{
 							GoName:  n.Name,
 							Type:    ftype,
 							JSONTag: jsonTag,
+							Omit:    omit,
+							Doc:     stripLeadingDocIdent(doc, n.Name),
 						})
 					}
 				}
-				info.ParamStructs[ts.Name.Name] = si
+				allStructs[ts.Name.Name] = si
+				if strings.HasSuffix(ts.Name.Name, "Params") {
+					info.ParamStructs[ts.Name.Name] = si
+				}
 			}
+		}
+	}
+
+	// Resolve JSONRequestBody aliases (`type FooJSONRequestBody = FooRequest`)
+	// to their underlying struct.
+	for aliasName, target := range info.TypeAliases {
+		if !strings.HasSuffix(aliasName, "JSONRequestBody") {
+			continue
+		}
+		if si, ok := allStructs[target]; ok {
+			info.BodyStructs[aliasName] = si
 		}
 	}
 
@@ -163,27 +184,68 @@ func printExpr(fset *token.FileSet, e ast.Expr) (string, error) {
 	return buf.String(), nil
 }
 
-// jsonTagKey returns the first comma-delimited segment of a `json:"..."` tag,
-// or empty string if no json tag is present.
-func jsonTagKey(lit *ast.BasicLit) string {
+// jsonTagKey returns the first comma-delimited segment of a `json:"..."` tag
+// and whether the tag included ",omitempty". Missing tag yields ("", false).
+func jsonTagKey(lit *ast.BasicLit) (string, bool) {
 	if lit == nil {
-		return ""
+		return "", false
 	}
 	raw := strings.Trim(lit.Value, "`")
-	// Minimal struct-tag parsing: look for json:"...".
 	const key = `json:"`
 	idx := strings.Index(raw, key)
 	if idx < 0 {
-		return ""
+		return "", false
 	}
 	rest := raw[idx+len(key):]
 	end := strings.Index(rest, `"`)
 	if end < 0 {
-		return ""
+		return "", false
 	}
 	val := rest[:end]
+	name := val
+	omit := false
 	if comma := strings.Index(val, ","); comma >= 0 {
-		val = val[:comma]
+		name = val[:comma]
+		if strings.Contains(val[comma:], "omitempty") {
+			omit = true
+		}
 	}
-	return val
+	return name, omit
+}
+
+// fieldDoc returns the doc-comment text associated with a struct field, with
+// leading "// " stripped and newlines collapsed to spaces. Both the block
+// comment above the field (f.Doc) and the inline comment (f.Comment) are
+// considered, in that order.
+func fieldDoc(f *ast.Field) string {
+	var parts []string
+	if f.Doc != nil {
+		for _, c := range f.Doc.List {
+			parts = append(parts, strings.TrimSpace(strings.TrimPrefix(c.Text, "//")))
+		}
+	}
+	if f.Comment != nil {
+		for _, c := range f.Comment.List {
+			parts = append(parts, strings.TrimSpace(strings.TrimPrefix(c.Text, "//")))
+		}
+	}
+	return strings.Join(parts, " ")
+}
+
+// stripLeadingDocIdent removes a leading "FieldName " token from a doc comment.
+// oapi-codegen emits field comments in the form "FieldName <description>"; we
+// surface only the description. Returns the input unchanged when the prefix
+// doesn't match.
+func stripLeadingDocIdent(doc, fieldName string) string {
+	doc = strings.TrimSpace(doc)
+	if doc == "" || fieldName == "" {
+		return doc
+	}
+	if strings.HasPrefix(doc, fieldName+" ") {
+		return strings.TrimSpace(doc[len(fieldName)+1:])
+	}
+	if doc == fieldName {
+		return ""
+	}
+	return doc
 }
