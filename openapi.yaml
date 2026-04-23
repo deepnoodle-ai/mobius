@@ -7832,6 +7832,13 @@ components:
           description: The list of results for this page.
           items:
             $ref: '#/components/schemas/Interaction'
+        has_more:
+          type: boolean
+          description: Whether additional pages are available.
+        next_cursor:
+          type: string
+          description: Opaque cursor to pass as `cursor` on the next request. Absent
+            when `has_more` is false.
     CreateInteractionRequest:
       type: object
       required:

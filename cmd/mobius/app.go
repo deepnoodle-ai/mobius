@@ -55,9 +55,11 @@ func newApp() *cli.App {
 // embedded in a project-pinned API key — surfaces here so the caller can
 // fail the command before any HTTP request is sent.
 //
-// --project is only forwarded when the user set it explicitly. The flag's
-// "default" default would otherwise collide with the handle embedded in a
-// project-pinned API key and force NewClient to reject a valid credential.
+// --project is forwarded when the user set it explicitly OR when the API key
+// is org-scoped (no embedded handle), so that org-scoped keys pick up the
+// project from MOBIUS_PROJECT / --project rather than silently sending an
+// empty handle. For project-pinned keys the handle is extracted from the key
+// itself; if --project is also set it must match (NewClient enforces this).
 func clientFromContext(ctx *cli.Context) (*mobius.Client, error) {
 	logger := newLogger(ctx.String("log-level"))
 	opts := []mobius.Option{
@@ -65,7 +67,9 @@ func clientFromContext(ctx *cli.Context) (*mobius.Client, error) {
 		mobius.WithAPIKey(ctx.String("api-key")),
 		mobius.WithLogger(logger),
 	}
-	if ctx.IsSet("project") {
+	apiKey := ctx.String("api-key")
+	orgScopedKey := apiKey != "" && !strings.Contains(apiKey, "/")
+	if ctx.IsSet("project") || orgScopedKey {
 		opts = append(opts, mobius.WithProjectHandle(ctx.String("project")))
 	}
 	return mobius.NewClient(opts...)

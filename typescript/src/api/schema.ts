@@ -4240,6 +4240,10 @@ export interface components {
         InteractionListResponse: {
             /** @description The list of results for this page. */
             items: components["schemas"]["Interaction"][];
+            /** @description Whether additional pages are available. */
+            has_more?: boolean;
+            /** @description Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false. */
+            next_cursor?: string;
         };
         /**
          * @description Creates an interaction directly. When `run_id` is provided,

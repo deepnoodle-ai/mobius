@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -55,6 +56,9 @@ type jobEventsRequest struct {
 // worker's queue and action filters. Returns nil when the poll
 // window closes empty.
 func (c *Client) runtimeClaim(ctx context.Context, cfg WorkerConfig) (*runtimeJob, error) {
+	if c.projectHandle == "" {
+		return nil, fmt.Errorf("mobius: claim: no project configured — set MOBIUS_PROJECT or pass --project")
+	}
 	wait := cfg.PollWaitSeconds
 	data := api.JobClaimRequest{
 		WorkerId:    cfg.WorkerID,
@@ -89,7 +93,8 @@ func (c *Client) runtimeClaim(ctx context.Context, cfg WorkerConfig) (*runtimeJo
 		return nil, ErrAuthRevoked
 	}
 	if resp.StatusCode >= 400 {
-		return nil, fmt.Errorf("mobius: claim: unexpected status %d", resp.StatusCode)
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 512))
+		return nil, fmt.Errorf("mobius: claim: unexpected status %d: %s", resp.StatusCode, strings.TrimSpace(string(body)))
 	}
 	var claim api.JobClaim
 	if err := json.NewDecoder(resp.Body).Decode(&claim); err != nil {

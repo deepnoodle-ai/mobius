@@ -2917,6 +2917,13 @@ class InteractionListResponse(BaseModel):
     items: list[Interaction] = Field(
         ..., description='The list of results for this page.'
     )
+    has_more: bool | None = Field(
+        None, description='Whether additional pages are available.'
+    )
+    next_cursor: str | None = Field(
+        None,
+        description='Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.',
+    )
 
 
 class CreateInteractionRequest(BaseModel):
