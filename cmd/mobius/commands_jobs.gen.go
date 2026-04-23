@@ -284,7 +284,7 @@ func registerJobsCommands(app *cli.App) {
 			return printResponse(ctx, resp.StatusCode(), resp.Body)
 		})
 
-	jobsGrp.Command("heartbeat-job").
+	jobsGrp.Command("heartbeat").
 		Description("Refresh the lease on a claimed workflow job").
 		Args("id").
 		Flags(
