@@ -77,6 +77,6 @@ var groupDescriptions = map[string]string{
 	"tools":        "Workflows published as callable tools",
 	"triggers":     "Event, schedule, and webhook triggers",
 	"webhooks":     "Outgoing webhook subscriptions",
-	"workers":      "Registered workers",
+	"worker-sessions": "Registered worker sessions",
 	"workflows":    "Workflow definitions",
 }

@@ -13,7 +13,7 @@ import (
 
 // registerWorkerSessionsCommands registers every generated subcommand in the "worker-sessions" group.
 func registerWorkerSessionsCommands(app *cli.App) {
-	workerSessionsGrp := app.Group("worker-sessions")
+	workerSessionsGrp := app.Group("worker-sessions").Description("Registered worker sessions")
 	workerSessionsGrp.Alias("worker-session")
 	workerSessionsGrp.Command("list-sessions").
 		Description("List worker sessions").

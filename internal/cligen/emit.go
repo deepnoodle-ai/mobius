@@ -197,7 +197,10 @@ func resolveBodyField(f FieldInfo, client *ClientInfo) BodyField {
 	elem := f.Type
 	if strings.HasPrefix(elem, "*") {
 		elem = strings.TrimPrefix(elem, "*")
-	} else {
+	} else if !f.Omit {
+		// Non-pointer + no omitempty means the field is required on the wire.
+		// A non-pointer tagged omitempty is still optional (oapi-codegen emits
+		// this for a handful of map/interface fields).
 		bf.Required = true
 	}
 	// Slices: []string (optionally via alias) maps to cli.Strings; anything
