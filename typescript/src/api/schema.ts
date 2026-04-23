@@ -288,8 +288,8 @@ export interface paths {
          * List workflow runs
          * @description Supports cursor-based pagination and keyset filtering by
          *     status, workflow type, queue, parent run, and
-         *     initiator. Returns `{data, next_cursor?}`; pass `next_cursor`
-         *     back in the next call to walk the result set.
+         *     initiator. When `has_more` is true, pass the returned
+         *     `next_cursor` back on the next call to walk the result set.
          */
         get: operations["listRuns"];
         put?: never;
@@ -773,9 +773,9 @@ export interface paths {
          *     The server derives the owning run and project scope from the job,
          *     so workers do not need to pass `run_id` explicitly. Prefer this
          *     route over `POST /v1/projects/{project}/interactions` from within a
-         *     job context. The optional `topic` field overrides the server-
-         *     derived signal topic; when omitted the server derives the topic
-         *     from `step_name` or uses a default interaction topic.
+         *     job context. The optional `signal_name` field overrides the
+         *     server-derived signal name; when omitted the server derives the
+         *     signal name from `step_name` or uses a default interaction signal.
          */
         post: operations["createJobInteraction"];
         delete?: never;
@@ -1080,10 +1080,13 @@ export interface paths {
         put?: never;
         /**
          * Test a webhook URL
-         * @description Sends a live test POST request to the webhook's configured URL (or an
-         *     override URL supplied in the request body) and returns the result.
-         *     Use this to verify a URL before saving it. The test payload has
-         *     `type: "ping"` and is signed with the webhook's secret if one is set.
+         * @description Sends a live test POST request to the webhook's saved URL, or to an
+         *     override URL supplied in the request body, and returns the result.
+         *     Because the webhook URL may be empty at creation time, the typical
+         *     flow is: create the webhook without a URL, ping candidate URLs via
+         *     the override until one succeeds, then persist the chosen URL with
+         *     `PATCH`. The test payload has `type: "ping"` and is signed with the
+         *     webhook's secret if one is set.
          */
         post: operations["pingWebhook"];
         delete?: never;
@@ -2836,7 +2839,7 @@ export interface components {
             run_id: string;
             /** @description Handle of the workflow definition that owns this run. */
             workflow_name: string;
-            /** @description Step label from the workflow spec — used for UI and interaction topic derivation. */
+            /** @description Step label from the workflow spec — used for UI and interaction signal name derivation. */
             step_name: string;
             /** @description Action name the worker must execute for this step. */
             action: string;
@@ -3034,9 +3037,9 @@ export interface components {
              * @description When target_actor.type is "group", setting require_all=true
              *     means all snapshotted group members must respond before the
              *     interaction is considered complete. Ignored for non-group targets.
-             * @default false
+             *     Defaults to false when omitted.
              */
-            require_all: boolean;
+            require_all?: boolean;
             /**
              * @description Optional duration string (e.g. "24h", "30m") specifying how long
              *     the interaction should remain open before expiring. When absent
@@ -3208,11 +3211,8 @@ export interface components {
             input_mapping?: {
                 [key: string]: string;
             };
-            /**
-             * @description Whether this target starts enabled. Defaults to true.
-             * @default true
-             */
-            enabled: boolean;
+            /** @description Whether this target starts enabled. Defaults to true when omitted. */
+            enabled?: boolean;
         };
         /** @description Partial update for a trigger target; omitted fields are unchanged. */
         UpdateTriggerTargetRequest: {
@@ -3352,11 +3352,8 @@ export interface components {
             /** @description Workflows to start when this trigger fires (inline convenience; stored as sub-resources). */
             targets?: components["schemas"]["CreateTriggerTargetRequest"][];
             concurrency_policy?: components["schemas"]["ConcurrencyPolicy"];
-            /**
-             * @description Whether the trigger starts enabled. Defaults to true.
-             * @default true
-             */
-            enabled: boolean;
+            /** @description Whether the trigger starts enabled. Defaults to true when omitted. */
+            enabled?: boolean;
             /**
              * @description URL-safe handle that determines the inbound receive URL. Auto-derived
              *     from `name` for `webhook` triggers when omitted. Must be unique
@@ -3562,8 +3559,13 @@ export interface components {
         CreateWebhookRequest: {
             /** @description Human-readable name, unique within the project. */
             name: string;
-            /** @description The endpoint Mobius will POST event payloads to. */
-            url: string;
+            /**
+             * @description The endpoint Mobius will POST event payloads to. May be left empty
+             *     at creation time so a candidate URL can be tested via the ping
+             *     endpoint before it is saved; events do not fire for webhooks with
+             *     an empty URL.
+             */
+            url?: string;
             /**
              * @description Optional shared secret. When set, Mobius signs each POST body
              *     with HMAC-SHA256 and includes `X-Mobius-Signature: sha256=<hex>`
@@ -3575,11 +3577,8 @@ export interface components {
              *     subscriptions, e.g. `["run.*"]` for all run events.
              */
             events: string[];
-            /**
-             * @description Whether the webhook starts enabled. Defaults to true.
-             * @default true
-             */
-            enabled: boolean;
+            /** @description Whether the webhook starts enabled. Defaults to true when omitted. */
+            enabled?: boolean;
         };
         UpdateWebhookRequest: {
             /** @description Replacement human-readable name. */
@@ -3598,10 +3597,10 @@ export interface components {
         };
         PingWebhookRequest: {
             /**
-             * Format: uri
              * @description URL to test. When supplied, the ping is sent to this URL instead
-             *     of the webhook's saved URL — use this to validate a new URL before
-             *     saving it. When omitted, the webhook's current saved URL is used.
+             *     of the webhook's saved URL — use this to validate a candidate URL
+             *     before saving it. When omitted, the webhook's current saved URL
+             *     is used.
              */
             url?: string;
         };
@@ -4268,9 +4267,9 @@ export interface components {
              * @description When target_actor.type is "group", setting require_all=true
              *     means all snapshotted group members must respond before the
              *     interaction is considered complete. Ignored for non-group targets.
-             * @default false
+             *     Defaults to false when omitted.
              */
-            require_all: boolean;
+            require_all?: boolean;
             /**
              * Format: date-time
              * @description Timestamp after which this interaction expires if not responded to.

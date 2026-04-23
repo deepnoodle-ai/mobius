@@ -754,9 +754,9 @@ paths:
 
         status, workflow type, queue, parent run, and
 
-        initiator. Returns `{data, next_cursor?}`; pass `next_cursor`
+        initiator. When `has_more` is true, pass the returned
 
-        back in the next call to walk the result set.
+        `next_cursor` back on the next call to walk the result set.
 
         '
       parameters:
@@ -1531,11 +1531,11 @@ paths:
 
         route over `POST /v1/projects/{project}/interactions` from within a
 
-        job context. The optional `topic` field overrides the server-
+        job context. The optional `signal_name` field overrides the
 
-        derived signal topic; when omitted the server derives the topic
+        server-derived signal name; when omitted the server derives the
 
-        from `step_name` or uses a default interaction topic.
+        signal name from `step_name` or uses a default interaction signal.
 
         '
       parameters:
@@ -2237,14 +2237,20 @@ paths:
       tags:
       - webhooks
       summary: Test a webhook URL
-      description: 'Sends a live test POST request to the webhook''s configured URL
-        (or an
+      description: 'Sends a live test POST request to the webhook''s saved URL, or
+        to an
 
-        override URL supplied in the request body) and returns the result.
+        override URL supplied in the request body, and returns the result.
 
-        Use this to verify a URL before saving it. The test payload has
+        Because the webhook URL may be empty at creation time, the typical
 
-        `type: "ping"` and is signed with the webhook''s secret if one is set.
+        flow is: create the webhook without a URL, ping candidate URLs via
+
+        the override until one succeeds, then persist the chosen URL with
+
+        `PATCH`. The test payload has `type: "ping"` and is signed with the
+
+        webhook''s secret if one is set.
 
         '
       parameters:
@@ -5490,7 +5496,7 @@ components:
         step_name:
           type: string
           description: Step label from the workflow spec — used for UI and interaction
-            topic derivation.
+            signal name derivation.
         action:
           type: string
           description: Action name the worker must execute for this step.
@@ -5839,12 +5845,13 @@ components:
           $ref: '#/components/schemas/InteractionSpec'
         require_all:
           type: boolean
-          default: false
           description: 'When target_actor.type is "group", setting require_all=true
 
             means all snapshotted group members must respond before the
 
             interaction is considered complete. Ignored for non-group targets.
+
+            Defaults to false when omitted.
 
             '
         timeout:
@@ -6134,8 +6141,7 @@ components:
           description: Maps workflow input names to JSONPath expressions.
         enabled:
           type: boolean
-          default: true
-          description: Whether this target starts enabled. Defaults to true.
+          description: Whether this target starts enabled. Defaults to true when omitted.
     UpdateTriggerTargetRequest:
       type: object
       description: Partial update for a trigger target; omitted fields are unchanged.
@@ -6361,8 +6367,7 @@ components:
           $ref: '#/components/schemas/ConcurrencyPolicy'
         enabled:
           type: boolean
-          default: true
-          description: Whether the trigger starts enabled. Defaults to true.
+          description: Whether the trigger starts enabled. Defaults to true when omitted.
         webhook_handle:
           type: string
           description: 'URL-safe handle that determines the inbound receive URL. Auto-derived
@@ -6700,7 +6705,6 @@ components:
       type: object
       required:
       - name
-      - url
       - events
       properties:
         name:
@@ -6708,7 +6712,16 @@ components:
           description: Human-readable name, unique within the project.
         url:
           type: string
-          description: The endpoint Mobius will POST event payloads to.
+          description: 'The endpoint Mobius will POST event payloads to. May be left
+            empty
+
+            at creation time so a candidate URL can be tested via the ping
+
+            endpoint before it is saved; events do not fire for webhooks with
+
+            an empty URL.
+
+            '
         secret:
           type: string
           description: 'Optional shared secret. When set, Mobius signs each POST body
@@ -6729,8 +6742,7 @@ components:
             '
         enabled:
           type: boolean
-          default: true
-          description: Whether the webhook starts enabled. Defaults to true.
+          description: Whether the webhook starts enabled. Defaults to true when omitted.
     UpdateWebhookRequest:
       type: object
       properties:
@@ -6761,12 +6773,13 @@ components:
       properties:
         url:
           type: string
-          format: uri
           description: 'URL to test. When supplied, the ping is sent to this URL instead
 
-            of the webhook''s saved URL — use this to validate a new URL before
+            of the webhook''s saved URL — use this to validate a candidate URL
 
-            saving it. When omitted, the webhook''s current saved URL is used.
+            before saving it. When omitted, the webhook''s current saved URL
+
+            is used.
 
             '
     PingWebhookResult:
@@ -7864,12 +7877,13 @@ components:
           $ref: '#/components/schemas/InteractionSpec'
         require_all:
           type: boolean
-          default: false
           description: 'When target_actor.type is "group", setting require_all=true
 
             means all snapshotted group members must respond before the
 
             interaction is considered complete. Ignored for non-group targets.
+
+            Defaults to false when omitted.
 
             '
         expires_at:
@@ -8116,6 +8130,7 @@ components:
         description:
           type: string
           description: Optional human-readable description.
+          maxLength: 500
         kind:
           type: string
           description: Freeform agent classification for tooling and filtering (e.g.
@@ -8229,6 +8244,7 @@ components:
         description:
           type: string
           description: Optional human-readable description.
+          maxLength: 500
         kind:
           type: string
           description: Freeform classification (e.g. "llm", "rpa", "integration").

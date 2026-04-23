@@ -1353,7 +1353,7 @@ class JobClaim(BaseModel):
     )
     step_name: str = Field(
         ...,
-        description='Step label from the workflow spec — used for UI and interaction topic derivation.',
+        description='Step label from the workflow spec — used for UI and interaction signal name derivation.',
     )
     action: str = Field(
         ..., description='Action name the worker must execute for this step.'
@@ -1588,8 +1588,8 @@ class CreateJobInteractionRequest(BaseModel):
     )
     spec: InteractionSpec | None = None
     require_all: bool | None = Field(
-        False,
-        description='When target_actor.type is "group", setting require_all=true\nmeans all snapshotted group members must respond before the\ninteraction is considered complete. Ignored for non-group targets.\n',
+        None,
+        description='When target_actor.type is "group", setting require_all=true\nmeans all snapshotted group members must respond before the\ninteraction is considered complete. Ignored for non-group targets.\nDefaults to false when omitted.\n',
     )
     timeout: str | None = Field(
         None,
@@ -1796,7 +1796,8 @@ class CreateTriggerTargetRequest(BaseModel):
         None, description='Maps workflow input names to JSONPath expressions.'
     )
     enabled: bool | None = Field(
-        True, description='Whether this target starts enabled. Defaults to true.'
+        None,
+        description='Whether this target starts enabled. Defaults to true when omitted.',
     )
 
 
@@ -1951,7 +1952,8 @@ class CreateTriggerRequest(BaseModel):
     )
     concurrency_policy: ConcurrencyPolicy | None = None
     enabled: bool | None = Field(
-        True, description='Whether the trigger starts enabled. Defaults to true.'
+        None,
+        description='Whether the trigger starts enabled. Defaults to true when omitted.',
     )
     webhook_handle: str | None = Field(
         None,
@@ -2170,8 +2172,9 @@ class CreateWebhookRequest(BaseModel):
     name: str = Field(
         ..., description='Human-readable name, unique within the project.'
     )
-    url: str = Field(
-        ..., description='The endpoint Mobius will POST event payloads to.'
+    url: str | None = Field(
+        None,
+        description='The endpoint Mobius will POST event payloads to. May be left empty\nat creation time so a candidate URL can be tested via the ping\nendpoint before it is saved; events do not fire for webhooks with\nan empty URL.\n',
     )
     secret: str | None = Field(
         None,
@@ -2182,7 +2185,8 @@ class CreateWebhookRequest(BaseModel):
         description='Event types to subscribe to. Use wildcards for broad\nsubscriptions, e.g. `["run.*"]` for all run events.\n',
     )
     enabled: bool | None = Field(
-        True, description='Whether the webhook starts enabled. Defaults to true.'
+        None,
+        description='Whether the webhook starts enabled. Defaults to true when omitted.',
     )
 
 
@@ -2204,9 +2208,9 @@ class UpdateWebhookRequest(BaseModel):
 
 
 class PingWebhookRequest(BaseModel):
-    url: AnyUrl | None = Field(
+    url: str | None = Field(
         None,
-        description="URL to test. When supplied, the ping is sent to this URL instead\nof the webhook's saved URL — use this to validate a new URL before\nsaving it. When omitted, the webhook's current saved URL is used.\n",
+        description="URL to test. When supplied, the ping is sent to this URL instead\nof the webhook's saved URL — use this to validate a candidate URL\nbefore saving it. When omitted, the webhook's current saved URL\nis used.\n",
     )
 
 
@@ -2946,8 +2950,8 @@ class CreateInteractionRequest(BaseModel):
     )
     spec: InteractionSpec | None = None
     require_all: bool | None = Field(
-        False,
-        description='When target_actor.type is "group", setting require_all=true\nmeans all snapshotted group members must respond before the\ninteraction is considered complete. Ignored for non-group targets.\n',
+        None,
+        description='When target_actor.type is "group", setting require_all=true\nmeans all snapshotted group members must respond before the\ninteraction is considered complete. Ignored for non-group targets.\nDefaults to false when omitted.\n',
     )
     expires_at: datetime | None = Field(
         None,
@@ -3144,7 +3148,7 @@ class Agent(BaseModel):
         pattern='^[a-z0-9]([a-z0-9_-]{0,61}[a-z0-9])?$',
     )
     description: str | None = Field(
-        None, description='Optional human-readable description.'
+        None, description='Optional human-readable description.', max_length=500
     )
     kind: str | None = Field(
         None,
@@ -3219,7 +3223,7 @@ class CreateAgentRequest(BaseModel):
         pattern='^[a-z0-9]([a-z0-9_-]{0,61}[a-z0-9])?$',
     )
     description: str | None = Field(
-        None, description='Optional human-readable description.'
+        None, description='Optional human-readable description.', max_length=500
     )
     kind: str | None = Field(
         None, description='Freeform classification (e.g. "llm", "rpa", "integration").'

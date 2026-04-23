@@ -1420,6 +1420,7 @@ type CreateInteractionRequest struct {
 	// RequireAll When target_actor.type is "group", setting require_all=true
 	// means all snapshotted group members must respond before the
 	// interaction is considered complete. Ignored for non-group targets.
+	// Defaults to false when omitted.
 	RequireAll *bool `json:"require_all,omitempty"`
 
 	// RunId ID of the workflow run to resume when this interaction is completed.
@@ -1455,6 +1456,7 @@ type CreateJobInteractionRequest struct {
 	// RequireAll When target_actor.type is "group", setting require_all=true
 	// means all snapshotted group members must respond before the
 	// interaction is considered complete. Ignored for non-group targets.
+	// Defaults to false when omitted.
 	RequireAll *bool `json:"require_all,omitempty"`
 
 	// SignalName Optional signal name override. When omitted, the server derives
@@ -1502,7 +1504,7 @@ type CreateTriggerRequest struct {
 	// - `replace` — cancel the active run before starting a new one.
 	ConcurrencyPolicy *ConcurrencyPolicy `json:"concurrency_policy,omitempty"`
 
-	// Enabled Whether the trigger starts enabled. Defaults to true.
+	// Enabled Whether the trigger starts enabled. Defaults to true when omitted.
 	Enabled *bool `json:"enabled,omitempty"`
 
 	// FilterConfig Additional payload filters evaluated before targets.
@@ -1538,7 +1540,7 @@ type CreateTriggerTargetRequest struct {
 	// Condition Expression evaluated against the event payload. Omit to always run.
 	Condition *string `json:"condition,omitempty"`
 
-	// Enabled Whether this target starts enabled. Defaults to true.
+	// Enabled Whether this target starts enabled. Defaults to true when omitted.
 	Enabled *bool `json:"enabled,omitempty"`
 
 	// InputMapping Maps workflow input names to JSONPath expressions.
@@ -1550,7 +1552,7 @@ type CreateTriggerTargetRequest struct {
 
 // CreateWebhookRequest defines model for CreateWebhookRequest.
 type CreateWebhookRequest struct {
-	// Enabled Whether the webhook starts enabled. Defaults to true.
+	// Enabled Whether the webhook starts enabled. Defaults to true when omitted.
 	Enabled *bool `json:"enabled,omitempty"`
 
 	// Events Event types to subscribe to. Use wildcards for broad
@@ -1565,8 +1567,11 @@ type CreateWebhookRequest struct {
 	// in the request headers.
 	Secret *string `json:"secret,omitempty"`
 
-	// Url The endpoint Mobius will POST event payloads to.
-	Url string `json:"url"`
+	// Url The endpoint Mobius will POST event payloads to. May be left empty
+	// at creation time so a candidate URL can be tested via the ping
+	// endpoint before it is saved; events do not fire for webhooks with
+	// an empty URL.
+	Url *string `json:"url,omitempty"`
 }
 
 // CreateWorkflowRequest defines model for CreateWorkflowRequest.
@@ -1992,7 +1997,7 @@ type JobClaim struct {
 	// RunId Parent workflow run ID.
 	RunId string `json:"run_id"`
 
-	// StepName Step label from the workflow spec — used for UI and interaction topic derivation.
+	// StepName Step label from the workflow spec — used for UI and interaction signal name derivation.
 	StepName string `json:"step_name"`
 
 	// WorkflowName Handle of the workflow definition that owns this run.
@@ -2126,8 +2131,9 @@ type Metadata map[string]interface{}
 // PingWebhookRequest defines model for PingWebhookRequest.
 type PingWebhookRequest struct {
 	// Url URL to test. When supplied, the ping is sent to this URL instead
-	// of the webhook's saved URL — use this to validate a new URL before
-	// saving it. When omitted, the webhook's current saved URL is used.
+	// of the webhook's saved URL — use this to validate a candidate URL
+	// before saving it. When omitted, the webhook's current saved URL
+	// is used.
 	Url *string `json:"url,omitempty"`
 }
 
