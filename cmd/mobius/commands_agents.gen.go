@@ -8,6 +8,9 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
+
 	"github.com/deepnoodle-ai/wonton/cli"
 
 	"github.com/deepnoodle-ai/mobius/mobius/api"
@@ -15,12 +18,18 @@ import (
 
 // registerAgentsCommands registers every generated subcommand in the "agents" group.
 func registerAgentsCommands(app *cli.App) {
-	agentsGrp := app.Group("agents")
+	agentsGrp := app.Group("agents").Description("Agents and agent sessions")
 	agentsGrp.Alias("agent")
 	agentsGrp.Command("create").
 		Description("Create an agent").
 		Flags(
-			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin)"),
+			cli.String("capabilities", "").Help("Arbitrary capability map used by orchestrators to select suitable agents. (JSON)"),
+			cli.String("config", "").Help("Agent-specific configuration stored and returned opaquely. (JSON)"),
+			cli.String("description", "").Help("Optional human-readable description."),
+			cli.String("kind", "").Help("Freeform classification (e.g. \"llm\", \"rpa\", \"integration\")."),
+			cli.String("name", "").Help("[required] Project-scoped unique name for this agent. Must match pattern and be 1-63 characters."),
+			cli.String("service-account-id", "").Help("Service account that backs this agent. Must be active and belong to the same project. If omitted, a new service account is auto-created with the same name as the agent."),
+			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -34,6 +43,34 @@ func registerAgentsCommands(app *cli.App) {
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
 			}
+			if ctx.IsSet("capabilities") {
+				if err := json.Unmarshal([]byte(ctx.String("capabilities")), &body.Capabilities); err != nil {
+					return fmt.Errorf("--capabilities: invalid JSON: %w", err)
+				}
+			}
+			if ctx.IsSet("config") {
+				if err := json.Unmarshal([]byte(ctx.String("config")), &body.Config); err != nil {
+					return fmt.Errorf("--config: invalid JSON: %w", err)
+				}
+			}
+			if ctx.IsSet("description") {
+				v := ctx.String("description")
+				body.Description = &v
+			}
+			if ctx.IsSet("kind") {
+				v := ctx.String("kind")
+				body.Kind = &v
+			}
+			if ctx.IsSet("name") {
+				body.Name = ctx.String("name")
+			}
+			if ctx.IsSet("service-account-id") {
+				v := ctx.String("service-account-id")
+				body.ServiceAccountId = &v
+			}
+			if body.Name == "" {
+				return fmt.Errorf("--name is required (or supply it via --file)")
+			}
 			resp, err := client.CreateAgentWithResponse(ctx.Context(), p0, body)
 			if err != nil {
 				return err
@@ -45,7 +82,9 @@ func registerAgentsCommands(app *cli.App) {
 		Description("Register a new agent session").
 		Args("id").
 		Flags(
-			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin)"),
+			cli.String("metadata", "").Help("Optional metadata such as hostname, SDK version, or region. (JSON)"),
+			cli.String("transport", "").Help("[required] Connection mechanism identifier (e.g. \"sse\", \"polling\")."),
+			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -59,6 +98,17 @@ func registerAgentsCommands(app *cli.App) {
 			var body api.CreateAgentSessionJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
+			}
+			if ctx.IsSet("metadata") {
+				if err := json.Unmarshal([]byte(ctx.String("metadata")), &body.Metadata); err != nil {
+					return fmt.Errorf("--metadata: invalid JSON: %w", err)
+				}
+			}
+			if ctx.IsSet("transport") {
+				body.Transport = ctx.String("transport")
+			}
+			if body.Transport == "" {
+				return fmt.Errorf("--transport is required (or supply it via --file)")
 			}
 			resp, err := client.CreateAgentSessionWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
@@ -238,7 +288,14 @@ func registerAgentsCommands(app *cli.App) {
 		Description("Update an agent").
 		Args("id").
 		Flags(
-			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin)"),
+			cli.String("capabilities", "").Help("Replacement capability map. (JSON)"),
+			cli.String("config", "").Help("Replacement configuration blob. (JSON)"),
+			cli.String("description", "").Help("Replacement description."),
+			cli.String("kind", "").Help("Replacement freeform agent classification (e.g. `llm`, `rpa`)."),
+			cli.String("name", "").Help("Replacement name. Must be unique within the project and match the agent name pattern."),
+			cli.String("service-account-id", "").Help("Replacement service account. Must be active and belong to the same project."),
+			cli.String("status", "").Help("Administrative status. Inactive agents cannot claim new jobs."),
+			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -252,6 +309,39 @@ func registerAgentsCommands(app *cli.App) {
 			var body api.UpdateAgentJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
+			}
+			if ctx.IsSet("capabilities") {
+				if err := json.Unmarshal([]byte(ctx.String("capabilities")), &body.Capabilities); err != nil {
+					return fmt.Errorf("--capabilities: invalid JSON: %w", err)
+				}
+			}
+			if ctx.IsSet("config") {
+				if err := json.Unmarshal([]byte(ctx.String("config")), &body.Config); err != nil {
+					return fmt.Errorf("--config: invalid JSON: %w", err)
+				}
+			}
+			if ctx.IsSet("description") {
+				v := ctx.String("description")
+				body.Description = &v
+			}
+			if ctx.IsSet("kind") {
+				v := ctx.String("kind")
+				body.Kind = &v
+			}
+			if ctx.IsSet("name") {
+				v := ctx.String("name")
+				body.Name = &v
+			}
+			if ctx.IsSet("service-account-id") {
+				v := ctx.String("service-account-id")
+				body.ServiceAccountId = &v
+			}
+			if ctx.IsSet("status") {
+				v := api.AgentStatus(ctx.String("status"))
+				body.Status = &v
+			}
+			if ctx.String("file") == "" && !ctx.IsSet("capabilities") && !ctx.IsSet("config") && !ctx.IsSet("description") && !ctx.IsSet("kind") && !ctx.IsSet("name") && !ctx.IsSet("service-account-id") && !ctx.IsSet("status") {
+				return fmt.Errorf("at least one flag or --file is required")
 			}
 			resp, err := client.UpdateAgentWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {

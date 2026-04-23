@@ -33,16 +33,17 @@ func registerGeneratedCommands(app *cli.App) {
 	registerToolsCommands(app)
 	registerTriggersCommands(app)
 	registerWebhooksCommands(app)
-	registerWorkersCommands(app)
+	registerWorkerSessionsCommands(app)
 	registerWorkflowsCommands(app)
 }
 
 // readJSONBody reads a JSON request body from --file (path or '-' for stdin)
-// and unmarshals it into v.
+// and unmarshals it into v. When --file is not set this is a no-op so that
+// per-field flags alone can populate the body.
 func readJSONBody(ctx *cli.Context, v any) error {
 	path := ctx.String("file")
 	if path == "" {
-		return fmt.Errorf("missing --file (use '-' to read JSON from stdin)")
+		return nil
 	}
 	var data []byte
 	var err error

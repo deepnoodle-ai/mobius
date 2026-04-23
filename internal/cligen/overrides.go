@@ -60,7 +60,23 @@ var overrides = map[string]Override{
 // groupDescriptions is an opt-in table of subcommand group descriptions,
 // keyed by group name (i.e. the kebab-case tag or explicit Override.Group).
 //
-// Groups without an entry here render with no description — the group name
-// alone is expected to be self-explanatory. Add an entry only when a short
-// help string genuinely clarifies the group beyond its name.
-var groupDescriptions = map[string]string{}
+// Descriptions should be short noun phrases (roughly 4–8 words) that read
+// well when listed vertically in `mobius --help`. Prefer consistent
+// grammatical shape across entries.
+var groupDescriptions = map[string]string{
+	"actions":      "Custom HTTP actions called by workflow steps",
+	"agents":       "Agents and agent sessions",
+	"audit-logs":   "Organization and project audit log entries",
+	"channels":     "Chat channels, members, and messages",
+	"groups":       "Member groups for routing interactions",
+	"interactions": "Approval, review, and input prompts",
+	"jobs":         "Worker runtime — claim, heartbeat, complete",
+	"metrics":      "Platform and workflow metrics",
+	"projects":     "Projects within the organization",
+	"runs":         "Workflow runs",
+	"tools":        "Workflows published as callable tools",
+	"triggers":     "Event, schedule, and webhook triggers",
+	"webhooks":     "Outgoing webhook subscriptions",
+	"workers":      "Registered workers",
+	"workflows":    "Workflow definitions",
+}

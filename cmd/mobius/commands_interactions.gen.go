@@ -8,6 +8,9 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
+
 	"github.com/deepnoodle-ai/wonton/cli"
 
 	"github.com/deepnoodle-ai/mobius/mobius/api"
@@ -15,7 +18,7 @@ import (
 
 // registerInteractionsCommands registers every generated subcommand in the "interactions" group.
 func registerInteractionsCommands(app *cli.App) {
-	interactionsGrp := app.Group("interactions")
+	interactionsGrp := app.Group("interactions").Description("Approval, review, and input prompts")
 	interactionsGrp.Alias("interaction")
 	interactionsGrp.Command("claim").
 		Description("Claim a pending first-responder group interaction").
@@ -39,7 +42,16 @@ func registerInteractionsCommands(app *cli.App) {
 	interactionsGrp.Command("create").
 		Description("Create an interaction").
 		Flags(
-			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin)"),
+			cli.String("context", "").Help("Additional key-value context surfaced in the UI alongside the message. (JSON)"),
+			cli.String("expires-at", "").Help("Timestamp after which this interaction expires if not responded to. (JSON)"),
+			cli.String("message", "").Help("[required] Message shown to the responder describing what response is needed."),
+			cli.Bool("require-all", "").Help("When target_actor.type is \"group\", setting require_all=true means all snapshotted group members must respond before the interaction is considered complete. Ignored for non-group targets. Defaults to false when omitted."),
+			cli.String("run-id", "").Help("ID of the workflow run to resume when this interaction is completed."),
+			cli.String("signal-name", "").Help("Signal name the interaction will complete against when run-backed."),
+			cli.String("spec", "").Help("Declarative dialog contract for rendering and validating an interaction. `type` defines the semantic intent; `mode` defines the input affordance. Compatibility rules are enforced server-side: - `approval` requires `mode = confirm` - `review` requires `mode = select` - `input` supports `input`, `select`, or `multi_select` (JSON)"),
+			cli.String("target-actor", "").Help("[required] target-actor (JSON)"),
+			cli.String("type", "").Help("[required] type"),
+			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -52,6 +64,53 @@ func registerInteractionsCommands(app *cli.App) {
 			var body api.CreateInteractionJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
+			}
+			if ctx.IsSet("context") {
+				if err := json.Unmarshal([]byte(ctx.String("context")), &body.Context); err != nil {
+					return fmt.Errorf("--context: invalid JSON: %w", err)
+				}
+			}
+			if ctx.IsSet("expires-at") {
+				if err := json.Unmarshal([]byte(ctx.String("expires-at")), &body.ExpiresAt); err != nil {
+					return fmt.Errorf("--expires-at: invalid JSON: %w", err)
+				}
+			}
+			if ctx.IsSet("message") {
+				body.Message = ctx.String("message")
+			}
+			if ctx.IsSet("require-all") {
+				v := ctx.Bool("require-all")
+				body.RequireAll = &v
+			}
+			if ctx.IsSet("run-id") {
+				v := ctx.String("run-id")
+				body.RunId = &v
+			}
+			if ctx.IsSet("signal-name") {
+				v := ctx.String("signal-name")
+				body.SignalName = &v
+			}
+			if ctx.IsSet("spec") {
+				if err := json.Unmarshal([]byte(ctx.String("spec")), &body.Spec); err != nil {
+					return fmt.Errorf("--spec: invalid JSON: %w", err)
+				}
+			}
+			if ctx.IsSet("target-actor") {
+				if err := json.Unmarshal([]byte(ctx.String("target-actor")), &body.TargetActor); err != nil {
+					return fmt.Errorf("--target-actor: invalid JSON: %w", err)
+				}
+			}
+			if ctx.IsSet("type") {
+				body.Type = api.InteractionType(ctx.String("type"))
+			}
+			if body.Message == "" {
+				return fmt.Errorf("--message is required (or supply it via --file)")
+			}
+			if ctx.String("file") == "" && !ctx.IsSet("target-actor") {
+				return fmt.Errorf("--target-actor is required (or supply it via --file)")
+			}
+			if body.Type == "" {
+				return fmt.Errorf("--type is required (or supply it via --file)")
 			}
 			resp, err := client.CreateInteractionWithResponse(ctx.Context(), p0, body)
 			if err != nil {
@@ -157,7 +216,9 @@ func registerInteractionsCommands(app *cli.App) {
 		Description("Submit a response to an interaction").
 		Args("id").
 		Flags(
-			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin)"),
+			cli.String("comment", "").Help("Optional free-text comment accompanying the response."),
+			cli.String("value", "").Help("Free-form JSON payload supplied by the responder. (JSON)"),
+			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -171,6 +232,18 @@ func registerInteractionsCommands(app *cli.App) {
 			var body api.RespondToInteractionJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
+			}
+			if ctx.IsSet("comment") {
+				v := ctx.String("comment")
+				body.Comment = &v
+			}
+			if ctx.IsSet("value") {
+				if err := json.Unmarshal([]byte(ctx.String("value")), &body.Value); err != nil {
+					return fmt.Errorf("--value: invalid JSON: %w", err)
+				}
+			}
+			if ctx.String("file") == "" && !ctx.IsSet("comment") && !ctx.IsSet("value") {
+				return fmt.Errorf("at least one flag or --file is required")
 			}
 			resp, err := client.RespondToInteractionWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {

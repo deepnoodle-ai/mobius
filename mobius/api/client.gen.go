@@ -407,6 +407,24 @@ func (e JobCompleteRequestStatus) Valid() bool {
 	}
 }
 
+// Defines values for ProjectAccessMode.
+const (
+	ProjectAccessModeOrgOpen    ProjectAccessMode = "org_open"
+	ProjectAccessModeRestricted ProjectAccessMode = "restricted"
+)
+
+// Valid indicates whether the value is a known member of the ProjectAccessMode enum.
+func (e ProjectAccessMode) Valid() bool {
+	switch e {
+	case ProjectAccessModeOrgOpen:
+		return true
+	case ProjectAccessModeRestricted:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for SendChannelMessageRequestDisplay.
 const (
 	SendChannelMessageRequestDisplayCard    SendChannelMessageRequestDisplay = "card"
@@ -972,6 +990,12 @@ type AddGroupMemberRequest struct {
 	UserId string `json:"user_id"`
 }
 
+// AddProjectMemberRequest defines model for AddProjectMemberRequest.
+type AddProjectMemberRequest struct {
+	// UserId User ID of the org member to add to this project.
+	UserId string `json:"user_id"`
+}
+
 // Agent defines model for Agent.
 type Agent struct {
 	// Capabilities Arbitrary capability map used by orchestrators to select suitable agents.
@@ -1343,8 +1367,10 @@ type CreateAgentRequest struct {
 	// Name Project-scoped unique name for this agent. Must match pattern and be 1-63 characters.
 	Name string `json:"name"`
 
-	// ServiceAccountId Service account that backs this agent. Must be active and belong to the same project.
-	ServiceAccountId string `json:"service_account_id"`
+	// ServiceAccountId Service account that backs this agent. Must be active and belong to
+	// the same project. If omitted, a new service account is auto-created
+	// with the same name as the agent.
+	ServiceAccountId *string `json:"service_account_id,omitempty"`
 }
 
 // CreateAgentSessionRequest defines model for CreateAgentSessionRequest.
@@ -1485,6 +1511,11 @@ type CreateJobInteractionRequest struct {
 
 // CreateProjectRequest defines model for CreateProjectRequest.
 type CreateProjectRequest struct {
+	// AccessMode `org_open`: every org member can see and use the project, subject to
+	// role assignments. `restricted`: only listed project members (and org
+	// owners/admins) can see or use the project.
+	AccessMode *ProjectAccessMode `json:"access_mode,omitempty"`
+
 	// Description Optional human-readable description.
 	Description *string `json:"description,omitempty"`
 
@@ -1516,6 +1547,11 @@ type CreateTriggerRequest struct {
 	// Name Human-readable trigger name, unique within the project.
 	Name string `json:"name"`
 
+	// SigningSecret Optional HMAC-SHA256 secret for verifying inbound webhook payloads.
+	// When set, Mobius validates the `X-Mobius-Signature` header on
+	// incoming requests.
+	SigningSecret *string `json:"signing_secret,omitempty"`
+
 	// SourceConfig Kind-specific configuration. Required for `schedule` triggers:
 	// `{"cron": "0 9 * * 1-5"}`. For `event` triggers: event type and
 	// filter expressions.
@@ -1528,11 +1564,6 @@ type CreateTriggerRequest struct {
 	// from `name` for `webhook` triggers when omitted. Must be unique
 	// within the project.
 	WebhookHandle *string `json:"webhook_handle,omitempty"`
-
-	// WebhookSecret Optional HMAC-SHA256 secret for verifying inbound webhook payloads.
-	// When set, Mobius validates the `X-Mobius-Signature` header on
-	// incoming requests.
-	WebhookSecret *string `json:"webhook_secret,omitempty"`
 }
 
 // CreateTriggerTargetRequest Parameters for attaching a workflow target to a trigger.
@@ -1562,10 +1593,10 @@ type CreateWebhookRequest struct {
 	// Name Human-readable name, unique within the project.
 	Name string `json:"name"`
 
-	// Secret Optional shared secret. When set, Mobius signs each POST body
-	// with HMAC-SHA256 and includes `X-Mobius-Signature: sha256=<hex>`
-	// in the request headers.
-	Secret *string `json:"secret,omitempty"`
+	// SigningSecret Optional HMAC-SHA256 secret. When set, Mobius signs each POST body
+	// and includes `X-Mobius-Signature: sha256=<hex>` in the request
+	// headers.
+	SigningSecret *string `json:"signing_secret,omitempty"`
 
 	// Url The endpoint Mobius will POST event payloads to. May be left empty
 	// at creation time so a candidate URL can be tested via the ping
@@ -2160,6 +2191,11 @@ type PingWebhookResult struct {
 
 // Project defines model for Project.
 type Project struct {
+	// AccessMode `org_open`: every org member can see and use the project, subject to
+	// role assignments. `restricted`: only listed project members (and org
+	// owners/admins) can see or use the project.
+	AccessMode ProjectAccessMode `json:"access_mode"`
+
 	// CreatedAt Timestamp when this project was created.
 	CreatedAt time.Time `json:"created_at"`
 
@@ -2183,10 +2219,42 @@ type Project struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
+// ProjectAccessMode `org_open`: every org member can see and use the project, subject to
+// role assignments. `restricted`: only listed project members (and org
+// owners/admins) can see or use the project.
+type ProjectAccessMode string
+
 // ProjectListResponse defines model for ProjectListResponse.
 type ProjectListResponse struct {
 	// Items The list of results for this page.
 	Items []Project `json:"items"`
+}
+
+// ProjectMember defines model for ProjectMember.
+type ProjectMember struct {
+	// AddedAt Timestamp when the member was added.
+	AddedAt time.Time `json:"added_at"`
+
+	// AddedByActorId Actor ID of whoever added this member, if recorded.
+	AddedByActorId *string `json:"added_by_actor_id,omitempty"`
+
+	// AddedByActorType Actor type of whoever added this member, if recorded.
+	AddedByActorType *string `json:"added_by_actor_type,omitempty"`
+
+	// Id Unique identifier for this membership record.
+	Id string `json:"id"`
+
+	// ProjectId ID of the project this membership belongs to.
+	ProjectId string `json:"project_id"`
+
+	// UserId ID of the user who is a member.
+	UserId string `json:"user_id"`
+}
+
+// ProjectMemberListResponse defines model for ProjectMemberListResponse.
+type ProjectMemberListResponse struct {
+	// Items The list of members for this project.
+	Items []ProjectMember `json:"items"`
 }
 
 // ProjectMetrics defines model for ProjectMetrics.
@@ -2679,11 +2747,21 @@ type UpdateGroupRequestRoutingPolicy string
 
 // UpdateProjectRequest defines model for UpdateProjectRequest.
 type UpdateProjectRequest struct {
+	// AccessMode `org_open`: every org member can see and use the project, subject to
+	// role assignments. `restricted`: only listed project members (and org
+	// owners/admins) can see or use the project.
+	AccessMode *ProjectAccessMode `json:"access_mode,omitempty"`
+
 	// Description Replacement description.
 	Description *string `json:"description,omitempty"`
 
 	// Name Replacement human-readable name.
 	Name *string `json:"name,omitempty"`
+
+	// SeedExistingMembers When transitioning from `org_open` to `restricted`, set true to
+	// insert all current org members as project members so nobody
+	// loses visibility on the flip. Ignored on other transitions.
+	SeedExistingMembers *bool `json:"seed_existing_members,omitempty"`
 }
 
 // UpdateTriggerRequest defines model for UpdateTriggerRequest.
@@ -2703,14 +2781,14 @@ type UpdateTriggerRequest struct {
 	// Name Replacement human-readable name.
 	Name *string `json:"name,omitempty"`
 
+	// SigningSecret Replace or clear the inbound signature verification secret.
+	SigningSecret *string `json:"signing_secret,omitempty"`
+
 	// SourceConfig Replacement kind-specific source configuration.
 	SourceConfig *map[string]interface{} `json:"source_config,omitempty"`
 
 	// WebhookHandle Changing this changes the `receive_url`; update any upstream integrations.
 	WebhookHandle *string `json:"webhook_handle,omitempty"`
-
-	// WebhookSecret Replace or clear the inbound signature verification secret.
-	WebhookSecret *string `json:"webhook_secret,omitempty"`
 }
 
 // UpdateTriggerTargetRequest Partial update for a trigger target; omitted fields are unchanged.
@@ -2739,9 +2817,9 @@ type UpdateWebhookRequest struct {
 	// Name Replacement human-readable name.
 	Name *string `json:"name,omitempty"`
 
-	// Secret Replace the current signing secret. Set to empty string to
+	// SigningSecret Replace the current signing secret. Set to empty string to
 	// disable signing. Omit to leave the current secret unchanged.
-	Secret *string `json:"secret,omitempty"`
+	SigningSecret *string `json:"signing_secret,omitempty"`
 
 	// Url Replacement endpoint URL.
 	Url *string `json:"url,omitempty"`
@@ -2862,11 +2940,18 @@ type WebhookListResponse struct {
 	NextCursor *string `json:"next_cursor,omitempty"`
 }
 
-// Worker defines model for Worker.
-type Worker struct {
-	// ApiKeyId ID of the specific API key this worker presented on its most recent
-	// register/heartbeat. Changes across credential rotations; use together
-	// with `service_account_id` to see rotation progress across a fleet.
+// WorkerSession defines model for WorkerSession.
+type WorkerSession struct {
+	// AgentId Agent this session represents, when the polling process declared
+	// itself as a registered agent (via `agent_id` on the claim request
+	// or via inference from the service account). Absent for ad-hoc
+	// worker processes that are not tied to a declared agent.
+	AgentId *string `json:"agent_id,omitempty"`
+
+	// ApiKeyId ID of the specific API key this session presented on its most
+	// recent register/heartbeat. Only set for service-account-backed
+	// sessions; changes across credential rotations. Use together with
+	// `service_account_id` to see rotation progress across a fleet.
 	ApiKeyId *string `json:"api_key_id,omitempty"`
 
 	// Capabilities Reserved for future capability-based job routing. Not currently used for filtering.
@@ -2875,31 +2960,37 @@ type Worker struct {
 	// Id Caller-assigned stable identifier for this worker process.
 	Id string `json:"id"`
 
-	// LastSeenAt Timestamp of the worker's most recent job claim poll. Updated on
-	// every `POST /v1/projects/{project}/jobs/claim` call regardless of whether a job was
-	// returned. Used to compute `stale`.
+	// LastSeenAt Timestamp of this session's most recent job claim poll. Updated on
+	// every `POST /v1/projects/{project}/jobs/claim` call regardless of
+	// whether a job was returned. Used to compute `stale`.
 	LastSeenAt *time.Time `json:"last_seen_at,omitempty"`
 
 	// Name Optional human-readable name supplied in the claim request.
 	Name *string `json:"name,omitempty"`
 
-	// ServiceAccountId Service account this worker authenticated as on register/heartbeat.
-	// Stable across credential rotation — use this to group worker rows
-	// by identity in the admin UI.
+	// ServiceAccountId Service account this session authenticated as on register/heartbeat.
+	// Set when a machine identity is polling; mutually exclusive with
+	// `user_id`. Stable across credential rotation — use this to group
+	// sessions by identity in the admin UI.
 	ServiceAccountId *string `json:"service_account_id,omitempty"`
 
 	// Stale True when `last_seen_at` is older than 2 minutes or absent.
 	// Computed at read time, not stored.
 	Stale bool `json:"stale"`
 
+	// UserId User this session authenticated as on register/heartbeat. Set when
+	// a human is polling via the CLI; mutually exclusive with
+	// `service_account_id`.
+	UserId *string `json:"user_id,omitempty"`
+
 	// Version Optional version string supplied in the claim request.
 	Version *string `json:"version,omitempty"`
 }
 
-// WorkerListResponse defines model for WorkerListResponse.
-type WorkerListResponse struct {
-	// Items The list of recently seen workers.
-	Items []Worker `json:"items"`
+// WorkerSessionListResponse defines model for WorkerSessionListResponse.
+type WorkerSessionListResponse struct {
+	// Items The list of recently seen worker sessions.
+	Items []WorkerSession `json:"items"`
 }
 
 // WorkflowActionKind Execution mode for `action` steps.
@@ -3605,6 +3696,9 @@ type BadRequest = ErrorResponse
 // Conflict defines model for Conflict.
 type Conflict = ErrorResponse
 
+// Forbidden defines model for Forbidden.
+type Forbidden = ErrorResponse
+
 // NotFound defines model for NotFound.
 type NotFound = ErrorResponse
 
@@ -3907,6 +4001,9 @@ type CreateProjectJSONRequestBody = CreateProjectRequest
 
 // UpdateProjectJSONRequestBody defines body for UpdateProject for application/json ContentType.
 type UpdateProjectJSONRequestBody = UpdateProjectRequest
+
+// AddProjectMemberJSONRequestBody defines body for AddProjectMember for application/json ContentType.
+type AddProjectMemberJSONRequestBody = AddProjectMemberRequest
 
 // CreateActionJSONRequestBody defines body for CreateAction for application/json ContentType.
 type CreateActionJSONRequestBody = CreateActionRequest
@@ -4603,6 +4700,17 @@ type ClientInterface interface {
 
 	UpdateProject(ctx context.Context, id IDParam, body UpdateProjectJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ListProjectMembers request
+	ListProjectMembers(ctx context.Context, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// AddProjectMemberWithBody request with any body
+	AddProjectMemberWithBody(ctx context.Context, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	AddProjectMember(ctx context.Context, id IDParam, body AddProjectMemberJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RemoveProjectMember request
+	RemoveProjectMember(ctx context.Context, id IDParam, uid string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListActionAuditLog request
 	ListActionAuditLog(ctx context.Context, project ProjectHandleParam, params *ListActionAuditLogParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -4920,8 +5028,8 @@ type ClientInterface interface {
 
 	PingWebhook(ctx context.Context, project ProjectHandleParam, id IDParam, body PingWebhookJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListWorkers request
-	ListWorkers(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// ListWorkerSessions request
+	ListWorkerSessions(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListWorkflows request
 	ListWorkflows(ctx context.Context, project ProjectHandleParam, params *ListWorkflowsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -5040,6 +5148,54 @@ func (c *Client) UpdateProjectWithBody(ctx context.Context, id IDParam, contentT
 
 func (c *Client) UpdateProject(ctx context.Context, id IDParam, body UpdateProjectJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewUpdateProjectRequest(c.Server, id, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListProjectMembers(ctx context.Context, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListProjectMembersRequest(c.Server, id)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) AddProjectMemberWithBody(ctx context.Context, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAddProjectMemberRequestWithBody(c.Server, id, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) AddProjectMember(ctx context.Context, id IDParam, body AddProjectMemberJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAddProjectMemberRequest(c.Server, id, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) RemoveProjectMember(ctx context.Context, id IDParam, uid string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRemoveProjectMemberRequest(c.Server, id, uid)
 	if err != nil {
 		return nil, err
 	}
@@ -6442,8 +6598,8 @@ func (c *Client) PingWebhook(ctx context.Context, project ProjectHandleParam, id
 	return c.Client.Do(req)
 }
 
-func (c *Client) ListWorkers(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListWorkersRequest(c.Server, project)
+func (c *Client) ListWorkerSessions(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListWorkerSessionsRequest(c.Server, project)
 	if err != nil {
 		return nil, err
 	}
@@ -6995,6 +7151,128 @@ func NewUpdateProjectRequestWithBody(server string, id IDParam, contentType stri
 	}
 
 	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewListProjectMembersRequest generates requests for ListProjectMembers
+func NewListProjectMembersRequest(server string, id IDParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/members", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewAddProjectMemberRequest calls the generic AddProjectMember builder with application/json body
+func NewAddProjectMemberRequest(server string, id IDParam, body AddProjectMemberJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewAddProjectMemberRequestWithBody(server, id, "application/json", bodyReader)
+}
+
+// NewAddProjectMemberRequestWithBody generates requests for AddProjectMember with any type of body
+func NewAddProjectMemberRequestWithBody(server string, id IDParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/members", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewRemoveProjectMemberRequest generates requests for RemoveProjectMember
+func NewRemoveProjectMemberRequest(server string, id IDParam, uid string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "uid", uid, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/members/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
 
 	return req, nil
 }
@@ -11810,8 +12088,8 @@ func NewPingWebhookRequestWithBody(server string, project ProjectHandleParam, id
 	return req, nil
 }
 
-// NewListWorkersRequest generates requests for ListWorkers
-func NewListWorkersRequest(server string, project ProjectHandleParam) (*http.Request, error) {
+// NewListWorkerSessionsRequest generates requests for ListWorkerSessions
+func NewListWorkerSessionsRequest(server string, project ProjectHandleParam) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -11826,7 +12104,7 @@ func NewListWorkersRequest(server string, project ProjectHandleParam) (*http.Req
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/projects/%s/workers", pathParam0)
+	operationPath := fmt.Sprintf("/v1/projects/%s/worker-sessions", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -12322,6 +12600,17 @@ type ClientWithResponsesInterface interface {
 
 	UpdateProjectWithResponse(ctx context.Context, id IDParam, body UpdateProjectJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateProjectResponse, error)
 
+	// ListProjectMembersWithResponse request
+	ListProjectMembersWithResponse(ctx context.Context, id IDParam, reqEditors ...RequestEditorFn) (*ListProjectMembersResponse, error)
+
+	// AddProjectMemberWithBodyWithResponse request with any body
+	AddProjectMemberWithBodyWithResponse(ctx context.Context, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AddProjectMemberResponse, error)
+
+	AddProjectMemberWithResponse(ctx context.Context, id IDParam, body AddProjectMemberJSONRequestBody, reqEditors ...RequestEditorFn) (*AddProjectMemberResponse, error)
+
+	// RemoveProjectMemberWithResponse request
+	RemoveProjectMemberWithResponse(ctx context.Context, id IDParam, uid string, reqEditors ...RequestEditorFn) (*RemoveProjectMemberResponse, error)
+
 	// ListActionAuditLogWithResponse request
 	ListActionAuditLogWithResponse(ctx context.Context, project ProjectHandleParam, params *ListActionAuditLogParams, reqEditors ...RequestEditorFn) (*ListActionAuditLogResponse, error)
 
@@ -12639,8 +12928,8 @@ type ClientWithResponsesInterface interface {
 
 	PingWebhookWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body PingWebhookJSONRequestBody, reqEditors ...RequestEditorFn) (*PingWebhookResponse, error)
 
-	// ListWorkersWithResponse request
-	ListWorkersWithResponse(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*ListWorkersResponse, error)
+	// ListWorkerSessionsWithResponse request
+	ListWorkerSessionsWithResponse(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*ListWorkerSessionsResponse, error)
 
 	// ListWorkflowsWithResponse request
 	ListWorkflowsWithResponse(ctx context.Context, project ProjectHandleParam, params *ListWorkflowsParams, reqEditors ...RequestEditorFn) (*ListWorkflowsResponse, error)
@@ -12810,6 +13099,82 @@ func (r UpdateProjectResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r UpdateProjectResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ListProjectMembersResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ProjectMemberListResponse
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r ListProjectMembersResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListProjectMembersResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type AddProjectMemberResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON201      *ProjectMember
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r AddProjectMemberResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r AddProjectMemberResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type RemoveProjectMemberResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r RemoveProjectMemberResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r RemoveProjectMemberResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -14878,16 +15243,16 @@ func (r PingWebhookResponse) StatusCode() int {
 	return 0
 }
 
-type ListWorkersResponse struct {
+type ListWorkerSessionsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *WorkerListResponse
+	JSON200      *WorkerSessionListResponse
 	JSON401      *Unauthorized
 	JSON404      *NotFound
 }
 
 // Status returns HTTPResponse.Status
-func (r ListWorkersResponse) Status() string {
+func (r ListWorkerSessionsResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -14895,7 +15260,7 @@ func (r ListWorkersResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r ListWorkersResponse) StatusCode() int {
+func (r ListWorkerSessionsResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -15165,6 +15530,41 @@ func (c *ClientWithResponses) UpdateProjectWithResponse(ctx context.Context, id 
 		return nil, err
 	}
 	return ParseUpdateProjectResponse(rsp)
+}
+
+// ListProjectMembersWithResponse request returning *ListProjectMembersResponse
+func (c *ClientWithResponses) ListProjectMembersWithResponse(ctx context.Context, id IDParam, reqEditors ...RequestEditorFn) (*ListProjectMembersResponse, error) {
+	rsp, err := c.ListProjectMembers(ctx, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListProjectMembersResponse(rsp)
+}
+
+// AddProjectMemberWithBodyWithResponse request with arbitrary body returning *AddProjectMemberResponse
+func (c *ClientWithResponses) AddProjectMemberWithBodyWithResponse(ctx context.Context, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AddProjectMemberResponse, error) {
+	rsp, err := c.AddProjectMemberWithBody(ctx, id, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAddProjectMemberResponse(rsp)
+}
+
+func (c *ClientWithResponses) AddProjectMemberWithResponse(ctx context.Context, id IDParam, body AddProjectMemberJSONRequestBody, reqEditors ...RequestEditorFn) (*AddProjectMemberResponse, error) {
+	rsp, err := c.AddProjectMember(ctx, id, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAddProjectMemberResponse(rsp)
+}
+
+// RemoveProjectMemberWithResponse request returning *RemoveProjectMemberResponse
+func (c *ClientWithResponses) RemoveProjectMemberWithResponse(ctx context.Context, id IDParam, uid string, reqEditors ...RequestEditorFn) (*RemoveProjectMemberResponse, error) {
+	rsp, err := c.RemoveProjectMember(ctx, id, uid, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRemoveProjectMemberResponse(rsp)
 }
 
 // ListActionAuditLogWithResponse request returning *ListActionAuditLogResponse
@@ -16180,13 +16580,13 @@ func (c *ClientWithResponses) PingWebhookWithResponse(ctx context.Context, proje
 	return ParsePingWebhookResponse(rsp)
 }
 
-// ListWorkersWithResponse request returning *ListWorkersResponse
-func (c *ClientWithResponses) ListWorkersWithResponse(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*ListWorkersResponse, error) {
-	rsp, err := c.ListWorkers(ctx, project, reqEditors...)
+// ListWorkerSessionsWithResponse request returning *ListWorkerSessionsResponse
+func (c *ClientWithResponses) ListWorkerSessionsWithResponse(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*ListWorkerSessionsResponse, error) {
+	rsp, err := c.ListWorkerSessions(ctx, project, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseListWorkersResponse(rsp)
+	return ParseListWorkerSessionsResponse(rsp)
 }
 
 // ListWorkflowsWithResponse request returning *ListWorkflowsResponse
@@ -16505,6 +16905,154 @@ func ParseUpdateProjectResponse(rsp *http.Response) (*UpdateProjectResponse, err
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListProjectMembersResponse parses an HTTP response from a ListProjectMembersWithResponse call
+func ParseListProjectMembersResponse(rsp *http.Response) (*ListProjectMembersResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListProjectMembersResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ProjectMemberListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseAddProjectMemberResponse parses an HTTP response from a AddProjectMemberWithResponse call
+func ParseAddProjectMemberResponse(rsp *http.Response) (*AddProjectMemberResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &AddProjectMemberResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest ProjectMember
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseRemoveProjectMemberResponse parses an HTTP response from a RemoveProjectMemberWithResponse call
+func ParseRemoveProjectMemberResponse(rsp *http.Response) (*RemoveProjectMemberResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &RemoveProjectMemberResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
@@ -20072,22 +20620,22 @@ func ParsePingWebhookResponse(rsp *http.Response) (*PingWebhookResponse, error) 
 	return response, nil
 }
 
-// ParseListWorkersResponse parses an HTTP response from a ListWorkersWithResponse call
-func ParseListWorkersResponse(rsp *http.Response) (*ListWorkersResponse, error) {
+// ParseListWorkerSessionsResponse parses an HTTP response from a ListWorkerSessionsWithResponse call
+func ParseListWorkerSessionsResponse(rsp *http.Response) (*ListWorkerSessionsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &ListWorkersResponse{
+	response := &ListWorkerSessionsResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest WorkerListResponse
+		var dest WorkerSessionListResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

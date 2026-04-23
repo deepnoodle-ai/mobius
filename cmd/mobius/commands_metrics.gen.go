@@ -13,7 +13,7 @@ import (
 
 // registerMetricsCommands registers every generated subcommand in the "metrics" group.
 func registerMetricsCommands(app *cli.App) {
-	metricsGrp := app.Group("metrics")
+	metricsGrp := app.Group("metrics").Description("Platform and workflow metrics")
 	metricsGrp.Alias("metric")
 	metricsGrp.Command("get-metrics").
 		Description("Get operational metrics for a project").
