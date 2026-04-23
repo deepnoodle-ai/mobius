@@ -2123,6 +2123,11 @@ class ProjectMemberListResponse(BaseModel):
     items: list[ProjectMember] = Field(
         ..., description='The list of members for this project.'
     )
+    has_more: bool = Field(..., description='Whether more results are available.')
+    next_cursor: str | None = Field(
+        None,
+        description='Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.',
+    )
 
 
 class AddProjectMemberRequest(BaseModel):
@@ -2864,6 +2869,21 @@ class User(BaseModel):
     )
 
 
+class SystemRoleName(Enum):
+    """
+    One of the built-in system roles. These are seeded at startup and
+    cannot be deleted. `Owner` and `Admin` bypass project-member
+    visibility for restricted projects.
+
+    """
+
+    Owner = 'Owner'
+    Admin = 'Admin'
+    Operator = 'Operator'
+    Worker = 'Worker'
+    Viewer = 'Viewer'
+
+
 class DefaultProjectAccessMode(Enum):
     """
     Access mode applied to newly-created projects when the caller does
@@ -2886,9 +2906,9 @@ class Org(BaseModel):
     metadata: dict[str, Any] | None = Field(
         None, description='Arbitrary key-value metadata stored alongside the org.'
     )
-    default_member_role: str | None = Field(
+    default_member_role: SystemRoleName | None = Field(
         None,
-        description='System-role name assigned at org scope to new org members. One of\n`Owner`, `Admin`, `Operator`, `Worker`, `Viewer`. Defaults to\n`Operator`.\n',
+        description='System-role name assigned at org scope to new org members.\nDefaults to `Operator`.\n',
     )
     default_project_access_mode: DefaultProjectAccessMode | None = Field(
         None,
@@ -2939,9 +2959,8 @@ class UpdateOrgRequest(BaseModel):
         description='Must be non-empty if provided. Changing the handle affects all API route URLs for this org.',
     )
     metadata: dict[str, Any] | None = Field(None, description='Replacement metadata.')
-    default_member_role: str | None = Field(
-        None,
-        description='System-role name assigned to new org members at org scope. One of\n`Owner`, `Admin`, `Operator`, `Worker`, `Viewer`.\n',
+    default_member_role: SystemRoleName | None = Field(
+        None, description='System-role name assigned to new org members at org scope.'
     )
     default_project_access_mode: DefaultProjectAccessMode1 | None = Field(
         None, description='Access mode applied to newly-created projects.'
@@ -3254,10 +3273,9 @@ class Agent(BaseModel):
     )
     name: str = Field(
         ...,
-        description='Mutable unique name within the project. Use `id` for stable references and job targeting.',
+        description='Mutable unique name within the project. Free-form human-readable label; use `id` for stable references and job targeting.',
         max_length=63,
         min_length=1,
-        pattern='^[a-z0-9]([a-z0-9_-]{0,61}[a-z0-9])?$',
     )
     description: str | None = Field(
         None, description='Optional human-readable description.', max_length=500
@@ -3329,10 +3347,9 @@ class CreateAgentRequest(BaseModel):
     )
     name: str = Field(
         ...,
-        description='Project-scoped unique name for this agent. Must match pattern and be 1-63 characters.',
+        description='Project-scoped unique name for this agent. Free-form human-readable label, 1-63 characters.',
         max_length=63,
         min_length=1,
-        pattern='^[a-z0-9]([a-z0-9_-]{0,61}[a-z0-9])?$',
     )
     description: str | None = Field(
         None, description='Optional human-readable description.', max_length=500
@@ -3356,10 +3373,9 @@ class UpdateAgentRequest(BaseModel):
     )
     name: str | None = Field(
         None,
-        description='Replacement name. Must be unique within the project and match the agent name pattern.',
+        description='Replacement name. Must be unique within the project.',
         max_length=63,
         min_length=1,
-        pattern='^[a-z0-9]([a-z0-9_-]{0,61}[a-z0-9])?$',
     )
     description: str | None = Field(
         None, description='Replacement description.', max_length=500
