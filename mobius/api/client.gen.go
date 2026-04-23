@@ -1796,8 +1796,14 @@ type InteractionStatus string
 
 // InteractionListResponse defines model for InteractionListResponse.
 type InteractionListResponse struct {
+	// HasMore Whether additional pages are available.
+	HasMore *bool `json:"has_more,omitempty"`
+
 	// Items The list of results for this page.
 	Items []Interaction `json:"items"`
+
+	// NextCursor Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.
+	NextCursor *string `json:"next_cursor,omitempty"`
 }
 
 // InteractionOption Selectable option for `select` and `multi_select` modes.
