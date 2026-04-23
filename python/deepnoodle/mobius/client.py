@@ -128,7 +128,13 @@ class Client:
         # project as defence in depth.
         handle_in_key = _extract_handle_from_api_key(resolved.api_key)
         if handle_in_key is not None:
-            explicit = project if project != "default" else namespace
+            # Derive the explicit project from the resolved options so a
+            # caller-supplied ClientOptions(project=...) is honoured even
+            # when __init__'s project/namespace kwargs stayed at their
+            # defaults.
+            explicit = (
+                resolved.project if resolved.project != "default" else resolved.namespace
+            )
             if explicit and explicit != "default" and explicit != handle_in_key:
                 raise ValueError(
                     f"project={explicit!r} conflicts with the handle embedded "

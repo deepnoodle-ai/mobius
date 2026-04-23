@@ -220,11 +220,12 @@ export class Client {
 
   async emitJobEvents(jobId: string, req: JobEventsRequest): Promise<void> {
     // 429 responses surface as RateLimitError (thrown from the retry
-    // transport below). 409/413 are non-retryable and handled here.
+    // transport below). 401/409/413 are non-retryable and handled here.
     const resp = await this.request(
       `/v1/projects/${encodeURIComponent(this.project)}/jobs/${encodeURIComponent(jobId)}/events`,
       { method: "POST", body: req },
     );
+    if (resp.status === 401) throw new AuthRevokedError(jobId);
     if (resp.status === 409) throw new LeaseLostError(jobId);
     if (resp.status === 413) throw new PayloadTooLargeError(jobId);
   }

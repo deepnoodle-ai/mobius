@@ -277,7 +277,6 @@ export class Worker {
             `[mobius] job ${jobId}: credential revoked; cancelling action`,
           );
           this.authRevoked = true;
-          hbLost = true;
           actionController.abort();
         } else if (err instanceof LeaseLostError) {
           this.logger.warn(

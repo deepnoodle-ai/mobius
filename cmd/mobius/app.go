@@ -54,14 +54,21 @@ func newApp() *cli.App {
 // A construction error — e.g. a conflict between --project and the handle
 // embedded in a project-pinned API key — surfaces here so the caller can
 // fail the command before any HTTP request is sent.
+//
+// --project is only forwarded when the user set it explicitly. The flag's
+// "default" default would otherwise collide with the handle embedded in a
+// project-pinned API key and force NewClient to reject a valid credential.
 func clientFromContext(ctx *cli.Context) (*mobius.Client, error) {
 	logger := newLogger(ctx.String("log-level"))
-	return mobius.NewClient(
+	opts := []mobius.Option{
 		mobius.WithBaseURL(ctx.String("api-url")),
 		mobius.WithAPIKey(ctx.String("api-key")),
-		mobius.WithProjectHandle(ctx.String("project")),
 		mobius.WithLogger(logger),
-	)
+	}
+	if ctx.IsSet("project") {
+		opts = append(opts, mobius.WithProjectHandle(ctx.String("project")))
+	}
+	return mobius.NewClient(opts...)
 }
 
 func newLogger(level string) *slog.Logger {
