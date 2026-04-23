@@ -8,8 +8,9 @@
 //
 // Typical usage:
 //
-//	client := mobius.NewClient(mobius.WithAPIKey("mbx_..."))
-//	worker := client.NewWorker(mobius.WorkerConfig{WorkerID: "worker-1"})
+//	client, err := mobius.NewClient(mobius.WithAPIKey("prod/mbx_..."))
+//	if err != nil { log.Fatal(err) }
+//	worker := client.NewWorker(mobius.WorkerConfig{})
 //	mobius.RegisterAction(worker, "send_email", sendEmail)
 //	worker.Run(ctx)
 package mobius

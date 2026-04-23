@@ -42,6 +42,54 @@ export class LeaseLostError extends Error {
   }
 }
 
+/**
+ * Thrown when the server returns HTTP 401 on a worker-loop request.
+ * The credential has been revoked mid-execution; the process needs
+ * to restart under a fresh credential. Distinct from
+ * {@link LeaseLostError} (409 — lease reclaimed by scheduler) because
+ * the remedy is operational, not workflow-level.
+ */
+export class AuthRevokedError extends Error {
+  constructor(public readonly jobId?: string) {
+    super(
+      jobId
+        ? `mobius: credential revoked (job ${jobId})`
+        : "mobius: credential revoked",
+    );
+    this.name = "AuthRevokedError";
+  }
+}
+
+/**
+ * Thrown from {@link Client} construction when the API key or project
+ * options are malformed (e.g. a project-pinned key whose handle prefix
+ * doesn't match the server's handle regex, or a handle conflict
+ * between `WithProjectHandle` and the handle embedded in the key).
+ */
+export class ConfigError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ConfigError";
+  }
+}
+
+// Mirrors the server-side handle regex (domain/validate.go) so the
+// extracted prefix is rejected here rather than as a 403 on first
+// request.
+const HANDLE_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+
+function extractHandleFromApiKey(apiKey: string): string | null {
+  const slash = apiKey.indexOf("/");
+  if (slash < 0) return null;
+  const handle = apiKey.slice(0, slash);
+  if (!HANDLE_RE.test(handle)) {
+    throw new ConfigError(
+      `invalid project handle prefix in API key: ${JSON.stringify(handle)}`,
+    );
+  }
+  return handle;
+}
+
 export class PayloadTooLargeError extends Error {
   constructor(public readonly jobId: string) {
     super(`custom event payload too large for job ${jobId}`);
@@ -99,7 +147,25 @@ export class Client {
 
   constructor(opts: ClientOptions) {
     this.baseURL = (opts.baseURL ?? DEFAULT_BASE_URL).replace(/\/$/, "");
-    this.project = opts.project ?? opts.namespace ?? DEFAULT_PROJECT;
+    const explicitProject = opts.project ?? opts.namespace;
+    // Project-pinned keys arrive as "<handle>/mbx_<secret>". Split the
+    // handle off and use it as the project; any explicit project option
+    // must either match or be the default sentinel.
+    const handleInKey = extractHandleFromApiKey(opts.apiKey);
+    if (handleInKey != null) {
+      if (
+        explicitProject != null &&
+        explicitProject !== DEFAULT_PROJECT &&
+        explicitProject !== handleInKey
+      ) {
+        throw new ConfigError(
+          `project=${JSON.stringify(explicitProject)} conflicts with the handle embedded in the API key (${JSON.stringify(handleInKey)})`,
+        );
+      }
+      this.project = handleInKey;
+    } else {
+      this.project = explicitProject ?? DEFAULT_PROJECT;
+    }
     this.headers = {
       Authorization: `Bearer ${opts.apiKey}`,
       "Content-Type": "application/json",
@@ -124,6 +190,7 @@ export class Client {
       { method: "POST", body: req, signal },
     );
     if (resp.status === 204) return null;
+    if (resp.status === 401) throw new AuthRevokedError();
     return (await resp.json()) as JobClaim;
   }
 
@@ -136,6 +203,7 @@ export class Client {
       `/v1/projects/${encodeURIComponent(this.project)}/jobs/${encodeURIComponent(jobId)}/heartbeat`,
       { method: "POST", body: req },
     );
+    if (resp.status === 401) throw new AuthRevokedError(jobId);
     if (resp.status === 409) throw new LeaseLostError(jobId);
     return (await resp.json()) as JobHeartbeat;
   }
@@ -146,16 +214,18 @@ export class Client {
       `/v1/projects/${encodeURIComponent(this.project)}/jobs/${encodeURIComponent(jobId)}/complete`,
       { method: "POST", body: req },
     );
+    if (resp.status === 401) throw new AuthRevokedError(jobId);
     if (resp.status === 409) throw new LeaseLostError(jobId);
   }
 
   async emitJobEvents(jobId: string, req: JobEventsRequest): Promise<void> {
     // 429 responses surface as RateLimitError (thrown from the retry
-    // transport below). 409/413 are non-retryable and handled here.
+    // transport below). 401/409/413 are non-retryable and handled here.
     const resp = await this.request(
       `/v1/projects/${encodeURIComponent(this.project)}/jobs/${encodeURIComponent(jobId)}/events`,
       { method: "POST", body: req },
     );
+    if (resp.status === 401) throw new AuthRevokedError(jobId);
     if (resp.status === 409) throw new LeaseLostError(jobId);
     if (resp.status === 413) throw new PayloadTooLargeError(jobId);
   }
@@ -195,6 +265,7 @@ export class Client {
     if (
       !resp.ok &&
       resp.status !== 204 &&
+      resp.status !== 401 &&
       resp.status !== 409 &&
       resp.status !== 413 &&
       resp.status !== 429

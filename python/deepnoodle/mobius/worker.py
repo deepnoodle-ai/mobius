@@ -8,6 +8,7 @@ import queue
 import signal
 import threading
 import time
+import uuid
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from typing import Any, Callable
@@ -26,14 +27,19 @@ from .client import (
     LeaseLostError,
     PayloadTooLargeError,
 )
-from .errors import RateLimitError
+from .errors import AuthRevokedError, RateLimitError
 
 logger = logging.getLogger(__name__)
 
 
 @dataclass
 class WorkerConfig:
-    worker_id: str
+    # worker_id is optional — when empty, the Worker constructor fills
+    # it with a per-boot UUID so two processes running the same image
+    # surface as two distinct rows on the workers page. Set explicitly
+    # only for singleton workers that want stable identity across
+    # restarts; two processes with the same override collide on one row.
+    worker_id: str = ""
     name: str = ""
     version: str = ""
     queues: list[str] = field(default_factory=list)
@@ -65,6 +71,11 @@ class ActionContext:
     step_name: str | None
     action: str | None
     _event_queue: "queue.Queue[JobEventEntry]"
+    # Set when the worker needs the action to exit early (currently only
+    # on mid-flight credential revocation, since Python threads can't be
+    # pre-empted). Well-behaved long-running actions should poll
+    # ``ctx.cancelled.is_set()`` and return promptly when it becomes True.
+    cancelled: threading.Event = field(default_factory=threading.Event)
 
     def emit_event(self, type: str, data: dict[str, Any]) -> None:
         event = JobEventEntry(type=type, payload=data)
@@ -94,16 +105,24 @@ class Worker:
 
     def __init__(self, client: Client, config: WorkerConfig) -> None:
         self._client = client
+        if not config.worker_id:
+            config.worker_id = str(uuid.uuid4())
         self._config = config
         self._actions: dict[str, ActionFunc] = {}
         self._stop_event = threading.Event()
+        self._auth_revoked = threading.Event()
 
     def register(self, name: str, fn: ActionFunc) -> None:
         """Register an action function under the given name."""
         self._actions[name] = fn
 
     def run(self) -> None:
-        """Start the claim loop. Blocks until SIGINT/SIGTERM or stop() is called."""
+        """Start the claim loop. Blocks until SIGINT/SIGTERM, stop(), or
+        an [AuthRevokedError][deepnoodle.mobius.errors.AuthRevokedError]
+        from the server — in the last case the credential is gone and
+        the process needs to restart under a rotated credential, so
+        we raise out of run() rather than silently looping.
+        """
         if threading.current_thread() is threading.main_thread():
             signal.signal(signal.SIGINT, lambda *_: self.stop())
             signal.signal(signal.SIGTERM, lambda *_: self.stop())
@@ -111,10 +130,22 @@ class Worker:
         logger.info("worker %s started", self._config.worker_id)
         claim_req = self._build_claim_request()
 
-        with ThreadPoolExecutor(max_workers=self._config.concurrency) as pool:
+        # Manage the pool explicitly so we can drop `wait=False,
+        # cancel_futures=True` when a credential is revoked mid-flight —
+        # pending submissions are dropped immediately, and running jobs
+        # see ``ActionContext.cancelled`` flip so they can unwind rather
+        # than being joined on by the default ``wait=True`` shutdown.
+        pool = ThreadPoolExecutor(max_workers=self._config.concurrency)
+        try:
             while not self._stop_event.is_set():
+                if self._auth_revoked.is_set():
+                    raise AuthRevokedError()
                 try:
                     job = self._client.claim_job(claim_req)
+                except AuthRevokedError:
+                    logger.error("claim rejected: credential revoked")
+                    self._auth_revoked.set()
+                    raise
                 except Exception as exc:
                     logger.error("claim error: %s", exc)
                     time.sleep(2)
@@ -124,6 +155,11 @@ class Worker:
                     continue
 
                 pool.submit(self._execute_job, job)
+        finally:
+            if self._auth_revoked.is_set():
+                pool.shutdown(wait=False, cancel_futures=True)
+            else:
+                pool.shutdown(wait=True)
 
         logger.info("worker %s stopped", self._config.worker_id)
 
@@ -168,18 +204,6 @@ class Worker:
             maxsize=self._config.event_queue_size
         )
         stop_events = threading.Event()
-        hb_thread = threading.Thread(
-            target=self._heartbeat_loop,
-            args=(job, stop_hb),
-            daemon=True,
-        )
-        event_thread = threading.Thread(
-            target=self._event_loop,
-            args=(job, event_queue, stop_events),
-            daemon=True,
-        )
-        hb_thread.start()
-        event_thread.start()
         ctx = ActionContext(
             job_id=job.job_id,
             run_id=job.run_id,
@@ -192,6 +216,18 @@ class Worker:
             action=job.action,
             _event_queue=event_queue,
         )
+        hb_thread = threading.Thread(
+            target=self._heartbeat_loop,
+            args=(job, stop_hb, ctx.cancelled),
+            daemon=True,
+        )
+        event_thread = threading.Thread(
+            target=self._event_loop,
+            args=(job, event_queue, stop_events),
+            daemon=True,
+        )
+        hb_thread.start()
+        event_thread.start()
 
         try:
             result = self._invoke_action(fn, ctx, dict(job.parameters or {}))
@@ -225,12 +261,20 @@ class Worker:
                 ),
             )
             log.info("job completed")
+        except AuthRevokedError:
+            log.warning("complete: credential revoked; worker will exit")
+            self._auth_revoked.set()
         except LeaseLostError:
             log.warning("lease lost during complete")
         except Exception as exc:
             log.error("failed to complete job: %s", exc)
 
-    def _heartbeat_loop(self, job: JobClaim, stop: threading.Event) -> None:
+    def _heartbeat_loop(
+        self,
+        job: JobClaim,
+        stop: threading.Event,
+        cancelled: threading.Event,
+    ) -> None:
         interval = (
             job.heartbeat_interval_seconds
             if job.heartbeat_interval_seconds
@@ -248,6 +292,15 @@ class Worker:
                     )
                     stop.set()
                     return
+            except AuthRevokedError:
+                logger.warning(
+                    "heartbeat: credential revoked for job %s; cancelling action",
+                    job.job_id,
+                )
+                self._auth_revoked.set()
+                cancelled.set()
+                stop.set()
+                return
             except LeaseLostError:
                 logger.warning(
                     "lease lost during heartbeat for job %s", job.job_id
@@ -273,6 +326,12 @@ class Worker:
                     error_message=message,
                 ),
             )
+        except AuthRevokedError:
+            logger.warning(
+                "fail: credential revoked for job %s; worker will exit",
+                job.job_id,
+            )
+            self._auth_revoked.set()
         except Exception as exc:
             logger.error(
                 "failed to report job failure for %s: %s", job.job_id, exc

@@ -22,7 +22,11 @@ func registerInteractionsCommands(app *cli.App) {
 		Args("id").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			p0 := ctx.String("project")
 			p1 := ctx.Arg(0)
 			resp, err := client.ClaimInteractionWithResponse(ctx.Context(), p0, p1)
@@ -39,7 +43,11 @@ func registerInteractionsCommands(app *cli.App) {
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			p0 := ctx.String("project")
 			var body api.CreateInteractionJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
@@ -57,7 +65,11 @@ func registerInteractionsCommands(app *cli.App) {
 		Args("id").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			p0 := ctx.String("project")
 			p1 := ctx.Arg(0)
 			resp, err := client.GetInteractionWithResponse(ctx.Context(), p0, p1)
@@ -70,17 +82,21 @@ func registerInteractionsCommands(app *cli.App) {
 	interactionsGrp.Command("list").
 		Description("List interactions").
 		Flags(
-			cli.String("status", "").Help("status"),
-			cli.String("run-id", "").Help("run-id"),
-			cli.String("target-actor-type", "").Help("target-actor-type"),
-			cli.String("target-actor-id", "").Help("target-actor-id"),
-			cli.Bool("inbox", "").Help("inbox"),
+			cli.String("status", "").Help("Filter by status"),
+			cli.String("run-id", "").Help("Filter by originating run ID"),
+			cli.String("target-actor-type", "").Help("Filter by target actor type"),
+			cli.String("target-actor-id", "").Help("Filter by target actor ID"),
+			cli.Bool("inbox", "").Help("When true, returns only interactions visible to the authenticated user (direct + group membership)"),
 			cli.String("cursor", "").Help("cursor"),
 			cli.Int("limit", "").Help("limit"),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			p0 := ctx.String("project")
 			params := &api.ListInteractionsParams{}
 			if ctx.IsSet("status") {
@@ -123,7 +139,11 @@ func registerInteractionsCommands(app *cli.App) {
 		Args("id").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			p0 := ctx.String("project")
 			p1 := ctx.Arg(0)
 			resp, err := client.ReleaseInteractionWithResponse(ctx.Context(), p0, p1)
@@ -141,7 +161,11 @@ func registerInteractionsCommands(app *cli.App) {
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			p0 := ctx.String("project")
 			p1 := ctx.Arg(0)
 			var body api.RespondToInteractionJSONRequestBody

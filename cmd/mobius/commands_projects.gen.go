@@ -24,7 +24,11 @@ func registerProjectsCommands(app *cli.App) {
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			var body api.CreateProjectJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -41,7 +45,11 @@ func registerProjectsCommands(app *cli.App) {
 		Args("id").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			p0 := ctx.Arg(0)
 			resp, err := client.DeleteProjectWithResponse(ctx.Context(), p0)
 			if err != nil {
@@ -55,7 +63,11 @@ func registerProjectsCommands(app *cli.App) {
 		Args("id").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			p0 := ctx.Arg(0)
 			resp, err := client.GetProjectWithResponse(ctx.Context(), p0)
 			if err != nil {
@@ -67,11 +79,15 @@ func registerProjectsCommands(app *cli.App) {
 	projectsGrp.Command("list").
 		Description("List projects").
 		Flags(
-			cli.String("search", "").Help("search"),
+			cli.String("search", "").Help("Prefix-match filter applied to project name and handle."),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			params := &api.ListProjectsParams{}
 			if ctx.IsSet("search") {
 				v := ctx.String("search")
@@ -92,7 +108,11 @@ func registerProjectsCommands(app *cli.App) {
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			p0 := ctx.Arg(0)
 			var body api.UpdateProjectJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {

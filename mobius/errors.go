@@ -10,6 +10,16 @@ import (
 // payload for exceeding the size limit (HTTP 413).
 var ErrPayloadTooLarge = errors.New("mobius: custom event payload too large")
 
+// ErrAuthRevoked is returned when the server rejects a worker-loop
+// request with 401. Distinct from [ErrLeaseLost] (409 — the lease was
+// reclaimed) because the remedy is operational, not workflow-level:
+// the credential has been revoked mid-execution, the process needs to
+// restart under a fresh credential, and the orphan job will be retried
+// by the scheduler after the lease expires. Bubbles up out of the
+// worker run loop with a non-zero exit code so the process supervisor
+// can restart under a rotated credential.
+var ErrAuthRevoked = errors.New("mobius: credential revoked")
+
 // ErrRateLimited is the sentinel returned for rate-limited requests (HTTP
 // 429). Rich details live on [RateLimitError]; use errors.Is to detect the
 // category and errors.As to read the fields.

@@ -9,12 +9,13 @@ from .client import (
     PayloadTooLargeError,
     RateLimitedError,
 )
-from .errors import RateLimitError
+from .errors import AuthRevokedError, RateLimitError
 from .retry import RetryingTransport
 from .worker import ActionContext, Worker, WorkerConfig
 
 __all__ = [
     "ActionContext",
+    "AuthRevokedError",
     "Client",
     "ClientOptions",
     "DEFAULT_BASE_URL",

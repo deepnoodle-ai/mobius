@@ -17,42 +17,6 @@ import (
 	"github.com/oapi-codegen/runtime"
 )
 
-// Defines values for APIKeyScope.
-const (
-	APIKeyScopeOrg    APIKeyScope = "org"
-	APIKeyScopeSystem APIKeyScope = "system"
-)
-
-// Valid indicates whether the value is a known member of the APIKeyScope enum.
-func (e APIKeyScope) Valid() bool {
-	switch e {
-	case APIKeyScopeOrg:
-		return true
-	case APIKeyScopeSystem:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for APIKeyCreateResultScope.
-const (
-	APIKeyCreateResultScopeOrg    APIKeyCreateResultScope = "org"
-	APIKeyCreateResultScopeSystem APIKeyCreateResultScope = "system"
-)
-
-// Valid indicates whether the value is a known member of the APIKeyCreateResultScope enum.
-func (e APIKeyCreateResultScope) Valid() bool {
-	switch e {
-	case APIKeyCreateResultScopeOrg:
-		return true
-	case APIKeyCreateResultScopeSystem:
-		return true
-	default:
-		return false
-	}
-}
-
 // Defines values for ActorRefType.
 const (
 	ActorRefTypeAgent  ActorRefType = "agent"
@@ -154,19 +118,19 @@ func (e AgentStatus) Valid() bool {
 
 // Defines values for AuditLogEntryAction.
 const (
-	Create AuditLogEntryAction = "create"
-	Delete AuditLogEntryAction = "delete"
-	Update AuditLogEntryAction = "update"
+	AuditLogEntryActionCreate AuditLogEntryAction = "create"
+	AuditLogEntryActionDelete AuditLogEntryAction = "delete"
+	AuditLogEntryActionUpdate AuditLogEntryAction = "update"
 )
 
 // Valid indicates whether the value is a known member of the AuditLogEntryAction enum.
 func (e AuditLogEntryAction) Valid() bool {
 	switch e {
-	case Create:
+	case AuditLogEntryActionCreate:
 		return true
-	case Delete:
+	case AuditLogEntryActionDelete:
 		return true
-	case Update:
+	case AuditLogEntryActionUpdate:
 		return true
 	default:
 		return false
@@ -250,19 +214,19 @@ func (e ChannelMessageSenderType) Valid() bool {
 
 // Defines values for ConcurrencyPolicy.
 const (
-	Allow   ConcurrencyPolicy = "allow"
-	Forbid  ConcurrencyPolicy = "forbid"
-	Replace ConcurrencyPolicy = "replace"
+	ConcurrencyPolicyAllow   ConcurrencyPolicy = "allow"
+	ConcurrencyPolicyForbid  ConcurrencyPolicy = "forbid"
+	ConcurrencyPolicyReplace ConcurrencyPolicy = "replace"
 )
 
 // Valid indicates whether the value is a known member of the ConcurrencyPolicy enum.
 func (e ConcurrencyPolicy) Valid() bool {
 	switch e {
-	case Allow:
+	case ConcurrencyPolicyAllow:
 		return true
-	case Forbid:
+	case ConcurrencyPolicyForbid:
 		return true
-	case Replace:
+	case ConcurrencyPolicyReplace:
 		return true
 	default:
 		return false
@@ -305,57 +269,6 @@ func (e CreateGroupRequestRoutingPolicy) Valid() bool {
 	}
 }
 
-// Defines values for CreateOrgOrSystemAPIKeyRequestScope.
-const (
-	CreateOrgOrSystemAPIKeyRequestScopeOrg    CreateOrgOrSystemAPIKeyRequestScope = "org"
-	CreateOrgOrSystemAPIKeyRequestScopeSystem CreateOrgOrSystemAPIKeyRequestScope = "system"
-)
-
-// Valid indicates whether the value is a known member of the CreateOrgOrSystemAPIKeyRequestScope enum.
-func (e CreateOrgOrSystemAPIKeyRequestScope) Valid() bool {
-	switch e {
-	case CreateOrgOrSystemAPIKeyRequestScopeOrg:
-		return true
-	case CreateOrgOrSystemAPIKeyRequestScopeSystem:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for CreateProjectPinnedAPIKeyRequestScope.
-const (
-	CreateProjectPinnedAPIKeyRequestScopeOrg CreateProjectPinnedAPIKeyRequestScope = "org"
-)
-
-// Valid indicates whether the value is a known member of the CreateProjectPinnedAPIKeyRequestScope enum.
-func (e CreateProjectPinnedAPIKeyRequestScope) Valid() bool {
-	switch e {
-	case CreateProjectPinnedAPIKeyRequestScopeOrg:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for CreateRoleAssignmentRequestActorType.
-const (
-	CreateRoleAssignmentRequestActorTypeServiceAccount CreateRoleAssignmentRequestActorType = "service_account"
-	CreateRoleAssignmentRequestActorTypeUser           CreateRoleAssignmentRequestActorType = "user"
-)
-
-// Valid indicates whether the value is a known member of the CreateRoleAssignmentRequestActorType enum.
-func (e CreateRoleAssignmentRequestActorType) Valid() bool {
-	switch e {
-	case CreateRoleAssignmentRequestActorTypeServiceAccount:
-		return true
-	case CreateRoleAssignmentRequestActorTypeUser:
-		return true
-	default:
-		return false
-	}
-}
-
 // Defines values for GroupRoutingPolicy.
 const (
 	GroupRoutingPolicyAllMembers     GroupRoutingPolicy = "all_members"
@@ -386,27 +299,6 @@ func (e GroupWithCountRoutingPolicy) Valid() bool {
 	case GroupWithCountRoutingPolicyAllMembers:
 		return true
 	case GroupWithCountRoutingPolicyFirstResponder:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for IntegrationStatus.
-const (
-	IntegrationStatusActive   IntegrationStatus = "active"
-	IntegrationStatusExpired  IntegrationStatus = "expired"
-	IntegrationStatusInactive IntegrationStatus = "inactive"
-)
-
-// Valid indicates whether the value is a known member of the IntegrationStatus enum.
-func (e IntegrationStatus) Valid() bool {
-	switch e {
-	case IntegrationStatusActive:
-		return true
-	case IntegrationStatusExpired:
-		return true
-	case IntegrationStatusInactive:
 		return true
 	default:
 		return false
@@ -515,24 +407,6 @@ func (e JobCompleteRequestStatus) Valid() bool {
 	}
 }
 
-// Defines values for RoleAssignmentActorType.
-const (
-	RoleAssignmentActorTypeServiceAccount RoleAssignmentActorType = "service_account"
-	RoleAssignmentActorTypeUser           RoleAssignmentActorType = "user"
-)
-
-// Valid indicates whether the value is a known member of the RoleAssignmentActorType enum.
-func (e RoleAssignmentActorType) Valid() bool {
-	switch e {
-	case RoleAssignmentActorTypeServiceAccount:
-		return true
-	case RoleAssignmentActorTypeUser:
-		return true
-	default:
-		return false
-	}
-}
-
 // Defines values for SendChannelMessageRequestDisplay.
 const (
 	SendChannelMessageRequestDisplayCard    SendChannelMessageRequestDisplay = "card"
@@ -583,15 +457,18 @@ func (e ToolRunStatus) Valid() bool {
 
 // Defines values for TriggerFireStatus.
 const (
-	TriggerFireStatusFailed  TriggerFireStatus = "failed"
-	TriggerFireStatusSkipped TriggerFireStatus = "skipped"
-	TriggerFireStatusSuccess TriggerFireStatus = "success"
+	TriggerFireStatusFailed         TriggerFireStatus = "failed"
+	TriggerFireStatusPartialFailure TriggerFireStatus = "partial_failure"
+	TriggerFireStatusSkipped        TriggerFireStatus = "skipped"
+	TriggerFireStatusSuccess        TriggerFireStatus = "success"
 )
 
 // Valid indicates whether the value is a known member of the TriggerFireStatus enum.
 func (e TriggerFireStatus) Valid() bool {
 	switch e {
 	case TriggerFireStatusFailed:
+		return true
+	case TriggerFireStatusPartialFailure:
 		return true
 	case TriggerFireStatusSkipped:
 		return true
@@ -625,16 +502,16 @@ func (e TriggerKind) Valid() bool {
 
 // Defines values for UpdateGroupRequestRoutingPolicy.
 const (
-	AllMembers     UpdateGroupRequestRoutingPolicy = "all_members"
-	FirstResponder UpdateGroupRequestRoutingPolicy = "first_responder"
+	UpdateGroupRequestRoutingPolicyAllMembers     UpdateGroupRequestRoutingPolicy = "all_members"
+	UpdateGroupRequestRoutingPolicyFirstResponder UpdateGroupRequestRoutingPolicy = "first_responder"
 )
 
 // Valid indicates whether the value is a known member of the UpdateGroupRequestRoutingPolicy enum.
 func (e UpdateGroupRequestRoutingPolicy) Valid() bool {
 	switch e {
-	case AllMembers:
+	case UpdateGroupRequestRoutingPolicyAllMembers:
 		return true
-	case FirstResponder:
+	case UpdateGroupRequestRoutingPolicyFirstResponder:
 		return true
 	default:
 		return false
@@ -685,16 +562,16 @@ func (e WorkflowActionKind) Valid() bool {
 
 // Defines values for WorkflowEdgeMatchingStrategy.
 const (
-	All   WorkflowEdgeMatchingStrategy = "all"
-	First WorkflowEdgeMatchingStrategy = "first"
+	WorkflowEdgeMatchingStrategyAll   WorkflowEdgeMatchingStrategy = "all"
+	WorkflowEdgeMatchingStrategyFirst WorkflowEdgeMatchingStrategy = "first"
 )
 
 // Valid indicates whether the value is a known member of the WorkflowEdgeMatchingStrategy enum.
 func (e WorkflowEdgeMatchingStrategy) Valid() bool {
 	switch e {
-	case All:
+	case WorkflowEdgeMatchingStrategyAll:
 		return true
-	case First:
+	case WorkflowEdgeMatchingStrategyFirst:
 		return true
 	default:
 		return false
@@ -766,16 +643,16 @@ func (e WorkflowInteractionTargetType) Valid() bool {
 
 // Defines values for WorkflowRetryJitterStrategy.
 const (
-	FULL WorkflowRetryJitterStrategy = "FULL"
-	NONE WorkflowRetryJitterStrategy = "NONE"
+	WorkflowRetryJitterStrategyFULL WorkflowRetryJitterStrategy = "FULL"
+	WorkflowRetryJitterStrategyNONE WorkflowRetryJitterStrategy = "NONE"
 )
 
 // Valid indicates whether the value is a known member of the WorkflowRetryJitterStrategy enum.
 func (e WorkflowRetryJitterStrategy) Valid() bool {
 	switch e {
-	case FULL:
+	case WorkflowRetryJitterStrategyFULL:
 		return true
-	case NONE:
+	case WorkflowRetryJitterStrategyNONE:
 		return true
 	default:
 		return false
@@ -829,19 +706,19 @@ func (e ListChannelsParamsKind) Valid() bool {
 
 // Defines values for ListInteractionsParamsStatus.
 const (
-	Completed ListInteractionsParamsStatus = "completed"
-	Expired   ListInteractionsParamsStatus = "expired"
-	Pending   ListInteractionsParamsStatus = "pending"
+	ListInteractionsParamsStatusCompleted ListInteractionsParamsStatus = "completed"
+	ListInteractionsParamsStatusExpired   ListInteractionsParamsStatus = "expired"
+	ListInteractionsParamsStatusPending   ListInteractionsParamsStatus = "pending"
 )
 
 // Valid indicates whether the value is a known member of the ListInteractionsParamsStatus enum.
 func (e ListInteractionsParamsStatus) Valid() bool {
 	switch e {
-	case Completed:
+	case ListInteractionsParamsStatusCompleted:
 		return true
-	case Expired:
+	case ListInteractionsParamsStatusExpired:
 		return true
-	case Pending:
+	case ListInteractionsParamsStatusPending:
 		return true
 	default:
 		return false
@@ -868,114 +745,6 @@ func (e ListInteractionsParamsTargetActorType) Valid() bool {
 		return false
 	}
 }
-
-// Defines values for ListRoleAssignmentsParamsActorType.
-const (
-	ServiceAccount ListRoleAssignmentsParamsActorType = "service_account"
-	User           ListRoleAssignmentsParamsActorType = "user"
-)
-
-// Valid indicates whether the value is a known member of the ListRoleAssignmentsParamsActorType enum.
-func (e ListRoleAssignmentsParamsActorType) Valid() bool {
-	switch e {
-	case ServiceAccount:
-		return true
-	case User:
-		return true
-	default:
-		return false
-	}
-}
-
-// APIKey defines model for APIKey.
-type APIKey struct {
-	// CreatedAt Timestamp when this key was created.
-	CreatedAt time.Time `json:"created_at"`
-
-	// ExpiresAt Hard expiry timestamp. Requests using an expired key receive 401.
-	ExpiresAt *time.Time `json:"expires_at,omitempty"`
-
-	// Id Unique identifier for this API key.
-	Id string `json:"id"`
-
-	// KeyPrefix First 8 characters of the key, used to identify it without exposing the secret.
-	KeyPrefix string `json:"key_prefix"`
-
-	// LastUsedAt Timestamp of the most recent authenticated request using this key.
-	LastUsedAt *time.Time `json:"last_used_at,omitempty"`
-
-	// Name Human-readable label, unique within the org (or org+project for project-pinned keys).
-	Name string `json:"name"`
-
-	// Permissions Explicit permission set granted to this key (e.g. "mobius.job.claim").
-	Permissions *[]string `json:"permissions,omitempty"`
-
-	// ProjectId Set for project-pinned keys; omitted for org-scoped keys.
-	ProjectId *APIKeyProjectID `json:"project_id,omitempty"`
-
-	// Scope `org` is the standard API key scope; `system` is reserved for platform-level access. Project-pinned versus org-level behavior is determined by `project_id`.
-	Scope APIKeyScope `json:"scope"`
-
-	// ServiceAccountId Optional service account for attribution and quota tracking.
-	ServiceAccountId *string `json:"service_account_id,omitempty"`
-
-	// UpdatedAt Timestamp when this key was last updated.
-	UpdatedAt time.Time `json:"updated_at"`
-}
-
-// APIKeyScope `org` is the standard API key scope; `system` is reserved for platform-level access. Project-pinned versus org-level behavior is determined by `project_id`.
-type APIKeyScope string
-
-// APIKeyCreateResult Returned only on key creation. Contains the raw `key` value which is not retrievable after this response.
-type APIKeyCreateResult struct {
-	// CreatedAt Timestamp when this key was created.
-	CreatedAt time.Time `json:"created_at"`
-
-	// ExpiresAt Timestamp when this key expires. Null if it does not expire.
-	ExpiresAt *time.Time `json:"expires_at,omitempty"`
-
-	// Id Unique identifier for the created API key.
-	Id string `json:"id"`
-
-	// Key The raw API key. Returned only once at creation — store it securely immediately.
-	Key string `json:"key"`
-
-	// KeyPrefix First 8 characters of the key for identification.
-	KeyPrefix string `json:"key_prefix"`
-
-	// LastUsedAt Timestamp of the most recent authenticated request using this key.
-	LastUsedAt *time.Time `json:"last_used_at,omitempty"`
-
-	// Name Human-readable name for the key.
-	Name string `json:"name"`
-
-	// Permissions List of permissions granted to this key.
-	Permissions *[]string `json:"permissions,omitempty"`
-
-	// ProjectId Set for project-pinned keys; omitted for org-scoped keys.
-	ProjectId *APIKeyProjectID `json:"project_id,omitempty"`
-
-	// Scope Scope of the key. `org` is the standard API key scope, and `system` is reserved for platform-only keys. Project-pinned versus org-level behavior is determined by `project_id`.
-	Scope APIKeyCreateResultScope `json:"scope"`
-
-	// ServiceAccountId ID of the service account this key belongs to.
-	ServiceAccountId *string `json:"service_account_id,omitempty"`
-
-	// UpdatedAt Timestamp when this key was last updated.
-	UpdatedAt time.Time `json:"updated_at"`
-}
-
-// APIKeyCreateResultScope Scope of the key. `org` is the standard API key scope, and `system` is reserved for platform-only keys. Project-pinned versus org-level behavior is determined by `project_id`.
-type APIKeyCreateResultScope string
-
-// APIKeyListResponse defines model for APIKeyListResponse.
-type APIKeyListResponse struct {
-	// Items The list of results for this page.
-	Items []APIKey `json:"items"`
-}
-
-// APIKeyProjectID Project ID.
-type APIKeyProjectID = ProjectID
 
 // Action defines model for Action.
 type Action struct {
@@ -1077,7 +846,7 @@ type ActionAuditLogListResponse struct {
 	HasMore bool `json:"has_more"`
 
 	// Items The list of results for this page.
-	Items *[]ActionAuditLogEntry `json:"items,omitempty"`
+	Items []ActionAuditLogEntry `json:"items"`
 
 	// NextCursor Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.
 	NextCursor *string `json:"next_cursor,omitempty"`
@@ -1131,7 +900,7 @@ type ActionListResponse struct {
 	HasMore bool `json:"has_more"`
 
 	// Items The list of results for this page.
-	Items *[]Action `json:"items,omitempty"`
+	Items []Action `json:"items"`
 
 	// NextCursor Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.
 	NextCursor *string `json:"next_cursor,omitempty"`
@@ -1217,16 +986,13 @@ type Agent struct {
 	// Description Optional human-readable description.
 	Description *string `json:"description,omitempty"`
 
-	// DisplayName Human-readable label shown in the UI.
-	DisplayName string `json:"display_name"`
-
 	// Id Unique identifier for this agent.
 	Id string `json:"id"`
 
 	// Kind Freeform agent classification for tooling and filtering (e.g. "llm", "rpa").
 	Kind *string `json:"kind,omitempty"`
 
-	// Name Unique name within the project, used for targeting in job claims.
+	// Name Mutable unique name within the project. Use `id` for stable references and job targeting.
 	Name string `json:"name"`
 
 	// Presence Computed from the most recent 20 sessions. `online` means a connected
@@ -1234,7 +1000,7 @@ type Agent struct {
 	// `offline` means no connected sessions.
 	Presence AgentPresence `json:"presence"`
 
-	// ServiceAccountId The service account whose credentials this agent uses to authenticate. Immutable after creation.
+	// ServiceAccountId The service account whose credentials this agent uses to authenticate. Can be changed via PATCH.
 	ServiceAccountId string `json:"service_account_id"`
 
 	// Status Administrative status. Inactive agents cannot claim new jobs.
@@ -1306,6 +1072,9 @@ type AuditLogEntry struct {
 	// ActorId Durable actor ID that performed the action
 	ActorId *string `json:"actor_id,omitempty"`
 
+	// ActorName Display name of the actor (email for users, service account name for service accounts)
+	ActorName *string `json:"actor_name,omitempty"`
+
 	// ActorType Durable actor type that performed the action
 	ActorType *string `json:"actor_type,omitempty"`
 
@@ -1352,25 +1121,10 @@ type AuditLogListResponse struct {
 	HasMore bool `json:"has_more"`
 
 	// Items The list of results for this page.
-	Items *[]AuditLogEntry `json:"items,omitempty"`
+	Items []AuditLogEntry `json:"items"`
 
 	// NextCursor Cursor for fetching next page of results
 	NextCursor *string `json:"next_cursor,omitempty"`
-}
-
-// BulkRunRequest defines model for BulkRunRequest.
-type BulkRunRequest struct {
-	// RunIds IDs of the runs to operate on.
-	RunIds []string `json:"run_ids"`
-}
-
-// BulkRunResult defines model for BulkRunResult.
-type BulkRunResult struct {
-	// Failures Map of run_id -> error message for per-run failures.
-	Failures *map[string]string `json:"failures,omitempty"`
-
-	// Succeeded IDs of runs that were successfully processed.
-	Succeeded []string `json:"succeeded"`
 }
 
 // Channel defines model for Channel.
@@ -1545,26 +1299,6 @@ type ChannelMessageSenderType string
 // - `replace` — cancel the active run before starting a new one.
 type ConcurrencyPolicy string
 
-// CopyIntegrationRequest defines model for CopyIntegrationRequest.
-type CopyIntegrationRequest struct {
-	// Name Name for the copied integration in the destination project.
-	// Defaults to the source integration's name. Required if the
-	// source name conflicts with an existing `(provider, name)` in
-	// this project.
-	Name *string `json:"name,omitempty"`
-
-	// SourceIntegrationId ID of the integration to copy from the source project.
-	SourceIntegrationId string `json:"source_integration_id"`
-
-	// SourceProjectId ID of the source project. Must be in the same org.
-	SourceProjectId string `json:"source_project_id"`
-}
-
-// CreateAPIKeyRequest defines model for CreateAPIKeyRequest.
-type CreateAPIKeyRequest struct {
-	union json.RawMessage
-}
-
 // CreateActionRequest defines model for CreateActionRequest.
 type CreateActionRequest struct {
 	// Annotations Hints that describe the safe-use properties of the action. Used by the
@@ -1603,16 +1337,13 @@ type CreateAgentRequest struct {
 	// Description Optional human-readable description.
 	Description *string `json:"description,omitempty"`
 
-	// DisplayName Human-readable label shown in the UI.
-	DisplayName *string `json:"display_name,omitempty"`
-
 	// Kind Freeform classification (e.g. "llm", "rpa", "integration").
 	Kind *string `json:"kind,omitempty"`
 
-	// Name Project-scoped unique identifier for this agent.
+	// Name Project-scoped unique name for this agent. Must match pattern and be 1-63 characters.
 	Name string `json:"name"`
 
-	// ServiceAccountId Service account that backs this agent. Must belong to the same org.
+	// ServiceAccountId Service account that backs this agent. Must be active and belong to the same project.
 	ServiceAccountId string `json:"service_account_id"`
 }
 
@@ -1670,21 +1401,6 @@ type CreateGroupRequest struct {
 // CreateGroupRequestRoutingPolicy How responses are collected from group members. Defaults to `first_responder`.
 type CreateGroupRequestRoutingPolicy string
 
-// CreateIntegrationRequest defines model for CreateIntegrationRequest.
-type CreateIntegrationRequest struct {
-	// Config Non-sensitive provider-specific settings (e.g. default bucket, from address).
-	Config *map[string]interface{} `json:"config,omitempty"`
-
-	// Credentials Sensitive credentials (API keys, tokens, secrets). Stored encrypted and never returned in API responses.
-	Credentials *map[string]interface{} `json:"credentials,omitempty"`
-
-	// Name Human-readable name. Must be unique per `(project, provider)` tuple.
-	Name string `json:"name"`
-
-	// Provider Provider identifier string (e.g. `openai`, `github`). Immutable after creation.
-	Provider string `json:"provider"`
-}
-
 // CreateInteractionRequest Creates an interaction directly. When `run_id` is provided,
 // `signal_name` is also required and the interaction is linked to that
 // run. When both are omitted, the interaction is standalone and
@@ -1704,12 +1420,13 @@ type CreateInteractionRequest struct {
 	// RequireAll When target_actor.type is "group", setting require_all=true
 	// means all snapshotted group members must respond before the
 	// interaction is considered complete. Ignored for non-group targets.
+	// Defaults to false when omitted.
 	RequireAll *bool `json:"require_all,omitempty"`
 
-	// RunId ID of the workflow run to resume when this interaction is completed. Provide together with `signal_name` for run-backed interactions; omit or null both fields for standalone interactions.
+	// RunId ID of the workflow run to resume when this interaction is completed.
 	RunId *string `json:"run_id,omitempty"`
 
-	// SignalName Signal name the interaction will complete against when run-backed. Provide together with `run_id` for run-backed interactions; omit or null both fields for standalone interactions.
+	// SignalName Signal name the interaction will complete against when run-backed.
 	SignalName *string `json:"signal_name,omitempty"`
 
 	// Spec Declarative dialog contract for rendering and validating an interaction.
@@ -1739,6 +1456,7 @@ type CreateJobInteractionRequest struct {
 	// RequireAll When target_actor.type is "group", setting require_all=true
 	// means all snapshotted group members must respond before the
 	// interaction is considered complete. Ignored for non-group targets.
+	// Defaults to false when omitted.
 	RequireAll *bool `json:"require_all,omitempty"`
 
 	// SignalName Optional signal name override. When omitted, the server derives
@@ -1765,55 +1483,6 @@ type CreateJobInteractionRequest struct {
 	Type    InteractionType `json:"type"`
 }
 
-// CreateOrgOrSystemAPIKeyRequest defines model for CreateOrgOrSystemAPIKeyRequest.
-type CreateOrgOrSystemAPIKeyRequest struct {
-	// ExpiresAt Optional hard expiry. Omit for a non-expiring key.
-	ExpiresAt *time.Time `json:"expires_at,omitempty"`
-
-	// Name Human-readable label, unique within the org (or project for project-pinned keys).
-	Name string `json:"name"`
-
-	// Permissions Permissions to grant. Each permission must be held by the creating
-	// caller — you cannot grant more than you have.
-	Permissions *[]string `json:"permissions,omitempty"`
-
-	// Scope Standard API key scope. Project-pinned versus org-level behavior is determined separately by `project_id`.
-	Scope *CreateOrgOrSystemAPIKeyRequestScope `json:"scope,omitempty"`
-
-	// ServiceAccountId Associate this key with a service account for attribution.
-	ServiceAccountId *string `json:"service_account_id,omitempty"`
-}
-
-// CreateOrgOrSystemAPIKeyRequestScope Standard API key scope. Project-pinned versus org-level behavior is determined separately by `project_id`.
-type CreateOrgOrSystemAPIKeyRequestScope string
-
-// CreateProjectPinnedAPIKeyRequest defines model for CreateProjectPinnedAPIKeyRequest.
-type CreateProjectPinnedAPIKeyRequest struct {
-	// ExpiresAt Optional hard expiry. Omit for a non-expiring key.
-	ExpiresAt *time.Time `json:"expires_at,omitempty"`
-
-	// Name Human-readable label, unique within the org (or project for project-pinned keys).
-	Name string `json:"name"`
-
-	// Permissions Permissions to grant. Each permission must be held by the creating
-	// caller — you cannot grant more than you have.
-	Permissions *[]string `json:"permissions,omitempty"`
-
-	// ProjectId Set `project_id` to pin this key to exactly one project. When
-	// `project_id` is omitted, the request creates an org-level key
-	// instead.
-	ProjectId ProjectID `json:"project_id"`
-
-	// Scope Standard API key scope for project-pinned keys.
-	Scope *CreateProjectPinnedAPIKeyRequestScope `json:"scope,omitempty"`
-
-	// ServiceAccountId Associate this key with a service account for attribution.
-	ServiceAccountId *string `json:"service_account_id,omitempty"`
-}
-
-// CreateProjectPinnedAPIKeyRequestScope Standard API key scope for project-pinned keys.
-type CreateProjectPinnedAPIKeyRequestScope string
-
 // CreateProjectRequest defines model for CreateProjectRequest.
 type CreateProjectRequest struct {
 	// Description Optional human-readable description.
@@ -1827,42 +1496,6 @@ type CreateProjectRequest struct {
 	Name string `json:"name"`
 }
 
-// CreateRoleAssignmentRequest defines model for CreateRoleAssignmentRequest.
-type CreateRoleAssignmentRequest struct {
-	// ActorId User ID or service account ID to assign the role to.
-	ActorId string `json:"actor_id"`
-
-	// ActorType Type of actor to assign the role to: `user` or `service_account`.
-	ActorType CreateRoleAssignmentRequestActorType `json:"actor_type"`
-
-	// ProjectId Scope this assignment to a project. Omit for org-wide assignment.
-	ProjectId *string `json:"project_id,omitempty"`
-
-	// RoleId Mutually exclusive with `role_name`.
-	RoleId *string `json:"role_id,omitempty"`
-
-	// RoleName Resolved to a role ID server-side. Mutually exclusive with `role_id`.
-	RoleName *string `json:"role_name,omitempty"`
-}
-
-// CreateRoleAssignmentRequestActorType Type of actor to assign the role to: `user` or `service_account`.
-type CreateRoleAssignmentRequestActorType string
-
-// CreateRoleRequest defines model for CreateRoleRequest.
-type CreateRoleRequest struct {
-	// Description Optional human-readable description of what this role grants.
-	Description *string `json:"description,omitempty"`
-
-	// Name Unique name within the org+project scope.
-	Name string `json:"name"`
-
-	// Permissions Permission strings to include (e.g. "mobius.workflow.create").
-	Permissions []string `json:"permissions"`
-
-	// ProjectId Scope the role to a project. Omit for an org-wide role.
-	ProjectId *string `json:"project_id,omitempty"`
-}
-
 // CreateTriggerRequest defines model for CreateTriggerRequest.
 type CreateTriggerRequest struct {
 	// ConcurrencyPolicy Controls overlapping runs from the same trigger:
@@ -1871,7 +1504,7 @@ type CreateTriggerRequest struct {
 	// - `replace` — cancel the active run before starting a new one.
 	ConcurrencyPolicy *ConcurrencyPolicy `json:"concurrency_policy,omitempty"`
 
-	// Enabled Whether the trigger starts enabled. Defaults to true.
+	// Enabled Whether the trigger starts enabled. Defaults to true when omitted.
 	Enabled *bool `json:"enabled,omitempty"`
 
 	// FilterConfig Additional payload filters evaluated before targets.
@@ -1888,8 +1521,8 @@ type CreateTriggerRequest struct {
 	// filter expressions.
 	SourceConfig *map[string]interface{} `json:"source_config,omitempty"`
 
-	// Targets Workflows to start when this trigger fires.
-	Targets *[]TriggerTarget `json:"targets,omitempty"`
+	// Targets Workflows to start when this trigger fires (inline convenience; stored as sub-resources).
+	Targets *[]CreateTriggerTargetRequest `json:"targets,omitempty"`
 
 	// WebhookHandle URL-safe handle that determines the inbound receive URL. Auto-derived
 	// from `name` for `webhook` triggers when omitted. Must be unique
@@ -1902,9 +1535,24 @@ type CreateTriggerRequest struct {
 	WebhookSecret *string `json:"webhook_secret,omitempty"`
 }
 
+// CreateTriggerTargetRequest Parameters for attaching a workflow target to a trigger.
+type CreateTriggerTargetRequest struct {
+	// Condition Expression evaluated against the event payload. Omit to always run.
+	Condition *string `json:"condition,omitempty"`
+
+	// Enabled Whether this target starts enabled. Defaults to true when omitted.
+	Enabled *bool `json:"enabled,omitempty"`
+
+	// InputMapping Maps workflow input names to JSONPath expressions.
+	InputMapping *map[string]string `json:"input_mapping,omitempty"`
+
+	// WorkflowId ID of the workflow definition to run.
+	WorkflowId string `json:"workflow_id"`
+}
+
 // CreateWebhookRequest defines model for CreateWebhookRequest.
 type CreateWebhookRequest struct {
-	// Enabled Whether the webhook starts enabled. Defaults to true.
+	// Enabled Whether the webhook starts enabled. Defaults to true when omitted.
 	Enabled *bool `json:"enabled,omitempty"`
 
 	// Events Event types to subscribe to. Use wildcards for broad
@@ -1919,8 +1567,11 @@ type CreateWebhookRequest struct {
 	// in the request headers.
 	Secret *string `json:"secret,omitempty"`
 
-	// Url The endpoint Mobius will POST event payloads to.
-	Url string `json:"url"`
+	// Url The endpoint Mobius will POST event payloads to. May be left empty
+	// at creation time so a candidate URL can be tested via the ping
+	// endpoint before it is saved; events do not fire for webhooks with
+	// an empty URL.
+	Url *string `json:"url,omitempty"`
 }
 
 // CreateWorkflowRequest defines model for CreateWorkflowRequest.
@@ -2070,54 +1721,6 @@ type GroupWithCountListResponse struct {
 	// NextCursor Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.
 	NextCursor *string `json:"next_cursor,omitempty"`
 }
-
-// Integration defines model for Integration.
-type Integration struct {
-	// Config Provider-specific credential and configuration blob stored as
-	// JSON. The shape is provider-defined.
-	Config *map[string]interface{} `json:"config,omitempty"`
-
-	// CreatedAt Timestamp when this integration was created.
-	CreatedAt time.Time `json:"created_at"`
-
-	// CreatedBy User ID of the org member who created this integration.
-	CreatedBy *string `json:"created_by,omitempty"`
-
-	// Id Unique identifier for this integration.
-	Id string `json:"id"`
-
-	// Name Human-readable name, unique per `(project, provider)` tuple.
-	Name string `json:"name"`
-
-	// Provider Free-form provider identifier (e.g. `openai`, `slack`, `github`).
-	// Immutable after creation.
-	Provider string `json:"provider"`
-
-	// Status `active` — integration is enabled and usable by workflows.
-	// `inactive` — manually disabled; no automatic expiry behavior.
-	// `expired` — token/credential has expired (e.g., OAuth token not refreshed).
-	Status IntegrationStatus `json:"status"`
-
-	// UpdatedAt Timestamp when this integration was last updated.
-	UpdatedAt time.Time `json:"updated_at"`
-}
-
-// IntegrationListResponse defines model for IntegrationListResponse.
-type IntegrationListResponse struct {
-	// HasMore Whether additional pages are available.
-	HasMore bool `json:"has_more"`
-
-	// Items The list of results for this page.
-	Items *[]Integration `json:"items,omitempty"`
-
-	// NextCursor Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.
-	NextCursor *string `json:"next_cursor,omitempty"`
-}
-
-// IntegrationStatus `active` — integration is enabled and usable by workflows.
-// `inactive` — manually disabled; no automatic expiry behavior.
-// `expired` — token/credential has expired (e.g., OAuth token not refreshed).
-type IntegrationStatus string
 
 // Interaction defines model for Interaction.
 type Interaction struct {
@@ -2394,7 +1997,7 @@ type JobClaim struct {
 	// RunId Parent workflow run ID.
 	RunId string `json:"run_id"`
 
-	// StepName Step name from the workflow spec — used for UI and interaction topic derivation.
+	// StepName Step label from the workflow spec — used for UI and interaction signal name derivation.
 	StepName string `json:"step_name"`
 
 	// WorkflowName Handle of the workflow definition that owns this run.
@@ -2525,6 +2128,30 @@ type JobListResponse struct {
 // Metadata defines model for Metadata.
 type Metadata map[string]interface{}
 
+// PingWebhookRequest defines model for PingWebhookRequest.
+type PingWebhookRequest struct {
+	// Url URL to test. When supplied, the ping is sent to this URL instead
+	// of the webhook's saved URL — use this to validate a candidate URL
+	// before saving it. When omitted, the webhook's current saved URL
+	// is used.
+	Url *string `json:"url,omitempty"`
+}
+
+// PingWebhookResult defines model for PingWebhookResult.
+type PingWebhookResult struct {
+	// Error Error message if the request could not be completed.
+	Error *string `json:"error,omitempty"`
+
+	// LatencyMs Round-trip latency in milliseconds.
+	LatencyMs *int `json:"latency_ms,omitempty"`
+
+	// StatusCode HTTP status code returned by the target. Absent on network error.
+	StatusCode *int `json:"status_code,omitempty"`
+
+	// Success True if the target responded with a 2xx status code.
+	Success bool `json:"success"`
+}
+
 // Project defines model for Project.
 type Project struct {
 	// CreatedAt Timestamp when this project was created.
@@ -2549,9 +2176,6 @@ type Project struct {
 	// UpdatedAt Timestamp when this project was last updated.
 	UpdatedAt time.Time `json:"updated_at"`
 }
-
-// ProjectID Project ID.
-type ProjectID = string
 
 // ProjectListResponse defines model for ProjectListResponse.
 type ProjectListResponse struct {
@@ -2610,78 +2234,6 @@ type RespondToInteractionRequest struct {
 
 	// Value Free-form JSON payload supplied by the responder.
 	Value *InteractionValue `json:"value,omitempty"`
-}
-
-// Role defines model for Role.
-type Role struct {
-	// CreatedAt Timestamp when this role was created.
-	CreatedAt time.Time `json:"created_at"`
-
-	// Description Optional human-readable description of what this role grants.
-	Description string `json:"description"`
-
-	// Id Unique identifier for this role.
-	Id string `json:"id"`
-
-	// Name Human-readable role name, unique within org+project scope.
-	Name string `json:"name"`
-
-	// Permissions Permission strings granted by this role (e.g. "mobius.job.claim").
-	Permissions []string `json:"permissions"`
-
-	// ProjectId Scoping project. Empty for org-wide roles.
-	ProjectId *string `json:"project_id,omitempty"`
-
-	// SystemDefined True for built-in platform roles that cannot be modified or deleted.
-	SystemDefined bool `json:"system_defined"`
-
-	// UpdatedAt Timestamp when this role was last updated.
-	UpdatedAt time.Time `json:"updated_at"`
-}
-
-// RoleAssignment defines model for RoleAssignment.
-type RoleAssignment struct {
-	// ActorId User ID or service account ID receiving the role.
-	ActorId string `json:"actor_id"`
-
-	// ActorType Type of actor this assignment applies to: `user` or `service_account`.
-	ActorType RoleAssignmentActorType `json:"actor_type"`
-
-	// CreatedAt Timestamp when this assignment was created.
-	CreatedAt time.Time `json:"created_at"`
-
-	// GrantedByActorId Actor ID of the caller who created this assignment.
-	GrantedByActorId *string `json:"granted_by_actor_id,omitempty"`
-
-	// GrantedByActorType Actor type of the caller who created this assignment.
-	GrantedByActorType *string `json:"granted_by_actor_type,omitempty"`
-
-	// Id Unique identifier for this role assignment.
-	Id string `json:"id"`
-
-	// ProjectId Set for project-scoped assignments; empty for org-wide.
-	ProjectId *string `json:"project_id,omitempty"`
-
-	// RoleId ID of the assigned role.
-	RoleId string `json:"role_id"`
-
-	// RoleName Name of the assigned role.
-	RoleName string `json:"role_name"`
-}
-
-// RoleAssignmentActorType Type of actor this assignment applies to: `user` or `service_account`.
-type RoleAssignmentActorType string
-
-// RoleAssignmentListResponse defines model for RoleAssignmentListResponse.
-type RoleAssignmentListResponse struct {
-	// Items The list of results for this page.
-	Items []RoleAssignment `json:"items"`
-}
-
-// RoleListResponse defines model for RoleListResponse.
-type RoleListResponse struct {
-	// Items The list of results for this page.
-	Items []Role `json:"items"`
 }
 
 // RotateSecretResult defines model for RotateSecretResult.
@@ -2901,7 +2453,7 @@ type Trigger struct {
 	// For `webhook` and `event`: contains event type filters.
 	SourceConfig *map[string]interface{} `json:"source_config,omitempty"`
 
-	// Targets Workflows to start when this trigger fires.
+	// Targets Targets attached to this trigger, populated via join.
 	Targets *[]TriggerTarget `json:"targets,omitempty"`
 
 	// UpdatedAt Timestamp when this trigger was last updated.
@@ -2928,14 +2480,18 @@ type TriggerFire struct {
 	// Id Unique identifier for this fire record.
 	Id string `json:"id"`
 
-	// RunId Workflow run created by this fire. Absent when status is `skipped` or `failed` before run creation.
-	RunId *string `json:"run_id,omitempty"`
-
 	// ScheduledAt When the trigger was scheduled to fire (schedule triggers only).
 	ScheduledAt *time.Time `json:"scheduled_at,omitempty"`
 
-	// Status `skipped` means the fire was suppressed by the concurrency policy or a target condition evaluated to false.
+	// Status Outcome of a trigger activation:
+	// - `success` — all enabled targets started their runs (or no targets configured).
+	// - `partial_failure` — at least one target failed while others succeeded.
+	// - `failed` — all targets failed, or a trigger-level error prevented any target.
+	// - `skipped` — the concurrency policy suppressed the entire activation.
 	Status TriggerFireStatus `json:"status"`
+
+	// TargetResults Per-target outcomes for this activation.
+	TargetResults *[]TriggerFireTargetResult `json:"target_results,omitempty"`
 
 	// TriggerId ID of the trigger that fired.
 	TriggerId string `json:"trigger_id"`
@@ -2947,14 +2503,40 @@ type TriggerFireListResponse struct {
 	HasMore bool `json:"has_more"`
 
 	// Items The list of results for this page.
-	Items *[]TriggerFire `json:"items,omitempty"`
+	Items []TriggerFire `json:"items"`
 
 	// NextCursor Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.
 	NextCursor *string `json:"next_cursor,omitempty"`
 }
 
-// TriggerFireStatus `skipped` means the fire was suppressed by the concurrency policy or a target condition evaluated to false.
+// TriggerFireStatus Outcome of a trigger activation:
+// - `success` — all enabled targets started their runs (or no targets configured).
+// - `partial_failure` — at least one target failed while others succeeded.
+// - `failed` — all targets failed, or a trigger-level error prevented any target.
+// - `skipped` — the concurrency policy suppressed the entire activation.
 type TriggerFireStatus string
+
+// TriggerFireTargetResult Outcome of a single target within a trigger fire activation.
+type TriggerFireTargetResult struct {
+	// Error Error detail when status is `failed`.
+	Error *string `json:"error,omitempty"`
+
+	// RunId ID of the workflow run that was created. Absent when the target failed or was skipped.
+	RunId *string `json:"run_id,omitempty"`
+
+	// Status Outcome of a trigger activation:
+	// - `success` — all enabled targets started their runs (or no targets configured).
+	// - `partial_failure` — at least one target failed while others succeeded.
+	// - `failed` — all targets failed, or a trigger-level error prevented any target.
+	// - `skipped` — the concurrency policy suppressed the entire activation.
+	Status TriggerFireStatus `json:"status"`
+
+	// TargetId ID of the trigger target that was evaluated.
+	TargetId string `json:"target_id"`
+
+	// WorkflowId ID of the workflow definition that was started (or attempted).
+	WorkflowId string `json:"workflow_id"`
+}
 
 // TriggerKind Determines the event source and required `source_config` shape.
 type TriggerKind string
@@ -2965,7 +2547,7 @@ type TriggerListResponse struct {
 	HasMore bool `json:"has_more"`
 
 	// Items The list of results for this page.
-	Items *[]Trigger `json:"items,omitempty"`
+	Items []Trigger `json:"items"`
 
 	// NextCursor Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.
 	NextCursor *string `json:"next_cursor,omitempty"`
@@ -2977,12 +2559,33 @@ type TriggerTarget struct {
 	// skipped if this evaluates to false. Omit to always run.
 	Condition *string `json:"condition,omitempty"`
 
+	// CreatedAt Timestamp when this target was created.
+	CreatedAt time.Time `json:"created_at"`
+
+	// Enabled When false, this target is paused and will not start a run when the trigger fires.
+	Enabled bool `json:"enabled"`
+
+	// Id Unique identifier for this target.
+	Id string `json:"id"`
+
 	// InputMapping Maps workflow input names to JSONPath expressions evaluated against
 	// the event payload. Example: `{"user_id": "$.event.actor.id"}`.
 	InputMapping *map[string]string `json:"input_mapping,omitempty"`
 
+	// TriggerId ID of the trigger this target belongs to.
+	TriggerId string `json:"trigger_id"`
+
+	// UpdatedAt Timestamp when this target was last updated.
+	UpdatedAt time.Time `json:"updated_at"`
+
 	// WorkflowId ID of the workflow definition to run.
 	WorkflowId string `json:"workflow_id"`
+}
+
+// TriggerTargetListResponse defines model for TriggerTargetListResponse.
+type TriggerTargetListResponse struct {
+	// Items The list of targets for this trigger.
+	Items []TriggerTarget `json:"items"`
 }
 
 // UpdateActionRequest defines model for UpdateActionRequest.
@@ -3018,11 +2621,14 @@ type UpdateAgentRequest struct {
 	// Description Replacement description.
 	Description *string `json:"description,omitempty"`
 
-	// DisplayName Replacement human-readable label.
-	DisplayName *string `json:"display_name,omitempty"`
-
 	// Kind Replacement freeform agent classification (e.g. `llm`, `rpa`).
 	Kind *string `json:"kind,omitempty"`
+
+	// Name Replacement name. Must be unique within the project and match the agent name pattern.
+	Name *string `json:"name,omitempty"`
+
+	// ServiceAccountId Replacement service account. Must be active and belong to the same project.
+	ServiceAccountId *string `json:"service_account_id,omitempty"`
 
 	// Status Administrative status. Inactive agents cannot claim new jobs.
 	Status *AgentStatus `json:"status,omitempty"`
@@ -3065,23 +2671,6 @@ type UpdateGroupRequest struct {
 // UpdateGroupRequestRoutingPolicy Affects future interactions only; in-flight interactions retain the snapshotted policy.
 type UpdateGroupRequestRoutingPolicy string
 
-// UpdateIntegrationRequest defines model for UpdateIntegrationRequest.
-type UpdateIntegrationRequest struct {
-	// Config Replacement config blob (full replace, not merge).
-	Config *map[string]interface{} `json:"config,omitempty"`
-
-	// Credentials Replacement credentials blob (full replace). Stored encrypted and never returned in API responses.
-	Credentials *map[string]interface{} `json:"credentials,omitempty"`
-
-	// Name Updated display name.
-	Name *string `json:"name,omitempty"`
-
-	// Status `active` — integration is enabled and usable by workflows.
-	// `inactive` — manually disabled; no automatic expiry behavior.
-	// `expired` — token/credential has expired (e.g., OAuth token not refreshed).
-	Status *IntegrationStatus `json:"status,omitempty"`
-}
-
 // UpdateProjectRequest defines model for UpdateProjectRequest.
 type UpdateProjectRequest struct {
 	// Description Replacement description.
@@ -3089,21 +2678,6 @@ type UpdateProjectRequest struct {
 
 	// Name Replacement human-readable name.
 	Name *string `json:"name,omitempty"`
-}
-
-// UpdateRoleRequest defines model for UpdateRoleRequest.
-type UpdateRoleRequest struct {
-	// Description Replacement description.
-	Description *string `json:"description,omitempty"`
-
-	// Name Replacement role name.
-	Name *string `json:"name,omitempty"`
-
-	// Permissions Replaces the existing permissions array entirely.
-	Permissions *[]string `json:"permissions,omitempty"`
-
-	// ProjectId Scope to change this role to. Cannot change an org-scoped role to project-scoped after creation.
-	ProjectId *string `json:"project_id,omitempty"`
 }
 
 // UpdateTriggerRequest defines model for UpdateTriggerRequest.
@@ -3126,14 +2700,26 @@ type UpdateTriggerRequest struct {
 	// SourceConfig Replacement kind-specific source configuration.
 	SourceConfig *map[string]interface{} `json:"source_config,omitempty"`
 
-	// Targets Replaces the entire targets array.
-	Targets *[]TriggerTarget `json:"targets,omitempty"`
-
 	// WebhookHandle Changing this changes the `receive_url`; update any upstream integrations.
 	WebhookHandle *string `json:"webhook_handle,omitempty"`
 
 	// WebhookSecret Replace or clear the inbound signature verification secret.
 	WebhookSecret *string `json:"webhook_secret,omitempty"`
+}
+
+// UpdateTriggerTargetRequest Partial update for a trigger target; omitted fields are unchanged.
+type UpdateTriggerTargetRequest struct {
+	// Condition Replacement condition expression. Set to empty string to remove.
+	Condition *string `json:"condition,omitempty"`
+
+	// Enabled Set to false to pause this target without removing it.
+	Enabled *bool `json:"enabled,omitempty"`
+
+	// InputMapping Replacement input mapping. Set to null to clear all mappings.
+	InputMapping *map[string]string `json:"input_mapping,omitempty"`
+
+	// WorkflowId Replacement workflow definition ID.
+	WorkflowId *string `json:"workflow_id,omitempty"`
 }
 
 // UpdateWebhookRequest defines model for UpdateWebhookRequest.
@@ -3272,6 +2858,11 @@ type WebhookListResponse struct {
 
 // Worker defines model for Worker.
 type Worker struct {
+	// ApiKeyId ID of the specific API key this worker presented on its most recent
+	// register/heartbeat. Changes across credential rotations; use together
+	// with `service_account_id` to see rotation progress across a fleet.
+	ApiKeyId *string `json:"api_key_id,omitempty"`
+
 	// Capabilities Reserved for future capability-based job routing. Not currently used for filtering.
 	Capabilities *[]string `json:"capabilities,omitempty"`
 
@@ -3285,6 +2876,11 @@ type Worker struct {
 
 	// Name Optional human-readable name supplied in the claim request.
 	Name *string `json:"name,omitempty"`
+
+	// ServiceAccountId Service account this worker authenticated as on register/heartbeat.
+	// Stable across credential rotation — use this to group worker rows
+	// by identity in the admin UI.
+	ServiceAccountId *string `json:"service_account_id,omitempty"`
 
 	// Stale True when `last_seen_at` is older than 2 minutes or absent.
 	// Computed at read time, not stored.
@@ -3360,7 +2956,7 @@ type WorkflowDefinitionListResponse struct {
 	HasMore bool `json:"has_more"`
 
 	// Items The list of results for this page.
-	Items *[]WorkflowDefinition `json:"items,omitempty"`
+	Items []WorkflowDefinition `json:"items"`
 
 	// NextCursor Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.
 	NextCursor *string `json:"next_cursor,omitempty"`
@@ -3812,7 +3408,7 @@ type WorkflowRunListResponse struct {
 	HasMore bool `json:"has_more"`
 
 	// Items The list of results for this page.
-	Items *[]WorkflowRun `json:"items,omitempty"`
+	Items []WorkflowRun `json:"items"`
 
 	// NextCursor Opaque cursor for fetching the next page. Present only when
 	// has_more is true.
@@ -3976,9 +3572,6 @@ type WorkflowWaitSignalStep struct {
 	WaitSignal WorkflowWaitSignalConfig `json:"wait_signal"`
 }
 
-// APIKeyProjectIDParam Project ID.
-type APIKeyProjectIDParam = ProjectID
-
 // ActionNameParam defines model for ActionNameParam.
 type ActionNameParam = string
 
@@ -3997,14 +3590,14 @@ type LimitParam = int
 // ProjectHandleParam defines model for ProjectHandleParam.
 type ProjectHandleParam = string
 
+// TriggerTargetIDParam defines model for TriggerTargetIDParam.
+type TriggerTargetIDParam = string
+
 // BadRequest defines model for BadRequest.
 type BadRequest = ErrorResponse
 
 // Conflict defines model for Conflict.
 type Conflict = ErrorResponse
-
-// Forbidden defines model for Forbidden.
-type Forbidden = ErrorResponse
 
 // NotFound defines model for NotFound.
 type NotFound = ErrorResponse
@@ -4014,33 +3607,6 @@ type TooManyRequests = ErrorResponse
 
 // Unauthorized defines model for Unauthorized.
 type Unauthorized = ErrorResponse
-
-// ListAPIKeysParams defines parameters for ListAPIKeys.
-type ListAPIKeysParams struct {
-	// ProjectId Optional project scope for this request. When `project_id` is
-	// provided, the API key operation is resolved in that project's
-	// permission context. When `project_id` is omitted, the request is
-	// treated as org-level and project-pinned keys are excluded.
-	ProjectId *APIKeyProjectIDParam `form:"project_id,omitempty" json:"project_id,omitempty"`
-}
-
-// RevokeAPIKeyParams defines parameters for RevokeAPIKey.
-type RevokeAPIKeyParams struct {
-	// ProjectId Optional project scope for this request. When `project_id` is
-	// provided, the API key operation is resolved in that project's
-	// permission context. When `project_id` is omitted, the request is
-	// treated as org-level and project-pinned keys are excluded.
-	ProjectId *APIKeyProjectIDParam `form:"project_id,omitempty" json:"project_id,omitempty"`
-}
-
-// GetAPIKeyParams defines parameters for GetAPIKey.
-type GetAPIKeyParams struct {
-	// ProjectId Optional project scope for this request. When `project_id` is
-	// provided, the API key operation is resolved in that project's
-	// permission context. When `project_id` is omitted, the request is
-	// treated as org-level and project-pinned keys are excluded.
-	ProjectId *APIKeyProjectIDParam `form:"project_id,omitempty" json:"project_id,omitempty"`
-}
 
 // ListAuditLogsParams defines parameters for ListAuditLogs.
 type ListAuditLogsParams struct {
@@ -4198,21 +3764,6 @@ type ListGroupMembersParams struct {
 	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
-// ListIntegrationsParams defines parameters for ListIntegrations.
-type ListIntegrationsParams struct {
-	// Provider Filter by provider string (exact match).
-	Provider *string `form:"provider,omitempty" json:"provider,omitempty"`
-
-	// Status Filter by integration status.
-	Status *IntegrationStatus `form:"status,omitempty" json:"status,omitempty"`
-
-	// Cursor Opaque pagination cursor returned from the previous response.
-	Cursor *string `form:"cursor,omitempty" json:"cursor,omitempty"`
-
-	// Limit Maximum number of results to return per page.
-	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
-}
-
 // ListInteractionsParams defines parameters for ListInteractions.
 type ListInteractionsParams struct {
 	// Status Filter by status
@@ -4345,54 +3896,6 @@ type ListWorkflowVersionsParams struct {
 	IncludeSpec *bool `form:"include_spec,omitempty" json:"include_spec,omitempty"`
 }
 
-// ListRoleAssignmentsParams defines parameters for ListRoleAssignments.
-type ListRoleAssignmentsParams struct {
-	// ActorType Filter by the type of actor receiving the assignment.
-	ActorType *ListRoleAssignmentsParamsActorType `form:"actor_type,omitempty" json:"actor_type,omitempty"`
-
-	// ActorId Filter to assignments for a specific actor.
-	ActorId *string `form:"actor_id,omitempty" json:"actor_id,omitempty"`
-
-	// RoleId Filter to assignments for a specific role.
-	RoleId *string `form:"role_id,omitempty" json:"role_id,omitempty"`
-
-	// ProjectId Filter to project-scoped assignments for this project.
-	ProjectId *string `form:"project_id,omitempty" json:"project_id,omitempty"`
-}
-
-// ListRoleAssignmentsParamsActorType defines parameters for ListRoleAssignments.
-type ListRoleAssignmentsParamsActorType string
-
-// ListRolesParams defines parameters for ListRoles.
-type ListRolesParams struct {
-	// Limit Maximum number of results to return per page.
-	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
-
-	// ProjectId Filter to roles scoped to a specific project.
-	ProjectId *string `form:"project_id,omitempty" json:"project_id,omitempty"`
-}
-
-// DeleteRoleParams defines parameters for DeleteRole.
-type DeleteRoleParams struct {
-	// ProjectId Scope to change this role to. Cannot change an org-scoped role to project-scoped after creation.
-	ProjectId *string `form:"project_id,omitempty" json:"project_id,omitempty"`
-}
-
-// GetRoleParams defines parameters for GetRole.
-type GetRoleParams struct {
-	// ProjectId Provide to resolve a project-scoped role.
-	ProjectId *string `form:"project_id,omitempty" json:"project_id,omitempty"`
-}
-
-// UpdateRoleParams defines parameters for UpdateRole.
-type UpdateRoleParams struct {
-	// ProjectId Scope to change this role to. Cannot change an org-scoped role to project-scoped after creation.
-	ProjectId *string `form:"project_id,omitempty" json:"project_id,omitempty"`
-}
-
-// CreateAPIKeyJSONRequestBody defines body for CreateAPIKey for application/json ContentType.
-type CreateAPIKeyJSONRequestBody = CreateAPIKeyRequest
-
 // CreateProjectJSONRequestBody defines body for CreateProject for application/json ContentType.
 type CreateProjectJSONRequestBody = CreateProjectRequest
 
@@ -4438,15 +3941,6 @@ type UpdateGroupJSONRequestBody = UpdateGroupRequest
 // AddGroupMemberJSONRequestBody defines body for AddGroupMember for application/json ContentType.
 type AddGroupMemberJSONRequestBody = AddGroupMemberRequest
 
-// CreateIntegrationJSONRequestBody defines body for CreateIntegration for application/json ContentType.
-type CreateIntegrationJSONRequestBody = CreateIntegrationRequest
-
-// CopyIntegrationJSONRequestBody defines body for CopyIntegration for application/json ContentType.
-type CopyIntegrationJSONRequestBody = CopyIntegrationRequest
-
-// UpdateIntegrationJSONRequestBody defines body for UpdateIntegration for application/json ContentType.
-type UpdateIntegrationJSONRequestBody = UpdateIntegrationRequest
-
 // CreateInteractionJSONRequestBody defines body for CreateInteraction for application/json ContentType.
 type CreateInteractionJSONRequestBody = CreateInteractionRequest
 
@@ -4474,12 +3968,6 @@ type CreateJobInteractionJSONRequestBody = CreateJobInteractionRequest
 // StartRunJSONRequestBody defines body for StartRun for application/json ContentType.
 type StartRunJSONRequestBody = StartRunRequest
 
-// BulkCancelRunsJSONRequestBody defines body for BulkCancelRuns for application/json ContentType.
-type BulkCancelRunsJSONRequestBody = BulkRunRequest
-
-// BulkRetryRunsJSONRequestBody defines body for BulkRetryRuns for application/json ContentType.
-type BulkRetryRunsJSONRequestBody = BulkRunRequest
-
 // SendRunSignalJSONRequestBody defines body for SendRunSignal for application/json ContentType.
 type SendRunSignalJSONRequestBody = SendRunSignalRequest
 
@@ -4492,11 +3980,20 @@ type CreateTriggerJSONRequestBody = CreateTriggerRequest
 // UpdateTriggerJSONRequestBody defines body for UpdateTrigger for application/json ContentType.
 type UpdateTriggerJSONRequestBody = UpdateTriggerRequest
 
+// CreateTriggerTargetJSONRequestBody defines body for CreateTriggerTarget for application/json ContentType.
+type CreateTriggerTargetJSONRequestBody = CreateTriggerTargetRequest
+
+// UpdateTriggerTargetJSONRequestBody defines body for UpdateTriggerTarget for application/json ContentType.
+type UpdateTriggerTargetJSONRequestBody = UpdateTriggerTargetRequest
+
 // CreateWebhookJSONRequestBody defines body for CreateWebhook for application/json ContentType.
 type CreateWebhookJSONRequestBody = CreateWebhookRequest
 
 // UpdateWebhookJSONRequestBody defines body for UpdateWebhook for application/json ContentType.
 type UpdateWebhookJSONRequestBody = UpdateWebhookRequest
+
+// PingWebhookJSONRequestBody defines body for PingWebhook for application/json ContentType.
+type PingWebhookJSONRequestBody = PingWebhookRequest
 
 // CreateWorkflowJSONRequestBody defines body for CreateWorkflow for application/json ContentType.
 type CreateWorkflowJSONRequestBody = CreateWorkflowRequest
@@ -4506,77 +4003,6 @@ type UpdateWorkflowJSONRequestBody = UpdateWorkflowRequest
 
 // StartWorkflowRunJSONRequestBody defines body for StartWorkflowRun for application/json ContentType.
 type StartWorkflowRunJSONRequestBody = StartRunRequest
-
-// CreateRoleAssignmentJSONRequestBody defines body for CreateRoleAssignment for application/json ContentType.
-type CreateRoleAssignmentJSONRequestBody = CreateRoleAssignmentRequest
-
-// CreateRoleJSONRequestBody defines body for CreateRole for application/json ContentType.
-type CreateRoleJSONRequestBody = CreateRoleRequest
-
-// UpdateRoleJSONRequestBody defines body for UpdateRole for application/json ContentType.
-type UpdateRoleJSONRequestBody = UpdateRoleRequest
-
-// AsCreateProjectPinnedAPIKeyRequest returns the union data inside the CreateAPIKeyRequest as a CreateProjectPinnedAPIKeyRequest
-func (t CreateAPIKeyRequest) AsCreateProjectPinnedAPIKeyRequest() (CreateProjectPinnedAPIKeyRequest, error) {
-	var body CreateProjectPinnedAPIKeyRequest
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromCreateProjectPinnedAPIKeyRequest overwrites any union data inside the CreateAPIKeyRequest as the provided CreateProjectPinnedAPIKeyRequest
-func (t *CreateAPIKeyRequest) FromCreateProjectPinnedAPIKeyRequest(v CreateProjectPinnedAPIKeyRequest) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeCreateProjectPinnedAPIKeyRequest performs a merge with any union data inside the CreateAPIKeyRequest, using the provided CreateProjectPinnedAPIKeyRequest
-func (t *CreateAPIKeyRequest) MergeCreateProjectPinnedAPIKeyRequest(v CreateProjectPinnedAPIKeyRequest) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsCreateOrgOrSystemAPIKeyRequest returns the union data inside the CreateAPIKeyRequest as a CreateOrgOrSystemAPIKeyRequest
-func (t CreateAPIKeyRequest) AsCreateOrgOrSystemAPIKeyRequest() (CreateOrgOrSystemAPIKeyRequest, error) {
-	var body CreateOrgOrSystemAPIKeyRequest
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromCreateOrgOrSystemAPIKeyRequest overwrites any union data inside the CreateAPIKeyRequest as the provided CreateOrgOrSystemAPIKeyRequest
-func (t *CreateAPIKeyRequest) FromCreateOrgOrSystemAPIKeyRequest(v CreateOrgOrSystemAPIKeyRequest) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeCreateOrgOrSystemAPIKeyRequest performs a merge with any union data inside the CreateAPIKeyRequest, using the provided CreateOrgOrSystemAPIKeyRequest
-func (t *CreateAPIKeyRequest) MergeCreateOrgOrSystemAPIKeyRequest(v CreateOrgOrSystemAPIKeyRequest) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-func (t CreateAPIKeyRequest) MarshalJSON() ([]byte, error) {
-	b, err := t.union.MarshalJSON()
-	return b, err
-}
-
-func (t *CreateAPIKeyRequest) UnmarshalJSON(b []byte) error {
-	err := t.union.UnmarshalJSON(b)
-	return err
-}
 
 // AsInteractionValue0 returns the union data inside the InteractionValue as a InteractionValue0
 func (t InteractionValue) AsInteractionValue0() (InteractionValue0, error) {
@@ -5149,20 +4575,6 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 
 // The interface specification for the client above.
 type ClientInterface interface {
-	// ListAPIKeys request
-	ListAPIKeys(ctx context.Context, params *ListAPIKeysParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// CreateAPIKeyWithBody request with any body
-	CreateAPIKeyWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	CreateAPIKey(ctx context.Context, body CreateAPIKeyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// RevokeAPIKey request
-	RevokeAPIKey(ctx context.Context, id IDParam, params *RevokeAPIKeyParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// GetAPIKey request
-	GetAPIKey(ctx context.Context, id IDParam, params *GetAPIKeyParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
 	// ListAuditLogs request
 	ListAuditLogs(ctx context.Context, params *ListAuditLogsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -5328,30 +4740,6 @@ type ClientInterface interface {
 	// RemoveGroupMember request
 	RemoveGroupMember(ctx context.Context, project ProjectHandleParam, groupId GroupIDParam, userId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListIntegrations request
-	ListIntegrations(ctx context.Context, project ProjectHandleParam, params *ListIntegrationsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// CreateIntegrationWithBody request with any body
-	CreateIntegrationWithBody(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	CreateIntegration(ctx context.Context, project ProjectHandleParam, body CreateIntegrationJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// CopyIntegrationWithBody request with any body
-	CopyIntegrationWithBody(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	CopyIntegration(ctx context.Context, project ProjectHandleParam, body CopyIntegrationJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// DeleteIntegration request
-	DeleteIntegration(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// GetIntegration request
-	GetIntegration(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// UpdateIntegrationWithBody request with any body
-	UpdateIntegrationWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	UpdateIntegration(ctx context.Context, project ProjectHandleParam, id IDParam, body UpdateIntegrationJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
 	// ListInteractions request
 	ListInteractions(ctx context.Context, project ProjectHandleParam, params *ListInteractionsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -5418,24 +4806,14 @@ type ClientInterface interface {
 
 	StartRun(ctx context.Context, project ProjectHandleParam, body StartRunJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// BulkCancelRunsWithBody request with any body
-	BulkCancelRunsWithBody(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	BulkCancelRuns(ctx context.Context, project ProjectHandleParam, body BulkCancelRunsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
 	// StreamProjectRunEvents request
 	StreamProjectRunEvents(ctx context.Context, project ProjectHandleParam, params *StreamProjectRunEventsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// BulkRetryRunsWithBody request with any body
-	BulkRetryRunsWithBody(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	BulkRetryRuns(ctx context.Context, project ProjectHandleParam, body BulkRetryRunsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetRun request
 	GetRun(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetRunActionLog request
-	GetRunActionLog(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// ListRunActionLog request
+	ListRunActionLog(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// CancelRun request
 	CancelRun(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -5443,8 +4821,8 @@ type ClientInterface interface {
 	// StreamRunEvents request
 	StreamRunEvents(ctx context.Context, project ProjectHandleParam, id IDParam, params *StreamRunEventsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetRunJobs request
-	GetRunJobs(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// ListRunJobs request
+	ListRunJobs(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ResumeRun request
 	ResumeRun(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -5487,6 +4865,28 @@ type ClientInterface interface {
 	// ListTriggerFires request
 	ListTriggerFires(ctx context.Context, project ProjectHandleParam, id IDParam, params *ListTriggerFiresParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// DeleteAllTriggerTargets request
+	DeleteAllTriggerTargets(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListTriggerTargets request
+	ListTriggerTargets(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateTriggerTargetWithBody request with any body
+	CreateTriggerTargetWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	CreateTriggerTarget(ctx context.Context, project ProjectHandleParam, id IDParam, body CreateTriggerTargetJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DeleteTriggerTarget request
+	DeleteTriggerTarget(ctx context.Context, project ProjectHandleParam, id IDParam, targetId TriggerTargetIDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetTriggerTarget request
+	GetTriggerTarget(ctx context.Context, project ProjectHandleParam, id IDParam, targetId TriggerTargetIDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateTriggerTargetWithBody request with any body
+	UpdateTriggerTargetWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, targetId TriggerTargetIDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	UpdateTriggerTarget(ctx context.Context, project ProjectHandleParam, id IDParam, targetId TriggerTargetIDParam, body UpdateTriggerTargetJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListWebhooks request
 	ListWebhooks(ctx context.Context, project ProjectHandleParam, params *ListWebhooksParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -5508,6 +4908,11 @@ type ClientInterface interface {
 
 	// ListWebhookDeliveries request
 	ListWebhookDeliveries(ctx context.Context, project ProjectHandleParam, id IDParam, params *ListWebhookDeliveriesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PingWebhookWithBody request with any body
+	PingWebhookWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PingWebhook(ctx context.Context, project ProjectHandleParam, id IDParam, body PingWebhookJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListWorkers request
 	ListWorkers(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -5541,96 +4946,6 @@ type ClientInterface interface {
 
 	// ListWorkflowVersions request
 	ListWorkflowVersions(ctx context.Context, project ProjectHandleParam, id IDParam, params *ListWorkflowVersionsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// ListRoleAssignments request
-	ListRoleAssignments(ctx context.Context, params *ListRoleAssignmentsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// CreateRoleAssignmentWithBody request with any body
-	CreateRoleAssignmentWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	CreateRoleAssignment(ctx context.Context, body CreateRoleAssignmentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// DeleteRoleAssignment request
-	DeleteRoleAssignment(ctx context.Context, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// ListRoles request
-	ListRoles(ctx context.Context, params *ListRolesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// CreateRoleWithBody request with any body
-	CreateRoleWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	CreateRole(ctx context.Context, body CreateRoleJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// DeleteRole request
-	DeleteRole(ctx context.Context, id IDParam, params *DeleteRoleParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// GetRole request
-	GetRole(ctx context.Context, id IDParam, params *GetRoleParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// UpdateRoleWithBody request with any body
-	UpdateRoleWithBody(ctx context.Context, id IDParam, params *UpdateRoleParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	UpdateRole(ctx context.Context, id IDParam, params *UpdateRoleParams, body UpdateRoleJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-}
-
-func (c *Client) ListAPIKeys(ctx context.Context, params *ListAPIKeysParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListAPIKeysRequest(c.Server, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) CreateAPIKeyWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateAPIKeyRequestWithBody(c.Server, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) CreateAPIKey(ctx context.Context, body CreateAPIKeyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateAPIKeyRequest(c.Server, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) RevokeAPIKey(ctx context.Context, id IDParam, params *RevokeAPIKeyParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewRevokeAPIKeyRequest(c.Server, id, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) GetAPIKey(ctx context.Context, id IDParam, params *GetAPIKeyParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetAPIKeyRequest(c.Server, id, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
 }
 
 func (c *Client) ListAuditLogs(ctx context.Context, params *ListAuditLogsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -6353,114 +5668,6 @@ func (c *Client) RemoveGroupMember(ctx context.Context, project ProjectHandlePar
 	return c.Client.Do(req)
 }
 
-func (c *Client) ListIntegrations(ctx context.Context, project ProjectHandleParam, params *ListIntegrationsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListIntegrationsRequest(c.Server, project, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) CreateIntegrationWithBody(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateIntegrationRequestWithBody(c.Server, project, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) CreateIntegration(ctx context.Context, project ProjectHandleParam, body CreateIntegrationJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateIntegrationRequest(c.Server, project, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) CopyIntegrationWithBody(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCopyIntegrationRequestWithBody(c.Server, project, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) CopyIntegration(ctx context.Context, project ProjectHandleParam, body CopyIntegrationJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCopyIntegrationRequest(c.Server, project, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) DeleteIntegration(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDeleteIntegrationRequest(c.Server, project, id)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) GetIntegration(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetIntegrationRequest(c.Server, project, id)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) UpdateIntegrationWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateIntegrationRequestWithBody(c.Server, project, id, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) UpdateIntegration(ctx context.Context, project ProjectHandleParam, id IDParam, body UpdateIntegrationJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateIntegrationRequest(c.Server, project, id, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
 func (c *Client) ListInteractions(ctx context.Context, project ProjectHandleParam, params *ListInteractionsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListInteractionsRequest(c.Server, project, params)
 	if err != nil {
@@ -6761,56 +5968,8 @@ func (c *Client) StartRun(ctx context.Context, project ProjectHandleParam, body 
 	return c.Client.Do(req)
 }
 
-func (c *Client) BulkCancelRunsWithBody(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewBulkCancelRunsRequestWithBody(c.Server, project, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) BulkCancelRuns(ctx context.Context, project ProjectHandleParam, body BulkCancelRunsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewBulkCancelRunsRequest(c.Server, project, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
 func (c *Client) StreamProjectRunEvents(ctx context.Context, project ProjectHandleParam, params *StreamProjectRunEventsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewStreamProjectRunEventsRequest(c.Server, project, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) BulkRetryRunsWithBody(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewBulkRetryRunsRequestWithBody(c.Server, project, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) BulkRetryRuns(ctx context.Context, project ProjectHandleParam, body BulkRetryRunsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewBulkRetryRunsRequest(c.Server, project, body)
 	if err != nil {
 		return nil, err
 	}
@@ -6833,8 +5992,8 @@ func (c *Client) GetRun(ctx context.Context, project ProjectHandleParam, id IDPa
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetRunActionLog(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetRunActionLogRequest(c.Server, project, id)
+func (c *Client) ListRunActionLog(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListRunActionLogRequest(c.Server, project, id)
 	if err != nil {
 		return nil, err
 	}
@@ -6869,8 +6028,8 @@ func (c *Client) StreamRunEvents(ctx context.Context, project ProjectHandleParam
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetRunJobs(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetRunJobsRequest(c.Server, project, id)
+func (c *Client) ListRunJobs(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListRunJobsRequest(c.Server, project, id)
 	if err != nil {
 		return nil, err
 	}
@@ -7061,6 +6220,102 @@ func (c *Client) ListTriggerFires(ctx context.Context, project ProjectHandlePara
 	return c.Client.Do(req)
 }
 
+func (c *Client) DeleteAllTriggerTargets(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteAllTriggerTargetsRequest(c.Server, project, id)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListTriggerTargets(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListTriggerTargetsRequest(c.Server, project, id)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateTriggerTargetWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateTriggerTargetRequestWithBody(c.Server, project, id, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateTriggerTarget(ctx context.Context, project ProjectHandleParam, id IDParam, body CreateTriggerTargetJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateTriggerTargetRequest(c.Server, project, id, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) DeleteTriggerTarget(ctx context.Context, project ProjectHandleParam, id IDParam, targetId TriggerTargetIDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteTriggerTargetRequest(c.Server, project, id, targetId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetTriggerTarget(ctx context.Context, project ProjectHandleParam, id IDParam, targetId TriggerTargetIDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetTriggerTargetRequest(c.Server, project, id, targetId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateTriggerTargetWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, targetId TriggerTargetIDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateTriggerTargetRequestWithBody(c.Server, project, id, targetId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateTriggerTarget(ctx context.Context, project ProjectHandleParam, id IDParam, targetId TriggerTargetIDParam, body UpdateTriggerTargetJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateTriggerTargetRequest(c.Server, project, id, targetId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) ListWebhooks(ctx context.Context, project ProjectHandleParam, params *ListWebhooksParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListWebhooksRequest(c.Server, project, params)
 	if err != nil {
@@ -7147,6 +6402,30 @@ func (c *Client) UpdateWebhook(ctx context.Context, project ProjectHandleParam, 
 
 func (c *Client) ListWebhookDeliveries(ctx context.Context, project ProjectHandleParam, id IDParam, params *ListWebhookDeliveriesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListWebhookDeliveriesRequest(c.Server, project, id, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PingWebhookWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPingWebhookRequestWithBody(c.Server, project, id, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PingWebhook(ctx context.Context, project ProjectHandleParam, id IDParam, body PingWebhookJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPingWebhookRequest(c.Server, project, id, body)
 	if err != nil {
 		return nil, err
 	}
@@ -7299,339 +6578,6 @@ func (c *Client) ListWorkflowVersions(ctx context.Context, project ProjectHandle
 		return nil, err
 	}
 	return c.Client.Do(req)
-}
-
-func (c *Client) ListRoleAssignments(ctx context.Context, params *ListRoleAssignmentsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListRoleAssignmentsRequest(c.Server, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) CreateRoleAssignmentWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateRoleAssignmentRequestWithBody(c.Server, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) CreateRoleAssignment(ctx context.Context, body CreateRoleAssignmentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateRoleAssignmentRequest(c.Server, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) DeleteRoleAssignment(ctx context.Context, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDeleteRoleAssignmentRequest(c.Server, id)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) ListRoles(ctx context.Context, params *ListRolesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListRolesRequest(c.Server, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) CreateRoleWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateRoleRequestWithBody(c.Server, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) CreateRole(ctx context.Context, body CreateRoleJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateRoleRequest(c.Server, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) DeleteRole(ctx context.Context, id IDParam, params *DeleteRoleParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDeleteRoleRequest(c.Server, id, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) GetRole(ctx context.Context, id IDParam, params *GetRoleParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetRoleRequest(c.Server, id, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) UpdateRoleWithBody(ctx context.Context, id IDParam, params *UpdateRoleParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateRoleRequestWithBody(c.Server, id, params, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) UpdateRole(ctx context.Context, id IDParam, params *UpdateRoleParams, body UpdateRoleJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateRoleRequest(c.Server, id, params, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// NewListAPIKeysRequest generates requests for ListAPIKeys
-func NewListAPIKeysRequest(server string, params *ListAPIKeysParams) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/api-keys")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		queryValues := queryURL.Query()
-
-		if params.ProjectId != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "project_id", *params.ProjectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-				return nil, err
-			} else {
-				for k, v := range parsed {
-					for _, v2 := range v {
-						queryValues.Add(k, v2)
-					}
-				}
-			}
-
-		}
-
-		queryURL.RawQuery = queryValues.Encode()
-	}
-
-	req, err := http.NewRequest("GET", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewCreateAPIKeyRequest calls the generic CreateAPIKey builder with application/json body
-func NewCreateAPIKeyRequest(server string, body CreateAPIKeyJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewCreateAPIKeyRequestWithBody(server, "application/json", bodyReader)
-}
-
-// NewCreateAPIKeyRequestWithBody generates requests for CreateAPIKey with any type of body
-func NewCreateAPIKeyRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/api-keys")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("POST", queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewRevokeAPIKeyRequest generates requests for RevokeAPIKey
-func NewRevokeAPIKeyRequest(server string, id IDParam, params *RevokeAPIKeyParams) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/api-keys/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		queryValues := queryURL.Query()
-
-		if params.ProjectId != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "project_id", *params.ProjectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-				return nil, err
-			} else {
-				for k, v := range parsed {
-					for _, v2 := range v {
-						queryValues.Add(k, v2)
-					}
-				}
-			}
-
-		}
-
-		queryURL.RawQuery = queryValues.Encode()
-	}
-
-	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewGetAPIKeyRequest generates requests for GetAPIKey
-func NewGetAPIKeyRequest(server string, id IDParam, params *GetAPIKeyParams) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/api-keys/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		queryValues := queryURL.Query()
-
-		if params.ProjectId != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "project_id", *params.ProjectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-				return nil, err
-			} else {
-				for k, v := range parsed {
-					for _, v2 := range v {
-						queryValues.Add(k, v2)
-					}
-				}
-			}
-
-		}
-
-		queryURL.RawQuery = queryValues.Encode()
-	}
-
-	req, err := http.NewRequest("GET", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
 }
 
 // NewListAuditLogsRequest generates requests for ListAuditLogs
@@ -10275,340 +9221,6 @@ func NewRemoveGroupMemberRequest(server string, project ProjectHandleParam, grou
 	return req, nil
 }
 
-// NewListIntegrationsRequest generates requests for ListIntegrations
-func NewListIntegrationsRequest(server string, project ProjectHandleParam, params *ListIntegrationsParams) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/projects/%s/integrations", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		queryValues := queryURL.Query()
-
-		if params.Provider != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "provider", *params.Provider, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-				return nil, err
-			} else {
-				for k, v := range parsed {
-					for _, v2 := range v {
-						queryValues.Add(k, v2)
-					}
-				}
-			}
-
-		}
-
-		if params.Status != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "status", *params.Status, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-				return nil, err
-			} else {
-				for k, v := range parsed {
-					for _, v2 := range v {
-						queryValues.Add(k, v2)
-					}
-				}
-			}
-
-		}
-
-		if params.Cursor != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "cursor", *params.Cursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-				return nil, err
-			} else {
-				for k, v := range parsed {
-					for _, v2 := range v {
-						queryValues.Add(k, v2)
-					}
-				}
-			}
-
-		}
-
-		if params.Limit != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
-				return nil, err
-			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-				return nil, err
-			} else {
-				for k, v := range parsed {
-					for _, v2 := range v {
-						queryValues.Add(k, v2)
-					}
-				}
-			}
-
-		}
-
-		queryURL.RawQuery = queryValues.Encode()
-	}
-
-	req, err := http.NewRequest("GET", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewCreateIntegrationRequest calls the generic CreateIntegration builder with application/json body
-func NewCreateIntegrationRequest(server string, project ProjectHandleParam, body CreateIntegrationJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewCreateIntegrationRequestWithBody(server, project, "application/json", bodyReader)
-}
-
-// NewCreateIntegrationRequestWithBody generates requests for CreateIntegration with any type of body
-func NewCreateIntegrationRequestWithBody(server string, project ProjectHandleParam, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/projects/%s/integrations", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("POST", queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewCopyIntegrationRequest calls the generic CopyIntegration builder with application/json body
-func NewCopyIntegrationRequest(server string, project ProjectHandleParam, body CopyIntegrationJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewCopyIntegrationRequestWithBody(server, project, "application/json", bodyReader)
-}
-
-// NewCopyIntegrationRequestWithBody generates requests for CopyIntegration with any type of body
-func NewCopyIntegrationRequestWithBody(server string, project ProjectHandleParam, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/projects/%s/integrations/copy", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("POST", queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewDeleteIntegrationRequest generates requests for DeleteIntegration
-func NewDeleteIntegrationRequest(server string, project ProjectHandleParam, id IDParam) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/projects/%s/integrations/%s", pathParam0, pathParam1)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewGetIntegrationRequest generates requests for GetIntegration
-func NewGetIntegrationRequest(server string, project ProjectHandleParam, id IDParam) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/projects/%s/integrations/%s", pathParam0, pathParam1)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("GET", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewUpdateIntegrationRequest calls the generic UpdateIntegration builder with application/json body
-func NewUpdateIntegrationRequest(server string, project ProjectHandleParam, id IDParam, body UpdateIntegrationJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewUpdateIntegrationRequestWithBody(server, project, id, "application/json", bodyReader)
-}
-
-// NewUpdateIntegrationRequestWithBody generates requests for UpdateIntegration with any type of body
-func NewUpdateIntegrationRequestWithBody(server string, project ProjectHandleParam, id IDParam, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/projects/%s/integrations/%s", pathParam0, pathParam1)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("PUT", queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
 // NewListInteractionsRequest generates requests for ListInteractions
 func NewListInteractionsRequest(server string, project ProjectHandleParam, params *ListInteractionsParams) (*http.Request, error) {
 	var err error
@@ -11599,53 +10211,6 @@ func NewStartRunRequestWithBody(server string, project ProjectHandleParam, conte
 	return req, nil
 }
 
-// NewBulkCancelRunsRequest calls the generic BulkCancelRuns builder with application/json body
-func NewBulkCancelRunsRequest(server string, project ProjectHandleParam, body BulkCancelRunsJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewBulkCancelRunsRequestWithBody(server, project, "application/json", bodyReader)
-}
-
-// NewBulkCancelRunsRequestWithBody generates requests for BulkCancelRuns with any type of body
-func NewBulkCancelRunsRequestWithBody(server string, project ProjectHandleParam, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/projects/%s/runs/cancellations", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("POST", queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
 // NewStreamProjectRunEventsRequest generates requests for StreamProjectRunEvents
 func NewStreamProjectRunEventsRequest(server string, project ProjectHandleParam, params *StreamProjectRunEventsParams) (*http.Request, error) {
 	var err error
@@ -11702,53 +10267,6 @@ func NewStreamProjectRunEventsRequest(server string, project ProjectHandleParam,
 	return req, nil
 }
 
-// NewBulkRetryRunsRequest calls the generic BulkRetryRuns builder with application/json body
-func NewBulkRetryRunsRequest(server string, project ProjectHandleParam, body BulkRetryRunsJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewBulkRetryRunsRequestWithBody(server, project, "application/json", bodyReader)
-}
-
-// NewBulkRetryRunsRequestWithBody generates requests for BulkRetryRuns with any type of body
-func NewBulkRetryRunsRequestWithBody(server string, project ProjectHandleParam, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/projects/%s/runs/retries", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("POST", queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
 // NewGetRunRequest generates requests for GetRun
 func NewGetRunRequest(server string, project ProjectHandleParam, id IDParam) (*http.Request, error) {
 	var err error
@@ -11790,8 +10308,8 @@ func NewGetRunRequest(server string, project ProjectHandleParam, id IDParam) (*h
 	return req, nil
 }
 
-// NewGetRunActionLogRequest generates requests for GetRunActionLog
-func NewGetRunActionLogRequest(server string, project ProjectHandleParam, id IDParam) (*http.Request, error) {
+// NewListRunActionLogRequest generates requests for ListRunActionLog
+func NewListRunActionLogRequest(server string, project ProjectHandleParam, id IDParam) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -11935,8 +10453,8 @@ func NewStreamRunEventsRequest(server string, project ProjectHandleParam, id IDP
 	return req, nil
 }
 
-// NewGetRunJobsRequest generates requests for GetRunJobs
-func NewGetRunJobsRequest(server string, project ProjectHandleParam, id IDParam) (*http.Request, error) {
+// NewListRunJobsRequest generates requests for ListRunJobs
+func NewListRunJobsRequest(server string, project ProjectHandleParam, id IDParam) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -12589,6 +11107,299 @@ func NewListTriggerFiresRequest(server string, project ProjectHandleParam, id ID
 	return req, nil
 }
 
+// NewDeleteAllTriggerTargetsRequest generates requests for DeleteAllTriggerTargets
+func NewDeleteAllTriggerTargetsRequest(server string, project ProjectHandleParam, id IDParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/triggers/%s/targets", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewListTriggerTargetsRequest generates requests for ListTriggerTargets
+func NewListTriggerTargetsRequest(server string, project ProjectHandleParam, id IDParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/triggers/%s/targets", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCreateTriggerTargetRequest calls the generic CreateTriggerTarget builder with application/json body
+func NewCreateTriggerTargetRequest(server string, project ProjectHandleParam, id IDParam, body CreateTriggerTargetJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateTriggerTargetRequestWithBody(server, project, id, "application/json", bodyReader)
+}
+
+// NewCreateTriggerTargetRequestWithBody generates requests for CreateTriggerTarget with any type of body
+func NewCreateTriggerTargetRequestWithBody(server string, project ProjectHandleParam, id IDParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/triggers/%s/targets", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewDeleteTriggerTargetRequest generates requests for DeleteTriggerTarget
+func NewDeleteTriggerTargetRequest(server string, project ProjectHandleParam, id IDParam, targetId TriggerTargetIDParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam2 string
+
+	pathParam2, err = runtime.StyleParamWithOptions("simple", false, "target_id", targetId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/triggers/%s/targets/%s", pathParam0, pathParam1, pathParam2)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetTriggerTargetRequest generates requests for GetTriggerTarget
+func NewGetTriggerTargetRequest(server string, project ProjectHandleParam, id IDParam, targetId TriggerTargetIDParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam2 string
+
+	pathParam2, err = runtime.StyleParamWithOptions("simple", false, "target_id", targetId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/triggers/%s/targets/%s", pathParam0, pathParam1, pathParam2)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewUpdateTriggerTargetRequest calls the generic UpdateTriggerTarget builder with application/json body
+func NewUpdateTriggerTargetRequest(server string, project ProjectHandleParam, id IDParam, targetId TriggerTargetIDParam, body UpdateTriggerTargetJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpdateTriggerTargetRequestWithBody(server, project, id, targetId, "application/json", bodyReader)
+}
+
+// NewUpdateTriggerTargetRequestWithBody generates requests for UpdateTriggerTarget with any type of body
+func NewUpdateTriggerTargetRequestWithBody(server string, project ProjectHandleParam, id IDParam, targetId TriggerTargetIDParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam2 string
+
+	pathParam2, err = runtime.StyleParamWithOptions("simple", false, "target_id", targetId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/triggers/%s/targets/%s", pathParam0, pathParam1, pathParam2)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PATCH", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewListWebhooksRequest generates requests for ListWebhooks
 func NewListWebhooksRequest(server string, project ProjectHandleParam, params *ListWebhooksParams) (*http.Request, error) {
 	var err error
@@ -12935,6 +11746,60 @@ func NewListWebhookDeliveriesRequest(server string, project ProjectHandleParam, 
 	if err != nil {
 		return nil, err
 	}
+
+	return req, nil
+}
+
+// NewPingWebhookRequest calls the generic PingWebhook builder with application/json body
+func NewPingWebhookRequest(server string, project ProjectHandleParam, id IDParam, body PingWebhookJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPingWebhookRequestWithBody(server, project, id, "application/json", bodyReader)
+}
+
+// NewPingWebhookRequestWithBody generates requests for PingWebhook with any type of body
+func NewPingWebhookRequestWithBody(server string, project ProjectHandleParam, id IDParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/webhooks/%s/ping", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
 }
@@ -13386,463 +12251,6 @@ func NewListWorkflowVersionsRequest(server string, project ProjectHandleParam, i
 	return req, nil
 }
 
-// NewListRoleAssignmentsRequest generates requests for ListRoleAssignments
-func NewListRoleAssignmentsRequest(server string, params *ListRoleAssignmentsParams) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/role-assignments")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		queryValues := queryURL.Query()
-
-		if params.ActorType != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "actor_type", *params.ActorType, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-				return nil, err
-			} else {
-				for k, v := range parsed {
-					for _, v2 := range v {
-						queryValues.Add(k, v2)
-					}
-				}
-			}
-
-		}
-
-		if params.ActorId != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "actor_id", *params.ActorId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-				return nil, err
-			} else {
-				for k, v := range parsed {
-					for _, v2 := range v {
-						queryValues.Add(k, v2)
-					}
-				}
-			}
-
-		}
-
-		if params.RoleId != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "role_id", *params.RoleId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-				return nil, err
-			} else {
-				for k, v := range parsed {
-					for _, v2 := range v {
-						queryValues.Add(k, v2)
-					}
-				}
-			}
-
-		}
-
-		if params.ProjectId != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "project_id", *params.ProjectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-				return nil, err
-			} else {
-				for k, v := range parsed {
-					for _, v2 := range v {
-						queryValues.Add(k, v2)
-					}
-				}
-			}
-
-		}
-
-		queryURL.RawQuery = queryValues.Encode()
-	}
-
-	req, err := http.NewRequest("GET", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewCreateRoleAssignmentRequest calls the generic CreateRoleAssignment builder with application/json body
-func NewCreateRoleAssignmentRequest(server string, body CreateRoleAssignmentJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewCreateRoleAssignmentRequestWithBody(server, "application/json", bodyReader)
-}
-
-// NewCreateRoleAssignmentRequestWithBody generates requests for CreateRoleAssignment with any type of body
-func NewCreateRoleAssignmentRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/role-assignments")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("POST", queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewDeleteRoleAssignmentRequest generates requests for DeleteRoleAssignment
-func NewDeleteRoleAssignmentRequest(server string, id IDParam) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/role-assignments/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewListRolesRequest generates requests for ListRoles
-func NewListRolesRequest(server string, params *ListRolesParams) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/roles")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		queryValues := queryURL.Query()
-
-		if params.Limit != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
-				return nil, err
-			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-				return nil, err
-			} else {
-				for k, v := range parsed {
-					for _, v2 := range v {
-						queryValues.Add(k, v2)
-					}
-				}
-			}
-
-		}
-
-		if params.ProjectId != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "project_id", *params.ProjectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-				return nil, err
-			} else {
-				for k, v := range parsed {
-					for _, v2 := range v {
-						queryValues.Add(k, v2)
-					}
-				}
-			}
-
-		}
-
-		queryURL.RawQuery = queryValues.Encode()
-	}
-
-	req, err := http.NewRequest("GET", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewCreateRoleRequest calls the generic CreateRole builder with application/json body
-func NewCreateRoleRequest(server string, body CreateRoleJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewCreateRoleRequestWithBody(server, "application/json", bodyReader)
-}
-
-// NewCreateRoleRequestWithBody generates requests for CreateRole with any type of body
-func NewCreateRoleRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/roles")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("POST", queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewDeleteRoleRequest generates requests for DeleteRole
-func NewDeleteRoleRequest(server string, id IDParam, params *DeleteRoleParams) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/roles/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		queryValues := queryURL.Query()
-
-		if params.ProjectId != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "project_id", *params.ProjectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-				return nil, err
-			} else {
-				for k, v := range parsed {
-					for _, v2 := range v {
-						queryValues.Add(k, v2)
-					}
-				}
-			}
-
-		}
-
-		queryURL.RawQuery = queryValues.Encode()
-	}
-
-	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewGetRoleRequest generates requests for GetRole
-func NewGetRoleRequest(server string, id IDParam, params *GetRoleParams) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/roles/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		queryValues := queryURL.Query()
-
-		if params.ProjectId != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "project_id", *params.ProjectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-				return nil, err
-			} else {
-				for k, v := range parsed {
-					for _, v2 := range v {
-						queryValues.Add(k, v2)
-					}
-				}
-			}
-
-		}
-
-		queryURL.RawQuery = queryValues.Encode()
-	}
-
-	req, err := http.NewRequest("GET", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewUpdateRoleRequest calls the generic UpdateRole builder with application/json body
-func NewUpdateRoleRequest(server string, id IDParam, params *UpdateRoleParams, body UpdateRoleJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewUpdateRoleRequestWithBody(server, id, params, "application/json", bodyReader)
-}
-
-// NewUpdateRoleRequestWithBody generates requests for UpdateRole with any type of body
-func NewUpdateRoleRequestWithBody(server string, id IDParam, params *UpdateRoleParams, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/roles/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		queryValues := queryURL.Query()
-
-		if params.ProjectId != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "project_id", *params.ProjectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-				return nil, err
-			} else {
-				for k, v := range parsed {
-					for _, v2 := range v {
-						queryValues.Add(k, v2)
-					}
-				}
-			}
-
-		}
-
-		queryURL.RawQuery = queryValues.Encode()
-	}
-
-	req, err := http.NewRequest("PATCH", queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
 func (c *Client) applyEditors(ctx context.Context, req *http.Request, additionalEditors []RequestEditorFn) error {
 	for _, r := range c.RequestEditors {
 		if err := r(ctx, req); err != nil {
@@ -13886,20 +12294,6 @@ func WithBaseURL(baseURL string) ClientOption {
 
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
-	// ListAPIKeysWithResponse request
-	ListAPIKeysWithResponse(ctx context.Context, params *ListAPIKeysParams, reqEditors ...RequestEditorFn) (*ListAPIKeysResponse, error)
-
-	// CreateAPIKeyWithBodyWithResponse request with any body
-	CreateAPIKeyWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateAPIKeyResponse, error)
-
-	CreateAPIKeyWithResponse(ctx context.Context, body CreateAPIKeyJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateAPIKeyResponse, error)
-
-	// RevokeAPIKeyWithResponse request
-	RevokeAPIKeyWithResponse(ctx context.Context, id IDParam, params *RevokeAPIKeyParams, reqEditors ...RequestEditorFn) (*RevokeAPIKeyResponse, error)
-
-	// GetAPIKeyWithResponse request
-	GetAPIKeyWithResponse(ctx context.Context, id IDParam, params *GetAPIKeyParams, reqEditors ...RequestEditorFn) (*GetAPIKeyResponse, error)
-
 	// ListAuditLogsWithResponse request
 	ListAuditLogsWithResponse(ctx context.Context, params *ListAuditLogsParams, reqEditors ...RequestEditorFn) (*ListAuditLogsResponse, error)
 
@@ -14065,30 +12459,6 @@ type ClientWithResponsesInterface interface {
 	// RemoveGroupMemberWithResponse request
 	RemoveGroupMemberWithResponse(ctx context.Context, project ProjectHandleParam, groupId GroupIDParam, userId string, reqEditors ...RequestEditorFn) (*RemoveGroupMemberResponse, error)
 
-	// ListIntegrationsWithResponse request
-	ListIntegrationsWithResponse(ctx context.Context, project ProjectHandleParam, params *ListIntegrationsParams, reqEditors ...RequestEditorFn) (*ListIntegrationsResponse, error)
-
-	// CreateIntegrationWithBodyWithResponse request with any body
-	CreateIntegrationWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateIntegrationResponse, error)
-
-	CreateIntegrationWithResponse(ctx context.Context, project ProjectHandleParam, body CreateIntegrationJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateIntegrationResponse, error)
-
-	// CopyIntegrationWithBodyWithResponse request with any body
-	CopyIntegrationWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CopyIntegrationResponse, error)
-
-	CopyIntegrationWithResponse(ctx context.Context, project ProjectHandleParam, body CopyIntegrationJSONRequestBody, reqEditors ...RequestEditorFn) (*CopyIntegrationResponse, error)
-
-	// DeleteIntegrationWithResponse request
-	DeleteIntegrationWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*DeleteIntegrationResponse, error)
-
-	// GetIntegrationWithResponse request
-	GetIntegrationWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*GetIntegrationResponse, error)
-
-	// UpdateIntegrationWithBodyWithResponse request with any body
-	UpdateIntegrationWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateIntegrationResponse, error)
-
-	UpdateIntegrationWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body UpdateIntegrationJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateIntegrationResponse, error)
-
 	// ListInteractionsWithResponse request
 	ListInteractionsWithResponse(ctx context.Context, project ProjectHandleParam, params *ListInteractionsParams, reqEditors ...RequestEditorFn) (*ListInteractionsResponse, error)
 
@@ -14155,24 +12525,14 @@ type ClientWithResponsesInterface interface {
 
 	StartRunWithResponse(ctx context.Context, project ProjectHandleParam, body StartRunJSONRequestBody, reqEditors ...RequestEditorFn) (*StartRunResponse, error)
 
-	// BulkCancelRunsWithBodyWithResponse request with any body
-	BulkCancelRunsWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*BulkCancelRunsResponse, error)
-
-	BulkCancelRunsWithResponse(ctx context.Context, project ProjectHandleParam, body BulkCancelRunsJSONRequestBody, reqEditors ...RequestEditorFn) (*BulkCancelRunsResponse, error)
-
 	// StreamProjectRunEventsWithResponse request
 	StreamProjectRunEventsWithResponse(ctx context.Context, project ProjectHandleParam, params *StreamProjectRunEventsParams, reqEditors ...RequestEditorFn) (*StreamProjectRunEventsResponse, error)
-
-	// BulkRetryRunsWithBodyWithResponse request with any body
-	BulkRetryRunsWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*BulkRetryRunsResponse, error)
-
-	BulkRetryRunsWithResponse(ctx context.Context, project ProjectHandleParam, body BulkRetryRunsJSONRequestBody, reqEditors ...RequestEditorFn) (*BulkRetryRunsResponse, error)
 
 	// GetRunWithResponse request
 	GetRunWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*GetRunResponse, error)
 
-	// GetRunActionLogWithResponse request
-	GetRunActionLogWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*GetRunActionLogResponse, error)
+	// ListRunActionLogWithResponse request
+	ListRunActionLogWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*ListRunActionLogResponse, error)
 
 	// CancelRunWithResponse request
 	CancelRunWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*CancelRunResponse, error)
@@ -14180,8 +12540,8 @@ type ClientWithResponsesInterface interface {
 	// StreamRunEventsWithResponse request
 	StreamRunEventsWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, params *StreamRunEventsParams, reqEditors ...RequestEditorFn) (*StreamRunEventsResponse, error)
 
-	// GetRunJobsWithResponse request
-	GetRunJobsWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*GetRunJobsResponse, error)
+	// ListRunJobsWithResponse request
+	ListRunJobsWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*ListRunJobsResponse, error)
 
 	// ResumeRunWithResponse request
 	ResumeRunWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*ResumeRunResponse, error)
@@ -14224,6 +12584,28 @@ type ClientWithResponsesInterface interface {
 	// ListTriggerFiresWithResponse request
 	ListTriggerFiresWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, params *ListTriggerFiresParams, reqEditors ...RequestEditorFn) (*ListTriggerFiresResponse, error)
 
+	// DeleteAllTriggerTargetsWithResponse request
+	DeleteAllTriggerTargetsWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*DeleteAllTriggerTargetsResponse, error)
+
+	// ListTriggerTargetsWithResponse request
+	ListTriggerTargetsWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*ListTriggerTargetsResponse, error)
+
+	// CreateTriggerTargetWithBodyWithResponse request with any body
+	CreateTriggerTargetWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateTriggerTargetResponse, error)
+
+	CreateTriggerTargetWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body CreateTriggerTargetJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateTriggerTargetResponse, error)
+
+	// DeleteTriggerTargetWithResponse request
+	DeleteTriggerTargetWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, targetId TriggerTargetIDParam, reqEditors ...RequestEditorFn) (*DeleteTriggerTargetResponse, error)
+
+	// GetTriggerTargetWithResponse request
+	GetTriggerTargetWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, targetId TriggerTargetIDParam, reqEditors ...RequestEditorFn) (*GetTriggerTargetResponse, error)
+
+	// UpdateTriggerTargetWithBodyWithResponse request with any body
+	UpdateTriggerTargetWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, targetId TriggerTargetIDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateTriggerTargetResponse, error)
+
+	UpdateTriggerTargetWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, targetId TriggerTargetIDParam, body UpdateTriggerTargetJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateTriggerTargetResponse, error)
+
 	// ListWebhooksWithResponse request
 	ListWebhooksWithResponse(ctx context.Context, project ProjectHandleParam, params *ListWebhooksParams, reqEditors ...RequestEditorFn) (*ListWebhooksResponse, error)
 
@@ -14245,6 +12627,11 @@ type ClientWithResponsesInterface interface {
 
 	// ListWebhookDeliveriesWithResponse request
 	ListWebhookDeliveriesWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, params *ListWebhookDeliveriesParams, reqEditors ...RequestEditorFn) (*ListWebhookDeliveriesResponse, error)
+
+	// PingWebhookWithBodyWithResponse request with any body
+	PingWebhookWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PingWebhookResponse, error)
+
+	PingWebhookWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body PingWebhookJSONRequestBody, reqEditors ...RequestEditorFn) (*PingWebhookResponse, error)
 
 	// ListWorkersWithResponse request
 	ListWorkersWithResponse(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*ListWorkersResponse, error)
@@ -14278,132 +12665,6 @@ type ClientWithResponsesInterface interface {
 
 	// ListWorkflowVersionsWithResponse request
 	ListWorkflowVersionsWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, params *ListWorkflowVersionsParams, reqEditors ...RequestEditorFn) (*ListWorkflowVersionsResponse, error)
-
-	// ListRoleAssignmentsWithResponse request
-	ListRoleAssignmentsWithResponse(ctx context.Context, params *ListRoleAssignmentsParams, reqEditors ...RequestEditorFn) (*ListRoleAssignmentsResponse, error)
-
-	// CreateRoleAssignmentWithBodyWithResponse request with any body
-	CreateRoleAssignmentWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateRoleAssignmentResponse, error)
-
-	CreateRoleAssignmentWithResponse(ctx context.Context, body CreateRoleAssignmentJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateRoleAssignmentResponse, error)
-
-	// DeleteRoleAssignmentWithResponse request
-	DeleteRoleAssignmentWithResponse(ctx context.Context, id IDParam, reqEditors ...RequestEditorFn) (*DeleteRoleAssignmentResponse, error)
-
-	// ListRolesWithResponse request
-	ListRolesWithResponse(ctx context.Context, params *ListRolesParams, reqEditors ...RequestEditorFn) (*ListRolesResponse, error)
-
-	// CreateRoleWithBodyWithResponse request with any body
-	CreateRoleWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateRoleResponse, error)
-
-	CreateRoleWithResponse(ctx context.Context, body CreateRoleJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateRoleResponse, error)
-
-	// DeleteRoleWithResponse request
-	DeleteRoleWithResponse(ctx context.Context, id IDParam, params *DeleteRoleParams, reqEditors ...RequestEditorFn) (*DeleteRoleResponse, error)
-
-	// GetRoleWithResponse request
-	GetRoleWithResponse(ctx context.Context, id IDParam, params *GetRoleParams, reqEditors ...RequestEditorFn) (*GetRoleResponse, error)
-
-	// UpdateRoleWithBodyWithResponse request with any body
-	UpdateRoleWithBodyWithResponse(ctx context.Context, id IDParam, params *UpdateRoleParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateRoleResponse, error)
-
-	UpdateRoleWithResponse(ctx context.Context, id IDParam, params *UpdateRoleParams, body UpdateRoleJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateRoleResponse, error)
-}
-
-type ListAPIKeysResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *APIKeyListResponse
-	JSON401      *Unauthorized
-	JSON404      *NotFound
-}
-
-// Status returns HTTPResponse.Status
-func (r ListAPIKeysResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ListAPIKeysResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type CreateAPIKeyResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON201      *APIKeyCreateResult
-	JSON400      *BadRequest
-	JSON401      *Unauthorized
-	JSON404      *NotFound
-}
-
-// Status returns HTTPResponse.Status
-func (r CreateAPIKeyResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r CreateAPIKeyResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type RevokeAPIKeyResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON401      *Unauthorized
-	JSON404      *NotFound
-}
-
-// Status returns HTTPResponse.Status
-func (r RevokeAPIKeyResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r RevokeAPIKeyResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type GetAPIKeyResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *APIKey
-	JSON401      *Unauthorized
-	JSON404      *NotFound
-}
-
-// Status returns HTTPResponse.Status
-func (r GetAPIKeyResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetAPIKeyResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
 }
 
 type ListAuditLogsResponse struct {
@@ -14941,6 +13202,7 @@ type UpdateAgentResponse struct {
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
 	JSON404      *NotFound
+	JSON409      *Conflict
 }
 
 // Status returns HTTPResponse.Status
@@ -15491,150 +13753,6 @@ func (r RemoveGroupMemberResponse) StatusCode() int {
 	return 0
 }
 
-type ListIntegrationsResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *IntegrationListResponse
-	JSON401      *Unauthorized
-}
-
-// Status returns HTTPResponse.Status
-func (r ListIntegrationsResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ListIntegrationsResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type CreateIntegrationResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON201      *Integration
-	JSON400      *BadRequest
-	JSON401      *Unauthorized
-}
-
-// Status returns HTTPResponse.Status
-func (r CreateIntegrationResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r CreateIntegrationResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type CopyIntegrationResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON201      *Integration
-	JSON400      *BadRequest
-	JSON401      *Unauthorized
-	JSON404      *NotFound
-}
-
-// Status returns HTTPResponse.Status
-func (r CopyIntegrationResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r CopyIntegrationResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type DeleteIntegrationResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON401      *Unauthorized
-	JSON404      *NotFound
-}
-
-// Status returns HTTPResponse.Status
-func (r DeleteIntegrationResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r DeleteIntegrationResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type GetIntegrationResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *Integration
-	JSON401      *Unauthorized
-	JSON404      *NotFound
-}
-
-// Status returns HTTPResponse.Status
-func (r GetIntegrationResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetIntegrationResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type UpdateIntegrationResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *Integration
-	JSON400      *BadRequest
-	JSON401      *Unauthorized
-	JSON404      *NotFound
-}
-
-// Status returns HTTPResponse.Status
-func (r UpdateIntegrationResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r UpdateIntegrationResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
 type ListInteractionsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -16032,30 +14150,6 @@ func (r StartRunResponse) StatusCode() int {
 	return 0
 }
 
-type BulkCancelRunsResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *BulkRunResult
-	JSON400      *BadRequest
-	JSON401      *Unauthorized
-}
-
-// Status returns HTTPResponse.Status
-func (r BulkCancelRunsResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r BulkCancelRunsResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
 type StreamProjectRunEventsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -16072,30 +14166,6 @@ func (r StreamProjectRunEventsResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r StreamProjectRunEventsResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type BulkRetryRunsResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *BulkRunResult
-	JSON400      *BadRequest
-	JSON401      *Unauthorized
-}
-
-// Status returns HTTPResponse.Status
-func (r BulkRetryRunsResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r BulkRetryRunsResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -16126,7 +14196,7 @@ func (r GetRunResponse) StatusCode() int {
 	return 0
 }
 
-type GetRunActionLogResponse struct {
+type ListRunActionLogResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *ActionLogListResponse
@@ -16135,7 +14205,7 @@ type GetRunActionLogResponse struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r GetRunActionLogResponse) Status() string {
+func (r ListRunActionLogResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -16143,7 +14213,7 @@ func (r GetRunActionLogResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r GetRunActionLogResponse) StatusCode() int {
+func (r ListRunActionLogResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -16196,7 +14266,7 @@ func (r StreamRunEventsResponse) StatusCode() int {
 	return 0
 }
 
-type GetRunJobsResponse struct {
+type ListRunJobsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *JobListResponse
@@ -16205,7 +14275,7 @@ type GetRunJobsResponse struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r GetRunJobsResponse) Status() string {
+func (r ListRunJobsResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -16213,7 +14283,7 @@ func (r GetRunJobsResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r GetRunJobsResponse) StatusCode() int {
+func (r ListRunJobsResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -16487,6 +14557,150 @@ func (r ListTriggerFiresResponse) StatusCode() int {
 	return 0
 }
 
+type DeleteAllTriggerTargetsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteAllTriggerTargetsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteAllTriggerTargetsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ListTriggerTargetsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *TriggerTargetListResponse
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r ListTriggerTargetsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListTriggerTargetsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type CreateTriggerTargetResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON201      *TriggerTarget
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateTriggerTargetResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateTriggerTargetResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type DeleteTriggerTargetResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteTriggerTargetResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteTriggerTargetResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetTriggerTargetResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *TriggerTarget
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r GetTriggerTargetResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetTriggerTargetResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type UpdateTriggerTargetResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *TriggerTarget
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r UpdateTriggerTargetResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpdateTriggerTargetResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type ListWebhooksResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -16627,6 +14841,31 @@ func (r ListWebhookDeliveriesResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r ListWebhookDeliveriesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type PingWebhookResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *PingWebhookResult
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r PingWebhookResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PingWebhookResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -16850,251 +15089,6 @@ func (r ListWorkflowVersionsResponse) StatusCode() int {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
-}
-
-type ListRoleAssignmentsResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *RoleAssignmentListResponse
-	JSON401      *Unauthorized
-	JSON403      *Forbidden
-}
-
-// Status returns HTTPResponse.Status
-func (r ListRoleAssignmentsResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ListRoleAssignmentsResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type CreateRoleAssignmentResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON201      *RoleAssignment
-	JSON400      *BadRequest
-	JSON401      *Unauthorized
-	JSON403      *Forbidden
-	JSON404      *NotFound
-	JSON409      *Conflict
-}
-
-// Status returns HTTPResponse.Status
-func (r CreateRoleAssignmentResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r CreateRoleAssignmentResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type DeleteRoleAssignmentResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON401      *Unauthorized
-	JSON403      *Forbidden
-	JSON404      *NotFound
-}
-
-// Status returns HTTPResponse.Status
-func (r DeleteRoleAssignmentResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r DeleteRoleAssignmentResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type ListRolesResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *RoleListResponse
-	JSON401      *Unauthorized
-	JSON403      *Forbidden
-}
-
-// Status returns HTTPResponse.Status
-func (r ListRolesResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ListRolesResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type CreateRoleResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON201      *Role
-	JSON400      *BadRequest
-	JSON401      *Unauthorized
-	JSON403      *Forbidden
-	JSON409      *Conflict
-}
-
-// Status returns HTTPResponse.Status
-func (r CreateRoleResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r CreateRoleResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type DeleteRoleResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON401      *Unauthorized
-	JSON403      *Forbidden
-	JSON404      *NotFound
-}
-
-// Status returns HTTPResponse.Status
-func (r DeleteRoleResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r DeleteRoleResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type GetRoleResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *Role
-	JSON401      *Unauthorized
-	JSON403      *Forbidden
-	JSON404      *NotFound
-}
-
-// Status returns HTTPResponse.Status
-func (r GetRoleResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetRoleResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type UpdateRoleResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *Role
-	JSON400      *BadRequest
-	JSON401      *Unauthorized
-	JSON403      *Forbidden
-	JSON404      *NotFound
-	JSON409      *Conflict
-}
-
-// Status returns HTTPResponse.Status
-func (r UpdateRoleResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r UpdateRoleResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ListAPIKeysWithResponse request returning *ListAPIKeysResponse
-func (c *ClientWithResponses) ListAPIKeysWithResponse(ctx context.Context, params *ListAPIKeysParams, reqEditors ...RequestEditorFn) (*ListAPIKeysResponse, error) {
-	rsp, err := c.ListAPIKeys(ctx, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseListAPIKeysResponse(rsp)
-}
-
-// CreateAPIKeyWithBodyWithResponse request with arbitrary body returning *CreateAPIKeyResponse
-func (c *ClientWithResponses) CreateAPIKeyWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateAPIKeyResponse, error) {
-	rsp, err := c.CreateAPIKeyWithBody(ctx, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateAPIKeyResponse(rsp)
-}
-
-func (c *ClientWithResponses) CreateAPIKeyWithResponse(ctx context.Context, body CreateAPIKeyJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateAPIKeyResponse, error) {
-	rsp, err := c.CreateAPIKey(ctx, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateAPIKeyResponse(rsp)
-}
-
-// RevokeAPIKeyWithResponse request returning *RevokeAPIKeyResponse
-func (c *ClientWithResponses) RevokeAPIKeyWithResponse(ctx context.Context, id IDParam, params *RevokeAPIKeyParams, reqEditors ...RequestEditorFn) (*RevokeAPIKeyResponse, error) {
-	rsp, err := c.RevokeAPIKey(ctx, id, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseRevokeAPIKeyResponse(rsp)
-}
-
-// GetAPIKeyWithResponse request returning *GetAPIKeyResponse
-func (c *ClientWithResponses) GetAPIKeyWithResponse(ctx context.Context, id IDParam, params *GetAPIKeyParams, reqEditors ...RequestEditorFn) (*GetAPIKeyResponse, error) {
-	rsp, err := c.GetAPIKey(ctx, id, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetAPIKeyResponse(rsp)
 }
 
 // ListAuditLogsWithResponse request returning *ListAuditLogsResponse
@@ -17622,84 +15616,6 @@ func (c *ClientWithResponses) RemoveGroupMemberWithResponse(ctx context.Context,
 	return ParseRemoveGroupMemberResponse(rsp)
 }
 
-// ListIntegrationsWithResponse request returning *ListIntegrationsResponse
-func (c *ClientWithResponses) ListIntegrationsWithResponse(ctx context.Context, project ProjectHandleParam, params *ListIntegrationsParams, reqEditors ...RequestEditorFn) (*ListIntegrationsResponse, error) {
-	rsp, err := c.ListIntegrations(ctx, project, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseListIntegrationsResponse(rsp)
-}
-
-// CreateIntegrationWithBodyWithResponse request with arbitrary body returning *CreateIntegrationResponse
-func (c *ClientWithResponses) CreateIntegrationWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateIntegrationResponse, error) {
-	rsp, err := c.CreateIntegrationWithBody(ctx, project, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateIntegrationResponse(rsp)
-}
-
-func (c *ClientWithResponses) CreateIntegrationWithResponse(ctx context.Context, project ProjectHandleParam, body CreateIntegrationJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateIntegrationResponse, error) {
-	rsp, err := c.CreateIntegration(ctx, project, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateIntegrationResponse(rsp)
-}
-
-// CopyIntegrationWithBodyWithResponse request with arbitrary body returning *CopyIntegrationResponse
-func (c *ClientWithResponses) CopyIntegrationWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CopyIntegrationResponse, error) {
-	rsp, err := c.CopyIntegrationWithBody(ctx, project, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCopyIntegrationResponse(rsp)
-}
-
-func (c *ClientWithResponses) CopyIntegrationWithResponse(ctx context.Context, project ProjectHandleParam, body CopyIntegrationJSONRequestBody, reqEditors ...RequestEditorFn) (*CopyIntegrationResponse, error) {
-	rsp, err := c.CopyIntegration(ctx, project, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCopyIntegrationResponse(rsp)
-}
-
-// DeleteIntegrationWithResponse request returning *DeleteIntegrationResponse
-func (c *ClientWithResponses) DeleteIntegrationWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*DeleteIntegrationResponse, error) {
-	rsp, err := c.DeleteIntegration(ctx, project, id, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseDeleteIntegrationResponse(rsp)
-}
-
-// GetIntegrationWithResponse request returning *GetIntegrationResponse
-func (c *ClientWithResponses) GetIntegrationWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*GetIntegrationResponse, error) {
-	rsp, err := c.GetIntegration(ctx, project, id, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetIntegrationResponse(rsp)
-}
-
-// UpdateIntegrationWithBodyWithResponse request with arbitrary body returning *UpdateIntegrationResponse
-func (c *ClientWithResponses) UpdateIntegrationWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateIntegrationResponse, error) {
-	rsp, err := c.UpdateIntegrationWithBody(ctx, project, id, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUpdateIntegrationResponse(rsp)
-}
-
-func (c *ClientWithResponses) UpdateIntegrationWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body UpdateIntegrationJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateIntegrationResponse, error) {
-	rsp, err := c.UpdateIntegration(ctx, project, id, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUpdateIntegrationResponse(rsp)
-}
-
 // ListInteractionsWithResponse request returning *ListInteractionsResponse
 func (c *ClientWithResponses) ListInteractionsWithResponse(ctx context.Context, project ProjectHandleParam, params *ListInteractionsParams, reqEditors ...RequestEditorFn) (*ListInteractionsResponse, error) {
 	rsp, err := c.ListInteractions(ctx, project, params, reqEditors...)
@@ -17916,23 +15832,6 @@ func (c *ClientWithResponses) StartRunWithResponse(ctx context.Context, project 
 	return ParseStartRunResponse(rsp)
 }
 
-// BulkCancelRunsWithBodyWithResponse request with arbitrary body returning *BulkCancelRunsResponse
-func (c *ClientWithResponses) BulkCancelRunsWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*BulkCancelRunsResponse, error) {
-	rsp, err := c.BulkCancelRunsWithBody(ctx, project, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseBulkCancelRunsResponse(rsp)
-}
-
-func (c *ClientWithResponses) BulkCancelRunsWithResponse(ctx context.Context, project ProjectHandleParam, body BulkCancelRunsJSONRequestBody, reqEditors ...RequestEditorFn) (*BulkCancelRunsResponse, error) {
-	rsp, err := c.BulkCancelRuns(ctx, project, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseBulkCancelRunsResponse(rsp)
-}
-
 // StreamProjectRunEventsWithResponse request returning *StreamProjectRunEventsResponse
 func (c *ClientWithResponses) StreamProjectRunEventsWithResponse(ctx context.Context, project ProjectHandleParam, params *StreamProjectRunEventsParams, reqEditors ...RequestEditorFn) (*StreamProjectRunEventsResponse, error) {
 	rsp, err := c.StreamProjectRunEvents(ctx, project, params, reqEditors...)
@@ -17940,23 +15839,6 @@ func (c *ClientWithResponses) StreamProjectRunEventsWithResponse(ctx context.Con
 		return nil, err
 	}
 	return ParseStreamProjectRunEventsResponse(rsp)
-}
-
-// BulkRetryRunsWithBodyWithResponse request with arbitrary body returning *BulkRetryRunsResponse
-func (c *ClientWithResponses) BulkRetryRunsWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*BulkRetryRunsResponse, error) {
-	rsp, err := c.BulkRetryRunsWithBody(ctx, project, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseBulkRetryRunsResponse(rsp)
-}
-
-func (c *ClientWithResponses) BulkRetryRunsWithResponse(ctx context.Context, project ProjectHandleParam, body BulkRetryRunsJSONRequestBody, reqEditors ...RequestEditorFn) (*BulkRetryRunsResponse, error) {
-	rsp, err := c.BulkRetryRuns(ctx, project, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseBulkRetryRunsResponse(rsp)
 }
 
 // GetRunWithResponse request returning *GetRunResponse
@@ -17968,13 +15850,13 @@ func (c *ClientWithResponses) GetRunWithResponse(ctx context.Context, project Pr
 	return ParseGetRunResponse(rsp)
 }
 
-// GetRunActionLogWithResponse request returning *GetRunActionLogResponse
-func (c *ClientWithResponses) GetRunActionLogWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*GetRunActionLogResponse, error) {
-	rsp, err := c.GetRunActionLog(ctx, project, id, reqEditors...)
+// ListRunActionLogWithResponse request returning *ListRunActionLogResponse
+func (c *ClientWithResponses) ListRunActionLogWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*ListRunActionLogResponse, error) {
+	rsp, err := c.ListRunActionLog(ctx, project, id, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseGetRunActionLogResponse(rsp)
+	return ParseListRunActionLogResponse(rsp)
 }
 
 // CancelRunWithResponse request returning *CancelRunResponse
@@ -17995,13 +15877,13 @@ func (c *ClientWithResponses) StreamRunEventsWithResponse(ctx context.Context, p
 	return ParseStreamRunEventsResponse(rsp)
 }
 
-// GetRunJobsWithResponse request returning *GetRunJobsResponse
-func (c *ClientWithResponses) GetRunJobsWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*GetRunJobsResponse, error) {
-	rsp, err := c.GetRunJobs(ctx, project, id, reqEditors...)
+// ListRunJobsWithResponse request returning *ListRunJobsResponse
+func (c *ClientWithResponses) ListRunJobsWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*ListRunJobsResponse, error) {
+	rsp, err := c.ListRunJobs(ctx, project, id, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseGetRunJobsResponse(rsp)
+	return ParseListRunJobsResponse(rsp)
 }
 
 // ResumeRunWithResponse request returning *ResumeRunResponse
@@ -18135,6 +16017,76 @@ func (c *ClientWithResponses) ListTriggerFiresWithResponse(ctx context.Context, 
 	return ParseListTriggerFiresResponse(rsp)
 }
 
+// DeleteAllTriggerTargetsWithResponse request returning *DeleteAllTriggerTargetsResponse
+func (c *ClientWithResponses) DeleteAllTriggerTargetsWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*DeleteAllTriggerTargetsResponse, error) {
+	rsp, err := c.DeleteAllTriggerTargets(ctx, project, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteAllTriggerTargetsResponse(rsp)
+}
+
+// ListTriggerTargetsWithResponse request returning *ListTriggerTargetsResponse
+func (c *ClientWithResponses) ListTriggerTargetsWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*ListTriggerTargetsResponse, error) {
+	rsp, err := c.ListTriggerTargets(ctx, project, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListTriggerTargetsResponse(rsp)
+}
+
+// CreateTriggerTargetWithBodyWithResponse request with arbitrary body returning *CreateTriggerTargetResponse
+func (c *ClientWithResponses) CreateTriggerTargetWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateTriggerTargetResponse, error) {
+	rsp, err := c.CreateTriggerTargetWithBody(ctx, project, id, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateTriggerTargetResponse(rsp)
+}
+
+func (c *ClientWithResponses) CreateTriggerTargetWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body CreateTriggerTargetJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateTriggerTargetResponse, error) {
+	rsp, err := c.CreateTriggerTarget(ctx, project, id, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateTriggerTargetResponse(rsp)
+}
+
+// DeleteTriggerTargetWithResponse request returning *DeleteTriggerTargetResponse
+func (c *ClientWithResponses) DeleteTriggerTargetWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, targetId TriggerTargetIDParam, reqEditors ...RequestEditorFn) (*DeleteTriggerTargetResponse, error) {
+	rsp, err := c.DeleteTriggerTarget(ctx, project, id, targetId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteTriggerTargetResponse(rsp)
+}
+
+// GetTriggerTargetWithResponse request returning *GetTriggerTargetResponse
+func (c *ClientWithResponses) GetTriggerTargetWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, targetId TriggerTargetIDParam, reqEditors ...RequestEditorFn) (*GetTriggerTargetResponse, error) {
+	rsp, err := c.GetTriggerTarget(ctx, project, id, targetId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetTriggerTargetResponse(rsp)
+}
+
+// UpdateTriggerTargetWithBodyWithResponse request with arbitrary body returning *UpdateTriggerTargetResponse
+func (c *ClientWithResponses) UpdateTriggerTargetWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, targetId TriggerTargetIDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateTriggerTargetResponse, error) {
+	rsp, err := c.UpdateTriggerTargetWithBody(ctx, project, id, targetId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateTriggerTargetResponse(rsp)
+}
+
+func (c *ClientWithResponses) UpdateTriggerTargetWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, targetId TriggerTargetIDParam, body UpdateTriggerTargetJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateTriggerTargetResponse, error) {
+	rsp, err := c.UpdateTriggerTarget(ctx, project, id, targetId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateTriggerTargetResponse(rsp)
+}
+
 // ListWebhooksWithResponse request returning *ListWebhooksResponse
 func (c *ClientWithResponses) ListWebhooksWithResponse(ctx context.Context, project ProjectHandleParam, params *ListWebhooksParams, reqEditors ...RequestEditorFn) (*ListWebhooksResponse, error) {
 	rsp, err := c.ListWebhooks(ctx, project, params, reqEditors...)
@@ -18203,6 +16155,23 @@ func (c *ClientWithResponses) ListWebhookDeliveriesWithResponse(ctx context.Cont
 		return nil, err
 	}
 	return ParseListWebhookDeliveriesResponse(rsp)
+}
+
+// PingWebhookWithBodyWithResponse request with arbitrary body returning *PingWebhookResponse
+func (c *ClientWithResponses) PingWebhookWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PingWebhookResponse, error) {
+	rsp, err := c.PingWebhookWithBody(ctx, project, id, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePingWebhookResponse(rsp)
+}
+
+func (c *ClientWithResponses) PingWebhookWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body PingWebhookJSONRequestBody, reqEditors ...RequestEditorFn) (*PingWebhookResponse, error) {
+	rsp, err := c.PingWebhook(ctx, project, id, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePingWebhookResponse(rsp)
 }
 
 // ListWorkersWithResponse request returning *ListWorkersResponse
@@ -18308,262 +16277,6 @@ func (c *ClientWithResponses) ListWorkflowVersionsWithResponse(ctx context.Conte
 		return nil, err
 	}
 	return ParseListWorkflowVersionsResponse(rsp)
-}
-
-// ListRoleAssignmentsWithResponse request returning *ListRoleAssignmentsResponse
-func (c *ClientWithResponses) ListRoleAssignmentsWithResponse(ctx context.Context, params *ListRoleAssignmentsParams, reqEditors ...RequestEditorFn) (*ListRoleAssignmentsResponse, error) {
-	rsp, err := c.ListRoleAssignments(ctx, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseListRoleAssignmentsResponse(rsp)
-}
-
-// CreateRoleAssignmentWithBodyWithResponse request with arbitrary body returning *CreateRoleAssignmentResponse
-func (c *ClientWithResponses) CreateRoleAssignmentWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateRoleAssignmentResponse, error) {
-	rsp, err := c.CreateRoleAssignmentWithBody(ctx, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateRoleAssignmentResponse(rsp)
-}
-
-func (c *ClientWithResponses) CreateRoleAssignmentWithResponse(ctx context.Context, body CreateRoleAssignmentJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateRoleAssignmentResponse, error) {
-	rsp, err := c.CreateRoleAssignment(ctx, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateRoleAssignmentResponse(rsp)
-}
-
-// DeleteRoleAssignmentWithResponse request returning *DeleteRoleAssignmentResponse
-func (c *ClientWithResponses) DeleteRoleAssignmentWithResponse(ctx context.Context, id IDParam, reqEditors ...RequestEditorFn) (*DeleteRoleAssignmentResponse, error) {
-	rsp, err := c.DeleteRoleAssignment(ctx, id, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseDeleteRoleAssignmentResponse(rsp)
-}
-
-// ListRolesWithResponse request returning *ListRolesResponse
-func (c *ClientWithResponses) ListRolesWithResponse(ctx context.Context, params *ListRolesParams, reqEditors ...RequestEditorFn) (*ListRolesResponse, error) {
-	rsp, err := c.ListRoles(ctx, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseListRolesResponse(rsp)
-}
-
-// CreateRoleWithBodyWithResponse request with arbitrary body returning *CreateRoleResponse
-func (c *ClientWithResponses) CreateRoleWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateRoleResponse, error) {
-	rsp, err := c.CreateRoleWithBody(ctx, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateRoleResponse(rsp)
-}
-
-func (c *ClientWithResponses) CreateRoleWithResponse(ctx context.Context, body CreateRoleJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateRoleResponse, error) {
-	rsp, err := c.CreateRole(ctx, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateRoleResponse(rsp)
-}
-
-// DeleteRoleWithResponse request returning *DeleteRoleResponse
-func (c *ClientWithResponses) DeleteRoleWithResponse(ctx context.Context, id IDParam, params *DeleteRoleParams, reqEditors ...RequestEditorFn) (*DeleteRoleResponse, error) {
-	rsp, err := c.DeleteRole(ctx, id, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseDeleteRoleResponse(rsp)
-}
-
-// GetRoleWithResponse request returning *GetRoleResponse
-func (c *ClientWithResponses) GetRoleWithResponse(ctx context.Context, id IDParam, params *GetRoleParams, reqEditors ...RequestEditorFn) (*GetRoleResponse, error) {
-	rsp, err := c.GetRole(ctx, id, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetRoleResponse(rsp)
-}
-
-// UpdateRoleWithBodyWithResponse request with arbitrary body returning *UpdateRoleResponse
-func (c *ClientWithResponses) UpdateRoleWithBodyWithResponse(ctx context.Context, id IDParam, params *UpdateRoleParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateRoleResponse, error) {
-	rsp, err := c.UpdateRoleWithBody(ctx, id, params, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUpdateRoleResponse(rsp)
-}
-
-func (c *ClientWithResponses) UpdateRoleWithResponse(ctx context.Context, id IDParam, params *UpdateRoleParams, body UpdateRoleJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateRoleResponse, error) {
-	rsp, err := c.UpdateRole(ctx, id, params, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUpdateRoleResponse(rsp)
-}
-
-// ParseListAPIKeysResponse parses an HTTP response from a ListAPIKeysWithResponse call
-func ParseListAPIKeysResponse(rsp *http.Response) (*ListAPIKeysResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ListAPIKeysResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest APIKeyListResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseCreateAPIKeyResponse parses an HTTP response from a CreateAPIKeyWithResponse call
-func ParseCreateAPIKeyResponse(rsp *http.Response) (*CreateAPIKeyResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &CreateAPIKeyResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
-		var dest APIKeyCreateResult
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON201 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest BadRequest
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseRevokeAPIKeyResponse parses an HTTP response from a RevokeAPIKeyWithResponse call
-func ParseRevokeAPIKeyResponse(rsp *http.Response) (*RevokeAPIKeyResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &RevokeAPIKeyResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseGetAPIKeyResponse parses an HTTP response from a GetAPIKeyWithResponse call
-func ParseGetAPIKeyResponse(rsp *http.Response) (*GetAPIKeyResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetAPIKeyResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest APIKey
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	}
-
-	return response, nil
 }
 
 // ParseListAuditLogsResponse parses an HTTP response from a ListAuditLogsWithResponse call
@@ -19488,6 +17201,13 @@ func ParseUpdateAgentResponse(rsp *http.Response) (*UpdateAgentResponse, error) 
 		}
 		response.JSON404 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
 	}
 
 	return response, nil
@@ -20401,246 +18121,6 @@ func ParseRemoveGroupMemberResponse(rsp *http.Response) (*RemoveGroupMemberRespo
 	return response, nil
 }
 
-// ParseListIntegrationsResponse parses an HTTP response from a ListIntegrationsWithResponse call
-func ParseListIntegrationsResponse(rsp *http.Response) (*ListIntegrationsResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ListIntegrationsResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest IntegrationListResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseCreateIntegrationResponse parses an HTTP response from a CreateIntegrationWithResponse call
-func ParseCreateIntegrationResponse(rsp *http.Response) (*CreateIntegrationResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &CreateIntegrationResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
-		var dest Integration
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON201 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest BadRequest
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseCopyIntegrationResponse parses an HTTP response from a CopyIntegrationWithResponse call
-func ParseCopyIntegrationResponse(rsp *http.Response) (*CopyIntegrationResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &CopyIntegrationResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
-		var dest Integration
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON201 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest BadRequest
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseDeleteIntegrationResponse parses an HTTP response from a DeleteIntegrationWithResponse call
-func ParseDeleteIntegrationResponse(rsp *http.Response) (*DeleteIntegrationResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &DeleteIntegrationResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseGetIntegrationResponse parses an HTTP response from a GetIntegrationWithResponse call
-func ParseGetIntegrationResponse(rsp *http.Response) (*GetIntegrationResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetIntegrationResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Integration
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseUpdateIntegrationResponse parses an HTTP response from a UpdateIntegrationWithResponse call
-func ParseUpdateIntegrationResponse(rsp *http.Response) (*UpdateIntegrationResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &UpdateIntegrationResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Integration
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest BadRequest
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
 // ParseListInteractionsResponse parses an HTTP response from a ListInteractionsWithResponse call
 func ParseListInteractionsResponse(rsp *http.Response) (*ListInteractionsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -21372,46 +18852,6 @@ func ParseStartRunResponse(rsp *http.Response) (*StartRunResponse, error) {
 	return response, nil
 }
 
-// ParseBulkCancelRunsResponse parses an HTTP response from a BulkCancelRunsWithResponse call
-func ParseBulkCancelRunsResponse(rsp *http.Response) (*BulkCancelRunsResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &BulkCancelRunsResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest BulkRunResult
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest BadRequest
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	}
-
-	return response, nil
-}
-
 // ParseStreamProjectRunEventsResponse parses an HTTP response from a StreamProjectRunEventsWithResponse call
 func ParseStreamProjectRunEventsResponse(rsp *http.Response) (*StreamProjectRunEventsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -21426,46 +18866,6 @@ func ParseStreamProjectRunEventsResponse(rsp *http.Response) (*StreamProjectRunE
 	}
 
 	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseBulkRetryRunsResponse parses an HTTP response from a BulkRetryRunsWithResponse call
-func ParseBulkRetryRunsResponse(rsp *http.Response) (*BulkRetryRunsResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &BulkRetryRunsResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest BulkRunResult
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest BadRequest
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
 		var dest Unauthorized
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -21518,15 +18918,15 @@ func ParseGetRunResponse(rsp *http.Response) (*GetRunResponse, error) {
 	return response, nil
 }
 
-// ParseGetRunActionLogResponse parses an HTTP response from a GetRunActionLogWithResponse call
-func ParseGetRunActionLogResponse(rsp *http.Response) (*GetRunActionLogResponse, error) {
+// ParseListRunActionLogResponse parses an HTTP response from a ListRunActionLogWithResponse call
+func ParseListRunActionLogResponse(rsp *http.Response) (*ListRunActionLogResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &GetRunActionLogResponse{
+	response := &ListRunActionLogResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -21624,15 +19024,15 @@ func ParseStreamRunEventsResponse(rsp *http.Response) (*StreamRunEventsResponse,
 	return response, nil
 }
 
-// ParseGetRunJobsResponse parses an HTTP response from a GetRunJobsWithResponse call
-func ParseGetRunJobsResponse(rsp *http.Response) (*GetRunJobsResponse, error) {
+// ParseListRunJobsResponse parses an HTTP response from a ListRunJobsWithResponse call
+func ParseListRunJobsResponse(rsp *http.Response) (*ListRunJobsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &GetRunJobsResponse{
+	response := &ListRunJobsResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -22125,6 +19525,246 @@ func ParseListTriggerFiresResponse(rsp *http.Response) (*ListTriggerFiresRespons
 	return response, nil
 }
 
+// ParseDeleteAllTriggerTargetsResponse parses an HTTP response from a DeleteAllTriggerTargetsWithResponse call
+func ParseDeleteAllTriggerTargetsResponse(rsp *http.Response) (*DeleteAllTriggerTargetsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteAllTriggerTargetsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListTriggerTargetsResponse parses an HTTP response from a ListTriggerTargetsWithResponse call
+func ParseListTriggerTargetsResponse(rsp *http.Response) (*ListTriggerTargetsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListTriggerTargetsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest TriggerTargetListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateTriggerTargetResponse parses an HTTP response from a CreateTriggerTargetWithResponse call
+func ParseCreateTriggerTargetResponse(rsp *http.Response) (*CreateTriggerTargetResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateTriggerTargetResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest TriggerTarget
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDeleteTriggerTargetResponse parses an HTTP response from a DeleteTriggerTargetWithResponse call
+func ParseDeleteTriggerTargetResponse(rsp *http.Response) (*DeleteTriggerTargetResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteTriggerTargetResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetTriggerTargetResponse parses an HTTP response from a GetTriggerTargetWithResponse call
+func ParseGetTriggerTargetResponse(rsp *http.Response) (*GetTriggerTargetResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetTriggerTargetResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest TriggerTarget
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUpdateTriggerTargetResponse parses an HTTP response from a UpdateTriggerTargetWithResponse call
+func ParseUpdateTriggerTargetResponse(rsp *http.Response) (*UpdateTriggerTargetResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpdateTriggerTargetResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest TriggerTarget
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseListWebhooksResponse parses an HTTP response from a ListWebhooksWithResponse call
 func ParseListWebhooksResponse(rsp *http.Response) (*ListWebhooksResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -22359,6 +19999,53 @@ func ParseListWebhookDeliveriesResponse(rsp *http.Response) (*ListWebhookDeliver
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParsePingWebhookResponse parses an HTTP response from a PingWebhookWithResponse call
+func ParsePingWebhookResponse(rsp *http.Response) (*PingWebhookResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PingWebhookResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest PingWebhookResult
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
 		var dest Unauthorized
@@ -22754,389 +20441,6 @@ func ParseListWorkflowVersionsResponse(rsp *http.Response) (*ListWorkflowVersion
 			return nil, err
 		}
 		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseListRoleAssignmentsResponse parses an HTTP response from a ListRoleAssignmentsWithResponse call
-func ParseListRoleAssignmentsResponse(rsp *http.Response) (*ListRoleAssignmentsResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ListRoleAssignmentsResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest RoleAssignmentListResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseCreateRoleAssignmentResponse parses an HTTP response from a CreateRoleAssignmentWithResponse call
-func ParseCreateRoleAssignmentResponse(rsp *http.Response) (*CreateRoleAssignmentResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &CreateRoleAssignmentResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
-		var dest RoleAssignment
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON201 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest BadRequest
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
-		var dest Conflict
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON409 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseDeleteRoleAssignmentResponse parses an HTTP response from a DeleteRoleAssignmentWithResponse call
-func ParseDeleteRoleAssignmentResponse(rsp *http.Response) (*DeleteRoleAssignmentResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &DeleteRoleAssignmentResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseListRolesResponse parses an HTTP response from a ListRolesWithResponse call
-func ParseListRolesResponse(rsp *http.Response) (*ListRolesResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ListRolesResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest RoleListResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseCreateRoleResponse parses an HTTP response from a CreateRoleWithResponse call
-func ParseCreateRoleResponse(rsp *http.Response) (*CreateRoleResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &CreateRoleResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
-		var dest Role
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON201 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest BadRequest
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
-		var dest Conflict
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON409 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseDeleteRoleResponse parses an HTTP response from a DeleteRoleWithResponse call
-func ParseDeleteRoleResponse(rsp *http.Response) (*DeleteRoleResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &DeleteRoleResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseGetRoleResponse parses an HTTP response from a GetRoleWithResponse call
-func ParseGetRoleResponse(rsp *http.Response) (*GetRoleResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetRoleResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Role
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseUpdateRoleResponse parses an HTTP response from a UpdateRoleWithResponse call
-func ParseUpdateRoleResponse(rsp *http.Response) (*UpdateRoleResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &UpdateRoleResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Role
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest BadRequest
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
-		var dest Conflict
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON409 = &dest
 
 	}
 

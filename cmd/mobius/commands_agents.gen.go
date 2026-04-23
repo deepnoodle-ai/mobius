@@ -24,7 +24,11 @@ func registerAgentsCommands(app *cli.App) {
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			p0 := ctx.String("project")
 			var body api.CreateAgentJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
@@ -45,7 +49,11 @@ func registerAgentsCommands(app *cli.App) {
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			p0 := ctx.String("project")
 			p1 := ctx.Arg(0)
 			var body api.CreateAgentSessionJSONRequestBody
@@ -64,7 +72,11 @@ func registerAgentsCommands(app *cli.App) {
 		Args("id").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			p0 := ctx.String("project")
 			p1 := ctx.Arg(0)
 			resp, err := client.DeleteAgentWithResponse(ctx.Context(), p0, p1)
@@ -79,7 +91,11 @@ func registerAgentsCommands(app *cli.App) {
 		Args("session-id").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			p0 := ctx.String("project")
 			p1 := ctx.Arg(0)
 			resp, err := client.DisconnectAgentSessionWithResponse(ctx.Context(), p0, p1)
@@ -94,7 +110,11 @@ func registerAgentsCommands(app *cli.App) {
 		Args("id").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			p0 := ctx.String("project")
 			p1 := ctx.Arg(0)
 			resp, err := client.GetAgentWithResponse(ctx.Context(), p0, p1)
@@ -109,7 +129,11 @@ func registerAgentsCommands(app *cli.App) {
 		Args("session-id").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			p0 := ctx.String("project")
 			p1 := ctx.Arg(0)
 			resp, err := client.GetAgentSessionWithResponse(ctx.Context(), p0, p1)
@@ -124,7 +148,11 @@ func registerAgentsCommands(app *cli.App) {
 		Args("session-id").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			p0 := ctx.String("project")
 			p1 := ctx.Arg(0)
 			resp, err := client.HeartbeatAgentSessionWithResponse(ctx.Context(), p0, p1)
@@ -137,13 +165,17 @@ func registerAgentsCommands(app *cli.App) {
 	agentsGrp.Command("list").
 		Description("List agents").
 		Flags(
-			cli.String("service-account-id", "").Help("service-account-id"),
-			cli.String("status", "").Help("status"),
+			cli.String("service-account-id", "").Help("Filter to agents backed by this service account."),
+			cli.String("status", "").Help("Filter by administrative status (active/inactive), independent of presence."),
 			cli.Int("limit", "").Help("limit"),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			p0 := ctx.String("project")
 			params := &api.ListAgentsParams{}
 			if ctx.IsSet("service-account-id") {
@@ -169,13 +201,17 @@ func registerAgentsCommands(app *cli.App) {
 		Description("List sessions for an agent").
 		Args("id").
 		Flags(
-			cli.String("status", "").Help("status"),
-			cli.String("transport", "").Help("transport"),
+			cli.String("status", "").Help("Filter by session status."),
+			cli.String("transport", "").Help("Filter by transport type (e.g. \"sse\", \"polling\")."),
 			cli.Int("limit", "").Help("limit"),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			p0 := ctx.String("project")
 			p1 := ctx.Arg(0)
 			params := &api.ListAgentSessionsParams{}
@@ -206,7 +242,11 @@ func registerAgentsCommands(app *cli.App) {
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			p0 := ctx.String("project")
 			p1 := ctx.Arg(0)
 			var body api.UpdateAgentJSONRequestBody

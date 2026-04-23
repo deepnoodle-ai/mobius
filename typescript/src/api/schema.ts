@@ -174,64 +174,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/api-keys": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List API keys
-         * @description Returns API keys for this org. When `project_id` is provided, return
-         *     only keys pinned to that project. When `project_id` is omitted, return
-         *     only org-level keys; project-pinned keys are excluded because the
-         *     request has no project-scoped context.
-         */
-        get: operations["listAPIKeys"];
-        put?: never;
-        /**
-         * Create an API key
-         * @description Creates an API key for this org. Omit `project_id` to create an
-         *     org-scoped key when the caller has org-level authorization, or set
-         *     `project_id` to pin the key to exactly one project. Project-pinned
-         *     keys remain inaccessible through org-level listing and management
-         *     unless the request is explicitly scoped with the same `project_id`.
-         *     The raw key value is returned in `key` and is never retrievable again
-         *     after this response.
-         */
-        post: operations["createAPIKey"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/api-keys/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get an API key */
-        get: operations["getAPIKey"];
-        put?: never;
-        post?: never;
-        /**
-         * Revoke an API key
-         * @description Permanently revokes the key. In-flight requests using this key will
-         *     immediately start receiving 401. When `project_id` is provided, revoke
-         *     only a key pinned to that project. When `project_id` is omitted,
-         *     project-pinned keys are excluded because the request has no
-         *     project-scoped context.
-         */
-        delete: operations["revokeAPIKey"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/projects/{project}/workflows": {
         parameters: {
             query?: never;
@@ -346,8 +288,8 @@ export interface paths {
          * List workflow runs
          * @description Supports cursor-based pagination and keyset filtering by
          *     status, workflow type, queue, parent run, and
-         *     initiator. Returns `{data, next_cursor?}`; pass `next_cursor`
-         *     back in the next call to walk the result set.
+         *     initiator. When `has_more` is true, pass the returned
+         *     `next_cursor` back on the next call to walk the result set.
          */
         get: operations["listRuns"];
         put?: never;
@@ -360,52 +302,6 @@ export interface paths {
          *     `definition_version`.
          */
         post: operations["startRun"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/projects/{project}/runs/cancellations": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Request cancellation for a batch of runs
-         * @description Sets `cancel_requested` on every listed run. Workers receive
-         *     `directives.should_cancel: true` on their next heartbeat and are
-         *     expected to stop cooperatively. Per-run errors are reported inline;
-         *     the response always returns 200 even on partial failures.
-         */
-        post: operations["bulkCancelRuns"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/projects/{project}/runs/retries": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Re-enqueue a batch of failed runs
-         * @description Flips every listed run from `failed` back to `queued`, clearing
-         *     the error message. Only runs in terminal `failed` status can be
-         *     retried; runs in other states produce per-run errors. Per-run errors
-         *     are reported inline; the response always returns 200 on partial failures.
-         */
-        post: operations["bulkRetryRuns"];
         delete?: never;
         options?: never;
         head?: never;
@@ -437,7 +333,7 @@ export interface paths {
             cookie?: never;
         };
         /** List action log entries for a run */
-        get: operations["getRunActionLog"];
+        get: operations["listRunActionLog"];
         put?: never;
         post?: never;
         delete?: never;
@@ -454,7 +350,7 @@ export interface paths {
             cookie?: never;
         };
         /** List jobs for a run */
-        get: operations["getRunJobs"];
+        get: operations["listRunJobs"];
         put?: never;
         post?: never;
         delete?: never;
@@ -877,9 +773,9 @@ export interface paths {
          *     The server derives the owning run and project scope from the job,
          *     so workers do not need to pass `run_id` explicitly. Prefer this
          *     route over `POST /v1/projects/{project}/interactions` from within a
-         *     job context. The optional `signal_name` field overrides the server-
-         *     derived signal name; when omitted the server derives the signal name
-         *     from `step_name` or uses a default interaction signal name.
+         *     job context. The optional `signal_name` field overrides the
+         *     server-derived signal name; when omitted the server derives the
+         *     signal name from `step_name` or uses a default interaction signal.
          */
         post: operations["createJobInteraction"];
         delete?: never;
@@ -975,7 +871,7 @@ export interface paths {
          * List fire history for a trigger
          * @description Returns a paginated history of trigger fires newest-first. Each entry
          *     records whether the fire succeeded, was skipped (e.g. by `forbid`
-         *     concurrency policy), or failed, along with the resulting run ID.
+         *     concurrency policy), or failed, along with per-target outcomes.
          */
         get: operations["listTriggerFires"];
         put?: never;
@@ -984,6 +880,56 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project}/triggers/{id}/targets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List targets for a trigger
+         * @description Returns all targets attached to the given trigger.
+         */
+        get: operations["listTriggerTargets"];
+        put?: never;
+        /**
+         * Add a target to a trigger
+         * @description Attaches a workflow as a new target of the trigger.
+         */
+        post: operations["createTriggerTarget"];
+        /**
+         * Remove all targets from a trigger
+         * @description Detaches every target from the trigger. The trigger itself is not deleted.
+         */
+        delete: operations["deleteAllTriggerTargets"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project}/triggers/{id}/targets/{target_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a trigger target */
+        get: operations["getTriggerTarget"];
+        put?: never;
+        post?: never;
+        /** Remove a target from a trigger */
+        delete: operations["deleteTriggerTarget"];
+        options?: never;
+        head?: never;
+        /**
+         * Update a trigger target
+         * @description All fields are optional; omitted fields are unchanged.
+         */
+        patch: operations["updateTriggerTarget"];
         trace?: never;
     };
     "/v1/projects/{project}/workers": {
@@ -1123,6 +1069,32 @@ export interface paths {
         patch: operations["updateWebhook"];
         trace?: never;
     };
+    "/v1/projects/{project}/webhooks/{id}/ping": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Test a webhook URL
+         * @description Sends a live test POST request to the webhook's saved URL, or to an
+         *     override URL supplied in the request body, and returns the result.
+         *     Because the webhook URL may be empty at creation time, the typical
+         *     flow is: create the webhook without a URL, ping candidate URLs via
+         *     the override until one succeeds, then persist the chosen URL with
+         *     `PATCH`. The test payload has `type: "ping"` and is signed with the
+         *     webhook's secret if one is set.
+         */
+        post: operations["pingWebhook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/projects/{project}/webhooks/{id}/deliveries": {
         parameters: {
             query?: never;
@@ -1147,83 +1119,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project}/integrations": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List integrations */
-        get: operations["listIntegrations"];
-        put?: never;
-        /**
-         * Create an integration
-         * @description Creates a new integration record. The `provider` + `name` pair must
-         *     be unique within the project. Returns 400 if validation fails (e.g.,
-         *     missing required fields).
-         */
-        post: operations["createIntegration"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/projects/{project}/integrations/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get an integration */
-        get: operations["getIntegration"];
-        /**
-         * Update an integration
-         * @description Replaces the integration's `name`, `config`, and/or `status`. Use
-         *     `status: inactive` to disable an integration without deleting it.
-         *     Use `status: active` to re-enable. The `provider` field is
-         *     immutable after creation.
-         */
-        put: operations["updateIntegration"];
-        post?: never;
-        /**
-         * Delete an integration
-         * @description Hard-deletes the integration record and its stored config.
-         */
-        delete: operations["deleteIntegration"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/projects/{project}/integrations/copy": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Copy an integration from another project
-         * @description Clones an integration from another project within the same org into
-         *     this project. The full `config` blob is copied as-is. The source
-         *     and destination projects must both belong to the same org.
-         *
-         *     The `(provider, name)` pair must be unique in the destination project;
-         *     supply a different `name` to avoid conflicts with an existing
-         *     integration of the same provider and name.
-         */
-        post: operations["copyIntegration"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/projects/{project}/metrics": {
         parameters: {
             query?: never;
@@ -1242,102 +1137,6 @@ export interface paths {
         put?: never;
         post?: never;
         delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/roles": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List roles
-         * @description Returns system-defined roles plus custom roles for the org. Use `project_id` to narrow results to project-scoped roles.
-         */
-        get: operations["listRoles"];
-        put?: never;
-        /**
-         * Create a role
-         * @description Creates a custom role for the org. Supply `project_id` to scope the
-         *     role to a specific project. Roles with an empty `project_id` are
-         *     org-wide and can be assigned across all projects.
-         */
-        post: operations["createRole"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/roles/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get a role */
-        get: operations["getRole"];
-        put?: never;
-        post?: never;
-        /**
-         * Delete a role
-         * @description Hard-deletes the role and all its assignments. System-defined roles cannot be deleted.
-         */
-        delete: operations["deleteRole"];
-        options?: never;
-        head?: never;
-        /**
-         * Update a role
-         * @description Updates name, description, or permissions of a custom role. System-defined
-         *     roles (system_defined=true) cannot be updated and return 403.
-         */
-        patch: operations["updateRole"];
-        trace?: never;
-    };
-    "/v1/role-assignments": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List role assignments
-         * @description Returns assignments optionally filtered by actor, role, or project scope.
-         */
-        get: operations["listRoleAssignments"];
-        put?: never;
-        /**
-         * Assign a role to an actor
-         * @description Binds a role to a user or service account. Supply `project_id` to create
-         *     a project-scoped assignment; omit it for an org-wide assignment.
-         *     The assignment records the creating actor in `granted_by_actor_type` /
-         *     `granted_by_actor_id` for audit purposes.
-         */
-        post: operations["createRoleAssignment"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/role-assignments/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /** Remove a role assignment */
-        delete: operations["deleteRoleAssignment"];
         options?: never;
         head?: never;
         patch?: never;
@@ -1575,8 +1374,8 @@ export interface paths {
         /**
          * Create an agent
          * @description Creates an agent bound to `service_account_id`. A service account can
-         *     back multiple agents, but each agent belongs to exactly one service
-         *     account for the lifetime of the agent.
+         *     back multiple agents. The service account can be changed after creation
+         *     via the PATCH endpoint.
          */
         post: operations["createAgent"];
         delete?: never;
@@ -1605,8 +1404,7 @@ export interface paths {
         head?: never;
         /**
          * Update an agent
-         * @description Updates mutable agent fields. The backing `service_account_id` cannot
-         *     be changed after creation. Setting `status` to `inactive` prevents
+         * @description Updates mutable agent fields. Setting `status` to `inactive` prevents
          *     the agent from claiming new jobs but does not terminate active sessions.
          */
         patch: operations["updateAgent"];
@@ -2014,6 +1812,8 @@ export interface components {
             actor_type?: string;
             /** @description Durable actor ID that performed the action */
             actor_id?: string;
+            /** @description Display name of the actor (email for users, service account name for service accounts) */
+            actor_name?: string;
             /** @description Credential ID used for the request, when applicable */
             credential_id?: string;
             /**
@@ -2043,7 +1843,7 @@ export interface components {
         };
         AuditLogListResponse: {
             /** @description The list of results for this page. */
-            items?: components["schemas"]["AuditLogEntry"][];
+            items: components["schemas"]["AuditLogEntry"][];
             /** @description Cursor for fetching next page of results */
             next_cursor?: string;
             /** @description Whether more results are available */
@@ -2526,7 +2326,7 @@ export interface components {
         };
         WorkflowDefinitionListResponse: {
             /** @description The list of results for this page. */
-            items?: components["schemas"]["WorkflowDefinition"][];
+            items: components["schemas"]["WorkflowDefinition"][];
             /** @description Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false. */
             next_cursor?: string;
             /** @description Whether additional pages are available. */
@@ -2649,7 +2449,7 @@ export interface components {
         };
         WorkflowRunListResponse: {
             /** @description The list of results for this page. */
-            items?: components["schemas"]["WorkflowRun"][];
+            items: components["schemas"]["WorkflowRun"][];
             /** @description True when more pages are available. */
             has_more: boolean;
             /**
@@ -2805,18 +2605,6 @@ export interface components {
             /** @description Signal topic name matching the wait_signal step's topic. */
             name: string;
         };
-        BulkRunRequest: {
-            /** @description IDs of the runs to operate on. */
-            run_ids: string[];
-        };
-        BulkRunResult: {
-            /** @description IDs of runs that were successfully processed. */
-            succeeded: string[];
-            /** @description Map of run_id -> error message for per-run failures. */
-            failures?: {
-                [key: string]: string;
-            };
-        };
         /**
          * @description Hints that describe the safe-use properties of the action. Used by the
          *     engine and tooling to decide retry behavior, dry-run eligibility, etc.
@@ -2918,7 +2706,7 @@ export interface components {
         };
         ActionListResponse: {
             /** @description The list of results for this page. */
-            items?: components["schemas"]["Action"][];
+            items: components["schemas"]["Action"][];
             /** @description Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false. */
             next_cursor?: string;
             /** @description Whether additional pages are available. */
@@ -3006,7 +2794,7 @@ export interface components {
         };
         ActionAuditLogListResponse: {
             /** @description The list of results for this page. */
-            items?: components["schemas"]["ActionAuditLogEntry"][];
+            items: components["schemas"]["ActionAuditLogEntry"][];
             /** @description Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false. */
             next_cursor?: string;
             /** @description Whether additional pages are available. */
@@ -3051,7 +2839,7 @@ export interface components {
             run_id: string;
             /** @description Handle of the workflow definition that owns this run. */
             workflow_name: string;
-            /** @description Step name from the workflow spec — used for UI and interaction topic derivation. */
+            /** @description Step label from the workflow spec — used for UI and interaction signal name derivation. */
             step_name: string;
             /** @description Action name the worker must execute for this step. */
             action: string;
@@ -3249,9 +3037,9 @@ export interface components {
              * @description When target_actor.type is "group", setting require_all=true
              *     means all snapshotted group members must respond before the
              *     interaction is considered complete. Ignored for non-group targets.
-             * @default false
+             *     Defaults to false when omitted.
              */
-            require_all: boolean;
+            require_all?: boolean;
             /**
              * @description Optional duration string (e.g. "24h", "30m") specifying how long
              *     the interaction should remain open before expiring. When absent
@@ -3368,12 +3156,20 @@ export interface components {
          */
         ConcurrencyPolicy: "allow" | "forbid" | "replace";
         /**
-         * @description `skipped` means the fire was suppressed by the concurrency policy or a target condition evaluated to false.
+         * @description Outcome of a trigger activation:
+         *     - `success` — all enabled targets started their runs (or no targets configured).
+         *     - `partial_failure` — at least one target failed while others succeeded.
+         *     - `failed` — all targets failed, or a trigger-level error prevented any target.
+         *     - `skipped` — the concurrency policy suppressed the entire activation.
          * @enum {string}
          */
-        TriggerFireStatus: "success" | "failed" | "skipped";
+        TriggerFireStatus: "success" | "partial_failure" | "failed" | "skipped";
         /** @description A workflow to start when this trigger fires. */
         TriggerTarget: {
+            /** @description Unique identifier for this target. */
+            id: string;
+            /** @description ID of the trigger this target belongs to. */
+            trigger_id: string;
             /** @description ID of the workflow definition to run. */
             workflow_id: string;
             /**
@@ -3388,6 +3184,60 @@ export interface components {
             input_mapping?: {
                 [key: string]: string;
             };
+            /** @description When false, this target is paused and will not start a run when the trigger fires. */
+            enabled: boolean;
+            /**
+             * Format: date-time
+             * @description Timestamp when this target was created.
+             */
+            created_at: string;
+            /**
+             * Format: date-time
+             * @description Timestamp when this target was last updated.
+             */
+            updated_at: string;
+        };
+        TriggerTargetListResponse: {
+            /** @description The list of targets for this trigger. */
+            items: components["schemas"]["TriggerTarget"][];
+        };
+        /** @description Parameters for attaching a workflow target to a trigger. */
+        CreateTriggerTargetRequest: {
+            /** @description ID of the workflow definition to run. */
+            workflow_id: string;
+            /** @description Expression evaluated against the event payload. Omit to always run. */
+            condition?: string;
+            /** @description Maps workflow input names to JSONPath expressions. */
+            input_mapping?: {
+                [key: string]: string;
+            };
+            /** @description Whether this target starts enabled. Defaults to true when omitted. */
+            enabled?: boolean;
+        };
+        /** @description Partial update for a trigger target; omitted fields are unchanged. */
+        UpdateTriggerTargetRequest: {
+            /** @description Replacement workflow definition ID. */
+            workflow_id?: string;
+            /** @description Replacement condition expression. Set to empty string to remove. */
+            condition?: string;
+            /** @description Replacement input mapping. Set to null to clear all mappings. */
+            input_mapping?: {
+                [key: string]: string;
+            } | null;
+            /** @description Set to false to pause this target without removing it. */
+            enabled?: boolean;
+        };
+        /** @description Outcome of a single target within a trigger fire activation. */
+        TriggerFireTargetResult: {
+            /** @description ID of the trigger target that was evaluated. */
+            target_id: string;
+            /** @description ID of the workflow definition that was started (or attempted). */
+            workflow_id: string;
+            /** @description ID of the workflow run that was created. Absent when the target failed or was skipped. */
+            run_id?: string;
+            status: components["schemas"]["TriggerFireStatus"];
+            /** @description Error detail when status is `failed`. */
+            error?: string;
         };
         Trigger: {
             /** @description Unique identifier for this trigger. */
@@ -3406,7 +3256,7 @@ export interface components {
             filter_config?: {
                 [key: string]: unknown;
             };
-            /** @description Workflows to start when this trigger fires. */
+            /** @description Targets attached to this trigger, populated via join. */
             targets?: components["schemas"]["TriggerTarget"][];
             concurrency_policy: components["schemas"]["ConcurrencyPolicy"];
             /** @description When false, the trigger is paused and will not fire. */
@@ -3440,7 +3290,7 @@ export interface components {
         };
         TriggerListResponse: {
             /** @description The list of results for this page. */
-            items?: components["schemas"]["Trigger"][];
+            items: components["schemas"]["Trigger"][];
             /** @description Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false. */
             next_cursor?: string;
             /** @description Whether additional pages are available. */
@@ -3462,8 +3312,8 @@ export interface components {
              * @description When the fire was actually processed.
              */
             fired_at: string;
-            /** @description Workflow run created by this fire. Absent when status is `skipped` or `failed` before run creation. */
-            run_id?: string;
+            /** @description Per-target outcomes for this activation. */
+            target_results?: components["schemas"]["TriggerFireTargetResult"][];
             status: components["schemas"]["TriggerFireStatus"];
             /** @description Error detail when status is `failed`. */
             error?: string;
@@ -3477,7 +3327,7 @@ export interface components {
         };
         TriggerFireListResponse: {
             /** @description The list of results for this page. */
-            items?: components["schemas"]["TriggerFire"][];
+            items: components["schemas"]["TriggerFire"][];
             /** @description Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false. */
             next_cursor?: string;
             /** @description Whether additional pages are available. */
@@ -3499,14 +3349,11 @@ export interface components {
             filter_config?: {
                 [key: string]: unknown;
             };
-            /** @description Workflows to start when this trigger fires. */
-            targets?: components["schemas"]["TriggerTarget"][];
+            /** @description Workflows to start when this trigger fires (inline convenience; stored as sub-resources). */
+            targets?: components["schemas"]["CreateTriggerTargetRequest"][];
             concurrency_policy?: components["schemas"]["ConcurrencyPolicy"];
-            /**
-             * @description Whether the trigger starts enabled. Defaults to true.
-             * @default true
-             */
-            enabled: boolean;
+            /** @description Whether the trigger starts enabled. Defaults to true when omitted. */
+            enabled?: boolean;
             /**
              * @description URL-safe handle that determines the inbound receive URL. Auto-derived
              *     from `name` for `webhook` triggers when omitted. Must be unique
@@ -3531,8 +3378,6 @@ export interface components {
             filter_config?: {
                 [key: string]: unknown;
             };
-            /** @description Replaces the entire targets array. */
-            targets?: components["schemas"]["TriggerTarget"][];
             concurrency_policy?: components["schemas"]["ConcurrencyPolicy"];
             /** @description Set to false to pause the trigger without deleting it. */
             enabled?: boolean;
@@ -3557,6 +3402,18 @@ export interface components {
             last_seen_at?: string;
             /** @description Reserved for future capability-based job routing. Not currently used for filtering. */
             capabilities?: string[];
+            /**
+             * @description Service account this worker authenticated as on register/heartbeat.
+             *     Stable across credential rotation — use this to group worker rows
+             *     by identity in the admin UI.
+             */
+            service_account_id?: string;
+            /**
+             * @description ID of the specific API key this worker presented on its most recent
+             *     register/heartbeat. Changes across credential rotations; use together
+             *     with `service_account_id` to see rotation progress across a fleet.
+             */
+            api_key_id?: string;
             /**
              * @description True when `last_seen_at` is older than 2 minutes or absent.
              *     Computed at read time, not stored.
@@ -3702,8 +3559,13 @@ export interface components {
         CreateWebhookRequest: {
             /** @description Human-readable name, unique within the project. */
             name: string;
-            /** @description The endpoint Mobius will POST event payloads to. */
-            url: string;
+            /**
+             * @description The endpoint Mobius will POST event payloads to. May be left empty
+             *     at creation time so a candidate URL can be tested via the ping
+             *     endpoint before it is saved; events do not fire for webhooks with
+             *     an empty URL.
+             */
+            url?: string;
             /**
              * @description Optional shared secret. When set, Mobius signs each POST body
              *     with HMAC-SHA256 and includes `X-Mobius-Signature: sha256=<hex>`
@@ -3715,11 +3577,8 @@ export interface components {
              *     subscriptions, e.g. `["run.*"]` for all run events.
              */
             events: string[];
-            /**
-             * @description Whether the webhook starts enabled. Defaults to true.
-             * @default true
-             */
-            enabled: boolean;
+            /** @description Whether the webhook starts enabled. Defaults to true when omitted. */
+            enabled?: boolean;
         };
         UpdateWebhookRequest: {
             /** @description Replacement human-readable name. */
@@ -3735,6 +3594,25 @@ export interface components {
             events?: string[];
             /** @description Set to false to disable delivery without deleting the webhook. */
             enabled?: boolean;
+        };
+        PingWebhookRequest: {
+            /**
+             * @description URL to test. When supplied, the ping is sent to this URL instead
+             *     of the webhook's saved URL — use this to validate a candidate URL
+             *     before saving it. When omitted, the webhook's current saved URL
+             *     is used.
+             */
+            url?: string;
+        };
+        PingWebhookResult: {
+            /** @description True if the target responded with a 2xx status code. */
+            success: boolean;
+            /** @description HTTP status code returned by the target. Absent on network error. */
+            status_code?: number;
+            /** @description Error message if the request could not be completed. */
+            error?: string;
+            /** @description Round-trip latency in milliseconds. */
+            latency_ms?: number;
         };
         /**
          * @description `active` — integration is enabled and usable by workflows.
@@ -3776,7 +3654,7 @@ export interface components {
         };
         IntegrationListResponse: {
             /** @description The list of results for this page. */
-            items?: components["schemas"]["Integration"][];
+            items: components["schemas"]["Integration"][];
             /** @description Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false. */
             next_cursor?: string;
             /** @description Whether additional pages are available. */
@@ -4221,10 +4099,6 @@ export interface components {
             permissions: string[];
         };
         UpdateRoleRequest: {
-            /** @description Scope to change this role to. Cannot change an org-scoped role to project-scoped after creation. */
-            project_id?: string;
-            /** @description Replacement role name. */
-            name?: string;
             /** @description Replacement description. */
             description?: string;
             /** @description Replaces the existing permissions array entirely. */
@@ -4376,9 +4250,9 @@ export interface components {
          *     from the claimed job context.
          */
         CreateInteractionRequest: {
-            /** @description ID of the workflow run to resume when this interaction is completed. Provide together with `signal_name` for run-backed interactions; omit or null both fields for standalone interactions. */
+            /** @description ID of the workflow run to resume when this interaction is completed. */
             run_id?: string | null;
-            /** @description Signal name the interaction will complete against when run-backed. Provide together with `run_id` for run-backed interactions; omit or null both fields for standalone interactions. */
+            /** @description Signal name the interaction will complete against when run-backed. */
             signal_name?: string | null;
             target_actor: components["schemas"]["ActorRef"];
             type: components["schemas"]["InteractionType"];
@@ -4393,9 +4267,9 @@ export interface components {
              * @description When target_actor.type is "group", setting require_all=true
              *     means all snapshotted group members must respond before the
              *     interaction is considered complete. Ignored for non-group targets.
-             * @default false
+             *     Defaults to false when omitted.
              */
-            require_all: boolean;
+            require_all?: boolean;
             /**
              * Format: date-time
              * @description Timestamp after which this interaction expires if not responded to.
@@ -4523,12 +4397,10 @@ export interface components {
         Agent: {
             /** @description Unique identifier for this agent. */
             id: string;
-            /** @description The service account whose credentials this agent uses to authenticate. Immutable after creation. */
+            /** @description The service account whose credentials this agent uses to authenticate. Can be changed via PATCH. */
             service_account_id: string;
-            /** @description Unique name within the project, used for targeting in job claims. */
+            /** @description Mutable unique name within the project. Use `id` for stable references and job targeting. */
             name: string;
-            /** @description Human-readable label shown in the UI. */
-            display_name: string;
             /** @description Optional human-readable description. */
             description?: string;
             /** @description Freeform agent classification for tooling and filtering (e.g. "llm", "rpa"). */
@@ -4601,12 +4473,10 @@ export interface components {
             items: components["schemas"]["AgentSession"][];
         };
         CreateAgentRequest: {
-            /** @description Service account that backs this agent. Must belong to the same org. */
+            /** @description Service account that backs this agent. Must be active and belong to the same project. */
             service_account_id: string;
-            /** @description Project-scoped unique identifier for this agent. */
+            /** @description Project-scoped unique name for this agent. Must match pattern and be 1-63 characters. */
             name: string;
-            /** @description Human-readable label shown in the UI. */
-            display_name?: string;
             /** @description Optional human-readable description. */
             description?: string;
             /** @description Freeform classification (e.g. "llm", "rpa", "integration"). */
@@ -4621,8 +4491,10 @@ export interface components {
             };
         };
         UpdateAgentRequest: {
-            /** @description Replacement human-readable label. */
-            display_name?: string;
+            /** @description Replacement service account. Must be active and belong to the same project. */
+            service_account_id?: string;
+            /** @description Replacement name. Must be unique within the project and match the agent name pattern. */
+            name?: string;
             /** @description Replacement description. */
             description?: string;
             /** @description Replacement freeform agent classification (e.g. `llm`, `rpa`). */
@@ -4653,10 +4525,8 @@ export interface components {
         ServiceAccount: {
             /** @description Unique identifier for this service account. */
             id: string;
-            /** @description Stable machine-readable identifier, unique within the project. Immutable after creation. */
+            /** @description Human-readable name for this service account. Immutable after creation. */
             name: string;
-            /** @description Human-readable label shown in the UI. */
-            display_name: string;
             /** @description Optional human-readable description. */
             description?: string;
             status: components["schemas"]["ServiceAccountStatus"];
@@ -4682,10 +4552,8 @@ export interface components {
             items: components["schemas"]["ServiceAccount"][];
         };
         CreateServiceAccountRequest: {
-            /** @description Stable machine-readable identifier, unique within the project. */
+            /** @description Human-readable name for this service account. Immutable after creation. */
             name: string;
-            /** @description Human-readable label shown in the UI. */
-            display_name?: string;
             /** @description Optional human-readable description. */
             description?: string;
             /** @description Org member responsible for this service account. */
@@ -4695,20 +4563,13 @@ export interface components {
                 [key: string]: unknown;
             };
             /**
-             * @description Role to assign at creation time. Mutually exclusive with `role_name`.
-             *     Requires `permission.manage`. The role must belong to this project
-             *     or be org-scoped (project_id empty).
+             * @description One or more role IDs to assign at creation time. All assignments are
+             *     created atomically with the service account. Requires `mobius.permission.manage`.
+             *     Each role must belong to this project or be org-scoped (project_id empty).
              */
-            role_id?: string;
-            /**
-             * @description Role name to assign at creation time (resolved to a role ID server-side).
-             *     Mutually exclusive with `role_id`. Requires `permission.manage`.
-             */
-            role_name?: string;
+            role_ids?: string[];
         };
         UpdateServiceAccountRequest: {
-            /** @description Replacement human-readable label. */
-            display_name?: string;
             /** @description Replacement description. */
             description?: string;
             status?: components["schemas"]["ServiceAccountStatus"];
@@ -4862,6 +4723,8 @@ export interface components {
          *     treated as org-level and project-pinned keys are excluded.
          */
         APIKeyProjectIDParam: components["schemas"]["ProjectID"];
+        /** @description Trigger target ID. */
+        TriggerTargetIDParam: string;
         /** @description Group ID or handle. */
         GroupIDParam: string;
     };
@@ -5285,127 +5148,6 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
         };
     };
-    listAPIKeys: {
-        parameters: {
-            query?: {
-                /**
-                 * @description Optional project scope for this request. When `project_id` is
-                 *     provided, the API key operation is resolved in that project's
-                 *     permission context. When `project_id` is omitted, the request is
-                 *     treated as org-level and project-pinned keys are excluded.
-                 */
-                project_id?: components["parameters"]["APIKeyProjectIDParam"];
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["APIKeyListResponse"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    createAPIKey: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateAPIKeyRequest"];
-            };
-        };
-        responses: {
-            /** @description Created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["APIKeyCreateResult"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    getAPIKey: {
-        parameters: {
-            query?: {
-                /**
-                 * @description Optional project scope for this request. When `project_id` is
-                 *     provided, the API key operation is resolved in that project's
-                 *     permission context. When `project_id` is omitted, the request is
-                 *     treated as org-level and project-pinned keys are excluded.
-                 */
-                project_id?: components["parameters"]["APIKeyProjectIDParam"];
-            };
-            header?: never;
-            path: {
-                /** @description Resource ID. */
-                id: components["parameters"]["IDParam"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["APIKey"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    revokeAPIKey: {
-        parameters: {
-            query?: {
-                /**
-                 * @description Optional project scope for this request. When `project_id` is
-                 *     provided, the API key operation is resolved in that project's
-                 *     permission context. When `project_id` is omitted, the request is
-                 *     treated as org-level and project-pinned keys are excluded.
-                 */
-                project_id?: components["parameters"]["APIKeyProjectIDParam"];
-            };
-            header?: never;
-            path: {
-                /** @description Resource ID. */
-                id: components["parameters"]["IDParam"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description No Content */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            401: components["responses"]["Unauthorized"];
-            404: components["responses"]["NotFound"];
-        };
-    };
     listWorkflows: {
         parameters: {
             query?: {
@@ -5712,64 +5454,6 @@ export interface operations {
             429: components["responses"]["TooManyRequests"];
         };
     };
-    bulkCancelRuns: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["BulkRunRequest"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["BulkRunResult"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-        };
-    };
-    bulkRetryRuns: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["BulkRunRequest"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["BulkRunResult"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-        };
-    };
     getRun: {
         parameters: {
             query?: never;
@@ -5797,7 +5481,7 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
-    getRunActionLog: {
+    listRunActionLog: {
         parameters: {
             query?: never;
             header?: never;
@@ -5824,7 +5508,7 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
-    getRunJobs: {
+    listRunJobs: {
         parameters: {
             query?: never;
             header?: never;
@@ -6626,6 +6310,180 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
+    listTriggerTargets: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
+                id: components["parameters"]["IDParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TriggerTargetListResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    createTriggerTarget: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
+                id: components["parameters"]["IDParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateTriggerTargetRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TriggerTarget"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    deleteAllTriggerTargets: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
+                id: components["parameters"]["IDParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getTriggerTarget: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
+                id: components["parameters"]["IDParam"];
+                /** @description Trigger target ID. */
+                target_id: components["parameters"]["TriggerTargetIDParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TriggerTarget"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    deleteTriggerTarget: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
+                id: components["parameters"]["IDParam"];
+                /** @description Trigger target ID. */
+                target_id: components["parameters"]["TriggerTargetIDParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    updateTriggerTarget: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
+                id: components["parameters"]["IDParam"];
+                /** @description Trigger target ID. */
+                target_id: components["parameters"]["TriggerTargetIDParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateTriggerTargetRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TriggerTarget"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
     listWorkers: {
         parameters: {
             query?: never;
@@ -6927,6 +6785,38 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
+    pingWebhook: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
+                id: components["parameters"]["IDParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PingWebhookRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PingWebhookResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
     listWebhookDeliveries: {
         parameters: {
             query?: {
@@ -6959,182 +6849,6 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
-    listIntegrations: {
-        parameters: {
-            query?: {
-                /** @description Filter by provider string (exact match). */
-                provider?: string;
-                /** @description Filter by integration status. */
-                status?: components["schemas"]["IntegrationStatus"];
-                /** @description Opaque pagination cursor returned from the previous response. */
-                cursor?: string;
-                /** @description Maximum number of results to return per page. */
-                limit?: number;
-            };
-            header?: never;
-            path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["IntegrationListResponse"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-        };
-    };
-    createIntegration: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateIntegrationRequest"];
-            };
-        };
-        responses: {
-            /** @description Created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Integration"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-        };
-    };
-    getIntegration: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
-                /** @description Resource ID. */
-                id: components["parameters"]["IDParam"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Integration"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    updateIntegration: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
-                /** @description Resource ID. */
-                id: components["parameters"]["IDParam"];
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateIntegrationRequest"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Integration"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    deleteIntegration: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
-                /** @description Resource ID. */
-                id: components["parameters"]["IDParam"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description No Content */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            401: components["responses"]["Unauthorized"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    copyIntegration: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CopyIntegrationRequest"];
-            };
-        };
-        responses: {
-            /** @description Created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Integration"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            404: components["responses"]["NotFound"];
-        };
-    };
     getProjectMetrics: {
         parameters: {
             query?: never;
@@ -7157,236 +6871,6 @@ export interface operations {
                 };
             };
             401: components["responses"]["Unauthorized"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    listRoles: {
-        parameters: {
-            query?: {
-                /** @description Maximum number of results to return per page. */
-                limit?: number;
-                /** @description Filter to roles scoped to a specific project. */
-                project_id?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["RoleListResponse"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-        };
-    };
-    createRole: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateRoleRequest"];
-            };
-        };
-        responses: {
-            /** @description Created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Role"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            409: components["responses"]["Conflict"];
-        };
-    };
-    getRole: {
-        parameters: {
-            query?: {
-                /** @description Provide to resolve a project-scoped role. */
-                project_id?: string;
-            };
-            header?: never;
-            path: {
-                /** @description Resource ID. */
-                id: components["parameters"]["IDParam"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Role"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    deleteRole: {
-        parameters: {
-            query?: {
-                /** @description Scope to change this role to. Cannot change an org-scoped role to project-scoped after creation. */
-                project_id?: string;
-            };
-            header?: never;
-            path: {
-                /** @description Resource ID. */
-                id: components["parameters"]["IDParam"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description No Content */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    updateRole: {
-        parameters: {
-            query?: {
-                /** @description Scope to change this role to. Cannot change an org-scoped role to project-scoped after creation. */
-                project_id?: string;
-            };
-            header?: never;
-            path: {
-                /** @description Resource ID. */
-                id: components["parameters"]["IDParam"];
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateRoleRequest"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Role"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            409: components["responses"]["Conflict"];
-        };
-    };
-    listRoleAssignments: {
-        parameters: {
-            query?: {
-                /** @description Filter by the type of actor receiving the assignment. */
-                actor_type?: "user" | "service_account";
-                /** @description Filter to assignments for a specific actor. */
-                actor_id?: string;
-                /** @description Filter to assignments for a specific role. */
-                role_id?: string;
-                /** @description Filter to project-scoped assignments for this project. */
-                project_id?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["RoleAssignmentListResponse"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-        };
-    };
-    createRoleAssignment: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateRoleAssignmentRequest"];
-            };
-        };
-        responses: {
-            /** @description Created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["RoleAssignment"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            409: components["responses"]["Conflict"];
-        };
-    };
-    deleteRoleAssignment: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Resource ID. */
-                id: components["parameters"]["IDParam"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description No Content */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
         };
     };
@@ -7982,6 +7466,7 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
         };
     };
     listAgentSessions: {

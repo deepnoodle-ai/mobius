@@ -85,6 +85,9 @@ func (c *Client) runtimeClaim(ctx context.Context, cfg WorkerConfig) (*runtimeJo
 	if resp.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
+	if resp.StatusCode == http.StatusUnauthorized {
+		return nil, ErrAuthRevoked
+	}
 	if resp.StatusCode >= 400 {
 		return nil, fmt.Errorf("mobius: claim: unexpected status %d", resp.StatusCode)
 	}
@@ -112,7 +115,9 @@ func (c *Client) runtimeClaim(ctx context.Context, cfg WorkerConfig) (*runtimeJo
 }
 
 // runtimeHeartbeat refreshes the lease on a claimed job and returns
-// any directives from the server. Returns ErrLeaseLost on 409.
+// any directives from the server. Returns ErrLeaseLost on 409, and
+// ErrAuthRevoked on 401 so the caller can cancel in-flight work and
+// exit the claim loop for the process supervisor to restart.
 func (c *Client) runtimeHeartbeat(ctx context.Context, job *runtimeJob) (*api.JobHeartbeatDirectives, error) {
 	resp, err := c.runtimeRequest(ctx, http.MethodPost, fmt.Sprintf("/v1/projects/%s/jobs/%s/heartbeat", url.PathEscape(c.projectHandle), url.PathEscape(job.JobID)), api.JobFenceRequest{
 		WorkerId: job.WorkerID,
@@ -122,6 +127,9 @@ func (c *Client) runtimeHeartbeat(ctx context.Context, job *runtimeJob) (*api.Jo
 		return nil, fmt.Errorf("mobius: heartbeat: %w", err)
 	}
 	defer resp.Body.Close()
+	if resp.StatusCode == http.StatusUnauthorized {
+		return nil, ErrAuthRevoked
+	}
 	if resp.StatusCode == http.StatusConflict {
 		return nil, ErrLeaseLost
 	}
@@ -177,6 +185,9 @@ func (c *Client) runtimeCompleteRaw(ctx context.Context, jobID string, req api.J
 		return fmt.Errorf("mobius: complete: %w", err)
 	}
 	defer resp.Body.Close()
+	if resp.StatusCode == http.StatusUnauthorized {
+		return ErrAuthRevoked
+	}
 	if resp.StatusCode == http.StatusConflict {
 		return ErrLeaseLost
 	}

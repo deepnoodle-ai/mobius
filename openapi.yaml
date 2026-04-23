@@ -14,8 +14,6 @@ tags:
   x-displayName: Channels
 - name: audit-logs
   x-displayName: Audit Logs
-- name: api-keys
-  x-displayName: API Keys
 - name: workflows
   x-displayName: Workflows
 - name: runs
@@ -32,12 +30,8 @@ tags:
   x-displayName: Projects
 - name: webhooks
   x-displayName: Webhooks
-- name: integrations
-  x-displayName: Integrations
 - name: metrics
   x-displayName: Metrics
-- name: roles
-  x-displayName: Roles
 - name: interactions
   x-displayName: Interactions
 - name: groups
@@ -476,121 +470,6 @@ paths:
                 $ref: '#/components/schemas/AuditLogListResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
-  /v1/api-keys:
-    post:
-      operationId: createAPIKey
-      tags:
-      - api-keys
-      summary: Create an API key
-      description: 'Creates an API key for this org. Omit `project_id` to create an
-
-        org-scoped key when the caller has org-level authorization, or set
-
-        `project_id` to pin the key to exactly one project. Project-pinned
-
-        keys remain inaccessible through org-level listing and management
-
-        unless the request is explicitly scoped with the same `project_id`.
-
-        The raw key value is returned in `key` and is never retrievable again
-
-        after this response.
-
-        '
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateAPIKeyRequest'
-      responses:
-        '201':
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/APIKeyCreateResult'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-    get:
-      operationId: listAPIKeys
-      tags:
-      - api-keys
-      summary: List API keys
-      description: 'Returns API keys for this org. When `project_id` is provided,
-        return
-
-        only keys pinned to that project. When `project_id` is omitted, return
-
-        only org-level keys; project-pinned keys are excluded because the
-
-        request has no project-scoped context.
-
-        '
-      parameters:
-      - $ref: '#/components/parameters/APIKeyProjectIDParam'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/APIKeyListResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-  /v1/api-keys/{id}:
-    get:
-      operationId: getAPIKey
-      tags:
-      - api-keys
-      summary: Get an API key
-      parameters:
-      - $ref: '#/components/parameters/IDParam'
-      - $ref: '#/components/parameters/APIKeyProjectIDParam'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/APIKey'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-    delete:
-      operationId: revokeAPIKey
-      tags:
-      - api-keys
-      summary: Revoke an API key
-      description: 'Permanently revokes the key. In-flight requests using this key
-        will
-
-        immediately start receiving 401. When `project_id` is provided, revoke
-
-        only a key pinned to that project. When `project_id` is omitted,
-
-        project-pinned keys are excluded because the request has no
-
-        project-scoped context.
-
-        '
-      parameters:
-      - $ref: '#/components/parameters/IDParam'
-      - $ref: '#/components/parameters/APIKeyProjectIDParam'
-      responses:
-        '204':
-          description: No Content
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
   /v1/projects/{project}/workflows:
     get:
       operationId: listWorkflows
@@ -875,9 +754,9 @@ paths:
 
         status, workflow type, queue, parent run, and
 
-        initiator. Returns `{data, next_cursor?}`; pass `next_cursor`
+        initiator. When `has_more` is true, pass the returned
 
-        back in the next call to walk the result set.
+        `next_cursor` back on the next call to walk the result set.
 
         '
       parameters:
@@ -923,74 +802,6 @@ paths:
                 $ref: '#/components/schemas/WorkflowRunListResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
-  /v1/projects/{project}/runs/cancellations:
-    post:
-      operationId: bulkCancelRuns
-      tags:
-      - runs
-      summary: Request cancellation for a batch of runs
-      description: 'Sets `cancel_requested` on every listed run. Workers receive
-
-        `directives.should_cancel: true` on their next heartbeat and are
-
-        expected to stop cooperatively. Per-run errors are reported inline;
-
-        the response always returns 200 even on partial failures.
-
-        '
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/BulkRunRequest'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/BulkRunResult'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-  /v1/projects/{project}/runs/retries:
-    post:
-      operationId: bulkRetryRuns
-      tags:
-      - runs
-      summary: Re-enqueue a batch of failed runs
-      description: 'Flips every listed run from `failed` back to `queued`, clearing
-
-        the error message. Only runs in terminal `failed` status can be
-
-        retried; runs in other states produce per-run errors. Per-run errors
-
-        are reported inline; the response always returns 200 on partial failures.
-
-        '
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/BulkRunRequest'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/BulkRunResult'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
   /v1/projects/{project}/runs/{id}:
     get:
       operationId: getRun
@@ -1013,7 +824,7 @@ paths:
           $ref: '#/components/responses/NotFound'
   /v1/projects/{project}/runs/{id}/action-log:
     get:
-      operationId: getRunActionLog
+      operationId: listRunActionLog
       tags:
       - runs
       summary: List action log entries for a run
@@ -1033,7 +844,7 @@ paths:
           $ref: '#/components/responses/NotFound'
   /v1/projects/{project}/runs/{id}/jobs:
     get:
-      operationId: getRunJobs
+      operationId: listRunJobs
       tags:
       - runs
       summary: List jobs for a run
@@ -1720,11 +1531,11 @@ paths:
 
         route over `POST /v1/projects/{project}/interactions` from within a
 
-        job context. The optional `signal_name` field overrides the server-
+        job context. The optional `signal_name` field overrides the
 
-        derived signal name; when omitted the server derives the signal name
+        server-derived signal name; when omitted the server derives the
 
-        from `step_name` or uses a default interaction signal name.
+        signal name from `step_name` or uses a default interaction signal.
 
         '
       parameters:
@@ -1947,7 +1758,7 @@ paths:
 
         records whether the fire succeeded, was skipped (e.g. by `forbid`
 
-        concurrency policy), or failed, along with the resulting run ID.
+        concurrency policy), or failed, along with per-target outcomes.
 
         '
       parameters:
@@ -1977,6 +1788,138 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TriggerFireListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/projects/{project}/triggers/{id}/targets:
+    get:
+      operationId: listTriggerTargets
+      tags:
+      - triggers
+      summary: List targets for a trigger
+      description: Returns all targets attached to the given trigger.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/IDParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TriggerTargetListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      operationId: deleteAllTriggerTargets
+      tags:
+      - triggers
+      summary: Remove all targets from a trigger
+      description: Detaches every target from the trigger. The trigger itself is not
+        deleted.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/IDParam'
+      responses:
+        '204':
+          description: No Content
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      operationId: createTriggerTarget
+      tags:
+      - triggers
+      summary: Add a target to a trigger
+      description: Attaches a workflow as a new target of the trigger.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/IDParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTriggerTargetRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TriggerTarget'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/projects/{project}/triggers/{id}/targets/{target_id}:
+    get:
+      operationId: getTriggerTarget
+      tags:
+      - triggers
+      summary: Get a trigger target
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/IDParam'
+      - $ref: '#/components/parameters/TriggerTargetIDParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TriggerTarget'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      operationId: updateTriggerTarget
+      tags:
+      - triggers
+      summary: Update a trigger target
+      description: All fields are optional; omitted fields are unchanged.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/IDParam'
+      - $ref: '#/components/parameters/TriggerTargetIDParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTriggerTargetRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TriggerTarget'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      operationId: deleteTriggerTarget
+      tags:
+      - triggers
+      summary: Remove a target from a trigger
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/IDParam'
+      - $ref: '#/components/parameters/TriggerTargetIDParam'
+      responses:
+        '204':
+          description: No Content
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
@@ -2288,6 +2231,50 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
+  /v1/projects/{project}/webhooks/{id}/ping:
+    post:
+      operationId: pingWebhook
+      tags:
+      - webhooks
+      summary: Test a webhook URL
+      description: 'Sends a live test POST request to the webhook''s saved URL, or
+        to an
+
+        override URL supplied in the request body, and returns the result.
+
+        Because the webhook URL may be empty at creation time, the typical
+
+        flow is: create the webhook without a URL, ping candidate URLs via
+
+        the override until one succeeds, then persist the chosen URL with
+
+        `PATCH`. The test payload has `type: "ping"` and is signed with the
+
+        webhook''s secret if one is set.
+
+        '
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/IDParam'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PingWebhookRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PingWebhookResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /v1/projects/{project}/webhooks/{id}/deliveries:
     get:
       operationId: listWebhookDeliveries
@@ -2331,192 +2318,6 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /v1/projects/{project}/integrations:
-    get:
-      operationId: listIntegrations
-      tags:
-      - integrations
-      summary: List integrations
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      - name: provider
-        in: query
-        schema:
-          type: string
-        description: Filter by provider string (exact match).
-      - name: status
-        in: query
-        schema:
-          $ref: '#/components/schemas/IntegrationStatus'
-        description: Filter by integration status.
-      - name: cursor
-        in: query
-        description: Opaque pagination cursor returned from the previous response.
-        schema:
-          type: string
-      - name: limit
-        in: query
-        description: Maximum number of results to return per page.
-        schema:
-          type: integer
-          minimum: 1
-          maximum: 200
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/IntegrationListResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-    post:
-      operationId: createIntegration
-      tags:
-      - integrations
-      summary: Create an integration
-      description: 'Creates a new integration record. The `provider` + `name` pair
-        must
-
-        be unique within the project. Returns 400 if validation fails (e.g.,
-
-        missing required fields).
-
-        '
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateIntegrationRequest'
-      responses:
-        '201':
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Integration'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-  /v1/projects/{project}/integrations/{id}:
-    get:
-      operationId: getIntegration
-      tags:
-      - integrations
-      summary: Get an integration
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      - $ref: '#/components/parameters/IDParam'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Integration'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-    put:
-      operationId: updateIntegration
-      tags:
-      - integrations
-      summary: Update an integration
-      description: 'Replaces the integration''s `name`, `config`, and/or `status`.
-        Use
-
-        `status: inactive` to disable an integration without deleting it.
-
-        Use `status: active` to re-enable. The `provider` field is
-
-        immutable after creation.
-
-        '
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      - $ref: '#/components/parameters/IDParam'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpdateIntegrationRequest'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Integration'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-    delete:
-      operationId: deleteIntegration
-      tags:
-      - integrations
-      summary: Delete an integration
-      description: Hard-deletes the integration record and its stored config.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      - $ref: '#/components/parameters/IDParam'
-      responses:
-        '204':
-          description: No Content
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-  /v1/projects/{project}/integrations/copy:
-    post:
-      operationId: copyIntegration
-      tags:
-      - integrations
-      summary: Copy an integration from another project
-      description: 'Clones an integration from another project within the same org
-        into
-
-        this project. The full `config` blob is copied as-is. The source
-
-        and destination projects must both belong to the same org.
-
-
-        The `(provider, name)` pair must be unique in the destination project;
-
-        supply a different `name` to avoid conflicts with an existing
-
-        integration of the same provider and name.
-
-        '
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CopyIntegrationRequest'
-      responses:
-        '201':
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Integration'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
   /v1/projects/{project}/metrics:
     get:
       operationId: getProjectMetrics
@@ -2543,261 +2344,6 @@ paths:
                 $ref: '#/components/schemas/ProjectMetrics'
         '401':
           $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-  /v1/roles:
-    get:
-      operationId: listRoles
-      tags:
-      - roles
-      summary: List roles
-      description: Returns system-defined roles plus custom roles for the org. Use
-        `project_id` to narrow results to project-scoped roles.
-      parameters:
-      - name: limit
-        in: query
-        description: Maximum number of results to return per page.
-        schema:
-          type: integer
-          minimum: 1
-          maximum: 200
-      - name: project_id
-        in: query
-        description: Filter to roles scoped to a specific project.
-        schema:
-          type: string
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RoleListResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-    post:
-      operationId: createRole
-      tags:
-      - roles
-      summary: Create a role
-      description: 'Creates a custom role for the org. Supply `project_id` to scope
-        the
-
-        role to a specific project. Roles with an empty `project_id` are
-
-        org-wide and can be assigned across all projects.
-
-        '
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateRoleRequest'
-      responses:
-        '201':
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Role'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '409':
-          $ref: '#/components/responses/Conflict'
-  /v1/roles/{id}:
-    get:
-      operationId: getRole
-      tags:
-      - roles
-      summary: Get a role
-      parameters:
-      - $ref: '#/components/parameters/IDParam'
-      - name: project_id
-        in: query
-        description: Provide to resolve a project-scoped role.
-        schema:
-          type: string
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Role'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-    patch:
-      operationId: updateRole
-      tags:
-      - roles
-      summary: Update a role
-      description: 'Updates name, description, or permissions of a custom role. System-defined
-
-        roles (system_defined=true) cannot be updated and return 403.
-
-        '
-      parameters:
-      - $ref: '#/components/parameters/IDParam'
-      - name: project_id
-        in: query
-        description: Scope to change this role to. Cannot change an org-scoped role
-          to project-scoped after creation.
-        schema:
-          type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpdateRoleRequest'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Role'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
-    delete:
-      operationId: deleteRole
-      tags:
-      - roles
-      summary: Delete a role
-      description: Hard-deletes the role and all its assignments. System-defined roles
-        cannot be deleted.
-      parameters:
-      - $ref: '#/components/parameters/IDParam'
-      - name: project_id
-        in: query
-        description: Scope to change this role to. Cannot change an org-scoped role
-          to project-scoped after creation.
-        schema:
-          type: string
-      responses:
-        '204':
-          description: No Content
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-  /v1/role-assignments:
-    get:
-      operationId: listRoleAssignments
-      tags:
-      - roles
-      summary: List role assignments
-      description: Returns assignments optionally filtered by actor, role, or project
-        scope.
-      parameters:
-      - name: actor_type
-        in: query
-        description: Filter by the type of actor receiving the assignment.
-        schema:
-          type: string
-          enum:
-          - user
-          - service_account
-      - name: actor_id
-        in: query
-        description: Filter to assignments for a specific actor.
-        schema:
-          type: string
-      - name: role_id
-        in: query
-        description: Filter to assignments for a specific role.
-        schema:
-          type: string
-      - name: project_id
-        in: query
-        description: Filter to project-scoped assignments for this project.
-        schema:
-          type: string
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RoleAssignmentListResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-    post:
-      operationId: createRoleAssignment
-      tags:
-      - roles
-      summary: Assign a role to an actor
-      description: 'Binds a role to a user or service account. Supply `project_id`
-        to create
-
-        a project-scoped assignment; omit it for an org-wide assignment.
-
-        The assignment records the creating actor in `granted_by_actor_type` /
-
-        `granted_by_actor_id` for audit purposes.
-
-        '
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateRoleAssignmentRequest'
-      responses:
-        '201':
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RoleAssignment'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
-  /v1/role-assignments/{id}:
-    delete:
-      operationId: deleteRoleAssignment
-      tags:
-      - roles
-      summary: Remove a role assignment
-      parameters:
-      - $ref: '#/components/parameters/IDParam'
-      responses:
-        '204':
-          description: No Content
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
   /v1/projects/{project}/interactions:
@@ -3241,9 +2787,9 @@ paths:
       description: 'Creates an agent bound to `service_account_id`. A service account
         can
 
-        back multiple agents, but each agent belongs to exactly one service
+        back multiple agents. The service account can be changed after creation
 
-        account for the lifetime of the agent.
+        via the PATCH endpoint.
 
         '
       parameters:
@@ -3326,10 +2872,7 @@ paths:
       tags:
       - agents
       summary: Update an agent
-      description: 'Updates mutable agent fields. The backing `service_account_id`
-        cannot
-
-        be changed after creation. Setting `status` to `inactive` prevents
+      description: 'Updates mutable agent fields. Setting `status` to `inactive` prevents
 
         the agent from claiming new jobs but does not terminate active sessions.
 
@@ -3356,6 +2899,8 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
     delete:
       operationId: deleteAgent
       tags:
@@ -3707,6 +3252,13 @@ components:
         treated as org-level and project-pinned keys are excluded.
 
         '
+    TriggerTargetIDParam:
+      name: target_id
+      in: path
+      required: true
+      description: Trigger target ID.
+      schema:
+        type: string
     GroupIDParam:
       name: groupId
       in: path
@@ -4203,6 +3755,10 @@ components:
         actor_id:
           type: string
           description: Durable actor ID that performed the action
+        actor_name:
+          type: string
+          description: Display name of the actor (email for users, service account
+            name for service accounts)
         credential_id:
           type: string
           description: Credential ID used for the request, when applicable
@@ -4239,7 +3795,7 @@ components:
     AuditLogListResponse:
       type: object
       required:
-      - data
+      - items
       - has_more
       properties:
         items:
@@ -5107,7 +4663,7 @@ components:
     WorkflowDefinitionListResponse:
       type: object
       required:
-      - data
+      - items
       - has_more
       properties:
         items:
@@ -5311,7 +4867,7 @@ components:
     WorkflowRunListResponse:
       type: object
       required:
-      - data
+      - items
       - has_more
       properties:
         items:
@@ -5565,31 +5121,6 @@ components:
         name:
           type: string
           description: Signal topic name matching the wait_signal step's topic.
-    BulkRunRequest:
-      type: object
-      required:
-      - run_ids
-      properties:
-        run_ids:
-          type: array
-          description: IDs of the runs to operate on.
-          items:
-            type: string
-    BulkRunResult:
-      type: object
-      required:
-      - succeeded
-      properties:
-        succeeded:
-          type: array
-          description: IDs of runs that were successfully processed.
-          items:
-            type: string
-        failures:
-          type: object
-          additionalProperties:
-            type: string
-          description: Map of run_id -> error message for per-run failures.
     ActionAnnotations:
       type: object
       description: 'Hints that describe the safe-use properties of the action. Used
@@ -5727,7 +5258,7 @@ components:
     ActionListResponse:
       type: object
       required:
-      - data
+      - items
       - has_more
       properties:
         items:
@@ -5868,7 +5399,7 @@ components:
     ActionAuditLogListResponse:
       type: object
       required:
-      - data
+      - items
       - has_more
       properties:
         items:
@@ -5964,8 +5495,8 @@ components:
           description: Handle of the workflow definition that owns this run.
         step_name:
           type: string
-          description: Step name from the workflow spec — used for UI and interaction
-            topic derivation.
+          description: Step label from the workflow spec — used for UI and interaction
+            signal name derivation.
         action:
           type: string
           description: Action name the worker must execute for this step.
@@ -6314,12 +5845,13 @@ components:
           $ref: '#/components/schemas/InteractionSpec'
         require_all:
           type: boolean
-          default: false
           description: 'When target_actor.type is "group", setting require_all=true
 
             means all snapshotted group members must respond before the
 
             interaction is considered complete. Ignored for non-group targets.
+
+            Defaults to false when omitted.
 
             '
         timeout:
@@ -6513,16 +6045,37 @@ components:
       type: string
       enum:
       - success
+      - partial_failure
       - failed
       - skipped
-      description: '`skipped` means the fire was suppressed by the concurrency policy
-        or a target condition evaluated to false.'
+      description: 'Outcome of a trigger activation:
+
+        - `success` — all enabled targets started their runs (or no targets configured).
+
+        - `partial_failure` — at least one target failed while others succeeded.
+
+        - `failed` — all targets failed, or a trigger-level error prevented any target.
+
+        - `skipped` — the concurrency policy suppressed the entire activation.
+
+        '
     TriggerTarget:
       type: object
       required:
+      - id
+      - trigger_id
       - workflow_id
+      - enabled
+      - created_at
+      - updated_at
       description: A workflow to start when this trigger fires.
       properties:
+        id:
+          type: string
+          description: Unique identifier for this target.
+        trigger_id:
+          type: string
+          description: ID of the trigger this target belongs to.
         workflow_id:
           type: string
           description: ID of the workflow definition to run.
@@ -6544,6 +6097,93 @@ components:
             the event payload. Example: `{"user_id": "$.event.actor.id"}`.
 
             '
+        enabled:
+          type: boolean
+          description: When false, this target is paused and will not start a run
+            when the trigger fires.
+        created_at:
+          type: string
+          format: date-time
+          description: Timestamp when this target was created.
+        updated_at:
+          type: string
+          format: date-time
+          description: Timestamp when this target was last updated.
+    TriggerTargetListResponse:
+      type: object
+      required:
+      - items
+      properties:
+        items:
+          type: array
+          description: The list of targets for this trigger.
+          items:
+            $ref: '#/components/schemas/TriggerTarget'
+    CreateTriggerTargetRequest:
+      type: object
+      required:
+      - workflow_id
+      description: Parameters for attaching a workflow target to a trigger.
+      properties:
+        workflow_id:
+          type: string
+          description: ID of the workflow definition to run.
+        condition:
+          type: string
+          description: 'Expression evaluated against the event payload. Omit to always
+            run.
+
+            '
+        input_mapping:
+          type: object
+          additionalProperties:
+            type: string
+          description: Maps workflow input names to JSONPath expressions.
+        enabled:
+          type: boolean
+          description: Whether this target starts enabled. Defaults to true when omitted.
+    UpdateTriggerTargetRequest:
+      type: object
+      description: Partial update for a trigger target; omitted fields are unchanged.
+      properties:
+        workflow_id:
+          type: string
+          description: Replacement workflow definition ID.
+        condition:
+          type: string
+          description: Replacement condition expression. Set to empty string to remove.
+        input_mapping:
+          type: object
+          nullable: true
+          additionalProperties:
+            type: string
+          description: Replacement input mapping. Set to null to clear all mappings.
+        enabled:
+          type: boolean
+          description: Set to false to pause this target without removing it.
+    TriggerFireTargetResult:
+      type: object
+      required:
+      - target_id
+      - workflow_id
+      - status
+      description: Outcome of a single target within a trigger fire activation.
+      properties:
+        target_id:
+          type: string
+          description: ID of the trigger target that was evaluated.
+        workflow_id:
+          type: string
+          description: ID of the workflow definition that was started (or attempted).
+        run_id:
+          type: string
+          description: ID of the workflow run that was created. Absent when the target
+            failed or was skipped.
+        status:
+          $ref: '#/components/schemas/TriggerFireStatus'
+        error:
+          type: string
+          description: Error detail when status is `failed`.
     Trigger:
       type: object
       required:
@@ -6580,7 +6220,7 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/TriggerTarget'
-          description: Workflows to start when this trigger fires.
+          description: Targets attached to this trigger, populated via join.
         concurrency_policy:
           $ref: '#/components/schemas/ConcurrencyPolicy'
         enabled:
@@ -6617,7 +6257,7 @@ components:
     TriggerListResponse:
       type: object
       required:
-      - data
+      - items
       - has_more
       properties:
         items:
@@ -6656,10 +6296,11 @@ components:
           type: string
           format: date-time
           description: When the fire was actually processed.
-        run_id:
-          type: string
-          description: Workflow run created by this fire. Absent when status is `skipped`
-            or `failed` before run creation.
+        target_results:
+          type: array
+          items:
+            $ref: '#/components/schemas/TriggerFireTargetResult'
+          description: Per-target outcomes for this activation.
         status:
           $ref: '#/components/schemas/TriggerFireStatus'
         error:
@@ -6676,7 +6317,7 @@ components:
     TriggerFireListResponse:
       type: object
       required:
-      - data
+      - items
       - has_more
       properties:
         items:
@@ -6718,15 +6359,15 @@ components:
           description: Additional payload filters evaluated before targets.
         targets:
           type: array
-          description: Workflows to start when this trigger fires.
+          description: Workflows to start when this trigger fires (inline convenience;
+            stored as sub-resources).
           items:
-            $ref: '#/components/schemas/TriggerTarget'
+            $ref: '#/components/schemas/CreateTriggerTargetRequest'
         concurrency_policy:
           $ref: '#/components/schemas/ConcurrencyPolicy'
         enabled:
           type: boolean
-          default: true
-          description: Whether the trigger starts enabled. Defaults to true.
+          description: Whether the trigger starts enabled. Defaults to true when omitted.
         webhook_handle:
           type: string
           description: 'URL-safe handle that determines the inbound receive URL. Auto-derived
@@ -6760,11 +6401,6 @@ components:
           type: object
           additionalProperties: true
           description: Replacement payload filter configuration.
-        targets:
-          type: array
-          items:
-            $ref: '#/components/schemas/TriggerTarget'
-          description: Replaces the entire targets array.
         concurrency_policy:
           $ref: '#/components/schemas/ConcurrencyPolicy'
         enabled:
@@ -6810,6 +6446,25 @@ components:
             type: string
           description: Reserved for future capability-based job routing. Not currently
             used for filtering.
+        service_account_id:
+          type: string
+          description: 'Service account this worker authenticated as on register/heartbeat.
+
+            Stable across credential rotation — use this to group worker rows
+
+            by identity in the admin UI.
+
+            '
+        api_key_id:
+          type: string
+          description: 'ID of the specific API key this worker presented on its most
+            recent
+
+            register/heartbeat. Changes across credential rotations; use together
+
+            with `service_account_id` to see rotation progress across a fleet.
+
+            '
         stale:
           type: boolean
           description: 'True when `last_seen_at` is older than 2 minutes or absent.
@@ -7050,7 +6705,6 @@ components:
       type: object
       required:
       - name
-      - url
       - events
       properties:
         name:
@@ -7058,7 +6712,16 @@ components:
           description: Human-readable name, unique within the project.
         url:
           type: string
-          description: The endpoint Mobius will POST event payloads to.
+          description: 'The endpoint Mobius will POST event payloads to. May be left
+            empty
+
+            at creation time so a candidate URL can be tested via the ping
+
+            endpoint before it is saved; events do not fire for webhooks with
+
+            an empty URL.
+
+            '
         secret:
           type: string
           description: 'Optional shared secret. When set, Mobius signs each POST body
@@ -7079,8 +6742,7 @@ components:
             '
         enabled:
           type: boolean
-          default: true
-          description: Whether the webhook starts enabled. Defaults to true.
+          description: Whether the webhook starts enabled. Defaults to true when omitted.
     UpdateWebhookRequest:
       type: object
       properties:
@@ -7106,6 +6768,38 @@ components:
         enabled:
           type: boolean
           description: Set to false to disable delivery without deleting the webhook.
+    PingWebhookRequest:
+      type: object
+      properties:
+        url:
+          type: string
+          description: 'URL to test. When supplied, the ping is sent to this URL instead
+
+            of the webhook''s saved URL — use this to validate a candidate URL
+
+            before saving it. When omitted, the webhook''s current saved URL
+
+            is used.
+
+            '
+    PingWebhookResult:
+      type: object
+      required:
+      - success
+      properties:
+        success:
+          type: boolean
+          description: True if the target responded with a 2xx status code.
+        status_code:
+          type: integer
+          description: HTTP status code returned by the target. Absent on network
+            error.
+        error:
+          type: string
+          description: Error message if the request could not be completed.
+        latency_ms:
+          type: integer
+          description: Round-trip latency in milliseconds.
     IntegrationStatus:
       type: string
       enum:
@@ -7167,7 +6861,7 @@ components:
     IntegrationListResponse:
       type: object
       required:
-      - data
+      - items
       - has_more
       properties:
         items:
@@ -7907,13 +7601,6 @@ components:
     UpdateRoleRequest:
       type: object
       properties:
-        project_id:
-          type: string
-          description: Scope to change this role to. Cannot change an org-scoped role
-            to project-scoped after creation.
-        name:
-          type: string
-          description: Replacement role name.
         description:
           type: string
           description: Replacement description.
@@ -8151,11 +7838,6 @@ components:
       - type
       - target_actor
       - message
-      dependencies:
-        run_id:
-        - signal_name
-        signal_name:
-        - run_id
       description: 'Creates an interaction directly. When `run_id` is provided,
 
         `signal_name` is also required and the interaction is linked to that
@@ -8173,15 +7855,11 @@ components:
         run_id:
           type: string
           nullable: true
-          description: ID of the workflow run to resume when this interaction is
-            completed. Provide together with `signal_name` for run-backed
-            interactions; omit or null both fields for standalone interactions.
+          description: ID of the workflow run to resume when this interaction is completed.
         signal_name:
           type: string
           nullable: true
-          description: Signal name the interaction will complete against when
-            run-backed. Provide together with `run_id` for run-backed
-            interactions; omit or null both fields for standalone interactions.
+          description: Signal name the interaction will complete against when run-backed.
         target_actor:
           $ref: '#/components/schemas/ActorRef'
         type:
@@ -8199,12 +7877,13 @@ components:
           $ref: '#/components/schemas/InteractionSpec'
         require_all:
           type: boolean
-          default: false
           description: 'When target_actor.type is "group", setting require_all=true
 
             means all snapshotted group members must respond before the
 
             interaction is considered complete. Ignored for non-group targets.
+
+            Defaults to false when omitted.
 
             '
         expires_at:
@@ -8429,7 +8108,6 @@ components:
       - id
       - service_account_id
       - name
-      - display_name
       - status
       - presence
       - created_at
@@ -8441,16 +8119,18 @@ components:
         service_account_id:
           type: string
           description: The service account whose credentials this agent uses to authenticate.
-            Immutable after creation.
+            Can be changed via PATCH.
         name:
           type: string
-          description: Unique name within the project, used for targeting in job claims.
-        display_name:
-          type: string
-          description: Human-readable label shown in the UI.
+          description: Mutable unique name within the project. Use `id` for stable
+            references and job targeting.
+          pattern: ^[a-z0-9]([a-z0-9_-]{0,61}[a-z0-9])?$
+          minLength: 1
+          maxLength: 63
         description:
           type: string
           description: Optional human-readable description.
+          maxLength: 500
         kind:
           type: string
           description: Freeform agent classification for tooling and filtering (e.g.
@@ -8552,17 +8232,19 @@ components:
       properties:
         service_account_id:
           type: string
-          description: Service account that backs this agent. Must belong to the same
-            org.
+          description: Service account that backs this agent. Must be active and belong
+            to the same project.
         name:
           type: string
-          description: Project-scoped unique identifier for this agent.
-        display_name:
-          type: string
-          description: Human-readable label shown in the UI.
+          description: Project-scoped unique name for this agent. Must match pattern
+            and be 1-63 characters.
+          pattern: ^[a-z0-9]([a-z0-9_-]{0,61}[a-z0-9])?$
+          minLength: 1
+          maxLength: 63
         description:
           type: string
           description: Optional human-readable description.
+          maxLength: 500
         kind:
           type: string
           description: Freeform classification (e.g. "llm", "rpa", "integration").
@@ -8578,12 +8260,21 @@ components:
     UpdateAgentRequest:
       type: object
       properties:
-        display_name:
+        service_account_id:
           type: string
-          description: Replacement human-readable label.
+          description: Replacement service account. Must be active and belong to the
+            same project.
+        name:
+          type: string
+          description: Replacement name. Must be unique within the project and match
+            the agent name pattern.
+          pattern: ^[a-z0-9]([a-z0-9_-]{0,61}[a-z0-9])?$
+          minLength: 1
+          maxLength: 63
         description:
           type: string
           description: Replacement description.
+          maxLength: 500
         kind:
           type: string
           description: Replacement freeform agent classification (e.g. `llm`, `rpa`).
@@ -8621,7 +8312,6 @@ components:
       required:
       - id
       - name
-      - display_name
       - status
       - created_at
       - updated_at
@@ -8631,11 +8321,8 @@ components:
           description: Unique identifier for this service account.
         name:
           type: string
-          description: Stable machine-readable identifier, unique within the project.
-            Immutable after creation.
-        display_name:
-          type: string
-          description: Human-readable label shown in the UI.
+          description: Human-readable name for this service account. Immutable after
+            creation.
         description:
           type: string
           description: Optional human-readable description.
@@ -8674,10 +8361,8 @@ components:
       properties:
         name:
           type: string
-          description: Stable machine-readable identifier, unique within the project.
-        display_name:
-          type: string
-          description: Human-readable label shown in the UI.
+          description: Human-readable name for this service account. Immutable after
+            creation.
         description:
           type: string
           description: Optional human-readable description.
@@ -8688,29 +8373,23 @@ components:
           type: object
           additionalProperties: true
           description: Arbitrary metadata to attach to the service account.
-        role_id:
-          type: string
-          description: 'Role to assign at creation time. Mutually exclusive with `role_name`.
+        role_ids:
+          type: array
+          items:
+            type: string
+          minItems: 1
+          uniqueItems: true
+          description: 'One or more role IDs to assign at creation time. All assignments
+            are
 
-            Requires `permission.manage`. The role must belong to this project
+            created atomically with the service account. Requires `mobius.permission.manage`.
 
-            or be org-scoped (project_id empty).
-
-            '
-        role_name:
-          type: string
-          description: 'Role name to assign at creation time (resolved to a role ID
-            server-side).
-
-            Mutually exclusive with `role_id`. Requires `permission.manage`.
+            Each role must belong to this project or be org-scoped (project_id empty).
 
             '
     UpdateServiceAccountRequest:
       type: object
       properties:
-        display_name:
-          type: string
-          description: Replacement human-readable label.
         description:
           type: string
           description: Replacement description.
@@ -8801,9 +8480,6 @@ x-tagGroups:
 - name: Audit Logs
   tags:
   - audit-logs
-- name: API Keys
-  tags:
-  - api-keys
 - name: Workflows
   tags:
   - workflows
@@ -8826,15 +8502,9 @@ x-tagGroups:
 - name: Webhooks
   tags:
   - webhooks
-- name: Integrations
-  tags:
-  - integrations
 - name: Metrics
   tags:
   - metrics
-- name: Roles
-  tags:
-  - roles
 - name: Interactions
   tags:
   - interactions

@@ -17,6 +17,26 @@ from __future__ import annotations
 from datetime import datetime
 
 
+class AuthRevokedError(Exception):
+    """Raised when the server returns HTTP 401 on a worker-loop request.
+
+    The credential has been revoked mid-execution. Distinct from
+    :class:`LeaseLostError` (409 — the lease was reclaimed by the
+    scheduler) because the remedy is operational: the process needs
+    to restart under a fresh credential. The worker loop raises this
+    so the process supervisor (k8s, systemd) can restart with rotated
+    config; the orphan job is abandoned and retried by the scheduler
+    after the lease expires.
+    """
+
+    def __init__(self, job_id: str | None = None) -> None:
+        msg = "mobius: credential revoked"
+        if job_id:
+            msg = f"{msg} (job {job_id})"
+        super().__init__(msg)
+        self.job_id = job_id
+
+
 class RateLimitError(Exception):
     """Raised when the server returns HTTP 429 and the request cannot be retried.
 

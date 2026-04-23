@@ -24,7 +24,11 @@ func registerActionsCommands(app *cli.App) {
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			p0 := ctx.String("project")
 			var body api.CreateActionJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
@@ -42,7 +46,11 @@ func registerActionsCommands(app *cli.App) {
 		Args("action-name").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			p0 := ctx.String("project")
 			p1 := ctx.Arg(0)
 			resp, err := client.DeleteActionWithResponse(ctx.Context(), p0, p1)
@@ -57,7 +65,11 @@ func registerActionsCommands(app *cli.App) {
 		Args("action-name").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			p0 := ctx.String("project")
 			p1 := ctx.Arg(0)
 			resp, err := client.GetActionWithResponse(ctx.Context(), p0, p1)
@@ -72,7 +84,11 @@ func registerActionsCommands(app *cli.App) {
 		Args("action-name").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			p0 := ctx.String("project")
 			p1 := ctx.Arg(0)
 			resp, err := client.GetCatalogActionWithResponse(ctx.Context(), p0, p1)
@@ -90,7 +106,11 @@ func registerActionsCommands(app *cli.App) {
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			p0 := ctx.String("project")
 			params := &api.ListActionsParams{}
 			if ctx.IsSet("cursor") {
@@ -112,7 +132,11 @@ func registerActionsCommands(app *cli.App) {
 		Description("List the action catalog").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			p0 := ctx.String("project")
 			resp, err := client.ListCatalogActionsWithResponse(ctx.Context(), p0)
 			if err != nil {
@@ -126,13 +150,17 @@ func registerActionsCommands(app *cli.App) {
 		Flags(
 			cli.String("cursor", "").Help("cursor"),
 			cli.Int("limit", "").Help("limit"),
-			cli.String("run-id", "").Help("run-id"),
-			cli.String("action-name", "").Help("action-name"),
-			cli.String("status", "").Help("status"),
+			cli.String("run-id", "").Help("Filter to invocations from a specific workflow run."),
+			cli.String("action-name", "").Help("Filter to invocations of a specific action."),
+			cli.String("status", "").Help("Filter by terminal status (e.g. \"success\", \"failed\")."),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			p0 := ctx.String("project")
 			params := &api.ListActionAuditLogParams{}
 			if ctx.IsSet("cursor") {
@@ -167,7 +195,11 @@ func registerActionsCommands(app *cli.App) {
 		Args("action-name").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			p0 := ctx.String("project")
 			p1 := ctx.Arg(0)
 			resp, err := client.RotateActionSecretWithResponse(ctx.Context(), p0, p1)
@@ -185,7 +217,11 @@ func registerActionsCommands(app *cli.App) {
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
-			client := clientFromContext(ctx).RawClient()
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
 			p0 := ctx.String("project")
 			p1 := ctx.Arg(0)
 			var body api.UpdateActionJSONRequestBody
