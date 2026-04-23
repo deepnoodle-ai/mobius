@@ -677,6 +677,48 @@ func (e WorkflowRetryJitterStrategy) Valid() bool {
 	}
 }
 
+// Defines values for WorkflowRunErrorType.
+const (
+	WorkflowRunErrorTypeJobFailed    WorkflowRunErrorType = "job_failed"
+	WorkflowRunErrorTypeRunCancelled WorkflowRunErrorType = "run_cancelled"
+	WorkflowRunErrorTypeRunTimeout   WorkflowRunErrorType = "run_timeout"
+)
+
+// Valid indicates whether the value is a known member of the WorkflowRunErrorType enum.
+func (e WorkflowRunErrorType) Valid() bool {
+	switch e {
+	case WorkflowRunErrorTypeJobFailed:
+		return true
+	case WorkflowRunErrorTypeRunCancelled:
+		return true
+	case WorkflowRunErrorTypeRunTimeout:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for WorkflowRunDetailErrorType.
+const (
+	WorkflowRunDetailErrorTypeJobFailed    WorkflowRunDetailErrorType = "job_failed"
+	WorkflowRunDetailErrorTypeRunCancelled WorkflowRunDetailErrorType = "run_cancelled"
+	WorkflowRunDetailErrorTypeRunTimeout   WorkflowRunDetailErrorType = "run_timeout"
+)
+
+// Valid indicates whether the value is a known member of the WorkflowRunDetailErrorType enum.
+func (e WorkflowRunDetailErrorType) Valid() bool {
+	switch e {
+	case WorkflowRunDetailErrorTypeJobFailed:
+		return true
+	case WorkflowRunDetailErrorTypeRunCancelled:
+		return true
+	case WorkflowRunDetailErrorTypeRunTimeout:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for WorkflowRunStatus.
 const (
 	WorkflowRunStatusCompleted WorkflowRunStatus = "completed"
@@ -1323,6 +1365,13 @@ type ChannelMessageSenderType string
 // - `replace` — cancel the active run before starting a new one.
 type ConcurrencyPolicy string
 
+// ConfigInput Hierarchical cascade config input. Shape: `{<category>: {<key>: <value>}}`.
+// The only category shipped in Phase 1 is `timeouts`, whose keys are
+// `claim`, `liveness`, `execution`, `wall_clock`. Unknown categories or
+// unknown keys under a known category are rejected at write time. See
+// PRD 035.
+type ConfigInput map[string]interface{}
+
 // CreateActionRequest defines model for CreateActionRequest.
 type CreateActionRequest struct {
 	// Annotations Hints that describe the safe-use properties of the action. Used by the
@@ -1953,6 +2002,13 @@ type Job struct {
 	// Attempt Current attempt number (1-based). Increments on each retry.
 	Attempt int `json:"attempt"`
 
+	// ClaimDeadlineAt Deadline at which the reaper will fail this job with
+	// `error_type=claim_timeout` if no worker has claimed it.
+	// Present only when `resolved_config.timeouts.claim` resolves
+	// to a finite duration. Re-stamped whenever the job returns
+	// to `pending`.
+	ClaimDeadlineAt *time.Time `json:"claim_deadline_at,omitempty"`
+
 	// ClaimedAt Timestamp when this job was claimed by a worker.
 	ClaimedAt *time.Time `json:"claimed_at,omitempty"`
 
@@ -1962,6 +2018,17 @@ type Job struct {
 	// CreatedAt Timestamp when this job was created.
 	CreatedAt time.Time `json:"created_at"`
 
+	// ErrorType Typed failure cause (e.g. `claim_timeout`, `liveness_timeout`,
+	// `execution_timeout`, `run_cancelled`). Present when
+	// `status=failed`.
+	ErrorType *string `json:"error_type,omitempty"`
+
+	// ExecutionDeadlineAt Deadline at which the reaper will fail this job with
+	// `error_type=execution_timeout` if it has not completed. Present
+	// only when `resolved_config.timeouts.execution` resolves to a
+	// finite duration.
+	ExecutionDeadlineAt *time.Time `json:"execution_deadline_at,omitempty"`
+
 	// HeartbeatAt Timestamp of the most recent heartbeat. Used to detect stale claims.
 	HeartbeatAt *time.Time `json:"heartbeat_at,omitempty"`
 
@@ -1970,6 +2037,13 @@ type Job struct {
 
 	// LastError Error detail from the most recent failed attempt.
 	LastError *string `json:"last_error,omitempty"`
+
+	// LivenessDeadlineAt Deadline at which the reaper will either reset (retries
+	// remain) or fail this job with `error_type=liveness_timeout`
+	// if the worker has not heartbeated in time. Present only
+	// when `resolved_config.timeouts.liveness` resolves to a
+	// finite duration and the job is claimed.
+	LivenessDeadlineAt *time.Time `json:"liveness_deadline_at,omitempty"`
 
 	// MaxAttempts Maximum number of attempts before the job is permanently failed.
 	MaxAttempts int `json:"max_attempts"`
@@ -1985,6 +2059,12 @@ type Job struct {
 
 	// Queue Queue the job was placed in. Workers subscribe to queues to receive jobs.
 	Queue string `json:"queue"`
+
+	// ResolvedConfig Frozen cascade resolution. Same outer shape as `ConfigInput`, but
+	// every leaf is a `{value, source}` object where `source` is one of
+	// `service` | `project` | `workflow` | `run` | `step`. Keys unset at
+	// every layer are omitted. See PRD 035.
+	ResolvedConfig *ResolvedConfig `json:"resolved_config,omitempty"`
 
 	// RunId The workflow run this job belongs to.
 	RunId string `json:"run_id"`
@@ -2196,6 +2276,13 @@ type Project struct {
 	// owners/admins) can see or use the project.
 	AccessMode ProjectAccessMode `json:"access_mode"`
 
+	// Config Hierarchical cascade config input. Shape: `{<category>: {<key>: <value>}}`.
+	// The only category shipped in Phase 1 is `timeouts`, whose keys are
+	// `claim`, `liveness`, `execution`, `wall_clock`. Unknown categories or
+	// unknown keys under a known category are rejected at write time. See
+	// PRD 035.
+	Config *ConfigInput `json:"config,omitempty"`
+
 	// CreatedAt Timestamp when this project was created.
 	CreatedAt time.Time `json:"created_at"`
 
@@ -2306,6 +2393,12 @@ type ProjectMetrics struct {
 	// WindowMinutes Rolling window width used for rate and failure metrics. Default is 60 minutes.
 	WindowMinutes int `json:"window_minutes"`
 }
+
+// ResolvedConfig Frozen cascade resolution. Same outer shape as `ConfigInput`, but
+// every leaf is a `{value, source}` object where `source` is one of
+// `service` | `project` | `workflow` | `run` | `step`. Keys unset at
+// every layer are omitted. See PRD 035.
+type ResolvedConfig map[string]interface{}
 
 // RespondToInteractionRequest defines model for RespondToInteractionRequest.
 type RespondToInteractionRequest struct {
@@ -2418,6 +2511,13 @@ type SendRunSignalRequest struct {
 // definition-bound endpoint (`POST /v1/projects/{project}/workflows/{id}/runs`)
 // `definition_id` is implied by the path and `spec` is forbidden.
 type StartRunRequest struct {
+	// Config Hierarchical cascade config input. Shape: `{<category>: {<key>: <value>}}`.
+	// The only category shipped in Phase 1 is `timeouts`, whose keys are
+	// `claim`, `liveness`, `execution`, `wall_clock`. Unknown categories or
+	// unknown keys under a known category are rejected at write time. See
+	// PRD 035.
+	Config *ConfigInput `json:"config,omitempty"`
+
 	// DefinitionId ID of an existing workflow definition to run. Mutually
 	// exclusive with `spec`. On the definition-bound path this is
 	// ignored (the path segment wins) but must not conflict.
@@ -2704,7 +2804,7 @@ type UpdateAgentRequest struct {
 	// Kind Replacement freeform agent classification (e.g. `llm`, `rpa`).
 	Kind *string `json:"kind,omitempty"`
 
-	// Name Replacement name. Must be unique within the project.
+	// Name Free-form human-readable label, 1-63 characters; must be unique within the project.
 	Name *string `json:"name,omitempty"`
 
 	// ServiceAccountId Replacement service account. Must be active and belong to the same project.
@@ -2757,6 +2857,13 @@ type UpdateProjectRequest struct {
 	// role assignments. `restricted`: only listed project members (and org
 	// owners/admins) can see or use the project.
 	AccessMode *ProjectAccessMode `json:"access_mode,omitempty"`
+
+	// Config Hierarchical cascade config input. Shape: `{<category>: {<key>: <value>}}`.
+	// The only category shipped in Phase 1 is `timeouts`, whose keys are
+	// `claim`, `liveness`, `execution`, `wall_clock`. Unknown categories or
+	// unknown keys under a known category are rejected at write time. See
+	// PRD 035.
+	Config *ConfigInput `json:"config,omitempty"`
 
 	// Description Replacement description.
 	Description *string `json:"description,omitempty"`
@@ -3367,6 +3474,12 @@ type WorkflowRun struct {
 	// CreatedAt Timestamp when this run was created.
 	CreatedAt time.Time `json:"created_at"`
 
+	// DefaultJobConfig Frozen cascade resolution. Same outer shape as `ConfigInput`, but
+	// every leaf is a `{value, source}` object where `source` is one of
+	// `service` | `project` | `workflow` | `run` | `step`. Keys unset at
+	// every layer are omitted. See PRD 035.
+	DefaultJobConfig *ResolvedConfig `json:"default_job_config,omitempty"`
+
 	// DefinitionId ID of the workflow definition this run was started from.
 	// Empty for ephemeral runs started from an inline spec.
 	DefinitionId *string `json:"definition_id,omitempty"`
@@ -3381,6 +3494,11 @@ type WorkflowRun struct {
 
 	// ErrorMessage Error message from the most recent failure. Present when status is failed.
 	ErrorMessage *string `json:"error_message,omitempty"`
+
+	// ErrorType Typed run-level failure cause. Its own vocabulary, not a
+	// superset of the job-level `error_type`. Present when
+	// `status=failed`.
+	ErrorType *WorkflowRunErrorType `json:"error_type,omitempty"`
 
 	// ExternalId Caller-supplied idempotency key or correlation ID.
 	ExternalId *string `json:"external_id,omitempty"`
@@ -3403,6 +3521,12 @@ type WorkflowRun struct {
 	// Queue Queue this run was enqueued on.
 	Queue *string `json:"queue,omitempty"`
 
+	// ResolvedConfig Frozen cascade resolution. Same outer shape as `ConfigInput`, but
+	// every leaf is a `{value, source}` object where `source` is one of
+	// `service` | `project` | `workflow` | `run` | `step`. Keys unset at
+	// every layer are omitted. See PRD 035.
+	ResolvedConfig *ResolvedConfig `json:"resolved_config,omitempty"`
+
 	// StartedAt Timestamp when a worker first claimed this run.
 	StartedAt *time.Time `json:"started_at,omitempty"`
 
@@ -3414,9 +3538,20 @@ type WorkflowRun struct {
 	// UpdatedAt Timestamp when this run was last updated.
 	UpdatedAt time.Time `json:"updated_at"`
 
+	// WallClockDeadlineAt Deadline at which the reaper will fail this run with
+	// `error_type=run_timeout` if it has not reached a terminal
+	// state. Present only when `resolved_config.timeouts.wall_clock`
+	// resolves to a finite duration. Anchored to `created_at`.
+	WallClockDeadlineAt *time.Time `json:"wall_clock_deadline_at,omitempty"`
+
 	// WorkflowName Name of the workflow as recorded at run creation time.
 	WorkflowName string `json:"workflow_name"`
 }
+
+// WorkflowRunErrorType Typed run-level failure cause. Its own vocabulary, not a
+// superset of the job-level `error_type`. Present when
+// `status=failed`.
+type WorkflowRunErrorType string
 
 // WorkflowRunDetail defines model for WorkflowRunDetail.
 type WorkflowRunDetail struct {
@@ -3440,6 +3575,12 @@ type WorkflowRunDetail struct {
 	// CreatedAt Timestamp when this run was created.
 	CreatedAt time.Time `json:"created_at"`
 
+	// DefaultJobConfig Frozen cascade resolution. Same outer shape as `ConfigInput`, but
+	// every leaf is a `{value, source}` object where `source` is one of
+	// `service` | `project` | `workflow` | `run` | `step`. Keys unset at
+	// every layer are omitted. See PRD 035.
+	DefaultJobConfig *ResolvedConfig `json:"default_job_config,omitempty"`
+
 	// DefinitionId ID of the workflow definition this run was started from.
 	// Empty for ephemeral runs started from an inline spec.
 	DefinitionId *string `json:"definition_id,omitempty"`
@@ -3454,6 +3595,11 @@ type WorkflowRunDetail struct {
 
 	// ErrorMessage Error message from the most recent failure. Present when status is failed.
 	ErrorMessage *string `json:"error_message,omitempty"`
+
+	// ErrorType Typed run-level failure cause. Its own vocabulary, not a
+	// superset of the job-level `error_type`. Present when
+	// `status=failed`.
+	ErrorType *WorkflowRunDetailErrorType `json:"error_type,omitempty"`
 
 	// ExternalId Caller-supplied idempotency key or correlation ID.
 	ExternalId *string `json:"external_id,omitempty"`
@@ -3479,6 +3625,12 @@ type WorkflowRunDetail struct {
 	// Queue Queue this run was enqueued on.
 	Queue *string `json:"queue,omitempty"`
 
+	// ResolvedConfig Frozen cascade resolution. Same outer shape as `ConfigInput`, but
+	// every leaf is a `{value, source}` object where `source` is one of
+	// `service` | `project` | `workflow` | `run` | `step`. Keys unset at
+	// every layer are omitted. See PRD 035.
+	ResolvedConfig *ResolvedConfig `json:"resolved_config,omitempty"`
+
 	// ResultB64 Base64-encoded terminal result blob
 	ResultB64 *string `json:"result_b64,omitempty"`
 
@@ -3501,9 +3653,20 @@ type WorkflowRunDetail struct {
 	// UpdatedAt Timestamp when this run was last updated.
 	UpdatedAt time.Time `json:"updated_at"`
 
+	// WallClockDeadlineAt Deadline at which the reaper will fail this run with
+	// `error_type=run_timeout` if it has not reached a terminal
+	// state. Present only when `resolved_config.timeouts.wall_clock`
+	// resolves to a finite duration. Anchored to `created_at`.
+	WallClockDeadlineAt *time.Time `json:"wall_clock_deadline_at,omitempty"`
+
 	// WorkflowName Name of the workflow as recorded at run creation time.
 	WorkflowName string `json:"workflow_name"`
 }
+
+// WorkflowRunDetailErrorType Typed run-level failure cause. Its own vocabulary, not a
+// superset of the job-level `error_type`. Present when
+// `status=failed`.
+type WorkflowRunDetailErrorType string
 
 // WorkflowRunListResponse defines model for WorkflowRunListResponse.
 type WorkflowRunListResponse struct {
