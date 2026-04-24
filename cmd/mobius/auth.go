@@ -303,6 +303,8 @@ func runAuthRemove(ctx *cli.Context) error {
 	if name == "" {
 		profile, err := authstore.ResolveProfile("")
 		if err != nil {
+			// A missing default from ResolveProfile means there is nothing local
+			// to remove, so logout/remove should exit successfully.
 			ctx.Println("No saved profile to remove.")
 			return nil
 		}
@@ -349,17 +351,13 @@ func runAuthStatus(ctx *cli.Context) error {
 		return nil
 	}
 
+	// ResolveProfile errors are shown as "not authenticated" here so status
+	// stays diagnostic; printSavedCredentialStatus runs only with a profile.
 	cred, err := authstore.ResolveProfile(ctx.String("profile"))
 	if err != nil {
 		ctx.Println("Auth source: none")
 		ctx.Println("Authenticated: no")
 		ctx.Println("Run `mobius auth login --profile <name>` to sign in from the browser.")
-		return nil
-	}
-	if cred == nil {
-		ctx.Println("Auth source: none")
-		ctx.Println("Authenticated: no")
-		ctx.Println("Run `mobius auth login` to sign in from the browser.")
 		return nil
 	}
 	printSavedCredentialStatus(ctx, cred)
@@ -671,8 +669,14 @@ func shellQuote(s string) string {
 	if s == "" {
 		return "''"
 	}
+	safe := func(r rune) bool {
+		return r >= 'a' && r <= 'z' ||
+			r >= 'A' && r <= 'Z' ||
+			r >= '0' && r <= '9' ||
+			r == '_' || r == '-' || r == '.' || r == '/'
+	}
 	if strings.IndexFunc(s, func(r rune) bool {
-		return !(r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' || r >= '0' && r <= '9' || r == '_' || r == '-' || r == '.' || r == '/')
+		return !safe(r)
 	}) < 0 {
 		return s
 	}

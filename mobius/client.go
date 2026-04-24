@@ -156,7 +156,7 @@ func (c *Client) resolveProjectHandleFromAPIKey() error {
 	}
 	handle, ok := ProjectHandleFromAPIKey(c.apiKey)
 	if !ok {
-		if hasCredentialSuffix(c.apiKey) {
+		if hasCredentialSuffix(c.apiKey) || strings.HasSuffix(c.apiKey, ".") {
 			return fmt.Errorf("mobius: invalid project handle suffix in API key")
 		}
 		return nil
@@ -191,7 +191,7 @@ func hasCredentialSuffix(key string) bool {
 		return false
 	}
 	dot := strings.LastIndexByte(key, '.')
-	return dot >= 0 && dot != len(key)-1
+	return dot >= 0 && (dot != len(key)-1 || strings.HasSuffix(key, "."))
 }
 
 // RawClient returns the underlying generated ClientWithResponses for direct access

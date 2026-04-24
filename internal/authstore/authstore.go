@@ -24,6 +24,10 @@ const (
 	SourceBrowserLogin Source = "browser-login"
 )
 
+// ErrNoDefaultProfile is returned when no profile is marked default and no
+// explicit profile name was requested.
+var ErrNoDefaultProfile = errors.New("no default profile")
+
 // Profile is one named CLI credential profile.
 type Profile struct {
 	Name          string `toml:"-"`
@@ -209,7 +213,7 @@ func ResolveProfile(name string) (*Profile, error) {
 	sort.Strings(defaults)
 	switch len(defaults) {
 	case 0:
-		return nil, errors.New("no default profile. Run `mobius auth login --profile <name>` or `mobius auth use <name>`")
+		return nil, fmt.Errorf("%w. Run `mobius auth login --profile <name>` or `mobius auth use <name>`", ErrNoDefaultProfile)
 	case 1:
 		p := store.Profiles[defaults[0]]
 		p.Name = defaults[0]
@@ -233,6 +237,7 @@ func PutProfile(name string, profile Profile, makeDefault bool) error {
 	if store.Profiles == nil {
 		store.Profiles = map[string]Profile{}
 	}
+	existing, exists := store.Profiles[name]
 	profile.Name = ""
 	if makeDefault {
 		for n, p := range store.Profiles {
@@ -240,6 +245,8 @@ func PutProfile(name string, profile Profile, makeDefault bool) error {
 			store.Profiles[n] = p
 		}
 		profile.Default = true
+	} else if exists {
+		profile.Default = existing.Default
 	} else if len(store.Profiles) == 0 {
 		profile.Default = true
 	}
@@ -308,7 +315,7 @@ func Save(c *Profile) error {
 func Load() (*Profile, error) {
 	p, err := ResolveProfile("")
 	if err != nil {
-		if strings.Contains(err.Error(), "no default profile") {
+		if errors.Is(err, ErrNoDefaultProfile) {
 			return nil, nil
 		}
 		return nil, err

@@ -98,6 +98,11 @@ func TestNewClient_InvalidHandleSuffix(t *testing.T) {
 	assert.True(t, err != nil)
 }
 
+func TestNewClient_RejectsTrailingDotSuffix(t *testing.T) {
+	_, err := NewClient(WithAPIKey("mbx_secret."))
+	assert.True(t, err != nil)
+}
+
 func TestRuntimeClaim_Job(t *testing.T) {
 	claimBody := `{"job_id":"job_1","run_id":"run_1","workflow_name":"hello","step_name":"greet","action":"print","parameters":{"msg":"hi"},"attempt":1,"queue":"default","heartbeat_interval_seconds":15}`
 	h := newRecorder(t, map[string]stubResponse{
