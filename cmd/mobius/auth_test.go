@@ -186,6 +186,59 @@ func TestAuthLoginRequestsExplicitProject(t *testing.T) {
 	}
 }
 
+func TestAuthLoginDisplaysVerificationURLFromCustomAPIURL(t *testing.T) {
+	srv, requestedProject := newDeviceLoginServer(t)
+	defer srv.Close()
+
+	result := newApp().Test(t,
+		cli.TestArgs("auth", "login", "--api-url", srv.URL, "--no-browser"),
+		cli.TestEnv("MOBIUS_CONFIG_DIR", t.TempDir()),
+	)
+	if !result.Success() {
+		t.Fatalf("auth login failed: %v\nstderr: %s", result.Err, result.Stderr)
+	}
+	if !strings.Contains(result.Stdout, "Open this URL:          "+srv.URL+"/auth/device?code=ABCD-EFGH") {
+		t.Fatalf("stdout missing custom verification URL:\n%s", result.Stdout)
+	}
+	if strings.Contains(result.Stdout, "https://example.invalid/auth/device") {
+		t.Fatalf("stdout used server-provided verification origin:\n%s", result.Stdout)
+	}
+	if got := <-requestedProject; got != "" {
+		t.Fatalf("requested project = %q, want empty", got)
+	}
+}
+
+func TestGeneratedCommandUsesCustomAPIURL(t *testing.T) {
+	seen := make(chan string, 1)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		seen <- r.Method + " " + r.URL.RequestURI() + " " + r.Header.Get("Authorization")
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"items":[]}`))
+	}))
+	defer srv.Close()
+
+	result := newApp().Test(t,
+		cli.TestArgs("projects", "list", "--api-url", srv.URL, "--api-key", "mbx_test"),
+		cli.TestEnv("MOBIUS_CONFIG_DIR", t.TempDir()),
+	)
+	if !result.Success() {
+		t.Fatalf("projects list failed: %v\nstderr: %s", result.Err, result.Stderr)
+	}
+	if got := <-seen; got != "GET /v1/projects Bearer mbx_test" {
+		t.Fatalf("request = %q, want custom server projects request", got)
+	}
+}
+
+func TestDeviceVerificationURLKeepsDefaultServerURL(t *testing.T) {
+	ch := &deviceCodeResponse{
+		UserCode:                "ABCD-EFGH",
+		VerificationURIComplete: "https://mobiusops.ai/auth/device?code=ABCD-EFGH",
+	}
+	if got := deviceVerificationURL("https://api.mobiusops.ai", ch); got != ch.VerificationURIComplete {
+		t.Fatalf("deviceVerificationURL() = %q, want %q", got, ch.VerificationURIComplete)
+	}
+}
+
 func newAuthProbeServer(t *testing.T, wantToken, wantPath string, status int) *httptest.Server {
 	t.Helper()
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
