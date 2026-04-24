@@ -279,6 +279,11 @@ func runAuthLogout(ctx *cli.Context) error {
 func runAuthStatus(ctx *cli.Context) error {
 	ctx.Printf("API URL: %s\n", ctx.String("api-url"))
 
+	if appliedSavedCredential != nil && ctx.String("api-key") == appliedSavedCredential.Token {
+		printSavedCredentialStatus(ctx, appliedSavedCredential)
+		return nil
+	}
+
 	if ctx.IsSet("api-key") {
 		// Distinguish between flag and env var as best we can.
 		if _, ok := os.LookupEnv("MOBIUS_API_KEY"); ok && os.Getenv("MOBIUS_API_KEY") == ctx.String("api-key") {
@@ -286,7 +291,7 @@ func runAuthStatus(ctx *cli.Context) error {
 		} else {
 			ctx.Println("Auth source: --api-key flag")
 		}
-		ctx.Println("Authenticated: yes (raw API key)")
+		printAuthVerification(ctx, "raw API key")
 		return nil
 	}
 
@@ -300,6 +305,11 @@ func runAuthStatus(ctx *cli.Context) error {
 		ctx.Println("Run `mobius auth login` to sign in from the browser.")
 		return nil
 	}
+	printSavedCredentialStatus(ctx, cred)
+	return nil
+}
+
+func printSavedCredentialStatus(ctx *cli.Context, cred *authstore.Credential) {
 	ctx.Println("Auth source: saved browser credential")
 	ctx.Printf("Credential file: ")
 	if p, err := authstore.Path(); err == nil {
@@ -316,8 +326,27 @@ func runAuthStatus(ctx *cli.Context) error {
 	if cred.UserEmail != "" || cred.UserName != "" || cred.UserID != "" {
 		ctx.Printf("User: %s\n", firstNonEmpty(cred.UserEmail, cred.UserName, cred.UserID))
 	}
-	ctx.Println("Authenticated: yes (browser-based CLI credential)")
-	return nil
+	printAuthVerification(ctx, "browser-based CLI credential")
+}
+
+func printAuthVerification(ctx *cli.Context, credentialKind string) {
+	probe, err := verifyAuthenticatedRequest(ctx)
+	if err != nil {
+		ctx.Printf("Auth check: GET %s failed: %v\n", probe.Path, err)
+		ctx.Printf("Authenticated: no (%s verification failed)\n", credentialKind)
+		return
+	}
+	ctx.Printf("Auth check: GET %s -> HTTP %d\n", probe.Path, probe.Status)
+	if probe.Status == http.StatusOK {
+		ctx.Printf("Authenticated: yes (%s verified)\n", credentialKind)
+		return
+	}
+	ctx.Printf("Authenticated: no (%s rejected)\n", credentialKind)
+}
+
+type authProbeResult struct {
+	Path   string
+	Status int
 }
 
 type cliCredential struct {
@@ -453,12 +482,69 @@ func authAPISetHeaders(ctx *cli.Context, req *http.Request) {
 }
 
 func authAPIGet(ctx *cli.Context, path string) (*http.Response, error) {
+	return authAPIGetWithClient(ctx, path, http.DefaultClient)
+}
+
+func authAPIGetWithClient(ctx *cli.Context, path string, client *http.Client) (*http.Response, error) {
 	req, err := http.NewRequestWithContext(ctx.Context(), http.MethodGet, authAPIURL(ctx, path), nil)
 	if err != nil {
 		return nil, err
 	}
 	authAPISetHeaders(ctx, req)
-	return http.DefaultClient.Do(req)
+	return client.Do(req)
+}
+
+func verifyAuthenticatedRequest(ctx *cli.Context) (authProbeResult, error) {
+	path := authProbePath(ctx.String("api-key"))
+	result := authProbeResult{Path: path}
+	client := &http.Client{Timeout: 15 * time.Second}
+	resp, err := authAPIGetWithClient(ctx, path, client)
+	if err != nil {
+		return result, err
+	}
+	defer resp.Body.Close()
+	_, _ = io.Copy(io.Discard, resp.Body)
+	result.Status = resp.StatusCode
+	return result, nil
+}
+
+func authProbePath(apiKey string) string {
+	if project, ok := projectHandleFromCLIToken(apiKey); ok {
+		return "/v1/projects/" + url.PathEscape(project) + "/workflows"
+	}
+	return "/v1/projects"
+}
+
+func projectHandleFromCLIToken(apiKey string) (string, bool) {
+	if !strings.HasPrefix(apiKey, "mbc_") {
+		return "", false
+	}
+	dot := strings.LastIndexByte(apiKey, '.')
+	if dot < len("mbc_") || dot == len(apiKey)-1 {
+		return "", false
+	}
+	project := apiKey[dot+1:]
+	if !validProjectHandle(project) {
+		return "", false
+	}
+	return project, true
+}
+
+func validProjectHandle(project string) bool {
+	var prevHyphen bool
+	for i, r := range project {
+		switch {
+		case r >= 'a' && r <= 'z':
+			prevHyphen = false
+		case r >= '0' && r <= '9':
+			prevHyphen = false
+		case r == '-' && i > 0 && !prevHyphen:
+			prevHyphen = true
+		default:
+			return false
+		}
+	}
+	return project != "" && !prevHyphen
 }
 
 // hasAuth reports whether clientFromContext will have a usable token.

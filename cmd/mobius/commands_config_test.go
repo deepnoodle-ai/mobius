@@ -7,12 +7,12 @@ import (
 
 func TestSplitDottedConfig(t *testing.T) {
 	tests := []struct {
-		name     string
-		entry    string
-		wantCat  string
-		wantKey  string
-		wantVal  any
-		wantErr  bool
+		name    string
+		entry   string
+		wantCat string
+		wantKey string
+		wantVal any
+		wantErr bool
 	}{
 		{name: "duration string", entry: "timeouts.wall_clock=30m", wantCat: "timeouts", wantKey: "wall_clock", wantVal: "30m"},
 		{name: "never sentinel", entry: "timeouts.execution=never", wantCat: "timeouts", wantKey: "execution", wantVal: "never"},
@@ -164,6 +164,28 @@ timeouts:
 			t.Errorf("got %#v, want empty", got)
 		}
 	})
+}
+
+func TestStringifyConfigValue(t *testing.T) {
+	tests := []struct {
+		name string
+		in   any
+		want string
+	}{
+		{name: "uint", in: uint(42), want: "42"},
+		{name: "uint64", in: uint64(18446744073709551615), want: "18446744073709551615"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := stringifyConfigValue(tt.in)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if got != tt.want {
+				t.Fatalf("got %q, want %q", got, tt.want)
+			}
+		})
+	}
 }
 
 func TestNormalizeYAMLValue(t *testing.T) {

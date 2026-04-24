@@ -21,7 +21,7 @@ func registerGroupsCommands(app *cli.App) {
 	groupsGrp.Alias("group")
 	groupsGrp.Command("add-member").
 		Description("Add a member to a group").
-		Args("group-id").
+		Args("group").
 		Flags(
 			cli.String("user-id", "").Help("[required] Org member user ID to add. Must be a current org member."),
 			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
@@ -58,7 +58,7 @@ func registerGroupsCommands(app *cli.App) {
 			cli.String("description", "").Help("Optional human-readable description."),
 			cli.String("handle", "").Help("URL-safe handle, unique within the project. Auto-derived from name if omitted."),
 			cli.String("name", "").Help("[required] Display name (1–64 chars)."),
-			cli.String("routing-policy", "").Help("How responses are collected from group members. Defaults to `first_responder`."),
+			cli.String("routing-policy", "").Help("How responses are collected from group members: `first_responder` or `all_members`. Defaults to `first_responder`."),
 			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
 		).
 		Use(cli.RequireFlags("api-key")).
@@ -100,7 +100,7 @@ func registerGroupsCommands(app *cli.App) {
 
 	groupsGrp.Command("delete").
 		Description("Delete a group").
-		Args("group-id").
+		Args("group").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -119,7 +119,7 @@ func registerGroupsCommands(app *cli.App) {
 
 	groupsGrp.Command("get").
 		Description("Get a group").
-		Args("group-id").
+		Args("group").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -187,7 +187,7 @@ func registerGroupsCommands(app *cli.App) {
 
 	groupsGrp.Command("list-members").
 		Description("List members of a group").
-		Args("group-id").
+		Args("group").
 		Flags(
 			cli.String("cursor", "").Help("cursor"),
 			cli.Int("limit", "").Help("limit"),
@@ -219,7 +219,7 @@ func registerGroupsCommands(app *cli.App) {
 
 	groupsGrp.Command("remove-member").
 		Description("Remove a member from a group").
-		Args("group-id", "user-id").
+		Args("group", "user-id").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -239,11 +239,11 @@ func registerGroupsCommands(app *cli.App) {
 
 	groupsGrp.Command("update").
 		Description("Update a group").
-		Args("group-id").
+		Args("group").
 		Flags(
 			cli.String("description", "").Help("Replacement description."),
 			cli.String("name", "").Help("Replacement human-readable name."),
-			cli.String("routing-policy", "").Help("Affects future interactions only; in-flight interactions retain the snapshotted policy."),
+			cli.String("routing-policy", "").Help("Replacement routing policy, either `first_responder` or `all_members`. Affects future interactions only; in-flight interactions retain the snapshotted policy."),
 			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
 		).
 		Use(cli.RequireFlags("api-key")).

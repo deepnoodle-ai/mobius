@@ -8,7 +8,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/deepnoodle-ai/wonton/cli"
@@ -115,6 +114,24 @@ func registerProjectsCommands(app *cli.App) {
 			return printResponse(ctx, resp.StatusCode(), resp.Body)
 		})
 
+	projectsGrp.Command("delete-config").
+		Description("Clear project config").
+		Args("id").
+		Use(cli.RequireFlags("api-key")).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := ctx.Arg(0)
+			resp, err := client.DeleteProjectConfigWithResponse(ctx.Context(), p0)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, resp.StatusCode(), resp.Body)
+		})
+
 	projectsGrp.Command("get").
 		Description("Get a project").
 		Args("id").
@@ -127,6 +144,24 @@ func registerProjectsCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := ctx.Arg(0)
 			resp, err := client.GetProjectWithResponse(ctx.Context(), p0)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, resp.StatusCode(), resp.Body)
+		})
+
+	projectsGrp.Command("get-config").
+		Description("Get project config").
+		Args("id").
+		Use(cli.RequireFlags("api-key")).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := ctx.Arg(0)
+			resp, err := client.GetProjectConfigWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
 			}
@@ -190,7 +225,7 @@ func registerProjectsCommands(app *cli.App) {
 
 	projectsGrp.Command("remove-member").
 		Description("Remove a project member").
-		Args("id", "uid").
+		Args("id", "user-id").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -212,7 +247,6 @@ func registerProjectsCommands(app *cli.App) {
 		Args("id").
 		Flags(
 			cli.String("access-mode", "").Help("`org_open`: every org member can see and use the project, subject to role assignments. `restricted`: only listed project members (and org owners/admins) can see or use the project."),
-			cli.String("config", "").Help("Hierarchical cascade config input. Shape: `{<category>: {<key>: <value>}}`. The only category shipped in Phase 1 is `timeouts`, whose keys are `claim`, `liveness`, `execution`, `wall_clock`. Unknown categories or unknown keys under a known category are rejected at write time. See PRD 035. (JSON)"),
 			cli.String("description", "").Help("Replacement description."),
 			cli.String("name", "").Help("Replacement human-readable name."),
 			cli.Bool("seed-existing-members", "").Help("When transitioning from `org_open` to `restricted`, set true to insert all current org members as project members so nobody loses visibility on the flip. Ignored on other transitions."),
@@ -234,11 +268,6 @@ func registerProjectsCommands(app *cli.App) {
 				v := api.ProjectAccessMode(ctx.String("access-mode"))
 				body.AccessMode = &v
 			}
-			if ctx.IsSet("config") {
-				if err := json.Unmarshal([]byte(ctx.String("config")), &body.Config); err != nil {
-					return fmt.Errorf("--config: invalid JSON: %w", err)
-				}
-			}
 			if ctx.IsSet("description") {
 				v := ctx.String("description")
 				body.Description = &v
@@ -251,10 +280,38 @@ func registerProjectsCommands(app *cli.App) {
 				v := ctx.Bool("seed-existing-members")
 				body.SeedExistingMembers = &v
 			}
-			if ctx.String("file") == "" && !ctx.IsSet("access-mode") && !ctx.IsSet("config") && !ctx.IsSet("description") && !ctx.IsSet("name") && !ctx.IsSet("seed-existing-members") {
+			if ctx.String("file") == "" && !ctx.IsSet("access-mode") && !ctx.IsSet("description") && !ctx.IsSet("name") && !ctx.IsSet("seed-existing-members") {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
 			resp, err := client.UpdateProjectWithResponse(ctx.Context(), p0, body)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, resp.StatusCode(), resp.Body)
+		})
+
+	projectsGrp.Command("update-config").
+		Description("Replace project config").
+		Args("id").
+		Flags(
+			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
+		).
+		Use(cli.RequireFlags("api-key")).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := ctx.Arg(0)
+			var body api.UpdateProjectConfigJSONRequestBody
+			if err := readJSONBody(ctx, &body); err != nil {
+				return err
+			}
+			if ctx.String("file") == "" {
+				return fmt.Errorf("at least one flag or --file is required")
+			}
+			resp, err := client.UpdateProjectConfigWithResponse(ctx.Context(), p0, body)
 			if err != nil {
 				return err
 			}

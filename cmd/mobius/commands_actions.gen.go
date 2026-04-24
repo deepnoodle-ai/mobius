@@ -23,7 +23,7 @@ func registerActionsCommands(app *cli.App) {
 	actionsGrp.Command("create").
 		Description("Create an action").
 		Flags(
-			cli.String("annotations", "").Help("Hints that describe the safe-use properties of the action. Used by the engine and tooling to decide retry behavior, dry-run eligibility, etc. (JSON)"),
+			cli.String("annotations", "").Help("Request hints that describe the safe-use properties of the action. Used by the engine and tooling to decide retry behavior, dry-run eligibility, etc. Unknown request properties are rejected. (JSON)"),
 			cli.String("description", "").Help("Markdown-safe description of what the action does."),
 			cli.String("endpoint-url", "").Help("[required] HTTP/HTTPS URL Mobius will POST to when invoking the action."),
 			cli.String("input-schema", "").Help("JSON Schema describing the expected input parameters. (JSON)"),
@@ -258,7 +258,7 @@ func registerActionsCommands(app *cli.App) {
 		Description("Update an action").
 		Args("action-name").
 		Flags(
-			cli.String("annotations", "").Help("Hints that describe the safe-use properties of the action. Used by the engine and tooling to decide retry behavior, dry-run eligibility, etc. (JSON)"),
+			cli.String("annotations", "").Help("Request hints that describe the safe-use properties of the action. Used by the engine and tooling to decide retry behavior, dry-run eligibility, etc. Unknown request properties are rejected. (JSON)"),
 			cli.String("description", "").Help("Replacement Markdown description."),
 			cli.String("endpoint-url", "").Help("Replacement endpoint URL."),
 			cli.String("input-schema", "").Help("Replacement JSON Schema for inputs. Replaces the existing schema. (JSON)"),

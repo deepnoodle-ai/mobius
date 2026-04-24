@@ -93,6 +93,13 @@ func parseClient(path string) (*ClientInfo, error) {
 					jsonTag, omit := jsonTagKey(f.Tag)
 					doc := fieldDoc(f)
 					for _, n := range f.Names {
+						// Skip unexported fields — the generated CLI lives in
+						// a different package and can't reference them. This
+						// elides e.g. the `union json.RawMessage` field
+						// oapi-codegen emits for discriminated oneOf types.
+						if !n.IsExported() {
+							continue
+						}
 						si.Fields = append(si.Fields, FieldInfo{
 							GoName:  n.Name,
 							Type:    ftype,

@@ -23,15 +23,6 @@ func registerTriggersCommands(app *cli.App) {
 	triggersGrp.Command("create").
 		Description("Create a trigger").
 		Flags(
-			cli.String("concurrency-policy", "").Help("Controls overlapping runs from the same trigger: - `allow` — start new runs unconditionally. - `forbid` — skip the new fire if a run from this trigger is still active. - `replace` — cancel the active run before starting a new one."),
-			cli.Bool("enabled", "").Help("Whether the trigger starts enabled. Defaults to true when omitted."),
-			cli.String("filter-config", "").Help("Additional payload filters evaluated before targets. (JSON)"),
-			cli.String("kind", "").Help("[required] Determines the event source and required `source_config` shape."),
-			cli.String("name", "").Help("[required] Human-readable trigger name, unique within the project."),
-			cli.String("signing-secret", "").Help("Optional HMAC-SHA256 secret for verifying inbound webhook payloads. When set, Mobius validates the `X-Mobius-Signature` header on incoming requests."),
-			cli.String("source-config", "").Help("Kind-specific configuration. Required for `schedule` triggers: `{\"cron\": \"0 9 * * 1-5\"}`. For `event` triggers: event type and filter expressions. (JSON)"),
-			cli.String("targets", "").Help("Workflows to start when this trigger fires (inline convenience; stored as sub-resources). (JSON)"),
-			cli.String("webhook-handle", "").Help("URL-safe handle that determines the inbound receive URL. Auto-derived from `name` for `webhook` triggers when omitted. Must be unique within the project."),
 			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
 		).
 		Use(cli.RequireFlags("api-key")).
@@ -46,48 +37,8 @@ func registerTriggersCommands(app *cli.App) {
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
 			}
-			if ctx.IsSet("concurrency-policy") {
-				v := api.ConcurrencyPolicy(ctx.String("concurrency-policy"))
-				body.ConcurrencyPolicy = &v
-			}
-			if ctx.IsSet("enabled") {
-				v := ctx.Bool("enabled")
-				body.Enabled = &v
-			}
-			if ctx.IsSet("filter-config") {
-				if err := json.Unmarshal([]byte(ctx.String("filter-config")), &body.FilterConfig); err != nil {
-					return fmt.Errorf("--filter-config: invalid JSON: %w", err)
-				}
-			}
-			if ctx.IsSet("kind") {
-				body.Kind = api.TriggerKind(ctx.String("kind"))
-			}
-			if ctx.IsSet("name") {
-				body.Name = ctx.String("name")
-			}
-			if ctx.IsSet("signing-secret") {
-				v := ctx.String("signing-secret")
-				body.SigningSecret = &v
-			}
-			if ctx.IsSet("source-config") {
-				if err := json.Unmarshal([]byte(ctx.String("source-config")), &body.SourceConfig); err != nil {
-					return fmt.Errorf("--source-config: invalid JSON: %w", err)
-				}
-			}
-			if ctx.IsSet("targets") {
-				if err := json.Unmarshal([]byte(ctx.String("targets")), &body.Targets); err != nil {
-					return fmt.Errorf("--targets: invalid JSON: %w", err)
-				}
-			}
-			if ctx.IsSet("webhook-handle") {
-				v := ctx.String("webhook-handle")
-				body.WebhookHandle = &v
-			}
-			if body.Kind == "" {
-				return fmt.Errorf("--kind is required (or supply it via --file)")
-			}
-			if body.Name == "" {
-				return fmt.Errorf("--name is required (or supply it via --file)")
+			if ctx.String("file") == "" {
+				return fmt.Errorf("at least one flag or --file is required")
 			}
 			resp, err := client.CreateTriggerWithResponse(ctx.Context(), p0, body)
 			if err != nil {
@@ -344,11 +295,8 @@ func registerTriggersCommands(app *cli.App) {
 		Flags(
 			cli.String("concurrency-policy", "").Help("Controls overlapping runs from the same trigger: - `allow` — start new runs unconditionally. - `forbid` — skip the new fire if a run from this trigger is still active. - `replace` — cancel the active run before starting a new one."),
 			cli.Bool("enabled", "").Help("Set to false to pause the trigger without deleting it."),
-			cli.String("filter-config", "").Help("Replacement payload filter configuration. (JSON)"),
 			cli.String("name", "").Help("Replacement human-readable name."),
-			cli.String("signing-secret", "").Help("Replace or clear the inbound signature verification secret."),
-			cli.String("source-config", "").Help("Replacement kind-specific source configuration. (JSON)"),
-			cli.String("webhook-handle", "").Help("Changing this changes the `receive_url`; update any upstream integrations."),
+			cli.String("source-config", "").Help("Typed source configuration. The shape is determined by the trigger's `kind` (`schedule` → `ScheduleSourceConfig`, `webhook` → `WebhookSourceConfig`, `event` → `EventSourceConfig`); mismatches are rejected with 400. (JSON)"),
 			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
 		).
 		Use(cli.RequireFlags("api-key")).
@@ -372,29 +320,16 @@ func registerTriggersCommands(app *cli.App) {
 				v := ctx.Bool("enabled")
 				body.Enabled = &v
 			}
-			if ctx.IsSet("filter-config") {
-				if err := json.Unmarshal([]byte(ctx.String("filter-config")), &body.FilterConfig); err != nil {
-					return fmt.Errorf("--filter-config: invalid JSON: %w", err)
-				}
-			}
 			if ctx.IsSet("name") {
 				v := ctx.String("name")
 				body.Name = &v
-			}
-			if ctx.IsSet("signing-secret") {
-				v := ctx.String("signing-secret")
-				body.SigningSecret = &v
 			}
 			if ctx.IsSet("source-config") {
 				if err := json.Unmarshal([]byte(ctx.String("source-config")), &body.SourceConfig); err != nil {
 					return fmt.Errorf("--source-config: invalid JSON: %w", err)
 				}
 			}
-			if ctx.IsSet("webhook-handle") {
-				v := ctx.String("webhook-handle")
-				body.WebhookHandle = &v
-			}
-			if ctx.String("file") == "" && !ctx.IsSet("concurrency-policy") && !ctx.IsSet("enabled") && !ctx.IsSet("filter-config") && !ctx.IsSet("name") && !ctx.IsSet("signing-secret") && !ctx.IsSet("source-config") && !ctx.IsSet("webhook-handle") {
+			if ctx.String("file") == "" && !ctx.IsSet("concurrency-policy") && !ctx.IsSet("enabled") && !ctx.IsSet("name") && !ctx.IsSet("source-config") {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
 			resp, err := client.UpdateTriggerWithResponse(ctx.Context(), p0, p1, body)

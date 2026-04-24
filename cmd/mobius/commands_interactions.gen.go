@@ -42,15 +42,6 @@ func registerInteractionsCommands(app *cli.App) {
 	interactionsGrp.Command("create").
 		Description("Create an interaction").
 		Flags(
-			cli.String("context", "").Help("Additional key-value context surfaced in the UI alongside the message. (JSON)"),
-			cli.String("expires-at", "").Help("Timestamp after which this interaction expires if not responded to. (JSON)"),
-			cli.String("message", "").Help("[required] Message shown to the responder describing what response is needed."),
-			cli.Bool("require-all", "").Help("When target_actor.type is \"group\", setting require_all=true means all snapshotted group members must respond before the interaction is considered complete. Ignored for non-group targets. Defaults to false when omitted."),
-			cli.String("run-id", "").Help("ID of the workflow run to resume when this interaction is completed."),
-			cli.String("signal-name", "").Help("Signal name the interaction will complete against when run-backed."),
-			cli.String("spec", "").Help("Declarative dialog contract for rendering and validating an interaction. `type` defines the semantic intent; `mode` defines the input affordance. Compatibility rules are enforced server-side: - `approval` requires `mode = confirm` - `review` requires `mode = select` - `input` supports `input`, `select`, or `multi_select` (JSON)"),
-			cli.String("target-actor", "").Help("[required] target-actor (JSON)"),
-			cli.String("type", "").Help("[required] type"),
 			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
 		).
 		Use(cli.RequireFlags("api-key")).
@@ -65,52 +56,8 @@ func registerInteractionsCommands(app *cli.App) {
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
 			}
-			if ctx.IsSet("context") {
-				if err := json.Unmarshal([]byte(ctx.String("context")), &body.Context); err != nil {
-					return fmt.Errorf("--context: invalid JSON: %w", err)
-				}
-			}
-			if ctx.IsSet("expires-at") {
-				if err := json.Unmarshal([]byte(ctx.String("expires-at")), &body.ExpiresAt); err != nil {
-					return fmt.Errorf("--expires-at: invalid JSON: %w", err)
-				}
-			}
-			if ctx.IsSet("message") {
-				body.Message = ctx.String("message")
-			}
-			if ctx.IsSet("require-all") {
-				v := ctx.Bool("require-all")
-				body.RequireAll = &v
-			}
-			if ctx.IsSet("run-id") {
-				v := ctx.String("run-id")
-				body.RunId = &v
-			}
-			if ctx.IsSet("signal-name") {
-				v := ctx.String("signal-name")
-				body.SignalName = &v
-			}
-			if ctx.IsSet("spec") {
-				if err := json.Unmarshal([]byte(ctx.String("spec")), &body.Spec); err != nil {
-					return fmt.Errorf("--spec: invalid JSON: %w", err)
-				}
-			}
-			if ctx.IsSet("target-actor") {
-				if err := json.Unmarshal([]byte(ctx.String("target-actor")), &body.TargetActor); err != nil {
-					return fmt.Errorf("--target-actor: invalid JSON: %w", err)
-				}
-			}
-			if ctx.IsSet("type") {
-				body.Type = api.InteractionType(ctx.String("type"))
-			}
-			if body.Message == "" {
-				return fmt.Errorf("--message is required (or supply it via --file)")
-			}
-			if ctx.String("file") == "" && !ctx.IsSet("target-actor") {
-				return fmt.Errorf("--target-actor is required (or supply it via --file)")
-			}
-			if body.Type == "" {
-				return fmt.Errorf("--type is required (or supply it via --file)")
+			if ctx.String("file") == "" {
+				return fmt.Errorf("at least one flag or --file is required")
 			}
 			resp, err := client.CreateInteractionWithResponse(ctx.Context(), p0, body)
 			if err != nil {
@@ -143,8 +90,8 @@ func registerInteractionsCommands(app *cli.App) {
 		Flags(
 			cli.String("status", "").Help("Filter by status"),
 			cli.String("run-id", "").Help("Filter by originating run ID"),
-			cli.String("target-actor-type", "").Help("Filter by target actor type"),
-			cli.String("target-actor-id", "").Help("Filter by target actor ID"),
+			cli.String("target-type", "").Help("Filter by target type"),
+			cli.String("target-id", "").Help("Filter by target ID"),
 			cli.Bool("inbox", "").Help("When true, returns only interactions visible to the authenticated user (direct + group membership)"),
 			cli.String("cursor", "").Help("cursor"),
 			cli.Int("limit", "").Help("limit"),
@@ -166,13 +113,13 @@ func registerInteractionsCommands(app *cli.App) {
 				v := ctx.String("run-id")
 				params.RunId = &v
 			}
-			if ctx.IsSet("target-actor-type") {
-				v := api.ListInteractionsParamsTargetActorType(ctx.String("target-actor-type"))
-				params.TargetActorType = &v
+			if ctx.IsSet("target-type") {
+				v := api.ListInteractionsParamsTargetType(ctx.String("target-type"))
+				params.TargetType = &v
 			}
-			if ctx.IsSet("target-actor-id") {
-				v := ctx.String("target-actor-id")
-				params.TargetActorId = &v
+			if ctx.IsSet("target-id") {
+				v := ctx.String("target-id")
+				params.TargetId = &v
 			}
 			if ctx.IsSet("inbox") {
 				v := ctx.Bool("inbox")
