@@ -3,7 +3,9 @@ package main
 import (
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -21,12 +23,14 @@ func TestAuthStatusReportsSavedCredentialAfterInjection(t *testing.T) {
 	defer srv.Close()
 
 	err := authstore.Save(&authstore.Credential{
-		Source:       authstore.SourceBrowserLogin,
-		APIURL:       srv.URL,
-		Token:        "mbc_saved.default",
-		CredentialID: "cred_123",
-		OrgName:      "Example Org",
-		UserEmail:    "user@example.invalid",
+		Source:        authstore.SourceBrowserLogin,
+		APIURL:        srv.URL,
+		Token:         "mbc_saved",
+		CredentialID:  "cred_123",
+		OrgName:       "Example Org",
+		ProjectID:     "prj_123",
+		ProjectHandle: "default",
+		UserEmail:     "user@example.invalid",
 	})
 	if err != nil {
 		t.Fatalf("save credential: %v", err)
@@ -40,7 +44,7 @@ func TestAuthStatusReportsSavedCredentialAfterInjection(t *testing.T) {
 	if !strings.Contains(result.Stdout, "API URL: "+srv.URL) {
 		t.Fatalf("stdout missing saved API URL:\n%s", result.Stdout)
 	}
-	if !strings.Contains(result.Stdout, "Auth source: saved browser credential") {
+	if !strings.Contains(result.Stdout, "Auth source: saved profile") {
 		t.Fatalf("stdout missing saved credential source:\n%s", result.Stdout)
 	}
 	if strings.Contains(result.Stdout, "MOBIUS_API_KEY environment variable") {
@@ -127,6 +131,24 @@ func TestAuthProbePathUsesProjectScopedEndpointForPinnedCLIToken(t *testing.T) {
 				t.Fatalf("authProbePath(%q) = %q, want %q", tt.key, got, tt.want)
 			}
 		})
+	}
+}
+
+func TestAddDeviceCodeClientInfo(t *testing.T) {
+	form := url.Values{}
+	addDeviceCodeClientInfo(form)
+
+	if got := form.Get("mobius_client"); got != "mobius-cli" {
+		t.Fatalf("mobius_client = %q, want mobius-cli", got)
+	}
+	if got := form.Get("mobius_client_version"); got == "" {
+		t.Fatalf("mobius_client_version is empty")
+	}
+	if got := form.Get("mobius_client_os"); got != runtime.GOOS {
+		t.Fatalf("mobius_client_os = %q, want %q", got, runtime.GOOS)
+	}
+	if got := form.Get("mobius_client_arch"); got != runtime.GOARCH {
+		t.Fatalf("mobius_client_arch = %q, want %q", got, runtime.GOARCH)
 	}
 }
 

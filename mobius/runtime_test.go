@@ -78,23 +78,23 @@ func TestNewClient_WithBaseURLOverride(t *testing.T) {
 }
 
 // TestNewClient_ExtractsHandleFromAPIKey covers the self-contained
-// credential path: a project-pinned token "<handle>/mbx_<secret>"
+// credential path: a project-pinned token "mbx_<secret>.<handle>"
 // should yield a client with projectHandle already set, and the full
 // token stays on the Authorization header so the server can validate.
 func TestNewClient_ExtractsHandleFromAPIKey(t *testing.T) {
-	c, err := NewClient(WithAPIKey("prod/mbx_secret"))
+	c, err := NewClient(WithAPIKey("mbx_secret.prod"))
 	assert.NoError(t, err)
 	assert.Equal(t, c.projectHandle, "prod")
-	assert.Equal(t, c.apiKey, "prod/mbx_secret")
+	assert.Equal(t, c.apiKey, "mbx_secret.prod")
 }
 
 func TestNewClient_HandleConflictBetweenFlagAndKey(t *testing.T) {
-	_, err := NewClient(WithAPIKey("prod/mbx_secret"), WithProjectHandle("staging"))
+	_, err := NewClient(WithAPIKey("mbx_secret.prod"), WithProjectHandle("staging"))
 	assert.True(t, err != nil)
 }
 
-func TestNewClient_InvalidHandlePrefix(t *testing.T) {
-	_, err := NewClient(WithAPIKey("Not_A_Handle/mbx_secret"))
+func TestNewClient_InvalidHandleSuffix(t *testing.T) {
+	_, err := NewClient(WithAPIKey("mbx_secret.Not_A_Handle"))
 	assert.True(t, err != nil)
 }
 
