@@ -134,14 +134,15 @@ func runAuthLogin(ctx *cli.Context) error {
 	if err != nil {
 		return err
 	}
+	verificationURL := deviceVerificationURL(apiURL, challenge)
 
 	ctx.Println("")
 	ctx.Printf("  Your verification code: %s\n", challenge.UserCode)
-	ctx.Printf("  Open this URL:          %s\n", challenge.VerificationURIComplete)
+	ctx.Printf("  Open this URL:          %s\n", verificationURL)
 	ctx.Println("")
 
 	if !ctx.Bool("no-browser") {
-		if err := openBrowser(challenge.VerificationURIComplete); err != nil {
+		if err := openBrowser(verificationURL); err != nil {
 			ctx.Warn("could not open browser automatically: %s", err)
 		}
 	}
@@ -215,6 +216,50 @@ func postDeviceCode(ctx context.Context, client *http.Client, apiURL string, for
 		return nil, fmt.Errorf("decode device code response: %w", err)
 	}
 	return &out, nil
+}
+
+func deviceVerificationURL(apiURL string, ch *deviceCodeResponse) string {
+	raw := ch.VerificationURIComplete
+	if raw == "" {
+		raw = ch.VerificationURI
+	}
+	if raw == "" {
+		return ""
+	}
+	u, err := url.Parse(raw)
+	if err != nil {
+		return raw
+	}
+	if ch.UserCode != "" && u.Query().Get("code") == "" {
+		q := u.Query()
+		q.Set("code", ch.UserCode)
+		u.RawQuery = q.Encode()
+	}
+	if strings.TrimRight(apiURL, "/") == strings.TrimRight(mobius.DefaultBaseURL, "/") {
+		return u.String()
+	}
+	base, err := url.Parse(apiURL)
+	if err != nil || base.Scheme == "" || base.Host == "" {
+		return u.String()
+	}
+	base.Path = joinURLPaths(base.Path, u.Path)
+	base.RawQuery = u.RawQuery
+	base.Fragment = u.Fragment
+	return base.String()
+}
+
+func joinURLPaths(basePath, targetPath string) string {
+	basePath = strings.TrimRight(basePath, "/")
+	if basePath == "" {
+		if targetPath == "" {
+			return "/"
+		}
+		return targetPath
+	}
+	if targetPath == "" {
+		return basePath
+	}
+	return basePath + "/" + strings.TrimLeft(targetPath, "/")
 }
 
 // pollForToken exchanges the device code at the server-requested cadence
