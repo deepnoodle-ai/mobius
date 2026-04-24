@@ -186,7 +186,7 @@ func TestAuthLoginRequestsExplicitProject(t *testing.T) {
 	}
 }
 
-func TestAuthLoginDisplaysVerificationURLFromCustomAPIURL(t *testing.T) {
+func TestAuthLoginKeepsServerVerificationURLWithCustomAPIURL(t *testing.T) {
 	srv, requestedProject := newDeviceLoginServer(t)
 	defer srv.Close()
 
@@ -197,8 +197,30 @@ func TestAuthLoginDisplaysVerificationURLFromCustomAPIURL(t *testing.T) {
 	if !result.Success() {
 		t.Fatalf("auth login failed: %v\nstderr: %s", result.Err, result.Stderr)
 	}
-	if !strings.Contains(result.Stdout, "Open this URL:          "+srv.URL+"/auth/device?code=ABCD-EFGH") {
-		t.Fatalf("stdout missing custom verification URL:\n%s", result.Stdout)
+	if !strings.Contains(result.Stdout, "Open this URL:          https://example.invalid/auth/device?code=ABCD-EFGH") {
+		t.Fatalf("stdout missing server verification URL:\n%s", result.Stdout)
+	}
+	if strings.Contains(result.Stdout, srv.URL+"/auth/device") {
+		t.Fatalf("stdout incorrectly used API URL as web URL:\n%s", result.Stdout)
+	}
+	if got := <-requestedProject; got != "" {
+		t.Fatalf("requested project = %q, want empty", got)
+	}
+}
+
+func TestAuthLoginDisplaysVerificationURLFromWebURL(t *testing.T) {
+	srv, requestedProject := newDeviceLoginServer(t)
+	defer srv.Close()
+
+	result := newApp().Test(t,
+		cli.TestArgs("auth", "login", "--api-url", srv.URL, "--web-url", "http://localhost:5173", "--no-browser"),
+		cli.TestEnv("MOBIUS_CONFIG_DIR", t.TempDir()),
+	)
+	if !result.Success() {
+		t.Fatalf("auth login failed: %v\nstderr: %s", result.Err, result.Stderr)
+	}
+	if !strings.Contains(result.Stdout, "Open this URL:          http://localhost:5173/auth/device?code=ABCD-EFGH") {
+		t.Fatalf("stdout missing web verification URL:\n%s", result.Stdout)
 	}
 	if strings.Contains(result.Stdout, "https://example.invalid/auth/device") {
 		t.Fatalf("stdout used server-provided verification origin:\n%s", result.Stdout)
@@ -234,7 +256,7 @@ func TestDeviceVerificationURLKeepsDefaultServerURL(t *testing.T) {
 		UserCode:                "ABCD-EFGH",
 		VerificationURIComplete: "https://mobiusops.ai/auth/device?code=ABCD-EFGH",
 	}
-	if got := deviceVerificationURL("https://api.mobiusops.ai", ch); got != ch.VerificationURIComplete {
+	if got, err := deviceVerificationURL("", ch); err != nil || got != ch.VerificationURIComplete {
 		t.Fatalf("deviceVerificationURL() = %q, want %q", got, ch.VerificationURIComplete)
 	}
 }
