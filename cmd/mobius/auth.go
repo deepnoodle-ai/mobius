@@ -65,6 +65,7 @@ func registerAuthCommands(app *cli.App) {
 			cli.String("org", "").Help("Requested org ID (optional; browser will prompt otherwise)"),
 			cli.String("project", "").Help("Project handle to pin this login to (optional)"),
 			cli.String("label", "").Help("Device label shown in the web app (defaults to user@host)"),
+			cli.String("web-url", "").Env("MOBIUS_WEB_URL").Help("Web app base URL for browser confirmation (optional)"),
 			cli.Bool("default", "").Default(false).Help("Mark this profile as the default"),
 			cli.Bool("no-browser", "").Default(false).Help("Do not try to open the browser automatically"),
 		).
@@ -134,7 +135,10 @@ func runAuthLogin(ctx *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	verificationURL := deviceVerificationURL(apiURL, challenge)
+	verificationURL, err := deviceVerificationURL(ctx.String("web-url"), challenge)
+	if err != nil {
+		return err
+	}
 
 	ctx.Println("")
 	ctx.Printf("  Your verification code: %s\n", challenge.UserCode)
@@ -218,34 +222,35 @@ func postDeviceCode(ctx context.Context, client *http.Client, apiURL string, for
 	return &out, nil
 }
 
-func deviceVerificationURL(apiURL string, ch *deviceCodeResponse) string {
+func deviceVerificationURL(webURL string, ch *deviceCodeResponse) (string, error) {
 	raw := ch.VerificationURIComplete
 	if raw == "" {
 		raw = ch.VerificationURI
 	}
 	if raw == "" {
-		return ""
+		return "", nil
 	}
 	u, err := url.Parse(raw)
 	if err != nil {
-		return raw
+		return raw, nil
 	}
 	if ch.UserCode != "" && u.Query().Get("code") == "" {
 		q := u.Query()
 		q.Set("code", ch.UserCode)
 		u.RawQuery = q.Encode()
 	}
-	if strings.TrimRight(apiURL, "/") == strings.TrimRight(mobius.DefaultBaseURL, "/") {
-		return u.String()
+	webURL = strings.TrimSpace(webURL)
+	if webURL == "" {
+		return u.String(), nil
 	}
-	base, err := url.Parse(apiURL)
+	base, err := url.Parse(webURL)
 	if err != nil || base.Scheme == "" || base.Host == "" {
-		return u.String()
+		return "", fmt.Errorf("--web-url must be an absolute URL")
 	}
 	base.Path = joinURLPaths(base.Path, u.Path)
 	base.RawQuery = u.RawQuery
 	base.Fragment = u.Fragment
-	return base.String()
+	return base.String(), nil
 }
 
 func joinURLPaths(basePath, targetPath string) string {
