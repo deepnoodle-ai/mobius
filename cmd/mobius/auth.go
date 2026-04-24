@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
+	"sort"
 	"strings"
 	"time"
 
@@ -37,9 +38,11 @@ type deviceCodeResponse struct {
 // deviceTokenResponse is the RFC 6749 §5.1 success envelope plus the
 // mobius-specific credential_id extension.
 type deviceTokenResponse struct {
-	AccessToken  string `json:"access_token"`
-	TokenType    string `json:"token_type"`
-	CredentialID string `json:"credential_id"`
+	AccessToken   string `json:"access_token"`
+	TokenType     string `json:"token_type"`
+	CredentialID  string `json:"credential_id"`
+	ProjectID     string `json:"project_id"`
+	ProjectHandle string `json:"project_handle"`
 }
 
 // oauthError matches the RFC 6749 §5.2 error envelope.
@@ -57,15 +60,18 @@ func registerAuthCommands(app *cli.App) {
 
 	grp.Command("login").
 		Description("Log this device into Mobius via the browser").
+		OmitGlobalFlag("project").
 		Flags(
 			cli.String("org", "").Help("Requested org ID (optional; browser will prompt otherwise)"),
+			cli.String("project", "").Help("Project handle to pin this login to (optional)"),
 			cli.String("label", "").Help("Device label shown in the web app (defaults to user@host)"),
+			cli.Bool("default", "").Default(false).Help("Mark this profile as the default"),
 			cli.Bool("no-browser", "").Default(false).Help("Do not try to open the browser automatically"),
 		).
 		Run(runAuthLogin)
 
 	grp.Command("logout").
-		Description("Remove the saved browser-based CLI credential").
+		Description("Remove the selected local credential profile").
 		Run(runAuthLogout)
 
 	grp.Command("status").
@@ -73,8 +79,18 @@ func registerAuthCommands(app *cli.App) {
 		Run(runAuthStatus)
 
 	grp.Command("list").
-		Description("List browser-issued CLI credentials for the current user").
+		Description("List local credential profiles").
 		Run(runAuthList)
+
+	grp.Command("use").
+		Description("Print an export command that selects a profile").
+		Args("name").
+		Run(runAuthUse)
+
+	grp.Command("remove").
+		Description("Remove a local credential profile").
+		Args("name?").
+		Run(runAuthRemove)
 
 	grp.Command("revoke").
 		Description("Revoke one browser-issued CLI credential").
@@ -109,6 +125,10 @@ func runAuthLogin(ctx *cli.Context) error {
 	if org := ctx.String("org"); org != "" {
 		form.Set("mobius_requested_org_id", org)
 	}
+	if ctx.IsSet("project") && ctx.String("project") != "" {
+		form.Set("mobius_requested_project_handle", ctx.String("project"))
+	}
+	addDeviceCodeClientInfo(form)
 
 	challenge, err := postDeviceCode(ctx.Context(), httpClient, apiURL, form)
 	if err != nil {
@@ -128,26 +148,42 @@ func runAuthLogin(ctx *cli.Context) error {
 
 	ctx.Println("Waiting for you to confirm in the browser...")
 
-	token, credID, err := pollForToken(ctx.Context(), httpClient, apiURL, challenge)
+	token, credID, projectID, projectHandle, err := pollForToken(ctx.Context(), httpClient, apiURL, challenge)
 	if err != nil {
 		return err
 	}
 
-	cred := &authstore.Credential{
-		Source:       authstore.SourceBrowserLogin,
-		APIURL:       apiURL,
-		Token:        token,
-		CredentialID: credID,
-		OrgID:        ctx.String("org"),
-		CreatedAt:    time.Now().UTC().Format(time.RFC3339),
+	profileName := ctx.String("profile")
+	if profileName == "" {
+		profileName = "default"
 	}
-	if err := authstore.Save(cred); err != nil {
+	if projectHandle == "" && ctx.IsSet("project") {
+		projectHandle = ctx.String("project")
+	}
+	cred := authstore.Profile{
+		Source:        authstore.SourceBrowserLogin,
+		APIURL:        apiURL,
+		Token:         token,
+		CredentialID:  credID,
+		OrgID:         ctx.String("org"),
+		ProjectID:     projectID,
+		ProjectHandle: projectHandle,
+		CreatedAt:     time.Now().UTC().Format(time.RFC3339),
+	}
+	if err := authstore.PutProfile(profileName, cred, ctx.Bool("default")); err != nil {
 		return fmt.Errorf("save credential: %w", err)
 	}
 
 	path, _ := authstore.Path()
-	ctx.Success("Logged in. Credential saved to %s", path)
+	ctx.Success("Logged in. Profile %q saved to %s", profileName, path)
 	return nil
+}
+
+func addDeviceCodeClientInfo(form url.Values) {
+	form.Set("mobius_client", "mobius-cli")
+	form.Set("mobius_client_version", cliVersion())
+	form.Set("mobius_client_os", runtime.GOOS)
+	form.Set("mobius_client_arch", runtime.GOARCH)
 }
 
 // postDeviceCode calls RFC 8628 §3.1 (Device Authorization Request) with a
@@ -186,7 +222,7 @@ func postDeviceCode(ctx context.Context, client *http.Client, apiURL string, for
 // responses are expected during the normal waiting window, everything else
 // is terminal. We honor the server's suggested interval, increase it by 5s on
 // slow_down, and cap the overall wait by expires_in.
-func pollForToken(ctx context.Context, client *http.Client, apiURL string, ch *deviceCodeResponse) (string, string, error) {
+func pollForToken(ctx context.Context, client *http.Client, apiURL string, ch *deviceCodeResponse) (string, string, string, string, error) {
 	interval := time.Duration(ch.Interval) * time.Second
 	if interval <= 0 {
 		interval = 5 * time.Second
@@ -196,11 +232,11 @@ func pollForToken(ctx context.Context, client *http.Client, apiURL string, ch *d
 	for {
 		select {
 		case <-ctx.Done():
-			return "", "", ctx.Err()
+			return "", "", "", "", ctx.Err()
 		case <-time.After(interval):
 		}
 		if time.Now().After(expiresAt) {
-			return "", "", errors.New("login flow expired before confirmation; run `mobius auth login` again")
+			return "", "", "", "", errors.New("login flow expired before confirmation; run `mobius auth login` again")
 		}
 
 		form := url.Values{
@@ -209,12 +245,12 @@ func pollForToken(ctx context.Context, client *http.Client, apiURL string, ch *d
 		}
 		req, err := http.NewRequestWithContext(ctx, http.MethodPost, apiURL+"/v1/auth/device/token", strings.NewReader(form.Encode()))
 		if err != nil {
-			return "", "", err
+			return "", "", "", "", err
 		}
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		resp, err := client.Do(req)
 		if err != nil {
-			return "", "", fmt.Errorf("poll for token: %w", err)
+			return "", "", "", "", fmt.Errorf("poll for token: %w", err)
 		}
 		body, _ := io.ReadAll(resp.Body)
 		_ = resp.Body.Close()
@@ -222,17 +258,17 @@ func pollForToken(ctx context.Context, client *http.Client, apiURL string, ch *d
 		if resp.StatusCode == http.StatusOK {
 			var tok deviceTokenResponse
 			if err := json.Unmarshal(body, &tok); err != nil {
-				return "", "", fmt.Errorf("decode token response: %w", err)
+				return "", "", "", "", fmt.Errorf("decode token response: %w", err)
 			}
 			if tok.AccessToken == "" {
-				return "", "", errors.New("server returned 200 but no access_token")
+				return "", "", "", "", errors.New("server returned 200 but no access_token")
 			}
-			return tok.AccessToken, tok.CredentialID, nil
+			return tok.AccessToken, tok.CredentialID, tok.ProjectID, tok.ProjectHandle, nil
 		}
 
 		var oe oauthError
 		if err := json.Unmarshal(body, &oe); err != nil {
-			return "", "", fmt.Errorf("poll for token: HTTP %d: %s", resp.StatusCode, strings.TrimSpace(string(body)))
+			return "", "", "", "", fmt.Errorf("poll for token: HTTP %d: %s", resp.StatusCode, strings.TrimSpace(string(body)))
 		}
 		switch oe.Error {
 		case "authorization_pending":
@@ -241,45 +277,65 @@ func pollForToken(ctx context.Context, client *http.Client, apiURL string, ch *d
 			interval += 5 * time.Second
 			continue
 		case "access_denied":
-			return "", "", errors.New("login was denied in the browser")
+			return "", "", "", "", errors.New("login was denied in the browser")
 		case "expired_token":
-			return "", "", errors.New("login flow expired before confirmation; run `mobius auth login` again")
+			return "", "", "", "", errors.New("login flow expired before confirmation; run `mobius auth login` again")
 		default:
 			if oe.ErrorDescription != "" {
-				return "", "", fmt.Errorf("device token exchange failed: %s (%s)", oe.Error, oe.ErrorDescription)
+				return "", "", "", "", fmt.Errorf("device token exchange failed: %s (%s)", oe.Error, oe.ErrorDescription)
 			}
-			return "", "", fmt.Errorf("device token exchange failed: %s", oe.Error)
+			return "", "", "", "", fmt.Errorf("device token exchange failed: %s", oe.Error)
 		}
 	}
 }
 
-// runAuthLogout removes the local credential file. We intentionally do not
-// revoke the remote credential here in v1 — open question in the PRD — so
-// the user can still `mobius auth list` and revoke specific devices
-// explicitly if they want.
+// runAuthLogout removes the selected local profile without revoking the
+// server-side credential. Use `mobius auth revoke` for remote revocation.
 func runAuthLogout(ctx *cli.Context) error {
-	cred, err := authstore.Load()
-	if err != nil {
+	return runAuthRemove(ctx)
+}
+
+func runAuthRemove(ctx *cli.Context) error {
+	name := ctx.Arg(0)
+	if name == "" {
+		name = ctx.String("profile")
+	}
+	if name == "" {
+		profile, err := authstore.ResolveProfile("")
+		if err != nil {
+			// A missing default from ResolveProfile means there is nothing local
+			// to remove, so logout/remove should exit successfully.
+			ctx.Println("No saved profile to remove.")
+			return nil
+		}
+		name = profile.Name
+	}
+	if err := authstore.DeleteProfile(name); err != nil {
 		return err
 	}
-	if cred == nil {
-		ctx.Println("No saved credential to remove.")
-		return nil
+	ctx.Success("Removed profile %q", name)
+	return nil
+}
+
+func runAuthUse(ctx *cli.Context) error {
+	name := ctx.Arg(0)
+	if name == "" {
+		return errors.New("specify a profile name: `mobius auth use <name>`")
 	}
-	if err := authstore.Delete(); err != nil {
+	if err := authstore.SetDefault(name); err != nil {
 		return err
 	}
-	ctx.Success("Removed saved credential for %s", cred.APIURL)
+	ctx.Printf("export MOBIUS_PROFILE=%s\n", shellQuote(name))
 	return nil
 }
 
 // runAuthStatus prints which credential source the next CLI call would use.
 // The precedence here mirrors clientFromContext: --api-key, then
-// MOBIUS_API_KEY, then the saved browser credential.
+// MOBIUS_API_KEY, then the selected saved profile.
 func runAuthStatus(ctx *cli.Context) error {
 	ctx.Printf("API URL: %s\n", ctx.String("api-url"))
 
-	if appliedSavedCredential != nil && ctx.String("api-key") == appliedSavedCredential.Token {
+	if appliedSavedCredential != nil && ctx.String("api-key") == appliedSavedCredential.RequestToken() {
 		printSavedCredentialStatus(ctx, appliedSavedCredential)
 		return nil
 	}
@@ -295,22 +351,24 @@ func runAuthStatus(ctx *cli.Context) error {
 		return nil
 	}
 
-	cred, err := authstore.Load()
+	// ResolveProfile errors are shown as "not authenticated" here so status
+	// stays diagnostic; printSavedCredentialStatus runs only with a profile.
+	cred, err := authstore.ResolveProfile(ctx.String("profile"))
 	if err != nil {
-		return err
-	}
-	if cred == nil || cred.Token == "" {
 		ctx.Println("Auth source: none")
 		ctx.Println("Authenticated: no")
-		ctx.Println("Run `mobius auth login` to sign in from the browser.")
+		ctx.Println("Run `mobius auth login --profile <name>` to sign in from the browser.")
 		return nil
 	}
 	printSavedCredentialStatus(ctx, cred)
 	return nil
 }
 
-func printSavedCredentialStatus(ctx *cli.Context, cred *authstore.Credential) {
-	ctx.Println("Auth source: saved browser credential")
+func printSavedCredentialStatus(ctx *cli.Context, cred *authstore.Profile) {
+	ctx.Println("Auth source: saved profile")
+	if cred.Name != "" {
+		ctx.Printf("Profile: %s\n", cred.Name)
+	}
 	ctx.Printf("Credential file: ")
 	if p, err := authstore.Path(); err == nil {
 		ctx.Println(p)
@@ -322,6 +380,9 @@ func printSavedCredentialStatus(ctx *cli.Context, cred *authstore.Credential) {
 	}
 	if cred.OrgName != "" || cred.OrgID != "" {
 		ctx.Printf("Org: %s\n", firstNonEmpty(cred.OrgName, cred.OrgID))
+	}
+	if cred.ProjectHandle != "" || cred.ProjectID != "" {
+		ctx.Printf("Project: %s\n", firstNonEmpty(cred.ProjectHandle, cred.ProjectID))
 	}
 	if cred.UserEmail != "" || cred.UserName != "" || cred.UserID != "" {
 		ctx.Printf("User: %s\n", firstNonEmpty(cred.UserEmail, cred.UserName, cred.UserID))
@@ -402,22 +463,50 @@ func printCLICredentials(ctx *cli.Context, creds []cliCredential) error {
 	return nil
 }
 
-// runAuthList lists the CLI credentials the authenticated user has minted
-// across devices. This hits an authenticated endpoint, so it uses the
-// resolved client (saved credential or explicit key).
-func runAuthList(ctx *cli.Context) error {
-	if !hasAuth(ctx) {
-		return errLoginRequired()
+func printProfiles(ctx *cli.Context, store *authstore.Store) error {
+	names := make([]string, 0, len(store.Profiles))
+	for name := range store.Profiles {
+		names = append(names, name)
 	}
-	creds, err := fetchCLICredentials(ctx)
+	sort.Strings(names)
+	rows := make([][]string, 0, len(names))
+	for _, name := range names {
+		p := store.Profiles[name]
+		def := ""
+		if p.Default {
+			def = "*"
+		}
+		project := firstNonEmpty(p.ProjectHandle, "all projects")
+		lastUsed := firstNonEmpty(p.LastUsedAt, "never")
+		rows = append(rows, []string{def, name, firstNonEmpty(p.OrgName, p.OrgID), project, p.APIURL, lastUsed})
+	}
+	sel := -1
+	view := tui.Table([]tui.TableColumn{
+		{Title: "DEFAULT"},
+		{Title: "PROFILE"},
+		{Title: "ORG"},
+		{Title: "PROJECT"},
+		{Title: "ENDPOINT"},
+		{Title: "LAST USED"},
+	}, &sel).Rows(rows)
+	if err := tui.Fprint(ctx.Stdout(), view); err != nil {
+		return err
+	}
+	ctx.Println("")
+	return nil
+}
+
+// runAuthList lists local CLI profiles.
+func runAuthList(ctx *cli.Context) error {
+	store, err := authstore.LoadStore()
 	if err != nil {
 		return err
 	}
-	if len(creds) == 0 {
-		ctx.Println("No CLI credentials.")
+	if len(store.Profiles) == 0 {
+		ctx.Println("No credential profiles.")
 		return nil
 	}
-	return printCLICredentials(ctx, creds)
+	return printProfiles(ctx, store)
 }
 
 func runAuthRevoke(ctx *cli.Context) error {
@@ -456,10 +545,11 @@ func runAuthRevoke(ctx *cli.Context) error {
 	}
 	ctx.Success("Revoked CLI credential %s", id)
 	// If the user revoked the credential they are currently using, the
-	// saved copy is now useless — wipe it so the next command fails fast
+	// saved profile is now useless — wipe it so the next command fails fast
 	// with a clear "not logged in" rather than a 401.
-	if cred, err := authstore.Load(); err == nil && cred != nil && cred.CredentialID == id {
-		_ = authstore.Delete()
+	profileName := ctx.String("profile")
+	if cred, err := authstore.ResolveProfile(profileName); err == nil && cred != nil && cred.CredentialID == id {
+		_ = authstore.DeleteProfile(cred.Name)
 	}
 	return nil
 }
@@ -472,8 +562,8 @@ func authAPIURL(ctx *cli.Context, path string) string {
 func authAPISetHeaders(ctx *cli.Context, req *http.Request) {
 	key := ctx.String("api-key")
 	if key == "" {
-		if cred, err := authstore.Load(); err == nil && cred != nil {
-			key = cred.Token
+		if cred, err := authstore.ResolveProfile(ctx.String("profile")); err == nil && cred != nil {
+			key = cred.RequestToken()
 		}
 	}
 	if key != "" {
@@ -516,35 +606,7 @@ func authProbePath(apiKey string) string {
 }
 
 func projectHandleFromCLIToken(apiKey string) (string, bool) {
-	if !strings.HasPrefix(apiKey, "mbc_") {
-		return "", false
-	}
-	dot := strings.LastIndexByte(apiKey, '.')
-	if dot < len("mbc_") || dot == len(apiKey)-1 {
-		return "", false
-	}
-	project := apiKey[dot+1:]
-	if !validProjectHandle(project) {
-		return "", false
-	}
-	return project, true
-}
-
-func validProjectHandle(project string) bool {
-	var prevHyphen bool
-	for i, r := range project {
-		switch {
-		case r >= 'a' && r <= 'z':
-			prevHyphen = false
-		case r >= '0' && r <= '9':
-			prevHyphen = false
-		case r == '-' && i > 0 && !prevHyphen:
-			prevHyphen = true
-		default:
-			return false
-		}
-	}
-	return project != "" && !prevHyphen
+	return mobius.ProjectHandleFromAPIKey(apiKey)
 }
 
 // hasAuth reports whether clientFromContext will have a usable token.
@@ -552,7 +614,7 @@ func hasAuth(ctx *cli.Context) bool {
 	if ctx.IsSet("api-key") {
 		return true
 	}
-	cred, err := authstore.Load()
+	cred, err := authstore.ResolveProfile(ctx.String("profile"))
 	if err != nil {
 		return false
 	}
@@ -560,7 +622,7 @@ func hasAuth(ctx *cli.Context) bool {
 }
 
 func errLoginRequired() error {
-	return errors.New("not authenticated. Run `mobius auth login` or set --api-key / MOBIUS_API_KEY")
+	return errors.New("not authenticated. Run `mobius auth login --profile <name>` or set --api-key / MOBIUS_API_KEY")
 }
 
 // openBrowser best-effort opens the URL in the user's browser. We return the
@@ -601,4 +663,22 @@ func firstNonEmpty(vals ...string) string {
 		}
 	}
 	return ""
+}
+
+func shellQuote(s string) string {
+	if s == "" {
+		return "''"
+	}
+	safe := func(r rune) bool {
+		return r >= 'a' && r <= 'z' ||
+			r >= 'A' && r <= 'Z' ||
+			r >= '0' && r <= '9' ||
+			r == '_' || r == '-' || r == '.' || r == '/'
+	}
+	if strings.IndexFunc(s, func(r rune) bool {
+		return !safe(r)
+	}) < 0 {
+		return s
+	}
+	return "'" + strings.ReplaceAll(s, "'", "'\\''") + "'"
 }

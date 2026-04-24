@@ -43,10 +43,10 @@ type Option func(*Client)
 
 // WithAPIKey sets the API key used to authenticate all requests.
 // Project-pinned keys are presented to the server as
-// "<handle>/mbx_<secret>" — pass the credential exactly as it was
-// issued and the client will extract the handle for URL templating,
-// so a single credential is sufficient to configure a worker. Org-
-// scoped keys ("mbx_<secret>" with no prefix) are also accepted.
+// "mbx_<secret>.<handle>" or "mbc_<secret>.<handle>" — pass the
+// credential exactly as it was issued and the client will extract the
+// handle for URL templating. Org-scoped keys without a suffix are also
+// accepted.
 func WithAPIKey(key string) Option {
 	return func(c *Client) { c.apiKey = key }
 }
@@ -101,11 +101,11 @@ var projectHandleRe = regexp.MustCompile(`^[a-z0-9]+(-[a-z0-9]+)*$`)
 
 // NewClient returns a Client targeting the default Mobius API host unless
 // overridden with WithBaseURL. Construction validates the credential
-// shape (when WithAPIKey is supplied): a "<handle>/mbx_<secret>" token
-// is split on the first slash, the handle is validated against the
-// server's handle regex, and any explicit WithProjectHandle must match
-// the embedded handle. All of these surface as an error here rather
-// than as a 403 on the first request.
+// shape (when WithAPIKey is supplied): a "mbx_<secret>.<handle>" or
+// "mbc_<secret>.<handle>" token is split on the final dot, the handle is
+// validated against the server's handle regex, and any explicit
+// WithProjectHandle must match the embedded handle. All of these surface
+// as an error here rather than as a 403 on the first request.
 func NewClient(opts ...Option) (*Client, error) {
 	c := &Client{
 		baseURL:    DefaultBaseURL,
@@ -144,29 +144,54 @@ func NewClient(opts ...Option) (*Client, error) {
 	return c, nil
 }
 
-// resolveProjectHandleFromAPIKey extracts the optional "<handle>/"
-// prefix from the configured API key so the URL templater can stop
+// resolveProjectHandleFromAPIKey extracts the optional ".<handle>"
+// suffix from the configured API key so the URL templater can stop
 // requiring WithProjectHandle for project-pinned credentials. The
-// apiKey itself is left untouched — the full "<handle>/mbx_<secret>"
-// string still rides on the Authorization header, and the server
-// re-runs the prefix-vs-pinned-project check as defence in depth.
+// apiKey itself is left untouched — the full suffixed credential still
+// rides on the Authorization header, and the server
+// re-runs the suffix-vs-pinned-project check as defence in depth.
 func (c *Client) resolveProjectHandleFromAPIKey() error {
 	if c.apiKey == "" {
 		return nil
 	}
-	slash := strings.IndexByte(c.apiKey, '/')
-	if slash < 0 {
+	handle, ok := ProjectHandleFromAPIKey(c.apiKey)
+	if !ok {
+		if hasCredentialSuffix(c.apiKey) || strings.HasSuffix(c.apiKey, ".") {
+			return fmt.Errorf("mobius: invalid project handle suffix in API key")
+		}
 		return nil
-	}
-	handle := c.apiKey[:slash]
-	if !projectHandleRe.MatchString(handle) {
-		return fmt.Errorf("mobius: invalid project handle prefix in API key: %q", handle)
 	}
 	if c.projectHandle != "" && c.projectHandle != handle {
 		return fmt.Errorf("mobius: WithProjectHandle(%q) conflicts with the handle embedded in the API key (%q)", c.projectHandle, handle)
 	}
 	c.projectHandle = handle
 	return nil
+}
+
+// ProjectHandleFromAPIKey returns the project suffix from a pinned Mobius
+// credential. The suffix format is mbx_<secret>.<handle> for API keys and
+// mbc_<secret>.<handle> for browser-issued CLI credentials.
+func ProjectHandleFromAPIKey(key string) (string, bool) {
+	if !strings.HasPrefix(key, "mbx_") && !strings.HasPrefix(key, "mbc_") {
+		return "", false
+	}
+	dot := strings.LastIndexByte(key, '.')
+	if dot < 0 || dot == len(key)-1 {
+		return "", false
+	}
+	handle := key[dot+1:]
+	if !projectHandleRe.MatchString(handle) {
+		return "", false
+	}
+	return handle, true
+}
+
+func hasCredentialSuffix(key string) bool {
+	if !strings.HasPrefix(key, "mbx_") && !strings.HasPrefix(key, "mbc_") {
+		return false
+	}
+	dot := strings.LastIndexByte(key, '.')
+	return dot >= 0 && (dot != len(key)-1 || strings.HasSuffix(key, "."))
 }
 
 // RawClient returns the underlying generated ClientWithResponses for direct access

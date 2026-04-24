@@ -29,6 +29,9 @@ func newApp() *cli.App {
 		cli.String("api-key", "").
 			Env("MOBIUS_API_KEY").
 			Help("API key (mbx_...)"),
+		cli.String("profile", "").
+			Env("MOBIUS_PROFILE").
+			Help("Credential profile"),
 		cli.String("project", "").
 			Env("MOBIUS_PROJECT").
 			Default("default").
@@ -51,12 +54,12 @@ func newApp() *cli.App {
 // clientFromContext builds a *mobius.Client from the global flags on ctx.
 // An empty --api-key is accepted here; individual subcommands that require
 // auth should declare it via RequireFlags middleware or check explicitly.
-// A construction error — e.g. a conflict between --project and the handle
-// embedded in a project-pinned API key — surfaces here so the caller can
+// A construction error — e.g. a conflict between --project and the project
+// suffix embedded in a project-pinned API key — surfaces here so the caller can
 // fail the command before any HTTP request is sent.
 //
 // --project is forwarded when the user set it explicitly OR when the API key
-// is org-scoped (no embedded handle), so that org-scoped keys pick up the
+// is org-scoped (no embedded suffix), so that org-scoped keys pick up the
 // project from MOBIUS_PROJECT / --project rather than silently sending an
 // empty handle. For project-pinned keys the handle is extracted from the key
 // itself; if --project is also set it must match (NewClient enforces this).
@@ -68,11 +71,21 @@ func clientFromContext(ctx *cli.Context) (*mobius.Client, error) {
 		mobius.WithLogger(logger),
 	}
 	apiKey := ctx.String("api-key")
-	orgScopedKey := apiKey != "" && !strings.Contains(apiKey, "/")
+	orgScopedKey := apiKey != "" && projectHandleFromCredential(apiKey) == ""
 	if ctx.IsSet("project") || orgScopedKey {
 		opts = append(opts, mobius.WithProjectHandle(ctx.String("project")))
 	}
 	return mobius.NewClient(opts...)
+}
+
+func projectHandleFromCredential(key string) string {
+	if project, ok := projectHandleFromCLIToken(key); ok {
+		return project
+	}
+	if project, ok := mobius.ProjectHandleFromAPIKey(key); ok {
+		return project
+	}
+	return ""
 }
 
 func newLogger(level string) *slog.Logger {

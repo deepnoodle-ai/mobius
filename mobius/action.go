@@ -8,7 +8,7 @@
 //
 // Typical usage:
 //
-//	client, err := mobius.NewClient(mobius.WithAPIKey("prod/mbx_..."))
+//	client, err := mobius.NewClient(mobius.WithAPIKey("mbx_....prod"))
 //	if err != nil { log.Fatal(err) }
 //	worker := client.NewWorker(mobius.WorkerConfig{})
 //	mobius.RegisterAction(worker, "send_email", sendEmail)

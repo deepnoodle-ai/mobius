@@ -18,6 +18,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/deepnoodle-ai/wonton/cli"
 	"github.com/deepnoodle-ai/wonton/env"
@@ -25,7 +26,7 @@ import (
 	"github.com/deepnoodle-ai/mobius/internal/authstore"
 )
 
-var appliedSavedCredential *authstore.Credential
+var appliedSavedCredential *authstore.Profile
 
 func main() {
 	if _, err := os.Stat(".env"); err == nil {
@@ -46,10 +47,10 @@ func main() {
 	}
 }
 
-// applySavedCredential fills in MOBIUS_API_KEY / MOBIUS_API_URL from the
-// persisted browser-login credential when those variables are not already
-// set, so the rest of the CLI can treat saved and explicit credentials
-// identically. Errors are intentionally swallowed — an unreadable
+// applySavedCredential fills in MOBIUS_API_KEY / MOBIUS_API_URL /
+// MOBIUS_PROJECT from the selected profile when those variables are not
+// already set, so the rest of the CLI can treat saved and explicit
+// credentials identically. Errors are intentionally swallowed — an unreadable
 // credentials file must not block commands that do not need auth (e.g.
 // `mobius auth login`, `mobius --help`).
 func applySavedCredential() {
@@ -57,11 +58,14 @@ func applySavedCredential() {
 	if _, ok := os.LookupEnv("MOBIUS_API_KEY"); ok {
 		return
 	}
-	cred, err := authstore.Load()
+	if warning, err := authstore.PermissionWarning(); err == nil && warning != "" {
+		fmt.Fprintf(os.Stderr, "mobius: warning: credentials file %s\n", warning)
+	}
+	cred, err := authstore.ResolveProfile(os.Getenv("MOBIUS_PROFILE"))
 	if err != nil || cred == nil || cred.Token == "" {
 		return
 	}
-	if err := os.Setenv("MOBIUS_API_KEY", cred.Token); err != nil {
+	if err := os.Setenv("MOBIUS_API_KEY", cred.RequestToken()); err != nil {
 		fmt.Fprintf(os.Stderr, "mobius: warning: apply saved credential: set MOBIUS_API_KEY: %v\n", err)
 		return
 	}
@@ -71,6 +75,16 @@ func applySavedCredential() {
 				fmt.Fprintf(os.Stderr, "mobius: warning: apply saved credential: set MOBIUS_API_URL: %v\n", err)
 			}
 		}
+	}
+	if cred.ProjectHandle != "" {
+		if _, ok := os.LookupEnv("MOBIUS_PROJECT"); !ok {
+			if err := os.Setenv("MOBIUS_PROJECT", cred.ProjectHandle); err != nil {
+				fmt.Fprintf(os.Stderr, "mobius: warning: apply saved credential: set MOBIUS_PROJECT: %v\n", err)
+			}
+		}
+	}
+	if err := authstore.TouchProfile(cred.Name, time.Now().UTC().Format(time.RFC3339)); err != nil {
+		fmt.Fprintf(os.Stderr, "mobius: warning: update profile last-used: %v\n", err)
 	}
 	appliedSavedCredential = cred
 }

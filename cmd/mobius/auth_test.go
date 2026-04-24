@@ -3,7 +3,9 @@ package main
 import (
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -21,12 +23,14 @@ func TestAuthStatusReportsSavedCredentialAfterInjection(t *testing.T) {
 	defer srv.Close()
 
 	err := authstore.Save(&authstore.Credential{
-		Source:       authstore.SourceBrowserLogin,
-		APIURL:       srv.URL,
-		Token:        "mbc_saved.default",
-		CredentialID: "cred_123",
-		OrgName:      "Example Org",
-		UserEmail:    "user@example.invalid",
+		Source:        authstore.SourceBrowserLogin,
+		APIURL:        srv.URL,
+		Token:         "mbc_saved",
+		CredentialID:  "cred_123",
+		OrgName:       "Example Org",
+		ProjectID:     "prj_123",
+		ProjectHandle: "default",
+		UserEmail:     "user@example.invalid",
 	})
 	if err != nil {
 		t.Fatalf("save credential: %v", err)
@@ -40,7 +44,7 @@ func TestAuthStatusReportsSavedCredentialAfterInjection(t *testing.T) {
 	if !strings.Contains(result.Stdout, "API URL: "+srv.URL) {
 		t.Fatalf("stdout missing saved API URL:\n%s", result.Stdout)
 	}
-	if !strings.Contains(result.Stdout, "Auth source: saved browser credential") {
+	if !strings.Contains(result.Stdout, "Auth source: saved profile") {
 		t.Fatalf("stdout missing saved credential source:\n%s", result.Stdout)
 	}
 	if strings.Contains(result.Stdout, "MOBIUS_API_KEY environment variable") {
@@ -130,6 +134,58 @@ func TestAuthProbePathUsesProjectScopedEndpointForPinnedCLIToken(t *testing.T) {
 	}
 }
 
+func TestAddDeviceCodeClientInfo(t *testing.T) {
+	form := url.Values{}
+	addDeviceCodeClientInfo(form)
+
+	if got := form.Get("mobius_client"); got != "mobius-cli" {
+		t.Fatalf("mobius_client = %q, want mobius-cli", got)
+	}
+	if got := form.Get("mobius_client_version"); got == "" {
+		t.Fatalf("mobius_client_version is empty")
+	}
+	if got := form.Get("mobius_client_os"); got != runtime.GOOS {
+		t.Fatalf("mobius_client_os = %q, want %q", got, runtime.GOOS)
+	}
+	if got := form.Get("mobius_client_arch"); got != runtime.GOARCH {
+		t.Fatalf("mobius_client_arch = %q, want %q", got, runtime.GOARCH)
+	}
+}
+
+func TestAuthLoginDoesNotRequestProjectFromEnvOrDefault(t *testing.T) {
+	srv, requestedProject := newDeviceLoginServer(t)
+	defer srv.Close()
+
+	result := newApp().Test(t,
+		cli.TestArgs("auth", "login", "--api-url", srv.URL, "--no-browser"),
+		cli.TestEnv("MOBIUS_CONFIG_DIR", t.TempDir()),
+		cli.TestEnv("MOBIUS_PROJECT", "env-project"),
+	)
+	if !result.Success() {
+		t.Fatalf("auth login failed: %v\nstderr: %s", result.Err, result.Stderr)
+	}
+	if got := <-requestedProject; got != "" {
+		t.Fatalf("requested project = %q, want empty", got)
+	}
+}
+
+func TestAuthLoginRequestsExplicitProject(t *testing.T) {
+	srv, requestedProject := newDeviceLoginServer(t)
+	defer srv.Close()
+
+	result := newApp().Test(t,
+		cli.TestArgs("auth", "login", "--api-url", srv.URL, "--no-browser", "--project", "cli-project"),
+		cli.TestEnv("MOBIUS_CONFIG_DIR", t.TempDir()),
+		cli.TestEnv("MOBIUS_PROJECT", "env-project"),
+	)
+	if !result.Success() {
+		t.Fatalf("auth login failed: %v\nstderr: %s", result.Err, result.Stderr)
+	}
+	if got := <-requestedProject; got != "cli-project" {
+		t.Fatalf("requested project = %q, want cli-project", got)
+	}
+}
+
 func newAuthProbeServer(t *testing.T, wantToken, wantPath string, status int) *httptest.Server {
 	t.Helper()
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -146,6 +202,41 @@ func newAuthProbeServer(t *testing.T, wantToken, wantPath string, status int) *h
 		w.WriteHeader(status)
 		_, _ = w.Write([]byte(`{"items":[]}`))
 	}))
+}
+
+func newDeviceLoginServer(t *testing.T) (*httptest.Server, <-chan string) {
+	t.Helper()
+	requestedProject := make(chan string, 1)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/v1/auth/device/code":
+			if r.Method != http.MethodPost {
+				t.Errorf("device code method = %s, want POST", r.Method)
+				http.NotFound(w, r)
+				return
+			}
+			if err := r.ParseForm(); err != nil {
+				t.Errorf("parse form: %v", err)
+				http.Error(w, "bad form", http.StatusBadRequest)
+				return
+			}
+			requestedProject <- r.PostFormValue("mobius_requested_project_handle")
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"device_code":"dev_123","user_code":"ABCD-EFGH","verification_uri":"https://example.invalid/auth/device","verification_uri_complete":"https://example.invalid/auth/device?code=ABCD-EFGH","expires_in":60,"interval":1}`))
+		case "/v1/auth/device/token":
+			if r.Method != http.MethodPost {
+				t.Errorf("device token method = %s, want POST", r.Method)
+				http.NotFound(w, r)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"access_token":"mbc_login","token_type":"Bearer","credential_id":"cred_login"}`))
+		default:
+			t.Errorf("unexpected request: %s %s", r.Method, r.URL.Path)
+			http.NotFound(w, r)
+		}
+	}))
+	return srv, requestedProject
 }
 
 func unsetEnv(t *testing.T, key string) {
