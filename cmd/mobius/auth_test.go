@@ -17,13 +17,13 @@ func TestAuthStatusReportsSavedCredentialAfterInjection(t *testing.T) {
 	unsetEnv(t, "MOBIUS_API_URL")
 	t.Setenv("MOBIUS_CONFIG_DIR", t.TempDir())
 	resetAppliedSavedCredential(t)
-	srv := newAuthProbeServer(t, "mbx_saved", http.StatusOK)
+	srv := newAuthProbeServer(t, "mbc_saved.default", "/v1/projects/default/workflows", http.StatusOK)
 	defer srv.Close()
 
 	err := authstore.Save(&authstore.Credential{
 		Source:       authstore.SourceBrowserLogin,
 		APIURL:       srv.URL,
-		Token:        "mbx_saved",
+		Token:        "mbc_saved.default",
 		CredentialID: "cred_123",
 		OrgName:      "Example Org",
 		UserEmail:    "user@example.invalid",
@@ -46,7 +46,7 @@ func TestAuthStatusReportsSavedCredentialAfterInjection(t *testing.T) {
 	if strings.Contains(result.Stdout, "MOBIUS_API_KEY environment variable") {
 		t.Fatalf("stdout incorrectly reported synthetic env var:\n%s", result.Stdout)
 	}
-	if !strings.Contains(result.Stdout, "Auth check: GET /v1/projects -> HTTP 200") {
+	if !strings.Contains(result.Stdout, "Auth check: GET /v1/projects/default/workflows -> HTTP 200") {
 		t.Fatalf("stdout missing auth check:\n%s", result.Stdout)
 	}
 	if !strings.Contains(result.Stdout, "Authenticated: yes (browser-based CLI credential verified)") {
@@ -55,7 +55,7 @@ func TestAuthStatusReportsSavedCredentialAfterInjection(t *testing.T) {
 }
 
 func TestAuthStatusReportsRealAPIKeyEnv(t *testing.T) {
-	srv := newAuthProbeServer(t, "mbx_env", http.StatusOK)
+	srv := newAuthProbeServer(t, "mbx_env", "/v1/projects", http.StatusOK)
 	defer srv.Close()
 	t.Setenv("MOBIUS_API_KEY", "mbx_env")
 	t.Setenv("MOBIUS_API_URL", srv.URL)
@@ -91,7 +91,7 @@ func TestAuthStatusReportsRealAPIKeyEnv(t *testing.T) {
 }
 
 func TestAuthStatusReportsRejectedCredential(t *testing.T) {
-	srv := newAuthProbeServer(t, "mbx_env", http.StatusUnauthorized)
+	srv := newAuthProbeServer(t, "mbx_env", "/v1/projects", http.StatusUnauthorized)
 	defer srv.Close()
 	t.Setenv("MOBIUS_API_KEY", "mbx_env")
 	t.Setenv("MOBIUS_API_URL", srv.URL)
@@ -110,10 +110,30 @@ func TestAuthStatusReportsRejectedCredential(t *testing.T) {
 	}
 }
 
-func newAuthProbeServer(t *testing.T, wantToken string, status int) *httptest.Server {
+func TestAuthProbePathUsesProjectScopedEndpointForPinnedCLIToken(t *testing.T) {
+	tests := []struct {
+		name string
+		key  string
+		want string
+	}{
+		{name: "raw api key", key: "mbx_env", want: "/v1/projects"},
+		{name: "org scoped cli token", key: "mbc_token", want: "/v1/projects"},
+		{name: "project pinned cli token", key: "mbc_token.my-project", want: "/v1/projects/my-project/workflows"},
+		{name: "invalid project suffix", key: "mbc_token.BadProject", want: "/v1/projects"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := authProbePath(tt.key); got != tt.want {
+				t.Fatalf("authProbePath(%q) = %q, want %q", tt.key, got, tt.want)
+			}
+		})
+	}
+}
+
+func newAuthProbeServer(t *testing.T, wantToken, wantPath string, status int) *httptest.Server {
 	t.Helper()
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet || r.URL.Path != "/v1/projects" {
+		if r.Method != http.MethodGet || r.URL.Path != wantPath {
 			t.Errorf("unexpected probe request: %s %s", r.Method, r.URL.Path)
 			http.NotFound(w, r)
 			return

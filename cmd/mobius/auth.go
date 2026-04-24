@@ -330,18 +330,23 @@ func printSavedCredentialStatus(ctx *cli.Context, cred *authstore.Credential) {
 }
 
 func printAuthVerification(ctx *cli.Context, credentialKind string) {
-	status, err := verifyAuthenticatedRequest(ctx)
+	probe, err := verifyAuthenticatedRequest(ctx)
 	if err != nil {
-		ctx.Printf("Auth check: GET /v1/projects failed: %v\n", err)
+		ctx.Printf("Auth check: GET %s failed: %v\n", probe.Path, err)
 		ctx.Printf("Authenticated: no (%s verification failed)\n", credentialKind)
 		return
 	}
-	ctx.Printf("Auth check: GET /v1/projects -> HTTP %d\n", status)
-	if status == http.StatusOK {
+	ctx.Printf("Auth check: GET %s -> HTTP %d\n", probe.Path, probe.Status)
+	if probe.Status == http.StatusOK {
 		ctx.Printf("Authenticated: yes (%s verified)\n", credentialKind)
 		return
 	}
 	ctx.Printf("Authenticated: no (%s rejected)\n", credentialKind)
+}
+
+type authProbeResult struct {
+	Path   string
+	Status int
 }
 
 type cliCredential struct {
@@ -485,14 +490,56 @@ func authAPIGet(ctx *cli.Context, path string) (*http.Response, error) {
 	return http.DefaultClient.Do(req)
 }
 
-func verifyAuthenticatedRequest(ctx *cli.Context) (int, error) {
-	resp, err := authAPIGet(ctx, "/v1/projects")
+func verifyAuthenticatedRequest(ctx *cli.Context) (authProbeResult, error) {
+	path := authProbePath(ctx.String("api-key"))
+	result := authProbeResult{Path: path}
+	resp, err := authAPIGet(ctx, path)
 	if err != nil {
-		return 0, err
+		return result, err
 	}
 	defer resp.Body.Close()
 	_, _ = io.Copy(io.Discard, resp.Body)
-	return resp.StatusCode, nil
+	result.Status = resp.StatusCode
+	return result, nil
+}
+
+func authProbePath(apiKey string) string {
+	if project, ok := projectHandleFromCLIToken(apiKey); ok {
+		return "/v1/projects/" + url.PathEscape(project) + "/workflows"
+	}
+	return "/v1/projects"
+}
+
+func projectHandleFromCLIToken(apiKey string) (string, bool) {
+	if !strings.HasPrefix(apiKey, "mbc_") {
+		return "", false
+	}
+	dot := strings.LastIndexByte(apiKey, '.')
+	if dot < len("mbc_") || dot == len(apiKey)-1 {
+		return "", false
+	}
+	project := apiKey[dot+1:]
+	if !validProjectHandle(project) {
+		return "", false
+	}
+	return project, true
+}
+
+func validProjectHandle(project string) bool {
+	var prevHyphen bool
+	for i, r := range project {
+		switch {
+		case r >= 'a' && r <= 'z':
+			prevHyphen = false
+		case r >= '0' && r <= '9':
+			prevHyphen = false
+		case r == '-' && i > 0 && !prevHyphen:
+			prevHyphen = true
+		default:
+			return false
+		}
+	}
+	return project != "" && !prevHyphen
 }
 
 // hasAuth reports whether clientFromContext will have a usable token.
