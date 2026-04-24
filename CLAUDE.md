@@ -55,3 +55,5 @@ the colon, no scope. Types in use: `feat`, `build`, `docs`, `chore`, plus
 `openapi:` for spec-only changes. Use the same format for PR titles (squash
 merges make them the commit subject).
 
+For GitHub work in this repository, use the `gh` CLI rather than GitHub app or
+connector tools.
