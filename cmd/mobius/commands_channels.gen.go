@@ -24,7 +24,7 @@ func registerChannelsCommands(app *cli.App) {
 		Description("Add a member to a channel").
 		Args("id").
 		Flags(
-			cli.String("role", "").Help("Role to assign the new member."),
+			cli.String("role", "").Help("Role to assign the new member, either `member` or `admin`."),
 			cli.String("user-id", "").Help("[required] User or agent ID to add to the channel."),
 			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
 		).
@@ -62,7 +62,7 @@ func registerChannelsCommands(app *cli.App) {
 		Description("Create a channel").
 		Flags(
 			cli.String("display-name", "").Help("[required] Human-facing display name shown in the UI."),
-			cli.String("kind", "").Help("[required] Channel kind. Cannot be changed after creation."),
+			cli.String("kind", "").Help("[required] Channel kind, either `dm` or `channel`. Cannot be changed after creation."),
 			cli.Strings("member-ids", "").Help("Optional list of user or agent IDs to add as members at creation time. All receive the `member` role; the creator is added as `admin` separately."),
 			cli.String("name", "").Help("[required] URL-safe handle, unique within the project. Immutable after creation — choose carefully."),
 			cli.Bool("private", "").Help("When true, the channel is invite-only."),
@@ -320,8 +320,8 @@ func registerChannelsCommands(app *cli.App) {
 		Args("id").
 		Flags(
 			cli.String("content", "").Help("[required] Message body in Markdown."),
-			cli.String("display", "").Help("Rendering hint for the UI."),
-			cli.String("metadata", "").Help("metadata (JSON)"),
+			cli.String("display", "").Help("Rendering hint for the UI: `message`, `notice`, or `card`."),
+			cli.String("metadata", "").Help("Free-form JSON object for caller-defined metadata. (JSON)"),
 			cli.String("reply-to", "").Help("Parent message ID for threading (creates a reply)."),
 			cli.String("sender-agent-id", "").Help("Durable agent identity to attribute the message to. When set, `sender_type` on the resulting message is `agent`."),
 			cli.String("sender-session-id", "").Help("Live agent session to associate with the message."),
@@ -428,7 +428,7 @@ func registerChannelsCommands(app *cli.App) {
 		Args("id", "message-id").
 		Flags(
 			cli.String("content", "").Help("Updated Markdown content. Sets `edited_at` on the message."),
-			cli.String("metadata", "").Help("metadata (JSON)"),
+			cli.String("metadata", "").Help("Free-form JSON object for caller-defined metadata. (JSON)"),
 			cli.Bool("pinned", "").Help("Pin or unpin the message. Sets/clears `pinned_by`."),
 			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
 		).

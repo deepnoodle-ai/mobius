@@ -7,12 +7,12 @@ import (
 
 func TestSplitDottedConfig(t *testing.T) {
 	tests := []struct {
-		name     string
-		entry    string
-		wantCat  string
-		wantKey  string
-		wantVal  any
-		wantErr  bool
+		name    string
+		entry   string
+		wantCat string
+		wantKey string
+		wantVal any
+		wantErr bool
 	}{
 		{name: "duration string", entry: "timeouts.wall_clock=30m", wantCat: "timeouts", wantKey: "wall_clock", wantVal: "30m"},
 		{name: "never sentinel", entry: "timeouts.execution=never", wantCat: "timeouts", wantKey: "execution", wantVal: "never"},

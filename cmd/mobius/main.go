@@ -24,6 +24,8 @@ import (
 	"github.com/deepnoodle-ai/mobius/internal/authstore"
 )
 
+var appliedSavedCredential *authstore.Credential
+
 func main() {
 	if _, err := os.Stat(".env"); err == nil {
 		_ = env.LoadEnvFile(".env")
@@ -50,6 +52,7 @@ func main() {
 // credentials file must not block commands that do not need auth (e.g.
 // `mobius auth login`, `mobius --help`).
 func applySavedCredential() {
+	appliedSavedCredential = nil
 	if _, ok := os.LookupEnv("MOBIUS_API_KEY"); ok {
 		return
 	}
@@ -63,4 +66,5 @@ func applySavedCredential() {
 			os.Setenv("MOBIUS_API_URL", cred.APIURL)
 		}
 	}
+	appliedSavedCredential = cred
 }

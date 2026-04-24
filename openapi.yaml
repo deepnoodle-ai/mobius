@@ -87,6 +87,8 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '409':
+          $ref: '#/components/responses/Conflict'
     get:
       operationId: listChannels
       tags:
@@ -237,6 +239,8 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
   /v1/projects/{project}/channels/{id}/members/{member_id}:
     delete:
       operationId: removeChannelMember
@@ -596,6 +600,8 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
     delete:
       operationId: deleteWorkflow
       tags:
@@ -669,7 +675,6 @@ paths:
     get:
       operationId: listWorkflowRuns
       tags:
-      - workflows
       - runs
       summary: List runs for a workflow definition
       description: Returns runs for a specific workflow definition, newest first. All statuses
@@ -686,10 +691,11 @@ paths:
                 $ref: '#/components/schemas/WorkflowRunListResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
     post:
       operationId: startWorkflowRun
       tags:
-      - workflows
       - runs
       summary: Start a new workflow run against a saved definition
       description: 'Enqueues a run using the latest version of the workflow definition identified
@@ -1416,6 +1422,8 @@ paths:
                 ok: true
                 directives:
                   should_cancel: false
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
@@ -1778,6 +1786,8 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
     delete:
       operationId: deleteTrigger
       tags:
@@ -2110,6 +2120,8 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
     delete:
       operationId: deleteProject
       tags:
@@ -2426,6 +2438,8 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
     delete:
       operationId: deleteWebhook
       tags:
@@ -3036,6 +3050,8 @@ paths:
                 $ref: '#/components/schemas/GroupListResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /v1/projects/{project}/agents:
     post:
       operationId: createAgent
@@ -3467,6 +3483,7 @@ components:
       name: action_name
       in: path
       required: true
+      description: Project-scoped action name used in workflow step definitions.
       schema:
         type: string
     member_id:
@@ -3619,11 +3636,14 @@ components:
   schemas:
     ErrorResponse:
       type: object
+      additionalProperties: false
+      description: Standard error envelope returned by API endpoints.
       required:
       - error
       properties:
         error:
           type: object
+          additionalProperties: false
           description: Error detail.
           required:
           - code
@@ -3637,6 +3657,8 @@ components:
               description: Human-readable error message
     HealthResponse:
       type: object
+      additionalProperties: false
+      description: Health-check response for load balancers and uptime probes.
       required:
       - status
       properties:
@@ -3648,6 +3670,7 @@ components:
       description: Project ID.
     Metadata:
       type: object
+      description: Free-form JSON object for caller-defined metadata.
       additionalProperties: true
     InteractionMode:
       type: string
@@ -3657,7 +3680,8 @@ components:
       - multi_select
       - input
       description: Declarative UI/input primitive for collecting the response. This is a portable
-        rendering contract, not executable code.
+        rendering contract, not executable code. Values are `confirm`, `select`, `multi_select`,
+        and `input`.
     InteractionOption:
       type: object
       required:
@@ -3689,6 +3713,7 @@ components:
       properties:
         mode:
           $ref: '#/components/schemas/InteractionMode'
+          description: UI/input mode used to render and validate the response.
         options:
           type: array
           maxItems: 100
@@ -3724,6 +3749,8 @@ components:
       description: Whether the message was sent by a human org member or an agent worker.
     Channel:
       type: object
+      additionalProperties: false
+      description: Project-scoped messaging room or direct-message thread.
       required:
       - id
       - name
@@ -3776,6 +3803,8 @@ components:
           description: Timestamp when this channel was last updated.
     ChannelListResponse:
       type: object
+      additionalProperties: false
+      description: Paginated list of project channels.
       required:
       - items
       properties:
@@ -3793,6 +3822,8 @@ components:
             `has_more` is false.
     ChannelMember:
       type: object
+      additionalProperties: false
+      description: Live membership record for a user or agent in a channel.
       required:
       - id
       - channel_id
@@ -3819,8 +3850,8 @@ components:
         last_read_message_id:
           type: string
           nullable: true
-          description: ID of the last message this member has read (used for unread badge
-            counts).
+          description: ID of the last message this member has read; null until the member
+            reads a message.
         muted:
           type: boolean
           description: When true, notifications for this channel are suppressed for this member.
@@ -3833,6 +3864,8 @@ components:
           description: Timestamp when this member joined the channel.
     ChannelMemberListResponse:
       type: object
+      additionalProperties: false
+      description: Paginated list of members in a channel.
       required:
       - items
       properties:
@@ -3850,6 +3883,9 @@ components:
             `has_more` is false.
     ChannelMessage:
       type: object
+      additionalProperties: false
+      description: Message posted in a channel, including sender attribution and rendering
+        metadata.
       required:
       - id
       - channel_id
@@ -3867,6 +3903,7 @@ components:
           description: ID of the channel this message was posted in.
         sender_type:
           $ref: '#/components/schemas/ChannelMessageSenderType'
+          description: Whether the sender is a human member or an agent worker.
         sender_id:
           type: string
           description: User ID (for `member`) or agent ID (for `agent`) of the message sender.
@@ -3892,16 +3929,19 @@ components:
         reply_to:
           type: string
           nullable: true
-          description: ID of the parent message this reply belongs to (threading).
+          description: ID of the parent message this reply belongs to, or null when this is
+            not a threaded reply.
         metadata:
           $ref: '#/components/schemas/Metadata'
+          description: Free-form metadata attached to the message.
         pinned:
           type: boolean
           description: Whether this message is pinned in the channel.
         pinned_by:
           type: string
           nullable: true
-          description: User ID of the member who pinned this message.
+          description: User ID of the member who pinned this message, or null when the message
+            is not pinned.
         edited_at:
           type: string
           format: date-time
@@ -3913,6 +3953,8 @@ components:
           description: Timestamp when this message was posted.
     ChannelMessageListResponse:
       type: object
+      additionalProperties: false
+      description: Paginated list of channel messages.
       required:
       - items
       properties:
@@ -3930,6 +3972,8 @@ components:
             `has_more` is false.
     CreateChannelRequest:
       type: object
+      additionalProperties: false
+      description: Fields used to create a project channel or direct-message thread.
       required:
       - name
       - display_name
@@ -3950,7 +3994,7 @@ components:
           enum:
           - dm
           - channel
-          description: Channel kind. Cannot be changed after creation.
+          description: Channel kind, either `dm` or `channel`. Cannot be changed after creation.
         private:
           type: boolean
           default: false
@@ -3963,6 +4007,8 @@ components:
             All receive the `member` role; the creator is added as `admin` separately.
     UpdateChannelRequest:
       type: object
+      additionalProperties: false
+      description: Mutable channel fields.
       properties:
         display_name:
           type: string
@@ -3975,6 +4021,8 @@ components:
           description: Toggle invite-only visibility.
     AddChannelMemberRequest:
       type: object
+      additionalProperties: false
+      description: Member identity and role to add to a channel.
       required:
       - user_id
       properties:
@@ -3987,9 +4035,11 @@ components:
           - member
           - admin
           default: member
-          description: Role to assign the new member.
+          description: Role to assign the new member, either `member` or `admin`.
     SendChannelMessageRequest:
       type: object
+      additionalProperties: false
+      description: Fields used to post a new channel message.
       required:
       - content
       properties:
@@ -4010,7 +4060,7 @@ components:
           - notice
           - card
           default: message
-          description: Rendering hint for the UI.
+          description: 'Rendering hint for the UI: `message`, `notice`, or `card`.'
         type:
           type: string
           default: user.message
@@ -4020,19 +4070,27 @@ components:
           description: Parent message ID for threading (creates a reply).
         metadata:
           $ref: '#/components/schemas/Metadata'
+          description: Free-form metadata to attach to the message.
     UpdateChannelMessageRequest:
       type: object
+      additionalProperties: false
+      description: Mutable fields for an existing channel message.
       properties:
         content:
           type: string
           description: Updated Markdown content. Sets `edited_at` on the message.
         metadata:
           $ref: '#/components/schemas/Metadata'
+          description: Replacement free-form metadata for the message.
         pinned:
           type: boolean
           description: Pin or unpin the message. Sets/clears `pinned_by`.
     AuditLogEntry:
       type: object
+      additionalProperties: false
+      description: Immutable record of a security- or configuration-relevant change. Use audit
+        log entries to answer who changed a resource, when it happened, and which project
+        or credential was involved.
       required:
       - id
       - action
@@ -4068,7 +4126,7 @@ components:
           - create
           - update
           - delete
-          description: Type of action performed
+          description: 'Type of action performed: `create`, `update`, or `delete`.'
         resource_type:
           type: string
           description: Type of resource affected (e.g., job, channel, document)
@@ -4094,6 +4152,7 @@ components:
           description: Timestamp when the action was performed
     AuditLogListResponse:
       type: object
+      additionalProperties: false
       required:
       - items
       - has_more
@@ -4115,6 +4174,10 @@ components:
       description: Set for project-pinned keys; omitted for org-scoped keys.
     APIKey:
       type: object
+      additionalProperties: false
+      description: Stored API credential metadata for automation and service access. The raw
+        secret is never returned here; use this object to list, audit, expire, or identify
+        keys by prefix without exposing tokens.
       required:
       - id
       - name
@@ -4148,6 +4211,8 @@ components:
           description: Explicit permission set granted to this key (e.g. "mobius.job.claim").
         project_id:
           $ref: '#/components/schemas/APIKeyProjectID'
+          description: Project this key is pinned to; null or omitted for org-scoped and system
+            keys.
         service_account_id:
           type: string
           description: Optional service account for attribution and quota tracking.
@@ -4169,6 +4234,7 @@ components:
           description: Timestamp when this key was last updated.
     APIKeyCreateResult:
       type: object
+      additionalProperties: false
       required:
       - id
       - name
@@ -4204,6 +4270,8 @@ components:
           description: List of permissions granted to this key.
         project_id:
           $ref: '#/components/schemas/APIKeyProjectID'
+          description: Project this key is pinned to; null or omitted for org-scoped and system
+            keys.
         service_account_id:
           type: string
           description: ID of the service account this key belongs to.
@@ -4229,6 +4297,7 @@ components:
             immediately.
     APIKeyListResponse:
       type: object
+      additionalProperties: false
       required:
       - items
       properties:
@@ -4238,6 +4307,9 @@ components:
           items:
             $ref: '#/components/schemas/APIKey'
     CreateAPIKeyRequest:
+      description: Request shape for creating either a project-pinned key or an org-level
+        key. Choose the project-pinned variant when automation should be unable to cross project
+        boundaries.
       oneOf:
       - $ref: '#/components/schemas/CreateProjectPinnedAPIKeyRequest'
       - $ref: '#/components/schemas/CreateOrgOrSystemAPIKeyRequest'
@@ -4262,7 +4334,7 @@ components:
           enum:
           - org
           default: org
-          description: Standard API key scope for project-pinned keys.
+          description: Standard API key scope for project-pinned keys; value is always `org`.
         permissions:
           type: array
           items:
@@ -4292,8 +4364,9 @@ components:
           - org
           - system
           default: org
-          description: Standard API key scope. Project-pinned versus org-level behavior is
-            determined separately by `project_id`.
+          description: 'Standard API key scope: `org` for organization keys or `system` for
+            platform-only keys. Project-pinned versus org-level behavior is determined separately
+            by `project_id`.'
         permissions:
           type: array
           items:
@@ -4309,6 +4382,9 @@ components:
           description: Optional hard expiry. Omit for a non-expiring key.
     AuthContext:
       type: object
+      additionalProperties: false
+      description: Server-resolved identity context for the current request. Use this to confirm
+        which org, actor, and auth mechanism the API associated with the supplied credential.
       required:
       - user_id
       - auth_type
@@ -4333,6 +4409,7 @@ components:
           description: True when the caller is an owner or admin of the active organization.
     ConfirmDeviceCodeRequest:
       type: object
+      additionalProperties: false
       required:
       - user_code
       properties:
@@ -4350,6 +4427,7 @@ components:
             handle as a trailing `.<handle>` suffix.
     ConfirmDeviceCodeResult:
       type: object
+      additionalProperties: false
       required:
       - confirmed
       properties:
@@ -4362,8 +4440,14 @@ components:
       enum:
       - active
       - revoked
+      description: Lifecycle state for a CLI credential. `active` credentials can authenticate
+        requests; `revoked` credentials are retained for audit history but no longer work.
     CLICredential:
       type: object
+      additionalProperties: false
+      description: User-authorized CLI credential metadata. Use it to show local login sessions,
+        identify project-pinned tokens, and revoke stale command-line access without revealing
+        the token itself.
       required:
       - id
       - user_id
@@ -4397,6 +4481,7 @@ components:
             exposing the secret.
         status:
           $ref: '#/components/schemas/CLICredentialStatus'
+          description: 'Credential lifecycle state: `active` or `revoked`.'
         created_at:
           type: string
           format: date-time
@@ -4412,9 +4497,11 @@ components:
         expires_at:
           type: string
           format: date-time
+          nullable: true
           description: Timestamp when this credential expires. Null if it does not expire.
     CLICredentialListResponse:
       type: object
+      additionalProperties: false
       required:
       - items
       properties:
@@ -4464,6 +4551,7 @@ components:
             $ref: '#/components/schemas/WorkflowStep'
     WorkflowInput:
       type: object
+      description: Declares one named input accepted by a workflow spec.
       required:
       - name
       - type
@@ -4482,6 +4570,7 @@ components:
           description: Optional default value.
     WorkflowOutput:
       type: object
+      description: Declares one named output value produced by a workflow spec.
       required:
       - name
       - variable
@@ -4525,6 +4614,7 @@ components:
           description: Vertical position of the step in the editor canvas.
     WorkflowExecutableStep:
       type: object
+      description: Executes a worker or server action and stores its result in workflow state.
       additionalProperties: false
       required:
       - name
@@ -4543,10 +4633,14 @@ components:
             $ref: '#/components/schemas/WorkflowEdge'
         edge_matching_strategy:
           $ref: '#/components/schemas/WorkflowEdgeMatchingStrategy'
+          description: How outbound edge conditions are evaluated when more than one edge
+            matches.
         each:
           $ref: '#/components/schemas/WorkflowEach'
+          description: Optional fan-out configuration that runs this step once per item.
         layout:
           $ref: '#/components/schemas/WorkflowStepLayout'
+          description: Optional visual-editor position hint; ignored by the execution engine.
         action:
           type: string
           description: 'Canonical executable-step field. When `action_kind` is omitted, the
@@ -4554,6 +4648,8 @@ components:
             server actions.'
         action_kind:
           $ref: '#/components/schemas/WorkflowActionKind'
+          description: Whether `action` is handled by a worker or by a Mobius-managed server
+            action.
         store:
           type: string
           description: State variable name where the action result is stored.
@@ -4578,6 +4674,7 @@ components:
           doc_id: ${inputs.doc_id}
     WorkflowJoinStep:
       type: object
+      description: Waits for one or more parallel branches before continuing.
       additionalProperties: false
       required:
       - name
@@ -4596,14 +4693,19 @@ components:
             $ref: '#/components/schemas/WorkflowEdge'
         edge_matching_strategy:
           $ref: '#/components/schemas/WorkflowEdgeMatchingStrategy'
+          description: How outbound edge conditions are evaluated after the join completes.
         each:
           $ref: '#/components/schemas/WorkflowEach'
+          description: Optional fan-out configuration for repeated join evaluation.
         layout:
           $ref: '#/components/schemas/WorkflowStepLayout'
+          description: Optional visual-editor position hint; ignored by the execution engine.
         join:
           $ref: '#/components/schemas/WorkflowJoinConfig'
+          description: Branches, count, and branch result mappings used by the join.
     WorkflowWaitSignalStep:
       type: object
+      description: Suspends a branch until an external signal with the matching topic arrives.
       additionalProperties: false
       required:
       - name
@@ -4622,14 +4724,19 @@ components:
             $ref: '#/components/schemas/WorkflowEdge'
         edge_matching_strategy:
           $ref: '#/components/schemas/WorkflowEdgeMatchingStrategy'
+          description: How outbound edge conditions are evaluated after the signal arrives.
         each:
           $ref: '#/components/schemas/WorkflowEach'
+          description: Optional fan-out configuration for repeated signal waits.
         layout:
           $ref: '#/components/schemas/WorkflowStepLayout'
+          description: Optional visual-editor position hint; ignored by the execution engine.
         wait_signal:
           $ref: '#/components/schemas/WorkflowWaitSignalConfig'
+          description: Signal topic, timeout, and storage behavior for this suspension.
     WorkflowSleepStep:
       type: object
+      description: Suspends a branch for a fixed duration before continuing.
       additionalProperties: false
       required:
       - name
@@ -4648,14 +4755,19 @@ components:
             $ref: '#/components/schemas/WorkflowEdge'
         edge_matching_strategy:
           $ref: '#/components/schemas/WorkflowEdgeMatchingStrategy'
+          description: How outbound edge conditions are evaluated after the sleep completes.
         each:
           $ref: '#/components/schemas/WorkflowEach'
+          description: Optional fan-out configuration for repeated sleeps.
         layout:
           $ref: '#/components/schemas/WorkflowStepLayout'
+          description: Optional visual-editor position hint; ignored by the execution engine.
         sleep:
           $ref: '#/components/schemas/WorkflowSleepConfig'
+          description: Duration to wait before the branch resumes.
     WorkflowPauseStep:
       type: object
+      description: Suspends a branch until it is manually resumed.
       additionalProperties: false
       required:
       - name
@@ -4674,14 +4786,19 @@ components:
             $ref: '#/components/schemas/WorkflowEdge'
         edge_matching_strategy:
           $ref: '#/components/schemas/WorkflowEdgeMatchingStrategy'
+          description: How outbound edge conditions are evaluated after the pause is resumed.
         each:
           $ref: '#/components/schemas/WorkflowEach'
+          description: Optional fan-out configuration for repeated pauses.
         layout:
           $ref: '#/components/schemas/WorkflowStepLayout'
+          description: Optional visual-editor position hint; ignored by the execution engine.
         pause:
           $ref: '#/components/schemas/WorkflowPauseConfig'
+          description: Optional pause reason surfaced to operators.
     WorkflowInteractionStep:
       type: object
+      description: Creates a human or agent interaction and resumes when the interaction completes.
       additionalProperties: false
       required:
       - name
@@ -4700,25 +4817,35 @@ components:
             $ref: '#/components/schemas/WorkflowEdge'
         edge_matching_strategy:
           $ref: '#/components/schemas/WorkflowEdgeMatchingStrategy'
+          description: How outbound edge conditions are evaluated after the interaction completes.
         each:
           $ref: '#/components/schemas/WorkflowEach'
+          description: Optional fan-out configuration for repeated interactions.
         layout:
           $ref: '#/components/schemas/WorkflowStepLayout'
+          description: Optional visual-editor position hint; ignored by the execution engine.
         interaction:
           $ref: '#/components/schemas/WorkflowInteractionConfig'
+          description: Interaction prompt, recipient, response schema, and timeout behavior.
     WorkflowActionKind:
       type: string
       enum:
       - worker
       - server
-      description: Execution mode for `action` steps. Omit for the current default of `worker`.
+      description: 'Execution mode for `action` steps: `worker` creates claimable jobs for
+        external workers, while `server` executes Mobius-managed actions such as integrations
+        inside the service. Omit for the current default of `worker`.'
     WorkflowEdgeMatchingStrategy:
       type: string
       enum:
       - all
       - first
+      description: 'Controls matching when multiple outbound edge conditions are true: `all`
+        follows every matching edge in parallel, while `first` follows only the first matching
+        edge in declaration order.'
     WorkflowEdge:
       type: object
+      description: Directed transition from one workflow step to another.
       required:
       - step
       additionalProperties: false
@@ -4734,6 +4861,7 @@ components:
           description: Branch name assigned to parallel execution started by this edge.
     WorkflowEach:
       type: object
+      description: Fan-out configuration that repeats a step over a collection.
       required:
       - items
       additionalProperties: false
@@ -4745,6 +4873,7 @@ components:
           description: Variable name bound to the current iteration element.
     WorkflowRetry:
       type: object
+      description: Retry policy for a workflow step after a recoverable failure.
       additionalProperties: false
       properties:
         error_equals:
@@ -4776,6 +4905,7 @@ components:
           description: Go duration string.
     WorkflowCatch:
       type: object
+      description: Error routing rule that transfers execution to another step.
       required:
       - error_equals
       - next
@@ -4794,6 +4924,7 @@ components:
           description: State variable name where the caught error is stored.
     WorkflowJoinConfig:
       type: object
+      additionalProperties: false
       description: Waits for one or more parallel branches to complete before proceeding.
       properties:
         branches:
@@ -4834,6 +4965,7 @@ components:
             Fails the run if omitted.
     WorkflowSleepConfig:
       type: object
+      description: Configuration for a sleep step.
       required:
       - duration
       additionalProperties: false
@@ -4843,6 +4975,7 @@ components:
           description: Go duration string.
     WorkflowPauseConfig:
       type: object
+      description: Configuration for a manual pause step.
       additionalProperties: false
       properties:
         reason:
@@ -4850,6 +4983,7 @@ components:
           description: Optional human-readable reason displayed when the run is paused.
     WorkflowInteractionConfig:
       type: object
+      description: Configuration for an interaction step that waits on a response.
       required:
       - type
       - message
@@ -4874,13 +5008,16 @@ components:
           description: Arbitrary key-value context passed alongside the interaction for rendering.
         spec:
           $ref: '#/components/schemas/InteractionSpec'
+          description: Response controls and validation rules rendered to the recipient.
         timeout:
           type: string
           description: Go duration string.
         target:
           $ref: '#/components/schemas/WorkflowInteractionTarget'
+          description: User, group, or agent that should receive the interaction.
     WorkflowInteractionTarget:
       type: object
+      description: Recipient definition used by workflow interaction steps.
       required:
       - type
       - id
@@ -4902,6 +5039,7 @@ components:
             Only meaningful when type is `group`.
     WorkflowDefinitionSummary:
       type: object
+      additionalProperties: true
       description: Workflow definition metadata without the executable `spec`. Returned by
         list endpoints; fetch a single definition via `getWorkflow` to get the full spec.
       required:
@@ -4955,8 +5093,11 @@ components:
         properties:
           spec:
             $ref: '#/components/schemas/WorkflowSpec'
+            description: Executable workflow spec for this definition.
     WorkflowDefinitionListResponse:
       type: object
+      additionalProperties: false
+      description: Paginated list of workflow definition summaries.
       required:
       - items
       - has_more
@@ -4975,6 +5116,8 @@ components:
           description: Whether additional pages are available.
     CreateWorkflowRequest:
       type: object
+      additionalProperties: false
+      description: Creates a saved workflow definition and its first immutable version.
       required:
       - name
       - spec
@@ -4994,8 +5137,12 @@ components:
           description: When true, expose this workflow as a callable tool via /api/tools.
         spec:
           $ref: '#/components/schemas/WorkflowSpec'
+          description: Executable workflow spec to persist as version 1.
     UpdateWorkflowRequest:
       type: object
+      additionalProperties: false
+      description: Updates workflow metadata and optionally creates a new immutable version
+        when `spec` changes.
       properties:
         name:
           type: string
@@ -5008,8 +5155,11 @@ components:
           description: When true, expose this workflow as a callable tool via /api/tools.
         spec:
           $ref: '#/components/schemas/WorkflowSpec'
+          description: Replacement executable workflow spec. Supplying this creates a new
+            version.
     WorkflowVersionSummary:
       type: object
+      additionalProperties: true
       description: Workflow version metadata without the executable `spec`. Returned by `listWorkflowVersions`.
       required:
       - id
@@ -5040,8 +5190,10 @@ components:
         properties:
           spec:
             $ref: '#/components/schemas/WorkflowSpec'
+            description: Executable workflow spec captured for this immutable version.
     WorkflowVersionListResponse:
       type: object
+      additionalProperties: false
       required:
       - items
       description: Unpaginated list of immutable versions for one workflow definition. Version
@@ -5066,6 +5218,8 @@ components:
         when the signal is delivered or the interaction is responded to.'
     WorkflowRun:
       type: object
+      description: Runtime record for one workflow execution.
+      additionalProperties: true
       required:
       - id
       - workflow_name
@@ -5103,6 +5257,8 @@ components:
           description: Name of the workflow as recorded at run creation time.
         status:
           $ref: '#/components/schemas/WorkflowRunStatus'
+          description: 'Current run lifecycle state: `queued`, `running`, `completed`, `failed`,
+            or `suspended`.'
         attempt:
           type: integer
           description: Retry attempt number (1-based). Increments each time the run is retried.
@@ -5166,14 +5322,20 @@ components:
           - run_timeout
           - run_cancelled
           - job_failed
-          description: Typed run-level failure cause. Its own vocabulary, not a superset of
-            the job-level `error_type`. Present when `status=failed`.
+          description: 'Typed run-level failure cause: `run_timeout`, `run_cancelled`, or
+            `job_failed`. Its own vocabulary, not a superset of the job-level `error_type`.
+            Present when `status=failed`.'
         resolved_config:
           $ref: '#/components/schemas/ResolvedConfig'
+          description: Run-level cascade config frozen when the run was started.
         default_job_config:
           $ref: '#/components/schemas/ResolvedConfig'
+          description: Default job-level cascade config inherited by jobs unless a step overrides
+            it.
     WorkflowRunListResponse:
       type: object
+      description: Paginated list of workflow runs.
+      additionalProperties: false
       required:
       - items
       - has_more
@@ -5191,12 +5353,15 @@ components:
           description: Opaque cursor for fetching the next page. Present only when has_more
             is true.
     WorkflowRunDetail:
+      description: Detailed workflow run including its spec snapshot, terminal result, and
+        jobs.
       allOf:
       - $ref: '#/components/schemas/WorkflowRun'
       - type: object
         properties:
           spec:
             $ref: '#/components/schemas/WorkflowSpec'
+            description: Spec snapshot used to execute this run.
           result_b64:
             type: string
             description: Base64-encoded terminal result blob
@@ -5241,6 +5406,7 @@ components:
           description: Caller-supplied idempotency key or correlation ID attached to the run.
         config:
           $ref: '#/components/schemas/ConfigEntries'
+          description: Run-level cascade config overrides applied when starting the run.
     StartInlineRunRequest:
       type: object
       additionalProperties: false
@@ -5258,6 +5424,7 @@ components:
           description: Discriminator value — must be `inline`.
         spec:
           $ref: '#/components/schemas/WorkflowSpec'
+          description: Inline executable spec to snapshot onto the ephemeral run.
         queue:
           type: string
           description: Queue name to enqueue the run on. Defaults to "default".
@@ -5277,6 +5444,7 @@ components:
           description: Caller-supplied idempotency key or correlation ID attached to the run.
         config:
           $ref: '#/components/schemas/ConfigEntries'
+          description: Run-level cascade config overrides applied when starting the run.
     StartRunRequest:
       description: |-
         Request body for `POST /v1/projects/{project}/runs`. Discriminated by
@@ -5318,8 +5486,11 @@ components:
           description: Caller-supplied idempotency key or correlation ID attached to the run.
         config:
           $ref: '#/components/schemas/ConfigEntries'
+          description: Run-level cascade config overrides applied when starting the bound
+            workflow.
     ConfigEntry:
       type: object
+      description: One cascade config override entry.
       required:
       - category
       - key
@@ -5351,6 +5522,7 @@ components:
         are omitted. See PRD 035.
     ResolvedConfigEntry:
       type: object
+      description: One cascade config value after layer resolution.
       required:
       - category
       - key
@@ -5375,9 +5547,12 @@ components:
           - workflow
           - run
           - step
-          description: Cascade layer that supplied the winning value.
+          description: 'Cascade layer that supplied the winning value: service, project, workflow,
+            run, or step.'
     ActionLogEntry:
       type: object
+      description: One server-side action invocation recorded for a workflow run.
+      additionalProperties: false
       required:
       - id
       - action
@@ -5418,6 +5593,7 @@ components:
           description: Elapsed time in milliseconds from start to completion.
     ActionLogListResponse:
       type: object
+      additionalProperties: false
       required:
       - items
       description: Unpaginated action log for one workflow run. Entries are scoped to a single
@@ -5443,6 +5619,7 @@ components:
         - `failed`    — terminal failure; may follow retries.
     Job:
       type: object
+      additionalProperties: false
       required:
       - id
       - run_id
@@ -5486,6 +5663,7 @@ components:
           description: Resolved input parameters to pass to the action.
         status:
           $ref: '#/components/schemas/JobStatus'
+          description: Current job lifecycle state.
         claimed_by:
           type: string
           description: Worker ID that claimed this job.
@@ -5546,6 +5724,7 @@ components:
             Present when `status=failed`.
         resolved_config:
           $ref: '#/components/schemas/ResolvedConfig'
+          description: Job-level cascade config resolved for this job.
         created_at:
           type: string
           format: date-time
@@ -5556,6 +5735,7 @@ components:
           description: Timestamp when this job was last updated.
     JobListResponse:
       type: object
+      additionalProperties: false
       required:
       - items
       description: Unpaginated list of jobs spawned by one workflow run. This is scoped to
@@ -5569,6 +5749,8 @@ components:
             $ref: '#/components/schemas/Job'
     SendRunSignalRequest:
       type: object
+      description: Delivers an external signal to a suspended workflow run.
+      additionalProperties: false
       required:
       - name
       properties:
@@ -5582,6 +5764,8 @@ components:
             received.
     RunSignal:
       type: object
+      description: Persisted external signal delivered to a workflow run.
+      additionalProperties: false
       required:
       - id
       - run_id
@@ -5635,6 +5819,7 @@ components:
     CreateActionRequest:
       type: object
       additionalProperties: false
+      description: Registers a project-owned action endpoint callable from workflow steps.
       required:
       - name
       - endpoint_url
@@ -5664,9 +5849,11 @@ components:
           description: JSON Schema describing the expected output shape.
         annotations:
           $ref: '#/components/schemas/ActionAnnotationsRequest'
+          description: Safe-use hints used by execution and authoring tools.
     UpdateActionRequest:
       type: object
       additionalProperties: false
+      description: Updates action metadata, endpoint, schemas, or safe-use hints.
       properties:
         title:
           type: string
@@ -5692,6 +5879,8 @@ components:
           description: Pass null to clear all annotation flags.
     Action:
       type: object
+      additionalProperties: false
+      description: Project-owned HTTP action endpoint callable by workflow steps.
       required:
       - id
       - name
@@ -5725,6 +5914,7 @@ components:
           description: JSON Schema describing the expected output shape.
         annotations:
           $ref: '#/components/schemas/ActionAnnotationsResponse'
+          description: Safe-use hints returned for this action.
         signing_secret:
           type: string
           description: Raw HMAC-SHA256 signing secret. Only populated on create and rotate
@@ -5740,6 +5930,8 @@ components:
           description: Timestamp when this action was last updated.
     ActionListResponse:
       type: object
+      additionalProperties: false
+      description: Paginated list of project-owned actions.
       required:
       - items
       - has_more
@@ -5759,6 +5951,7 @@ components:
     RotateSecretResult:
       type: object
       additionalProperties: false
+      description: New signing secret returned after rotating an action secret.
       required:
       - signing_secret
       properties:
@@ -5768,6 +5961,8 @@ components:
             time it is returned.
     ActionCatalogEntry:
       type: object
+      additionalProperties: false
+      description: One project or platform action available to workflow authors.
       required:
       - name
       - source
@@ -5795,6 +5990,7 @@ components:
             integration is not connected or the caller lacks permission.
         annotations:
           $ref: '#/components/schemas/ActionAnnotationsResponse'
+          description: Safe-use hints returned for this catalog action.
         input_schema:
           type: object
           additionalProperties: true
@@ -5809,6 +6005,7 @@ components:
           description: Endpoint URL (populated for project-owned actions only).
     ActionCatalogListResponse:
       type: object
+      additionalProperties: false
       required:
       - items
       description: Unpaginated project action catalog. This endpoint returns the complete
@@ -5822,6 +6019,8 @@ components:
             $ref: '#/components/schemas/ActionCatalogEntry'
     ActionAuditLogEntry:
       type: object
+      additionalProperties: false
+      description: Audit record for one action invocation.
       required:
       - id
       - action_name
@@ -5876,6 +6075,8 @@ components:
           description: Human-readable error detail when status is "failed".
     ActionAuditLogListResponse:
       type: object
+      additionalProperties: false
+      description: Paginated list of action invocation audit records.
       required:
       - items
       - has_more
@@ -5894,6 +6095,7 @@ components:
           description: Whether additional pages are available.
     JobClaimRequest:
       type: object
+      additionalProperties: false
       required:
       - worker_id
       properties:
@@ -5934,6 +6136,10 @@ components:
             immediately. Capped at 30 by the server.
     JobClaim:
       type: object
+      additionalProperties: false
+      description: Lease handed to a worker after a successful claim. It contains the action
+        to run, resolved parameters, and fencing values the worker must echo on heartbeat,
+        event, and complete calls.
       required:
       - job_id
       - run_id
@@ -5986,6 +6192,10 @@ components:
             alive. Typically 30 seconds.
     JobHeartbeatDirectives:
       type: object
+      additionalProperties: false
+      description: Server instructions returned with a heartbeat. Workers should inspect this
+        on every heartbeat so cancellation and future control signals can interrupt long-running
+        work promptly.
       properties:
         should_cancel:
           type: boolean
@@ -5994,6 +6204,9 @@ components:
             must stop processing immediately and call complete with `status: failed`.'
     JobHeartbeat:
       type: object
+      additionalProperties: false
+      description: Heartbeat acknowledgement for a claimed job. A successful response means
+        the worker still owns the lease and should continue unless the directives say otherwise.
       required:
       - ok
       - directives
@@ -6003,8 +6216,10 @@ components:
           description: True when the lease was successfully refreshed.
         directives:
           $ref: '#/components/schemas/JobHeartbeatDirectives'
+          description: Server instructions the worker should observe after the heartbeat.
     JobFenceRequest:
       type: object
+      additionalProperties: false
       required:
       - worker_id
       - attempt
@@ -6017,6 +6232,7 @@ components:
           description: Must match the `attempt` from the original claim.
     JobCompleteRequest:
       type: object
+      additionalProperties: false
       required:
       - worker_id
       - attempt
@@ -6033,8 +6249,8 @@ components:
           enum:
           - completed
           - failed
-          description: Terminal status for this job attempt. `failed` triggers the workflow
-            engine's retry logic if `attempt < max_attempts`.
+          description: 'Terminal status for this job attempt: `completed` or `failed`. `failed`
+            triggers the workflow engine''s retry logic if `attempt < max_attempts`.'
         result_b64:
           type: string
           description: Base64-encoded (standard encoding) bytes representing the job's output.
@@ -6049,6 +6265,7 @@ components:
           description: Human-readable error detail. Only relevant for failed status.
     RunActionRequest:
       type: object
+      additionalProperties: false
       properties:
         parameters:
           type: object
@@ -6064,6 +6281,7 @@ components:
             for actions that support dry-run mode.
     RunActionResult:
       type: object
+      additionalProperties: false
       required:
       - output
       properties:
@@ -6080,6 +6298,7 @@ components:
           description: Free-form output returned by the action handler.
     JobEventsRequest:
       type: object
+      additionalProperties: false
       required:
       - worker_id
       - attempt
@@ -6103,6 +6322,10 @@ components:
             $ref: '#/components/schemas/JobEventEntry'
     JobEventEntry:
       type: object
+      additionalProperties: false
+      description: Custom progress or telemetry event emitted while a worker owns a job. Use
+        these events to stream domain-specific status into run timelines without changing
+        the job completion payload.
       required:
       - type
       - payload
@@ -6145,8 +6368,11 @@ components:
       - approval
       - review
       - input
+      description: 'Interaction kind: `approval` captures a decision, `review` captures acknowledgement
+        or notes, and `input` collects free-form data.'
     CreateJobInteractionRequest:
       type: object
+      additionalProperties: false
       required:
       - target
       - type
@@ -6156,8 +6382,10 @@ components:
       properties:
         target:
           $ref: '#/components/schemas/InteractionTarget'
+          description: User, group, or agent that should receive the interaction.
         type:
           $ref: '#/components/schemas/InteractionType'
+          description: Interaction kind that determines the response workflow.
         message:
           type: string
           description: Message shown to the responder.
@@ -6174,6 +6402,7 @@ components:
           description: Additional key-value context surfaced in the UI alongside the message.
         spec:
           $ref: '#/components/schemas/InteractionSpec'
+          description: Response controls and validation rules rendered to the recipient.
         require_all:
           type: boolean
           description: When target.type is "group", setting require_all=true means all snapshotted
@@ -6219,12 +6448,15 @@ components:
       - type: boolean
     InteractionResponse:
       type: object
+      additionalProperties: false
+      description: Final response that completed an interaction.
       required:
       - value
       - at
       properties:
         value:
           $ref: '#/components/schemas/InteractionValue'
+          description: JSON value supplied by the responder.
         comment:
           type: string
           nullable: true
@@ -6235,6 +6467,8 @@ components:
           description: When the response was submitted
     InteractionPartialResponse:
       type: object
+      additionalProperties: false
+      description: One member response captured while a group interaction waits for all members.
       required:
       - user_id
       - value
@@ -6245,6 +6479,7 @@ components:
           description: ID of the user who submitted this partial response.
         value:
           $ref: '#/components/schemas/InteractionValue'
+          description: JSON value supplied by this group member.
         comment:
           type: string
           nullable: true
@@ -6255,6 +6490,8 @@ components:
           description: Timestamp when this response was submitted.
     Interaction:
       type: object
+      additionalProperties: false
+      description: Human or agent interaction request and its current response state.
       required:
       - id
       - type
@@ -6276,36 +6513,43 @@ components:
           description: Signal name used to resume the originating run when run-backed.
         type:
           $ref: '#/components/schemas/InteractionType'
+          description: Interaction kind that determines the expected response experience.
         status:
           type: string
           enum:
           - pending
           - completed
           - expired
-          description: Current status of the interaction.
+          description: 'Current status of the interaction: pending, completed, or expired.'
         message:
           type: string
           nullable: true
-          description: Human-readable message shown to the responder
+          description: Human-readable message shown to the responder when supplied.
         context:
           type: object
           additionalProperties: true
           nullable: true
-          description: Additional key-value context surfaced in the UI alongside the message.
+          description: Additional key-value context surfaced in the UI alongside the message
+            when supplied.
         spec:
           $ref: '#/components/schemas/InteractionSpec'
+          description: Response controls and validation rules rendered to the recipient.
         target:
           $ref: '#/components/schemas/InteractionTarget'
+          description: Recipient of the interaction.
         responder:
           type: object
+          additionalProperties: false
           nullable: true
-          allOf:
-          - $ref: '#/components/schemas/InteractionResponder'
+          description: User or agent that completed the interaction; null until completion.
+          $ref: '#/components/schemas/InteractionResponder'
         response:
           type: object
+          additionalProperties: false
           nullable: true
-          allOf:
-          - $ref: '#/components/schemas/InteractionResponse'
+          description: Final response payload; null while the interaction is pending or expired
+            without a response.
+          $ref: '#/components/schemas/InteractionResponse'
         expires_at:
           type: string
           format: date-time
@@ -6333,22 +6577,24 @@ components:
           items:
             type: string
           nullable: true
-          description: User IDs of group members at the time of creation
+          description: User IDs of group members at the time of creation; null for non-group
+            targets.
         routing_policy_snapshot:
           type: string
           enum:
           - first_responder
           - all_members
           nullable: true
-          description: Group routing policy captured at creation time
+          description: 'Group routing policy captured at creation time: first_responder or
+            all_members. Null for non-group targets.'
         require_all:
           type: boolean
           description: When true, all snapshotted members must respond before completion
         claimed_by:
           type: string
           nullable: true
-          description: User ID of the member who claimed this interaction (first_responder
-            only)
+          description: User ID of the member who claimed this interaction; null until claimed
+            and only used for first_responder routing.
         claimed_at:
           type: string
           format: date-time
@@ -6359,14 +6605,16 @@ components:
           items:
             $ref: '#/components/schemas/InteractionPartialResponse'
           nullable: true
-          description: Per-member responses for all_members routing
+          description: Per-member responses for all_members routing; null for non-group interactions
+            or before any partial responses.
     TriggerKind:
       type: string
       enum:
       - schedule
       - webhook
       - event
-      description: Determines the event source and required `source_config` shape.
+      description: 'Determines the event source and required `source_config` shape: schedule,
+        webhook, or event.'
     ConcurrencyPolicy:
       type: string
       enum:
@@ -6393,6 +6641,7 @@ components:
         - `skipped` — the concurrency policy suppressed the entire activation.
     TriggerTarget:
       type: object
+      additionalProperties: false
       required:
       - id
       - trigger_id
@@ -6435,6 +6684,7 @@ components:
           description: Timestamp when this target was last updated.
     TriggerTargetListResponse:
       type: object
+      additionalProperties: false
       required:
       - items
       description: Unpaginated list of targets attached to one trigger. Trigger fan-out is
@@ -6447,6 +6697,7 @@ components:
             $ref: '#/components/schemas/TriggerTarget'
     CreateTriggerTargetRequest:
       type: object
+      additionalProperties: false
       required:
       - workflow_id
       description: Parameters for attaching a workflow target to a trigger.
@@ -6467,6 +6718,7 @@ components:
           description: Whether this target starts enabled. Defaults to true when omitted.
     UpdateTriggerTargetRequest:
       type: object
+      additionalProperties: false
       description: Partial update for a trigger target; omitted fields are unchanged.
       properties:
         workflow_id:
@@ -6486,6 +6738,7 @@ components:
           description: Set to false to pause this target without removing it.
     TriggerFireTargetResult:
       type: object
+      additionalProperties: false
       required:
       - target_id
       - workflow_id
@@ -6504,6 +6757,7 @@ components:
             or was skipped.
         status:
           $ref: '#/components/schemas/TriggerFireStatus'
+          description: 'Outcome for this target: `started`, `skipped`, or `failed`.'
         error:
           type: string
           description: Error detail when status is `failed`.
@@ -6558,6 +6812,8 @@ components:
       - $ref: '#/components/schemas/EventSourceConfig'
     Trigger:
       type: object
+      additionalProperties: false
+      description: Event source that starts one or more workflow targets.
       required:
       - id
       - name
@@ -6575,8 +6831,10 @@ components:
           description: Human-readable trigger name, unique within the project.
         kind:
           $ref: '#/components/schemas/TriggerKind'
+          description: Trigger source kind that determines the source_config schema.
         source_config:
           $ref: '#/components/schemas/TriggerSourceConfig'
+          description: Typed configuration for the trigger source.
         targets:
           type: array
           items:
@@ -6584,6 +6842,7 @@ components:
           description: Targets attached to this trigger, populated via join.
         concurrency_policy:
           $ref: '#/components/schemas/ConcurrencyPolicy'
+          description: Policy for overlapping runs started by this trigger.
         enabled:
           type: boolean
           description: When false, the trigger is paused and will not fire.
@@ -6608,6 +6867,8 @@ components:
           description: Timestamp when this trigger was last updated.
     TriggerListResponse:
       type: object
+      additionalProperties: false
+      description: Paginated list of triggers.
       required:
       - items
       - has_more
@@ -6626,6 +6887,7 @@ components:
           description: Whether additional pages are available.
     TriggerFire:
       type: object
+      additionalProperties: false
       required:
       - id
       - trigger_id
@@ -6655,6 +6917,7 @@ components:
           description: Per-target outcomes for this activation.
         status:
           $ref: '#/components/schemas/TriggerFireStatus'
+          description: 'Overall trigger fire outcome: `started`, `skipped`, or `failed`.'
         error:
           type: string
           description: Error detail when status is `failed`.
@@ -6668,6 +6931,8 @@ components:
           description: Timestamp when this fire record was created.
     TriggerFireListResponse:
       type: object
+      additionalProperties: false
+      description: Paginated history of trigger fire attempts.
       required:
       - items
       - has_more
@@ -6700,6 +6965,7 @@ components:
     CreateScheduleTriggerRequest:
       type: object
       additionalProperties: false
+      description: Creates a schedule trigger from a cron expression or fixed interval.
       required:
       - name
       - kind
@@ -6715,6 +6981,7 @@ components:
           description: Discriminator value — must be `schedule`.
         source_config:
           $ref: '#/components/schemas/ScheduleSourceConfig'
+          description: Schedule-specific source configuration.
         targets:
           type: array
           description: Workflows to start when this trigger fires (inline convenience; stored
@@ -6723,12 +6990,14 @@ components:
             $ref: '#/components/schemas/CreateTriggerTargetRequest'
         concurrency_policy:
           $ref: '#/components/schemas/ConcurrencyPolicy'
+          description: Policy for overlapping runs started by this trigger.
         enabled:
           type: boolean
           description: Whether the trigger starts enabled. Defaults to true when omitted.
     CreateWebhookTriggerRequest:
       type: object
       additionalProperties: false
+      description: Creates a webhook trigger with an inbound receive URL.
       required:
       - name
       - kind
@@ -6743,6 +7012,7 @@ components:
           description: Discriminator value — must be `webhook`.
         source_config:
           $ref: '#/components/schemas/WebhookSourceConfig'
+          description: Webhook-specific source configuration.
         targets:
           type: array
           description: Workflows to start when this trigger fires (inline convenience; stored
@@ -6751,12 +7021,14 @@ components:
             $ref: '#/components/schemas/CreateTriggerTargetRequest'
         concurrency_policy:
           $ref: '#/components/schemas/ConcurrencyPolicy'
+          description: Policy for overlapping runs started by this trigger.
         enabled:
           type: boolean
           description: Whether the trigger starts enabled. Defaults to true when omitted.
     CreateEventTriggerRequest:
       type: object
       additionalProperties: false
+      description: Creates an event trigger for platform-originated events.
       required:
       - name
       - kind
@@ -6772,6 +7044,7 @@ components:
           description: Discriminator value — must be `event`.
         source_config:
           $ref: '#/components/schemas/EventSourceConfig'
+          description: Event-specific source configuration.
         targets:
           type: array
           description: Workflows to start when this trigger fires (inline convenience; stored
@@ -6780,24 +7053,33 @@ components:
             $ref: '#/components/schemas/CreateTriggerTargetRequest'
         concurrency_policy:
           $ref: '#/components/schemas/ConcurrencyPolicy'
+          description: Policy for overlapping runs started by this trigger.
         enabled:
           type: boolean
           description: Whether the trigger starts enabled. Defaults to true when omitted.
     UpdateTriggerRequest:
       type: object
+      additionalProperties: false
       properties:
         name:
           type: string
           description: Replacement human-readable name.
         source_config:
           $ref: '#/components/schemas/TriggerSourceConfig'
+          description: Replacement source configuration; its shape must match the trigger
+            kind.
         concurrency_policy:
           $ref: '#/components/schemas/ConcurrencyPolicy'
+          description: Replacement policy for overlapping runs started by this trigger.
         enabled:
           type: boolean
           description: Set to false to pause the trigger without deleting it.
     WorkerSession:
       type: object
+      additionalProperties: false
+      description: Recently observed worker process for a project. Use sessions to see which
+        machines, users, service accounts, or agents are polling for work and whether they
+        appear stale.
       required:
       - id
       - stale
@@ -6851,6 +7133,7 @@ components:
             at read time, not stored.
     WorkerSessionListResponse:
       type: object
+      additionalProperties: false
       required:
       - items
       properties:
@@ -6869,6 +7152,10 @@ components:
         see or use the project.'
     Project:
       type: object
+      additionalProperties: false
+      description: Workspace boundary for workflows, actions, credentials, agents, and runtime
+        activity. Most operational APIs are project-scoped, so this object tells clients which
+        handle to use and who can see the project.
       required:
       - id
       - name
@@ -6892,6 +7179,7 @@ components:
           description: Optional human-readable description.
         access_mode:
           $ref: '#/components/schemas/ProjectAccessMode'
+          description: 'Current project access policy: `org_open` or `restricted`.'
         created_by:
           type: string
           description: User ID of the org member who created this project.
@@ -6905,6 +7193,7 @@ components:
           description: Timestamp when this project was last updated.
     ProjectListResponse:
       type: object
+      additionalProperties: false
       required:
       - items
       properties:
@@ -6915,6 +7204,7 @@ components:
             $ref: '#/components/schemas/Project'
     CreateProjectRequest:
       type: object
+      additionalProperties: false
       required:
       - name
       properties:
@@ -6930,8 +7220,10 @@ components:
           description: Optional human-readable description.
         access_mode:
           $ref: '#/components/schemas/ProjectAccessMode'
+          description: 'Initial project access policy: `org_open` or `restricted`.'
     UpdateProjectRequest:
       type: object
+      additionalProperties: false
       properties:
         name:
           type: string
@@ -6941,6 +7233,7 @@ components:
           description: Replacement description.
         access_mode:
           $ref: '#/components/schemas/ProjectAccessMode'
+          description: 'Replacement project access policy: `org_open` or `restricted`.'
         seed_existing_members:
           type: boolean
           description: When transitioning from `org_open` to `restricted`, set true to insert
@@ -6948,6 +7241,10 @@ components:
             Ignored on other transitions.
     ProjectMember:
       type: object
+      additionalProperties: false
+      description: Explicit project membership used when a project is restricted. Use this
+        record to decide who can see or operate on a project outside the default org-wide
+        access model.
       required:
       - id
       - project_id
@@ -6975,6 +7272,7 @@ components:
           description: Timestamp when the member was added.
     ProjectMemberListResponse:
       type: object
+      additionalProperties: false
       required:
       - items
       - has_more
@@ -6993,6 +7291,7 @@ components:
             `has_more` is false.
     AddProjectMemberRequest:
       type: object
+      additionalProperties: false
       required:
       - user_id
       properties:
@@ -7010,6 +7309,7 @@ components:
         delivered. `delivered` — recipient returned 2xx. `failed` — all retry attempts exhausted.'
     Webhook:
       type: object
+      additionalProperties: false
       required:
       - id
       - name
@@ -7052,6 +7352,7 @@ components:
           description: Timestamp when this webhook was last updated.
     WebhookListResponse:
       type: object
+      additionalProperties: false
       required:
       - has_more
       properties:
@@ -7069,6 +7370,7 @@ components:
           description: Whether additional pages are available.
     WebhookDelivery:
       type: object
+      additionalProperties: false
       required:
       - id
       - webhook_id
@@ -7094,6 +7396,7 @@ components:
           description: The event type that triggered this delivery (e.g. `run.completed`).
         status:
           $ref: '#/components/schemas/WebhookDeliveryStatus'
+          description: 'Current delivery status: `pending`, `delivered`, or `failed`.'
         attempts:
           type: integer
           description: Number of delivery attempts made so far. Max 10.
@@ -7110,6 +7413,7 @@ components:
           description: Timestamp of the successful delivery. Absent until delivered.
     WebhookDeliveryListResponse:
       type: object
+      additionalProperties: false
       required:
       - has_more
       properties:
@@ -7127,6 +7431,7 @@ components:
           description: Whether additional pages are available.
     CreateWebhookRequest:
       type: object
+      additionalProperties: false
       required:
       - name
       - events
@@ -7154,6 +7459,7 @@ components:
           description: Whether the webhook starts enabled. Defaults to true when omitted.
     UpdateWebhookRequest:
       type: object
+      additionalProperties: false
       properties:
         name:
           type: string
@@ -7175,6 +7481,7 @@ components:
           description: Set to false to disable delivery without deleting the webhook.
     PingWebhookRequest:
       type: object
+      additionalProperties: false
       properties:
         url:
           type: string
@@ -7183,6 +7490,7 @@ components:
             When omitted, the webhook's current saved URL is used.
     PingWebhookResult:
       type: object
+      additionalProperties: false
       required:
       - success
       properties:
@@ -7209,6 +7517,10 @@ components:
         expired (e.g., OAuth token not refreshed).'
     Integration:
       type: object
+      additionalProperties: false
+      description: Project-scoped connection to an external provider such as Slack, GitHub,
+        or a model service. Workflows and actions use integrations to find provider configuration
+        without embedding secrets in definitions.
       required:
       - id
       - name
@@ -7234,6 +7546,7 @@ components:
             The shape is provider-defined.
         status:
           $ref: '#/components/schemas/IntegrationStatus'
+          description: 'Current integration state: `connected`, `disconnected`, or `error`.'
         created_by:
           type: string
           description: User ID of the org member who created this integration.
@@ -7247,6 +7560,7 @@ components:
           description: Timestamp when this integration was last updated.
     IntegrationListResponse:
       type: object
+      additionalProperties: false
       required:
       - items
       - has_more
@@ -7265,6 +7579,7 @@ components:
           description: Whether additional pages are available.
     CreateIntegrationRequest:
       type: object
+      additionalProperties: false
       required:
       - name
       - provider
@@ -7288,6 +7603,7 @@ components:
             address).
     UpdateIntegrationRequest:
       type: object
+      additionalProperties: false
       properties:
         name:
           type: string
@@ -7303,8 +7619,10 @@ components:
           description: Replacement config blob (full replace, not merge).
         status:
           $ref: '#/components/schemas/IntegrationStatus'
+          description: 'Replacement integration state: `connected`, `disconnected`, or `error`.'
     CopyIntegrationRequest:
       type: object
+      additionalProperties: false
       required:
       - source_project_id
       - source_integration_id
@@ -7322,6 +7640,9 @@ components:
             existing `(provider, name)` in this project.
     BillingSubscription:
       type: object
+      additionalProperties: false
+      description: Current billing entitlement for an organization. Use it to show plan status,
+        trial/grace timing, renewal behavior, and usage caps that may block workflow execution.
       required:
       - id
       - plan_type
@@ -7403,6 +7724,10 @@ components:
           description: Timestamp when this subscription was last updated.
     BillingPlan:
       type: object
+      additionalProperties: false
+      description: Purchasable plan configuration exposed to clients before checkout. It explains
+        price, included usage, seat limits, and operational caps so users can compare plans
+        before upgrading.
       required:
       - plan_type
       - price_cents
@@ -7445,6 +7770,7 @@ components:
           description: When true, a payment method is required to start this plan.
     BillingPlanListResponse:
       type: object
+      additionalProperties: false
       required:
       - items
       properties:
@@ -7455,6 +7781,10 @@ components:
             $ref: '#/components/schemas/BillingPlan'
     BillingUsageKeySummary:
       type: object
+      additionalProperties: false
+      description: Attribution row for usage generated by a single API key. Useful for identifying
+        which automation or service account is driving billing consumption within the current
+        period.
       required:
       - api_key_id
       - count
@@ -7467,6 +7797,10 @@ components:
           description: Number of usage records attributed to this key in the current period.
     BillingUsageSummary:
       type: object
+      additionalProperties: false
+      description: Billing-period usage snapshot for an organization. Use it to show remaining
+        capacity, estimated overage, and which categories or API keys are contributing to
+        spend.
       required:
       - current_period_start
       - current_period_end
@@ -7509,6 +7843,9 @@ components:
           description: Per-API-key usage breakdown for cost attribution.
     Invoice:
       type: object
+      additionalProperties: false
+      description: Customer-facing invoice metadata from Stripe. Clients use invoices to display
+        payment status and link users to hosted invoice or PDF views.
       required:
       - id
       - status
@@ -7546,6 +7883,7 @@ components:
           description: Timestamp when this invoice was created by Stripe.
     InvoiceListResponse:
       type: object
+      additionalProperties: false
       required:
       - items
       properties:
@@ -7556,6 +7894,7 @@ components:
             $ref: '#/components/schemas/Invoice'
     CreateCheckoutRequest:
       type: object
+      additionalProperties: false
       required:
       - success_url
       - cancel_url
@@ -7570,6 +7909,7 @@ components:
           description: URL Stripe redirects to when the user cancels checkout.
     CreatePortalRequest:
       type: object
+      additionalProperties: false
       required:
       - return_url
       properties:
@@ -7579,6 +7919,7 @@ components:
           description: URL Stripe redirects to after the user exits the customer portal.
     BillingURLResult:
       type: object
+      additionalProperties: false
       required:
       - url
       properties:
@@ -7588,6 +7929,7 @@ components:
           description: Stripe-hosted URL to redirect the user's browser to.
     UpdateBillingLimitsRequest:
       type: object
+      additionalProperties: false
       properties:
         monthly_credit_cap:
           type: integer
@@ -7606,6 +7948,10 @@ components:
             full existing list. Must not exceed the plan's `max_alert_thresholds`.
     OnboardingStatus:
       type: object
+      additionalProperties: false
+      description: Whether the current user has completed initial organization setup. Use
+        this at app startup to decide whether to route the user into onboarding or the normal
+        workspace experience.
       required:
       - completed
       properties:
@@ -7620,6 +7966,7 @@ components:
           description: The user's org display name (present only when completed is true)
     OnboardingResult:
       type: object
+      additionalProperties: false
       required:
       - org_id
       - org_name
@@ -7632,6 +7979,10 @@ components:
           description: Display name of the org
     ProjectMetrics:
       type: object
+      additionalProperties: false
+      description: Operational health snapshot for a project. Use it to power dashboards,
+        detect stuck queues or stale workers, and summarize run throughput and failure rates
+        over a recent window.
       required:
       - generated_at
       - window_minutes
@@ -7698,6 +8049,7 @@ components:
             windowed). Includes all terminal and in-progress statuses.
     PreviewPermissionsRequest:
       type: object
+      additionalProperties: false
       properties:
         service_account_default_role:
           type: string
@@ -7705,6 +8057,7 @@ components:
             assignment at the time of preview.
     EnablePermissionsRequest:
       type: object
+      additionalProperties: false
       properties:
         service_account_default_role:
           type: string
@@ -7717,9 +8070,18 @@ components:
             $ref: '#/components/schemas/PermissionsAssignmentInput'
     PermissionsAssignmentInput:
       type: object
+      additionalProperties: false
+      description: Desired role assignment supplied while enabling permissions. Use this to
+        make the initial rollout explicit instead of relying only on default roles for users
+        and service accounts.
       required:
       - actor_type
       - actor_id
+      oneOf:
+      - required:
+        - role_id
+      - required:
+        - role_name
       properties:
         actor_type:
           type: string
@@ -7741,6 +8103,10 @@ components:
           description: Scope this assignment to a project. Omit for org-wide.
     PermissionsAssignmentProposal:
       type: object
+      additionalProperties: false
+      description: Role assignment the server would create during a permissions preview or
+        enable operation. Clients can show these proposals before enforcing permissions so
+        admins understand the blast radius.
       required:
       - actor_type
       - actor_id
@@ -7764,9 +8130,11 @@ components:
           description: Name of the role that would be assigned.
         project_id:
           type: string
+          nullable: true
           description: Project scope for the assignment. Null for org-wide assignments.
     PermissionsPlan:
       type: object
+      additionalProperties: false
       required:
       - permissions_enabled
       - assignments
@@ -7782,6 +8150,10 @@ components:
             $ref: '#/components/schemas/PermissionsAssignmentProposal'
     PermissionsState:
       type: object
+      additionalProperties: false
+      description: Lightweight org-level switch showing whether permission enforcement is
+        active. Use it to decide whether role assignments are informational or actually gate
+        API access.
       required:
       - permissions_enabled
       properties:
@@ -7790,6 +8162,10 @@ components:
           description: Whether enforcement is currently active for the org.
     Role:
       type: object
+      additionalProperties: false
+      description: Named bundle of permissions assignable to users or service accounts. Roles
+        let admins grant workflow, project, and automation capabilities consistently without
+        editing every actor individually.
       required:
       - id
       - name
@@ -7829,6 +8205,10 @@ components:
           description: Timestamp when this role was last updated.
     RoleAssignment:
       type: object
+      additionalProperties: false
+      description: Binding between an actor and a role, optionally scoped to a project. Use
+        assignments to explain why a user or service account has access and to audit who granted
+        it.
       required:
       - id
       - actor_type
@@ -7870,6 +8250,7 @@ components:
           description: Timestamp when this assignment was created.
     RoleListResponse:
       type: object
+      additionalProperties: false
       required:
       - items
       properties:
@@ -7880,6 +8261,7 @@ components:
             $ref: '#/components/schemas/Role'
     RoleAssignmentListResponse:
       type: object
+      additionalProperties: false
       required:
       - items
       properties:
@@ -7890,6 +8272,7 @@ components:
             $ref: '#/components/schemas/RoleAssignment'
     CreateRoleRequest:
       type: object
+      additionalProperties: false
       required:
       - project_id
       - name
@@ -7911,6 +8294,7 @@ components:
           description: Permission strings to include (e.g. "mobius.workflow.create").
     UpdateRoleRequest:
       type: object
+      additionalProperties: false
       properties:
         description:
           type: string
@@ -7922,9 +8306,15 @@ components:
           description: Replaces the existing permissions array entirely.
     CreateRoleAssignmentRequest:
       type: object
+      additionalProperties: false
       required:
       - actor_type
       - actor_id
+      oneOf:
+      - required:
+        - role_id
+      - required:
+        - role_name
       properties:
         actor_type:
           type: string
@@ -7946,6 +8336,10 @@ components:
           description: Scope this assignment to a project. Omit for org-wide assignment.
     User:
       type: object
+      additionalProperties: false
+      description: Human identity known to the organization. User records are useful for membership
+        lists, role assignment UIs, attribution, and displaying profile information next to
+        actions.
       required:
       - id
       - email
@@ -7983,10 +8377,15 @@ components:
       - Operator
       - Worker
       - Viewer
-      description: One of the built-in system roles. These are seeded at startup and cannot
-        be deleted. `Owner` and `Admin` bypass project-member visibility for restricted projects.
+      description: 'One of the built-in system roles: `Owner`, `Admin`, `Operator`, `Worker`,
+        or `Viewer`. These are seeded at startup and cannot be deleted. `Owner` and `Admin`
+        bypass project-member visibility for restricted projects.'
     Org:
       type: object
+      additionalProperties: false
+      description: Top-level account boundary for users, projects, billing, roles, and shared
+        settings. Use the org to understand default access policy and the handle/name shown
+        across the workspace.
       required:
       - id
       - name
@@ -8016,8 +8415,9 @@ components:
           enum:
           - org_open
           - restricted
-          description: Access mode applied to newly-created projects when the caller does
-            not pass one explicitly. Changing this only affects future projects.
+          description: 'Access mode applied to newly-created projects when the caller does
+            not pass one explicitly: `org_open` or `restricted`. Changing this only affects
+            future projects.'
         created_at:
           type: string
           format: date-time
@@ -8028,6 +8428,7 @@ components:
           description: Timestamp when this organization was last updated.
     OrgListResponse:
       type: object
+      additionalProperties: false
       required:
       - items
       properties:
@@ -8045,6 +8446,7 @@ components:
             `has_more` is false.
     CreateOrgRequest:
       type: object
+      additionalProperties: false
       required:
       - name
       - handle
@@ -8061,6 +8463,7 @@ components:
           description: Arbitrary metadata to attach to the organization.
     UpdateOrgRequest:
       type: object
+      additionalProperties: false
       properties:
         name:
           type: string
@@ -8081,9 +8484,13 @@ components:
           enum:
           - org_open
           - restricted
-          description: Access mode applied to newly-created projects.
+          description: 'Access mode applied to newly-created projects: `org_open` or `restricted`.'
     OrgMember:
       type: object
+      additionalProperties: false
+      description: User's membership in an organization. Use this record to show who belongs
+        to the org, what their broad org role is, and any embedded user profile needed for
+        member management.
       required:
       - id
       - user_id
@@ -8115,8 +8522,10 @@ components:
           description: Timestamp when this membership was last updated.
         user:
           $ref: '#/components/schemas/User'
+          description: Embedded user profile for this organization member.
     OrgMemberListResponse:
       type: object
+      additionalProperties: false
       required:
       - items
       properties:
@@ -8134,6 +8543,7 @@ components:
             `has_more` is false.
     AddOrgMemberRequest:
       type: object
+      additionalProperties: false
       required:
       - user_id
       - role
@@ -8150,6 +8560,7 @@ components:
           description: 'Role to assign the new member: `Owner`, `Admin`, or `Member`.'
     UpdateOrgMemberRoleRequest:
       type: object
+      additionalProperties: false
       required:
       - role
       properties:
@@ -8162,6 +8573,7 @@ components:
           description: 'New role to assign: `Owner`, `Admin`, or `Member`.'
     InteractionListResponse:
       type: object
+      additionalProperties: false
       required:
       - items
       properties:
@@ -8197,8 +8609,10 @@ components:
       properties:
         target:
           $ref: '#/components/schemas/InteractionTarget'
+          description: User, group, or agent that should receive the interaction.
         type:
           $ref: '#/components/schemas/InteractionType'
+          description: Interaction kind that determines the response workflow.
         message:
           type: string
           description: Message shown to the responder describing what response is needed.
@@ -8208,6 +8622,7 @@ components:
           description: Additional key-value context surfaced in the UI alongside the message.
         spec:
           $ref: '#/components/schemas/InteractionSpec'
+          description: Response controls and validation rules rendered to the recipient.
         require_all:
           type: boolean
           description: When target.type is "group", setting require_all=true means all snapshotted
@@ -8237,8 +8652,10 @@ components:
           description: Signal name the interaction will complete against when run-backed.
         target:
           $ref: '#/components/schemas/InteractionTarget'
+          description: User, group, or agent that should receive the interaction.
         type:
           $ref: '#/components/schemas/InteractionType'
+          description: Interaction kind that determines the response workflow.
         message:
           type: string
           description: Message shown to the responder describing what response is needed.
@@ -8248,6 +8665,7 @@ components:
           description: Additional key-value context surfaced in the UI alongside the message.
         spec:
           $ref: '#/components/schemas/InteractionSpec'
+          description: Response controls and validation rules rendered to the recipient.
         require_all:
           type: boolean
           description: When target.type is "group", setting require_all=true means all snapshotted
@@ -8259,14 +8677,19 @@ components:
           description: Timestamp after which this interaction expires if not responded to.
     RespondToInteractionRequest:
       type: object
+      additionalProperties: false
       properties:
         value:
           $ref: '#/components/schemas/InteractionValue'
+          description: JSON value supplied by the responder.
         comment:
           type: string
           description: Optional free-text comment accompanying the response.
     SlackInstall:
       type: object
+      additionalProperties: false
+      description: Start of the Slack OAuth installation flow. Redirect users to the authorize
+        URL when they want to connect a Slack workspace to a project.
       required:
       - authorize_url
       properties:
@@ -8275,6 +8698,10 @@ components:
           description: The Slack OAuth authorize URL to redirect the user to.
     Group:
       type: object
+      additionalProperties: true
+      description: Project-scoped collection of users used as an interaction target. Groups
+        let workflows route approvals, reviews, and input requests to a team by handle rather
+        than hard-coding individual users.
       required:
       - id
       - handle
@@ -8313,6 +8740,7 @@ components:
           description: Timestamp when this group was last updated.
     GroupListResponse:
       type: object
+      additionalProperties: false
       required:
       - items
       properties:
@@ -8322,6 +8750,9 @@ components:
           items:
             $ref: '#/components/schemas/Group'
     GroupWithCount:
+      description: Group plus its current live member count. Use this lighter summary in list
+        views where clients need to show routing targets without fetching the full member
+        list for every group.
       allOf:
       - $ref: '#/components/schemas/Group'
       - type: object
@@ -8334,6 +8765,7 @@ components:
               snapshots.
     GroupWithCountListResponse:
       type: object
+      additionalProperties: false
       required:
       - items
       properties:
@@ -8351,6 +8783,10 @@ components:
             `has_more` is false.
     GroupMember:
       type: object
+      additionalProperties: false
+      description: User membership in a project group. Membership determines who receives
+        future group-targeted interactions; existing interaction snapshots are not retroactively
+        changed.
       required:
       - id
       - group_id
@@ -8376,6 +8812,7 @@ components:
           description: Timestamp when this member was added to the group.
     GroupMemberListResponse:
       type: object
+      additionalProperties: false
       required:
       - items
       properties:
@@ -8393,6 +8830,7 @@ components:
             `has_more` is false.
     CreateGroupRequest:
       type: object
+      additionalProperties: false
       required:
       - name
       properties:
@@ -8412,9 +8850,11 @@ components:
           - first_responder
           - all_members
           default: first_responder
-          description: How responses are collected from group members. Defaults to `first_responder`.
+          description: 'How responses are collected from group members: `first_responder`
+            or `all_members`. Defaults to `first_responder`.'
     UpdateGroupRequest:
       type: object
+      additionalProperties: false
       properties:
         name:
           type: string
@@ -8427,10 +8867,12 @@ components:
           enum:
           - first_responder
           - all_members
-          description: Affects future interactions only; in-flight interactions retain the
-            snapshotted policy.
+          description: Replacement routing policy, either `first_responder` or `all_members`.
+            Affects future interactions only; in-flight interactions retain the snapshotted
+            policy.
     AddGroupMemberRequest:
       type: object
+      additionalProperties: false
       required:
       - user_id
       properties:
@@ -8458,8 +8900,14 @@ components:
       - connected
       - disconnected
       - stale
+      description: Connection state for an agent session. `connected` sessions are usable,
+        `stale` sessions have missed heartbeats, and `disconnected` sessions have been closed.
     Agent:
       type: object
+      additionalProperties: false
+      description: Project-scoped automated worker identity backed by a service account. Agents
+        are useful when workflows need to target a named machine actor with capabilities,
+        configuration, and session presence.
       required:
       - id
       - service_account_id
@@ -8500,8 +8948,10 @@ components:
           description: Agent-specific configuration blob stored and returned opaquely.
         status:
           $ref: '#/components/schemas/AgentStatus'
+          description: 'Current agent status: `active` or `disabled`.'
         presence:
           $ref: '#/components/schemas/AgentPresence'
+          description: 'Current agent presence: `online`, `offline`, or `unknown`.'
         created_at:
           type: string
           format: date-time
@@ -8512,6 +8962,9 @@ components:
           description: Timestamp when this agent was last updated.
     AgentSession:
       type: object
+      additionalProperties: false
+      description: Live or historical connection from an agent process. Use sessions to monitor
+        availability, transport, metadata, and heartbeat freshness for automated workers.
       required:
       - id
       - agent_id
@@ -8528,6 +8981,7 @@ components:
           description: ID of the agent this session belongs to.
         status:
           $ref: '#/components/schemas/AgentSessionStatus'
+          description: 'Current session status: `connected` or `disconnected`.'
         transport:
           type: string
           description: Connection mechanism identifier (e.g. "sse", "polling").
@@ -8560,6 +9014,7 @@ components:
           description: Timestamp when this session was last updated.
     AgentListResponse:
       type: object
+      additionalProperties: false
       required:
       - items
       properties:
@@ -8570,6 +9025,7 @@ components:
             $ref: '#/components/schemas/Agent'
     AgentSessionListResponse:
       type: object
+      additionalProperties: false
       required:
       - items
       properties:
@@ -8580,6 +9036,7 @@ components:
             $ref: '#/components/schemas/AgentSession'
     CreateAgentRequest:
       type: object
+      additionalProperties: false
       required:
       - name
       properties:
@@ -8611,6 +9068,7 @@ components:
           description: Agent-specific configuration stored and returned opaquely.
     UpdateAgentRequest:
       type: object
+      additionalProperties: false
       properties:
         service_account_id:
           type: string
@@ -8639,8 +9097,10 @@ components:
           description: Replacement configuration blob.
         status:
           $ref: '#/components/schemas/AgentStatus'
+          description: 'Replacement agent status: `active` or `disabled`.'
     CreateAgentSessionRequest:
       type: object
+      additionalProperties: false
       required:
       - transport
       properties:
@@ -8656,10 +9116,14 @@ components:
       enum:
       - active
       - disabled
-      description: '`disabled` blocks authentication and job claims but preserves the record
-        and its assignments.'
+      description: '`active` allows authentication and job claims; `disabled` blocks them
+        but preserves the record and its assignments.'
     ServiceAccount:
       type: object
+      additionalProperties: false
+      description: Non-human identity used by automation, agents, and API keys. Service accounts
+        make ownership, permissions, and credential rotation explicit without tying machine
+        access to a human user.
       required:
       - id
       - name
@@ -8678,6 +9142,7 @@ components:
           description: Optional human-readable description.
         status:
           $ref: '#/components/schemas/ServiceAccountStatus'
+          description: 'Current service account status: `active` or `disabled`.'
         owner_user_id:
           type: string
           description: Optional org member responsible for this service account.
@@ -8695,6 +9160,7 @@ components:
           description: Timestamp when this service account was last updated.
     ServiceAccountListResponse:
       type: object
+      additionalProperties: false
       required:
       - items
       properties:
@@ -8705,6 +9171,7 @@ components:
             $ref: '#/components/schemas/ServiceAccount'
     CreateServiceAccountRequest:
       type: object
+      additionalProperties: false
       required:
       - name
       properties:
@@ -8732,12 +9199,14 @@ components:
             Each role must belong to this project or be org-scoped (project_id empty).
     UpdateServiceAccountRequest:
       type: object
+      additionalProperties: false
       properties:
         description:
           type: string
           description: Replacement description.
         status:
           $ref: '#/components/schemas/ServiceAccountStatus'
+          description: 'Replacement service account status: `active` or `disabled`.'
         owner_user_id:
           type: string
           description: ID of the org member responsible for this service account.
@@ -8747,6 +9216,10 @@ components:
           description: Replacement metadata.
     ToolDefinition:
       type: object
+      additionalProperties: false
+      description: Published workflow exposed as an invokable tool. Clients can use this definition
+        to list available tools and render input forms from the JSON Schema before starting
+        a run.
       required:
       - name
       - description
@@ -8764,6 +9237,7 @@ components:
           additionalProperties: true
     ToolDefinitionListResponse:
       type: object
+      additionalProperties: false
       required:
       - items
       properties:
@@ -8774,6 +9248,7 @@ components:
             $ref: '#/components/schemas/ToolDefinition'
     ToolRunRequest:
       type: object
+      additionalProperties: false
       properties:
         input:
           type: object
@@ -8788,6 +9263,10 @@ components:
           maximum: 120
     ToolRun:
       type: object
+      additionalProperties: false
+      description: Status envelope for a tool invocation backed by a workflow run. Use it
+        to poll asynchronous work, read completed output, or surface failure details to the
+        caller.
       required:
       - run_id
       - status
@@ -8797,7 +9276,7 @@ components:
           description: Unique run identifier for polling.
         status:
           type: string
-          description: Run status — "pending", "running", "completed", or "failed".
+          description: 'Run status: `pending`, `running`, `completed`, `failed`, or `suspended`.'
           enum:
           - pending
           - running

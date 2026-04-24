@@ -166,25 +166,6 @@ func registerWorkflowsCommands(app *cli.App) {
 			return printResponse(ctx, resp.StatusCode(), resp.Body)
 		})
 
-	workflowsGrp.Command("list-runs").
-		Description("List runs for a workflow definition").
-		Args("id").
-		Use(cli.RequireFlags("api-key")).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := ctx.String("project")
-			p1 := ctx.Arg(0)
-			resp, err := client.ListWorkflowRunsWithResponse(ctx.Context(), p0, p1)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
-		})
-
 	workflowsGrp.Command("list-versions").
 		Description("List versions of a workflow definition").
 		Args("id").
@@ -198,63 +179,6 @@ func registerWorkflowsCommands(app *cli.App) {
 			p0 := ctx.String("project")
 			p1 := ctx.Arg(0)
 			resp, err := client.ListWorkflowVersionsWithResponse(ctx.Context(), p0, p1)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
-		})
-
-	workflowsGrp.Command("start-workflow-run").
-		Description("Start a new workflow run against a saved definition").
-		Args("id").
-		Flags(
-			cli.String("config", "").Help("Flat cascade config input used outside authored workflow YAML. Each entry addresses one `(category, key)` pair. Unknown categories or unknown keys under a known category are rejected at write time. The only category shipped in Phase 1 is `timeouts`, whose keys are `claim`, `liveness`, `execution`, `wall_clock`. (JSON)"),
-			cli.String("external-id", "").Help("Caller-supplied idempotency key or correlation ID attached to the run."),
-			cli.String("inputs", "").Help("Input values to pass to the workflow. Must conform to the workflow's declared input schema. (JSON)"),
-			cli.String("metadata", "").Help("Caller-supplied string metadata attached to the run for filtering and display. (JSON)"),
-			cli.String("queue", "").Help("Queue name to enqueue the run on. Defaults to \"default\"."),
-			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
-		).
-		Use(cli.RequireFlags("api-key")).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := ctx.String("project")
-			p1 := ctx.Arg(0)
-			var body api.StartWorkflowRunJSONRequestBody
-			if err := readJSONBody(ctx, &body); err != nil {
-				return err
-			}
-			if ctx.IsSet("config") {
-				if err := json.Unmarshal([]byte(ctx.String("config")), &body.Config); err != nil {
-					return fmt.Errorf("--config: invalid JSON: %w", err)
-				}
-			}
-			if ctx.IsSet("external-id") {
-				v := ctx.String("external-id")
-				body.ExternalId = &v
-			}
-			if ctx.IsSet("inputs") {
-				if err := json.Unmarshal([]byte(ctx.String("inputs")), &body.Inputs); err != nil {
-					return fmt.Errorf("--inputs: invalid JSON: %w", err)
-				}
-			}
-			if ctx.IsSet("metadata") {
-				if err := json.Unmarshal([]byte(ctx.String("metadata")), &body.Metadata); err != nil {
-					return fmt.Errorf("--metadata: invalid JSON: %w", err)
-				}
-			}
-			if ctx.IsSet("queue") {
-				v := ctx.String("queue")
-				body.Queue = &v
-			}
-			if ctx.String("file") == "" && !ctx.IsSet("config") && !ctx.IsSet("external-id") && !ctx.IsSet("inputs") && !ctx.IsSet("metadata") && !ctx.IsSet("queue") {
-				return fmt.Errorf("at least one flag or --file is required")
-			}
-			resp, err := client.StartWorkflowRunWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}

@@ -94,7 +94,7 @@ func registerJobsCommands(app *cli.App) {
 			cli.String("error-message", "").Help("Human-readable error detail. Only relevant for failed status."),
 			cli.String("error-type", "").Help("Short error class identifier (e.g. \"TimeoutError\"). Used for observability and retry classification. Only relevant when `status: failed`."),
 			cli.String("result-b64", "").Help("Base64-encoded (standard encoding) bytes representing the job's output. The workflow engine decodes this and may pass it as input to downstream steps. Omit if the step produces no output."),
-			cli.String("status", "").Help("[required] Terminal status for this job attempt. `failed` triggers the workflow engine's retry logic if `attempt < max_attempts`."),
+			cli.String("status", "").Help("[required] Terminal status for this job attempt: `completed` or `failed`. `failed` triggers the workflow engine's retry logic if `attempt < max_attempts`."),
 			cli.String("worker-id", "").Help("[required] Must match the `worker_id` from the original claim."),
 			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
 		).
@@ -161,7 +161,7 @@ func registerJobsCommands(app *cli.App) {
 			cli.String("step-name", "").Help("Optional workflow step label for UI/debugging context"),
 			cli.String("target", "").Help("[required] Identifies who should receive an interaction request. Note: distinct from the caller/audit `Actor` vocabulary — a target is a *recipient*, not someone who has acted yet. (JSON)"),
 			cli.String("timeout", "").Help("Optional duration string (e.g. \"24h\", \"30m\") specifying how long the interaction should remain open before expiring. When absent the caller is responsible for setting expires_at directly."),
-			cli.String("type", "").Help("[required] type"),
+			cli.String("type", "").Help("[required] Interaction kind: `approval` captures a decision, `review` captures acknowledgement or notes, and `input` collects free-form data."),
 			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
 		).
 		Use(cli.RequireFlags("api-key")).

@@ -934,7 +934,7 @@ func (e ListInteractionsParamsTargetType) Valid() bool {
 	}
 }
 
-// Action defines model for Action.
+// Action Project-owned HTTP action endpoint callable by workflow steps.
 type Action struct {
 	// Annotations Response hints that describe the safe-use properties of the action. Response annotations are forward-compatible so the server can add response-only hints without breaking strict clients.
 	Annotations *ActionAnnotationsResponse `json:"annotations,omitempty"`
@@ -995,7 +995,7 @@ type ActionAnnotationsResponse struct {
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
-// ActionAuditLogEntry defines model for ActionAuditLogEntry.
+// ActionAuditLogEntry Audit record for one action invocation.
 type ActionAuditLogEntry struct {
 	// ActionName Name of the action that was invoked.
 	ActionName string `json:"action_name"`
@@ -1037,7 +1037,7 @@ type ActionAuditLogEntry struct {
 	StepName *string `json:"step_name,omitempty"`
 }
 
-// ActionAuditLogListResponse defines model for ActionAuditLogListResponse.
+// ActionAuditLogListResponse Paginated list of action invocation audit records.
 type ActionAuditLogListResponse struct {
 	// HasMore Whether additional pages are available.
 	HasMore bool `json:"has_more"`
@@ -1049,7 +1049,7 @@ type ActionAuditLogListResponse struct {
 	NextCursor *string `json:"next_cursor,omitempty"`
 }
 
-// ActionCatalogEntry defines model for ActionCatalogEntry.
+// ActionCatalogEntry One project or platform action available to workflow authors.
 type ActionCatalogEntry struct {
 	// Annotations Response hints that describe the safe-use properties of the action. Response annotations are forward-compatible so the server can add response-only hints without breaking strict clients.
 	Annotations *ActionAnnotationsResponse `json:"annotations,omitempty"`
@@ -1088,7 +1088,7 @@ type ActionCatalogListResponse struct {
 	Items []ActionCatalogEntry `json:"items"`
 }
 
-// ActionListResponse defines model for ActionListResponse.
+// ActionListResponse Paginated list of project-owned actions.
 type ActionListResponse struct {
 	// HasMore Whether additional pages are available.
 	HasMore bool `json:"has_more"`
@@ -1100,7 +1100,7 @@ type ActionListResponse struct {
 	NextCursor *string `json:"next_cursor,omitempty"`
 }
 
-// ActionLogEntry defines model for ActionLogEntry.
+// ActionLogEntry One server-side action invocation recorded for a workflow run.
 type ActionLogEntry struct {
 	// Action Action name that was executed.
 	Action string `json:"action"`
@@ -1136,16 +1136,16 @@ type ActionLogListResponse struct {
 	Items []ActionLogEntry `json:"items"`
 }
 
-// AddChannelMemberRequest defines model for AddChannelMemberRequest.
+// AddChannelMemberRequest Member identity and role to add to a channel.
 type AddChannelMemberRequest struct {
-	// Role Role to assign the new member.
+	// Role Role to assign the new member, either `member` or `admin`.
 	Role *AddChannelMemberRequestRole `json:"role,omitempty"`
 
 	// UserId User or agent ID to add to the channel.
 	UserId string `json:"user_id"`
 }
 
-// AddChannelMemberRequestRole Role to assign the new member.
+// AddChannelMemberRequestRole Role to assign the new member, either `member` or `admin`.
 type AddChannelMemberRequestRole string
 
 // AddGroupMemberRequest defines model for AddGroupMemberRequest.
@@ -1160,7 +1160,7 @@ type AddProjectMemberRequest struct {
 	UserId string `json:"user_id"`
 }
 
-// Agent defines model for Agent.
+// Agent Project-scoped automated worker identity backed by a service account. Agents are useful when workflows need to target a named machine actor with capabilities, configuration, and session presence.
 type Agent struct {
 	// Capabilities Arbitrary capability map used by orchestrators to select suitable agents.
 	Capabilities *map[string]interface{} `json:"capabilities,omitempty"`
@@ -1205,7 +1205,7 @@ type AgentListResponse struct {
 // AgentPresence Computed from the most recent 20 sessions. `online` means a connected session with a fresh heartbeat; `stale` means heartbeats are overdue; `offline` means no connected sessions.
 type AgentPresence string
 
-// AgentSession defines model for AgentSession.
+// AgentSession Live or historical connection from an agent process. Use sessions to monitor availability, transport, metadata, and heartbeat freshness for automated workers.
 type AgentSession struct {
 	// AgentId ID of the agent this session belongs to.
 	AgentId string `json:"agent_id"`
@@ -1227,7 +1227,9 @@ type AgentSession struct {
 
 	// Metadata Caller-supplied metadata (e.g. hostname, version, region).
 	Metadata *map[string]interface{} `json:"metadata,omitempty"`
-	Status   AgentSessionStatus      `json:"status"`
+
+	// Status Connection state for an agent session. `connected` sessions are usable, `stale` sessions have missed heartbeats, and `disconnected` sessions have been closed.
+	Status AgentSessionStatus `json:"status"`
 
 	// Transport Connection mechanism identifier (e.g. "sse", "polling").
 	Transport string `json:"transport"`
@@ -1242,15 +1244,15 @@ type AgentSessionListResponse struct {
 	Items []AgentSession `json:"items"`
 }
 
-// AgentSessionStatus defines model for AgentSessionStatus.
+// AgentSessionStatus Connection state for an agent session. `connected` sessions are usable, `stale` sessions have missed heartbeats, and `disconnected` sessions have been closed.
 type AgentSessionStatus string
 
 // AgentStatus Administrative status. Inactive agents cannot claim new jobs.
 type AgentStatus string
 
-// AuditLogEntry defines model for AuditLogEntry.
+// AuditLogEntry Immutable record of a security- or configuration-relevant change. Use audit log entries to answer who changed a resource, when it happened, and which project or credential was involved.
 type AuditLogEntry struct {
-	// Action Type of action performed
+	// Action Type of action performed: `create`, `update`, or `delete`.
 	Action AuditLogEntryAction `json:"action"`
 
 	// ActorId Durable actor ID that performed the action
@@ -1296,7 +1298,7 @@ type AuditLogEntry struct {
 	UserId *string `json:"user_id,omitempty"`
 }
 
-// AuditLogEntryAction Type of action performed
+// AuditLogEntryAction Type of action performed: `create`, `update`, or `delete`.
 type AuditLogEntryAction string
 
 // AuditLogListResponse defines model for AuditLogListResponse.
@@ -1311,7 +1313,7 @@ type AuditLogListResponse struct {
 	NextCursor *string `json:"next_cursor,omitempty"`
 }
 
-// Channel defines model for Channel.
+// Channel Project-scoped messaging room or direct-message thread.
 type Channel struct {
 	// ArchivedAt Set when the channel is archived. Archived channels are hidden in the UI but their message history remains accessible.
 	ArchivedAt *time.Time `json:"archived_at,omitempty"`
@@ -1347,7 +1349,7 @@ type Channel struct {
 // ChannelKind `channel` — persistent named room. `dm` — direct-message thread, typically between a small fixed set of participants.
 type ChannelKind string
 
-// ChannelListResponse defines model for ChannelListResponse.
+// ChannelListResponse Paginated list of project channels.
 type ChannelListResponse struct {
 	// HasMore Whether additional pages are available.
 	HasMore *bool `json:"has_more,omitempty"`
@@ -1359,7 +1361,7 @@ type ChannelListResponse struct {
 	NextCursor *string `json:"next_cursor,omitempty"`
 }
 
-// ChannelMember defines model for ChannelMember.
+// ChannelMember Live membership record for a user or agent in a channel.
 type ChannelMember struct {
 	// ChannelId ID of the channel this membership belongs to.
 	ChannelId string `json:"channel_id"`
@@ -1370,7 +1372,7 @@ type ChannelMember struct {
 	// JoinedAt Timestamp when this member joined the channel.
 	JoinedAt time.Time `json:"joined_at"`
 
-	// LastReadMessageId ID of the last message this member has read (used for unread badge counts).
+	// LastReadMessageId ID of the last message this member has read; null until the member reads a message.
 	LastReadMessageId *string `json:"last_read_message_id,omitempty"`
 
 	// Muted When true, notifications for this channel are suppressed for this member.
@@ -1389,7 +1391,7 @@ type ChannelMember struct {
 // ChannelMemberRole `admin` — can update channel settings and manage members. `member` — can post messages and view history. Creators are automatically assigned `admin`.
 type ChannelMemberRole string
 
-// ChannelMemberListResponse defines model for ChannelMemberListResponse.
+// ChannelMemberListResponse Paginated list of members in a channel.
 type ChannelMemberListResponse struct {
 	// HasMore Whether additional pages are available.
 	HasMore *bool `json:"has_more,omitempty"`
@@ -1401,7 +1403,7 @@ type ChannelMemberListResponse struct {
 	NextCursor *string `json:"next_cursor,omitempty"`
 }
 
-// ChannelMessage defines model for ChannelMessage.
+// ChannelMessage Message posted in a channel, including sender attribution and rendering metadata.
 type ChannelMessage struct {
 	// ChannelId ID of the channel this message was posted in.
 	ChannelId string `json:"channel_id"`
@@ -1419,16 +1421,18 @@ type ChannelMessage struct {
 	EditedAt *time.Time `json:"edited_at,omitempty"`
 
 	// Id Unique identifier for this message.
-	Id       string    `json:"id"`
+	Id string `json:"id"`
+
+	// Metadata Free-form JSON object for caller-defined metadata.
 	Metadata *Metadata `json:"metadata,omitempty"`
 
 	// Pinned Whether this message is pinned in the channel.
 	Pinned *bool `json:"pinned,omitempty"`
 
-	// PinnedBy User ID of the member who pinned this message.
+	// PinnedBy User ID of the member who pinned this message, or null when the message is not pinned.
 	PinnedBy *string `json:"pinned_by,omitempty"`
 
-	// ReplyTo ID of the parent message this reply belongs to (threading).
+	// ReplyTo ID of the parent message this reply belongs to, or null when this is not a threaded reply.
 	ReplyTo *string `json:"reply_to,omitempty"`
 
 	// SenderId User ID (for `member`) or agent ID (for `agent`) of the message sender.
@@ -1447,7 +1451,7 @@ type ChannelMessage struct {
 // ChannelMessageDisplay Rendering hint for the UI. `message` — standard chat bubble. `notice` — system/informational notice (no attribution). `card` — structured card layout.
 type ChannelMessageDisplay string
 
-// ChannelMessageListResponse defines model for ChannelMessageListResponse.
+// ChannelMessageListResponse Paginated list of channel messages.
 type ChannelMessageListResponse struct {
 	// HasMore Whether additional pages are available.
 	HasMore *bool `json:"has_more,omitempty"`
@@ -1471,7 +1475,7 @@ type ConcurrencyPolicy string
 // ConfigEntries Flat cascade config input used outside authored workflow YAML. Each entry addresses one `(category, key)` pair. Unknown categories or unknown keys under a known category are rejected at write time. The only category shipped in Phase 1 is `timeouts`, whose keys are `claim`, `liveness`, `execution`, `wall_clock`.
 type ConfigEntries = []ConfigEntry
 
-// ConfigEntry defines model for ConfigEntry.
+// ConfigEntry One cascade config override entry.
 type ConfigEntry struct {
 	// Category Config category token, for example `timeouts`.
 	Category string `json:"category"`
@@ -1483,7 +1487,7 @@ type ConfigEntry struct {
 	Value string `json:"value"`
 }
 
-// CreateActionRequest defines model for CreateActionRequest.
+// CreateActionRequest Registers a project-owned action endpoint callable from workflow steps.
 type CreateActionRequest struct {
 	// Annotations Request hints that describe the safe-use properties of the action. Used by the engine and tooling to decide retry behavior, dry-run eligibility, etc. Unknown request properties are rejected.
 	Annotations *ActionAnnotationsRequest `json:"annotations,omitempty"`
@@ -1537,12 +1541,12 @@ type CreateAgentSessionRequest struct {
 	Transport string `json:"transport"`
 }
 
-// CreateChannelRequest defines model for CreateChannelRequest.
+// CreateChannelRequest Fields used to create a project channel or direct-message thread.
 type CreateChannelRequest struct {
 	// DisplayName Human-facing display name shown in the UI.
 	DisplayName string `json:"display_name"`
 
-	// Kind Channel kind. Cannot be changed after creation.
+	// Kind Channel kind, either `dm` or `channel`. Cannot be changed after creation.
 	Kind CreateChannelRequestKind `json:"kind"`
 
 	// MemberIds Optional list of user or agent IDs to add as members at creation time. All receive the `member` role; the creator is added as `admin` separately.
@@ -1558,10 +1562,10 @@ type CreateChannelRequest struct {
 	Topic *string `json:"topic,omitempty"`
 }
 
-// CreateChannelRequestKind Channel kind. Cannot be changed after creation.
+// CreateChannelRequestKind Channel kind, either `dm` or `channel`. Cannot be changed after creation.
 type CreateChannelRequestKind string
 
-// CreateEventTriggerRequest defines model for CreateEventTriggerRequest.
+// CreateEventTriggerRequest Creates an event trigger for platform-originated events.
 type CreateEventTriggerRequest struct {
 	// ConcurrencyPolicy Controls overlapping runs from the same trigger:
 	// - `allow` — start new runs unconditionally.
@@ -1599,11 +1603,11 @@ type CreateGroupRequest struct {
 	// Name Display name (1–64 chars).
 	Name string `json:"name"`
 
-	// RoutingPolicy How responses are collected from group members. Defaults to `first_responder`.
+	// RoutingPolicy How responses are collected from group members: `first_responder` or `all_members`. Defaults to `first_responder`.
 	RoutingPolicy *CreateGroupRequestRoutingPolicy `json:"routing_policy,omitempty"`
 }
 
-// CreateGroupRequestRoutingPolicy How responses are collected from group members. Defaults to `first_responder`.
+// CreateGroupRequestRoutingPolicy How responses are collected from group members: `first_responder` or `all_members`. Defaults to `first_responder`.
 type CreateGroupRequestRoutingPolicy string
 
 // CreateInteractionRequest Creates an interaction directly. Use the standalone variant with no workflow side effect, or the run-backed variant that requires both `run_id` and `signal_name` so completion can resume the run. For worker/job usage, prefer the job-scoped route so the server can derive the owning run from the claimed job context.
@@ -1642,8 +1646,10 @@ type CreateJobInteractionRequest struct {
 	Target InteractionTarget `json:"target"`
 
 	// Timeout Optional duration string (e.g. "24h", "30m") specifying how long the interaction should remain open before expiring. When absent the caller is responsible for setting expires_at directly.
-	Timeout *string         `json:"timeout,omitempty"`
-	Type    InteractionType `json:"type"`
+	Timeout *string `json:"timeout,omitempty"`
+
+	// Type Interaction kind: `approval` captures a decision, `review` captures acknowledgement or notes, and `input` collects free-form data.
+	Type InteractionType `json:"type"`
 }
 
 // CreateProjectRequest defines model for CreateProjectRequest.
@@ -1690,10 +1696,12 @@ type CreateRunBackedInteractionRequest struct {
 
 	// Target Identifies who should receive an interaction request. Note: distinct from the caller/audit `Actor` vocabulary — a target is a *recipient*, not someone who has acted yet.
 	Target InteractionTarget `json:"target"`
-	Type   InteractionType   `json:"type"`
+
+	// Type Interaction kind: `approval` captures a decision, `review` captures acknowledgement or notes, and `input` collects free-form data.
+	Type InteractionType `json:"type"`
 }
 
-// CreateScheduleTriggerRequest defines model for CreateScheduleTriggerRequest.
+// CreateScheduleTriggerRequest Creates a schedule trigger from a cron expression or fixed interval.
 type CreateScheduleTriggerRequest struct {
 	// ConcurrencyPolicy Controls overlapping runs from the same trigger:
 	// - `allow` — start new runs unconditionally.
@@ -1743,7 +1751,9 @@ type CreateStandaloneInteractionRequest struct {
 
 	// Target Identifies who should receive an interaction request. Note: distinct from the caller/audit `Actor` vocabulary — a target is a *recipient*, not someone who has acted yet.
 	Target InteractionTarget `json:"target"`
-	Type   InteractionType   `json:"type"`
+
+	// Type Interaction kind: `approval` captures a decision, `review` captures acknowledgement or notes, and `input` collects free-form data.
+	Type InteractionType `json:"type"`
 }
 
 // CreateTriggerRequest Creates a trigger. The request is discriminated by `kind`, and each variant requires the matching `source_config` schema.
@@ -1784,7 +1794,7 @@ type CreateWebhookRequest struct {
 	Url *string `json:"url,omitempty"`
 }
 
-// CreateWebhookTriggerRequest defines model for CreateWebhookTriggerRequest.
+// CreateWebhookTriggerRequest Creates a webhook trigger with an inbound receive URL.
 type CreateWebhookTriggerRequest struct {
 	// ConcurrencyPolicy Controls overlapping runs from the same trigger:
 	// - `allow` — start new runs unconditionally.
@@ -1811,7 +1821,7 @@ type CreateWebhookTriggerRequest struct {
 // CreateWebhookTriggerRequestKind Discriminator value — must be `webhook`.
 type CreateWebhookTriggerRequestKind string
 
-// CreateWorkflowRequest defines model for CreateWorkflowRequest.
+// CreateWorkflowRequest Creates a saved workflow definition and its first immutable version.
 type CreateWorkflowRequest struct {
 	// Description Optional description of the workflow's purpose.
 	Description *string `json:"description,omitempty"`
@@ -1831,7 +1841,7 @@ type CreateWorkflowRequest struct {
 	Spec WorkflowSpec `json:"spec"`
 }
 
-// ErrorResponse defines model for ErrorResponse.
+// ErrorResponse Standard error envelope returned by API endpoints.
 type ErrorResponse struct {
 	// Error Error detail.
 	Error struct {
@@ -1849,7 +1859,7 @@ type EventSourceConfig struct {
 	EventType *string `json:"event_type,omitempty"`
 }
 
-// Group defines model for Group.
+// Group Project-scoped collection of users used as an interaction target. Groups let workflows route approvals, reviews, and input requests to a team by handle rather than hard-coding individual users.
 type Group struct {
 	// CreatedAt Timestamp when this group was created.
 	CreatedAt time.Time `json:"created_at"`
@@ -1870,7 +1880,8 @@ type Group struct {
 	RoutingPolicy GroupRoutingPolicy `json:"routing_policy"`
 
 	// UpdatedAt Timestamp when this group was last updated.
-	UpdatedAt time.Time `json:"updated_at"`
+	UpdatedAt            time.Time              `json:"updated_at"`
+	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
 // GroupRoutingPolicy How interactions targeting this group collect responses. `first_responder`: first member to claim or respond wins. `all_members`: every snapshotted member must respond.
@@ -1882,7 +1893,7 @@ type GroupListResponse struct {
 	Items []Group `json:"items"`
 }
 
-// GroupMember defines model for GroupMember.
+// GroupMember User membership in a project group. Membership determines who receives future group-targeted interactions; existing interaction snapshots are not retroactively changed.
 type GroupMember struct {
 	// AddedAt Timestamp when this member was added to the group.
 	AddedAt time.Time `json:"added_at"`
@@ -1936,7 +1947,8 @@ type GroupWithCount struct {
 	RoutingPolicy GroupWithCountRoutingPolicy `json:"routing_policy"`
 
 	// UpdatedAt Timestamp when this group was last updated.
-	UpdatedAt time.Time `json:"updated_at"`
+	UpdatedAt            time.Time              `json:"updated_at"`
+	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
 // GroupWithCountRoutingPolicy How interactions targeting this group collect responses. `first_responder`: first member to claim or respond wins. `all_members`: every snapshotted member must respond.
@@ -1954,18 +1966,18 @@ type GroupWithCountListResponse struct {
 	NextCursor *string `json:"next_cursor,omitempty"`
 }
 
-// Interaction defines model for Interaction.
+// Interaction Human or agent interaction request and its current response state.
 type Interaction struct {
 	// ClaimedAt Timestamp when a first-responder member claimed this interaction.
 	ClaimedAt *time.Time `json:"claimed_at,omitempty"`
 
-	// ClaimedBy User ID of the member who claimed this interaction (first_responder only)
+	// ClaimedBy User ID of the member who claimed this interaction; null until claimed and only used for first_responder routing.
 	ClaimedBy *string `json:"claimed_by,omitempty"`
 
 	// CompletedAt Timestamp when the interaction received a terminal response.
 	CompletedAt *time.Time `json:"completed_at,omitempty"`
 
-	// Context Additional key-value context surfaced in the UI alongside the message.
+	// Context Additional key-value context surfaced in the UI alongside the message when supplied.
 	Context *map[string]interface{} `json:"context,omitempty"`
 
 	// CreatedAt Timestamp when this interaction was created.
@@ -1977,18 +1989,22 @@ type Interaction struct {
 	// Id Unique identifier for this interaction.
 	Id string `json:"id"`
 
-	// Message Human-readable message shown to the responder
+	// Message Human-readable message shown to the responder when supplied.
 	Message *string `json:"message,omitempty"`
 
-	// PartialResponses Per-member responses for all_members routing
+	// PartialResponses Per-member responses for all_members routing; null for non-group interactions or before any partial responses.
 	PartialResponses *[]InteractionPartialResponse `json:"partial_responses,omitempty"`
 
 	// RequireAll When true, all snapshotted members must respond before completion
-	RequireAll *bool                 `json:"require_all,omitempty"`
-	Responder  *InteractionResponder `json:"responder,omitempty"`
-	Response   *InteractionResponse  `json:"response,omitempty"`
+	RequireAll *bool `json:"require_all,omitempty"`
 
-	// RoutingPolicySnapshot Group routing policy captured at creation time
+	// Responder Identifies who answered an interaction. Groups cannot themselves respond — only a user within a group — so `group` is not a valid responder type.
+	Responder *InteractionResponder `json:"responder,omitempty"`
+
+	// Response Final response that completed an interaction.
+	Response *InteractionResponse `json:"response,omitempty"`
+
+	// RoutingPolicySnapshot Group routing policy captured at creation time: first_responder or all_members. Null for non-group targets.
 	RoutingPolicySnapshot *InteractionRoutingPolicySnapshot `json:"routing_policy_snapshot,omitempty"`
 
 	// RunId Originating workflow run when the interaction is run-backed.
@@ -2004,7 +2020,7 @@ type Interaction struct {
 	// - `input` supports `input`, `select`, or `multi_select`
 	Spec *InteractionSpec `json:"spec,omitempty"`
 
-	// Status Current status of the interaction.
+	// Status Current status of the interaction: pending, completed, or expired.
 	Status InteractionStatus `json:"status"`
 
 	// Target Identifies who should receive an interaction request. Note: distinct from the caller/audit `Actor` vocabulary — a target is a *recipient*, not someone who has acted yet.
@@ -2013,18 +2029,20 @@ type Interaction struct {
 	// TargetGroupId Resolved group ID (set when target.type = group)
 	TargetGroupId *string `json:"target_group_id,omitempty"`
 
-	// TargetMemberSnapshot User IDs of group members at the time of creation
-	TargetMemberSnapshot *[]string       `json:"target_member_snapshot,omitempty"`
-	Type                 InteractionType `json:"type"`
+	// TargetMemberSnapshot User IDs of group members at the time of creation; null for non-group targets.
+	TargetMemberSnapshot *[]string `json:"target_member_snapshot,omitempty"`
+
+	// Type Interaction kind: `approval` captures a decision, `review` captures acknowledgement or notes, and `input` collects free-form data.
+	Type InteractionType `json:"type"`
 
 	// UpdatedAt Timestamp when this interaction was last updated.
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-// InteractionRoutingPolicySnapshot Group routing policy captured at creation time
+// InteractionRoutingPolicySnapshot Group routing policy captured at creation time: first_responder or all_members. Null for non-group targets.
 type InteractionRoutingPolicySnapshot string
 
-// InteractionStatus Current status of the interaction.
+// InteractionStatus Current status of the interaction: pending, completed, or expired.
 type InteractionStatus string
 
 // InteractionListResponse defines model for InteractionListResponse.
@@ -2039,7 +2057,7 @@ type InteractionListResponse struct {
 	NextCursor *string `json:"next_cursor,omitempty"`
 }
 
-// InteractionMode Declarative UI/input primitive for collecting the response. This is a portable rendering contract, not executable code.
+// InteractionMode Declarative UI/input primitive for collecting the response. This is a portable rendering contract, not executable code. Values are `confirm`, `select`, `multi_select`, and `input`.
 type InteractionMode string
 
 // InteractionOption Selectable option for `select` and `multi_select` modes.
@@ -2054,7 +2072,7 @@ type InteractionOption struct {
 	Value string `json:"value"`
 }
 
-// InteractionPartialResponse defines model for InteractionPartialResponse.
+// InteractionPartialResponse One member response captured while a group interaction waits for all members.
 type InteractionPartialResponse struct {
 	// Comment Optional free-text comment from this responder.
 	Comment *string `json:"comment,omitempty"`
@@ -2081,7 +2099,7 @@ type InteractionResponder struct {
 // InteractionResponderType Responder kind: a user or an agent.
 type InteractionResponderType string
 
-// InteractionResponse defines model for InteractionResponse.
+// InteractionResponse Final response that completed an interaction.
 type InteractionResponse struct {
 	// At When the response was submitted
 	At time.Time `json:"at"`
@@ -2111,7 +2129,7 @@ type InteractionSpec struct {
 	// DefaultValues Default selected options for `multi_select` mode.
 	DefaultValues *[]string `json:"default_values,omitempty"`
 
-	// Mode Declarative UI/input primitive for collecting the response. This is a portable rendering contract, not executable code.
+	// Mode Declarative UI/input primitive for collecting the response. This is a portable rendering contract, not executable code. Values are `confirm`, `select`, `multi_select`, and `input`.
 	Mode InteractionMode `json:"mode"`
 
 	// Multiline When true, render `input` mode as a multiline text area.
@@ -2136,7 +2154,7 @@ type InteractionTarget struct {
 // InteractionTargetType Target kind: a specific user, an agent queue, or a group.
 type InteractionTargetType string
 
-// InteractionType defines model for InteractionType.
+// InteractionType Interaction kind: `approval` captures a decision, `review` captures acknowledgement or notes, and `input` collects free-form data.
 type InteractionType string
 
 // InteractionValue Free-form JSON payload supplied by the responder.
@@ -2244,7 +2262,7 @@ type Job struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-// JobClaim defines model for JobClaim.
+// JobClaim Lease handed to a worker after a successful claim. It contains the action to run, resolved parameters, and fencing values the worker must echo on heartbeat, event, and complete calls.
 type JobClaim struct {
 	// Action Action name the worker must execute for this step.
 	Action string `json:"action"`
@@ -2321,17 +2339,17 @@ type JobCompleteRequest struct {
 	// ResultB64 Base64-encoded (standard encoding) bytes representing the job's output. The workflow engine decodes this and may pass it as input to downstream steps. Omit if the step produces no output.
 	ResultB64 *string `json:"result_b64,omitempty"`
 
-	// Status Terminal status for this job attempt. `failed` triggers the workflow engine's retry logic if `attempt < max_attempts`.
+	// Status Terminal status for this job attempt: `completed` or `failed`. `failed` triggers the workflow engine's retry logic if `attempt < max_attempts`.
 	Status JobCompleteRequestStatus `json:"status"`
 
 	// WorkerId Must match the `worker_id` from the original claim.
 	WorkerId string `json:"worker_id"`
 }
 
-// JobCompleteRequestStatus Terminal status for this job attempt. `failed` triggers the workflow engine's retry logic if `attempt < max_attempts`.
+// JobCompleteRequestStatus Terminal status for this job attempt: `completed` or `failed`. `failed` triggers the workflow engine's retry logic if `attempt < max_attempts`.
 type JobCompleteRequestStatus string
 
-// JobEventEntry defines model for JobEventEntry.
+// JobEventEntry Custom progress or telemetry event emitted while a worker owns a job. Use these events to stream domain-specific status into run timelines without changing the job completion payload.
 type JobEventEntry struct {
 	// Payload Free-form JSON payload. Bounded by the server-side byte limit (default 16 KiB per event); oversize payloads are rejected with 413.
 	Payload map[string]interface{} `json:"payload"`
@@ -2361,15 +2379,16 @@ type JobFenceRequest struct {
 	WorkerId string `json:"worker_id"`
 }
 
-// JobHeartbeat defines model for JobHeartbeat.
+// JobHeartbeat Heartbeat acknowledgement for a claimed job. A successful response means the worker still owns the lease and should continue unless the directives say otherwise.
 type JobHeartbeat struct {
+	// Directives Server instructions returned with a heartbeat. Workers should inspect this on every heartbeat so cancellation and future control signals can interrupt long-running work promptly.
 	Directives JobHeartbeatDirectives `json:"directives"`
 
 	// Ok True when the lease was successfully refreshed.
 	Ok bool `json:"ok"`
 }
 
-// JobHeartbeatDirectives defines model for JobHeartbeatDirectives.
+// JobHeartbeatDirectives Server instructions returned with a heartbeat. Workers should inspect this on every heartbeat so cancellation and future control signals can interrupt long-running work promptly.
 type JobHeartbeatDirectives struct {
 	// ShouldCancel When true, the run has received a cancellation request. The worker must stop processing immediately and call complete with `status: failed`.
 	ShouldCancel *bool `json:"should_cancel,omitempty"`
@@ -2388,7 +2407,7 @@ type JobListResponse struct {
 // - `failed`    — terminal failure; may follow retries.
 type JobStatus string
 
-// Metadata defines model for Metadata.
+// Metadata Free-form JSON object for caller-defined metadata.
 type Metadata map[string]interface{}
 
 // PingWebhookRequest defines model for PingWebhookRequest.
@@ -2412,7 +2431,7 @@ type PingWebhookResult struct {
 	Success bool `json:"success"`
 }
 
-// Project defines model for Project.
+// Project Workspace boundary for workflows, actions, credentials, agents, and runtime activity. Most operational APIs are project-scoped, so this object tells clients which handle to use and who can see the project.
 type Project struct {
 	// AccessMode `org_open`: every org member can see and use the project, subject to role assignments. `restricted`: only listed project members (and org owners/admins) can see or use the project.
 	AccessMode ProjectAccessMode `json:"access_mode"`
@@ -2448,7 +2467,7 @@ type ProjectListResponse struct {
 	Items []Project `json:"items"`
 }
 
-// ProjectMember defines model for ProjectMember.
+// ProjectMember Explicit project membership used when a project is restricted. Use this record to decide who can see or operate on a project outside the default org-wide access model.
 type ProjectMember struct {
 	// AddedAt Timestamp when the member was added.
 	AddedAt time.Time `json:"added_at"`
@@ -2481,7 +2500,7 @@ type ProjectMemberListResponse struct {
 	NextCursor *string `json:"next_cursor,omitempty"`
 }
 
-// ProjectMetrics defines model for ProjectMetrics.
+// ProjectMetrics Operational health snapshot for a project. Use it to power dashboards, detect stuck queues or stale workers, and summarize run throughput and failure rates over a recent window.
 type ProjectMetrics struct {
 	// ActiveWorkers Number of workers whose `last_seen_at` is within the 2-minute staleness threshold.
 	ActiveWorkers int `json:"active_workers"`
@@ -2523,7 +2542,7 @@ type ProjectMetrics struct {
 // ResolvedConfig Frozen cascade resolution in flat entry form. Keys unset at every layer are omitted. See PRD 035.
 type ResolvedConfig = []ResolvedConfigEntry
 
-// ResolvedConfigEntry defines model for ResolvedConfigEntry.
+// ResolvedConfigEntry One cascade config value after layer resolution.
 type ResolvedConfigEntry struct {
 	// Category Config category token, for example `timeouts`.
 	Category string `json:"category"`
@@ -2531,14 +2550,14 @@ type ResolvedConfigEntry struct {
 	// Key Resolved key within the category.
 	Key string `json:"key"`
 
-	// Source Cascade layer that supplied the winning value.
+	// Source Cascade layer that supplied the winning value: service, project, workflow, run, or step.
 	Source ResolvedConfigEntrySource `json:"source"`
 
 	// Value Resolved raw string value.
 	Value string `json:"value"`
 }
 
-// ResolvedConfigEntrySource Cascade layer that supplied the winning value.
+// ResolvedConfigEntrySource Cascade layer that supplied the winning value: service, project, workflow, run, or step.
 type ResolvedConfigEntrySource string
 
 // RespondToInteractionRequest defines model for RespondToInteractionRequest.
@@ -2550,7 +2569,7 @@ type RespondToInteractionRequest struct {
 	Value *InteractionValue `json:"value,omitempty"`
 }
 
-// RotateSecretResult defines model for RotateSecretResult.
+// RotateSecretResult New signing secret returned after rotating an action secret.
 type RotateSecretResult struct {
 	// SigningSecret The new raw signing secret. Store it immediately — this is the only time it is returned.
 	SigningSecret string `json:"signing_secret"`
@@ -2597,7 +2616,7 @@ type RunActionResult_Output struct {
 	union json.RawMessage
 }
 
-// RunSignal defines model for RunSignal.
+// RunSignal Persisted external signal delivered to a workflow run.
 type RunSignal struct {
 	// Id Unique identifier for this signal.
 	Id string `json:"id"`
@@ -2618,14 +2637,16 @@ type ScheduleSourceConfig struct {
 	Interval *string `json:"interval,omitempty"`
 }
 
-// SendChannelMessageRequest defines model for SendChannelMessageRequest.
+// SendChannelMessageRequest Fields used to post a new channel message.
 type SendChannelMessageRequest struct {
 	// Content Message body in Markdown.
 	Content string `json:"content"`
 
-	// Display Rendering hint for the UI.
-	Display  *SendChannelMessageRequestDisplay `json:"display,omitempty"`
-	Metadata *Metadata                         `json:"metadata,omitempty"`
+	// Display Rendering hint for the UI: `message`, `notice`, or `card`.
+	Display *SendChannelMessageRequestDisplay `json:"display,omitempty"`
+
+	// Metadata Free-form JSON object for caller-defined metadata.
+	Metadata *Metadata `json:"metadata,omitempty"`
 
 	// ReplyTo Parent message ID for threading (creates a reply).
 	ReplyTo *string `json:"reply_to,omitempty"`
@@ -2640,10 +2661,10 @@ type SendChannelMessageRequest struct {
 	Type *string `json:"type,omitempty"`
 }
 
-// SendChannelMessageRequestDisplay Rendering hint for the UI.
+// SendChannelMessageRequestDisplay Rendering hint for the UI: `message`, `notice`, or `card`.
 type SendChannelMessageRequestDisplay string
 
-// SendRunSignalRequest defines model for SendRunSignalRequest.
+// SendRunSignalRequest Delivers an external signal to a suspended workflow run.
 type SendRunSignalRequest struct {
 	// Name Signal topic (e.g. "approval", "webhook").
 	Name string `json:"name"`
@@ -2734,7 +2755,7 @@ type StartSavedRunRequest struct {
 // StartSavedRunRequestMode Discriminator value — must be `saved`.
 type StartSavedRunRequestMode string
 
-// ToolDefinition defines model for ToolDefinition.
+// ToolDefinition Published workflow exposed as an invokable tool. Clients can use this definition to list available tools and render input forms from the JSON Schema before starting a run.
 type ToolDefinition struct {
 	// Description Human-readable description of what the tool does.
 	Description string `json:"description"`
@@ -2752,7 +2773,7 @@ type ToolDefinitionListResponse struct {
 	Items []ToolDefinition `json:"items"`
 }
 
-// ToolRun defines model for ToolRun.
+// ToolRun Status envelope for a tool invocation backed by a workflow run. Use it to poll asynchronous work, read completed output, or surface failure details to the caller.
 type ToolRun struct {
 	// Error Error message. Present when status is "failed".
 	Error *string `json:"error,omitempty"`
@@ -2763,11 +2784,11 @@ type ToolRun struct {
 	// RunId Unique run identifier for polling.
 	RunId string `json:"run_id"`
 
-	// Status Run status — "pending", "running", "completed", or "failed".
+	// Status Run status: `pending`, `running`, `completed`, `failed`, or `suspended`.
 	Status ToolRunStatus `json:"status"`
 }
 
-// ToolRunStatus Run status — "pending", "running", "completed", or "failed".
+// ToolRunStatus Run status: `pending`, `running`, `completed`, `failed`, or `suspended`.
 type ToolRunStatus string
 
 // ToolRunRequest defines model for ToolRunRequest.
@@ -2779,7 +2800,7 @@ type ToolRunRequest struct {
 	TimeoutSeconds *int `json:"timeout_seconds,omitempty"`
 }
 
-// Trigger defines model for Trigger.
+// Trigger Event source that starts one or more workflow targets.
 type Trigger struct {
 	// ConcurrencyPolicy Controls overlapping runs from the same trigger:
 	// - `allow` — start new runs unconditionally.
@@ -2799,7 +2820,7 @@ type Trigger struct {
 	// Id Unique identifier for this trigger.
 	Id string `json:"id"`
 
-	// Kind Determines the event source and required `source_config` shape.
+	// Kind Determines the event source and required `source_config` shape: schedule, webhook, or event.
 	Kind TriggerKind `json:"kind"`
 
 	// LastFireAt Timestamp of the most recent fire attempt.
@@ -2855,7 +2876,7 @@ type TriggerFire struct {
 	TriggerId string `json:"trigger_id"`
 }
 
-// TriggerFireListResponse defines model for TriggerFireListResponse.
+// TriggerFireListResponse Paginated history of trigger fire attempts.
 type TriggerFireListResponse struct {
 	// HasMore Whether additional pages are available.
 	HasMore bool `json:"has_more"`
@@ -2896,10 +2917,10 @@ type TriggerFireTargetResult struct {
 	WorkflowId string `json:"workflow_id"`
 }
 
-// TriggerKind Determines the event source and required `source_config` shape.
+// TriggerKind Determines the event source and required `source_config` shape: schedule, webhook, or event.
 type TriggerKind string
 
-// TriggerListResponse defines model for TriggerListResponse.
+// TriggerListResponse Paginated list of triggers.
 type TriggerListResponse struct {
 	// HasMore Whether additional pages are available.
 	HasMore bool `json:"has_more"`
@@ -2949,7 +2970,7 @@ type TriggerTargetListResponse struct {
 	Items []TriggerTarget `json:"items"`
 }
 
-// UpdateActionRequest defines model for UpdateActionRequest.
+// UpdateActionRequest Updates action metadata, endpoint, schemas, or safe-use hints.
 type UpdateActionRequest struct {
 	// Annotations Request hints that describe the safe-use properties of the action. Used by the engine and tooling to decide retry behavior, dry-run eligibility, etc. Unknown request properties are rejected.
 	Annotations *ActionAnnotationsRequest `json:"annotations,omitempty"`
@@ -2994,17 +3015,19 @@ type UpdateAgentRequest struct {
 	Status *AgentStatus `json:"status,omitempty"`
 }
 
-// UpdateChannelMessageRequest defines model for UpdateChannelMessageRequest.
+// UpdateChannelMessageRequest Mutable fields for an existing channel message.
 type UpdateChannelMessageRequest struct {
 	// Content Updated Markdown content. Sets `edited_at` on the message.
-	Content  *string   `json:"content,omitempty"`
+	Content *string `json:"content,omitempty"`
+
+	// Metadata Free-form JSON object for caller-defined metadata.
 	Metadata *Metadata `json:"metadata,omitempty"`
 
 	// Pinned Pin or unpin the message. Sets/clears `pinned_by`.
 	Pinned *bool `json:"pinned,omitempty"`
 }
 
-// UpdateChannelRequest defines model for UpdateChannelRequest.
+// UpdateChannelRequest Mutable channel fields.
 type UpdateChannelRequest struct {
 	// DisplayName Updated display name.
 	DisplayName *string `json:"display_name,omitempty"`
@@ -3024,11 +3047,11 @@ type UpdateGroupRequest struct {
 	// Name Replacement human-readable name.
 	Name *string `json:"name,omitempty"`
 
-	// RoutingPolicy Affects future interactions only; in-flight interactions retain the snapshotted policy.
+	// RoutingPolicy Replacement routing policy, either `first_responder` or `all_members`. Affects future interactions only; in-flight interactions retain the snapshotted policy.
 	RoutingPolicy *UpdateGroupRequestRoutingPolicy `json:"routing_policy,omitempty"`
 }
 
-// UpdateGroupRequestRoutingPolicy Affects future interactions only; in-flight interactions retain the snapshotted policy.
+// UpdateGroupRequestRoutingPolicy Replacement routing policy, either `first_responder` or `all_members`. Affects future interactions only; in-flight interactions retain the snapshotted policy.
 type UpdateGroupRequestRoutingPolicy string
 
 // UpdateProjectRequest defines model for UpdateProjectRequest.
@@ -3097,7 +3120,7 @@ type UpdateWebhookRequest struct {
 	Url *string `json:"url,omitempty"`
 }
 
-// UpdateWorkflowRequest defines model for UpdateWorkflowRequest.
+// UpdateWorkflowRequest Updates workflow metadata and optionally creates a new immutable version when `spec` changes.
 type UpdateWorkflowRequest struct {
 	// Description Replacement description. Omit to leave unchanged.
 	Description *string `json:"description,omitempty"`
@@ -3210,7 +3233,7 @@ type WebhookSourceConfig struct {
 	SigningSecret *string `json:"signing_secret,omitempty"`
 }
 
-// WorkerSession defines model for WorkerSession.
+// WorkerSession Recently observed worker process for a project. Use sessions to see which machines, users, service accounts, or agents are polling for work and whether they appear stale.
 type WorkerSession struct {
 	// AgentId Agent this session represents, when the polling process declared itself as a registered agent (via `agent_id` on the claim request or via inference from the service account). Absent for ad-hoc worker processes that are not tied to a declared agent.
 	AgentId *string `json:"agent_id,omitempty"`
@@ -3249,10 +3272,10 @@ type WorkerSessionListResponse struct {
 	Items []WorkerSession `json:"items"`
 }
 
-// WorkflowActionKind Execution mode for `action` steps. Omit for the current default of `worker`.
+// WorkflowActionKind Execution mode for `action` steps: `worker` creates claimable jobs for external workers, while `server` executes Mobius-managed actions such as integrations inside the service. Omit for the current default of `worker`.
 type WorkflowActionKind string
 
-// WorkflowCatch defines model for WorkflowCatch.
+// WorkflowCatch Error routing rule that transfers execution to another step.
 type WorkflowCatch struct {
 	// ErrorEquals Error class names this catch clause handles.
 	ErrorEquals []string `json:"error_equals"`
@@ -3296,10 +3319,11 @@ type WorkflowDefinition struct {
 	Spec WorkflowSpec `json:"spec"`
 
 	// UpdatedAt Timestamp when this workflow definition was last updated.
-	UpdatedAt time.Time `json:"updated_at"`
+	UpdatedAt            time.Time              `json:"updated_at"`
+	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
-// WorkflowDefinitionListResponse defines model for WorkflowDefinitionListResponse.
+// WorkflowDefinitionListResponse Paginated list of workflow definition summaries.
 type WorkflowDefinitionListResponse struct {
 	// HasMore Whether additional pages are available.
 	HasMore bool `json:"has_more"`
@@ -3338,10 +3362,11 @@ type WorkflowDefinitionSummary struct {
 	PublishedAsTool *bool `json:"published_as_tool,omitempty"`
 
 	// UpdatedAt Timestamp when this workflow definition was last updated.
-	UpdatedAt time.Time `json:"updated_at"`
+	UpdatedAt            time.Time              `json:"updated_at"`
+	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
-// WorkflowEach defines model for WorkflowEach.
+// WorkflowEach Fan-out configuration that repeats a step over a collection.
 type WorkflowEach struct {
 	// As Variable name bound to the current iteration element.
 	As *string `json:"as,omitempty"`
@@ -3350,7 +3375,7 @@ type WorkflowEach struct {
 	Items interface{} `json:"items"`
 }
 
-// WorkflowEdge defines model for WorkflowEdge.
+// WorkflowEdge Directed transition from one workflow step to another.
 type WorkflowEdge struct {
 	// Branch Branch name assigned to parallel execution started by this edge.
 	Branch *string `json:"branch,omitempty"`
@@ -3362,23 +3387,27 @@ type WorkflowEdge struct {
 	Step string `json:"step"`
 }
 
-// WorkflowEdgeMatchingStrategy defines model for WorkflowEdgeMatchingStrategy.
+// WorkflowEdgeMatchingStrategy Controls matching when multiple outbound edge conditions are true: `all` follows every matching edge in parallel, while `first` follows only the first matching edge in declaration order.
 type WorkflowEdgeMatchingStrategy string
 
-// WorkflowExecutableStep defines model for WorkflowExecutableStep.
+// WorkflowExecutableStep Executes a worker or server action and stores its result in workflow state.
 type WorkflowExecutableStep struct {
 	// Action Canonical executable-step field. When `action_kind` is omitted, the engine treats this as a worker action. Use `action_kind: server` for Mobius-managed server actions.
 	Action string `json:"action"`
 
-	// ActionKind Execution mode for `action` steps. Omit for the current default of `worker`.
+	// ActionKind Execution mode for `action` steps: `worker` creates claimable jobs for external workers, while `server` executes Mobius-managed actions such as integrations inside the service. Omit for the current default of `worker`.
 	ActionKind *WorkflowActionKind `json:"action_kind,omitempty"`
 
 	// Catch Error catch clauses that redirect execution on specific failures.
 	Catch *[]WorkflowCatch `json:"catch,omitempty"`
 
 	// Description Optional human-readable description of what this step does.
-	Description          *string                       `json:"description,omitempty"`
-	Each                 *WorkflowEach                 `json:"each,omitempty"`
+	Description *string `json:"description,omitempty"`
+
+	// Each Fan-out configuration that repeats a step over a collection.
+	Each *WorkflowEach `json:"each,omitempty"`
+
+	// EdgeMatchingStrategy Controls matching when multiple outbound edge conditions are true: `all` follows every matching edge in parallel, while `first` follows only the first matching edge in declaration order.
 	EdgeMatchingStrategy *WorkflowEdgeMatchingStrategy `json:"edge_matching_strategy,omitempty"`
 
 	// Layout Optional presentation hint for the visual editor. Ignored by the execution engine; when absent, editors auto-lay out the step.
@@ -3400,7 +3429,7 @@ type WorkflowExecutableStep struct {
 	Store *string `json:"store,omitempty"`
 }
 
-// WorkflowInput defines model for WorkflowInput.
+// WorkflowInput Declares one named input accepted by a workflow spec.
 type WorkflowInput struct {
 	// Default Optional default value.
 	Default interface{} `json:"default,omitempty"`
@@ -3415,7 +3444,7 @@ type WorkflowInput struct {
 	Type string `json:"type"`
 }
 
-// WorkflowInteractionConfig defines model for WorkflowInteractionConfig.
+// WorkflowInteractionConfig Configuration for an interaction step that waits on a response.
 type WorkflowInteractionConfig struct {
 	// Context Arbitrary key-value context passed alongside the interaction for rendering.
 	Context *map[string]interface{} `json:"context,omitempty"`
@@ -3428,7 +3457,9 @@ type WorkflowInteractionConfig struct {
 	// - `approval` requires `mode = confirm`
 	// - `review` requires `mode = select`
 	// - `input` supports `input`, `select`, or `multi_select`
-	Spec   *InteractionSpec          `json:"spec,omitempty"`
+	Spec *InteractionSpec `json:"spec,omitempty"`
+
+	// Target Recipient definition used by workflow interaction steps.
 	Target WorkflowInteractionTarget `json:"target"`
 
 	// Timeout Go duration string.
@@ -3441,13 +3472,19 @@ type WorkflowInteractionConfig struct {
 // WorkflowInteractionConfigType Interaction kind: approval requires a yes/no decision, review requests acknowledgement, input collects free-form data.
 type WorkflowInteractionConfigType string
 
-// WorkflowInteractionStep defines model for WorkflowInteractionStep.
+// WorkflowInteractionStep Creates a human or agent interaction and resumes when the interaction completes.
 type WorkflowInteractionStep struct {
 	// Description Optional human-readable description of what this step does.
-	Description          *string                       `json:"description,omitempty"`
-	Each                 *WorkflowEach                 `json:"each,omitempty"`
+	Description *string `json:"description,omitempty"`
+
+	// Each Fan-out configuration that repeats a step over a collection.
+	Each *WorkflowEach `json:"each,omitempty"`
+
+	// EdgeMatchingStrategy Controls matching when multiple outbound edge conditions are true: `all` follows every matching edge in parallel, while `first` follows only the first matching edge in declaration order.
 	EdgeMatchingStrategy *WorkflowEdgeMatchingStrategy `json:"edge_matching_strategy,omitempty"`
-	Interaction          WorkflowInteractionConfig     `json:"interaction"`
+
+	// Interaction Configuration for an interaction step that waits on a response.
+	Interaction WorkflowInteractionConfig `json:"interaction"`
 
 	// Layout Optional presentation hint for the visual editor. Ignored by the execution engine; when absent, editors auto-lay out the step.
 	Layout *WorkflowStepLayout `json:"layout,omitempty"`
@@ -3459,7 +3496,7 @@ type WorkflowInteractionStep struct {
 	Next *[]WorkflowEdge `json:"next,omitempty"`
 }
 
-// WorkflowInteractionTarget defines model for WorkflowInteractionTarget.
+// WorkflowInteractionTarget Recipient definition used by workflow interaction steps.
 type WorkflowInteractionTarget struct {
 	// Id ID of the target user, group, or agent.
 	Id string `json:"id"`
@@ -3486,11 +3523,15 @@ type WorkflowJoinConfig struct {
 	Count *int `json:"count,omitempty"`
 }
 
-// WorkflowJoinStep defines model for WorkflowJoinStep.
+// WorkflowJoinStep Waits for one or more parallel branches before continuing.
 type WorkflowJoinStep struct {
 	// Description Optional human-readable description of what this step does.
-	Description          *string                       `json:"description,omitempty"`
-	Each                 *WorkflowEach                 `json:"each,omitempty"`
+	Description *string `json:"description,omitempty"`
+
+	// Each Fan-out configuration that repeats a step over a collection.
+	Each *WorkflowEach `json:"each,omitempty"`
+
+	// EdgeMatchingStrategy Controls matching when multiple outbound edge conditions are true: `all` follows every matching edge in parallel, while `first` follows only the first matching edge in declaration order.
 	EdgeMatchingStrategy *WorkflowEdgeMatchingStrategy `json:"edge_matching_strategy,omitempty"`
 
 	// Join Waits for one or more parallel branches to complete before proceeding.
@@ -3506,7 +3547,7 @@ type WorkflowJoinStep struct {
 	Next *[]WorkflowEdge `json:"next,omitempty"`
 }
 
-// WorkflowOutput defines model for WorkflowOutput.
+// WorkflowOutput Declares one named output value produced by a workflow spec.
 type WorkflowOutput struct {
 	// Branch Defaults to `main` when omitted.
 	Branch *string `json:"branch,omitempty"`
@@ -3521,17 +3562,21 @@ type WorkflowOutput struct {
 	Variable string `json:"variable"`
 }
 
-// WorkflowPauseConfig defines model for WorkflowPauseConfig.
+// WorkflowPauseConfig Configuration for a manual pause step.
 type WorkflowPauseConfig struct {
 	// Reason Optional human-readable reason displayed when the run is paused.
 	Reason *string `json:"reason,omitempty"`
 }
 
-// WorkflowPauseStep defines model for WorkflowPauseStep.
+// WorkflowPauseStep Suspends a branch until it is manually resumed.
 type WorkflowPauseStep struct {
 	// Description Optional human-readable description of what this step does.
-	Description          *string                       `json:"description,omitempty"`
-	Each                 *WorkflowEach                 `json:"each,omitempty"`
+	Description *string `json:"description,omitempty"`
+
+	// Each Fan-out configuration that repeats a step over a collection.
+	Each *WorkflowEach `json:"each,omitempty"`
+
+	// EdgeMatchingStrategy Controls matching when multiple outbound edge conditions are true: `all` follows every matching edge in parallel, while `first` follows only the first matching edge in declaration order.
 	EdgeMatchingStrategy *WorkflowEdgeMatchingStrategy `json:"edge_matching_strategy,omitempty"`
 
 	// Layout Optional presentation hint for the visual editor. Ignored by the execution engine; when absent, editors auto-lay out the step.
@@ -3541,11 +3586,13 @@ type WorkflowPauseStep struct {
 	Name string `json:"name"`
 
 	// Next Outbound edges controlling which step executes after this one.
-	Next  *[]WorkflowEdge     `json:"next,omitempty"`
+	Next *[]WorkflowEdge `json:"next,omitempty"`
+
+	// Pause Configuration for a manual pause step.
 	Pause WorkflowPauseConfig `json:"pause"`
 }
 
-// WorkflowRetry defines model for WorkflowRetry.
+// WorkflowRetry Retry policy for a workflow step after a recoverable failure.
 type WorkflowRetry struct {
 	// BackoffRate Exponential backoff multiplier applied to the delay after each attempt.
 	BackoffRate *float32 `json:"backoff_rate,omitempty"`
@@ -3572,7 +3619,7 @@ type WorkflowRetry struct {
 // WorkflowRetryJitterStrategy Jitter strategy to apply to the computed delay: NONE or FULL.
 type WorkflowRetryJitterStrategy string
 
-// WorkflowRun defines model for WorkflowRun.
+// WorkflowRun Runtime record for one workflow execution.
 type WorkflowRun struct {
 	// ActorId ID of the actor that started this run.
 	ActorId *string `json:"actor_id,omitempty"`
@@ -3607,7 +3654,7 @@ type WorkflowRun struct {
 	// ErrorMessage Error message from the most recent failure. Present when status is failed.
 	ErrorMessage *string `json:"error_message,omitempty"`
 
-	// ErrorType Typed run-level failure cause. Its own vocabulary, not a superset of the job-level `error_type`. Present when `status=failed`.
+	// ErrorType Typed run-level failure cause: `run_timeout`, `run_cancelled`, or `job_failed`. Its own vocabulary, not a superset of the job-level `error_type`. Present when `status=failed`.
 	ErrorType *WorkflowRunErrorType `json:"error_type,omitempty"`
 
 	// ExternalId Caller-supplied idempotency key or correlation ID.
@@ -3647,10 +3694,11 @@ type WorkflowRun struct {
 	WallClockDeadlineAt *time.Time `json:"wall_clock_deadline_at,omitempty"`
 
 	// WorkflowName Name of the workflow as recorded at run creation time.
-	WorkflowName string `json:"workflow_name"`
+	WorkflowName         string                 `json:"workflow_name"`
+	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
-// WorkflowRunErrorType Typed run-level failure cause. Its own vocabulary, not a superset of the job-level `error_type`. Present when `status=failed`.
+// WorkflowRunErrorType Typed run-level failure cause: `run_timeout`, `run_cancelled`, or `job_failed`. Its own vocabulary, not a superset of the job-level `error_type`. Present when `status=failed`.
 type WorkflowRunErrorType string
 
 // WorkflowRunDetail defines model for WorkflowRunDetail.
@@ -3688,7 +3736,7 @@ type WorkflowRunDetail struct {
 	// ErrorMessage Error message from the most recent failure. Present when status is failed.
 	ErrorMessage *string `json:"error_message,omitempty"`
 
-	// ErrorType Typed run-level failure cause. Its own vocabulary, not a superset of the job-level `error_type`. Present when `status=failed`.
+	// ErrorType Typed run-level failure cause: `run_timeout`, `run_cancelled`, or `job_failed`. Its own vocabulary, not a superset of the job-level `error_type`. Present when `status=failed`.
 	ErrorType *WorkflowRunDetailErrorType `json:"error_type,omitempty"`
 
 	// ExternalId Caller-supplied idempotency key or correlation ID.
@@ -3739,13 +3787,14 @@ type WorkflowRunDetail struct {
 	WallClockDeadlineAt *time.Time `json:"wall_clock_deadline_at,omitempty"`
 
 	// WorkflowName Name of the workflow as recorded at run creation time.
-	WorkflowName string `json:"workflow_name"`
+	WorkflowName         string                 `json:"workflow_name"`
+	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
-// WorkflowRunDetailErrorType Typed run-level failure cause. Its own vocabulary, not a superset of the job-level `error_type`. Present when `status=failed`.
+// WorkflowRunDetailErrorType Typed run-level failure cause: `run_timeout`, `run_cancelled`, or `job_failed`. Its own vocabulary, not a superset of the job-level `error_type`. Present when `status=failed`.
 type WorkflowRunDetailErrorType string
 
-// WorkflowRunListResponse defines model for WorkflowRunListResponse.
+// WorkflowRunListResponse Paginated list of workflow runs.
 type WorkflowRunListResponse struct {
 	// HasMore True when more pages are available.
 	HasMore bool `json:"has_more"`
@@ -3760,17 +3809,21 @@ type WorkflowRunListResponse struct {
 // WorkflowRunStatus Run lifecycle: `queued` → `running` → `completed` | `failed` | `suspended`. A `suspended` run is waiting on a signal or interaction; it resumes automatically when the signal is delivered or the interaction is responded to.
 type WorkflowRunStatus string
 
-// WorkflowSleepConfig defines model for WorkflowSleepConfig.
+// WorkflowSleepConfig Configuration for a sleep step.
 type WorkflowSleepConfig struct {
 	// Duration Go duration string.
 	Duration string `json:"duration"`
 }
 
-// WorkflowSleepStep defines model for WorkflowSleepStep.
+// WorkflowSleepStep Suspends a branch for a fixed duration before continuing.
 type WorkflowSleepStep struct {
 	// Description Optional human-readable description of what this step does.
-	Description          *string                       `json:"description,omitempty"`
-	Each                 *WorkflowEach                 `json:"each,omitempty"`
+	Description *string `json:"description,omitempty"`
+
+	// Each Fan-out configuration that repeats a step over a collection.
+	Each *WorkflowEach `json:"each,omitempty"`
+
+	// EdgeMatchingStrategy Controls matching when multiple outbound edge conditions are true: `all` follows every matching edge in parallel, while `first` follows only the first matching edge in declaration order.
 	EdgeMatchingStrategy *WorkflowEdgeMatchingStrategy `json:"edge_matching_strategy,omitempty"`
 
 	// Layout Optional presentation hint for the visual editor. Ignored by the execution engine; when absent, editors auto-lay out the step.
@@ -3780,7 +3833,9 @@ type WorkflowSleepStep struct {
 	Name string `json:"name"`
 
 	// Next Outbound edges controlling which step executes after this one.
-	Next  *[]WorkflowEdge     `json:"next,omitempty"`
+	Next *[]WorkflowEdge `json:"next,omitempty"`
+
+	// Sleep Configuration for a sleep step.
 	Sleep WorkflowSleepConfig `json:"sleep"`
 }
 
@@ -3841,7 +3896,8 @@ type WorkflowVersion struct {
 	Spec WorkflowSpec `json:"spec"`
 
 	// Version Monotonically increasing version number. Starts at 1.
-	Version int `json:"version"`
+	Version              int                    `json:"version"`
+	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
 // WorkflowVersionListResponse Unpaginated list of immutable versions for one workflow definition. Version histories are expected to stay small enough to return in one response; fetch an individual version to retrieve its executable spec.
@@ -3862,7 +3918,8 @@ type WorkflowVersionSummary struct {
 	Id string `json:"id"`
 
 	// Version Monotonically increasing version number. Starts at 1.
-	Version int `json:"version"`
+	Version              int                    `json:"version"`
+	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
 // WorkflowWaitSignalConfig Suspends the run until a signal with the matching topic arrives.
@@ -3880,11 +3937,15 @@ type WorkflowWaitSignalConfig struct {
 	Topic string `json:"topic"`
 }
 
-// WorkflowWaitSignalStep defines model for WorkflowWaitSignalStep.
+// WorkflowWaitSignalStep Suspends a branch until an external signal with the matching topic arrives.
 type WorkflowWaitSignalStep struct {
 	// Description Optional human-readable description of what this step does.
-	Description          *string                       `json:"description,omitempty"`
-	Each                 *WorkflowEach                 `json:"each,omitempty"`
+	Description *string `json:"description,omitempty"`
+
+	// Each Fan-out configuration that repeats a step over a collection.
+	Each *WorkflowEach `json:"each,omitempty"`
+
+	// EdgeMatchingStrategy Controls matching when multiple outbound edge conditions are true: `all` follows every matching edge in parallel, while `first` follows only the first matching edge in declaration order.
 	EdgeMatchingStrategy *WorkflowEdgeMatchingStrategy `json:"edge_matching_strategy,omitempty"`
 
 	// Layout Optional presentation hint for the visual editor. Ignored by the execution engine; when absent, editors auto-lay out the step.
@@ -3936,22 +3997,22 @@ type SessionId = string
 // UserId defines model for user_id.
 type UserId = string
 
-// BadRequest defines model for BadRequest.
+// BadRequest Standard error envelope returned by API endpoints.
 type BadRequest = ErrorResponse
 
-// Conflict defines model for Conflict.
+// Conflict Standard error envelope returned by API endpoints.
 type Conflict = ErrorResponse
 
-// Forbidden defines model for Forbidden.
+// Forbidden Standard error envelope returned by API endpoints.
 type Forbidden = ErrorResponse
 
-// NotFound defines model for NotFound.
+// NotFound Standard error envelope returned by API endpoints.
 type NotFound = ErrorResponse
 
-// TooManyRequests defines model for TooManyRequests.
+// TooManyRequests Standard error envelope returned by API endpoints.
 type TooManyRequests = ErrorResponse
 
-// Unauthorized defines model for Unauthorized.
+// Unauthorized Standard error envelope returned by API endpoints.
 type Unauthorized = ErrorResponse
 
 // ListAuditLogsParams defines parameters for ListAuditLogs.
@@ -4446,6 +4507,1768 @@ func (a ActionAnnotationsResponse) MarshalJSON() ([]byte, error) {
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'read_only': %w", err)
 		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for Group. Returns the specified
+// element and whether it was found
+func (a Group) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for Group
+func (a *Group) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for Group to handle AdditionalProperties
+func (a *Group) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["created_at"]; found {
+		err = json.Unmarshal(raw, &a.CreatedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'created_at': %w", err)
+		}
+		delete(object, "created_at")
+	}
+
+	if raw, found := object["description"]; found {
+		err = json.Unmarshal(raw, &a.Description)
+		if err != nil {
+			return fmt.Errorf("error reading 'description': %w", err)
+		}
+		delete(object, "description")
+	}
+
+	if raw, found := object["handle"]; found {
+		err = json.Unmarshal(raw, &a.Handle)
+		if err != nil {
+			return fmt.Errorf("error reading 'handle': %w", err)
+		}
+		delete(object, "handle")
+	}
+
+	if raw, found := object["id"]; found {
+		err = json.Unmarshal(raw, &a.Id)
+		if err != nil {
+			return fmt.Errorf("error reading 'id': %w", err)
+		}
+		delete(object, "id")
+	}
+
+	if raw, found := object["name"]; found {
+		err = json.Unmarshal(raw, &a.Name)
+		if err != nil {
+			return fmt.Errorf("error reading 'name': %w", err)
+		}
+		delete(object, "name")
+	}
+
+	if raw, found := object["routing_policy"]; found {
+		err = json.Unmarshal(raw, &a.RoutingPolicy)
+		if err != nil {
+			return fmt.Errorf("error reading 'routing_policy': %w", err)
+		}
+		delete(object, "routing_policy")
+	}
+
+	if raw, found := object["updated_at"]; found {
+		err = json.Unmarshal(raw, &a.UpdatedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'updated_at': %w", err)
+		}
+		delete(object, "updated_at")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for Group to handle AdditionalProperties
+func (a Group) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["created_at"], err = json.Marshal(a.CreatedAt)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'created_at': %w", err)
+	}
+
+	if a.Description != nil {
+		object["description"], err = json.Marshal(a.Description)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'description': %w", err)
+		}
+	}
+
+	object["handle"], err = json.Marshal(a.Handle)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'handle': %w", err)
+	}
+
+	object["id"], err = json.Marshal(a.Id)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'id': %w", err)
+	}
+
+	object["name"], err = json.Marshal(a.Name)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'name': %w", err)
+	}
+
+	object["routing_policy"], err = json.Marshal(a.RoutingPolicy)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'routing_policy': %w", err)
+	}
+
+	object["updated_at"], err = json.Marshal(a.UpdatedAt)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'updated_at': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for GroupWithCount. Returns the specified
+// element and whether it was found
+func (a GroupWithCount) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for GroupWithCount
+func (a *GroupWithCount) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for GroupWithCount to handle AdditionalProperties
+func (a *GroupWithCount) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["created_at"]; found {
+		err = json.Unmarshal(raw, &a.CreatedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'created_at': %w", err)
+		}
+		delete(object, "created_at")
+	}
+
+	if raw, found := object["description"]; found {
+		err = json.Unmarshal(raw, &a.Description)
+		if err != nil {
+			return fmt.Errorf("error reading 'description': %w", err)
+		}
+		delete(object, "description")
+	}
+
+	if raw, found := object["handle"]; found {
+		err = json.Unmarshal(raw, &a.Handle)
+		if err != nil {
+			return fmt.Errorf("error reading 'handle': %w", err)
+		}
+		delete(object, "handle")
+	}
+
+	if raw, found := object["id"]; found {
+		err = json.Unmarshal(raw, &a.Id)
+		if err != nil {
+			return fmt.Errorf("error reading 'id': %w", err)
+		}
+		delete(object, "id")
+	}
+
+	if raw, found := object["member_count"]; found {
+		err = json.Unmarshal(raw, &a.MemberCount)
+		if err != nil {
+			return fmt.Errorf("error reading 'member_count': %w", err)
+		}
+		delete(object, "member_count")
+	}
+
+	if raw, found := object["name"]; found {
+		err = json.Unmarshal(raw, &a.Name)
+		if err != nil {
+			return fmt.Errorf("error reading 'name': %w", err)
+		}
+		delete(object, "name")
+	}
+
+	if raw, found := object["routing_policy"]; found {
+		err = json.Unmarshal(raw, &a.RoutingPolicy)
+		if err != nil {
+			return fmt.Errorf("error reading 'routing_policy': %w", err)
+		}
+		delete(object, "routing_policy")
+	}
+
+	if raw, found := object["updated_at"]; found {
+		err = json.Unmarshal(raw, &a.UpdatedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'updated_at': %w", err)
+		}
+		delete(object, "updated_at")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for GroupWithCount to handle AdditionalProperties
+func (a GroupWithCount) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["created_at"], err = json.Marshal(a.CreatedAt)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'created_at': %w", err)
+	}
+
+	if a.Description != nil {
+		object["description"], err = json.Marshal(a.Description)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'description': %w", err)
+		}
+	}
+
+	object["handle"], err = json.Marshal(a.Handle)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'handle': %w", err)
+	}
+
+	object["id"], err = json.Marshal(a.Id)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'id': %w", err)
+	}
+
+	object["member_count"], err = json.Marshal(a.MemberCount)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'member_count': %w", err)
+	}
+
+	object["name"], err = json.Marshal(a.Name)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'name': %w", err)
+	}
+
+	object["routing_policy"], err = json.Marshal(a.RoutingPolicy)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'routing_policy': %w", err)
+	}
+
+	object["updated_at"], err = json.Marshal(a.UpdatedAt)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'updated_at': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for WorkflowDefinition. Returns the specified
+// element and whether it was found
+func (a WorkflowDefinition) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for WorkflowDefinition
+func (a *WorkflowDefinition) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for WorkflowDefinition to handle AdditionalProperties
+func (a *WorkflowDefinition) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["created_at"]; found {
+		err = json.Unmarshal(raw, &a.CreatedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'created_at': %w", err)
+		}
+		delete(object, "created_at")
+	}
+
+	if raw, found := object["created_by"]; found {
+		err = json.Unmarshal(raw, &a.CreatedBy)
+		if err != nil {
+			return fmt.Errorf("error reading 'created_by': %w", err)
+		}
+		delete(object, "created_by")
+	}
+
+	if raw, found := object["description"]; found {
+		err = json.Unmarshal(raw, &a.Description)
+		if err != nil {
+			return fmt.Errorf("error reading 'description': %w", err)
+		}
+		delete(object, "description")
+	}
+
+	if raw, found := object["handle"]; found {
+		err = json.Unmarshal(raw, &a.Handle)
+		if err != nil {
+			return fmt.Errorf("error reading 'handle': %w", err)
+		}
+		delete(object, "handle")
+	}
+
+	if raw, found := object["id"]; found {
+		err = json.Unmarshal(raw, &a.Id)
+		if err != nil {
+			return fmt.Errorf("error reading 'id': %w", err)
+		}
+		delete(object, "id")
+	}
+
+	if raw, found := object["latest_version"]; found {
+		err = json.Unmarshal(raw, &a.LatestVersion)
+		if err != nil {
+			return fmt.Errorf("error reading 'latest_version': %w", err)
+		}
+		delete(object, "latest_version")
+	}
+
+	if raw, found := object["name"]; found {
+		err = json.Unmarshal(raw, &a.Name)
+		if err != nil {
+			return fmt.Errorf("error reading 'name': %w", err)
+		}
+		delete(object, "name")
+	}
+
+	if raw, found := object["published_as_tool"]; found {
+		err = json.Unmarshal(raw, &a.PublishedAsTool)
+		if err != nil {
+			return fmt.Errorf("error reading 'published_as_tool': %w", err)
+		}
+		delete(object, "published_as_tool")
+	}
+
+	if raw, found := object["spec"]; found {
+		err = json.Unmarshal(raw, &a.Spec)
+		if err != nil {
+			return fmt.Errorf("error reading 'spec': %w", err)
+		}
+		delete(object, "spec")
+	}
+
+	if raw, found := object["updated_at"]; found {
+		err = json.Unmarshal(raw, &a.UpdatedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'updated_at': %w", err)
+		}
+		delete(object, "updated_at")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for WorkflowDefinition to handle AdditionalProperties
+func (a WorkflowDefinition) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["created_at"], err = json.Marshal(a.CreatedAt)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'created_at': %w", err)
+	}
+
+	object["created_by"], err = json.Marshal(a.CreatedBy)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'created_by': %w", err)
+	}
+
+	if a.Description != nil {
+		object["description"], err = json.Marshal(a.Description)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'description': %w", err)
+		}
+	}
+
+	object["handle"], err = json.Marshal(a.Handle)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'handle': %w", err)
+	}
+
+	object["id"], err = json.Marshal(a.Id)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'id': %w", err)
+	}
+
+	object["latest_version"], err = json.Marshal(a.LatestVersion)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'latest_version': %w", err)
+	}
+
+	object["name"], err = json.Marshal(a.Name)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'name': %w", err)
+	}
+
+	if a.PublishedAsTool != nil {
+		object["published_as_tool"], err = json.Marshal(a.PublishedAsTool)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'published_as_tool': %w", err)
+		}
+	}
+
+	object["spec"], err = json.Marshal(a.Spec)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'spec': %w", err)
+	}
+
+	object["updated_at"], err = json.Marshal(a.UpdatedAt)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'updated_at': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for WorkflowDefinitionSummary. Returns the specified
+// element and whether it was found
+func (a WorkflowDefinitionSummary) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for WorkflowDefinitionSummary
+func (a *WorkflowDefinitionSummary) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for WorkflowDefinitionSummary to handle AdditionalProperties
+func (a *WorkflowDefinitionSummary) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["created_at"]; found {
+		err = json.Unmarshal(raw, &a.CreatedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'created_at': %w", err)
+		}
+		delete(object, "created_at")
+	}
+
+	if raw, found := object["created_by"]; found {
+		err = json.Unmarshal(raw, &a.CreatedBy)
+		if err != nil {
+			return fmt.Errorf("error reading 'created_by': %w", err)
+		}
+		delete(object, "created_by")
+	}
+
+	if raw, found := object["description"]; found {
+		err = json.Unmarshal(raw, &a.Description)
+		if err != nil {
+			return fmt.Errorf("error reading 'description': %w", err)
+		}
+		delete(object, "description")
+	}
+
+	if raw, found := object["handle"]; found {
+		err = json.Unmarshal(raw, &a.Handle)
+		if err != nil {
+			return fmt.Errorf("error reading 'handle': %w", err)
+		}
+		delete(object, "handle")
+	}
+
+	if raw, found := object["id"]; found {
+		err = json.Unmarshal(raw, &a.Id)
+		if err != nil {
+			return fmt.Errorf("error reading 'id': %w", err)
+		}
+		delete(object, "id")
+	}
+
+	if raw, found := object["latest_version"]; found {
+		err = json.Unmarshal(raw, &a.LatestVersion)
+		if err != nil {
+			return fmt.Errorf("error reading 'latest_version': %w", err)
+		}
+		delete(object, "latest_version")
+	}
+
+	if raw, found := object["name"]; found {
+		err = json.Unmarshal(raw, &a.Name)
+		if err != nil {
+			return fmt.Errorf("error reading 'name': %w", err)
+		}
+		delete(object, "name")
+	}
+
+	if raw, found := object["published_as_tool"]; found {
+		err = json.Unmarshal(raw, &a.PublishedAsTool)
+		if err != nil {
+			return fmt.Errorf("error reading 'published_as_tool': %w", err)
+		}
+		delete(object, "published_as_tool")
+	}
+
+	if raw, found := object["updated_at"]; found {
+		err = json.Unmarshal(raw, &a.UpdatedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'updated_at': %w", err)
+		}
+		delete(object, "updated_at")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for WorkflowDefinitionSummary to handle AdditionalProperties
+func (a WorkflowDefinitionSummary) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["created_at"], err = json.Marshal(a.CreatedAt)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'created_at': %w", err)
+	}
+
+	object["created_by"], err = json.Marshal(a.CreatedBy)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'created_by': %w", err)
+	}
+
+	if a.Description != nil {
+		object["description"], err = json.Marshal(a.Description)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'description': %w", err)
+		}
+	}
+
+	object["handle"], err = json.Marshal(a.Handle)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'handle': %w", err)
+	}
+
+	object["id"], err = json.Marshal(a.Id)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'id': %w", err)
+	}
+
+	object["latest_version"], err = json.Marshal(a.LatestVersion)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'latest_version': %w", err)
+	}
+
+	object["name"], err = json.Marshal(a.Name)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'name': %w", err)
+	}
+
+	if a.PublishedAsTool != nil {
+		object["published_as_tool"], err = json.Marshal(a.PublishedAsTool)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'published_as_tool': %w", err)
+		}
+	}
+
+	object["updated_at"], err = json.Marshal(a.UpdatedAt)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'updated_at': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for WorkflowRun. Returns the specified
+// element and whether it was found
+func (a WorkflowRun) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for WorkflowRun
+func (a *WorkflowRun) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for WorkflowRun to handle AdditionalProperties
+func (a *WorkflowRun) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["actor_id"]; found {
+		err = json.Unmarshal(raw, &a.ActorId)
+		if err != nil {
+			return fmt.Errorf("error reading 'actor_id': %w", err)
+		}
+		delete(object, "actor_id")
+	}
+
+	if raw, found := object["actor_type"]; found {
+		err = json.Unmarshal(raw, &a.ActorType)
+		if err != nil {
+			return fmt.Errorf("error reading 'actor_type': %w", err)
+		}
+		delete(object, "actor_type")
+	}
+
+	if raw, found := object["attempt"]; found {
+		err = json.Unmarshal(raw, &a.Attempt)
+		if err != nil {
+			return fmt.Errorf("error reading 'attempt': %w", err)
+		}
+		delete(object, "attempt")
+	}
+
+	if raw, found := object["cancel_requested"]; found {
+		err = json.Unmarshal(raw, &a.CancelRequested)
+		if err != nil {
+			return fmt.Errorf("error reading 'cancel_requested': %w", err)
+		}
+		delete(object, "cancel_requested")
+	}
+
+	if raw, found := object["completed_at"]; found {
+		err = json.Unmarshal(raw, &a.CompletedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'completed_at': %w", err)
+		}
+		delete(object, "completed_at")
+	}
+
+	if raw, found := object["created_at"]; found {
+		err = json.Unmarshal(raw, &a.CreatedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'created_at': %w", err)
+		}
+		delete(object, "created_at")
+	}
+
+	if raw, found := object["default_job_config"]; found {
+		err = json.Unmarshal(raw, &a.DefaultJobConfig)
+		if err != nil {
+			return fmt.Errorf("error reading 'default_job_config': %w", err)
+		}
+		delete(object, "default_job_config")
+	}
+
+	if raw, found := object["definition_id"]; found {
+		err = json.Unmarshal(raw, &a.DefinitionId)
+		if err != nil {
+			return fmt.Errorf("error reading 'definition_id': %w", err)
+		}
+		delete(object, "definition_id")
+	}
+
+	if raw, found := object["definition_version"]; found {
+		err = json.Unmarshal(raw, &a.DefinitionVersion)
+		if err != nil {
+			return fmt.Errorf("error reading 'definition_version': %w", err)
+		}
+		delete(object, "definition_version")
+	}
+
+	if raw, found := object["ephemeral"]; found {
+		err = json.Unmarshal(raw, &a.Ephemeral)
+		if err != nil {
+			return fmt.Errorf("error reading 'ephemeral': %w", err)
+		}
+		delete(object, "ephemeral")
+	}
+
+	if raw, found := object["error_message"]; found {
+		err = json.Unmarshal(raw, &a.ErrorMessage)
+		if err != nil {
+			return fmt.Errorf("error reading 'error_message': %w", err)
+		}
+		delete(object, "error_message")
+	}
+
+	if raw, found := object["error_type"]; found {
+		err = json.Unmarshal(raw, &a.ErrorType)
+		if err != nil {
+			return fmt.Errorf("error reading 'error_type': %w", err)
+		}
+		delete(object, "error_type")
+	}
+
+	if raw, found := object["external_id"]; found {
+		err = json.Unmarshal(raw, &a.ExternalId)
+		if err != nil {
+			return fmt.Errorf("error reading 'external_id': %w", err)
+		}
+		delete(object, "external_id")
+	}
+
+	if raw, found := object["id"]; found {
+		err = json.Unmarshal(raw, &a.Id)
+		if err != nil {
+			return fmt.Errorf("error reading 'id': %w", err)
+		}
+		delete(object, "id")
+	}
+
+	if raw, found := object["initiated_by"]; found {
+		err = json.Unmarshal(raw, &a.InitiatedBy)
+		if err != nil {
+			return fmt.Errorf("error reading 'initiated_by': %w", err)
+		}
+		delete(object, "initiated_by")
+	}
+
+	if raw, found := object["inputs"]; found {
+		err = json.Unmarshal(raw, &a.Inputs)
+		if err != nil {
+			return fmt.Errorf("error reading 'inputs': %w", err)
+		}
+		delete(object, "inputs")
+	}
+
+	if raw, found := object["metadata"]; found {
+		err = json.Unmarshal(raw, &a.Metadata)
+		if err != nil {
+			return fmt.Errorf("error reading 'metadata': %w", err)
+		}
+		delete(object, "metadata")
+	}
+
+	if raw, found := object["parent_run_id"]; found {
+		err = json.Unmarshal(raw, &a.ParentRunId)
+		if err != nil {
+			return fmt.Errorf("error reading 'parent_run_id': %w", err)
+		}
+		delete(object, "parent_run_id")
+	}
+
+	if raw, found := object["queue"]; found {
+		err = json.Unmarshal(raw, &a.Queue)
+		if err != nil {
+			return fmt.Errorf("error reading 'queue': %w", err)
+		}
+		delete(object, "queue")
+	}
+
+	if raw, found := object["resolved_config"]; found {
+		err = json.Unmarshal(raw, &a.ResolvedConfig)
+		if err != nil {
+			return fmt.Errorf("error reading 'resolved_config': %w", err)
+		}
+		delete(object, "resolved_config")
+	}
+
+	if raw, found := object["started_at"]; found {
+		err = json.Unmarshal(raw, &a.StartedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'started_at': %w", err)
+		}
+		delete(object, "started_at")
+	}
+
+	if raw, found := object["status"]; found {
+		err = json.Unmarshal(raw, &a.Status)
+		if err != nil {
+			return fmt.Errorf("error reading 'status': %w", err)
+		}
+		delete(object, "status")
+	}
+
+	if raw, found := object["updated_at"]; found {
+		err = json.Unmarshal(raw, &a.UpdatedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'updated_at': %w", err)
+		}
+		delete(object, "updated_at")
+	}
+
+	if raw, found := object["wall_clock_deadline_at"]; found {
+		err = json.Unmarshal(raw, &a.WallClockDeadlineAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'wall_clock_deadline_at': %w", err)
+		}
+		delete(object, "wall_clock_deadline_at")
+	}
+
+	if raw, found := object["workflow_name"]; found {
+		err = json.Unmarshal(raw, &a.WorkflowName)
+		if err != nil {
+			return fmt.Errorf("error reading 'workflow_name': %w", err)
+		}
+		delete(object, "workflow_name")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for WorkflowRun to handle AdditionalProperties
+func (a WorkflowRun) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.ActorId != nil {
+		object["actor_id"], err = json.Marshal(a.ActorId)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'actor_id': %w", err)
+		}
+	}
+
+	if a.ActorType != nil {
+		object["actor_type"], err = json.Marshal(a.ActorType)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'actor_type': %w", err)
+		}
+	}
+
+	object["attempt"], err = json.Marshal(a.Attempt)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'attempt': %w", err)
+	}
+
+	if a.CancelRequested != nil {
+		object["cancel_requested"], err = json.Marshal(a.CancelRequested)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'cancel_requested': %w", err)
+		}
+	}
+
+	if a.CompletedAt != nil {
+		object["completed_at"], err = json.Marshal(a.CompletedAt)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'completed_at': %w", err)
+		}
+	}
+
+	object["created_at"], err = json.Marshal(a.CreatedAt)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'created_at': %w", err)
+	}
+
+	if a.DefaultJobConfig != nil {
+		object["default_job_config"], err = json.Marshal(a.DefaultJobConfig)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'default_job_config': %w", err)
+		}
+	}
+
+	if a.DefinitionId != nil {
+		object["definition_id"], err = json.Marshal(a.DefinitionId)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'definition_id': %w", err)
+		}
+	}
+
+	if a.DefinitionVersion != nil {
+		object["definition_version"], err = json.Marshal(a.DefinitionVersion)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'definition_version': %w", err)
+		}
+	}
+
+	object["ephemeral"], err = json.Marshal(a.Ephemeral)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'ephemeral': %w", err)
+	}
+
+	if a.ErrorMessage != nil {
+		object["error_message"], err = json.Marshal(a.ErrorMessage)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'error_message': %w", err)
+		}
+	}
+
+	if a.ErrorType != nil {
+		object["error_type"], err = json.Marshal(a.ErrorType)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'error_type': %w", err)
+		}
+	}
+
+	if a.ExternalId != nil {
+		object["external_id"], err = json.Marshal(a.ExternalId)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'external_id': %w", err)
+		}
+	}
+
+	object["id"], err = json.Marshal(a.Id)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'id': %w", err)
+	}
+
+	if a.InitiatedBy != nil {
+		object["initiated_by"], err = json.Marshal(a.InitiatedBy)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'initiated_by': %w", err)
+		}
+	}
+
+	if a.Inputs != nil {
+		object["inputs"], err = json.Marshal(a.Inputs)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'inputs': %w", err)
+		}
+	}
+
+	if a.Metadata != nil {
+		object["metadata"], err = json.Marshal(a.Metadata)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'metadata': %w", err)
+		}
+	}
+
+	if a.ParentRunId != nil {
+		object["parent_run_id"], err = json.Marshal(a.ParentRunId)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'parent_run_id': %w", err)
+		}
+	}
+
+	if a.Queue != nil {
+		object["queue"], err = json.Marshal(a.Queue)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'queue': %w", err)
+		}
+	}
+
+	if a.ResolvedConfig != nil {
+		object["resolved_config"], err = json.Marshal(a.ResolvedConfig)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'resolved_config': %w", err)
+		}
+	}
+
+	if a.StartedAt != nil {
+		object["started_at"], err = json.Marshal(a.StartedAt)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'started_at': %w", err)
+		}
+	}
+
+	object["status"], err = json.Marshal(a.Status)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'status': %w", err)
+	}
+
+	object["updated_at"], err = json.Marshal(a.UpdatedAt)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'updated_at': %w", err)
+	}
+
+	if a.WallClockDeadlineAt != nil {
+		object["wall_clock_deadline_at"], err = json.Marshal(a.WallClockDeadlineAt)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'wall_clock_deadline_at': %w", err)
+		}
+	}
+
+	object["workflow_name"], err = json.Marshal(a.WorkflowName)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'workflow_name': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for WorkflowRunDetail. Returns the specified
+// element and whether it was found
+func (a WorkflowRunDetail) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for WorkflowRunDetail
+func (a *WorkflowRunDetail) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for WorkflowRunDetail to handle AdditionalProperties
+func (a *WorkflowRunDetail) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["actor_id"]; found {
+		err = json.Unmarshal(raw, &a.ActorId)
+		if err != nil {
+			return fmt.Errorf("error reading 'actor_id': %w", err)
+		}
+		delete(object, "actor_id")
+	}
+
+	if raw, found := object["actor_type"]; found {
+		err = json.Unmarshal(raw, &a.ActorType)
+		if err != nil {
+			return fmt.Errorf("error reading 'actor_type': %w", err)
+		}
+		delete(object, "actor_type")
+	}
+
+	if raw, found := object["attempt"]; found {
+		err = json.Unmarshal(raw, &a.Attempt)
+		if err != nil {
+			return fmt.Errorf("error reading 'attempt': %w", err)
+		}
+		delete(object, "attempt")
+	}
+
+	if raw, found := object["cancel_requested"]; found {
+		err = json.Unmarshal(raw, &a.CancelRequested)
+		if err != nil {
+			return fmt.Errorf("error reading 'cancel_requested': %w", err)
+		}
+		delete(object, "cancel_requested")
+	}
+
+	if raw, found := object["completed_at"]; found {
+		err = json.Unmarshal(raw, &a.CompletedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'completed_at': %w", err)
+		}
+		delete(object, "completed_at")
+	}
+
+	if raw, found := object["created_at"]; found {
+		err = json.Unmarshal(raw, &a.CreatedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'created_at': %w", err)
+		}
+		delete(object, "created_at")
+	}
+
+	if raw, found := object["default_job_config"]; found {
+		err = json.Unmarshal(raw, &a.DefaultJobConfig)
+		if err != nil {
+			return fmt.Errorf("error reading 'default_job_config': %w", err)
+		}
+		delete(object, "default_job_config")
+	}
+
+	if raw, found := object["definition_id"]; found {
+		err = json.Unmarshal(raw, &a.DefinitionId)
+		if err != nil {
+			return fmt.Errorf("error reading 'definition_id': %w", err)
+		}
+		delete(object, "definition_id")
+	}
+
+	if raw, found := object["definition_version"]; found {
+		err = json.Unmarshal(raw, &a.DefinitionVersion)
+		if err != nil {
+			return fmt.Errorf("error reading 'definition_version': %w", err)
+		}
+		delete(object, "definition_version")
+	}
+
+	if raw, found := object["ephemeral"]; found {
+		err = json.Unmarshal(raw, &a.Ephemeral)
+		if err != nil {
+			return fmt.Errorf("error reading 'ephemeral': %w", err)
+		}
+		delete(object, "ephemeral")
+	}
+
+	if raw, found := object["error_message"]; found {
+		err = json.Unmarshal(raw, &a.ErrorMessage)
+		if err != nil {
+			return fmt.Errorf("error reading 'error_message': %w", err)
+		}
+		delete(object, "error_message")
+	}
+
+	if raw, found := object["error_type"]; found {
+		err = json.Unmarshal(raw, &a.ErrorType)
+		if err != nil {
+			return fmt.Errorf("error reading 'error_type': %w", err)
+		}
+		delete(object, "error_type")
+	}
+
+	if raw, found := object["external_id"]; found {
+		err = json.Unmarshal(raw, &a.ExternalId)
+		if err != nil {
+			return fmt.Errorf("error reading 'external_id': %w", err)
+		}
+		delete(object, "external_id")
+	}
+
+	if raw, found := object["id"]; found {
+		err = json.Unmarshal(raw, &a.Id)
+		if err != nil {
+			return fmt.Errorf("error reading 'id': %w", err)
+		}
+		delete(object, "id")
+	}
+
+	if raw, found := object["initiated_by"]; found {
+		err = json.Unmarshal(raw, &a.InitiatedBy)
+		if err != nil {
+			return fmt.Errorf("error reading 'initiated_by': %w", err)
+		}
+		delete(object, "initiated_by")
+	}
+
+	if raw, found := object["inputs"]; found {
+		err = json.Unmarshal(raw, &a.Inputs)
+		if err != nil {
+			return fmt.Errorf("error reading 'inputs': %w", err)
+		}
+		delete(object, "inputs")
+	}
+
+	if raw, found := object["jobs"]; found {
+		err = json.Unmarshal(raw, &a.Jobs)
+		if err != nil {
+			return fmt.Errorf("error reading 'jobs': %w", err)
+		}
+		delete(object, "jobs")
+	}
+
+	if raw, found := object["metadata"]; found {
+		err = json.Unmarshal(raw, &a.Metadata)
+		if err != nil {
+			return fmt.Errorf("error reading 'metadata': %w", err)
+		}
+		delete(object, "metadata")
+	}
+
+	if raw, found := object["parent_run_id"]; found {
+		err = json.Unmarshal(raw, &a.ParentRunId)
+		if err != nil {
+			return fmt.Errorf("error reading 'parent_run_id': %w", err)
+		}
+		delete(object, "parent_run_id")
+	}
+
+	if raw, found := object["queue"]; found {
+		err = json.Unmarshal(raw, &a.Queue)
+		if err != nil {
+			return fmt.Errorf("error reading 'queue': %w", err)
+		}
+		delete(object, "queue")
+	}
+
+	if raw, found := object["resolved_config"]; found {
+		err = json.Unmarshal(raw, &a.ResolvedConfig)
+		if err != nil {
+			return fmt.Errorf("error reading 'resolved_config': %w", err)
+		}
+		delete(object, "resolved_config")
+	}
+
+	if raw, found := object["result_b64"]; found {
+		err = json.Unmarshal(raw, &a.ResultB64)
+		if err != nil {
+			return fmt.Errorf("error reading 'result_b64': %w", err)
+		}
+		delete(object, "result_b64")
+	}
+
+	if raw, found := object["spec"]; found {
+		err = json.Unmarshal(raw, &a.Spec)
+		if err != nil {
+			return fmt.Errorf("error reading 'spec': %w", err)
+		}
+		delete(object, "spec")
+	}
+
+	if raw, found := object["started_at"]; found {
+		err = json.Unmarshal(raw, &a.StartedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'started_at': %w", err)
+		}
+		delete(object, "started_at")
+	}
+
+	if raw, found := object["status"]; found {
+		err = json.Unmarshal(raw, &a.Status)
+		if err != nil {
+			return fmt.Errorf("error reading 'status': %w", err)
+		}
+		delete(object, "status")
+	}
+
+	if raw, found := object["updated_at"]; found {
+		err = json.Unmarshal(raw, &a.UpdatedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'updated_at': %w", err)
+		}
+		delete(object, "updated_at")
+	}
+
+	if raw, found := object["wall_clock_deadline_at"]; found {
+		err = json.Unmarshal(raw, &a.WallClockDeadlineAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'wall_clock_deadline_at': %w", err)
+		}
+		delete(object, "wall_clock_deadline_at")
+	}
+
+	if raw, found := object["workflow_name"]; found {
+		err = json.Unmarshal(raw, &a.WorkflowName)
+		if err != nil {
+			return fmt.Errorf("error reading 'workflow_name': %w", err)
+		}
+		delete(object, "workflow_name")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for WorkflowRunDetail to handle AdditionalProperties
+func (a WorkflowRunDetail) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.ActorId != nil {
+		object["actor_id"], err = json.Marshal(a.ActorId)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'actor_id': %w", err)
+		}
+	}
+
+	if a.ActorType != nil {
+		object["actor_type"], err = json.Marshal(a.ActorType)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'actor_type': %w", err)
+		}
+	}
+
+	object["attempt"], err = json.Marshal(a.Attempt)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'attempt': %w", err)
+	}
+
+	if a.CancelRequested != nil {
+		object["cancel_requested"], err = json.Marshal(a.CancelRequested)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'cancel_requested': %w", err)
+		}
+	}
+
+	if a.CompletedAt != nil {
+		object["completed_at"], err = json.Marshal(a.CompletedAt)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'completed_at': %w", err)
+		}
+	}
+
+	object["created_at"], err = json.Marshal(a.CreatedAt)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'created_at': %w", err)
+	}
+
+	if a.DefaultJobConfig != nil {
+		object["default_job_config"], err = json.Marshal(a.DefaultJobConfig)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'default_job_config': %w", err)
+		}
+	}
+
+	if a.DefinitionId != nil {
+		object["definition_id"], err = json.Marshal(a.DefinitionId)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'definition_id': %w", err)
+		}
+	}
+
+	if a.DefinitionVersion != nil {
+		object["definition_version"], err = json.Marshal(a.DefinitionVersion)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'definition_version': %w", err)
+		}
+	}
+
+	object["ephemeral"], err = json.Marshal(a.Ephemeral)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'ephemeral': %w", err)
+	}
+
+	if a.ErrorMessage != nil {
+		object["error_message"], err = json.Marshal(a.ErrorMessage)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'error_message': %w", err)
+		}
+	}
+
+	if a.ErrorType != nil {
+		object["error_type"], err = json.Marshal(a.ErrorType)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'error_type': %w", err)
+		}
+	}
+
+	if a.ExternalId != nil {
+		object["external_id"], err = json.Marshal(a.ExternalId)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'external_id': %w", err)
+		}
+	}
+
+	object["id"], err = json.Marshal(a.Id)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'id': %w", err)
+	}
+
+	if a.InitiatedBy != nil {
+		object["initiated_by"], err = json.Marshal(a.InitiatedBy)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'initiated_by': %w", err)
+		}
+	}
+
+	if a.Inputs != nil {
+		object["inputs"], err = json.Marshal(a.Inputs)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'inputs': %w", err)
+		}
+	}
+
+	if a.Jobs != nil {
+		object["jobs"], err = json.Marshal(a.Jobs)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'jobs': %w", err)
+		}
+	}
+
+	if a.Metadata != nil {
+		object["metadata"], err = json.Marshal(a.Metadata)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'metadata': %w", err)
+		}
+	}
+
+	if a.ParentRunId != nil {
+		object["parent_run_id"], err = json.Marshal(a.ParentRunId)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'parent_run_id': %w", err)
+		}
+	}
+
+	if a.Queue != nil {
+		object["queue"], err = json.Marshal(a.Queue)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'queue': %w", err)
+		}
+	}
+
+	if a.ResolvedConfig != nil {
+		object["resolved_config"], err = json.Marshal(a.ResolvedConfig)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'resolved_config': %w", err)
+		}
+	}
+
+	if a.ResultB64 != nil {
+		object["result_b64"], err = json.Marshal(a.ResultB64)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'result_b64': %w", err)
+		}
+	}
+
+	if a.Spec != nil {
+		object["spec"], err = json.Marshal(a.Spec)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'spec': %w", err)
+		}
+	}
+
+	if a.StartedAt != nil {
+		object["started_at"], err = json.Marshal(a.StartedAt)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'started_at': %w", err)
+		}
+	}
+
+	object["status"], err = json.Marshal(a.Status)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'status': %w", err)
+	}
+
+	object["updated_at"], err = json.Marshal(a.UpdatedAt)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'updated_at': %w", err)
+	}
+
+	if a.WallClockDeadlineAt != nil {
+		object["wall_clock_deadline_at"], err = json.Marshal(a.WallClockDeadlineAt)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'wall_clock_deadline_at': %w", err)
+		}
+	}
+
+	object["workflow_name"], err = json.Marshal(a.WorkflowName)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'workflow_name': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for WorkflowVersion. Returns the specified
+// element and whether it was found
+func (a WorkflowVersion) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for WorkflowVersion
+func (a *WorkflowVersion) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for WorkflowVersion to handle AdditionalProperties
+func (a *WorkflowVersion) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["created_at"]; found {
+		err = json.Unmarshal(raw, &a.CreatedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'created_at': %w", err)
+		}
+		delete(object, "created_at")
+	}
+
+	if raw, found := object["created_by"]; found {
+		err = json.Unmarshal(raw, &a.CreatedBy)
+		if err != nil {
+			return fmt.Errorf("error reading 'created_by': %w", err)
+		}
+		delete(object, "created_by")
+	}
+
+	if raw, found := object["id"]; found {
+		err = json.Unmarshal(raw, &a.Id)
+		if err != nil {
+			return fmt.Errorf("error reading 'id': %w", err)
+		}
+		delete(object, "id")
+	}
+
+	if raw, found := object["spec"]; found {
+		err = json.Unmarshal(raw, &a.Spec)
+		if err != nil {
+			return fmt.Errorf("error reading 'spec': %w", err)
+		}
+		delete(object, "spec")
+	}
+
+	if raw, found := object["version"]; found {
+		err = json.Unmarshal(raw, &a.Version)
+		if err != nil {
+			return fmt.Errorf("error reading 'version': %w", err)
+		}
+		delete(object, "version")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for WorkflowVersion to handle AdditionalProperties
+func (a WorkflowVersion) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["created_at"], err = json.Marshal(a.CreatedAt)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'created_at': %w", err)
+	}
+
+	object["created_by"], err = json.Marshal(a.CreatedBy)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'created_by': %w", err)
+	}
+
+	object["id"], err = json.Marshal(a.Id)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'id': %w", err)
+	}
+
+	object["spec"], err = json.Marshal(a.Spec)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'spec': %w", err)
+	}
+
+	object["version"], err = json.Marshal(a.Version)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'version': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for WorkflowVersionSummary. Returns the specified
+// element and whether it was found
+func (a WorkflowVersionSummary) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for WorkflowVersionSummary
+func (a *WorkflowVersionSummary) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for WorkflowVersionSummary to handle AdditionalProperties
+func (a *WorkflowVersionSummary) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["created_at"]; found {
+		err = json.Unmarshal(raw, &a.CreatedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'created_at': %w", err)
+		}
+		delete(object, "created_at")
+	}
+
+	if raw, found := object["created_by"]; found {
+		err = json.Unmarshal(raw, &a.CreatedBy)
+		if err != nil {
+			return fmt.Errorf("error reading 'created_by': %w", err)
+		}
+		delete(object, "created_by")
+	}
+
+	if raw, found := object["id"]; found {
+		err = json.Unmarshal(raw, &a.Id)
+		if err != nil {
+			return fmt.Errorf("error reading 'id': %w", err)
+		}
+		delete(object, "id")
+	}
+
+	if raw, found := object["version"]; found {
+		err = json.Unmarshal(raw, &a.Version)
+		if err != nil {
+			return fmt.Errorf("error reading 'version': %w", err)
+		}
+		delete(object, "version")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for WorkflowVersionSummary to handle AdditionalProperties
+func (a WorkflowVersionSummary) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["created_at"], err = json.Marshal(a.CreatedAt)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'created_at': %w", err)
+	}
+
+	object["created_by"], err = json.Marshal(a.CreatedBy)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'created_by': %w", err)
+	}
+
+	object["id"], err = json.Marshal(a.Id)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'id': %w", err)
+	}
+
+	object["version"], err = json.Marshal(a.Version)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'version': %w", err)
 	}
 
 	for fieldName, field := range a.AdditionalProperties {
@@ -14142,6 +15965,7 @@ type UpdateProjectResponse struct {
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
 	JSON404      *NotFound
+	JSON409      *Conflict
 }
 
 // Status returns HTTPResponse.Status
@@ -14801,6 +16625,7 @@ type CreateChannelResponse struct {
 	JSON201      *Channel
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
+	JSON409      *Conflict
 }
 
 // Status returns HTTPResponse.Status
@@ -14922,6 +16747,7 @@ type AddChannelMemberResponse struct {
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
 	JSON404      *NotFound
+	JSON409      *Conflict
 }
 
 // Status returns HTTPResponse.Status
@@ -15533,6 +17359,7 @@ type HeartbeatJobResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *JobHeartbeat
+	JSON400      *BadRequest
 	JSON401      *Unauthorized
 	JSON404      *NotFound
 	JSON409      *Conflict
@@ -15585,6 +17412,7 @@ type ListMemberGroupsResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *GroupListResponse
 	JSON401      *Unauthorized
+	JSON404      *NotFound
 }
 
 // Status returns HTTPResponse.Status
@@ -16041,6 +17869,7 @@ type UpdateTriggerResponse struct {
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
 	JSON404      *NotFound
+	JSON409      *Conflict
 }
 
 // Status returns HTTPResponse.Status
@@ -16331,6 +18160,7 @@ type UpdateWebhookResponse struct {
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
 	JSON404      *NotFound
+	JSON409      *Conflict
 }
 
 // Status returns HTTPResponse.Status
@@ -16526,6 +18356,7 @@ type UpdateWorkflowResponse struct {
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
 	JSON404      *NotFound
+	JSON409      *Conflict
 }
 
 // Status returns HTTPResponse.Status
@@ -16549,6 +18380,7 @@ type ListWorkflowRunsResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *WorkflowRunListResponse
 	JSON401      *Unauthorized
+	JSON404      *NotFound
 }
 
 // Status returns HTTPResponse.Status
@@ -18145,6 +19977,13 @@ func ParseUpdateProjectResponse(rsp *http.Response) (*UpdateProjectResponse, err
 		}
 		response.JSON404 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
 	}
 
 	return response, nil
@@ -19302,6 +21141,13 @@ func ParseCreateChannelResponse(rsp *http.Response) (*CreateChannelResponse, err
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
 	}
 
 	return response, nil
@@ -19508,6 +21354,13 @@ func ParseAddChannelMemberResponse(rsp *http.Response) (*AddChannelMemberRespons
 			return nil, err
 		}
 		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	}
 
@@ -20586,6 +22439,13 @@ func ParseHeartbeatJobResponse(rsp *http.Response) (*HeartbeatJobResponse, error
 		}
 		response.JSON200 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
 		var dest Unauthorized
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -20693,6 +22553,13 @@ func ParseListMemberGroupsResponse(rsp *http.Response) (*ListMemberGroupsRespons
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
 
 	}
 
@@ -21454,6 +23321,13 @@ func ParseUpdateTriggerResponse(rsp *http.Response) (*UpdateTriggerResponse, err
 		}
 		response.JSON404 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
 	}
 
 	return response, nil
@@ -21948,6 +23822,13 @@ func ParseUpdateWebhookResponse(rsp *http.Response) (*UpdateWebhookResponse, err
 		}
 		response.JSON404 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
 	}
 
 	return response, nil
@@ -22289,6 +24170,13 @@ func ParseUpdateWorkflowResponse(rsp *http.Response) (*UpdateWorkflowResponse, e
 		}
 		response.JSON404 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
 	}
 
 	return response, nil
@@ -22321,6 +24209,13 @@ func ParseListWorkflowRunsResponse(rsp *http.Response) (*ListWorkflowRunsRespons
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
 
 	}
 

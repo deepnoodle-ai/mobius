@@ -58,7 +58,7 @@ func registerGroupsCommands(app *cli.App) {
 			cli.String("description", "").Help("Optional human-readable description."),
 			cli.String("handle", "").Help("URL-safe handle, unique within the project. Auto-derived from name if omitted."),
 			cli.String("name", "").Help("[required] Display name (1–64 chars)."),
-			cli.String("routing-policy", "").Help("How responses are collected from group members. Defaults to `first_responder`."),
+			cli.String("routing-policy", "").Help("How responses are collected from group members: `first_responder` or `all_members`. Defaults to `first_responder`."),
 			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
 		).
 		Use(cli.RequireFlags("api-key")).
@@ -243,7 +243,7 @@ func registerGroupsCommands(app *cli.App) {
 		Flags(
 			cli.String("description", "").Help("Replacement description."),
 			cli.String("name", "").Help("Replacement human-readable name."),
-			cli.String("routing-policy", "").Help("Affects future interactions only; in-flight interactions retain the snapshotted policy."),
+			cli.String("routing-policy", "").Help("Replacement routing policy, either `first_responder` or `all_members`. Affects future interactions only; in-flight interactions retain the snapshotted policy."),
 			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
 		).
 		Use(cli.RequireFlags("api-key")).

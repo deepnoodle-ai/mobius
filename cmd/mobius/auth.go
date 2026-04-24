@@ -279,6 +279,11 @@ func runAuthLogout(ctx *cli.Context) error {
 func runAuthStatus(ctx *cli.Context) error {
 	ctx.Printf("API URL: %s\n", ctx.String("api-url"))
 
+	if appliedSavedCredential != nil && ctx.String("api-key") == appliedSavedCredential.Token {
+		printSavedCredentialStatus(ctx, appliedSavedCredential)
+		return nil
+	}
+
 	if ctx.IsSet("api-key") {
 		// Distinguish between flag and env var as best we can.
 		if _, ok := os.LookupEnv("MOBIUS_API_KEY"); ok && os.Getenv("MOBIUS_API_KEY") == ctx.String("api-key") {
@@ -286,7 +291,7 @@ func runAuthStatus(ctx *cli.Context) error {
 		} else {
 			ctx.Println("Auth source: --api-key flag")
 		}
-		ctx.Println("Authenticated: yes (raw API key)")
+		printAuthVerification(ctx, "raw API key")
 		return nil
 	}
 
@@ -300,6 +305,11 @@ func runAuthStatus(ctx *cli.Context) error {
 		ctx.Println("Run `mobius auth login` to sign in from the browser.")
 		return nil
 	}
+	printSavedCredentialStatus(ctx, cred)
+	return nil
+}
+
+func printSavedCredentialStatus(ctx *cli.Context, cred *authstore.Credential) {
 	ctx.Println("Auth source: saved browser credential")
 	ctx.Printf("Credential file: ")
 	if p, err := authstore.Path(); err == nil {
@@ -316,8 +326,22 @@ func runAuthStatus(ctx *cli.Context) error {
 	if cred.UserEmail != "" || cred.UserName != "" || cred.UserID != "" {
 		ctx.Printf("User: %s\n", firstNonEmpty(cred.UserEmail, cred.UserName, cred.UserID))
 	}
-	ctx.Println("Authenticated: yes (browser-based CLI credential)")
-	return nil
+	printAuthVerification(ctx, "browser-based CLI credential")
+}
+
+func printAuthVerification(ctx *cli.Context, credentialKind string) {
+	status, err := verifyAuthenticatedRequest(ctx)
+	if err != nil {
+		ctx.Printf("Auth check: GET /v1/projects failed: %v\n", err)
+		ctx.Printf("Authenticated: no (%s verification failed)\n", credentialKind)
+		return
+	}
+	ctx.Printf("Auth check: GET /v1/projects -> HTTP %d\n", status)
+	if status == http.StatusOK {
+		ctx.Printf("Authenticated: yes (%s verified)\n", credentialKind)
+		return
+	}
+	ctx.Printf("Authenticated: no (%s rejected)\n", credentialKind)
 }
 
 type cliCredential struct {
@@ -459,6 +483,16 @@ func authAPIGet(ctx *cli.Context, path string) (*http.Response, error) {
 	}
 	authAPISetHeaders(ctx, req)
 	return http.DefaultClient.Do(req)
+}
+
+func verifyAuthenticatedRequest(ctx *cli.Context) (int, error) {
+	resp, err := authAPIGet(ctx, "/v1/projects")
+	if err != nil {
+		return 0, err
+	}
+	defer resp.Body.Close()
+	_, _ = io.Copy(io.Discard, resp.Body)
+	return resp.StatusCode, nil
 }
 
 // hasAuth reports whether clientFromContext will have a usable token.
