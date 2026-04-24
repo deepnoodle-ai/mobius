@@ -60,8 +60,10 @@ func registerAuthCommands(app *cli.App) {
 
 	grp.Command("login").
 		Description("Log this device into Mobius via the browser").
+		OmitGlobalFlag("project").
 		Flags(
 			cli.String("org", "").Help("Requested org ID (optional; browser will prompt otherwise)"),
+			cli.String("project", "").Help("Project handle to pin this login to (optional)"),
 			cli.String("label", "").Help("Device label shown in the web app (defaults to user@host)"),
 			cli.Bool("default", "").Default(false).Help("Mark this profile as the default"),
 			cli.Bool("no-browser", "").Default(false).Help("Do not try to open the browser automatically"),
