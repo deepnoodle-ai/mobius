@@ -16,6 +16,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/deepnoodle-ai/wonton/cli"
@@ -60,10 +61,15 @@ func applySavedCredential() {
 	if err != nil || cred == nil || cred.Token == "" {
 		return
 	}
-	os.Setenv("MOBIUS_API_KEY", cred.Token)
+	if err := os.Setenv("MOBIUS_API_KEY", cred.Token); err != nil {
+		fmt.Fprintf(os.Stderr, "mobius: warning: apply saved credential: set MOBIUS_API_KEY: %v\n", err)
+		return
+	}
 	if cred.APIURL != "" {
 		if _, ok := os.LookupEnv("MOBIUS_API_URL"); !ok {
-			os.Setenv("MOBIUS_API_URL", cred.APIURL)
+			if err := os.Setenv("MOBIUS_API_URL", cred.APIURL); err != nil {
+				fmt.Fprintf(os.Stderr, "mobius: warning: apply saved credential: set MOBIUS_API_URL: %v\n", err)
+			}
 		}
 	}
 	appliedSavedCredential = cred

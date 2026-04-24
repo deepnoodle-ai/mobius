@@ -226,6 +226,10 @@ func stringifyConfigValue(v any) (string, error) {
 		return strconv.Itoa(val), nil
 	case int64:
 		return strconv.FormatInt(val, 10), nil
+	case uint:
+		return strconv.FormatUint(uint64(val), 10), nil
+	case uint64:
+		return strconv.FormatUint(val, 10), nil
 	case float64:
 		// json.Unmarshal/yaml numeric literals land here. Emit without a
 		// decimal point when the value is integral so "3" stays "3".

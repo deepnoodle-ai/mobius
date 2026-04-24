@@ -482,18 +482,23 @@ func authAPISetHeaders(ctx *cli.Context, req *http.Request) {
 }
 
 func authAPIGet(ctx *cli.Context, path string) (*http.Response, error) {
+	return authAPIGetWithClient(ctx, path, http.DefaultClient)
+}
+
+func authAPIGetWithClient(ctx *cli.Context, path string, client *http.Client) (*http.Response, error) {
 	req, err := http.NewRequestWithContext(ctx.Context(), http.MethodGet, authAPIURL(ctx, path), nil)
 	if err != nil {
 		return nil, err
 	}
 	authAPISetHeaders(ctx, req)
-	return http.DefaultClient.Do(req)
+	return client.Do(req)
 }
 
 func verifyAuthenticatedRequest(ctx *cli.Context) (authProbeResult, error) {
 	path := authProbePath(ctx.String("api-key"))
 	result := authProbeResult{Path: path}
-	resp, err := authAPIGet(ctx, path)
+	client := &http.Client{Timeout: 15 * time.Second}
+	resp, err := authAPIGetWithClient(ctx, path, client)
 	if err != nil {
 		return result, err
 	}
