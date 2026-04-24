@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import Enum
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import AnyUrl, BaseModel, ConfigDict, Field, RootModel
 
@@ -41,6 +41,76 @@ class Metadata(BaseModel):
     )
 
 
+class InteractionMode(Enum):
+    """
+    Declarative UI/input primitive for collecting the response. This is a portable rendering contract, not executable code.
+    """
+
+    confirm = 'confirm'
+    select = 'select'
+    multi_select = 'multi_select'
+    input = 'input'
+
+
+class InteractionOption(BaseModel):
+    """
+    Selectable option for `select` and `multi_select` modes.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    value: str = Field(
+        ..., description='Machine-readable value submitted when this option is chosen.'
+    )
+    label: str = Field(
+        ..., description='Human-readable label displayed for this option.'
+    )
+    description: str | None = Field(
+        None, description='Optional additional context shown beneath the label.'
+    )
+
+
+class InteractionSpec(BaseModel):
+    """
+    Declarative dialog contract for rendering and validating an interaction. Used at both authoring time (inside a workflow definition) and runtime (persisted on an interaction). Compatibility rules are enforced server-side:
+
+    - `approval` requires `mode = confirm`
+    - `review` requires `mode = select`
+    - `input` supports `input`, `select`, or `multi_select`
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    mode: InteractionMode
+    options: list[InteractionOption] | None = Field(
+        None,
+        description='Required for `select` and `multi_select` modes.',
+        max_length=100,
+    )
+    default_value: str | None = Field(
+        None, description='Default selected option for `select` mode.'
+    )
+    default_values: list[str] | None = Field(
+        None,
+        description='Default selected options for `multi_select` mode.',
+        max_length=100,
+    )
+    default_text: str | None = Field(
+        None, description='Initial text value for `input` mode.'
+    )
+    default_confirmed: bool | None = Field(
+        None, description='Initial yes/no value for `confirm` mode.'
+    )
+    placeholder: str | None = Field(
+        None, description='Hint text shown for `input` mode.'
+    )
+    multiline: bool | None = Field(
+        None, description='When true, render `input` mode as a multiline text area.'
+    )
+
+
 class ChannelMessageSenderType(Enum):
     """
     Whether the message was sent by a human org member or an agent worker.
@@ -52,9 +122,7 @@ class ChannelMessageSenderType(Enum):
 
 class Kind(Enum):
     """
-    `channel` — persistent named room.
-    `dm` — direct-message thread, typically between a small fixed set of participants.
-
+    `channel` — persistent named room. `dm` — direct-message thread, typically between a small fixed set of participants.
     """
 
     dm = 'dm'
@@ -65,7 +133,7 @@ class Channel(BaseModel):
     id: str = Field(..., description='Unique identifier for this channel.')
     name: str = Field(
         ...,
-        description='URL-safe channel handle, unique within the project. Immutable\nafter creation.\n',
+        description='URL-safe channel handle, unique within the project. Immutable after creation.',
     )
     display_name: str = Field(
         ..., description='Human-facing display name shown in the UI.'
@@ -76,7 +144,7 @@ class Channel(BaseModel):
     )
     kind: Kind = Field(
         ...,
-        description='`channel` — persistent named room.\n`dm` — direct-message thread, typically between a small fixed set of participants.\n',
+        description='`channel` — persistent named room. `dm` — direct-message thread, typically between a small fixed set of participants.',
     )
     private: bool = Field(
         ...,
@@ -87,7 +155,7 @@ class Channel(BaseModel):
     )
     archived_at: datetime | None = Field(
         None,
-        description='Set when the channel is archived. Archived channels are hidden in\nthe UI but their message history remains accessible.\n',
+        description='Set when the channel is archived. Archived channels are hidden in the UI but their message history remains accessible.',
     )
     created_at: datetime = Field(
         ..., description='Timestamp when this channel was created.'
@@ -110,10 +178,7 @@ class ChannelListResponse(BaseModel):
 
 class Role(Enum):
     """
-    `admin` — can update channel settings and manage members.
-    `member` — can post messages and view history.
-    Creators are automatically assigned `admin`.
-
+    `admin` — can update channel settings and manage members. `member` — can post messages and view history. Creators are automatically assigned `admin`.
     """
 
     member = 'member'
@@ -128,7 +193,7 @@ class ChannelMember(BaseModel):
     user_id: str = Field(..., description='ID of the user or agent who is a member.')
     role: Role = Field(
         ...,
-        description='`admin` — can update channel settings and manage members.\n`member` — can post messages and view history.\nCreators are automatically assigned `admin`.\n',
+        description='`admin` — can update channel settings and manage members. `member` — can post messages and view history. Creators are automatically assigned `admin`.',
     )
     last_read_message_id: str | None = Field(
         None,
@@ -162,11 +227,7 @@ class ChannelMemberListResponse(BaseModel):
 
 class Display(Enum):
     """
-    Rendering hint for the UI.
-    `message` — standard chat bubble.
-    `notice` — system/informational notice (no attribution).
-    `card` — structured card layout.
-
+    Rendering hint for the UI. `message` — standard chat bubble. `notice` — system/informational notice (no attribution). `card` — structured card layout.
     """
 
     message = 'message'
@@ -189,11 +250,11 @@ class ChannelMessage(BaseModel):
     )
     display: Display | None = Field(
         None,
-        description='Rendering hint for the UI.\n`message` — standard chat bubble.\n`notice` — system/informational notice (no attribution).\n`card` — structured card layout.\n',
+        description='Rendering hint for the UI. `message` — standard chat bubble. `notice` — system/informational notice (no attribution). `card` — structured card layout.',
     )
     type: str = Field(
         ...,
-        description='Dot-namespaced message type identifier, e.g. `user.message`,\n`ai.response`. Used for filtering and display logic.\n',
+        description='Dot-namespaced message type identifier, e.g. `user.message`, `ai.response`. Used for filtering and display logic.',
     )
     content: str = Field(..., description='Message body in Markdown.')
     reply_to: str | None = Field(
@@ -240,7 +301,7 @@ class Kind1(Enum):
 class CreateChannelRequest(BaseModel):
     name: str = Field(
         ...,
-        description='URL-safe handle, unique within the project. Immutable after\ncreation — choose carefully.\n',
+        description='URL-safe handle, unique within the project. Immutable after creation — choose carefully.',
     )
     display_name: str = Field(
         ..., description='Human-facing display name shown in the UI.'
@@ -256,7 +317,7 @@ class CreateChannelRequest(BaseModel):
     )
     member_ids: list[str] | None = Field(
         None,
-        description='Optional list of user or agent IDs to add as members at creation\ntime. All receive the `member` role; the creator is added as\n`admin` separately.\n',
+        description='Optional list of user or agent IDs to add as members at creation time. All receive the `member` role; the creator is added as `admin` separately.',
     )
 
 
@@ -293,7 +354,7 @@ class Display1(Enum):
 class SendChannelMessageRequest(BaseModel):
     sender_agent_id: str | None = Field(
         None,
-        description='Durable agent identity to attribute the message to. When set,\n`sender_type` on the resulting message is `agent`.\n',
+        description='Durable agent identity to attribute the message to. When set, `sender_type` on the resulting message is `agent`.',
     )
     sender_session_id: str | None = Field(
         None, description='Live agent session to associate with the message.'
@@ -505,14 +566,14 @@ class CreateProjectPinnedAPIKeyRequest(BaseModel):
     )
     project_id: ProjectID = Field(
         ...,
-        description='Set `project_id` to pin this key to exactly one project. When\n`project_id` is omitted, the request creates an org-level key\ninstead.\n',
+        description='Set `project_id` to pin this key to exactly one project. When `project_id` is omitted, the request creates an org-level key instead.',
     )
     scope: Scope2 | None = Field(
         'org', description='Standard API key scope for project-pinned keys.'
     )
     permissions: list[str] | None = Field(
         None,
-        description='Permissions to grant. Each permission must be held by the creating\ncaller — you cannot grant more than you have.\n',
+        description='Permissions to grant. Each permission must be held by the creating caller — you cannot grant more than you have.',
     )
     service_account_id: str | None = Field(
         None, description='Associate this key with a service account for attribution.'
@@ -545,7 +606,7 @@ class CreateOrgOrSystemAPIKeyRequest(BaseModel):
     )
     permissions: list[str] | None = Field(
         None,
-        description='Permissions to grant. Each permission must be held by the creating\ncaller — you cannot grant more than you have.\n',
+        description='Permissions to grant. Each permission must be held by the creating caller — you cannot grant more than you have.',
     )
     service_account_id: str | None = Field(
         None, description='Associate this key with a service account for attribution.'
@@ -571,8 +632,9 @@ class AuthContext(BaseModel):
         ...,
         description='How the caller authenticated: `clerk` (browser JWT), `api_key`, or `cli_token`.',
     )
-    is_admin: bool = Field(
-        ..., description='True for Mobius platform admins only; not an org-level flag.'
+    is_org_admin: bool = Field(
+        ...,
+        description='True when the caller is an owner or admin of the active organization.',
     )
 
 
@@ -587,7 +649,7 @@ class ConfirmDeviceCodeRequest(BaseModel):
     )
     project_id: str | None = Field(
         None,
-        description="Optional project ID to pin the issued CLI credential to. When set,\nthe resulting token is usable only for that project and must carry\nthe project's handle as a trailing `.<handle>` suffix.\n",
+        description="Optional project ID to pin the issued CLI credential to. When set, the resulting token is usable only for that project and must carry the project's handle as a trailing `.<handle>` suffix.",
     )
 
 
@@ -610,11 +672,11 @@ class CLICredential(BaseModel):
     )
     project_id: str | None = Field(
         None,
-        description='Project ID the credential is pinned to. Empty when the credential\nis org-scoped (usable across every project the user can access).\n',
+        description='Project ID the credential is pinned to. Empty when the credential is org-scoped (usable across every project the user can access).',
     )
     project_handle: str | None = Field(
         None,
-        description='Handle of the pinned project, echoed here so clients can format\nthe trailing `.<handle>` suffix on every request. Empty when the\ncredential is not pinned.\n',
+        description='Handle of the pinned project, echoed here so clients can format the trailing `.<handle>` suffix on every request. Empty when the credential is not pinned.',
     )
     label: str = Field(
         ..., description='Human-readable label identifying this credential.'
@@ -681,11 +743,12 @@ class WorkflowOutput(BaseModel):
 
 class WorkflowStepLayout(BaseModel):
     """
-    Optional presentation hint for the visual editor. Ignored by the
-    execution engine; when absent, editors auto-lay out the step.
-
+    Optional presentation hint for the visual editor. Ignored by the execution engine; when absent, editors auto-lay out the step.
     """
 
+    model_config = ConfigDict(
+        extra='forbid',
+    )
     x: float | None = Field(
         None, description='Horizontal position of the step in the editor canvas.'
     )
@@ -696,9 +759,7 @@ class WorkflowStepLayout(BaseModel):
 
 class WorkflowActionKind(Enum):
     """
-    Execution mode for `action` steps.
-    Omit for the current default of `worker`.
-
+    Execution mode for `action` steps. Omit for the current default of `worker`.
     """
 
     worker = 'worker'
@@ -862,40 +923,14 @@ class Type(Enum):
     input = 'input'
 
 
-class Mode(Enum):
-    """
-    UI rendering mode: confirm shows yes/no, select and multi_select show option lists, input shows a text field.
-    """
-
-    confirm = 'confirm'
-    select = 'select'
-    multi_select = 'multi_select'
-    input = 'input'
-
-
-class WorkflowInteractionOption(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    value: str = Field(
-        ...,
-        description='Machine-readable option value stored in the interaction response.',
-    )
-    label: str = Field(
-        ..., description='Human-readable option label displayed to the recipient.'
-    )
-    description: str | None = Field(
-        None, description='Optional supplementary text shown alongside the option.'
-    )
-
-
 class Type1(Enum):
     """
-    Whether the target is an individual user or a group.
+    Whether the target is an individual user, a group, or an agent.
     """
 
     user = 'user'
     group = 'group'
+    agent = 'agent'
 
 
 class WorkflowInteractionTarget(BaseModel):
@@ -903,21 +938,91 @@ class WorkflowInteractionTarget(BaseModel):
         extra='forbid',
     )
     type: Type1 = Field(
-        ..., description='Whether the target is an individual user or a group.'
+        ...,
+        description='Whether the target is an individual user, a group, or an agent.',
     )
-    id: str = Field(..., description='ID of the target user or group.')
+    id: str = Field(..., description='ID of the target user, group, or agent.')
     require_all: bool | None = Field(
         None,
-        description='When true, all group members must respond before the interaction completes.',
+        description='When true, all group members must respond before the interaction completes. Only meaningful when type is `group`.',
+    )
+
+
+class WorkflowDefinitionSummary(BaseModel):
+    """
+    Workflow definition metadata without the executable `spec`. Returned by list endpoints; fetch a single definition via `getWorkflow` to get the full spec.
+    """
+
+    id: str = Field(..., description='Unique identifier for this workflow definition.')
+    name: str = Field(..., description='Human-readable workflow name.')
+    handle: str = Field(
+        ...,
+        description='URL-safe slug, unique within the project. Used to reference this workflow in triggers and tools.',
+    )
+    description: str | None = Field(
+        None, description="Optional description of the workflow's purpose."
+    )
+    latest_version: int = Field(
+        ...,
+        description='The current highest version number. Starts at 1 and increments with each spec update.',
+    )
+    published_as_tool: bool | None = Field(
+        None,
+        description='When true, this workflow is exposed as a callable tool via /api/tools.',
+    )
+    created_by: str = Field(
+        ...,
+        description='User ID of the org member who created this workflow definition.',
+    )
+    created_at: datetime = Field(
+        ..., description='Timestamp when this workflow definition was created.'
+    )
+    updated_at: datetime = Field(
+        ..., description='Timestamp when this workflow definition was last updated.'
+    )
+
+
+class WorkflowDefinitionListResponse(BaseModel):
+    items: list[WorkflowDefinitionSummary] = Field(
+        ..., description='The list of results for this page.'
+    )
+    next_cursor: str | None = Field(
+        None,
+        description='Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.',
+    )
+    has_more: bool = Field(..., description='Whether additional pages are available.')
+
+
+class WorkflowVersionSummary(BaseModel):
+    """
+    Workflow version metadata without the executable `spec`. Returned by `listWorkflowVersions`.
+    """
+
+    id: str = Field(..., description='Unique identifier for this workflow version.')
+    version: int = Field(
+        ..., description='Monotonically increasing version number. Starts at 1.'
+    )
+    created_by: str = Field(
+        ..., description='User ID of the org member who created this version.'
+    )
+    created_at: datetime = Field(
+        ..., description='Timestamp when this version was created.'
+    )
+
+
+class WorkflowVersionListResponse(BaseModel):
+    """
+    Unpaginated list of immutable versions for one workflow definition. Version histories are expected to stay small enough to return in one response; fetch an individual version to retrieve its executable spec.
+    """
+
+    items: list[WorkflowVersionSummary] = Field(
+        ..., description='The list of workflow versions, newest first.'
     )
 
 
 class WorkflowRunStatus(Enum):
     """
-    Run lifecycle: `queued` → `running` → `completed` | `failed` | `suspended`.
-    A `suspended` run is waiting on a signal or interaction; it resumes
-    automatically when the signal is delivered or the interaction is responded to.
-
+    Run lifecycle: `queued` → `running` → `completed` | `failed` | `suspended`. A `suspended` run is waiting on a signal or interaction; it resumes automatically when the signal is delivered or the interaction is responded to.
     """
 
     queued = 'queued'
@@ -929,10 +1034,7 @@ class WorkflowRunStatus(Enum):
 
 class ErrorType(Enum):
     """
-    Typed run-level failure cause. Its own vocabulary, not a
-    superset of the job-level `error_type`. Present when
-    `status=failed`.
-
+    Typed run-level failure cause. Its own vocabulary, not a superset of the job-level `error_type`. Present when `status=failed`.
     """
 
     run_timeout = 'run_timeout'
@@ -940,32 +1042,71 @@ class ErrorType(Enum):
     job_failed = 'job_failed'
 
 
-class ConfigInput(BaseModel):
+class Mode(Enum):
     """
-    Hierarchical cascade config input. Shape: `{<category>: {<key>: <value>}}`.
-    The only category shipped in Phase 1 is `timeouts`, whose keys are
-    `claim`, `liveness`, `execution`, `wall_clock`. Unknown categories or
-    unknown keys under a known category are rejected at write time. See
-    PRD 035.
-
+    Discriminator value — must be `saved`.
     """
 
+    saved = 'saved'
+
+
+class Mode1(Enum):
+    """
+    Discriminator value — must be `inline`.
+    """
+
+    inline = 'inline'
+
+
+class ConfigEntry(BaseModel):
     model_config = ConfigDict(
-        extra='allow',
+        extra='forbid',
+    )
+    category: str = Field(
+        ..., description='Config category token, for example `timeouts`.'
+    )
+    key: str = Field(
+        ..., description='Config key within the category, for example `execution`.'
+    )
+    value: str = Field(
+        ..., description='Raw string value interpreted by the category-specific parser.'
     )
 
 
-class ResolvedConfig(BaseModel):
+class ConfigEntries(RootModel[list[ConfigEntry]]):
     """
-    Frozen cascade resolution. Same outer shape as `ConfigInput`, but
-    every leaf is a `{value, source}` object where `source` is one of
-    `service` | `project` | `workflow` | `run` | `step`. Keys unset at
-    every layer are omitted. See PRD 035.
-
+    Flat cascade config input used outside authored workflow YAML. Each entry addresses one `(category, key)` pair. Unknown categories or unknown keys under a known category are rejected at write time. The only category shipped in Phase 1 is `timeouts`, whose keys are `claim`, `liveness`, `execution`, `wall_clock`.
     """
 
+    root: list[ConfigEntry] = Field(
+        ...,
+        description='Flat cascade config input used outside authored workflow YAML. Each entry addresses one `(category, key)` pair. Unknown categories or unknown keys under a known category are rejected at write time. The only category shipped in Phase 1 is `timeouts`, whose keys are `claim`, `liveness`, `execution`, `wall_clock`.',
+    )
+
+
+class Source(Enum):
+    """
+    Cascade layer that supplied the winning value.
+    """
+
+    service = 'service'
+    project = 'project'
+    workflow = 'workflow'
+    run = 'run'
+    step = 'step'
+
+
+class ResolvedConfigEntry(BaseModel):
     model_config = ConfigDict(
-        extra='allow',
+        extra='forbid',
+    )
+    category: str = Field(
+        ..., description='Config category token, for example `timeouts`.'
+    )
+    key: str = Field(..., description='Resolved key within the category.')
+    value: str = Field(..., description='Resolved raw string value.')
+    source: Source = Field(
+        ..., description='Cascade layer that supplied the winning value.'
     )
 
 
@@ -992,95 +1133,28 @@ class ActionLogEntry(BaseModel):
 
 
 class ActionLogListResponse(BaseModel):
+    """
+    Unpaginated action log for one workflow run. Entries are scoped to a single run and ordered for inspection rather than broad search.
+    """
+
     items: list[ActionLogEntry] = Field(
         ..., description='The list of action log entries for this run.'
     )
 
 
-class Job(BaseModel):
+class JobStatus(Enum):
     """
-    A claimable unit of work derived from a single workflow step execution.
+    Job lifecycle state:
+    - `pending`   — created, not yet claimed by a worker.
+    - `claimed`   — held under an active worker lease.
+    - `completed` — terminal success.
+    - `failed`    — terminal failure; may follow retries.
     """
 
-    id: str = Field(..., description='Unique identifier for this job.')
-    run_id: str = Field(..., description='The workflow run this job belongs to.')
-    parent_job_id: str | None = Field(
-        None, description='Set when this job is a child of a fan-out (each) step.'
-    )
-    path_id: str | None = Field(
-        None,
-        description='Opaque identifier for the execution path within the run (used for fan-out deduplication).',
-    )
-    step_name: str = Field(
-        ..., description='Workflow step name this job was created for.'
-    )
-    action: str = Field(
-        ..., description='Action name the worker must execute to complete this job.'
-    )
-    queue: str = Field(
-        ...,
-        description='Queue the job was placed in. Workers subscribe to queues to receive jobs.',
-    )
-    parameters: dict[str, Any] | None = Field(
-        None, description='Resolved input parameters to pass to the action.'
-    )
-    status: str = Field(
-        ..., description='Job lifecycle: pending → claimed → completed | failed.'
-    )
-    claimed_by: str | None = Field(None, description='Worker ID that claimed this job.')
-    agent_id: str | None = Field(
-        None, description='Agent ID the claiming worker is acting on behalf of.'
-    )
-    agent_session_id: str | None = Field(
-        None, description='Agent session ID provided during the claim.'
-    )
-    claimed_at: datetime | None = Field(
-        None, description='Timestamp when this job was claimed by a worker.'
-    )
-    heartbeat_at: datetime | None = Field(
-        None,
-        description='Timestamp of the most recent heartbeat. Used to detect stale claims.',
-    )
-    attempt: int = Field(
-        ..., description='Current attempt number (1-based). Increments on each retry.'
-    )
-    max_attempts: int = Field(
-        ...,
-        description='Maximum number of attempts before the job is permanently failed.',
-    )
-    scheduled_at: datetime = Field(
-        ..., description='Earliest time at which this job may be claimed.'
-    )
-    last_error: str | None = Field(
-        None, description='Error detail from the most recent failed attempt.'
-    )
-    claim_deadline_at: datetime | None = Field(
-        None,
-        description='Deadline at which the reaper will fail this job with\n`error_type=claim_timeout` if no worker has claimed it.\nPresent only when `resolved_config.timeouts.claim` resolves\nto a finite duration. Re-stamped whenever the job returns\nto `pending`.\n',
-    )
-    liveness_deadline_at: datetime | None = Field(
-        None,
-        description='Deadline at which the reaper will either reset (retries\nremain) or fail this job with `error_type=liveness_timeout`\nif the worker has not heartbeated in time. Present only\nwhen `resolved_config.timeouts.liveness` resolves to a\nfinite duration and the job is claimed.\n',
-    )
-    execution_deadline_at: datetime | None = Field(
-        None,
-        description='Deadline at which the reaper will fail this job with\n`error_type=execution_timeout` if it has not completed. Present\nonly when `resolved_config.timeouts.execution` resolves to a\nfinite duration.\n',
-    )
-    error_type: str | None = Field(
-        None,
-        description='Typed failure cause (e.g. `claim_timeout`, `liveness_timeout`,\n`execution_timeout`, `run_cancelled`). Present when\n`status=failed`.\n',
-    )
-    resolved_config: ResolvedConfig | None = None
-    created_at: datetime = Field(
-        ..., description='Timestamp when this job was created.'
-    )
-    updated_at: datetime = Field(
-        ..., description='Timestamp when this job was last updated.'
-    )
-
-
-class JobListResponse(BaseModel):
-    items: list[Job] = Field(..., description='The list of jobs for this run.')
+    pending = 'pending'
+    claimed = 'claimed'
+    completed = 'completed'
+    failed = 'failed'
 
 
 class SendRunSignalRequest(BaseModel):
@@ -1099,13 +1173,36 @@ class RunSignal(BaseModel):
     )
 
 
-class ActionAnnotations(BaseModel):
+class ActionAnnotationsRequest(BaseModel):
     """
-    Hints that describe the safe-use properties of the action. Used by the
-    engine and tooling to decide retry behavior, dry-run eligibility, etc.
-
+    Request hints that describe the safe-use properties of the action. Used by the engine and tooling to decide retry behavior, dry-run eligibility, etc. Unknown request properties are rejected.
     """
 
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    idempotent: bool | None = Field(
+        None,
+        description='The action produces the same result when called with the same inputs; safe to retry automatically.',
+    )
+    destructive: bool | None = Field(
+        None,
+        description='The action has irreversible side effects (deletion, financial transactions, etc.). Surfaced as a warning in UI.',
+    )
+    read_only: bool | None = Field(
+        None,
+        description='The action has no side effects; safe to call in dry-run scenarios.',
+    )
+
+
+class ActionAnnotationsResponse(BaseModel):
+    """
+    Response hints that describe the safe-use properties of the action. Response annotations are forward-compatible so the server can add response-only hints without breaking strict clients.
+    """
+
+    model_config = ConfigDict(
+        extra='allow',
+    )
     idempotent: bool | None = Field(
         None,
         description='The action produces the same result when called with the same inputs; safe to retry automatically.',
@@ -1121,9 +1218,12 @@ class ActionAnnotations(BaseModel):
 
 
 class CreateActionRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
     name: str = Field(
         ...,
-        description='Project-scoped identifier used in workflow step definitions.\nLowercase alphanumeric + hyphens, e.g. "send-email". Must be\nunique within the project. Cannot start with "mobius." (reserved prefix).\n',
+        description='Project-scoped identifier used in workflow step definitions. Lowercase alphanumeric + hyphens, e.g. "send-email". Must be unique within the project. Cannot start with "mobius." (reserved prefix).',
     )
     title: str | None = Field(
         None, description='Human-readable display name shown in the UI and catalog.'
@@ -1140,10 +1240,13 @@ class CreateActionRequest(BaseModel):
     output_schema: dict[str, Any] | None = Field(
         None, description='JSON Schema describing the expected output shape.'
     )
-    annotations: ActionAnnotations | None = None
+    annotations: ActionAnnotationsRequest | None = None
 
 
 class UpdateActionRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
     title: str | None = Field(None, description='Replacement display title.')
     description: str | None = Field(
         None, description='Replacement Markdown description.'
@@ -1157,7 +1260,7 @@ class UpdateActionRequest(BaseModel):
         None,
         description='Replacement JSON Schema for outputs. Replaces the existing schema.',
     )
-    annotations: ActionAnnotations | None = Field(
+    annotations: ActionAnnotationsRequest | None = Field(
         None, description='Pass null to clear all annotation flags.'
     )
 
@@ -1183,10 +1286,10 @@ class Action1(BaseModel):
     output_schema: dict[str, Any] | None = Field(
         None, description='JSON Schema describing the expected output shape.'
     )
-    annotations: ActionAnnotations | None = None
+    annotations: ActionAnnotationsResponse | None = None
     signing_secret: str | None = Field(
         None,
-        description='Raw HMAC-SHA256 signing secret. Only populated on create and rotate\nresponses; null on all other reads. Store this value securely on\nfirst receipt — it cannot be retrieved again.\n',
+        description='Raw HMAC-SHA256 signing secret. Only populated on create and rotate responses; null on all other reads. Store this value securely on first receipt — it cannot be retrieved again.',
     )
     created_at: datetime = Field(
         ..., description='Timestamp when this action was created.'
@@ -1206,6 +1309,9 @@ class ActionListResponse(BaseModel):
 
 
 class RotateSecretResult(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
     signing_secret: str = Field(
         ...,
         description='The new raw signing secret. Store it immediately — this is the only time it is returned.',
@@ -1228,13 +1334,13 @@ class ActionCatalogEntry(BaseModel):
     )
     source: str = Field(
         ...,
-        description='Origin of this action: "project" for project-owned actions, or the\nintegration slug for platform-provided actions.\n',
+        description='Origin of this action: "project" for project-owned actions, or the integration slug for platform-provided actions.',
     )
     available: bool = Field(
         ...,
-        description='Whether this action can currently be invoked. False if the required\nintegration is not connected or the caller lacks permission.\n',
+        description='Whether this action can currently be invoked. False if the required integration is not connected or the caller lacks permission.',
     )
-    annotations: ActionAnnotations | None = None
+    annotations: ActionAnnotationsResponse | None = None
     input_schema: dict[str, Any] | None = Field(
         None, description='JSON Schema describing expected input parameters.'
     )
@@ -1247,6 +1353,10 @@ class ActionCatalogEntry(BaseModel):
 
 
 class ActionCatalogListResponse(BaseModel):
+    """
+    Unpaginated project action catalog. This endpoint returns the complete set of available project and platform actions so clients can build pickers without paging across a small catalog.
+    """
+
     items: list[ActionCatalogEntry] = Field(
         ..., description='The full list of catalog entries.'
     )
@@ -1306,7 +1416,7 @@ class ActionAuditLogListResponse(BaseModel):
 class JobClaimRequest(BaseModel):
     worker_id: str = Field(
         ...,
-        description='Caller-assigned stable identifier for this worker process. Used\nas the lease fence and for worker registry tracking.\n',
+        description='Caller-assigned stable identifier for this worker process. Used as the lease fence and for worker registry tracking.',
     )
     agent_id: str | None = Field(
         None, description='Durable agent identity the worker is acting on behalf of.'
@@ -1322,15 +1432,15 @@ class JobClaimRequest(BaseModel):
     )
     queues: list[str] | None = Field(
         None,
-        description='Queue names the worker subscribes to. When empty the worker\nclaims from any queue in the project. Workflow runs default\nto the "default" queue when not otherwise specified.\n',
+        description='Queue names the worker subscribes to. When empty the worker claims from any queue in the project. Workflow runs default to the "default" queue when not otherwise specified.',
     )
     actions: list[str] | None = Field(
         None,
-        description='Action names this worker can execute. When provided, only jobs\nwhose `action` is in this list are returned. When empty, action\nfiltering is skipped.\n',
+        description='Action names this worker can execute. When provided, only jobs whose `action` is in this list are returned. When empty, action filtering is skipped.',
     )
     wait_seconds: int | None = Field(
         None,
-        description='How long to hold the request open waiting for a job to surface.\n0 returns immediately. Capped at 30 by the server.\n',
+        description='How long to hold the request open waiting for a job to surface. 0 returns immediately. Capped at 30 by the server.',
         ge=0,
         le=30,
     )
@@ -1365,19 +1475,19 @@ class JobClaim(BaseModel):
     )
     attempt: int = Field(
         ...,
-        description='1-based attempt counter. Incremented on each automatic retry.\nInclude in the fence for all subsequent heartbeat and complete calls.\n',
+        description='1-based attempt counter. Incremented on each automatic retry. Include in the fence for all subsequent heartbeat and complete calls.',
     )
     queue: str = Field(..., description='Queue name the job was claimed from.')
     heartbeat_interval_seconds: int | None = Field(
         None,
-        description='Recommended heartbeat interval in seconds. Workers should call\n`POST /v1/projects/{project}/jobs/{id}/heartbeat` at this cadence to keep the lease\nalive. Typically 30 seconds.\n',
+        description='Recommended heartbeat interval in seconds. Workers should call `POST /v1/projects/{project}/jobs/{id}/heartbeat` at this cadence to keep the lease alive. Typically 30 seconds.',
     )
 
 
 class JobHeartbeatDirectives(BaseModel):
     should_cancel: bool | None = Field(
         False,
-        description='When true, the run has received a cancellation request. The\nworker must stop processing immediately and call complete with\n`status: failed`.\n',
+        description='When true, the run has received a cancellation request. The worker must stop processing immediately and call complete with `status: failed`.',
     )
 
 
@@ -1397,9 +1507,7 @@ class JobFenceRequest(BaseModel):
 
 class Status(Enum):
     """
-    Terminal status for this job attempt. `failed` triggers the
-    workflow engine's retry logic if `attempt < max_attempts`.
-
+    Terminal status for this job attempt. `failed` triggers the workflow engine's retry logic if `attempt < max_attempts`.
     """
 
     completed = 'completed'
@@ -1415,15 +1523,15 @@ class JobCompleteRequest(BaseModel):
     )
     status: Status = Field(
         ...,
-        description="Terminal status for this job attempt. `failed` triggers the\nworkflow engine's retry logic if `attempt < max_attempts`.\n",
+        description="Terminal status for this job attempt. `failed` triggers the workflow engine's retry logic if `attempt < max_attempts`.",
     )
     result_b64: str | None = Field(
         None,
-        description="Base64-encoded (standard encoding) bytes representing the job's\noutput. The workflow engine decodes this and may pass it as input\nto downstream steps. Omit if the step produces no output.\n",
+        description="Base64-encoded (standard encoding) bytes representing the job's output. The workflow engine decodes this and may pass it as input to downstream steps. Omit if the step produces no output.",
     )
     error_type: str | None = Field(
         None,
-        description='Short error class identifier (e.g. "TimeoutError"). Used for\nobservability and retry classification. Only relevant when\n`status: failed`.\n',
+        description='Short error class identifier (e.g. "TimeoutError"). Used for observability and retry classification. Only relevant when `status: failed`.',
     )
     error_message: str | None = Field(
         None,
@@ -1440,7 +1548,7 @@ class RunActionRequest(BaseModel):
     )
     dry_run: bool | None = Field(
         None,
-        description='When true, invokes the action without side effects. Only\neffective for actions that support dry-run mode.\n',
+        description='When true, invokes the action without side effects. Only effective for actions that support dry-run mode.',
     )
 
 
@@ -1453,32 +1561,41 @@ class RunActionResult(BaseModel):
 class JobEventEntry(BaseModel):
     type: str = Field(
         ...,
-        description='Caller-chosen event type identifier. The `mobius.` prefix is\nreserved for server-emitted well-known kinds and is rejected\nwith 400.\n',
+        description='Caller-chosen event type identifier. The `mobius.` prefix is reserved for server-emitted well-known kinds and is rejected with 400.',
         max_length=64,
         min_length=1,
         pattern='^[a-zA-Z0-9_.-]+$',
     )
     payload: dict[str, Any] = Field(
         ...,
-        description='Free-form JSON payload. Bounded by the server-side byte limit\n(default 16 KiB per event); oversize payloads are rejected\nwith 413.\n',
+        description='Free-form JSON payload. Bounded by the server-side byte limit (default 16 KiB per event); oversize payloads are rejected with 413.',
     )
 
 
 class Type2(Enum):
     """
-    Actor type: `user` or `service_account`.
+    Target kind: a specific user, an agent queue, or a group.
     """
 
-    member = 'member'
+    user = 'user'
     agent = 'agent'
     group = 'group'
 
 
-class ActorRef(BaseModel):
-    type: Type2 = Field(..., description='Actor type: `user` or `service_account`.')
+class InteractionTarget(BaseModel):
+    """
+    Identifies who should receive an interaction request. Note: distinct from the caller/audit `Actor` vocabulary — a target is a *recipient*, not someone who has acted yet.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    type: Type2 = Field(
+        ..., description='Target kind: a specific user, an agent queue, or a group.'
+    )
     id: str = Field(
         ...,
-        description='User ID for member; queue name for agent; group ID/handle for group',
+        description='User ID for user; queue name for agent; group ID or handle for group.',
     )
 
 
@@ -1488,90 +1605,17 @@ class InteractionType(Enum):
     input = 'input'
 
 
-class InteractionSpecMode(Enum):
-    """
-    Declarative UI/input primitive for collecting the response. This is a
-    portable rendering contract, not executable code.
-
-    """
-
-    confirm = 'confirm'
-    select = 'select'
-    multi_select = 'multi_select'
-    input = 'input'
-
-
-class InteractionOption(BaseModel):
-    """
-    Selectable option for `select` and `multi_select` modes.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    value: str = Field(
-        ..., description='Machine-readable value submitted when this option is chosen.'
-    )
-    label: str = Field(
-        ..., description='Human-readable label displayed for this option.'
-    )
-    description: str | None = Field(
-        None, description='Optional additional context shown beneath the label.'
-    )
-
-
-class InteractionSpec(BaseModel):
-    """
-    Declarative dialog contract for rendering and validating an interaction.
-    `type` defines the semantic intent; `mode` defines the input affordance.
-    Compatibility rules are enforced server-side:
-    - `approval` requires `mode = confirm`
-    - `review` requires `mode = select`
-    - `input` supports `input`, `select`, or `multi_select`
-
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    mode: InteractionSpecMode
-    options: list[InteractionOption] | None = Field(
-        None, description='Required for `select` and `multi_select` modes.'
-    )
-    default_value: str | None = Field(
-        None, description='Default selected option for `select` mode.'
-    )
-    default_values: list[str] | None = Field(
-        None, description='Default selected options for `multi_select` mode.'
-    )
-    default_text: str | None = Field(
-        None, description='Initial text value for `input` mode.'
-    )
-    default_confirmed: bool | None = Field(
-        None, description='Initial yes/no value for `confirm` mode.'
-    )
-    placeholder: str | None = Field(
-        None, description='Hint text shown for `input` mode.'
-    )
-    multiline: bool | None = Field(
-        None, description='When true, render `input` mode as a multiline text area.'
-    )
-
-
 class CreateJobInteractionRequest(BaseModel):
     """
-    Creates an interaction from a claimed job context. The server derives
-    the owning run from the job and may derive the signal name when
-    omitted.
-
+    Creates an interaction from a claimed job context. The server derives the owning run from the job and may derive the signal name when omitted.
     """
 
-    target_actor: ActorRef
+    target: InteractionTarget
     type: InteractionType
     message: str = Field(..., description='Message shown to the responder.')
     signal_name: str | None = Field(
         None,
-        description='Optional signal name override. When omitted, the server derives\nthe signal name from step_name or falls back to a default\ninteraction signal name.\n',
+        description='Optional signal name override. When omitted, the server derives the signal name from step_name or falls back to a default interaction signal name.',
     )
     step_name: str | None = Field(
         None, description='Optional workflow step label for UI/debugging context'
@@ -1583,15 +1627,36 @@ class CreateJobInteractionRequest(BaseModel):
     spec: InteractionSpec | None = None
     require_all: bool | None = Field(
         None,
-        description='When target_actor.type is "group", setting require_all=true\nmeans all snapshotted group members must respond before the\ninteraction is considered complete. Ignored for non-group targets.\nDefaults to false when omitted.\n',
+        description='When target.type is "group", setting require_all=true means all snapshotted group members must respond before the interaction is considered complete. Ignored for non-group targets. Defaults to false when omitted.',
     )
     timeout: str | None = Field(
         None,
-        description='Optional duration string (e.g. "24h", "30m") specifying how long\nthe interaction should remain open before expiring. When absent\nthe caller is responsible for setting expires_at directly.\n',
+        description='Optional duration string (e.g. "24h", "30m") specifying how long the interaction should remain open before expiring. When absent the caller is responsible for setting expires_at directly.',
     )
     expires_at: datetime | None = Field(
         None, description='Timestamp after which this interaction expires.'
     )
+
+
+class Type3(Enum):
+    """
+    Responder kind: a user or an agent.
+    """
+
+    user = 'user'
+    agent = 'agent'
+
+
+class InteractionResponder(BaseModel):
+    """
+    Identifies who answered an interaction. Groups cannot themselves respond — only a user within a group — so `group` is not a valid responder type.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    type: Type3 = Field(..., description='Responder kind: a user or an agent.')
+    id: str = Field(..., description='User ID for user; agent ID for agent.')
 
 
 class InteractionValue(RootModel[dict[str, Any] | list | str | float | int | bool]):
@@ -1659,8 +1724,8 @@ class Interaction(BaseModel):
         description='Additional key-value context surfaced in the UI alongside the message.',
     )
     spec: InteractionSpec | None = None
-    target_actor: ActorRef
-    responder_actor: ActorRef | None = None
+    target: InteractionTarget
+    responder: InteractionResponder | None = None
     response: InteractionResponse | None = None
     expires_at: datetime | None = Field(
         None, description='Timestamp when this interaction expires if not responded to.'
@@ -1675,7 +1740,7 @@ class Interaction(BaseModel):
         ..., description='Timestamp when this interaction was last updated.'
     )
     target_group_id: str | None = Field(
-        None, description='Resolved group ID (set when target_actor.type = group)'
+        None, description='Resolved group ID (set when target.type = group)'
     )
     target_member_snapshot: list[str] | None = Field(
         None, description='User IDs of group members at the time of creation'
@@ -1716,7 +1781,6 @@ class ConcurrencyPolicy(Enum):
     - `allow` — start new runs unconditionally.
     - `forbid` — skip the new fire if a run from this trigger is still active.
     - `replace` — cancel the active run before starting a new one.
-
     """
 
     allow = 'allow'
@@ -1731,7 +1795,6 @@ class TriggerFireStatus(Enum):
     - `partial_failure` — at least one target failed while others succeeded.
     - `failed` — all targets failed, or a trigger-level error prevented any target.
     - `skipped` — the concurrency policy suppressed the entire activation.
-
     """
 
     success = 'success'
@@ -1752,11 +1815,11 @@ class TriggerTarget(BaseModel):
     workflow_id: str = Field(..., description='ID of the workflow definition to run.')
     condition: str | None = Field(
         None,
-        description='Expression evaluated against the event payload. The target is\nskipped if this evaluates to false. Omit to always run.\n',
+        description='Expression evaluated against the event payload. The target is skipped if this evaluates to false. Omit to always run.',
     )
     input_mapping: dict[str, str] | None = Field(
         None,
-        description='Maps workflow input names to JSONPath expressions evaluated against\nthe event payload. Example: `{"user_id": "$.event.actor.id"}`.\n',
+        description='Maps workflow input names to JSONPath expressions evaluated against the event payload. Example: `{"user_id": "$.event.actor.id"}`.',
     )
     enabled: bool = Field(
         ...,
@@ -1771,6 +1834,10 @@ class TriggerTarget(BaseModel):
 
 
 class TriggerTargetListResponse(BaseModel):
+    """
+    Unpaginated list of targets attached to one trigger. Trigger fan-out is configured as a small bounded set rather than a high-volume collection.
+    """
+
     items: list[TriggerTarget] = Field(
         ..., description='The list of targets for this trigger.'
     )
@@ -1784,7 +1851,7 @@ class CreateTriggerTargetRequest(BaseModel):
     workflow_id: str = Field(..., description='ID of the workflow definition to run.')
     condition: str | None = Field(
         None,
-        description='Expression evaluated against the event payload. Omit to always run.\n',
+        description='Expression evaluated against the event payload. Omit to always run.',
     )
     input_mapping: dict[str, str] | None = Field(
         None, description='Maps workflow input names to JSONPath expressions.'
@@ -1836,20 +1903,74 @@ class TriggerFireTargetResult(BaseModel):
     error: str | None = Field(None, description='Error detail when status is `failed`.')
 
 
+class ScheduleSourceConfig(BaseModel):
+    """
+    Source configuration for `schedule` triggers. Provide exactly one of `cron` or `interval`.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    cron: str | None = Field(
+        None,
+        description='5-field cron expression or @-descriptor, e.g. `0 9 * * 1-5` or `@hourly`.',
+    )
+    interval: str | None = Field(
+        None,
+        description='Go duration string, e.g. `5m`, `1h`, `30s`. Must be positive.',
+    )
+
+
+class WebhookSourceConfig(BaseModel):
+    """
+    Source configuration for `webhook` triggers.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    handle: str | None = Field(
+        None,
+        description="URL-safe handle that determines the inbound `receive_url`. Auto-derived from the trigger's `name` when omitted. Must be unique within the project.",
+    )
+    signing_secret: str | None = Field(
+        None,
+        description='Optional HMAC-SHA256 secret for verifying inbound webhook payloads. When set, Mobius validates the `X-Mobius-Signature` header on incoming requests. Accepted on create/update; omitted from GET/list responses.',
+    )
+    receive_url: str | None = Field(
+        None, description='Full URL for posting inbound events. Computed from `handle`.'
+    )
+
+
+class EventSourceConfig(BaseModel):
+    """
+    Source configuration for `event` triggers.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    event_type: str | None = Field(
+        None, description='Platform event type to match, e.g. `run.completed`.'
+    )
+
+
+class TriggerSourceConfig(
+    RootModel[ScheduleSourceConfig | WebhookSourceConfig | EventSourceConfig]
+):
+    root: ScheduleSourceConfig | WebhookSourceConfig | EventSourceConfig = Field(
+        ...,
+        description="Typed source configuration. The shape is determined by the trigger's `kind` (`schedule` → `ScheduleSourceConfig`, `webhook` → `WebhookSourceConfig`, `event` → `EventSourceConfig`); mismatches are rejected with 400.",
+    )
+
+
 class Trigger(BaseModel):
     id: str = Field(..., description='Unique identifier for this trigger.')
     name: str = Field(
         ..., description='Human-readable trigger name, unique within the project.'
     )
     kind: TriggerKind
-    source_config: dict[str, Any] | None = Field(
-        None,
-        description='Kind-specific source configuration. For `schedule`: `{"cron": "0 * * * *"}`.\nFor `webhook` and `event`: contains event type filters.\n',
-    )
-    filter_config: dict[str, Any] | None = Field(
-        None,
-        description='Additional payload filters applied before targets are evaluated.',
-    )
+    source_config: TriggerSourceConfig | None = None
     targets: list[TriggerTarget] | None = Field(
         None, description='Targets attached to this trigger, populated via join.'
     )
@@ -1862,14 +1983,6 @@ class Trigger(BaseModel):
     )
     next_fire_at: datetime | None = Field(
         None, description='Computed next scheduled fire time (schedule triggers only).'
-    )
-    webhook_handle: str | None = Field(
-        None,
-        description='URL-safe handle for the inbound receive endpoint (webhook triggers only). Unique within the project.',
-    )
-    receive_url: str | None = Field(
-        None,
-        description='Full URL for posting inbound events (webhook triggers only). Computed from `webhook_handle`.',
     )
     created_by: str | None = Field(
         None, description='User ID of the org member who created this trigger.'
@@ -1928,18 +2041,25 @@ class TriggerFireListResponse(BaseModel):
     has_more: bool = Field(..., description='Whether additional pages are available.')
 
 
-class CreateTriggerRequest(BaseModel):
+class Kind2(Enum):
+    """
+    Discriminator value — must be `schedule`.
+    """
+
+    schedule = 'schedule'
+
+
+class CreateScheduleTriggerRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
     name: str = Field(
         ..., description='Human-readable trigger name, unique within the project.'
     )
-    kind: TriggerKind
-    source_config: dict[str, Any] | None = Field(
-        None,
-        description='Kind-specific configuration. Required for `schedule` triggers:\n`{"cron": "0 9 * * 1-5"}`. For `event` triggers: event type and\nfilter expressions.\n',
+    kind: Literal['schedule'] = Field(
+        ..., description='Discriminator value — must be `schedule`.'
     )
-    filter_config: dict[str, Any] | None = Field(
-        None, description='Additional payload filters evaluated before targets.'
-    )
+    source_config: ScheduleSourceConfig
     targets: list[CreateTriggerTargetRequest] | None = Field(
         None,
         description='Workflows to start when this trigger fires (inline convenience; stored as sub-resources).',
@@ -1949,34 +2069,74 @@ class CreateTriggerRequest(BaseModel):
         None,
         description='Whether the trigger starts enabled. Defaults to true when omitted.',
     )
-    webhook_handle: str | None = Field(
-        None,
-        description='URL-safe handle that determines the inbound receive URL. Auto-derived\nfrom `name` for `webhook` triggers when omitted. Must be unique\nwithin the project.\n',
+
+
+class Kind3(Enum):
+    """
+    Discriminator value — must be `webhook`.
+    """
+
+    webhook = 'webhook'
+
+
+class CreateWebhookTriggerRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
     )
-    signing_secret: str | None = Field(
+    name: str = Field(
+        ..., description='Human-readable trigger name, unique within the project.'
+    )
+    kind: Literal['webhook'] = Field(
+        ..., description='Discriminator value — must be `webhook`.'
+    )
+    source_config: WebhookSourceConfig | None = None
+    targets: list[CreateTriggerTargetRequest] | None = Field(
         None,
-        description='Optional HMAC-SHA256 secret for verifying inbound webhook payloads.\nWhen set, Mobius validates the `X-Mobius-Signature` header on\nincoming requests.\n',
+        description='Workflows to start when this trigger fires (inline convenience; stored as sub-resources).',
+    )
+    concurrency_policy: ConcurrencyPolicy | None = None
+    enabled: bool | None = Field(
+        None,
+        description='Whether the trigger starts enabled. Defaults to true when omitted.',
+    )
+
+
+class Kind4(Enum):
+    """
+    Discriminator value — must be `event`.
+    """
+
+    event = 'event'
+
+
+class CreateEventTriggerRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    name: str = Field(
+        ..., description='Human-readable trigger name, unique within the project.'
+    )
+    kind: Literal['event'] = Field(
+        ..., description='Discriminator value — must be `event`.'
+    )
+    source_config: EventSourceConfig
+    targets: list[CreateTriggerTargetRequest] | None = Field(
+        None,
+        description='Workflows to start when this trigger fires (inline convenience; stored as sub-resources).',
+    )
+    concurrency_policy: ConcurrencyPolicy | None = None
+    enabled: bool | None = Field(
+        None,
+        description='Whether the trigger starts enabled. Defaults to true when omitted.',
     )
 
 
 class UpdateTriggerRequest(BaseModel):
     name: str | None = Field(None, description='Replacement human-readable name.')
-    source_config: dict[str, Any] | None = Field(
-        None, description='Replacement kind-specific source configuration.'
-    )
-    filter_config: dict[str, Any] | None = Field(
-        None, description='Replacement payload filter configuration.'
-    )
+    source_config: TriggerSourceConfig | None = None
     concurrency_policy: ConcurrencyPolicy | None = None
     enabled: bool | None = Field(
         None, description='Set to false to pause the trigger without deleting it.'
-    )
-    webhook_handle: str | None = Field(
-        None,
-        description='Changing this changes the `receive_url`; update any upstream integrations.',
-    )
-    signing_secret: str | None = Field(
-        None, description='Replace or clear the inbound signature verification secret.'
     )
 
 
@@ -1992,7 +2152,7 @@ class WorkerSession(BaseModel):
     )
     last_seen_at: datetime | None = Field(
         None,
-        description="Timestamp of this session's most recent job claim poll. Updated on\nevery `POST /v1/projects/{project}/jobs/claim` call regardless of\nwhether a job was returned. Used to compute `stale`.\n",
+        description="Timestamp of this session's most recent job claim poll. Updated on every `POST /v1/projects/{project}/jobs/claim` call regardless of whether a job was returned. Used to compute `stale`.",
     )
     capabilities: list[str] | None = Field(
         None,
@@ -2000,23 +2160,23 @@ class WorkerSession(BaseModel):
     )
     service_account_id: str | None = Field(
         None,
-        description='Service account this session authenticated as on register/heartbeat.\nSet when a machine identity is polling; mutually exclusive with\n`user_id`. Stable across credential rotation — use this to group\nsessions by identity in the admin UI.\n',
+        description='Service account this session authenticated as on register/heartbeat. Set when a machine identity is polling; mutually exclusive with `user_id`. Stable across credential rotation — use this to group sessions by identity in the admin UI.',
     )
     user_id: str | None = Field(
         None,
-        description='User this session authenticated as on register/heartbeat. Set when\na human is polling via the CLI; mutually exclusive with\n`service_account_id`.\n',
+        description='User this session authenticated as on register/heartbeat. Set when a human is polling via the CLI; mutually exclusive with `service_account_id`.',
     )
     api_key_id: str | None = Field(
         None,
-        description='ID of the specific API key this session presented on its most\nrecent register/heartbeat. Only set for service-account-backed\nsessions; changes across credential rotations. Use together with\n`service_account_id` to see rotation progress across a fleet.\n',
+        description='ID of the specific API key this session presented on its most recent register/heartbeat. Only set for service-account-backed sessions; changes across credential rotations. Use together with `service_account_id` to see rotation progress across a fleet.',
     )
     agent_id: str | None = Field(
         None,
-        description='Agent this session represents, when the polling process declared\nitself as a registered agent (via `agent_id` on the claim request\nor via inference from the service account). Absent for ad-hoc\nworker processes that are not tied to a declared agent.\n',
+        description='Agent this session represents, when the polling process declared itself as a registered agent (via `agent_id` on the claim request or via inference from the service account). Absent for ad-hoc worker processes that are not tied to a declared agent.',
     )
     stale: bool = Field(
         ...,
-        description='True when `last_seen_at` is older than 2 minutes or absent.\nComputed at read time, not stored.\n',
+        description='True when `last_seen_at` is older than 2 minutes or absent. Computed at read time, not stored.',
     )
 
 
@@ -2028,10 +2188,7 @@ class WorkerSessionListResponse(BaseModel):
 
 class ProjectAccessMode(Enum):
     """
-    `org_open`: every org member can see and use the project, subject to
-    role assignments. `restricted`: only listed project members (and org
-    owners/admins) can see or use the project.
-
+    `org_open`: every org member can see and use the project, subject to role assignments. `restricted`: only listed project members (and org owners/admins) can see or use the project.
     """
 
     org_open = 'org_open'
@@ -2043,7 +2200,7 @@ class Project(BaseModel):
     name: str = Field(..., description='Human-readable project name.')
     handle: str = Field(
         ...,
-        description='URL-safe slug used as a path segment in all project-scoped API routes.\nUnique within the org. Immutable after creation.\n',
+        description='URL-safe slug used as a path segment in all project-scoped API routes. Unique within the org. Immutable after creation.',
     )
     description: str | None = Field(
         None, description='Optional human-readable description.'
@@ -2058,10 +2215,6 @@ class Project(BaseModel):
     updated_at: datetime = Field(
         ..., description='Timestamp when this project was last updated.'
     )
-    config: ConfigInput | None = Field(
-        None,
-        description='Project-layer cascade config, assembled from project_configs\nat read time. Shape: `{<category>: {<key>: <value>}}`. Absent\nwhen the project has no stored cascade input.\n',
-    )
 
 
 class ProjectListResponse(BaseModel):
@@ -2072,7 +2225,7 @@ class CreateProjectRequest(BaseModel):
     name: str = Field(..., description='Human-readable project name.')
     handle: str | None = Field(
         None,
-        description='URL-safe slug for API routes. Auto-derived from name if omitted.\nMust be unique within the org. Cannot be changed after creation.\n',
+        description='URL-safe slug for API routes. Auto-derived from name if omitted. Must be unique within the org. Cannot be changed after creation.',
     )
     description: str | None = Field(
         None, description='Optional human-readable description.'
@@ -2086,11 +2239,7 @@ class UpdateProjectRequest(BaseModel):
     access_mode: ProjectAccessMode | None = None
     seed_existing_members: bool | None = Field(
         None,
-        description='When transitioning from `org_open` to `restricted`, set true to\ninsert all current org members as project members so nobody\nloses visibility on the flip. Ignored on other transitions.\n',
-    )
-    config: ConfigInput | None = Field(
-        None,
-        description="Hierarchical cascade config with PRD 035 FR-F9 PATCH semantics.\nPer-category operations, applied in the order the payload is\niterated:\n  * `config: {}` → no-op (no categories mentioned).\n  * `config: {<cat>: null}` → clear that category completely.\n  * `config: {<cat>: {}}` → no-op on that category.\n  * `config: {<cat>: {...}}` → complete replacement of that\n    category's stored object (not a deep-merge); keys omitted\n    from the new object are removed.\nTo clear every category, issue explicit `{<cat>: null}` entries\nfor each category you want to clear.\n",
+        description='When transitioning from `org_open` to `restricted`, set true to insert all current org members as project members so nobody loses visibility on the flip. Ignored on other transitions.',
     )
 
 
@@ -2128,11 +2277,7 @@ class AddProjectMemberRequest(BaseModel):
 
 class WebhookDeliveryStatus(Enum):
     """
-    `pending` — queued, not yet attempted.
-    `processing` — currently being delivered.
-    `delivered` — recipient returned 2xx.
-    `failed` — all retry attempts exhausted.
-
+    `pending` — queued, not yet attempted. `processing` — currently being delivered. `delivered` — recipient returned 2xx. `failed` — all retry attempts exhausted.
     """
 
     pending = 'pending'
@@ -2143,9 +2288,7 @@ class WebhookDeliveryStatus(Enum):
 
 class Webhook(BaseModel):
     """
-    A project-level outgoing webhook subscription. When a subscribed
-    event fires, Mobius POSTs the event payload to `url`.
-
+    A project-level outgoing webhook subscription. When a subscribed event fires, Mobius POSTs the event payload to `url`.
     """
 
     id: str = Field(..., description='Unique identifier for this webhook.')
@@ -2157,7 +2300,7 @@ class Webhook(BaseModel):
     )
     events: list[str] = Field(
         ...,
-        description='Subscribed event types. Use dot notation (`run.completed`,\n`run.failed`) or wildcards (`run.*` for all run events).\n',
+        description='Subscribed event types. Use dot notation (`run.completed`, `run.failed`) or wildcards (`run.*` for all run events).',
     )
     enabled: bool = Field(
         ..., description='When false, matching events are not delivered.'
@@ -2186,11 +2329,7 @@ class WebhookListResponse(BaseModel):
 
 class WebhookDelivery(BaseModel):
     """
-    One delivery record for a webhook event. The daemon claims pending
-    rows, POSTs the payload, and transitions to `delivered` or retries
-    on failure. A delivery reaches `failed` only after exhausting all
-    10 retry attempts.
-
+    One delivery record for a webhook event. The daemon claims pending rows, POSTs the payload, and transitions to `delivered` or retries on failure. A delivery reaches `failed` only after exhausting all 10 retry attempts.
     """
 
     id: str = Field(..., description='Unique identifier for this delivery record.')
@@ -2237,15 +2376,15 @@ class CreateWebhookRequest(BaseModel):
     )
     url: str | None = Field(
         None,
-        description='The endpoint Mobius will POST event payloads to. May be left empty\nat creation time so a candidate URL can be tested via the ping\nendpoint before it is saved; events do not fire for webhooks with\nan empty URL.\n',
+        description='The endpoint Mobius will POST event payloads to. May be left empty at creation time so a candidate URL can be tested via the ping endpoint before it is saved; events do not fire for webhooks with an empty URL.',
     )
     signing_secret: str | None = Field(
         None,
-        description='Optional HMAC-SHA256 secret. When set, Mobius signs each POST body\nand includes `X-Mobius-Signature: sha256=<hex>` in the request\nheaders.\n',
+        description='Optional HMAC-SHA256 secret. When set, Mobius signs each POST body and includes `X-Mobius-Signature: sha256=<hex>` in the request headers.',
     )
     events: list[str] = Field(
         ...,
-        description='Event types to subscribe to. Use wildcards for broad\nsubscriptions, e.g. `["run.*"]` for all run events.\n',
+        description='Event types to subscribe to. Use wildcards for broad subscriptions, e.g. `["run.*"]` for all run events.',
     )
     enabled: bool | None = Field(
         None,
@@ -2258,7 +2397,7 @@ class UpdateWebhookRequest(BaseModel):
     url: str | None = Field(None, description='Replacement endpoint URL.')
     signing_secret: str | None = Field(
         None,
-        description='Replace the current signing secret. Set to empty string to\ndisable signing. Omit to leave the current secret unchanged.\n',
+        description='Replace the current signing secret. Set to empty string to disable signing. Omit to leave the current secret unchanged.',
     )
     events: list[str] | None = Field(
         None,
@@ -2273,7 +2412,7 @@ class UpdateWebhookRequest(BaseModel):
 class PingWebhookRequest(BaseModel):
     url: str | None = Field(
         None,
-        description="URL to test. When supplied, the ping is sent to this URL instead\nof the webhook's saved URL — use this to validate a candidate URL\nbefore saving it. When omitted, the webhook's current saved URL\nis used.\n",
+        description="URL to test. When supplied, the ping is sent to this URL instead of the webhook's saved URL — use this to validate a candidate URL before saving it. When omitted, the webhook's current saved URL is used.",
     )
 
 
@@ -2295,10 +2434,7 @@ class PingWebhookResult(BaseModel):
 
 class IntegrationStatus(Enum):
     """
-    `active` — integration is enabled and usable by workflows.
-    `inactive` — manually disabled; no automatic expiry behavior.
-    `expired` — token/credential has expired (e.g., OAuth token not refreshed).
-
+    `active` — integration is enabled and usable by workflows. `inactive` — manually disabled; no automatic expiry behavior. `expired` — token/credential has expired (e.g., OAuth token not refreshed).
     """
 
     active = 'active'
@@ -2313,11 +2449,11 @@ class Integration(BaseModel):
     )
     provider: str = Field(
         ...,
-        description='Free-form provider identifier (e.g. `openai`, `slack`, `github`).\nImmutable after creation.\n',
+        description='Free-form provider identifier (e.g. `openai`, `slack`, `github`). Immutable after creation.',
     )
     config: dict[str, Any] | None = Field(
         None,
-        description='Provider-specific credential and configuration blob stored as\nJSON. The shape is provider-defined.\n',
+        description='Provider-specific credential and configuration blob stored as JSON. The shape is provider-defined.',
     )
     status: IntegrationStatus
     created_by: str | None = Field(
@@ -2382,7 +2518,7 @@ class CopyIntegrationRequest(BaseModel):
     )
     name: str | None = Field(
         None,
-        description="Name for the copied integration in the destination project.\nDefaults to the source integration's name. Required if the\nsource name conflicts with an existing `(provider, name)` in\nthis project.\n",
+        description="Name for the copied integration in the destination project. Defaults to the source integration's name. Required if the source name conflicts with an existing `(provider, name)` in this project.",
     )
 
 
@@ -2390,11 +2526,11 @@ class BillingSubscription(BaseModel):
     id: str = Field(..., description='Unique identifier for this subscription.')
     plan_type: str = Field(
         ...,
-        description='Active plan: `trial`, `free`, `pro`, or `business`. New orgs\nstart on `trial`; the plan downgrades to `free` when the trial\nexpires.\n',
+        description='Active plan: `trial`, `free`, `pro`, or `business`. New orgs start on `trial`; the plan downgrades to `free` when the trial expires.',
     )
     status: str = Field(
         ...,
-        description='Stripe subscription status: `active`, `trialing`, `past_due`,\n`canceled`, `unpaid`, or `incomplete`.\n',
+        description='Stripe subscription status: `active`, `trialing`, `past_due`, `canceled`, `unpaid`, or `incomplete`.',
     )
     seat_count: int = Field(
         ..., description='Number of licensed seats included in the subscription.'
@@ -2411,7 +2547,7 @@ class BillingSubscription(BaseModel):
     )
     grace_ends_at: datetime | None = Field(
         None,
-        description='When the post-expiry grace period ends. During grace, the org\nretains access but is prompted to upgrade.\n',
+        description='When the post-expiry grace period ends. During grace, the org retains access but is prompted to upgrade.',
     )
     trial_days_remaining: int = Field(
         ..., description='Days remaining in the trial. 0 when the trial has ended.'
@@ -2421,15 +2557,15 @@ class BillingSubscription(BaseModel):
     )
     monthly_credit_cap: int = Field(
         ...,
-        description='Maximum usage credits allowed per billing period. Workflow\nexecution is blocked when this cap is reached.\n',
+        description='Maximum usage credits allowed per billing period. Workflow execution is blocked when this cap is reached.',
     )
     per_run_step_cap: int = Field(
         ...,
-        description='Maximum number of job steps allowed per individual workflow run.\nDefault: 10,000 (pro/trial), 50,000 (business).\n',
+        description='Maximum number of job steps allowed per individual workflow run. Default: 10,000 (pro/trial), 50,000 (business).',
     )
     alert_thresholds_percent: list[int] = Field(
         ...,
-        description='Percentage levels (1–100) of `monthly_credit_cap` at which usage\nalert notifications are sent. Up to `max_alert_thresholds` from\nthe plan.\n',
+        description='Percentage levels (1–100) of `monthly_credit_cap` at which usage alert notifications are sent. Up to `max_alert_thresholds` from the plan.',
     )
     cancel_at_period_end: bool = Field(
         ...,
@@ -2567,15 +2703,15 @@ class BillingURLResult(BaseModel):
 class UpdateBillingLimitsRequest(BaseModel):
     monthly_credit_cap: int | None = Field(
         None,
-        description='New monthly credit ceiling. When reached, workflow execution is\nblocked until the next billing period.\n',
+        description='New monthly credit ceiling. When reached, workflow execution is blocked until the next billing period.',
     )
     per_run_step_cap: int | None = Field(
         None,
-        description='Maximum job steps per workflow run. Prevents runaway runs from\nconsuming unbounded credits.\n',
+        description='Maximum job steps per workflow run. Prevents runaway runs from consuming unbounded credits.',
     )
     alert_thresholds_percent: list[int] | None = Field(
         None,
-        description="Replacement list of alert threshold percentages (1–100). Replaces\nthe full existing list. Must not exceed the plan's\n`max_alert_thresholds`.\n",
+        description="Replacement list of alert threshold percentages (1–100). Replaces the full existing list. Must not exceed the plan's `max_alert_thresholds`.",
     )
 
 
@@ -2614,15 +2750,15 @@ class ProjectMetrics(BaseModel):
     )
     failure_rate: float = Field(
         ...,
-        description='Fraction of completed runs that ended in `failed` status within\nthe window. Range 0.0–1.0.\n',
+        description='Fraction of completed runs that ended in `failed` status within the window. Range 0.0–1.0.',
     )
     avg_run_seconds: float = Field(
         ...,
-        description='Mean wall-clock duration of completed runs within the window,\nin seconds.\n',
+        description='Mean wall-clock duration of completed runs within the window, in seconds.',
     )
     p95_step_seconds: float = Field(
         ...,
-        description='95th-percentile job duration (claim time to terminal state)\ncomputed across the 40 most recent completed jobs, in seconds.\nUse this to detect slow or stuck steps.\n',
+        description='95th-percentile job duration (claim time to terminal state) computed across the 40 most recent completed jobs, in seconds. Use this to detect slow or stuck steps.',
     )
     queue_depth: int = Field(
         ...,
@@ -2642,14 +2778,14 @@ class ProjectMetrics(BaseModel):
     )
     status_breakdown: dict[str, int] = Field(
         ...,
-        description='Map of workflow run status → count across all runs in the project\n(not windowed). Includes all terminal and in-progress statuses.\n',
+        description='Map of workflow run status → count across all runs in the project (not windowed). Includes all terminal and in-progress statuses.',
     )
 
 
 class PreviewPermissionsRequest(BaseModel):
     service_account_default_role: str | None = Field(
         None,
-        description='Role name assigned as a fallback to service accounts that have no\nexplicit assignment at the time of preview.\n',
+        description='Role name assigned as a fallback to service accounts that have no explicit assignment at the time of preview.',
     )
 
 
@@ -2861,10 +2997,7 @@ class User(BaseModel):
 
 class SystemRoleName(Enum):
     """
-    One of the built-in system roles. These are seeded at startup and
-    cannot be deleted. `Owner` and `Admin` bypass project-member
-    visibility for restricted projects.
-
+    One of the built-in system roles. These are seeded at startup and cannot be deleted. `Owner` and `Admin` bypass project-member visibility for restricted projects.
     """
 
     Owner = 'Owner'
@@ -2876,10 +3009,7 @@ class SystemRoleName(Enum):
 
 class DefaultProjectAccessMode(Enum):
     """
-    Access mode applied to newly-created projects when the caller does
-    not pass one explicitly. Changing this only affects future
-    projects.
-
+    Access mode applied to newly-created projects when the caller does not pass one explicitly. Changing this only affects future projects.
     """
 
     org_open = 'org_open'
@@ -2898,11 +3028,11 @@ class Org(BaseModel):
     )
     default_member_role: SystemRoleName | None = Field(
         None,
-        description='System-role name assigned at org scope to new org members.\nDefaults to `Operator`.\n',
+        description='System-role name assigned at org scope to new org members. Defaults to `Operator`.',
     )
     default_project_access_mode: DefaultProjectAccessMode | None = Field(
         None,
-        description='Access mode applied to newly-created projects when the caller does\nnot pass one explicitly. Changing this only affects future\nprojects.\n',
+        description='Access mode applied to newly-created projects when the caller does not pass one explicitly. Changing this only affects future projects.',
     )
     created_at: datetime = Field(
         ..., description='Timestamp when this organization was created.'
@@ -3040,26 +3170,15 @@ class InteractionListResponse(BaseModel):
     )
 
 
-class CreateInteractionRequest(BaseModel):
+class CreateStandaloneInteractionRequest(BaseModel):
     """
-    Creates an interaction directly. When `run_id` is provided,
-    `signal_name` is also required and the interaction is linked to that
-    run. When both are omitted, the interaction is standalone and
-    completes with no workflow resume side effect. For worker/job usage,
-    prefer the job-scoped route so the server can derive the owning run
-    from the claimed job context.
-
+    Creates a standalone interaction. Completion records the response but does not deliver a workflow signal.
     """
 
-    run_id: str | None = Field(
-        None,
-        description='ID of the workflow run to resume when this interaction is completed.',
+    model_config = ConfigDict(
+        extra='forbid',
     )
-    signal_name: str | None = Field(
-        None,
-        description='Signal name the interaction will complete against when run-backed.',
-    )
-    target_actor: ActorRef
+    target: InteractionTarget
     type: InteractionType
     message: str = Field(
         ...,
@@ -3072,7 +3191,44 @@ class CreateInteractionRequest(BaseModel):
     spec: InteractionSpec | None = None
     require_all: bool | None = Field(
         None,
-        description='When target_actor.type is "group", setting require_all=true\nmeans all snapshotted group members must respond before the\ninteraction is considered complete. Ignored for non-group targets.\nDefaults to false when omitted.\n',
+        description='When target.type is "group", setting require_all=true means all snapshotted group members must respond before the interaction is considered complete. Ignored for non-group targets. Defaults to false when omitted.',
+    )
+    expires_at: datetime | None = Field(
+        None,
+        description='Timestamp after which this interaction expires if not responded to.',
+    )
+
+
+class CreateRunBackedInteractionRequest(BaseModel):
+    """
+    Creates a run-backed interaction. Completion delivers `signal_name` to `run_id` so a suspended workflow branch can resume.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    run_id: str = Field(
+        ...,
+        description='ID of the workflow run to resume when this interaction is completed.',
+    )
+    signal_name: str = Field(
+        ...,
+        description='Signal name the interaction will complete against when run-backed.',
+    )
+    target: InteractionTarget
+    type: InteractionType
+    message: str = Field(
+        ...,
+        description='Message shown to the responder describing what response is needed.',
+    )
+    context: dict[str, Any] | None = Field(
+        None,
+        description='Additional key-value context surfaced in the UI alongside the message.',
+    )
+    spec: InteractionSpec | None = None
+    require_all: bool | None = Field(
+        None,
+        description='When target.type is "group", setting require_all=true means all snapshotted group members must respond before the interaction is considered complete. Ignored for non-group targets. Defaults to false when omitted.',
     )
     expires_at: datetime | None = Field(
         None,
@@ -3095,10 +3251,7 @@ class SlackInstall(BaseModel):
 
 class RoutingPolicy(Enum):
     """
-    How interactions targeting this group collect responses.
-    `first_responder`: first member to claim or respond wins.
-    `all_members`: every snapshotted member must respond.
-
+    How interactions targeting this group collect responses. `first_responder`: first member to claim or respond wins. `all_members`: every snapshotted member must respond.
     """
 
     first_responder = 'first_responder'
@@ -3117,7 +3270,7 @@ class Group(BaseModel):
     )
     routing_policy: RoutingPolicy = Field(
         ...,
-        description='How interactions targeting this group collect responses.\n`first_responder`: first member to claim or respond wins.\n`all_members`: every snapshotted member must respond.\n',
+        description='How interactions targeting this group collect responses. `first_responder`: first member to claim or respond wins. `all_members`: every snapshotted member must respond.',
     )
     created_at: datetime = Field(
         ..., description='Timestamp when this group was created.'
@@ -3238,10 +3391,7 @@ class AgentStatus(Enum):
 
 class AgentPresence(Enum):
     """
-    Computed from the most recent 20 sessions. `online` means a connected
-    session with a fresh heartbeat; `stale` means heartbeats are overdue;
-    `offline` means no connected sessions.
-
+    Computed from the most recent 20 sessions. `online` means a connected session with a fresh heartbeat; `stale` means heartbeats are overdue; `offline` means no connected sessions.
     """
 
     online = 'online'
@@ -3333,7 +3483,7 @@ class AgentSessionListResponse(BaseModel):
 class CreateAgentRequest(BaseModel):
     service_account_id: str | None = Field(
         None,
-        description='Service account that backs this agent. Must be active and belong to\nthe same project. If omitted, a new service account is auto-created\nwith the same name as the agent.\n',
+        description='Service account that backs this agent. Must be active and belong to the same project. If omitted, a new service account is auto-created with the same name as the agent.',
     )
     name: str = Field(
         ...,
@@ -3448,7 +3598,7 @@ class CreateServiceAccountRequest(BaseModel):
     )
     role_ids: list[str] | None = Field(
         None,
-        description='One or more role IDs to assign at creation time. All assignments are\ncreated atomically with the service account. Requires `mobius.permission.manage`.\nEach role must belong to this project or be org-scoped (project_id empty).\n',
+        description='One or more role IDs to assign at creation time. All assignments are created atomically with the service account. Requires `mobius.permission.manage`. Each role must belong to this project or be org-scoped (project_id empty).',
         min_length=1,
     )
 
@@ -3487,7 +3637,7 @@ class ToolRunRequest(BaseModel):
     )
     timeout_seconds: int | None = Field(
         None,
-        description='How long (in seconds) to wait for synchronous completion.\nDefault 30, max 120. If the run does not complete within this\nwindow the response is 202 with status pending.\n',
+        description='How long (in seconds) to wait for synchronous completion. Default 30, max 120. If the run does not complete within this window the response is 202 with status pending.',
         ge=1,
         le=120,
     )
@@ -3524,7 +3674,10 @@ class CreateAPIKeyRequest(
     root: CreateProjectPinnedAPIKeyRequest | CreateOrgOrSystemAPIKeyRequest
 
 
-class WorkflowStepBase(BaseModel):
+class WorkflowExecutableStep(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
     name: str = Field(
         ...,
         description='Unique step name within the workflow, used for routing and logging.',
@@ -3539,12 +3692,9 @@ class WorkflowStepBase(BaseModel):
     edge_matching_strategy: WorkflowEdgeMatchingStrategy | None = None
     each: WorkflowEach | None = None
     layout: WorkflowStepLayout | None = None
-
-
-class WorkflowExecutableStep(WorkflowStepBase):
     action: str = Field(
         ...,
-        description='Canonical executable-step field.\nWhen `action_kind` is omitted, the engine treats this as a worker action.\nUse `action_kind: server` for Mobius-managed server actions.\n',
+        description='Canonical executable-step field. When `action_kind` is omitted, the engine treats this as a worker action. Use `action_kind: server` for Mobius-managed server actions.',
     )
     action_kind: WorkflowActionKind | None = None
     store: str | None = Field(
@@ -3563,58 +3713,345 @@ class WorkflowExecutableStep(WorkflowStepBase):
     )
 
 
-class WorkflowJoinStep(WorkflowStepBase):
+class WorkflowJoinStep(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    name: str = Field(
+        ...,
+        description='Unique step name within the workflow, used for routing and logging.',
+    )
+    description: str | None = Field(
+        None, description='Optional human-readable description of what this step does.'
+    )
+    next: list[WorkflowEdge] | None = Field(
+        None,
+        description='Outbound edges controlling which step executes after this one.',
+    )
+    edge_matching_strategy: WorkflowEdgeMatchingStrategy | None = None
+    each: WorkflowEach | None = None
+    layout: WorkflowStepLayout | None = None
     join: WorkflowJoinConfig
 
 
-class WorkflowWaitSignalStep(WorkflowStepBase):
+class WorkflowWaitSignalStep(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    name: str = Field(
+        ...,
+        description='Unique step name within the workflow, used for routing and logging.',
+    )
+    description: str | None = Field(
+        None, description='Optional human-readable description of what this step does.'
+    )
+    next: list[WorkflowEdge] | None = Field(
+        None,
+        description='Outbound edges controlling which step executes after this one.',
+    )
+    edge_matching_strategy: WorkflowEdgeMatchingStrategy | None = None
+    each: WorkflowEach | None = None
+    layout: WorkflowStepLayout | None = None
     wait_signal: WorkflowWaitSignalConfig
 
 
-class WorkflowSleepStep(WorkflowStepBase):
+class WorkflowSleepStep(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    name: str = Field(
+        ...,
+        description='Unique step name within the workflow, used for routing and logging.',
+    )
+    description: str | None = Field(
+        None, description='Optional human-readable description of what this step does.'
+    )
+    next: list[WorkflowEdge] | None = Field(
+        None,
+        description='Outbound edges controlling which step executes after this one.',
+    )
+    edge_matching_strategy: WorkflowEdgeMatchingStrategy | None = None
+    each: WorkflowEach | None = None
+    layout: WorkflowStepLayout | None = None
     sleep: WorkflowSleepConfig
 
 
-class WorkflowPauseStep(WorkflowStepBase):
+class WorkflowPauseStep(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    name: str = Field(
+        ...,
+        description='Unique step name within the workflow, used for routing and logging.',
+    )
+    description: str | None = Field(
+        None, description='Optional human-readable description of what this step does.'
+    )
+    next: list[WorkflowEdge] | None = Field(
+        None,
+        description='Outbound edges controlling which step executes after this one.',
+    )
+    edge_matching_strategy: WorkflowEdgeMatchingStrategy | None = None
+    each: WorkflowEach | None = None
+    layout: WorkflowStepLayout | None = None
     pause: WorkflowPauseConfig
 
 
-class WorkflowInteractionSpec(BaseModel):
-    """
-    Declarative interaction UI contract embedded in a workflow definition.
-    This mirrors the persisted interaction spec used at runtime and is
-    intentionally portable across web, email, and agent experiences.
+class WorkflowInteractionConfig(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    type: Type = Field(
+        ...,
+        description='Interaction kind: approval requires a yes/no decision, review requests acknowledgement, input collects free-form data.',
+    )
+    message: str = Field(
+        ..., description='Prompt message shown to the interaction recipient.'
+    )
+    context: dict[str, Any] | None = Field(
+        None,
+        description='Arbitrary key-value context passed alongside the interaction for rendering.',
+    )
+    spec: InteractionSpec | None = None
+    timeout: str = Field(..., description='Go duration string.')
+    target: WorkflowInteractionTarget
 
+
+class StartSavedRunRequest(BaseModel):
+    """
+    Run a previously-created workflow definition. Selected by `mode: saved` on `POST /v1/projects/{project}/runs`.
     """
 
     model_config = ConfigDict(
         extra='forbid',
     )
-    mode: Mode = Field(
+    mode: Literal['saved'] = Field(
+        ..., description='Discriminator value — must be `saved`.'
+    )
+    definition_id: str = Field(
+        ..., description='ID of an existing workflow definition to run.'
+    )
+    queue: str | None = Field(
+        None, description='Queue name to enqueue the run on. Defaults to "default".'
+    )
+    inputs: dict[str, Any] | None = Field(
+        None,
+        description="Input values to pass to the workflow. Must conform to the workflow's declared input schema.",
+    )
+    metadata: dict[str, str] | None = Field(
+        None,
+        description='Caller-supplied string metadata attached to the run for filtering and display.',
+    )
+    external_id: str | None = Field(
+        None,
+        description='Caller-supplied idempotency key or correlation ID attached to the run.',
+    )
+    config: ConfigEntries | None = None
+
+
+class StartBoundRunRequest(BaseModel):
+    """
+    Request body for `POST /v1/projects/{project}/workflows/{id}/runs`. The definition to run is identified by the path parameter, so neither `mode` nor `definition_id` appear here. Inline specs are not allowed on this route — use `POST /v1/projects/{project}/runs` with `mode: inline` instead.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    queue: str | None = Field(
+        None, description='Queue name to enqueue the run on. Defaults to "default".'
+    )
+    inputs: dict[str, Any] | None = Field(
+        None,
+        description="Input values to pass to the workflow. Must conform to the workflow's declared input schema.",
+    )
+    metadata: dict[str, str] | None = Field(
+        None,
+        description='Caller-supplied string metadata attached to the run for filtering and display.',
+    )
+    external_id: str | None = Field(
+        None,
+        description='Caller-supplied idempotency key or correlation ID attached to the run.',
+    )
+    config: ConfigEntries | None = None
+
+
+class ResolvedConfig(RootModel[list[ResolvedConfigEntry]]):
+    """
+    Frozen cascade resolution in flat entry form. Keys unset at every layer are omitted. See PRD 035.
+    """
+
+    root: list[ResolvedConfigEntry] = Field(
         ...,
-        description='UI rendering mode: confirm shows yes/no, select and multi_select show option lists, input shows a text field.',
+        description='Frozen cascade resolution in flat entry form. Keys unset at every layer are omitted. See PRD 035.',
     )
-    options: list[WorkflowInteractionOption] | None = Field(
-        None, description='Required for `select` and `multi_select` modes.'
+
+
+class Job(BaseModel):
+    """
+    A claimable unit of work derived from a single workflow step execution.
+    """
+
+    id: str = Field(..., description='Unique identifier for this job.')
+    run_id: str = Field(..., description='The workflow run this job belongs to.')
+    parent_job_id: str | None = Field(
+        None, description='Set when this job is a child of a fan-out (each) step.'
     )
-    default_value: str | None = Field(
-        None, description='Default selected option for `select` mode.'
+    path_id: str | None = Field(
+        None,
+        description='Opaque identifier for the execution path within the run (used for fan-out deduplication).',
     )
-    default_values: list[str] | None = Field(
-        None, description='Default selected options for `multi_select` mode.'
+    step_name: str = Field(
+        ..., description='Workflow step name this job was created for.'
     )
-    default_text: str | None = Field(
-        None, description='Initial text value for `input` mode.'
+    action: str = Field(
+        ..., description='Action name the worker must execute to complete this job.'
     )
-    default_confirmed: bool | None = Field(
-        None, description='Initial yes/no value for `confirm` mode.'
+    queue: str = Field(
+        ...,
+        description='Queue the job was placed in. Workers subscribe to queues to receive jobs.',
     )
-    placeholder: str | None = Field(
-        None, description='Hint text shown for `input` mode.'
+    parameters: dict[str, Any] | None = Field(
+        None, description='Resolved input parameters to pass to the action.'
     )
-    multiline: bool | None = Field(
-        None, description='When true, render `input` mode as a multiline text area.'
+    status: JobStatus
+    claimed_by: str | None = Field(None, description='Worker ID that claimed this job.')
+    agent_id: str | None = Field(
+        None, description='Agent ID the claiming worker is acting on behalf of.'
     )
+    agent_session_id: str | None = Field(
+        None, description='Agent session ID provided during the claim.'
+    )
+    claimed_at: datetime | None = Field(
+        None, description='Timestamp when this job was claimed by a worker.'
+    )
+    heartbeat_at: datetime | None = Field(
+        None,
+        description='Timestamp of the most recent heartbeat. Used to detect stale claims.',
+    )
+    attempt: int = Field(
+        ..., description='Current attempt number (1-based). Increments on each retry.'
+    )
+    max_attempts: int = Field(
+        ...,
+        description='Maximum number of attempts before the job is permanently failed.',
+    )
+    scheduled_at: datetime = Field(
+        ..., description='Earliest time at which this job may be claimed.'
+    )
+    last_error: str | None = Field(
+        None, description='Error detail from the most recent failed attempt.'
+    )
+    claim_deadline_at: datetime | None = Field(
+        None,
+        description='Deadline at which the reaper will fail this job with `error_type=claim_timeout` if no worker has claimed it. Present only when `resolved_config` contains an entry with `category="timeouts"` and `key="claim"` whose value resolves to a finite duration. Re-stamped whenever the job returns to `pending`.',
+    )
+    liveness_deadline_at: datetime | None = Field(
+        None,
+        description='Deadline at which the reaper will either reset (retries remain) or fail this job with `error_type=liveness_timeout` if the worker has not heartbeated in time. Present only when `resolved_config` contains an entry with `category="timeouts"` and `key="liveness"` whose value resolves to a finite duration and the job is claimed.',
+    )
+    execution_deadline_at: datetime | None = Field(
+        None,
+        description='Deadline at which the reaper will fail this job with `error_type=execution_timeout` if it has not completed. Present only when `resolved_config` contains an entry with `category="timeouts"` and `key="execution"` whose value resolves to a finite duration.',
+    )
+    error_type: str | None = Field(
+        None,
+        description='Failure cause. Server-produced timeout and cancellation failures use stable tokens such as `claim_timeout`, `liveness_timeout`, `execution_timeout`, and `run_cancelled`; worker-reported failures may use caller-defined class names. Present when `status=failed`.',
+    )
+    resolved_config: ResolvedConfig | None = None
+    created_at: datetime = Field(
+        ..., description='Timestamp when this job was created.'
+    )
+    updated_at: datetime = Field(
+        ..., description='Timestamp when this job was last updated.'
+    )
+
+
+class JobListResponse(BaseModel):
+    """
+    Unpaginated list of jobs spawned by one workflow run. This is scoped to a single run for debugging and execution inspection rather than a project-wide search surface.
+    """
+
+    items: list[Job] = Field(..., description='The list of jobs for this run.')
+
+
+class JobEventsRequest(BaseModel):
+    """
+    Fenced batch of custom run events published by the worker holding a job's lease. The fence is per-request: every event in `events` is published under the same `worker_id` + `attempt` pair.
+    """
+
+    worker_id: str = Field(
+        ..., description='Must match the `worker_id` from the original claim.'
+    )
+    attempt: int = Field(
+        ..., description='Must match the `attempt` from the original claim.'
+    )
+    events: list[JobEventEntry] = Field(
+        ...,
+        description='The batch of events to publish. All events are validated atomically.',
+        max_length=100,
+        min_length=1,
+    )
+
+
+class CreateTriggerRequest(
+    RootModel[
+        CreateScheduleTriggerRequest
+        | CreateWebhookTriggerRequest
+        | CreateEventTriggerRequest
+    ]
+):
+    root: (
+        CreateScheduleTriggerRequest
+        | CreateWebhookTriggerRequest
+        | CreateEventTriggerRequest
+    ) = Field(
+        ...,
+        description='Creates a trigger. The request is discriminated by `kind`, and each variant requires the matching `source_config` schema.',
+        discriminator='kind',
+    )
+
+
+class EnablePermissionsRequest(BaseModel):
+    service_account_default_role: str | None = Field(
+        None,
+        description='Fallback role name for service accounts with no existing assignment. Applied only to service accounts not covered by the `assignments` list.',
+    )
+    assignments: list[PermissionsAssignmentInput] | None = Field(
+        None,
+        description='Explicit role assignments to create as part of the enable operation.',
+    )
+
+
+class CreateInteractionRequest(
+    RootModel[CreateStandaloneInteractionRequest | CreateRunBackedInteractionRequest]
+):
+    root: CreateStandaloneInteractionRequest | CreateRunBackedInteractionRequest = (
+        Field(
+            ...,
+            description='Creates an interaction directly. Use the standalone variant with no workflow side effect, or the run-backed variant that requires both `run_id` and `signal_name` so completion can resume the run. For worker/job usage, prefer the job-scoped route so the server can derive the owning run from the claimed job context.',
+        )
+    )
+
+
+class WorkflowInteractionStep(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    name: str = Field(
+        ...,
+        description='Unique step name within the workflow, used for routing and logging.',
+    )
+    description: str | None = Field(
+        None, description='Optional human-readable description of what this step does.'
+    )
+    next: list[WorkflowEdge] | None = Field(
+        None,
+        description='Outbound edges controlling which step executes after this one.',
+    )
+    edge_matching_strategy: WorkflowEdgeMatchingStrategy | None = None
+    each: WorkflowEach | None = None
+    layout: WorkflowStepLayout | None = None
+    interaction: WorkflowInteractionConfig
 
 
 class WorkflowRun(BaseModel):
@@ -3626,12 +4063,15 @@ class WorkflowRun(BaseModel):
     )
     definition_id: str | None = Field(
         None,
-        description='ID of the workflow definition this run was started from.\nEmpty for ephemeral runs started from an inline spec.\n',
+        description='ID of the workflow definition this run was started from. Present only when `ephemeral` is false; omitted for ephemeral runs started from an inline spec.',
     )
-    definition_version: int | None = Field(None, description='Zero for ephemeral runs.')
-    ephemeral: bool | None = Field(
+    definition_version: int | None = Field(
         None,
-        description='True when the run was started from an inline spec rather\nthan a saved workflow definition. Equivalent to\n`definition_id == ""`.\n',
+        description='Version number of the workflow definition this run was started from. Present only when `ephemeral` is false.',
+    )
+    ephemeral: bool = Field(
+        ...,
+        description='True when the run was started from an inline spec rather than a saved workflow definition. Derived server-side; always present on the response. When true, `definition_id` and `definition_version` are omitted.',
     )
     workflow_name: str = Field(
         ..., description='Name of the workflow as recorded at run creation time.'
@@ -3667,7 +4107,7 @@ class WorkflowRun(BaseModel):
     )
     cancel_requested: bool | None = Field(
         None,
-        description='True when a cancel has been requested on this run but the run\nhas not yet reached a terminal state. Workers observe this on\ntheir next heartbeat and stop work.\n',
+        description='True when a cancel has been requested on this run but the run has not yet reached a terminal state. Workers observe this on their next heartbeat and stop work.',
     )
     created_at: datetime = Field(
         ..., description='Timestamp when this run was created.'
@@ -3683,11 +4123,11 @@ class WorkflowRun(BaseModel):
     )
     wall_clock_deadline_at: datetime | None = Field(
         None,
-        description='Deadline at which the reaper will fail this run with\n`error_type=run_timeout` if it has not reached a terminal\nstate. Present only when `resolved_config.timeouts.wall_clock`\nresolves to a finite duration. Anchored to `created_at`.\n',
+        description='Deadline at which the reaper will fail this run with `error_type=run_timeout` if it has not reached a terminal state. Present only when `resolved_config` contains an entry with `category="timeouts"` and `key="wall_clock"` whose value resolves to a finite duration. Anchored to `created_at`.',
     )
     error_type: ErrorType | None = Field(
         None,
-        description='Typed run-level failure cause. Its own vocabulary, not a\nsuperset of the job-level `error_type`. Present when\n`status=failed`.\n',
+        description='Typed run-level failure cause. Its own vocabulary, not a superset of the job-level `error_type`. Present when `status=failed`.',
     )
     resolved_config: ResolvedConfig | None = None
     default_job_config: ResolvedConfig | None = None
@@ -3700,65 +4140,8 @@ class WorkflowRunListResponse(BaseModel):
     has_more: bool = Field(..., description='True when more pages are available.')
     next_cursor: str | None = Field(
         None,
-        description='Opaque cursor for fetching the next page. Present only when\nhas_more is true.\n',
+        description='Opaque cursor for fetching the next page. Present only when has_more is true.',
     )
-
-
-class JobEventsRequest(BaseModel):
-    """
-    Fenced batch of custom run events published by the worker holding
-    a job's lease. The fence is per-request: every event in `events`
-    is published under the same `worker_id` + `attempt` pair.
-
-    """
-
-    worker_id: str = Field(
-        ..., description='Must match the `worker_id` from the original claim.'
-    )
-    attempt: int = Field(
-        ..., description='Must match the `attempt` from the original claim.'
-    )
-    events: list[JobEventEntry] = Field(
-        ...,
-        description='The batch of events to publish. All events are validated atomically.',
-        max_length=100,
-        min_length=1,
-    )
-
-
-class EnablePermissionsRequest(BaseModel):
-    service_account_default_role: str | None = Field(
-        None,
-        description='Fallback role name for service accounts with no existing assignment.\nApplied only to service accounts not covered by the `assignments` list.\n',
-    )
-    assignments: list[PermissionsAssignmentInput] | None = Field(
-        None,
-        description='Explicit role assignments to create as part of the enable operation.',
-    )
-
-
-class WorkflowInteractionConfig(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    type: Type = Field(
-        ...,
-        description='Interaction kind: approval requires a yes/no decision, review requests acknowledgement, input collects free-form data.',
-    )
-    message: str = Field(
-        ..., description='Prompt message shown to the interaction recipient.'
-    )
-    context: dict[str, Any] | None = Field(
-        None,
-        description='Arbitrary key-value context passed alongside the interaction for rendering.',
-    )
-    spec: WorkflowInteractionSpec | None = None
-    timeout: str = Field(..., description='Go duration string.')
-    target: WorkflowInteractionTarget
-
-
-class WorkflowInteractionStep(WorkflowStepBase):
-    interaction: WorkflowInteractionConfig
 
 
 class WorkflowStep(
@@ -3779,7 +4162,8 @@ class WorkflowStep(
         | WorkflowPauseStep
         | WorkflowInteractionStep
     ) = Field(
-        ..., description='A workflow step. Exactly one step shape should be used.\n'
+        ...,
+        description='A workflow step. Exactly one step shape should be used. Step variants are identified by their distinctive required property (`action`, `join`, `wait_signal`, `sleep`, `pause`, or `interaction`). The current authored shape intentionally does not add a separate discriminator field, so existing workflow YAML stays compact.',
     )
 
 
@@ -3787,11 +4171,7 @@ class WorkflowSpec(BaseModel):
     """
     Workflow definition shaped like `workflow.Options`.
 
-    Authoring rule: `action` is the canonical field for executable steps.
-    When `action_kind` is omitted, `action` uses worker/job semantics.
-    Use `action_kind: "server"` for Mobius-managed server actions such as
-    platform integrations or custom HTTP-backed actions.
-
+    Authoring rule: `action` is the canonical field for executable steps. When `action_kind` is omitted, `action` uses worker/job semantics. Use `action_kind: "server"` for Mobius-managed server actions such as platform integrations or custom HTTP-backed actions.
     """
 
     model_config = ConfigDict(
@@ -3817,46 +4197,12 @@ class WorkflowSpec(BaseModel):
     )
 
 
-class WorkflowDefinition(BaseModel):
-    id: str = Field(..., description='Unique identifier for this workflow definition.')
-    name: str = Field(..., description='Human-readable workflow name.')
-    handle: str = Field(
-        ...,
-        description='URL-safe slug, unique within the org. Used to reference this workflow in triggers and tools.',
-    )
-    description: str | None = Field(
-        None, description="Optional description of the workflow's purpose."
-    )
-    latest_version: int = Field(
-        ...,
-        description='The current highest version number. Starts at 1 and increments with each spec update.',
-    )
-    published_as_tool: bool | None = Field(
-        None,
-        description='When true, this workflow is exposed as a callable tool via /api/tools.',
-    )
-    spec: WorkflowSpec | None = None
-    created_by: str = Field(
-        ...,
-        description='User ID of the org member who created this workflow definition.',
-    )
-    created_at: datetime = Field(
-        ..., description='Timestamp when this workflow definition was created.'
-    )
-    updated_at: datetime = Field(
-        ..., description='Timestamp when this workflow definition was last updated.'
-    )
+class WorkflowDefinition(WorkflowDefinitionSummary):
+    """
+    Full workflow definition including the executable `spec`. Returned by `getWorkflow`, `createWorkflow`, and `updateWorkflow`.
+    """
 
-
-class WorkflowDefinitionListResponse(BaseModel):
-    items: list[WorkflowDefinition] = Field(
-        ..., description='The list of results for this page.'
-    )
-    next_cursor: str | None = Field(
-        None,
-        description='Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.',
-    )
-    has_more: bool = Field(..., description='Whether additional pages are available.')
+    spec: WorkflowSpec
 
 
 class CreateWorkflowRequest(BaseModel):
@@ -3865,7 +4211,7 @@ class CreateWorkflowRequest(BaseModel):
     )
     handle: str | None = Field(
         None,
-        description='URL-safe handle for this workflow. Auto-derived from name if omitted.',
+        description='URL-safe handle for this workflow, unique within the project. Auto-derived from name if omitted.',
     )
     description: str | None = Field(
         None, description="Optional description of the workflow's purpose."
@@ -3891,24 +4237,12 @@ class UpdateWorkflowRequest(BaseModel):
     spec: WorkflowSpec | None = None
 
 
-class WorkflowVersion(BaseModel):
-    id: str = Field(..., description='Unique identifier for this workflow version.')
-    version: int = Field(
-        ..., description='Monotonically increasing version number. Starts at 1.'
-    )
-    spec: WorkflowSpec | None = None
-    created_by: str = Field(
-        ..., description='User ID of the org member who created this version.'
-    )
-    created_at: datetime = Field(
-        ..., description='Timestamp when this version was created.'
-    )
+class WorkflowVersion(WorkflowVersionSummary):
+    """
+    Full workflow version including the executable `spec`.
+    """
 
-
-class WorkflowVersionListResponse(BaseModel):
-    items: list[WorkflowVersion] = Field(
-        ..., description='The list of workflow versions, newest first.'
-    )
+    spec: WorkflowSpec
 
 
 class WorkflowRunDetail(WorkflowRun):
@@ -3919,24 +4253,20 @@ class WorkflowRunDetail(WorkflowRun):
     jobs: list[Job] | None = Field(None, description='Jobs spawned by this run.')
 
 
-class StartRunRequest(BaseModel):
+class StartInlineRunRequest(BaseModel):
     """
-    Start a workflow run. Provide exactly one of `definition_id` or
-    `spec` — they are mutually exclusive. When both are absent on
-    the path-less `POST /v1/projects/{project}/runs` endpoint, or when both
-    are present, the request is rejected with 400. On the
-    definition-bound endpoint (`POST /v1/projects/{project}/workflows/{id}/runs`)
-    `definition_id` is implied by the path and `spec` is forbidden.
-
+    Run an ephemeral workflow from an inline spec. Selected by `mode: inline` on `POST /v1/projects/{project}/runs`. No `WorkflowDefinition` is persisted; the spec is snapshotted onto the returned run.
     """
 
-    definition_id: str | None = Field(
-        None,
-        description='ID of an existing workflow definition to run. Mutually\nexclusive with `spec`. On the definition-bound path this is\nignored (the path segment wins) but must not conflict.\n',
+    model_config = ConfigDict(
+        extra='forbid',
     )
-    spec: WorkflowSpec | None = None
+    mode: Literal['inline'] = Field(
+        ..., description='Discriminator value — must be `inline`.'
+    )
+    spec: WorkflowSpec
     queue: str | None = Field(
-        None, description='Queue name to enqueue the run on. Defaults to "default".\n'
+        None, description='Queue name to enqueue the run on. Defaults to "default".'
     )
     inputs: dict[str, Any] | None = Field(
         None,
@@ -3950,4 +4280,12 @@ class StartRunRequest(BaseModel):
         None,
         description='Caller-supplied idempotency key or correlation ID attached to the run.',
     )
-    config: ConfigInput | None = None
+    config: ConfigEntries | None = None
+
+
+class StartRunRequest(RootModel[StartSavedRunRequest | StartInlineRunRequest]):
+    root: StartSavedRunRequest | StartInlineRunRequest = Field(
+        ...,
+        description='Request body for `POST /v1/projects/{project}/runs`. Discriminated by\n`mode`:\n- `saved` — body conforms to `StartSavedRunRequest`.\n- `inline` — body conforms to `StartInlineRunRequest`.',
+        discriminator='mode',
+    )

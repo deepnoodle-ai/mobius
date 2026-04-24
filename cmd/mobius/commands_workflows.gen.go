@@ -24,7 +24,7 @@ func registerWorkflowsCommands(app *cli.App) {
 		Description("Create a workflow definition").
 		Flags(
 			cli.String("description", "").Help("Optional description of the workflow's purpose."),
-			cli.String("handle", "").Help("URL-safe handle for this workflow. Auto-derived from name if omitted."),
+			cli.String("handle", "").Help("URL-safe handle for this workflow, unique within the project. Auto-derived from name if omitted."),
 			cli.String("name", "").Help("[required] Human-readable workflow name, unique within the project."),
 			cli.Bool("published-as-tool", "").Help("When true, expose this workflow as a callable tool via /api/tools."),
 			cli.String("spec", "").Help("[required] Workflow definition shaped like `workflow.Options`.  Authoring rule: `action` is the canonical field for executable steps. When `action_kind` is omitted, `action` uses worker/job semantics. Use `action_kind: \"server\"` for Mobius-managed server actions such as platform integrations or custom HTTP-backed actions. (JSON)"),
@@ -113,6 +113,29 @@ func registerWorkflowsCommands(app *cli.App) {
 			return printResponse(ctx, resp.StatusCode(), resp.Body)
 		})
 
+	workflowsGrp.Command("get-version").
+		Description("Get a specific version of a workflow definition").
+		Args("id", "version").
+		Use(cli.RequireFlags("api-key")).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := ctx.String("project")
+			p1 := ctx.Arg(0)
+			p2, err := parseIntArg(ctx.Arg(1), "version")
+			if err != nil {
+				return err
+			}
+			resp, err := client.GetWorkflowVersionWithResponse(ctx.Context(), p0, p1, p2)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, resp.StatusCode(), resp.Body)
+		})
+
 	workflowsGrp.Command("list").
 		Description("List workflow definitions").
 		Flags(
@@ -165,9 +188,6 @@ func registerWorkflowsCommands(app *cli.App) {
 	workflowsGrp.Command("list-versions").
 		Description("List versions of a workflow definition").
 		Args("id").
-		Flags(
-			cli.Bool("include-spec", "").Help("When true, include the full workflow spec for each version."),
-		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -177,12 +197,7 @@ func registerWorkflowsCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := ctx.String("project")
 			p1 := ctx.Arg(0)
-			params := &api.ListWorkflowVersionsParams{}
-			if ctx.IsSet("include-spec") {
-				v := ctx.Bool("include-spec")
-				params.IncludeSpec = &v
-			}
-			resp, err := client.ListWorkflowVersionsWithResponse(ctx.Context(), p0, p1, params)
+			resp, err := client.ListWorkflowVersionsWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}
@@ -193,13 +208,11 @@ func registerWorkflowsCommands(app *cli.App) {
 		Description("Start a new workflow run against a saved definition").
 		Args("id").
 		Flags(
-			cli.String("config", "").Help("Hierarchical cascade config input. Shape: `{<category>: {<key>: <value>}}`. The only category shipped in Phase 1 is `timeouts`, whose keys are `claim`, `liveness`, `execution`, `wall_clock`. Unknown categories or unknown keys under a known category are rejected at write time. See PRD 035. (JSON)"),
-			cli.String("definition-id", "").Help("ID of an existing workflow definition to run. Mutually exclusive with `spec`. On the definition-bound path this is ignored (the path segment wins) but must not conflict."),
+			cli.String("config", "").Help("Flat cascade config input used outside authored workflow YAML. Each entry addresses one `(category, key)` pair. Unknown categories or unknown keys under a known category are rejected at write time. The only category shipped in Phase 1 is `timeouts`, whose keys are `claim`, `liveness`, `execution`, `wall_clock`. (JSON)"),
 			cli.String("external-id", "").Help("Caller-supplied idempotency key or correlation ID attached to the run."),
 			cli.String("inputs", "").Help("Input values to pass to the workflow. Must conform to the workflow's declared input schema. (JSON)"),
 			cli.String("metadata", "").Help("Caller-supplied string metadata attached to the run for filtering and display. (JSON)"),
 			cli.String("queue", "").Help("Queue name to enqueue the run on. Defaults to \"default\"."),
-			cli.String("spec", "").Help("Workflow definition shaped like `workflow.Options`.  Authoring rule: `action` is the canonical field for executable steps. When `action_kind` is omitted, `action` uses worker/job semantics. Use `action_kind: \"server\"` for Mobius-managed server actions such as platform integrations or custom HTTP-backed actions. (JSON)"),
 			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
 		).
 		Use(cli.RequireFlags("api-key")).
@@ -220,10 +233,6 @@ func registerWorkflowsCommands(app *cli.App) {
 					return fmt.Errorf("--config: invalid JSON: %w", err)
 				}
 			}
-			if ctx.IsSet("definition-id") {
-				v := ctx.String("definition-id")
-				body.DefinitionId = &v
-			}
 			if ctx.IsSet("external-id") {
 				v := ctx.String("external-id")
 				body.ExternalId = &v
@@ -242,12 +251,7 @@ func registerWorkflowsCommands(app *cli.App) {
 				v := ctx.String("queue")
 				body.Queue = &v
 			}
-			if ctx.IsSet("spec") {
-				if err := json.Unmarshal([]byte(ctx.String("spec")), &body.Spec); err != nil {
-					return fmt.Errorf("--spec: invalid JSON: %w", err)
-				}
-			}
-			if ctx.String("file") == "" && !ctx.IsSet("config") && !ctx.IsSet("definition-id") && !ctx.IsSet("external-id") && !ctx.IsSet("inputs") && !ctx.IsSet("metadata") && !ctx.IsSet("queue") && !ctx.IsSet("spec") {
+			if ctx.String("file") == "" && !ctx.IsSet("config") && !ctx.IsSet("external-id") && !ctx.IsSet("inputs") && !ctx.IsSet("metadata") && !ctx.IsSet("queue") {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
 			resp, err := client.StartWorkflowRunWithResponse(ctx.Context(), p0, p1, body)

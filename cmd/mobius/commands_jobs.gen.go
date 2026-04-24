@@ -155,11 +155,11 @@ func registerJobsCommands(app *cli.App) {
 			cli.String("context", "").Help("Additional key-value context surfaced in the UI alongside the message. (JSON)"),
 			cli.String("expires-at", "").Help("Timestamp after which this interaction expires. (JSON)"),
 			cli.String("message", "").Help("[required] Message shown to the responder."),
-			cli.Bool("require-all", "").Help("When target_actor.type is \"group\", setting require_all=true means all snapshotted group members must respond before the interaction is considered complete. Ignored for non-group targets. Defaults to false when omitted."),
+			cli.Bool("require-all", "").Help("When target.type is \"group\", setting require_all=true means all snapshotted group members must respond before the interaction is considered complete. Ignored for non-group targets. Defaults to false when omitted."),
 			cli.String("signal-name", "").Help("Optional signal name override. When omitted, the server derives the signal name from step_name or falls back to a default interaction signal name."),
-			cli.String("spec", "").Help("Declarative dialog contract for rendering and validating an interaction. `type` defines the semantic intent; `mode` defines the input affordance. Compatibility rules are enforced server-side: - `approval` requires `mode = confirm` - `review` requires `mode = select` - `input` supports `input`, `select`, or `multi_select` (JSON)"),
+			cli.String("spec", "").Help("Declarative dialog contract for rendering and validating an interaction. Used at both authoring time (inside a workflow definition) and runtime (persisted on an interaction). Compatibility rules are enforced server-side:  - `approval` requires `mode = confirm` - `review` requires `mode = select` - `input` supports `input`, `select`, or `multi_select` (JSON)"),
 			cli.String("step-name", "").Help("Optional workflow step label for UI/debugging context"),
-			cli.String("target-actor", "").Help("[required] target-actor (JSON)"),
+			cli.String("target", "").Help("[required] Identifies who should receive an interaction request. Note: distinct from the caller/audit `Actor` vocabulary — a target is a *recipient*, not someone who has acted yet. (JSON)"),
 			cli.String("timeout", "").Help("Optional duration string (e.g. \"24h\", \"30m\") specifying how long the interaction should remain open before expiring. When absent the caller is responsible for setting expires_at directly."),
 			cli.String("type", "").Help("[required] type"),
 			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
@@ -207,9 +207,9 @@ func registerJobsCommands(app *cli.App) {
 				v := ctx.String("step-name")
 				body.StepName = &v
 			}
-			if ctx.IsSet("target-actor") {
-				if err := json.Unmarshal([]byte(ctx.String("target-actor")), &body.TargetActor); err != nil {
-					return fmt.Errorf("--target-actor: invalid JSON: %w", err)
+			if ctx.IsSet("target") {
+				if err := json.Unmarshal([]byte(ctx.String("target")), &body.Target); err != nil {
+					return fmt.Errorf("--target: invalid JSON: %w", err)
 				}
 			}
 			if ctx.IsSet("timeout") {
@@ -222,8 +222,8 @@ func registerJobsCommands(app *cli.App) {
 			if body.Message == "" {
 				return fmt.Errorf("--message is required (or supply it via --file)")
 			}
-			if ctx.String("file") == "" && !ctx.IsSet("target-actor") {
-				return fmt.Errorf("--target-actor is required (or supply it via --file)")
+			if ctx.String("file") == "" && !ctx.IsSet("target") {
+				return fmt.Errorf("--target is required (or supply it via --file)")
 			}
 			if body.Type == "" {
 				return fmt.Errorf("--type is required (or supply it via --file)")
@@ -278,6 +278,25 @@ func registerJobsCommands(app *cli.App) {
 				return fmt.Errorf("--worker-id is required (or supply it via --file)")
 			}
 			resp, err := client.EmitJobEventsWithResponse(ctx.Context(), p0, p1, body)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, resp.StatusCode(), resp.Body)
+		})
+
+	jobsGrp.Command("get").
+		Description("Get a workflow job by ID").
+		Args("id").
+		Use(cli.RequireFlags("api-key")).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := ctx.String("project")
+			p1 := ctx.Arg(0)
+			resp, err := client.GetJobWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}

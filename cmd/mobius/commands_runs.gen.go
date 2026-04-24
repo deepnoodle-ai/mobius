@@ -217,13 +217,6 @@ func registerRunsCommands(app *cli.App) {
 	runsGrp.Command("start").
 		Description("Start a new workflow run").
 		Flags(
-			cli.String("config", "").Help("Hierarchical cascade config input. Shape: `{<category>: {<key>: <value>}}`. The only category shipped in Phase 1 is `timeouts`, whose keys are `claim`, `liveness`, `execution`, `wall_clock`. Unknown categories or unknown keys under a known category are rejected at write time. See PRD 035. (JSON)"),
-			cli.String("definition-id", "").Help("ID of an existing workflow definition to run. Mutually exclusive with `spec`. On the definition-bound path this is ignored (the path segment wins) but must not conflict."),
-			cli.String("external-id", "").Help("Caller-supplied idempotency key or correlation ID attached to the run."),
-			cli.String("inputs", "").Help("Input values to pass to the workflow. Must conform to the workflow's declared input schema. (JSON)"),
-			cli.String("metadata", "").Help("Caller-supplied string metadata attached to the run for filtering and display. (JSON)"),
-			cli.String("queue", "").Help("Queue name to enqueue the run on. Defaults to \"default\"."),
-			cli.String("spec", "").Help("Workflow definition shaped like `workflow.Options`.  Authoring rule: `action` is the canonical field for executable steps. When `action_kind` is omitted, `action` uses worker/job semantics. Use `action_kind: \"server\"` for Mobius-managed server actions such as platform integrations or custom HTTP-backed actions. (JSON)"),
 			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
 		).
 		Use(cli.RequireFlags("api-key")).
@@ -238,39 +231,7 @@ func registerRunsCommands(app *cli.App) {
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
 			}
-			if ctx.IsSet("config") {
-				if err := json.Unmarshal([]byte(ctx.String("config")), &body.Config); err != nil {
-					return fmt.Errorf("--config: invalid JSON: %w", err)
-				}
-			}
-			if ctx.IsSet("definition-id") {
-				v := ctx.String("definition-id")
-				body.DefinitionId = &v
-			}
-			if ctx.IsSet("external-id") {
-				v := ctx.String("external-id")
-				body.ExternalId = &v
-			}
-			if ctx.IsSet("inputs") {
-				if err := json.Unmarshal([]byte(ctx.String("inputs")), &body.Inputs); err != nil {
-					return fmt.Errorf("--inputs: invalid JSON: %w", err)
-				}
-			}
-			if ctx.IsSet("metadata") {
-				if err := json.Unmarshal([]byte(ctx.String("metadata")), &body.Metadata); err != nil {
-					return fmt.Errorf("--metadata: invalid JSON: %w", err)
-				}
-			}
-			if ctx.IsSet("queue") {
-				v := ctx.String("queue")
-				body.Queue = &v
-			}
-			if ctx.IsSet("spec") {
-				if err := json.Unmarshal([]byte(ctx.String("spec")), &body.Spec); err != nil {
-					return fmt.Errorf("--spec: invalid JSON: %w", err)
-				}
-			}
-			if ctx.String("file") == "" && !ctx.IsSet("config") && !ctx.IsSet("definition-id") && !ctx.IsSet("external-id") && !ctx.IsSet("inputs") && !ctx.IsSet("metadata") && !ctx.IsSet("queue") && !ctx.IsSet("spec") {
+			if ctx.String("file") == "" {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
 			resp, err := client.StartRunWithResponse(ctx.Context(), p0, body)

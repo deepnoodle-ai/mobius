@@ -297,7 +297,7 @@ func registerChannelsCommands(app *cli.App) {
 
 	channelsGrp.Command("remove-member").
 		Description("Remove a member from a channel").
-		Args("id", "user-id").
+		Args("id", "member-id").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
