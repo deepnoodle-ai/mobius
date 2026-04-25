@@ -977,33 +977,6 @@ func (e WorkflowRunWaitKind) Valid() bool {
 	}
 }
 
-// Defines values for ListAuditLogsParamsAction.
-const (
-	ListAuditLogsParamsActionArchive ListAuditLogsParamsAction = "archive"
-	ListAuditLogsParamsActionCreate  ListAuditLogsParamsAction = "create"
-	ListAuditLogsParamsActionDelete  ListAuditLogsParamsAction = "delete"
-	ListAuditLogsParamsActionRestore ListAuditLogsParamsAction = "restore"
-	ListAuditLogsParamsActionUpdate  ListAuditLogsParamsAction = "update"
-)
-
-// Valid indicates whether the value is a known member of the ListAuditLogsParamsAction enum.
-func (e ListAuditLogsParamsAction) Valid() bool {
-	switch e {
-	case ListAuditLogsParamsActionArchive:
-		return true
-	case ListAuditLogsParamsActionCreate:
-		return true
-	case ListAuditLogsParamsActionDelete:
-		return true
-	case ListAuditLogsParamsActionRestore:
-		return true
-	case ListAuditLogsParamsActionUpdate:
-		return true
-	default:
-		return false
-	}
-}
-
 // Defines values for ListProjectsParamsStatus.
 const (
 	ListProjectsParamsStatusActive   ListProjectsParamsStatus = "active"
@@ -3759,7 +3732,7 @@ type WorkflowInteractionConfig struct {
 	// Message Prompt message shown to the interaction recipient.
 	Message string `json:"message"`
 
-	// RequireAll When true, all group members must respond before the interaction completes. Only meaningful when `target.type` is `group`.
+	// RequireAll When true, all group members must respond before the interaction completes. Only meaningful when type is `group`.
 	RequireAll *bool `json:"require_all,omitempty"`
 
 	// Spec Declarative dialog contract for rendering and validating an interaction. Used at both authoring time (inside a workflow definition) and runtime (persisted on an interaction). Compatibility rules are enforced server-side:
@@ -4452,7 +4425,7 @@ type ListAuditLogsParams struct {
 	ActorId *string `form:"actor_id,omitempty" json:"actor_id,omitempty"`
 
 	// Action Filter by action (create, update, delete, archive, restore)
-	Action *ListAuditLogsParamsAction `form:"action,omitempty" json:"action,omitempty"`
+	Action *string `form:"action,omitempty" json:"action,omitempty"`
 
 	// CreatedAfter Filter to entries created after this timestamp
 	CreatedAfter *time.Time `form:"created_after,omitempty" json:"created_after,omitempty"`
@@ -4467,9 +4440,6 @@ type ListAuditLogsParams struct {
 	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
-// ListAuditLogsParamsAction defines parameters for ListAuditLogs.
-type ListAuditLogsParamsAction string
-
 // ListProjectsParams defines parameters for ListProjects.
 type ListProjectsParams struct {
 	// Search Prefix-match filter applied to project name and handle.
@@ -4481,6 +4451,8 @@ type ListProjectsParams struct {
 	// Tag Filter results by tag. Repeatable; multiple values combine with AND. Format: `Key:Value`, `Key:*` for any value, `Key:a,b,c` for IN.
 	//
 	// Tag values containing `:` or `,` cannot be filtered with this grammar — the parser splits on those literally. Constrain values to plain identifiers when you intend to filter on them.
+	//
+	// Not supported on the runs list — runs are too high-cardinality for ad-hoc tag filtering. To narrow runs by parent workflow, use the workflow-scoped endpoint `GET /v1/projects/{project}/workflows/{id}/runs` and inspect `tags` on each run client-side.
 	Tag *TagFilterParam `form:"tag,omitempty" json:"tag,omitempty"`
 }
 
@@ -4534,6 +4506,8 @@ type ListAgentsParams struct {
 	// Tag Filter results by tag. Repeatable; multiple values combine with AND. Format: `Key:Value`, `Key:*` for any value, `Key:a,b,c` for IN.
 	//
 	// Tag values containing `:` or `,` cannot be filtered with this grammar — the parser splits on those literally. Constrain values to plain identifiers when you intend to filter on them.
+	//
+	// Not supported on the runs list — runs are too high-cardinality for ad-hoc tag filtering. To narrow runs by parent workflow, use the workflow-scoped endpoint `GET /v1/projects/{project}/workflows/{id}/runs` and inspect `tags` on each run client-side.
 	Tag *TagFilterParam `form:"tag,omitempty" json:"tag,omitempty"`
 
 	// Limit Maximum number of items to return
@@ -4563,6 +4537,8 @@ type ListChannelsParams struct {
 	// Tag Filter results by tag. Repeatable; multiple values combine with AND. Format: `Key:Value`, `Key:*` for any value, `Key:a,b,c` for IN.
 	//
 	// Tag values containing `:` or `,` cannot be filtered with this grammar — the parser splits on those literally. Constrain values to plain identifiers when you intend to filter on them.
+	//
+	// Not supported on the runs list — runs are too high-cardinality for ad-hoc tag filtering. To narrow runs by parent workflow, use the workflow-scoped endpoint `GET /v1/projects/{project}/workflows/{id}/runs` and inspect `tags` on each run client-side.
 	Tag *TagFilterParam `form:"tag,omitempty" json:"tag,omitempty"`
 
 	// Cursor Cursor for pagination (opaque string from previous response)
@@ -4700,6 +4676,8 @@ type ListTriggersParams struct {
 	// Tag Filter results by tag. Repeatable; multiple values combine with AND. Format: `Key:Value`, `Key:*` for any value, `Key:a,b,c` for IN.
 	//
 	// Tag values containing `:` or `,` cannot be filtered with this grammar — the parser splits on those literally. Constrain values to plain identifiers when you intend to filter on them.
+	//
+	// Not supported on the runs list — runs are too high-cardinality for ad-hoc tag filtering. To narrow runs by parent workflow, use the workflow-scoped endpoint `GET /v1/projects/{project}/workflows/{id}/runs` and inspect `tags` on each run client-side.
 	Tag *TagFilterParam `form:"tag,omitempty" json:"tag,omitempty"`
 
 	// Cursor Opaque pagination cursor returned from the previous response.
@@ -4729,6 +4707,8 @@ type ListWebhooksParams struct {
 	// Tag Filter results by tag. Repeatable; multiple values combine with AND. Format: `Key:Value`, `Key:*` for any value, `Key:a,b,c` for IN.
 	//
 	// Tag values containing `:` or `,` cannot be filtered with this grammar — the parser splits on those literally. Constrain values to plain identifiers when you intend to filter on them.
+	//
+	// Not supported on the runs list — runs are too high-cardinality for ad-hoc tag filtering. To narrow runs by parent workflow, use the workflow-scoped endpoint `GET /v1/projects/{project}/workflows/{id}/runs` and inspect `tags` on each run client-side.
 	Tag *TagFilterParam `form:"tag,omitempty" json:"tag,omitempty"`
 
 	// Cursor Opaque pagination cursor returned from the previous response.
@@ -4752,6 +4732,8 @@ type ListWorkflowsParams struct {
 	// Tag Filter results by tag. Repeatable; multiple values combine with AND. Format: `Key:Value`, `Key:*` for any value, `Key:a,b,c` for IN.
 	//
 	// Tag values containing `:` or `,` cannot be filtered with this grammar — the parser splits on those literally. Constrain values to plain identifiers when you intend to filter on them.
+	//
+	// Not supported on the runs list — runs are too high-cardinality for ad-hoc tag filtering. To narrow runs by parent workflow, use the workflow-scoped endpoint `GET /v1/projects/{project}/workflows/{id}/runs` and inspect `tags` on each run client-side.
 	Tag *TagFilterParam `form:"tag,omitempty" json:"tag,omitempty"`
 
 	// Cursor Opaque pagination cursor returned from the previous response.

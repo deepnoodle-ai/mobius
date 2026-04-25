@@ -66,7 +66,7 @@ class TagMap(RootModel[dict[str, str] | None]):
     Azure-style key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 50 tags per resource. Use tags to organise resources by environment, team, cost-center, or any other dimension meaningful to your organisation; tags can be filtered on most list endpoints.
     """
 
-    root: dict[str, str] | None = Field(None, max_length=256, min_length=0)
+    root: dict[str, str] | None = Field(None, max_length=256)
 
 
 class InteractionMode(Enum):
@@ -5081,7 +5081,7 @@ class WorkflowInteractionConfig(BaseModel):
     )
     require_all: bool | None = Field(
         None,
-        description='When true, all group members must respond before the interaction completes. Only meaningful when `target.type` is `group`.',
+        description='When true, all group members must respond before the interaction completes. Only meaningful when type is `group`.',
     )
 
 
