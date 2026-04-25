@@ -28,6 +28,7 @@ func registerWorkflowsCommands(app *cli.App) {
 			cli.String("name", "").Help("[required] Human-readable workflow name, unique within the project."),
 			cli.Bool("published-as-tool", "").Help("When true, expose this workflow as a callable tool via /api/tools."),
 			cli.String("spec", "").Help("[required] Workflow definition shaped like `workflow.Options`.  Authoring rule: `action` is the canonical field for executable steps. When `action_kind` is omitted, `action` uses worker/job semantics. Use `action_kind: \"server\"` for Mobius-managed server actions such as platform integrations or custom HTTP-backed actions. (JSON)"),
+			cli.String("tags", "").Help("Azure-style key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 50 tags per resource. Use tags to organise resources by environment, team, cost-center, or any other dimension meaningful to your organisation; tags can be filtered on most list endpoints. (JSON)"),
 			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
 		).
 		Use(cli.RequireFlags("api-key")).
@@ -60,6 +61,11 @@ func registerWorkflowsCommands(app *cli.App) {
 			if ctx.IsSet("spec") {
 				if err := json.Unmarshal([]byte(ctx.String("spec")), &body.Spec); err != nil {
 					return fmt.Errorf("--spec: invalid JSON: %w", err)
+				}
+			}
+			if ctx.IsSet("tags") {
+				if err := json.Unmarshal([]byte(ctx.String("tags")), &body.Tags); err != nil {
+					return fmt.Errorf("--tags: invalid JSON: %w", err)
 				}
 			}
 			if body.Name == "" {
@@ -193,6 +199,7 @@ func registerWorkflowsCommands(app *cli.App) {
 			cli.String("name", "").Help("Replacement human-readable workflow name."),
 			cli.Bool("published-as-tool", "").Help("When true, expose this workflow as a callable tool via /api/tools."),
 			cli.String("spec", "").Help("Workflow definition shaped like `workflow.Options`.  Authoring rule: `action` is the canonical field for executable steps. When `action_kind` is omitted, `action` uses worker/job semantics. Use `action_kind: \"server\"` for Mobius-managed server actions such as platform integrations or custom HTTP-backed actions. (JSON)"),
+			cli.String("tags", "").Help("Azure-style key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 50 tags per resource. Use tags to organise resources by environment, team, cost-center, or any other dimension meaningful to your organisation; tags can be filtered on most list endpoints. (JSON)"),
 			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
 		).
 		Use(cli.RequireFlags("api-key")).
@@ -225,7 +232,12 @@ func registerWorkflowsCommands(app *cli.App) {
 					return fmt.Errorf("--spec: invalid JSON: %w", err)
 				}
 			}
-			if ctx.String("file") == "" && !ctx.IsSet("description") && !ctx.IsSet("name") && !ctx.IsSet("published-as-tool") && !ctx.IsSet("spec") {
+			if ctx.IsSet("tags") {
+				if err := json.Unmarshal([]byte(ctx.String("tags")), &body.Tags); err != nil {
+					return fmt.Errorf("--tags: invalid JSON: %w", err)
+				}
+			}
+			if ctx.String("file") == "" && !ctx.IsSet("description") && !ctx.IsSet("name") && !ctx.IsSet("published-as-tool") && !ctx.IsSet("spec") && !ctx.IsSet("tags") {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
 			resp, err := client.UpdateWorkflowWithResponse(ctx.Context(), p0, p1, body)

@@ -297,6 +297,8 @@ func registerTriggersCommands(app *cli.App) {
 			cli.Bool("enabled", "").Help("Set to false to pause the trigger without deleting it."),
 			cli.String("name", "").Help("Replacement human-readable name."),
 			cli.String("source-config", "").Help("Typed source configuration. The shape is determined by the trigger's `kind` (`schedule` → `ScheduleSourceConfig`, `webhook` → `WebhookSourceConfig`, `event` → `EventSourceConfig`); mismatches are rejected with 400. (JSON)"),
+			cli.String("tags", "").Help("Azure-style key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 50 tags per resource. Use tags to organise resources by environment, team, cost-center, or any other dimension meaningful to your organisation; tags can be filtered on most list endpoints. (JSON)"),
+			cli.String("targets", "").Help("Replacement target set for this trigger. Omit to leave targets unchanged; send an empty array to remove all targets. (JSON)"),
 			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
 		).
 		Use(cli.RequireFlags("api-key")).
@@ -329,7 +331,17 @@ func registerTriggersCommands(app *cli.App) {
 					return fmt.Errorf("--source-config: invalid JSON: %w", err)
 				}
 			}
-			if ctx.String("file") == "" && !ctx.IsSet("concurrency-policy") && !ctx.IsSet("enabled") && !ctx.IsSet("name") && !ctx.IsSet("source-config") {
+			if ctx.IsSet("tags") {
+				if err := json.Unmarshal([]byte(ctx.String("tags")), &body.Tags); err != nil {
+					return fmt.Errorf("--tags: invalid JSON: %w", err)
+				}
+			}
+			if ctx.IsSet("targets") {
+				if err := json.Unmarshal([]byte(ctx.String("targets")), &body.Targets); err != nil {
+					return fmt.Errorf("--targets: invalid JSON: %w", err)
+				}
+			}
+			if ctx.String("file") == "" && !ctx.IsSet("concurrency-policy") && !ctx.IsSet("enabled") && !ctx.IsSet("name") && !ctx.IsSet("source-config") && !ctx.IsSet("tags") && !ctx.IsSet("targets") {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
 			resp, err := client.UpdateTriggerWithResponse(ctx.Context(), p0, p1, body)

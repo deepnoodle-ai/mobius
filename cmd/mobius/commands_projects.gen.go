@@ -8,6 +8,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/deepnoodle-ai/wonton/cli"
@@ -51,6 +52,24 @@ func registerProjectsCommands(app *cli.App) {
 			return printResponse(ctx, resp.StatusCode(), resp.Body)
 		})
 
+	projectsGrp.Command("archive-project").
+		Description("Archive a project").
+		Args("id").
+		Use(cli.RequireFlags("api-key")).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := ctx.Arg(0)
+			resp, err := client.ArchiveProjectWithResponse(ctx.Context(), p0)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, resp.StatusCode(), resp.Body)
+		})
+
 	projectsGrp.Command("create").
 		Description("Create a project").
 		Flags(
@@ -58,6 +77,7 @@ func registerProjectsCommands(app *cli.App) {
 			cli.String("description", "").Help("Optional human-readable description."),
 			cli.String("handle", "").Help("URL-safe slug for API routes. Auto-derived from name if omitted. Must be unique within the org. Cannot be changed after creation."),
 			cli.String("name", "").Help("[required] Human-readable project name."),
+			cli.String("tags", "").Help("Azure-style key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 50 tags per resource. Use tags to organise resources by environment, team, cost-center, or any other dimension meaningful to your organisation; tags can be filtered on most list endpoints. (JSON)"),
 			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
 		).
 		Use(cli.RequireFlags("api-key")).
@@ -86,10 +106,54 @@ func registerProjectsCommands(app *cli.App) {
 			if ctx.IsSet("name") {
 				body.Name = ctx.String("name")
 			}
+			if ctx.IsSet("tags") {
+				if err := json.Unmarshal([]byte(ctx.String("tags")), &body.Tags); err != nil {
+					return fmt.Errorf("--tags: invalid JSON: %w", err)
+				}
+			}
 			if body.Name == "" {
 				return fmt.Errorf("--name is required (or supply it via --file)")
 			}
 			resp, err := client.CreateProjectWithResponse(ctx.Context(), body)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, resp.StatusCode(), resp.Body)
+		})
+
+	projectsGrp.Command("create-invite").
+		Description("Invite a teammate to a project by email").
+		Args("id").
+		Flags(
+			cli.String("email", "").Help("[required] Email address to invite. (JSON)"),
+			cli.String("role", "").Help("Org role assigned on accept. Defaults to `Member`."),
+			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
+		).
+		Use(cli.RequireFlags("api-key")).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := ctx.Arg(0)
+			var body api.CreateProjectInviteJSONRequestBody
+			if err := readJSONBody(ctx, &body); err != nil {
+				return err
+			}
+			if ctx.IsSet("email") {
+				if err := json.Unmarshal([]byte(ctx.String("email")), &body.Email); err != nil {
+					return fmt.Errorf("--email: invalid JSON: %w", err)
+				}
+			}
+			if ctx.IsSet("role") {
+				v := api.CreateProjectInviteRequestRole(ctx.String("role"))
+				body.Role = &v
+			}
+			if ctx.String("file") == "" && !ctx.IsSet("email") {
+				return fmt.Errorf("--email is required (or supply it via --file)")
+			}
+			resp, err := client.CreateProjectInviteWithResponse(ctx.Context(), p0, body)
 			if err != nil {
 				return err
 			}
@@ -172,6 +236,7 @@ func registerProjectsCommands(app *cli.App) {
 		Description("List projects").
 		Flags(
 			cli.String("search", "").Help("Prefix-match filter applied to project name and handle."),
+			cli.String("status", "").Help("Lifecycle filter. `active` (default) returns non-archived projects; `archived` returns archived projects only; `all` returns both."),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -184,6 +249,10 @@ func registerProjectsCommands(app *cli.App) {
 			if ctx.IsSet("search") {
 				v := ctx.String("search")
 				params.Search = &v
+			}
+			if ctx.IsSet("status") {
+				v := api.ListProjectsParamsStatus(ctx.String("status"))
+				params.Status = &v
 			}
 			resp, err := client.ListProjectsWithResponse(ctx.Context(), params)
 			if err != nil {
@@ -242,6 +311,24 @@ func registerProjectsCommands(app *cli.App) {
 			return printResponse(ctx, resp.StatusCode(), resp.Body)
 		})
 
+	projectsGrp.Command("restore-project").
+		Description("Restore an archived project").
+		Args("id").
+		Use(cli.RequireFlags("api-key")).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := ctx.Arg(0)
+			resp, err := client.RestoreProjectWithResponse(ctx.Context(), p0)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, resp.StatusCode(), resp.Body)
+		})
+
 	projectsGrp.Command("update").
 		Description("Update a project").
 		Args("id").
@@ -250,6 +337,7 @@ func registerProjectsCommands(app *cli.App) {
 			cli.String("description", "").Help("Replacement description."),
 			cli.String("name", "").Help("Replacement human-readable name."),
 			cli.Bool("seed-existing-members", "").Help("When transitioning from `org_open` to `restricted`, set true to insert all current org members as project members so nobody loses visibility on the flip. Ignored on other transitions."),
+			cli.String("tags", "").Help("Azure-style key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 50 tags per resource. Use tags to organise resources by environment, team, cost-center, or any other dimension meaningful to your organisation; tags can be filtered on most list endpoints. (JSON)"),
 			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
 		).
 		Use(cli.RequireFlags("api-key")).
@@ -280,7 +368,12 @@ func registerProjectsCommands(app *cli.App) {
 				v := ctx.Bool("seed-existing-members")
 				body.SeedExistingMembers = &v
 			}
-			if ctx.String("file") == "" && !ctx.IsSet("access-mode") && !ctx.IsSet("description") && !ctx.IsSet("name") && !ctx.IsSet("seed-existing-members") {
+			if ctx.IsSet("tags") {
+				if err := json.Unmarshal([]byte(ctx.String("tags")), &body.Tags); err != nil {
+					return fmt.Errorf("--tags: invalid JSON: %w", err)
+				}
+			}
+			if ctx.String("file") == "" && !ctx.IsSet("access-mode") && !ctx.IsSet("description") && !ctx.IsSet("name") && !ctx.IsSet("seed-existing-members") && !ctx.IsSet("tags") {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
 			resp, err := client.UpdateProjectWithResponse(ctx.Context(), p0, body)

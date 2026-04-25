@@ -110,6 +110,7 @@ paths:
         schema:
           type: boolean
         description: Filter by private flag.
+      - $ref: '#/components/parameters/TagFilterParam'
       - $ref: '#/components/parameters/CursorParam'
       - $ref: '#/components/parameters/LimitParam'
       responses:
@@ -389,7 +390,7 @@ paths:
       - audit-logs
       summary: List audit log entries
       description: |-
-        Returns an immutable, append-only log of create/update/delete actions performed against org resources. Entries record both the durable actor identity (service account or user) and the credential used, enabling attribution even when keys are later revoked.
+        Returns an immutable, append-only log of create/update/delete/archive/restore actions performed against org resources. Entries record both the durable actor identity (service account or user) and the credential used, enabling attribution even when keys are later revoked.
 
         Combine `actor_id` + `resource_type` to audit a specific identity's writes to a resource class. Use `created_after` / `created_before` for time-bounded compliance exports.
       parameters:
@@ -427,7 +428,7 @@ paths:
         in: query
         schema:
           type: string
-        description: Filter by action (create, update, delete)
+        description: Filter by action (create, update, delete, archive, restore)
       - name: created_after
         in: query
         schema:
@@ -462,6 +463,7 @@ paths:
         spec.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/TagFilterParam'
       - name: cursor
         in: query
         description: Opaque pagination cursor returned from the previous response.
@@ -723,6 +725,13 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          description: Conflict — the target project is archived. Code `project_archived`.
+            Restore the project before starting new runs; in-flight runs continue regardless.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '429':
           $ref: '#/components/responses/TooManyRequests'
   /v1/projects/{project}/runs:
@@ -788,8 +797,7 @@ paths:
                 definition_version: 3
                 ephemeral: false
                 workflow_name: document-review
-                status: running
-                lifecycle_status: active
+                status: active
                 path_counts:
                   total: 1
                   active: 1
@@ -823,6 +831,13 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          description: Conflict — the target project is archived. Code `project_archived`.
+            Restore the project before starting new runs; in-flight runs continue regardless.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '429':
           $ref: '#/components/responses/TooManyRequests'
     get:
@@ -973,7 +988,7 @@ paths:
               example: |
                 event: run_updated
                 id: 42
-                data: {"type":"run_updated","run_id":"run_01hw1n1a2b3c4d5e6f7g8h9j0k","seq":42,"timestamp":"2026-04-24T14:45:00Z","data":{"status":"running"}}
+                data: {"type":"run_updated","run_id":"run_01hw1n1a2b3c4d5e6f7g8h9j0k","seq":42,"timestamp":"2026-04-24T14:45:00Z","data":{"status":"active"}}
 
                 :keepalive
         '401':
@@ -1631,6 +1646,7 @@ paths:
         description: Filter to enabled or disabled triggers.
         schema:
           type: boolean
+      - $ref: '#/components/parameters/TagFilterParam'
       - name: cursor
         in: query
         description: Opaque pagination cursor returned from the previous response.
@@ -2042,13 +2058,26 @@ paths:
       - projects
       summary: List projects
       description: Returns up to 100 projects. Use `search` for prefix-match filtering by
-        name or handle.
+        name or handle. By default returns active (non-archived) projects; pass `status=archived`
+        to see archived projects, or `status=all` to see both.
       parameters:
       - name: search
         in: query
         description: Prefix-match filter applied to project name and handle.
         schema:
           type: string
+      - name: status
+        in: query
+        description: Lifecycle filter. `active` (default) returns non-archived projects; `archived`
+          returns archived projects only; `all` returns both.
+        schema:
+          type: string
+          enum:
+          - active
+          - archived
+          - all
+          default: active
+      - $ref: '#/components/parameters/TagFilterParam'
       responses:
         '200':
           description: OK
@@ -2141,14 +2170,63 @@ paths:
       tags:
       - projects
       summary: Delete a project
-      description: Permanently deletes the project and all child resources (workflows, runs,
-        jobs, triggers, webhooks, groups, interactions, actions, agents, service accounts).
-        This operation is irreversible.
+      description: |-
+        Permanently deletes the project and all child resources (workflows, runs, jobs, triggers, webhooks, groups, interactions, actions, agents, service accounts). This operation is irreversible.
+
+        The project must be archived first; calling delete on an active project returns `409 project_not_archived`. Archive via `POST /v1/projects/{id}/archive`.
       parameters:
       - $ref: '#/components/parameters/IDParam'
       responses:
         '204':
           description: No Content
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /v1/projects/{id}/archive:
+    post:
+      operationId: archiveProject
+      tags:
+      - projects
+      summary: Archive a project
+      description: 'Soft-retires the project: triggers and scheduled runs stop firing, edits
+        are blocked, and the project is hidden from the default listing. In-flight runs are
+        allowed to drain. The project can be restored at any time. Idempotent — archiving
+        an already-archived project returns the current state.'
+      parameters:
+      - $ref: '#/components/parameters/IDParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/projects/{id}/restore:
+    post:
+      operationId: restoreProject
+      tags:
+      - projects
+      summary: Restore an archived project
+      description: Clears the archived state and returns the project to active operation.
+        Triggers and scheduled runs resume on their next natural fire — there is no catch-up
+        backfill of missed fires during the archive window. Idempotent — restoring an active
+        project returns the current state.
+      parameters:
+      - $ref: '#/components/parameters/IDParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
@@ -2312,6 +2390,38 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /v1/projects/{id}/invites:
+    post:
+      operationId: createProjectInvite
+      tags:
+      - projects
+      summary: Invite a teammate to a project by email
+      description: Convenience endpoint that creates a Clerk Organization Invitation carrying
+        this project as the sole grant. The invitee joins the org on accept and is added to
+        this project automatically.
+      parameters:
+      - $ref: '#/components/parameters/IDParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProjectInviteRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrgInvite'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
   /v1/projects/{project}/webhooks:
     get:
       operationId: listWebhooks
@@ -2326,6 +2436,7 @@ paths:
         schema:
           type: boolean
         description: Filter by enabled/disabled state.
+      - $ref: '#/components/parameters/TagFilterParam'
       - name: cursor
         in: query
         description: Opaque pagination cursor returned from the previous response.
@@ -3118,6 +3229,7 @@ paths:
         description: Filter by administrative status (active/inactive), independent of presence.
         schema:
           $ref: '#/components/schemas/AgentStatus'
+      - $ref: '#/components/parameters/TagFilterParam'
       - $ref: '#/components/parameters/LimitParam'
       responses:
         '200':
@@ -3550,6 +3662,20 @@ components:
         default: 50
         minimum: 1
         maximum: 200
+    TagFilterParam:
+      name: tag
+      in: query
+      description: |-
+        Filter results by tag. Repeatable; multiple values combine with AND. Format: `Key:Value`, `Key:*` for any value, `Key:a,b,c` for IN.
+
+        Tag values containing `:` or `,` cannot be filtered with this grammar — the parser splits on those literally. Constrain values to plain identifiers when you intend to filter on them.
+
+        Not supported on the runs list — runs are too high-cardinality for ad-hoc tag filtering. To narrow runs by parent workflow, use the workflow-scoped endpoint `GET /v1/projects/{project}/workflows/{id}/runs` and inspect `tags` on each run client-side.
+      explode: true
+      schema:
+        type: array
+        items:
+          type: string
     APIKeyProjectIDParam:
       name: project_id
       in: query
@@ -3686,6 +3812,21 @@ components:
       type: object
       description: Free-form JSON object for caller-defined metadata.
       additionalProperties: true
+    TagMap:
+      type: object
+      description: Azure-style key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys
+        with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum
+        50 tags per resource. Use tags to organise resources by environment, team, cost-center,
+        or any other dimension meaningful to your organisation; tags can be filtered on most
+        list endpoints.
+      additionalProperties:
+        type: string
+        maxLength: 256
+      maxProperties: 50
+      example:
+        Environment: Production
+        Department: Finance
+        Owner: team@example.com
     InteractionMode:
       type: string
       enum:
@@ -3807,6 +3948,9 @@ components:
           nullable: true
           description: Set when the channel is archived. Archived channels are hidden in the
             UI but their message history remains accessible.
+        tags:
+          $ref: '#/components/schemas/TagMap'
+          description: Resource tags applied to this channel.
         created_at:
           type: string
           format: date-time
@@ -4019,6 +4163,9 @@ components:
             type: string
           description: Optional list of user or agent IDs to add as members at creation time.
             All receive the `member` role; the creator is added as `admin` separately.
+        tags:
+          $ref: '#/components/schemas/TagMap'
+          description: Initial tag set.
     UpdateChannelRequest:
       type: object
       additionalProperties: false
@@ -4033,6 +4180,10 @@ components:
         private:
           type: boolean
           description: Toggle invite-only visibility.
+        tags:
+          $ref: '#/components/schemas/TagMap'
+          description: When supplied, replaces the user tag set on the channel. System tags
+            (`mobius:*`) are preserved.
     AddChannelMemberRequest:
       type: object
       additionalProperties: false
@@ -4140,7 +4291,10 @@ components:
           - create
           - update
           - delete
-          description: 'Type of action performed: `create`, `update`, or `delete`.'
+          - archive
+          - restore
+          description: 'Type of action performed: `create`, `update`, `delete`, `archive`,
+            or `restore`.'
         resource_type:
           type: string
           description: Type of resource affected (e.g., job, channel, document)
@@ -4238,6 +4392,9 @@ components:
           type: string
           format: date-time
           description: Timestamp of the most recent authenticated request using this key.
+        tags:
+          $ref: '#/components/schemas/TagMap'
+          description: Resource tags applied to this API key.
         created_at:
           type: string
           format: date-time
@@ -4297,6 +4454,9 @@ components:
           type: string
           format: date-time
           description: Timestamp of the most recent authenticated request using this key.
+        tags:
+          $ref: '#/components/schemas/TagMap'
+          description: Resource tags applied to this API key.
         created_at:
           type: string
           format: date-time
@@ -4362,6 +4522,9 @@ components:
           type: string
           format: date-time
           description: Optional hard expiry. Omit for a non-expiring key.
+        tags:
+          $ref: '#/components/schemas/TagMap'
+          description: Initial tag set.
     CreateOrgOrSystemAPIKeyRequest:
       type: object
       required:
@@ -4394,6 +4557,9 @@ components:
           type: string
           format: date-time
           description: Optional hard expiry. Omit for a non-expiring key.
+        tags:
+          $ref: '#/components/schemas/TagMap'
+          description: Initial tag set.
     AuthContext:
       type: object
       additionalProperties: false
@@ -5070,6 +5236,10 @@ components:
         created_by:
           type: string
           description: User ID of the org member who created this workflow definition.
+        tags:
+          $ref: '#/components/schemas/TagMap'
+          description: Resource tags applied to this workflow. Inherited by runs at start
+            time; see `WorkflowRun.tags`.
         created_at:
           type: string
           format: date-time
@@ -5134,6 +5304,9 @@ components:
         spec:
           $ref: '#/components/schemas/WorkflowSpec'
           description: Executable workflow spec to persist as version 1.
+        tags:
+          $ref: '#/components/schemas/TagMap'
+          description: Initial tag set.
     UpdateWorkflowRequest:
       type: object
       additionalProperties: false
@@ -5153,6 +5326,10 @@ components:
           $ref: '#/components/schemas/WorkflowSpec'
           description: Replacement executable workflow spec. Supplying this creates a new
             version.
+        tags:
+          $ref: '#/components/schemas/TagMap'
+          description: When supplied, replaces the workflow's tag set. Omit to leave tags
+            unchanged.
     WorkflowVersionSummary:
       type: object
       additionalProperties: true
@@ -5204,22 +5381,11 @@ components:
     WorkflowRunStatus:
       type: string
       enum:
-      - queued
-      - running
-      - completed
-      - failed
-      - suspended
-      description: Legacy run status retained during the additive PRD 036 migration. New clients
-        should use `lifecycle_status`, `path_counts`, and `wait_summary`; non-terminal legacy
-        statuses project to `lifecycle_status=active`.
-    WorkflowRunLifecycleStatus:
-      type: string
-      enum:
       - active
       - completed
       - failed
-      description: Additive public lifecycle for PRD 036. Non-terminal legacy statuses (`queued`,
-        `running`, `suspended`) project to `active`.
+      description: Public run lifecycle. Path-level fields explain why an active run is working,
+        waiting, sleeping, retrying, paused, or blocked at a join.
     WorkflowRunPathState:
       type: string
       enum:
@@ -5374,7 +5540,6 @@ components:
       - id
       - workflow_name
       - status
-      - lifecycle_status
       - path_counts
       - wait_summary
       - errors
@@ -5411,10 +5576,7 @@ components:
           description: Name of the workflow as recorded at run creation time.
         status:
           $ref: '#/components/schemas/WorkflowRunStatus'
-          description: Legacy run status retained during migration. Prefer `lifecycle_status`.
-        lifecycle_status:
-          $ref: '#/components/schemas/WorkflowRunLifecycleStatus'
-          description: Public lifecycle for this run. Prefer this over legacy `status`.
+          description: Public lifecycle for this run.
         path_counts:
           $ref: '#/components/schemas/WorkflowRunPathCounts'
           description: Current path counts derived from the run projection.
@@ -5438,6 +5600,11 @@ components:
           additionalProperties:
             type: string
           description: Caller-supplied string metadata attached to the run.
+        tags:
+          $ref: '#/components/schemas/TagMap'
+          description: Resource tags applied to this run. Inherited from the parent workflow
+            at start time, with caller-supplied overrides merged on top. System tags (`mobius:*`)
+            are read-only.
         error_message:
           type: string
           description: Error message from the most recent failure. Present when status is
@@ -5457,9 +5624,8 @@ components:
           description: Caller-supplied idempotency key or correlation ID.
         cancel_requested:
           type: boolean
-          description: Compatibility boolean set when cancellation was requested. New clients
-            should use `cancel_requested_at` for audit detail and `lifecycle_status` for terminal
-            checks.
+          description: Compatibility boolean set when cancellation was requested. Use `cancel_requested_at`
+            for audit detail and `status` for terminal checks.
         cancel_requested_at:
           type: string
           format: date-time
@@ -5556,7 +5722,8 @@ components:
       - mode
       - definition_id
       description: 'Run a previously-created workflow definition. Selected by `mode: saved`
-        on `POST /v1/projects/{project}/runs`.'
+        on `POST /v1/projects/{project}/runs`. The run inherits the workflow definition''s
+        tags at start time; see the `tags` field below for the override rules.'
       properties:
         mode:
           type: string
@@ -5580,6 +5747,13 @@ components:
             type: string
           description: Caller-supplied string metadata attached to the run for filtering and
             display.
+        tags:
+          $ref: '#/components/schemas/TagMap'
+          description: Tags applied on top of the workflow definition's inherited tags. Caller
+            keys override on conflict; an entry whose value is the empty string opts the inherited
+            key out entirely (so the run does not carry it). Setting a tag value to "" is
+            therefore reserved as the opt-out signal — use a placeholder value if you actually
+            want a stored empty value.
         external_id:
           type: string
           description: Caller-supplied idempotency key or correlation ID attached to the run.
@@ -5618,6 +5792,11 @@ components:
             type: string
           description: Caller-supplied string metadata attached to the run for filtering and
             display.
+        tags:
+          $ref: '#/components/schemas/TagMap'
+          description: Initial tags for this inline run. Inline runs have no parent workflow
+            definition, so there is nothing to inherit from — every tag on the run comes from
+            this map.
         external_id:
           type: string
           description: Caller-supplied idempotency key or correlation ID attached to the run.
@@ -5660,6 +5839,13 @@ components:
             type: string
           description: Caller-supplied string metadata attached to the run for filtering and
             display.
+        tags:
+          $ref: '#/components/schemas/TagMap'
+          description: Tags applied on top of the bound workflow definition's inherited tags.
+            Caller keys override on conflict; an entry whose value is the empty string opts
+            the inherited key out entirely (so the run does not carry it). Setting a tag value
+            to "" is therefore reserved as the opt-out signal — use a placeholder value if
+            you actually want a stored empty value.
         external_id:
           type: string
           description: Caller-supplied idempotency key or correlation ID attached to the run.
@@ -7036,6 +7222,9 @@ components:
         created_by:
           type: string
           description: User ID of the org member who created this trigger.
+        tags:
+          $ref: '#/components/schemas/TagMap'
+          description: Resource tags applied to this trigger.
         created_at:
           type: string
           format: date-time
@@ -7173,6 +7362,9 @@ components:
         enabled:
           type: boolean
           description: Whether the trigger starts enabled. Defaults to true when omitted.
+        tags:
+          $ref: '#/components/schemas/TagMap'
+          description: Initial tag set.
     CreateWebhookTriggerRequest:
       type: object
       additionalProperties: false
@@ -7204,6 +7396,9 @@ components:
         enabled:
           type: boolean
           description: Whether the trigger starts enabled. Defaults to true when omitted.
+        tags:
+          $ref: '#/components/schemas/TagMap'
+          description: Initial tag set.
     CreateEventTriggerRequest:
       type: object
       additionalProperties: false
@@ -7236,6 +7431,9 @@ components:
         enabled:
           type: boolean
           description: Whether the trigger starts enabled. Defaults to true when omitted.
+        tags:
+          $ref: '#/components/schemas/TagMap'
+          description: Initial tag set.
     UpdateTriggerRequest:
       type: object
       additionalProperties: false
@@ -7247,12 +7445,22 @@ components:
           $ref: '#/components/schemas/TriggerSourceConfig'
           description: Replacement source configuration; its shape must match the trigger
             kind.
+        targets:
+          type: array
+          items:
+            $ref: '#/components/schemas/CreateTriggerTargetRequest'
+          description: Replacement target set for this trigger. Omit to leave targets unchanged;
+            send an empty array to remove all targets.
         concurrency_policy:
           $ref: '#/components/schemas/ConcurrencyPolicy'
           description: Replacement policy for overlapping runs started by this trigger.
         enabled:
           type: boolean
           description: Set to false to pause the trigger without deleting it.
+        tags:
+          $ref: '#/components/schemas/TagMap'
+          description: When supplied, replaces the user tag set on the trigger. System tags
+            (`mobius:*`) are preserved.
     WorkerSession:
       type: object
       additionalProperties: false
@@ -7362,6 +7570,16 @@ components:
         created_by:
           type: string
           description: User ID of the org member who created this project.
+        archived_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Timestamp when this project was archived. `null` for active projects.
+            Archived projects are read-only and excluded from the default project listing.
+        tags:
+          $ref: '#/components/schemas/TagMap'
+          description: Resource tags applied to this project. See TagMap for syntax and limits.
+            Keys with the `mobius:` prefix are system-managed.
         created_at:
           type: string
           format: date-time
@@ -7400,6 +7618,9 @@ components:
         access_mode:
           $ref: '#/components/schemas/ProjectAccessMode'
           description: 'Initial project access policy: `org_open` or `restricted`.'
+        tags:
+          $ref: '#/components/schemas/TagMap'
+          description: Initial tag set.
     UpdateProjectRequest:
       type: object
       additionalProperties: false
@@ -7418,6 +7639,10 @@ components:
           description: When transitioning from `org_open` to `restricted`, set true to insert
             all current org members as project members so nobody loses visibility on the flip.
             Ignored on other transitions.
+        tags:
+          $ref: '#/components/schemas/TagMap'
+          description: When supplied, replaces the user tag set on the project. System-managed
+            tags (`mobius:*`) are preserved.
     ProjectMember:
       type: object
       additionalProperties: false
@@ -7439,6 +7664,11 @@ components:
         user_id:
           type: string
           description: ID of the user who is a member.
+        user:
+          $ref: '#/components/schemas/User'
+          description: Profile of the member. Embedded by `listProjectMembers` so UIs can
+            render names, emails, and avatars without a separate user lookup. Absent on the
+            `addProjectMember` response.
         added_by_actor_type:
           type: string
           description: Actor type of whoever added this member, if recorded.
@@ -7477,6 +7707,114 @@ components:
         user_id:
           type: string
           description: User ID of the org member to add to this project.
+    CreateProjectInviteRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - email
+      properties:
+        email:
+          type: string
+          format: email
+          description: Email address to invite.
+        role:
+          type: string
+          enum:
+          - Owner
+          - Admin
+          - Member
+          description: Org role assigned on accept. Defaults to `Member`.
+    User:
+      type: object
+      additionalProperties: false
+      description: Human identity known to the organization. User records are useful for membership
+        lists, role assignment UIs, attribution, and displaying profile information next to
+        actions.
+      required:
+      - id
+      - email
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+          description: Clerk user ID. Stable and globally unique across all orgs.
+        email:
+          type: string
+          description: Primary email address from Clerk.
+        first_name:
+          type: string
+          description: User's first name from their Clerk profile.
+        last_name:
+          type: string
+          description: User's last name from their Clerk profile.
+        avatar_url:
+          type: string
+          description: Profile avatar URL from Clerk (may be a Gravatar or uploaded image).
+        created_at:
+          type: string
+          format: date-time
+          description: When the user record was first mirrored into Mobius.
+        updated_at:
+          type: string
+          format: date-time
+          description: Timestamp when this user record was last synced from Clerk.
+    OrgInvite:
+      type: object
+      additionalProperties: false
+      description: Presentation view of a Clerk Organization Invitation. Mobius does not persist
+        invitations — Clerk owns the token, expiry, accept UX, and email delivery. `project_grants`
+        and `invited_by` are stashed in Clerk's `publicMetadata` at create time and applied
+        via webhook when the invitee accepts.
+      required:
+      - id
+      - org_id
+      - email
+      - role
+      - status
+      - created_at
+      properties:
+        id:
+          type: string
+          description: Clerk invitation id (e.g. `orginv_2abc...`).
+        org_id:
+          type: string
+          description: ID of the organization the invitation belongs to.
+        email:
+          type: string
+          format: email
+          description: Email address the invitation was sent to.
+        role:
+          type: string
+          enum:
+          - Owner
+          - Admin
+          - Member
+          description: Org role the invitee will receive on accept.
+        project_grants:
+          type: array
+          items:
+            type: string
+          description: Project IDs the invitee will be added to on accept.
+        status:
+          type: string
+          enum:
+          - pending
+          - accepted
+          - revoked
+          description: Lifecycle reported by Clerk. Tokens that expired without acceptance
+            surface as `revoked`.
+        invited_by:
+          type: string
+          description: User ID of the inviter (from Clerk publicMetadata).
+        expires_at:
+          type: string
+          format: date-time
+          description: Clerk-managed expiry timestamp.
+        created_at:
+          type: string
+          format: date-time
+          description: When the invitation was created in Clerk.
     WebhookDeliveryStatus:
       type: string
       enum:
@@ -7521,6 +7859,9 @@ components:
         created_by:
           type: string
           description: User ID of the org member who created this webhook.
+        tags:
+          $ref: '#/components/schemas/TagMap'
+          description: Resource tags applied to this webhook.
         created_at:
           type: string
           format: date-time
@@ -7636,6 +7977,9 @@ components:
         enabled:
           type: boolean
           description: Whether the webhook starts enabled. Defaults to true when omitted.
+        tags:
+          $ref: '#/components/schemas/TagMap'
+          description: Initial tag set.
     UpdateWebhookRequest:
       type: object
       additionalProperties: false
@@ -7658,6 +8002,10 @@ components:
         enabled:
           type: boolean
           description: Set to false to disable delivery without deleting the webhook.
+        tags:
+          $ref: '#/components/schemas/TagMap'
+          description: When supplied, replaces the user tag set on the webhook. System tags
+            (`mobius:*`) are preserved.
     PingWebhookRequest:
       type: object
       additionalProperties: false
@@ -7729,6 +8077,9 @@ components:
         created_by:
           type: string
           description: User ID of the org member who created this integration.
+        tags:
+          $ref: '#/components/schemas/TagMap'
+          description: Resource tags applied to this integration.
         created_at:
           type: string
           format: date-time
@@ -7780,6 +8131,9 @@ components:
           additionalProperties: true
           description: Non-sensitive provider-specific settings (e.g. default bucket, from
             address).
+        tags:
+          $ref: '#/components/schemas/TagMap'
+          description: Initial tag set.
     UpdateIntegrationRequest:
       type: object
       additionalProperties: false
@@ -7799,6 +8153,10 @@ components:
         status:
           $ref: '#/components/schemas/IntegrationStatus'
           description: 'Replacement integration state: `connected`, `disconnected`, or `error`.'
+        tags:
+          $ref: '#/components/schemas/TagMap'
+          description: When supplied, replaces the user tag set on the integration. System
+            tags (`mobius:*`) are preserved.
     CopyIntegrationRequest:
       type: object
       additionalProperties: false
@@ -8374,6 +8732,9 @@ components:
         system_defined:
           type: boolean
           description: True for built-in platform roles that cannot be modified or deleted.
+        tags:
+          $ref: '#/components/schemas/TagMap'
+          description: Resource tags applied to this role.
         created_at:
           type: string
           format: date-time
@@ -8471,6 +8832,9 @@ components:
           items:
             type: string
           description: Permission strings to include (e.g. "mobius.workflow.create").
+        tags:
+          $ref: '#/components/schemas/TagMap'
+          description: Initial tag set.
     UpdateRoleRequest:
       type: object
       additionalProperties: false
@@ -8483,6 +8847,10 @@ components:
           items:
             type: string
           description: Replaces the existing permissions array entirely.
+        tags:
+          $ref: '#/components/schemas/TagMap'
+          description: When supplied, replaces the user tag set on the role. System tags (`mobius:*`)
+            are preserved.
     CreateRoleAssignmentRequest:
       type: object
       additionalProperties: false
@@ -8513,41 +8881,6 @@ components:
         project_id:
           type: string
           description: Scope this assignment to a project. Omit for org-wide assignment.
-    User:
-      type: object
-      additionalProperties: false
-      description: Human identity known to the organization. User records are useful for membership
-        lists, role assignment UIs, attribution, and displaying profile information next to
-        actions.
-      required:
-      - id
-      - email
-      - created_at
-      - updated_at
-      properties:
-        id:
-          type: string
-          description: Clerk user ID. Stable and globally unique across all orgs.
-        email:
-          type: string
-          description: Primary email address from Clerk.
-        first_name:
-          type: string
-          description: User's first name from their Clerk profile.
-        last_name:
-          type: string
-          description: User's last name from their Clerk profile.
-        avatar_url:
-          type: string
-          description: Profile avatar URL from Clerk (may be a Gravatar or uploaded image).
-        created_at:
-          type: string
-          format: date-time
-          description: When the user record was first mirrored into Mobius.
-        updated_at:
-          type: string
-          format: date-time
-          description: Timestamp when this user record was last synced from Clerk.
     SystemRoleName:
       type: string
       enum:
@@ -8750,6 +9083,39 @@ components:
           - Admin
           - Member
           description: 'New role to assign: `Owner`, `Admin`, or `Member`.'
+    OrgInviteListResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      properties:
+        items:
+          type: array
+          description: The list of results for this page.
+          items:
+            $ref: '#/components/schemas/OrgInvite'
+    CreateOrgInviteRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - email
+      properties:
+        email:
+          type: string
+          format: email
+          description: Email address to invite.
+        role:
+          type: string
+          enum:
+          - Owner
+          - Admin
+          - Member
+          description: Org role assigned on accept. Defaults to `Member`.
+        project_grants:
+          type: array
+          items:
+            type: string
+          description: Project IDs the invitee will be added to on accept.
     InteractionListResponse:
       type: object
       additionalProperties: false
@@ -9131,6 +9497,9 @@ components:
         presence:
           $ref: '#/components/schemas/AgentPresence'
           description: 'Current agent presence: `online`, `offline`, or `unknown`.'
+        tags:
+          $ref: '#/components/schemas/TagMap'
+          description: Resource tags applied to this agent.
         created_at:
           type: string
           format: date-time
@@ -9245,6 +9614,9 @@ components:
           type: object
           additionalProperties: true
           description: Agent-specific configuration stored and returned opaquely.
+        tags:
+          $ref: '#/components/schemas/TagMap'
+          description: Initial tag set.
     UpdateAgentRequest:
       type: object
       additionalProperties: false
@@ -9277,6 +9649,10 @@ components:
         status:
           $ref: '#/components/schemas/AgentStatus'
           description: 'Replacement agent status: `active` or `disabled`.'
+        tags:
+          $ref: '#/components/schemas/TagMap'
+          description: When supplied, replaces the user tag set on the agent. System tags
+            (`mobius:*`) are preserved.
     CreateAgentSessionRequest:
       type: object
       additionalProperties: false
@@ -9329,6 +9705,11 @@ components:
           type: object
           additionalProperties: true
           description: Arbitrary key-value metadata. Subject to size and nesting depth limits.
+        tags:
+          $ref: '#/components/schemas/TagMap'
+          description: 'Resource tags applied to this service account. Distinct from `metadata`:
+            `tags` is the uniform string-to-string field used for filtering and reporting;
+            `metadata` is a free-form caller-defined blob.'
         created_at:
           type: string
           format: date-time
@@ -9376,6 +9757,9 @@ components:
           description: One or more role IDs to assign at creation time. All assignments are
             created atomically with the service account. Requires `mobius.permission.manage`.
             Each role must belong to this project or be org-scoped (project_id empty).
+        tags:
+          $ref: '#/components/schemas/TagMap'
+          description: Initial tag set.
     UpdateServiceAccountRequest:
       type: object
       additionalProperties: false
@@ -9393,6 +9777,10 @@ components:
           type: object
           additionalProperties: true
           description: Replacement metadata.
+        tags:
+          $ref: '#/components/schemas/TagMap'
+          description: When supplied, replaces the user tag set on the service account. System
+            tags (`mobius:*`) are preserved.
     ToolDefinition:
       type: object
       additionalProperties: false

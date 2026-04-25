@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/oapi-codegen/runtime"
+	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
 const (
@@ -102,17 +103,23 @@ func (e AgentStatus) Valid() bool {
 
 // Defines values for AuditLogEntryAction.
 const (
-	AuditLogEntryActionCreate AuditLogEntryAction = "create"
-	AuditLogEntryActionDelete AuditLogEntryAction = "delete"
-	AuditLogEntryActionUpdate AuditLogEntryAction = "update"
+	AuditLogEntryActionArchive AuditLogEntryAction = "archive"
+	AuditLogEntryActionCreate  AuditLogEntryAction = "create"
+	AuditLogEntryActionDelete  AuditLogEntryAction = "delete"
+	AuditLogEntryActionRestore AuditLogEntryAction = "restore"
+	AuditLogEntryActionUpdate  AuditLogEntryAction = "update"
 )
 
 // Valid indicates whether the value is a known member of the AuditLogEntryAction enum.
 func (e AuditLogEntryAction) Valid() bool {
 	switch e {
+	case AuditLogEntryActionArchive:
+		return true
 	case AuditLogEntryActionCreate:
 		return true
 	case AuditLogEntryActionDelete:
+		return true
+	case AuditLogEntryActionRestore:
 		return true
 	case AuditLogEntryActionUpdate:
 		return true
@@ -262,6 +269,27 @@ func (e CreateGroupRequestRoutingPolicy) Valid() bool {
 	case CreateGroupRequestRoutingPolicyAllMembers:
 		return true
 	case CreateGroupRequestRoutingPolicyFirstResponder:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CreateProjectInviteRequestRole.
+const (
+	CreateProjectInviteRequestRoleAdmin  CreateProjectInviteRequestRole = "Admin"
+	CreateProjectInviteRequestRoleMember CreateProjectInviteRequestRole = "Member"
+	CreateProjectInviteRequestRoleOwner  CreateProjectInviteRequestRole = "Owner"
+)
+
+// Valid indicates whether the value is a known member of the CreateProjectInviteRequestRole enum.
+func (e CreateProjectInviteRequestRole) Valid() bool {
+	switch e {
+	case CreateProjectInviteRequestRoleAdmin:
+		return true
+	case CreateProjectInviteRequestRoleMember:
+		return true
+	case CreateProjectInviteRequestRoleOwner:
 		return true
 	default:
 		return false
@@ -493,6 +521,48 @@ func (e JobStatus) Valid() bool {
 	case JobStatusFailed:
 		return true
 	case JobStatusPending:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for OrgInviteRole.
+const (
+	OrgInviteRoleAdmin  OrgInviteRole = "Admin"
+	OrgInviteRoleMember OrgInviteRole = "Member"
+	OrgInviteRoleOwner  OrgInviteRole = "Owner"
+)
+
+// Valid indicates whether the value is a known member of the OrgInviteRole enum.
+func (e OrgInviteRole) Valid() bool {
+	switch e {
+	case OrgInviteRoleAdmin:
+		return true
+	case OrgInviteRoleMember:
+		return true
+	case OrgInviteRoleOwner:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for OrgInviteStatus.
+const (
+	OrgInviteStatusAccepted OrgInviteStatus = "accepted"
+	OrgInviteStatusPending  OrgInviteStatus = "pending"
+	OrgInviteStatusRevoked  OrgInviteStatus = "revoked"
+)
+
+// Valid indicates whether the value is a known member of the OrgInviteStatus enum.
+func (e OrgInviteStatus) Valid() bool {
+	switch e {
+	case OrgInviteStatusAccepted:
+		return true
+	case OrgInviteStatusPending:
+		return true
+	case OrgInviteStatusRevoked:
 		return true
 	default:
 		return false
@@ -832,27 +902,6 @@ func (e WorkflowRunDetailErrorType) Valid() bool {
 	}
 }
 
-// Defines values for WorkflowRunLifecycleStatus.
-const (
-	WorkflowRunLifecycleStatusActive    WorkflowRunLifecycleStatus = "active"
-	WorkflowRunLifecycleStatusCompleted WorkflowRunLifecycleStatus = "completed"
-	WorkflowRunLifecycleStatusFailed    WorkflowRunLifecycleStatus = "failed"
-)
-
-// Valid indicates whether the value is a known member of the WorkflowRunLifecycleStatus enum.
-func (e WorkflowRunLifecycleStatus) Valid() bool {
-	switch e {
-	case WorkflowRunLifecycleStatusActive:
-		return true
-	case WorkflowRunLifecycleStatusCompleted:
-		return true
-	case WorkflowRunLifecycleStatusFailed:
-		return true
-	default:
-		return false
-	}
-}
-
 // Defines values for WorkflowRunPathState.
 const (
 	WorkflowRunPathStateCompleted WorkflowRunPathState = "completed"
@@ -879,25 +928,19 @@ func (e WorkflowRunPathState) Valid() bool {
 
 // Defines values for WorkflowRunStatus.
 const (
+	WorkflowRunStatusActive    WorkflowRunStatus = "active"
 	WorkflowRunStatusCompleted WorkflowRunStatus = "completed"
 	WorkflowRunStatusFailed    WorkflowRunStatus = "failed"
-	WorkflowRunStatusQueued    WorkflowRunStatus = "queued"
-	WorkflowRunStatusRunning   WorkflowRunStatus = "running"
-	WorkflowRunStatusSuspended WorkflowRunStatus = "suspended"
 )
 
 // Valid indicates whether the value is a known member of the WorkflowRunStatus enum.
 func (e WorkflowRunStatus) Valid() bool {
 	switch e {
+	case WorkflowRunStatusActive:
+		return true
 	case WorkflowRunStatusCompleted:
 		return true
 	case WorkflowRunStatusFailed:
-		return true
-	case WorkflowRunStatusQueued:
-		return true
-	case WorkflowRunStatusRunning:
-		return true
-	case WorkflowRunStatusSuspended:
 		return true
 	default:
 		return false
@@ -928,6 +971,27 @@ func (e WorkflowRunWaitKind) Valid() bool {
 	case WorkflowRunWaitKindSignal:
 		return true
 	case WorkflowRunWaitKindSleep:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ListProjectsParamsStatus.
+const (
+	ListProjectsParamsStatusActive   ListProjectsParamsStatus = "active"
+	ListProjectsParamsStatusAll      ListProjectsParamsStatus = "all"
+	ListProjectsParamsStatusArchived ListProjectsParamsStatus = "archived"
+)
+
+// Valid indicates whether the value is a known member of the ListProjectsParamsStatus enum.
+func (e ListProjectsParamsStatus) Valid() bool {
+	switch e {
+	case ListProjectsParamsStatusActive:
+		return true
+	case ListProjectsParamsStatusAll:
+		return true
+	case ListProjectsParamsStatusArchived:
 		return true
 	default:
 		return false
@@ -1252,6 +1316,9 @@ type Agent struct {
 	// Status Administrative status. Inactive agents cannot claim new jobs.
 	Status AgentStatus `json:"status"`
 
+	// Tags Azure-style key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 50 tags per resource. Use tags to organise resources by environment, team, cost-center, or any other dimension meaningful to your organisation; tags can be filtered on most list endpoints.
+	Tags *TagMap `json:"tags,omitempty"`
+
 	// UpdatedAt Timestamp when this agent was last updated.
 	UpdatedAt time.Time `json:"updated_at"`
 }
@@ -1312,7 +1379,7 @@ type AgentStatus string
 
 // AuditLogEntry Immutable record of a security- or configuration-relevant change. Use audit log entries to answer who changed a resource, when it happened, and which project or credential was involved.
 type AuditLogEntry struct {
-	// Action Type of action performed: `create`, `update`, or `delete`.
+	// Action Type of action performed: `create`, `update`, `delete`, `archive`, or `restore`.
 	Action AuditLogEntryAction `json:"action"`
 
 	// ActorId Durable actor ID that performed the action
@@ -1358,7 +1425,7 @@ type AuditLogEntry struct {
 	UserId *string `json:"user_id,omitempty"`
 }
 
-// AuditLogEntryAction Type of action performed: `create`, `update`, or `delete`.
+// AuditLogEntryAction Type of action performed: `create`, `update`, `delete`, `archive`, or `restore`.
 type AuditLogEntryAction string
 
 // AuditLogListResponse defines model for AuditLogListResponse.
@@ -1398,6 +1465,9 @@ type Channel struct {
 
 	// Private When true, the channel is invite-only and not visible in public listings.
 	Private bool `json:"private"`
+
+	// Tags Azure-style key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 50 tags per resource. Use tags to organise resources by environment, team, cost-center, or any other dimension meaningful to your organisation; tags can be filtered on most list endpoints.
+	Tags *TagMap `json:"tags,omitempty"`
 
 	// Topic Optional topic or description shown at the top of the channel.
 	Topic *string `json:"topic,omitempty"`
@@ -1590,6 +1660,9 @@ type CreateAgentRequest struct {
 
 	// ServiceAccountId Service account that backs this agent. Must be active and belong to the same project. If omitted, a new service account is auto-created with the same name as the agent.
 	ServiceAccountId *string `json:"service_account_id,omitempty"`
+
+	// Tags Azure-style key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 50 tags per resource. Use tags to organise resources by environment, team, cost-center, or any other dimension meaningful to your organisation; tags can be filtered on most list endpoints.
+	Tags *TagMap `json:"tags,omitempty"`
 }
 
 // CreateAgentSessionRequest defines model for CreateAgentSessionRequest.
@@ -1618,6 +1691,9 @@ type CreateChannelRequest struct {
 	// Private When true, the channel is invite-only.
 	Private *bool `json:"private,omitempty"`
 
+	// Tags Azure-style key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 50 tags per resource. Use tags to organise resources by environment, team, cost-center, or any other dimension meaningful to your organisation; tags can be filtered on most list endpoints.
+	Tags *TagMap `json:"tags,omitempty"`
+
 	// Topic Optional channel topic or description.
 	Topic *string `json:"topic,omitempty"`
 }
@@ -1644,6 +1720,9 @@ type CreateEventTriggerRequest struct {
 
 	// SourceConfig Source configuration for `event` triggers.
 	SourceConfig EventSourceConfig `json:"source_config"`
+
+	// Tags Azure-style key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 50 tags per resource. Use tags to organise resources by environment, team, cost-center, or any other dimension meaningful to your organisation; tags can be filtered on most list endpoints.
+	Tags *TagMap `json:"tags,omitempty"`
 
 	// Targets Workflows to start when this trigger fires (inline convenience; stored as sub-resources).
 	Targets *[]CreateTriggerTargetRequest `json:"targets,omitempty"`
@@ -1712,6 +1791,18 @@ type CreateJobInteractionRequest struct {
 	Type InteractionType `json:"type"`
 }
 
+// CreateProjectInviteRequest defines model for CreateProjectInviteRequest.
+type CreateProjectInviteRequest struct {
+	// Email Email address to invite.
+	Email openapi_types.Email `json:"email"`
+
+	// Role Org role assigned on accept. Defaults to `Member`.
+	Role *CreateProjectInviteRequestRole `json:"role,omitempty"`
+}
+
+// CreateProjectInviteRequestRole Org role assigned on accept. Defaults to `Member`.
+type CreateProjectInviteRequestRole string
+
 // CreateProjectRequest defines model for CreateProjectRequest.
 type CreateProjectRequest struct {
 	// AccessMode `org_open`: every org member can see and use the project, subject to role assignments. `restricted`: only listed project members (and org owners/admins) can see or use the project.
@@ -1725,6 +1816,9 @@ type CreateProjectRequest struct {
 
 	// Name Human-readable project name.
 	Name string `json:"name"`
+
+	// Tags Azure-style key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 50 tags per resource. Use tags to organise resources by environment, team, cost-center, or any other dimension meaningful to your organisation; tags can be filtered on most list endpoints.
+	Tags *TagMap `json:"tags,omitempty"`
 }
 
 // CreateRunBackedInteractionRequest Creates a run-backed interaction. Completion delivers `signal_name` to `run_id` so a waiting run path can resume.
@@ -1780,6 +1874,9 @@ type CreateScheduleTriggerRequest struct {
 
 	// SourceConfig Source configuration for `schedule` triggers. Provide exactly one of `cron` or `interval`.
 	SourceConfig ScheduleSourceConfig `json:"source_config"`
+
+	// Tags Azure-style key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 50 tags per resource. Use tags to organise resources by environment, team, cost-center, or any other dimension meaningful to your organisation; tags can be filtered on most list endpoints.
+	Tags *TagMap `json:"tags,omitempty"`
 
 	// Targets Workflows to start when this trigger fires (inline convenience; stored as sub-resources).
 	Targets *[]CreateTriggerTargetRequest `json:"targets,omitempty"`
@@ -1850,6 +1947,9 @@ type CreateWebhookRequest struct {
 	// SigningSecret Optional HMAC-SHA256 secret. When set, Mobius signs each POST body and includes `X-Mobius-Signature: sha256=<hex>` in the request headers.
 	SigningSecret *string `json:"signing_secret,omitempty"`
 
+	// Tags Azure-style key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 50 tags per resource. Use tags to organise resources by environment, team, cost-center, or any other dimension meaningful to your organisation; tags can be filtered on most list endpoints.
+	Tags *TagMap `json:"tags,omitempty"`
+
 	// Url The endpoint Mobius will POST event payloads to. May be left empty at creation time so a candidate URL can be tested via the ping endpoint before it is saved; events do not fire for webhooks with an empty URL.
 	Url *string `json:"url,omitempty"`
 }
@@ -1873,6 +1973,9 @@ type CreateWebhookTriggerRequest struct {
 
 	// SourceConfig Source configuration for `webhook` triggers.
 	SourceConfig *WebhookSourceConfig `json:"source_config,omitempty"`
+
+	// Tags Azure-style key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 50 tags per resource. Use tags to organise resources by environment, team, cost-center, or any other dimension meaningful to your organisation; tags can be filtered on most list endpoints.
+	Tags *TagMap `json:"tags,omitempty"`
 
 	// Targets Workflows to start when this trigger fires (inline convenience; stored as sub-resources).
 	Targets *[]CreateTriggerTargetRequest `json:"targets,omitempty"`
@@ -1899,6 +2002,9 @@ type CreateWorkflowRequest struct {
 	//
 	// Authoring rule: `action` is the canonical field for executable steps. When `action_kind` is omitted, `action` uses worker/job semantics. Use `action_kind: "server"` for Mobius-managed server actions such as platform integrations or custom HTTP-backed actions.
 	Spec WorkflowSpec `json:"spec"`
+
+	// Tags Azure-style key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 50 tags per resource. Use tags to organise resources by environment, team, cost-center, or any other dimension meaningful to your organisation; tags can be filtered on most list endpoints.
+	Tags *TagMap `json:"tags,omitempty"`
 }
 
 // ErrorResponse Standard error envelope returned by API endpoints.
@@ -2470,6 +2576,42 @@ type JobStatus string
 // Metadata Free-form JSON object for caller-defined metadata.
 type Metadata map[string]interface{}
 
+// OrgInvite Presentation view of a Clerk Organization Invitation. Mobius does not persist invitations — Clerk owns the token, expiry, accept UX, and email delivery. `project_grants` and `invited_by` are stashed in Clerk's `publicMetadata` at create time and applied via webhook when the invitee accepts.
+type OrgInvite struct {
+	// CreatedAt When the invitation was created in Clerk.
+	CreatedAt time.Time `json:"created_at"`
+
+	// Email Email address the invitation was sent to.
+	Email openapi_types.Email `json:"email"`
+
+	// ExpiresAt Clerk-managed expiry timestamp.
+	ExpiresAt *time.Time `json:"expires_at,omitempty"`
+
+	// Id Clerk invitation id (e.g. `orginv_2abc...`).
+	Id string `json:"id"`
+
+	// InvitedBy User ID of the inviter (from Clerk publicMetadata).
+	InvitedBy *string `json:"invited_by,omitempty"`
+
+	// OrgId ID of the organization the invitation belongs to.
+	OrgId string `json:"org_id"`
+
+	// ProjectGrants Project IDs the invitee will be added to on accept.
+	ProjectGrants *[]string `json:"project_grants,omitempty"`
+
+	// Role Org role the invitee will receive on accept.
+	Role OrgInviteRole `json:"role"`
+
+	// Status Lifecycle reported by Clerk. Tokens that expired without acceptance surface as `revoked`.
+	Status OrgInviteStatus `json:"status"`
+}
+
+// OrgInviteRole Org role the invitee will receive on accept.
+type OrgInviteRole string
+
+// OrgInviteStatus Lifecycle reported by Clerk. Tokens that expired without acceptance surface as `revoked`.
+type OrgInviteStatus string
+
 // PingWebhookRequest defines model for PingWebhookRequest.
 type PingWebhookRequest struct {
 	// Url URL to test. When supplied, the ping is sent to this URL instead of the webhook's saved URL — use this to validate a candidate URL before saving it. When omitted, the webhook's current saved URL is used.
@@ -2496,6 +2638,9 @@ type Project struct {
 	// AccessMode `org_open`: every org member can see and use the project, subject to role assignments. `restricted`: only listed project members (and org owners/admins) can see or use the project.
 	AccessMode ProjectAccessMode `json:"access_mode"`
 
+	// ArchivedAt Timestamp when this project was archived. `null` for active projects. Archived projects are read-only and excluded from the default project listing.
+	ArchivedAt *time.Time `json:"archived_at,omitempty"`
+
 	// CreatedAt Timestamp when this project was created.
 	CreatedAt time.Time `json:"created_at"`
 
@@ -2513,6 +2658,9 @@ type Project struct {
 
 	// Name Human-readable project name.
 	Name string `json:"name"`
+
+	// Tags Azure-style key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 50 tags per resource. Use tags to organise resources by environment, team, cost-center, or any other dimension meaningful to your organisation; tags can be filtered on most list endpoints.
+	Tags *TagMap `json:"tags,omitempty"`
 
 	// UpdatedAt Timestamp when this project was last updated.
 	UpdatedAt time.Time `json:"updated_at"`
@@ -2543,6 +2691,9 @@ type ProjectMember struct {
 
 	// ProjectId ID of the project this membership belongs to.
 	ProjectId string `json:"project_id"`
+
+	// User Human identity known to the organization. User records are useful for membership lists, role assignment UIs, attribution, and displaying profile information next to actions.
+	User *User `json:"user,omitempty"`
 
 	// UserId ID of the user who is a member.
 	UserId string `json:"user_id"`
@@ -2749,6 +2900,9 @@ type StartBoundRunRequest struct {
 
 	// Queue Queue name to enqueue the run on. Defaults to "default".
 	Queue *string `json:"queue,omitempty"`
+
+	// Tags Azure-style key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 50 tags per resource. Use tags to organise resources by environment, team, cost-center, or any other dimension meaningful to your organisation; tags can be filtered on most list endpoints.
+	Tags *TagMap `json:"tags,omitempty"`
 }
 
 // StartInlineRunRequest Run an ephemeral workflow from an inline spec. Selected by `mode: inline` on `POST /v1/projects/{project}/runs`. No `WorkflowDefinition` is persisted; the spec is snapshotted onto the returned run.
@@ -2775,6 +2929,9 @@ type StartInlineRunRequest struct {
 	//
 	// Authoring rule: `action` is the canonical field for executable steps. When `action_kind` is omitted, `action` uses worker/job semantics. Use `action_kind: "server"` for Mobius-managed server actions such as platform integrations or custom HTTP-backed actions.
 	Spec WorkflowSpec `json:"spec"`
+
+	// Tags Azure-style key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 50 tags per resource. Use tags to organise resources by environment, team, cost-center, or any other dimension meaningful to your organisation; tags can be filtered on most list endpoints.
+	Tags *TagMap `json:"tags,omitempty"`
 }
 
 // StartInlineRunRequestMode Discriminator value — must be `inline`.
@@ -2788,7 +2945,7 @@ type StartRunRequest struct {
 	union json.RawMessage
 }
 
-// StartSavedRunRequest Run a previously-created workflow definition. Selected by `mode: saved` on `POST /v1/projects/{project}/runs`.
+// StartSavedRunRequest Run a previously-created workflow definition. Selected by `mode: saved` on `POST /v1/projects/{project}/runs`. The run inherits the workflow definition's tags at start time; see the `tags` field below for the override rules.
 type StartSavedRunRequest struct {
 	// Config Flat cascade config input used outside authored workflow YAML. Each entry addresses one `(category, key)` pair. Unknown categories or unknown keys under a known category are rejected at write time. The only category shipped in Phase 1 is `timeouts`, whose keys are `claim`, `liveness`, `execution`, `wall_clock`.
 	Config *ConfigEntries `json:"config,omitempty"`
@@ -2810,10 +2967,16 @@ type StartSavedRunRequest struct {
 
 	// Queue Queue name to enqueue the run on. Defaults to "default".
 	Queue *string `json:"queue,omitempty"`
+
+	// Tags Azure-style key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 50 tags per resource. Use tags to organise resources by environment, team, cost-center, or any other dimension meaningful to your organisation; tags can be filtered on most list endpoints.
+	Tags *TagMap `json:"tags,omitempty"`
 }
 
 // StartSavedRunRequestMode Discriminator value — must be `saved`.
 type StartSavedRunRequestMode string
+
+// TagMap Azure-style key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 50 tags per resource. Use tags to organise resources by environment, team, cost-center, or any other dimension meaningful to your organisation; tags can be filtered on most list endpoints.
+type TagMap map[string]string
 
 // ToolDefinition Published workflow exposed as an invokable tool. Clients can use this definition to list available tools and render input forms from the JSON Schema before starting a run.
 type ToolDefinition struct {
@@ -2894,6 +3057,9 @@ type Trigger struct {
 
 	// SourceConfig Typed source configuration. The shape is determined by the trigger's `kind` (`schedule` → `ScheduleSourceConfig`, `webhook` → `WebhookSourceConfig`, `event` → `EventSourceConfig`); mismatches are rejected with 400.
 	SourceConfig *TriggerSourceConfig `json:"source_config,omitempty"`
+
+	// Tags Azure-style key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 50 tags per resource. Use tags to organise resources by environment, team, cost-center, or any other dimension meaningful to your organisation; tags can be filtered on most list endpoints.
+	Tags *TagMap `json:"tags,omitempty"`
 
 	// Targets Targets attached to this trigger, populated via join.
 	Targets *[]TriggerTarget `json:"targets,omitempty"`
@@ -3073,6 +3239,9 @@ type UpdateAgentRequest struct {
 
 	// Status Administrative status. Inactive agents cannot claim new jobs.
 	Status *AgentStatus `json:"status,omitempty"`
+
+	// Tags Azure-style key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 50 tags per resource. Use tags to organise resources by environment, team, cost-center, or any other dimension meaningful to your organisation; tags can be filtered on most list endpoints.
+	Tags *TagMap `json:"tags,omitempty"`
 }
 
 // UpdateChannelMessageRequest Mutable fields for an existing channel message.
@@ -3094,6 +3263,9 @@ type UpdateChannelRequest struct {
 
 	// Private Toggle invite-only visibility.
 	Private *bool `json:"private,omitempty"`
+
+	// Tags Azure-style key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 50 tags per resource. Use tags to organise resources by environment, team, cost-center, or any other dimension meaningful to your organisation; tags can be filtered on most list endpoints.
+	Tags *TagMap `json:"tags,omitempty"`
 
 	// Topic Updated topic or description.
 	Topic *string `json:"topic,omitempty"`
@@ -3127,6 +3299,9 @@ type UpdateProjectRequest struct {
 
 	// SeedExistingMembers When transitioning from `org_open` to `restricted`, set true to insert all current org members as project members so nobody loses visibility on the flip. Ignored on other transitions.
 	SeedExistingMembers *bool `json:"seed_existing_members,omitempty"`
+
+	// Tags Azure-style key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 50 tags per resource. Use tags to organise resources by environment, team, cost-center, or any other dimension meaningful to your organisation; tags can be filtered on most list endpoints.
+	Tags *TagMap `json:"tags,omitempty"`
 }
 
 // UpdateTriggerRequest defines model for UpdateTriggerRequest.
@@ -3145,6 +3320,12 @@ type UpdateTriggerRequest struct {
 
 	// SourceConfig Typed source configuration. The shape is determined by the trigger's `kind` (`schedule` → `ScheduleSourceConfig`, `webhook` → `WebhookSourceConfig`, `event` → `EventSourceConfig`); mismatches are rejected with 400.
 	SourceConfig *TriggerSourceConfig `json:"source_config,omitempty"`
+
+	// Tags Azure-style key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 50 tags per resource. Use tags to organise resources by environment, team, cost-center, or any other dimension meaningful to your organisation; tags can be filtered on most list endpoints.
+	Tags *TagMap `json:"tags,omitempty"`
+
+	// Targets Replacement target set for this trigger. Omit to leave targets unchanged; send an empty array to remove all targets.
+	Targets *[]CreateTriggerTargetRequest `json:"targets,omitempty"`
 }
 
 // UpdateTriggerTargetRequest Partial update for a trigger target; omitted fields are unchanged.
@@ -3176,6 +3357,9 @@ type UpdateWebhookRequest struct {
 	// SigningSecret Replace the current signing secret. Set to empty string to disable signing. Omit to leave the current secret unchanged.
 	SigningSecret *string `json:"signing_secret,omitempty"`
 
+	// Tags Azure-style key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 50 tags per resource. Use tags to organise resources by environment, team, cost-center, or any other dimension meaningful to your organisation; tags can be filtered on most list endpoints.
+	Tags *TagMap `json:"tags,omitempty"`
+
 	// Url Replacement endpoint URL.
 	Url *string `json:"url,omitempty"`
 }
@@ -3195,6 +3379,33 @@ type UpdateWorkflowRequest struct {
 	//
 	// Authoring rule: `action` is the canonical field for executable steps. When `action_kind` is omitted, `action` uses worker/job semantics. Use `action_kind: "server"` for Mobius-managed server actions such as platform integrations or custom HTTP-backed actions.
 	Spec *WorkflowSpec `json:"spec,omitempty"`
+
+	// Tags Azure-style key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 50 tags per resource. Use tags to organise resources by environment, team, cost-center, or any other dimension meaningful to your organisation; tags can be filtered on most list endpoints.
+	Tags *TagMap `json:"tags,omitempty"`
+}
+
+// User Human identity known to the organization. User records are useful for membership lists, role assignment UIs, attribution, and displaying profile information next to actions.
+type User struct {
+	// AvatarUrl Profile avatar URL from Clerk (may be a Gravatar or uploaded image).
+	AvatarUrl *string `json:"avatar_url,omitempty"`
+
+	// CreatedAt When the user record was first mirrored into Mobius.
+	CreatedAt time.Time `json:"created_at"`
+
+	// Email Primary email address from Clerk.
+	Email string `json:"email"`
+
+	// FirstName User's first name from their Clerk profile.
+	FirstName *string `json:"first_name,omitempty"`
+
+	// Id Clerk user ID. Stable and globally unique across all orgs.
+	Id string `json:"id"`
+
+	// LastName User's last name from their Clerk profile.
+	LastName *string `json:"last_name,omitempty"`
+
+	// UpdatedAt Timestamp when this user record was last synced from Clerk.
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 // Webhook A project-level outgoing webhook subscription. When a subscribed event fires, Mobius POSTs the event payload to `url`.
@@ -3216,6 +3427,9 @@ type Webhook struct {
 
 	// Name Human-readable name, unique within the project.
 	Name string `json:"name"`
+
+	// Tags Azure-style key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 50 tags per resource. Use tags to organise resources by environment, team, cost-center, or any other dimension meaningful to your organisation; tags can be filtered on most list endpoints.
+	Tags *TagMap `json:"tags,omitempty"`
 
 	// UpdatedAt Timestamp when this webhook was last updated.
 	UpdatedAt time.Time `json:"updated_at"`
@@ -3378,6 +3592,9 @@ type WorkflowDefinition struct {
 	// Authoring rule: `action` is the canonical field for executable steps. When `action_kind` is omitted, `action` uses worker/job semantics. Use `action_kind: "server"` for Mobius-managed server actions such as platform integrations or custom HTTP-backed actions.
 	Spec WorkflowSpec `json:"spec"`
 
+	// Tags Azure-style key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 50 tags per resource. Use tags to organise resources by environment, team, cost-center, or any other dimension meaningful to your organisation; tags can be filtered on most list endpoints.
+	Tags *TagMap `json:"tags,omitempty"`
+
 	// UpdatedAt Timestamp when this workflow definition was last updated.
 	UpdatedAt            time.Time              `json:"updated_at"`
 	AdditionalProperties map[string]interface{} `json:"-"`
@@ -3420,6 +3637,9 @@ type WorkflowDefinitionSummary struct {
 
 	// PublishedAsTool When true, this workflow is exposed as a callable tool via /api/tools.
 	PublishedAsTool *bool `json:"published_as_tool,omitempty"`
+
+	// Tags Azure-style key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 50 tags per resource. Use tags to organise resources by environment, team, cost-center, or any other dimension meaningful to your organisation; tags can be filtered on most list endpoints.
+	Tags *TagMap `json:"tags,omitempty"`
 
 	// UpdatedAt Timestamp when this workflow definition was last updated.
 	UpdatedAt            time.Time              `json:"updated_at"`
@@ -3678,7 +3898,7 @@ type WorkflowRun struct {
 	// Attempt Retry attempt number (1-based). Increments each time the run is retried.
 	Attempt int `json:"attempt"`
 
-	// CancelRequested Compatibility boolean set when cancellation was requested. New clients should use `cancel_requested_at` for audit detail and `lifecycle_status` for terminal checks.
+	// CancelRequested Compatibility boolean set when cancellation was requested. Use `cancel_requested_at` for audit detail and `status` for terminal checks.
 	CancelRequested *bool `json:"cancel_requested,omitempty"`
 
 	// CancelRequestedAt Timestamp when cancellation was requested.
@@ -3723,9 +3943,6 @@ type WorkflowRun struct {
 	// Inputs Input values provided when the run was started.
 	Inputs *map[string]interface{} `json:"inputs,omitempty"`
 
-	// LifecycleStatus Additive public lifecycle for PRD 036. Non-terminal legacy statuses (`queued`, `running`, `suspended`) project to `active`.
-	LifecycleStatus WorkflowRunLifecycleStatus `json:"lifecycle_status"`
-
 	// Metadata Caller-supplied string metadata attached to the run.
 	Metadata *map[string]string `json:"metadata,omitempty"`
 
@@ -3744,8 +3961,11 @@ type WorkflowRun struct {
 	// StartedAt Timestamp when a worker first claimed this run.
 	StartedAt *time.Time `json:"started_at,omitempty"`
 
-	// Status Legacy run status retained during the additive PRD 036 migration. New clients should use `lifecycle_status`, `path_counts`, and `wait_summary`; non-terminal legacy statuses project to `lifecycle_status=active`.
+	// Status Public run lifecycle. Path-level fields explain why an active run is working, waiting, sleeping, retrying, paused, or blocked at a join.
 	Status WorkflowRunStatus `json:"status"`
+
+	// Tags Azure-style key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 50 tags per resource. Use tags to organise resources by environment, team, cost-center, or any other dimension meaningful to your organisation; tags can be filtered on most list endpoints.
+	Tags *TagMap `json:"tags,omitempty"`
 
 	// UpdatedAt Timestamp when this run was last updated.
 	UpdatedAt time.Time `json:"updated_at"`
@@ -3775,7 +3995,7 @@ type WorkflowRunDetail struct {
 	// Attempt Retry attempt number (1-based). Increments each time the run is retried.
 	Attempt int `json:"attempt"`
 
-	// CancelRequested Compatibility boolean set when cancellation was requested. New clients should use `cancel_requested_at` for audit detail and `lifecycle_status` for terminal checks.
+	// CancelRequested Compatibility boolean set when cancellation was requested. Use `cancel_requested_at` for audit detail and `status` for terminal checks.
 	CancelRequested *bool `json:"cancel_requested,omitempty"`
 
 	// CancelRequestedAt Timestamp when cancellation was requested.
@@ -3823,9 +4043,6 @@ type WorkflowRunDetail struct {
 	// Jobs Jobs spawned by this run.
 	Jobs *[]Job `json:"jobs,omitempty"`
 
-	// LifecycleStatus Additive public lifecycle for PRD 036. Non-terminal legacy statuses (`queued`, `running`, `suspended`) project to `active`.
-	LifecycleStatus WorkflowRunLifecycleStatus `json:"lifecycle_status"`
-
 	// Metadata Caller-supplied string metadata attached to the run.
 	Metadata *map[string]string `json:"metadata,omitempty"`
 
@@ -3855,8 +4072,11 @@ type WorkflowRunDetail struct {
 	// StartedAt Timestamp when a worker first claimed this run.
 	StartedAt *time.Time `json:"started_at,omitempty"`
 
-	// Status Legacy run status retained during the additive PRD 036 migration. New clients should use `lifecycle_status`, `path_counts`, and `wait_summary`; non-terminal legacy statuses project to `lifecycle_status=active`.
+	// Status Public run lifecycle. Path-level fields explain why an active run is working, waiting, sleeping, retrying, paused, or blocked at a join.
 	Status WorkflowRunStatus `json:"status"`
+
+	// Tags Azure-style key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 50 tags per resource. Use tags to organise resources by environment, team, cost-center, or any other dimension meaningful to your organisation; tags can be filtered on most list endpoints.
+	Tags *TagMap `json:"tags,omitempty"`
 
 	// UpdatedAt Timestamp when this run was last updated.
 	UpdatedAt time.Time `json:"updated_at"`
@@ -3881,9 +4101,6 @@ type WorkflowRunError struct {
 	ErrorType    string  `json:"error_type"`
 	PathId       *string `json:"path_id,omitempty"`
 }
-
-// WorkflowRunLifecycleStatus Additive public lifecycle for PRD 036. Non-terminal legacy statuses (`queued`, `running`, `suspended`) project to `active`.
-type WorkflowRunLifecycleStatus string
 
 // WorkflowRunListResponse Paginated list of workflow runs.
 type WorkflowRunListResponse struct {
@@ -3926,7 +4143,7 @@ type WorkflowRunPathCounts struct {
 // WorkflowRunPathState Current state of one execution path.
 type WorkflowRunPathState string
 
-// WorkflowRunStatus Legacy run status retained during the additive PRD 036 migration. New clients should use `lifecycle_status`, `path_counts`, and `wait_summary`; non-terminal legacy statuses project to `lifecycle_status=active`.
+// WorkflowRunStatus Public run lifecycle. Path-level fields explain why an active run is working, waiting, sleeping, retrying, paused, or blocked at a join.
 type WorkflowRunStatus string
 
 // WorkflowRunWaitDetail defines model for WorkflowRunWaitDetail.
@@ -4148,6 +4365,9 @@ type LimitParam = int
 // ProjectHandleParam defines model for ProjectHandleParam.
 type ProjectHandleParam = string
 
+// TagFilterParam defines model for TagFilterParam.
+type TagFilterParam = []string
+
 // TriggerTargetIDParam defines model for TriggerTargetIDParam.
 type TriggerTargetIDParam = string
 
@@ -4204,7 +4424,7 @@ type ListAuditLogsParams struct {
 	// ActorId Filter by actor ID
 	ActorId *string `form:"actor_id,omitempty" json:"actor_id,omitempty"`
 
-	// Action Filter by action (create, update, delete)
+	// Action Filter by action (create, update, delete, archive, restore)
 	Action *string `form:"action,omitempty" json:"action,omitempty"`
 
 	// CreatedAfter Filter to entries created after this timestamp
@@ -4224,7 +4444,20 @@ type ListAuditLogsParams struct {
 type ListProjectsParams struct {
 	// Search Prefix-match filter applied to project name and handle.
 	Search *string `form:"search,omitempty" json:"search,omitempty"`
+
+	// Status Lifecycle filter. `active` (default) returns non-archived projects; `archived` returns archived projects only; `all` returns both.
+	Status *ListProjectsParamsStatus `form:"status,omitempty" json:"status,omitempty"`
+
+	// Tag Filter results by tag. Repeatable; multiple values combine with AND. Format: `Key:Value`, `Key:*` for any value, `Key:a,b,c` for IN.
+	//
+	// Tag values containing `:` or `,` cannot be filtered with this grammar — the parser splits on those literally. Constrain values to plain identifiers when you intend to filter on them.
+	//
+	// Not supported on the runs list — runs are too high-cardinality for ad-hoc tag filtering. To narrow runs by parent workflow, use the workflow-scoped endpoint `GET /v1/projects/{project}/workflows/{id}/runs` and inspect `tags` on each run client-side.
+	Tag *TagFilterParam `form:"tag,omitempty" json:"tag,omitempty"`
 }
+
+// ListProjectsParamsStatus defines parameters for ListProjects.
+type ListProjectsParamsStatus string
 
 // ListProjectMembersParams defines parameters for ListProjectMembers.
 type ListProjectMembersParams struct {
@@ -4270,6 +4503,13 @@ type ListAgentsParams struct {
 	// Status Filter by administrative status (active/inactive), independent of presence.
 	Status *AgentStatus `form:"status,omitempty" json:"status,omitempty"`
 
+	// Tag Filter results by tag. Repeatable; multiple values combine with AND. Format: `Key:Value`, `Key:*` for any value, `Key:a,b,c` for IN.
+	//
+	// Tag values containing `:` or `,` cannot be filtered with this grammar — the parser splits on those literally. Constrain values to plain identifiers when you intend to filter on them.
+	//
+	// Not supported on the runs list — runs are too high-cardinality for ad-hoc tag filtering. To narrow runs by parent workflow, use the workflow-scoped endpoint `GET /v1/projects/{project}/workflows/{id}/runs` and inspect `tags` on each run client-side.
+	Tag *TagFilterParam `form:"tag,omitempty" json:"tag,omitempty"`
+
 	// Limit Maximum number of items to return
 	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
 }
@@ -4293,6 +4533,13 @@ type ListChannelsParams struct {
 
 	// Private Filter by private flag.
 	Private *bool `form:"private,omitempty" json:"private,omitempty"`
+
+	// Tag Filter results by tag. Repeatable; multiple values combine with AND. Format: `Key:Value`, `Key:*` for any value, `Key:a,b,c` for IN.
+	//
+	// Tag values containing `:` or `,` cannot be filtered with this grammar — the parser splits on those literally. Constrain values to plain identifiers when you intend to filter on them.
+	//
+	// Not supported on the runs list — runs are too high-cardinality for ad-hoc tag filtering. To narrow runs by parent workflow, use the workflow-scoped endpoint `GET /v1/projects/{project}/workflows/{id}/runs` and inspect `tags` on each run client-side.
+	Tag *TagFilterParam `form:"tag,omitempty" json:"tag,omitempty"`
 
 	// Cursor Cursor for pagination (opaque string from previous response)
 	Cursor *CursorParam `form:"cursor,omitempty" json:"cursor,omitempty"`
@@ -4426,6 +4673,13 @@ type ListTriggersParams struct {
 	// Enabled Filter to enabled or disabled triggers.
 	Enabled *bool `form:"enabled,omitempty" json:"enabled,omitempty"`
 
+	// Tag Filter results by tag. Repeatable; multiple values combine with AND. Format: `Key:Value`, `Key:*` for any value, `Key:a,b,c` for IN.
+	//
+	// Tag values containing `:` or `,` cannot be filtered with this grammar — the parser splits on those literally. Constrain values to plain identifiers when you intend to filter on them.
+	//
+	// Not supported on the runs list — runs are too high-cardinality for ad-hoc tag filtering. To narrow runs by parent workflow, use the workflow-scoped endpoint `GET /v1/projects/{project}/workflows/{id}/runs` and inspect `tags` on each run client-side.
+	Tag *TagFilterParam `form:"tag,omitempty" json:"tag,omitempty"`
+
 	// Cursor Opaque pagination cursor returned from the previous response.
 	Cursor *string `form:"cursor,omitempty" json:"cursor,omitempty"`
 
@@ -4450,6 +4704,13 @@ type ListWebhooksParams struct {
 	// Enabled Filter by enabled/disabled state.
 	Enabled *bool `form:"enabled,omitempty" json:"enabled,omitempty"`
 
+	// Tag Filter results by tag. Repeatable; multiple values combine with AND. Format: `Key:Value`, `Key:*` for any value, `Key:a,b,c` for IN.
+	//
+	// Tag values containing `:` or `,` cannot be filtered with this grammar — the parser splits on those literally. Constrain values to plain identifiers when you intend to filter on them.
+	//
+	// Not supported on the runs list — runs are too high-cardinality for ad-hoc tag filtering. To narrow runs by parent workflow, use the workflow-scoped endpoint `GET /v1/projects/{project}/workflows/{id}/runs` and inspect `tags` on each run client-side.
+	Tag *TagFilterParam `form:"tag,omitempty" json:"tag,omitempty"`
+
 	// Cursor Opaque pagination cursor returned from the previous response.
 	Cursor *string `form:"cursor,omitempty" json:"cursor,omitempty"`
 
@@ -4468,6 +4729,13 @@ type ListWebhookDeliveriesParams struct {
 
 // ListWorkflowsParams defines parameters for ListWorkflows.
 type ListWorkflowsParams struct {
+	// Tag Filter results by tag. Repeatable; multiple values combine with AND. Format: `Key:Value`, `Key:*` for any value, `Key:a,b,c` for IN.
+	//
+	// Tag values containing `:` or `,` cannot be filtered with this grammar — the parser splits on those literally. Constrain values to plain identifiers when you intend to filter on them.
+	//
+	// Not supported on the runs list — runs are too high-cardinality for ad-hoc tag filtering. To narrow runs by parent workflow, use the workflow-scoped endpoint `GET /v1/projects/{project}/workflows/{id}/runs` and inspect `tags` on each run client-side.
+	Tag *TagFilterParam `form:"tag,omitempty" json:"tag,omitempty"`
+
 	// Cursor Opaque pagination cursor returned from the previous response.
 	Cursor *string `form:"cursor,omitempty" json:"cursor,omitempty"`
 
@@ -4483,6 +4751,9 @@ type UpdateProjectJSONRequestBody = UpdateProjectRequest
 
 // UpdateProjectConfigJSONRequestBody defines body for UpdateProjectConfig for application/json ContentType.
 type UpdateProjectConfigJSONRequestBody = ConfigEntries
+
+// CreateProjectInviteJSONRequestBody defines body for CreateProjectInvite for application/json ContentType.
+type CreateProjectInviteJSONRequestBody = CreateProjectInviteRequest
 
 // AddProjectMemberJSONRequestBody defines body for AddProjectMember for application/json ContentType.
 type AddProjectMemberJSONRequestBody = AddProjectMemberRequest
@@ -5089,6 +5360,14 @@ func (a *WorkflowDefinition) UnmarshalJSON(b []byte) error {
 		delete(object, "spec")
 	}
 
+	if raw, found := object["tags"]; found {
+		err = json.Unmarshal(raw, &a.Tags)
+		if err != nil {
+			return fmt.Errorf("error reading 'tags': %w", err)
+		}
+		delete(object, "tags")
+	}
+
 	if raw, found := object["updated_at"]; found {
 		err = json.Unmarshal(raw, &a.UpdatedAt)
 		if err != nil {
@@ -5163,6 +5442,13 @@ func (a WorkflowDefinition) MarshalJSON() ([]byte, error) {
 	object["spec"], err = json.Marshal(a.Spec)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling 'spec': %w", err)
+	}
+
+	if a.Tags != nil {
+		object["tags"], err = json.Marshal(a.Tags)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'tags': %w", err)
+		}
 	}
 
 	object["updated_at"], err = json.Marshal(a.UpdatedAt)
@@ -5268,6 +5554,14 @@ func (a *WorkflowDefinitionSummary) UnmarshalJSON(b []byte) error {
 		delete(object, "published_as_tool")
 	}
 
+	if raw, found := object["tags"]; found {
+		err = json.Unmarshal(raw, &a.Tags)
+		if err != nil {
+			return fmt.Errorf("error reading 'tags': %w", err)
+		}
+		delete(object, "tags")
+	}
+
 	if raw, found := object["updated_at"]; found {
 		err = json.Unmarshal(raw, &a.UpdatedAt)
 		if err != nil {
@@ -5336,6 +5630,13 @@ func (a WorkflowDefinitionSummary) MarshalJSON() ([]byte, error) {
 		object["published_as_tool"], err = json.Marshal(a.PublishedAsTool)
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'published_as_tool': %w", err)
+		}
+	}
+
+	if a.Tags != nil {
+		object["tags"], err = json.Marshal(a.Tags)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'tags': %w", err)
 		}
 	}
 
@@ -5522,14 +5823,6 @@ func (a *WorkflowRun) UnmarshalJSON(b []byte) error {
 		delete(object, "inputs")
 	}
 
-	if raw, found := object["lifecycle_status"]; found {
-		err = json.Unmarshal(raw, &a.LifecycleStatus)
-		if err != nil {
-			return fmt.Errorf("error reading 'lifecycle_status': %w", err)
-		}
-		delete(object, "lifecycle_status")
-	}
-
 	if raw, found := object["metadata"]; found {
 		err = json.Unmarshal(raw, &a.Metadata)
 		if err != nil {
@@ -5584,6 +5877,14 @@ func (a *WorkflowRun) UnmarshalJSON(b []byte) error {
 			return fmt.Errorf("error reading 'status': %w", err)
 		}
 		delete(object, "status")
+	}
+
+	if raw, found := object["tags"]; found {
+		err = json.Unmarshal(raw, &a.Tags)
+		if err != nil {
+			return fmt.Errorf("error reading 'tags': %w", err)
+		}
+		delete(object, "tags")
 	}
 
 	if raw, found := object["updated_at"]; found {
@@ -5755,11 +6056,6 @@ func (a WorkflowRun) MarshalJSON() ([]byte, error) {
 		}
 	}
 
-	object["lifecycle_status"], err = json.Marshal(a.LifecycleStatus)
-	if err != nil {
-		return nil, fmt.Errorf("error marshaling 'lifecycle_status': %w", err)
-	}
-
 	if a.Metadata != nil {
 		object["metadata"], err = json.Marshal(a.Metadata)
 		if err != nil {
@@ -5803,6 +6099,13 @@ func (a WorkflowRun) MarshalJSON() ([]byte, error) {
 	object["status"], err = json.Marshal(a.Status)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling 'status': %w", err)
+	}
+
+	if a.Tags != nil {
+		object["tags"], err = json.Marshal(a.Tags)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'tags': %w", err)
+		}
 	}
 
 	object["updated_at"], err = json.Marshal(a.UpdatedAt)
@@ -6013,14 +6316,6 @@ func (a *WorkflowRunDetail) UnmarshalJSON(b []byte) error {
 		delete(object, "jobs")
 	}
 
-	if raw, found := object["lifecycle_status"]; found {
-		err = json.Unmarshal(raw, &a.LifecycleStatus)
-		if err != nil {
-			return fmt.Errorf("error reading 'lifecycle_status': %w", err)
-		}
-		delete(object, "lifecycle_status")
-	}
-
 	if raw, found := object["metadata"]; found {
 		err = json.Unmarshal(raw, &a.Metadata)
 		if err != nil {
@@ -6099,6 +6394,14 @@ func (a *WorkflowRunDetail) UnmarshalJSON(b []byte) error {
 			return fmt.Errorf("error reading 'status': %w", err)
 		}
 		delete(object, "status")
+	}
+
+	if raw, found := object["tags"]; found {
+		err = json.Unmarshal(raw, &a.Tags)
+		if err != nil {
+			return fmt.Errorf("error reading 'tags': %w", err)
+		}
+		delete(object, "tags")
 	}
 
 	if raw, found := object["updated_at"]; found {
@@ -6277,11 +6580,6 @@ func (a WorkflowRunDetail) MarshalJSON() ([]byte, error) {
 		}
 	}
 
-	object["lifecycle_status"], err = json.Marshal(a.LifecycleStatus)
-	if err != nil {
-		return nil, fmt.Errorf("error marshaling 'lifecycle_status': %w", err)
-	}
-
 	if a.Metadata != nil {
 		object["metadata"], err = json.Marshal(a.Metadata)
 		if err != nil {
@@ -6346,6 +6644,13 @@ func (a WorkflowRunDetail) MarshalJSON() ([]byte, error) {
 	object["status"], err = json.Marshal(a.Status)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling 'status': %w", err)
+	}
+
+	if a.Tags != nil {
+		object["tags"], err = json.Marshal(a.Tags)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'tags': %w", err)
+		}
 	}
 
 	object["updated_at"], err = json.Marshal(a.UpdatedAt)
@@ -7553,6 +7858,9 @@ type ClientInterface interface {
 
 	UpdateProject(ctx context.Context, id IDParam, body UpdateProjectJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ArchiveProject request
+	ArchiveProject(ctx context.Context, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// DeleteProjectConfig request
 	DeleteProjectConfig(ctx context.Context, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -7564,6 +7872,11 @@ type ClientInterface interface {
 
 	UpdateProjectConfig(ctx context.Context, id IDParam, body UpdateProjectConfigJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// CreateProjectInviteWithBody request with any body
+	CreateProjectInviteWithBody(ctx context.Context, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	CreateProjectInvite(ctx context.Context, id IDParam, body CreateProjectInviteJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListProjectMembers request
 	ListProjectMembers(ctx context.Context, id IDParam, params *ListProjectMembersParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -7574,6 +7887,9 @@ type ClientInterface interface {
 
 	// RemoveProjectMember request
 	RemoveProjectMember(ctx context.Context, id IDParam, userId UserId, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RestoreProject request
+	RestoreProject(ctx context.Context, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListActionAuditLog request
 	ListActionAuditLog(ctx context.Context, project ProjectHandleParam, params *ListActionAuditLogParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -8028,6 +8344,18 @@ func (c *Client) UpdateProject(ctx context.Context, id IDParam, body UpdateProje
 	return c.Client.Do(req)
 }
 
+func (c *Client) ArchiveProject(ctx context.Context, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewArchiveProjectRequest(c.Server, id)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) DeleteProjectConfig(ctx context.Context, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewDeleteProjectConfigRequest(c.Server, id)
 	if err != nil {
@@ -8076,6 +8404,30 @@ func (c *Client) UpdateProjectConfig(ctx context.Context, id IDParam, body Updat
 	return c.Client.Do(req)
 }
 
+func (c *Client) CreateProjectInviteWithBody(ctx context.Context, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateProjectInviteRequestWithBody(c.Server, id, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateProjectInvite(ctx context.Context, id IDParam, body CreateProjectInviteJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateProjectInviteRequest(c.Server, id, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) ListProjectMembers(ctx context.Context, id IDParam, params *ListProjectMembersParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListProjectMembersRequest(c.Server, id, params)
 	if err != nil {
@@ -8114,6 +8466,18 @@ func (c *Client) AddProjectMember(ctx context.Context, id IDParam, body AddProje
 
 func (c *Client) RemoveProjectMember(ctx context.Context, id IDParam, userId UserId, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewRemoveProjectMemberRequest(c.Server, id, userId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) RestoreProject(ctx context.Context, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRestoreProjectRequest(c.Server, id)
 	if err != nil {
 		return nil, err
 	}
@@ -9931,6 +10295,38 @@ func NewListProjectsRequest(server string, params *ListProjectsParams) (*http.Re
 
 		}
 
+		if params.Status != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "status", *params.Status, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Tag != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "tag", *params.Tag, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "array", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
 		queryURL.RawQuery = queryValues.Encode()
 	}
 
@@ -10097,6 +10493,40 @@ func NewUpdateProjectRequestWithBody(server string, id IDParam, contentType stri
 	return req, nil
 }
 
+// NewArchiveProjectRequest generates requests for ArchiveProject
+func NewArchiveProjectRequest(server string, id IDParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/archive", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewDeleteProjectConfigRequest generates requests for DeleteProjectConfig
 func NewDeleteProjectConfigRequest(server string, id IDParam) (*http.Request, error) {
 	var err error
@@ -10203,6 +10633,53 @@ func NewUpdateProjectConfigRequestWithBody(server string, id IDParam, contentTyp
 	}
 
 	req, err := http.NewRequest("PUT", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewCreateProjectInviteRequest calls the generic CreateProjectInvite builder with application/json body
+func NewCreateProjectInviteRequest(server string, id IDParam, body CreateProjectInviteJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateProjectInviteRequestWithBody(server, id, "application/json", bodyReader)
+}
+
+// NewCreateProjectInviteRequestWithBody generates requests for CreateProjectInvite with any type of body
+func NewCreateProjectInviteRequestWithBody(server string, id IDParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/invites", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
 	if err != nil {
 		return nil, err
 	}
@@ -10365,6 +10842,40 @@ func NewRemoveProjectMemberRequest(server string, id IDParam, userId UserId) (*h
 	}
 
 	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewRestoreProjectRequest generates requests for RestoreProject
+func NewRestoreProjectRequest(server string, id IDParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/restore", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -10911,6 +11422,22 @@ func NewListAgentsRequest(server string, project ProjectHandleParam, params *Lis
 		if params.Status != nil {
 
 			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "status", *params.Status, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Tag != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "tag", *params.Tag, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "array", Format: ""}); err != nil {
 				return nil, err
 			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
 				return nil, err
@@ -11475,6 +12002,22 @@ func NewListChannelsRequest(server string, project ProjectHandleParam, params *L
 		if params.Private != nil {
 
 			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "private", *params.Private, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "boolean", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Tag != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "tag", *params.Tag, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "array", Format: ""}); err != nil {
 				return nil, err
 			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
 				return nil, err
@@ -14227,6 +14770,22 @@ func NewListTriggersRequest(server string, project ProjectHandleParam, params *L
 
 		}
 
+		if params.Tag != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "tag", *params.Tag, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "array", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
 		if params.Cursor != nil {
 
 			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "cursor", *params.Cursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
@@ -14886,6 +15445,22 @@ func NewListWebhooksRequest(server string, project ProjectHandleParam, params *L
 
 		}
 
+		if params.Tag != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "tag", *params.Tag, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "array", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
 		if params.Cursor != nil {
 
 			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "cursor", *params.Cursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
@@ -15307,6 +15882,22 @@ func NewListWorkflowsRequest(server string, project ProjectHandleParam, params *
 
 	if params != nil {
 		queryValues := queryURL.Query()
+
+		if params.Tag != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "tag", *params.Tag, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "array", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
 
 		if params.Cursor != nil {
 
@@ -15783,6 +16374,9 @@ type ClientWithResponsesInterface interface {
 
 	UpdateProjectWithResponse(ctx context.Context, id IDParam, body UpdateProjectJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateProjectResponse, error)
 
+	// ArchiveProjectWithResponse request
+	ArchiveProjectWithResponse(ctx context.Context, id IDParam, reqEditors ...RequestEditorFn) (*ArchiveProjectResponse, error)
+
 	// DeleteProjectConfigWithResponse request
 	DeleteProjectConfigWithResponse(ctx context.Context, id IDParam, reqEditors ...RequestEditorFn) (*DeleteProjectConfigResponse, error)
 
@@ -15794,6 +16388,11 @@ type ClientWithResponsesInterface interface {
 
 	UpdateProjectConfigWithResponse(ctx context.Context, id IDParam, body UpdateProjectConfigJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateProjectConfigResponse, error)
 
+	// CreateProjectInviteWithBodyWithResponse request with any body
+	CreateProjectInviteWithBodyWithResponse(ctx context.Context, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateProjectInviteResponse, error)
+
+	CreateProjectInviteWithResponse(ctx context.Context, id IDParam, body CreateProjectInviteJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateProjectInviteResponse, error)
+
 	// ListProjectMembersWithResponse request
 	ListProjectMembersWithResponse(ctx context.Context, id IDParam, params *ListProjectMembersParams, reqEditors ...RequestEditorFn) (*ListProjectMembersResponse, error)
 
@@ -15804,6 +16403,9 @@ type ClientWithResponsesInterface interface {
 
 	// RemoveProjectMemberWithResponse request
 	RemoveProjectMemberWithResponse(ctx context.Context, id IDParam, userId UserId, reqEditors ...RequestEditorFn) (*RemoveProjectMemberResponse, error)
+
+	// RestoreProjectWithResponse request
+	RestoreProjectWithResponse(ctx context.Context, id IDParam, reqEditors ...RequestEditorFn) (*RestoreProjectResponse, error)
 
 	// ListActionAuditLogWithResponse request
 	ListActionAuditLogWithResponse(ctx context.Context, project ProjectHandleParam, params *ListActionAuditLogParams, reqEditors ...RequestEditorFn) (*ListActionAuditLogResponse, error)
@@ -16238,6 +16840,7 @@ type DeleteProjectResponse struct {
 	HTTPResponse *http.Response
 	JSON401      *Unauthorized
 	JSON404      *NotFound
+	JSON409      *Conflict
 }
 
 // Status returns HTTPResponse.Status
@@ -16300,6 +16903,30 @@ func (r UpdateProjectResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r UpdateProjectResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ArchiveProjectResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Project
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r ArchiveProjectResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ArchiveProjectResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -16381,6 +17008,32 @@ func (r UpdateProjectConfigResponse) StatusCode() int {
 	return 0
 }
 
+type CreateProjectInviteResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON201      *OrgInvite
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON409      *Conflict
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateProjectInviteResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateProjectInviteResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type ListProjectMembersResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -16452,6 +17105,30 @@ func (r RemoveProjectMemberResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r RemoveProjectMemberResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type RestoreProjectResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Project
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r RestoreProjectResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r RestoreProjectResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -17807,6 +18484,7 @@ type StartRunResponse struct {
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
 	JSON404      *NotFound
+	JSON409      *ErrorResponse
 	JSON429      *TooManyRequests
 }
 
@@ -18728,6 +19406,7 @@ type StartWorkflowRunResponse struct {
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
 	JSON404      *NotFound
+	JSON409      *ErrorResponse
 	JSON429      *TooManyRequests
 }
 
@@ -18865,6 +19544,15 @@ func (c *ClientWithResponses) UpdateProjectWithResponse(ctx context.Context, id 
 	return ParseUpdateProjectResponse(rsp)
 }
 
+// ArchiveProjectWithResponse request returning *ArchiveProjectResponse
+func (c *ClientWithResponses) ArchiveProjectWithResponse(ctx context.Context, id IDParam, reqEditors ...RequestEditorFn) (*ArchiveProjectResponse, error) {
+	rsp, err := c.ArchiveProject(ctx, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseArchiveProjectResponse(rsp)
+}
+
 // DeleteProjectConfigWithResponse request returning *DeleteProjectConfigResponse
 func (c *ClientWithResponses) DeleteProjectConfigWithResponse(ctx context.Context, id IDParam, reqEditors ...RequestEditorFn) (*DeleteProjectConfigResponse, error) {
 	rsp, err := c.DeleteProjectConfig(ctx, id, reqEditors...)
@@ -18900,6 +19588,23 @@ func (c *ClientWithResponses) UpdateProjectConfigWithResponse(ctx context.Contex
 	return ParseUpdateProjectConfigResponse(rsp)
 }
 
+// CreateProjectInviteWithBodyWithResponse request with arbitrary body returning *CreateProjectInviteResponse
+func (c *ClientWithResponses) CreateProjectInviteWithBodyWithResponse(ctx context.Context, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateProjectInviteResponse, error) {
+	rsp, err := c.CreateProjectInviteWithBody(ctx, id, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateProjectInviteResponse(rsp)
+}
+
+func (c *ClientWithResponses) CreateProjectInviteWithResponse(ctx context.Context, id IDParam, body CreateProjectInviteJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateProjectInviteResponse, error) {
+	rsp, err := c.CreateProjectInvite(ctx, id, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateProjectInviteResponse(rsp)
+}
+
 // ListProjectMembersWithResponse request returning *ListProjectMembersResponse
 func (c *ClientWithResponses) ListProjectMembersWithResponse(ctx context.Context, id IDParam, params *ListProjectMembersParams, reqEditors ...RequestEditorFn) (*ListProjectMembersResponse, error) {
 	rsp, err := c.ListProjectMembers(ctx, id, params, reqEditors...)
@@ -18933,6 +19638,15 @@ func (c *ClientWithResponses) RemoveProjectMemberWithResponse(ctx context.Contex
 		return nil, err
 	}
 	return ParseRemoveProjectMemberResponse(rsp)
+}
+
+// RestoreProjectWithResponse request returning *RestoreProjectResponse
+func (c *ClientWithResponses) RestoreProjectWithResponse(ctx context.Context, id IDParam, reqEditors ...RequestEditorFn) (*RestoreProjectResponse, error) {
+	rsp, err := c.RestoreProject(ctx, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRestoreProjectResponse(rsp)
 }
 
 // ListActionAuditLogWithResponse request returning *ListActionAuditLogResponse
@@ -20212,6 +20926,13 @@ func ParseDeleteProjectResponse(rsp *http.Response) (*DeleteProjectResponse, err
 		}
 		response.JSON404 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
 	}
 
 	return response, nil
@@ -20305,6 +21026,46 @@ func ParseUpdateProjectResponse(rsp *http.Response) (*UpdateProjectResponse, err
 			return nil, err
 		}
 		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseArchiveProjectResponse parses an HTTP response from a ArchiveProjectWithResponse call
+func ParseArchiveProjectResponse(rsp *http.Response) (*ArchiveProjectResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ArchiveProjectResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Project
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
 
 	}
 
@@ -20446,6 +21207,60 @@ func ParseUpdateProjectConfigResponse(rsp *http.Response) (*UpdateProjectConfigR
 			return nil, err
 		}
 		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateProjectInviteResponse parses an HTTP response from a CreateProjectInviteWithResponse call
+func ParseCreateProjectInviteResponse(rsp *http.Response) (*CreateProjectInviteResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateProjectInviteResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest OrgInvite
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	}
 
@@ -20594,6 +21409,46 @@ func ParseRemoveProjectMemberResponse(rsp *http.Response) (*RemoveProjectMemberR
 			return nil, err
 		}
 		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseRestoreProjectResponse parses an HTTP response from a RestoreProjectWithResponse call
+func ParseRestoreProjectResponse(rsp *http.Response) (*RestoreProjectResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &RestoreProjectResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Project
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
@@ -23003,6 +23858,13 @@ func ParseStartRunResponse(rsp *http.Response) (*StartRunResponse, error) {
 		}
 		response.JSON404 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
 		var dest TooManyRequests
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -24585,6 +25447,13 @@ func ParseStartWorkflowRunResponse(rsp *http.Response) (*StartWorkflowRunRespons
 			return nil, err
 		}
 		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
 		var dest TooManyRequests

@@ -176,7 +176,7 @@ func registerRunsCommands(app *cli.App) {
 		})
 
 	runsGrp.Command("resume").
-		Description("Resume a suspended run").
+		Description("Resume waiting run paths").
 		Args("id").
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -195,7 +195,7 @@ func registerRunsCommands(app *cli.App) {
 		})
 
 	runsGrp.Command("send-signal").
-		Description("Deliver a signal to a suspended run").
+		Description("Deliver a run-scoped signal").
 		Args("id").
 		Flags(
 			cli.String("name", "").Help("[required] Signal topic (e.g. \"approval\", \"webhook\")."),
@@ -269,6 +269,7 @@ func registerRunsCommands(app *cli.App) {
 			cli.String("inputs", "").Help("Input values to pass to the workflow. Must conform to the workflow's declared input schema. (JSON)"),
 			cli.String("metadata", "").Help("Caller-supplied string metadata attached to the run for filtering and display. (JSON)"),
 			cli.String("queue", "").Help("Queue name to enqueue the run on. Defaults to \"default\"."),
+			cli.String("tags", "").Help("Azure-style key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 50 tags per resource. Use tags to organise resources by environment, team, cost-center, or any other dimension meaningful to your organisation; tags can be filtered on most list endpoints. (JSON)"),
 			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
 		).
 		Use(cli.RequireFlags("api-key")).
@@ -307,7 +308,12 @@ func registerRunsCommands(app *cli.App) {
 				v := ctx.String("queue")
 				body.Queue = &v
 			}
-			if ctx.String("file") == "" && !ctx.IsSet("config") && !ctx.IsSet("external-id") && !ctx.IsSet("inputs") && !ctx.IsSet("metadata") && !ctx.IsSet("queue") {
+			if ctx.IsSet("tags") {
+				if err := json.Unmarshal([]byte(ctx.String("tags")), &body.Tags); err != nil {
+					return fmt.Errorf("--tags: invalid JSON: %w", err)
+				}
+			}
+			if ctx.String("file") == "" && !ctx.IsSet("config") && !ctx.IsSet("external-id") && !ctx.IsSet("inputs") && !ctx.IsSet("metadata") && !ctx.IsSet("queue") && !ctx.IsSet("tags") {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
 			resp, err := client.StartWorkflowRunWithResponse(ctx.Context(), p0, p1, body)

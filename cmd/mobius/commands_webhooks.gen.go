@@ -8,6 +8,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/deepnoodle-ai/wonton/cli"
@@ -26,6 +27,7 @@ func registerWebhooksCommands(app *cli.App) {
 			cli.Strings("events", "").Help("[required] Event types to subscribe to. Use wildcards for broad subscriptions, e.g. `[\"run.*\"]` for all run events."),
 			cli.String("name", "").Help("[required] Human-readable name, unique within the project."),
 			cli.String("signing-secret", "").Help("Optional HMAC-SHA256 secret. When set, Mobius signs each POST body and includes `X-Mobius-Signature: sha256=<hex>` in the request headers."),
+			cli.String("tags", "").Help("Azure-style key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 50 tags per resource. Use tags to organise resources by environment, team, cost-center, or any other dimension meaningful to your organisation; tags can be filtered on most list endpoints. (JSON)"),
 			cli.String("url", "").Help("The endpoint Mobius will POST event payloads to. May be left empty at creation time so a candidate URL can be tested via the ping endpoint before it is saved; events do not fire for webhooks with an empty URL."),
 			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
 		).
@@ -54,6 +56,11 @@ func registerWebhooksCommands(app *cli.App) {
 			if ctx.IsSet("signing-secret") {
 				v := ctx.String("signing-secret")
 				body.SigningSecret = &v
+			}
+			if ctx.IsSet("tags") {
+				if err := json.Unmarshal([]byte(ctx.String("tags")), &body.Tags); err != nil {
+					return fmt.Errorf("--tags: invalid JSON: %w", err)
+				}
 			}
 			if ctx.IsSet("url") {
 				v := ctx.String("url")
@@ -219,6 +226,7 @@ func registerWebhooksCommands(app *cli.App) {
 			cli.Strings("events", "").Help("Replacement event subscriptions. Replaces the entire current list."),
 			cli.String("name", "").Help("Replacement human-readable name."),
 			cli.String("signing-secret", "").Help("Replace the current signing secret. Set to empty string to disable signing. Omit to leave the current secret unchanged."),
+			cli.String("tags", "").Help("Azure-style key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 50 tags per resource. Use tags to organise resources by environment, team, cost-center, or any other dimension meaningful to your organisation; tags can be filtered on most list endpoints. (JSON)"),
 			cli.String("url", "").Help("Replacement endpoint URL."),
 			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
 		).
@@ -251,11 +259,16 @@ func registerWebhooksCommands(app *cli.App) {
 				v := ctx.String("signing-secret")
 				body.SigningSecret = &v
 			}
+			if ctx.IsSet("tags") {
+				if err := json.Unmarshal([]byte(ctx.String("tags")), &body.Tags); err != nil {
+					return fmt.Errorf("--tags: invalid JSON: %w", err)
+				}
+			}
 			if ctx.IsSet("url") {
 				v := ctx.String("url")
 				body.Url = &v
 			}
-			if ctx.String("file") == "" && !ctx.IsSet("enabled") && !ctx.IsSet("events") && !ctx.IsSet("name") && !ctx.IsSet("signing-secret") && !ctx.IsSet("url") {
+			if ctx.String("file") == "" && !ctx.IsSet("enabled") && !ctx.IsSet("events") && !ctx.IsSet("name") && !ctx.IsSet("signing-secret") && !ctx.IsSet("tags") && !ctx.IsSet("url") {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
 			resp, err := client.UpdateWebhookWithResponse(ctx.Context(), p0, p1, body)
