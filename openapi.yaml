@@ -984,9 +984,9 @@ paths:
       tags:
       - runs
       summary: Request cancellation of an in-flight run
-      description: 'Sets the cancel_requested flag on the run. The next heartbeat response
-        includes `directives.should_cancel: true`, and the worker is expected to drop the
-        run cooperatively.'
+      description: Records `cancel_requested_at`, terminalizes the run as failed with `error_type=run_cancelled`,
+        and closes any non-terminal jobs created by the run. During migration, `cancel_requested`
+        remains populated as an audit/compatibility field.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/IDParam'
@@ -1002,9 +1002,9 @@ paths:
       operationId: resumeRun
       tags:
       - runs
-      summary: Resume a suspended run
-      description: Transitions the run from `suspended` back to `queued` so the next worker
-        poll picks it up.
+      summary: Resume a waiting run path
+      description: Re-enters any resumable waiting paths, such as paused paths or due timer
+        waits.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/IDParam'
@@ -1020,11 +1020,10 @@ paths:
       operationId: sendRunSignal
       tags:
       - runs
-      summary: Deliver a signal to a suspended run
-      description: Durably enqueues a signal keyed by (run_id, name). If the run is currently
-        suspended waiting on that topic it is flipped back to queued so the next poll picks
-        it up. Otherwise the signal sits in the store until a future suspended branch receives
-        it.
+      summary: Deliver a signal to a waiting run path
+      description: Durably enqueues a signal keyed by (run_id, name). If any path in the run
+        is waiting on that topic, the server re-enters that path so it can consume the signal.
+        Otherwise the signal remains in the store until a future path waits for it.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/IDParam'
@@ -2588,8 +2587,8 @@ paths:
       summary: Create an interaction
       description: Creates a standalone or run-backed interaction. When `run_id` is provided,
         `signal_name` is also required and completing the interaction automatically delivers
-        a signal that resumes the suspended run. Omit both for a standalone interaction that
-        completes with no workflow side effect. Workers creating interactions from within
+        a signal that resumes the waiting run path. Omit both for a standalone interaction
+        that completes with no workflow side effect. Workers creating interactions from within
         a job should use the job-scoped route (`POST /v1/projects/{project}/jobs/{id}/interactions`)
         instead, which derives the run and signal name automatically.
       parameters:
@@ -5228,9 +5227,9 @@ components:
       - completed
       - failed
       - suspended
-      description: 'Run lifecycle: `queued` → `running` → `completed` | `failed` | `suspended`.
-        A `suspended` run is waiting on a signal or interaction; it resumes automatically
-        when the signal is delivered or the interaction is responded to.'
+      description: Legacy run status retained during the additive PRD 036 migration. New clients
+        should use `lifecycle_status`, `path_counts`, and `wait_summary`; non-terminal legacy
+        statuses project to `lifecycle_status=active`.
     WorkflowRunLifecycleStatus:
       type: string
       enum:
@@ -5431,11 +5430,10 @@ components:
           description: Name of the workflow as recorded at run creation time.
         status:
           $ref: '#/components/schemas/WorkflowRunStatus'
-          description: 'Current run lifecycle state: `queued`, `running`, `completed`, `failed`,
-            or `suspended`.'
+          description: Legacy run status retained during migration. Prefer `lifecycle_status`.
         lifecycle_status:
           $ref: '#/components/schemas/WorkflowRunLifecycleStatus'
-          description: Additive public lifecycle. Prefer this over legacy `status`.
+          description: Public lifecycle for this run. Prefer this over legacy `status`.
         path_counts:
           $ref: '#/components/schemas/WorkflowRunPathCounts'
           description: Current path counts derived from the run projection.
@@ -5478,9 +5476,9 @@ components:
           description: Caller-supplied idempotency key or correlation ID.
         cancel_requested:
           type: boolean
-          description: True when a cancel has been requested on this run but the run has not
-            yet reached a terminal state. Workers observe this on their next heartbeat and
-            stop work.
+          description: Compatibility boolean set when cancellation was requested. New clients
+            should use `cancel_requested_at` for audit detail and `lifecycle_status` for terminal
+            checks.
         cancel_requested_at:
           type: string
           format: date-time
@@ -5919,8 +5917,8 @@ components:
           type: string
           description: Failure cause. Server-produced timeout and cancellation failures use
             stable tokens such as `claim_timeout`, `liveness_timeout`, `execution_timeout`,
-            and `run_cancelled`; worker-reported failures may use caller-defined class names.
-            Present when `status=failed`.
+            `run_cancelled`, and `run_failed`; worker-reported failures may use caller-defined
+            class names. Present when `status=failed`.
         resolved_config:
           $ref: '#/components/schemas/ResolvedConfig'
           description: Job-level cascade config resolved for this job.
@@ -5948,7 +5946,7 @@ components:
             $ref: '#/components/schemas/Job'
     SendRunSignalRequest:
       type: object
-      description: Delivers an external signal to a suspended workflow run.
+      description: Delivers an external signal to a workflow run.
       additionalProperties: false
       required:
       - name

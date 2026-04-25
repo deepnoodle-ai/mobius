@@ -2281,7 +2281,7 @@ type Job struct {
 	// CreatedAt Timestamp when this job was created.
 	CreatedAt time.Time `json:"created_at"`
 
-	// ErrorType Failure cause. Server-produced timeout and cancellation failures use stable tokens such as `claim_timeout`, `liveness_timeout`, `execution_timeout`, and `run_cancelled`; worker-reported failures may use caller-defined class names. Present when `status=failed`.
+	// ErrorType Failure cause. Server-produced timeout and cancellation failures use stable tokens such as `claim_timeout`, `liveness_timeout`, `execution_timeout`, `run_cancelled`, and `run_failed`; worker-reported failures may use caller-defined class names. Present when `status=failed`.
 	ErrorType *string `json:"error_type,omitempty"`
 
 	// ExecutionDeadlineAt Deadline at which the reaper will fail this job with `error_type=execution_timeout` if it has not completed. Present only when `resolved_config` contains an entry with `category="timeouts"` and `key="execution"` whose value resolves to a finite duration.
@@ -2739,7 +2739,7 @@ type SendChannelMessageRequest struct {
 // SendChannelMessageRequestDisplay Rendering hint for the UI: `message`, `notice`, or `card`.
 type SendChannelMessageRequestDisplay string
 
-// SendRunSignalRequest Delivers an external signal to a suspended workflow run.
+// SendRunSignalRequest Delivers an external signal to a workflow run.
 type SendRunSignalRequest struct {
 	// Name Signal topic (e.g. "approval", "webhook").
 	Name string `json:"name"`
@@ -3705,7 +3705,7 @@ type WorkflowRun struct {
 	// Attempt Retry attempt number (1-based). Increments each time the run is retried.
 	Attempt int `json:"attempt"`
 
-	// CancelRequested True when a cancel has been requested on this run but the run has not yet reached a terminal state. Workers observe this on their next heartbeat and stop work.
+	// CancelRequested Compatibility boolean set when cancellation was requested. New clients should use `cancel_requested_at` for audit detail and `lifecycle_status` for terminal checks.
 	CancelRequested *bool `json:"cancel_requested,omitempty"`
 
 	// CancelRequestedAt Timestamp when cancellation was requested.
@@ -3771,7 +3771,7 @@ type WorkflowRun struct {
 	// StartedAt Timestamp when a worker first claimed this run.
 	StartedAt *time.Time `json:"started_at,omitempty"`
 
-	// Status Run lifecycle: `queued` → `running` → `completed` | `failed` | `suspended`. A `suspended` run is waiting on a signal or interaction; it resumes automatically when the signal is delivered or the interaction is responded to.
+	// Status Legacy run status retained during the additive PRD 036 migration. New clients should use `lifecycle_status`, `path_counts`, and `wait_summary`; non-terminal legacy statuses project to `lifecycle_status=active`.
 	Status WorkflowRunStatus `json:"status"`
 
 	// UpdatedAt Timestamp when this run was last updated.
@@ -3802,7 +3802,7 @@ type WorkflowRunDetail struct {
 	// Attempt Retry attempt number (1-based). Increments each time the run is retried.
 	Attempt int `json:"attempt"`
 
-	// CancelRequested True when a cancel has been requested on this run but the run has not yet reached a terminal state. Workers observe this on their next heartbeat and stop work.
+	// CancelRequested Compatibility boolean set when cancellation was requested. New clients should use `cancel_requested_at` for audit detail and `lifecycle_status` for terminal checks.
 	CancelRequested *bool `json:"cancel_requested,omitempty"`
 
 	// CancelRequestedAt Timestamp when cancellation was requested.
@@ -3882,7 +3882,7 @@ type WorkflowRunDetail struct {
 	// StartedAt Timestamp when a worker first claimed this run.
 	StartedAt *time.Time `json:"started_at,omitempty"`
 
-	// Status Run lifecycle: `queued` → `running` → `completed` | `failed` | `suspended`. A `suspended` run is waiting on a signal or interaction; it resumes automatically when the signal is delivered or the interaction is responded to.
+	// Status Legacy run status retained during the additive PRD 036 migration. New clients should use `lifecycle_status`, `path_counts`, and `wait_summary`; non-terminal legacy statuses project to `lifecycle_status=active`.
 	Status WorkflowRunStatus `json:"status"`
 
 	// UpdatedAt Timestamp when this run was last updated.
@@ -3953,7 +3953,7 @@ type WorkflowRunPathCounts struct {
 // WorkflowRunPathState Current state of one execution path.
 type WorkflowRunPathState string
 
-// WorkflowRunStatus Run lifecycle: `queued` → `running` → `completed` | `failed` | `suspended`. A `suspended` run is waiting on a signal or interaction; it resumes automatically when the signal is delivered or the interaction is responded to.
+// WorkflowRunStatus Legacy run status retained during the additive PRD 036 migration. New clients should use `lifecycle_status`, `path_counts`, and `wait_summary`; non-terminal legacy statuses project to `lifecycle_status=active`.
 type WorkflowRunStatus string
 
 // WorkflowRunWaitDetail defines model for WorkflowRunWaitDetail.
