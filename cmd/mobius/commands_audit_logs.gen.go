@@ -26,7 +26,7 @@ func registerAuditLogsCommands(app *cli.App) {
 			cli.String("user-id", "").Help("Filter by user ID"),
 			cli.String("actor-type", "").Help("Filter by actor type"),
 			cli.String("actor-id", "").Help("Filter by actor ID"),
-			cli.String("action", "").Help("Filter by action (create, update, delete)"),
+			cli.String("action", "").Help("Filter by action (create, update, delete, archive, restore)"),
 			cli.String("cursor", "").Help("cursor"),
 			cli.Int("limit", "").Help("limit"),
 		).

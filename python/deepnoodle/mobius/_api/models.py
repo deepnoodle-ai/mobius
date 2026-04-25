@@ -7,7 +7,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Any, Literal
 
-from pydantic import AnyUrl, BaseModel, ConfigDict, Field, RootModel
+from pydantic import AnyUrl, BaseModel, ConfigDict, EmailStr, Field, RootModel
 
 
 class Error(BaseModel):
@@ -59,6 +59,14 @@ class Metadata(BaseModel):
     model_config = ConfigDict(
         extra='allow',
     )
+
+
+class TagMap(RootModel[dict[str, str] | None]):
+    """
+    Azure-style key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 50 tags per resource. Use tags to organise resources by environment, team, cost-center, or any other dimension meaningful to your organisation; tags can be filtered on most list endpoints.
+    """
+
+    root: dict[str, str] | None = Field(None, max_length=256)
 
 
 class InteractionMode(Enum):
@@ -185,6 +193,9 @@ class Channel(BaseModel):
     archived_at: datetime | None = Field(
         None,
         description='Set when the channel is archived. Archived channels are hidden in the UI but their message history remains accessible.',
+    )
+    tags: TagMap | None = Field(
+        None, description='Resource tags applied to this channel.'
     )
     created_at: datetime = Field(
         ..., description='Timestamp when this channel was created.'
@@ -390,13 +401,12 @@ class CreateChannelRequest(BaseModel):
         ...,
         description='Channel kind, either `dm` or `channel`. Cannot be changed after creation.',
     )
-    private: bool | None = Field(
-        False, description='When true, the channel is invite-only.'
-    )
+    private: bool = Field(False, description='When true, the channel is invite-only.')
     member_ids: list[str] | None = Field(
         None,
         description='Optional list of user or agent IDs to add as members at creation time. All receive the `member` role; the creator is added as `admin` separately.',
     )
+    tags: TagMap | None = Field(None, description='Initial tag set.')
 
 
 class UpdateChannelRequest(BaseModel):
@@ -410,6 +420,10 @@ class UpdateChannelRequest(BaseModel):
     display_name: str | None = Field(None, description='Updated display name.')
     topic: str | None = Field(None, description='Updated topic or description.')
     private: bool | None = Field(None, description='Toggle invite-only visibility.')
+    tags: TagMap | None = Field(
+        None,
+        description='When supplied, replaces the user tag set on the channel. System tags (`mobius:*`) are preserved.',
+    )
 
 
 class Role1(Enum):
@@ -430,7 +444,7 @@ class AddChannelMemberRequest(BaseModel):
         extra='forbid',
     )
     user_id: str = Field(..., description='User or agent ID to add to the channel.')
-    role: Role1 | None = Field(
+    role: Role1 = Field(
         'member',
         description='Role to assign the new member, either `member` or `admin`.',
     )
@@ -462,11 +476,11 @@ class SendChannelMessageRequest(BaseModel):
         None, description='Live agent session to associate with the message.'
     )
     content: str = Field(..., description='Message body in Markdown.')
-    display: Display1 | None = Field(
+    display: Display1 = Field(
         'message',
         description='Rendering hint for the UI: `message`, `notice`, or `card`.',
     )
-    type: str | None = Field(
+    type: str = Field(
         'user.message', description='Dot-namespaced message type identifier.'
     )
     reply_to: str | None = Field(
@@ -498,12 +512,14 @@ class UpdateChannelMessageRequest(BaseModel):
 
 class Action(Enum):
     """
-    Type of action performed: `create`, `update`, or `delete`.
+    Type of action performed: `create`, `update`, `delete`, `archive`, or `restore`.
     """
 
     create = 'create'
     update = 'update'
     delete = 'delete'
+    archive = 'archive'
+    restore = 'restore'
 
 
 class AuditLogEntry(BaseModel):
@@ -536,7 +552,8 @@ class AuditLogEntry(BaseModel):
         None, description='Credential ID used for the request, when applicable'
     )
     action: Action = Field(
-        ..., description='Type of action performed: `create`, `update`, or `delete`.'
+        ...,
+        description='Type of action performed: `create`, `update`, `delete`, `archive`, or `restore`.',
     )
     resource_type: str = Field(
         ..., description='Type of resource affected (e.g., job, channel, document)'
@@ -623,6 +640,9 @@ class APIKey(BaseModel):
         None,
         description='Timestamp of the most recent authenticated request using this key.',
     )
+    tags: TagMap | None = Field(
+        None, description='Resource tags applied to this API key.'
+    )
     created_at: datetime = Field(
         ..., description='Timestamp when this key was created.'
     )
@@ -674,6 +694,9 @@ class APIKeyCreateResult(BaseModel):
         None,
         description='Timestamp of the most recent authenticated request using this key.',
     )
+    tags: TagMap | None = Field(
+        None, description='Resource tags applied to this API key.'
+    )
     created_at: datetime = Field(
         ..., description='Timestamp when this key was created.'
     )
@@ -713,7 +736,7 @@ class CreateProjectPinnedAPIKeyRequest(BaseModel):
         ...,
         description='Set `project_id` to pin this key to exactly one project. When `project_id` is omitted, the request creates an org-level key instead.',
     )
-    scope: Scope2 | None = Field(
+    scope: Scope2 = Field(
         'org',
         description='Standard API key scope for project-pinned keys; value is always `org`.',
     )
@@ -727,6 +750,7 @@ class CreateProjectPinnedAPIKeyRequest(BaseModel):
     expires_at: datetime | None = Field(
         None, description='Optional hard expiry. Omit for a non-expiring key.'
     )
+    tags: TagMap | None = Field(None, description='Initial tag set.')
 
 
 class Scope3(Enum):
@@ -746,7 +770,7 @@ class CreateOrgOrSystemAPIKeyRequest(BaseModel):
         ...,
         description='Human-readable label, unique within the org (or project for project-pinned keys).',
     )
-    scope: Scope3 | None = Field(
+    scope: Scope3 = Field(
         'org',
         description='Standard API key scope: `org` for organization keys or `system` for platform-only keys. Project-pinned versus org-level behavior is determined separately by `project_id`.',
     )
@@ -760,6 +784,7 @@ class CreateOrgOrSystemAPIKeyRequest(BaseModel):
     expires_at: datetime | None = Field(
         None, description='Optional hard expiry. Omit for a non-expiring key.'
     )
+    tags: TagMap | None = Field(None, description='Initial tag set.')
 
 
 class AuthContext(BaseModel):
@@ -1137,35 +1162,6 @@ class Type(Enum):
     input = 'input'
 
 
-class Type1(Enum):
-    """
-    Whether the target is an individual user, a group, or an agent.
-    """
-
-    user = 'user'
-    group = 'group'
-    agent = 'agent'
-
-
-class WorkflowInteractionTarget(BaseModel):
-    """
-    Recipient definition used by workflow interaction steps.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    type: Type1 = Field(
-        ...,
-        description='Whether the target is an individual user, a group, or an agent.',
-    )
-    id: str = Field(..., description='ID of the target user, group, or agent.')
-    require_all: bool | None = Field(
-        None,
-        description='When true, all group members must respond before the interaction completes. Only meaningful when type is `group`.',
-    )
-
-
 class WorkflowDefinitionSummary(BaseModel):
     """
     Workflow definition metadata without the executable `spec`. Returned by list endpoints; fetch a single definition via `getWorkflow` to get the full spec.
@@ -1194,6 +1190,10 @@ class WorkflowDefinitionSummary(BaseModel):
     created_by: str = Field(
         ...,
         description='User ID of the org member who created this workflow definition.',
+    )
+    tags: TagMap | None = Field(
+        None,
+        description='Resource tags applied to this workflow. Inherited by runs at start time; see `WorkflowRun.tags`.',
     )
     created_at: datetime = Field(
         ..., description='Timestamp when this workflow definition was created.'
@@ -1256,24 +1256,91 @@ class WorkflowVersionListResponse(BaseModel):
 
 class WorkflowRunStatus(Enum):
     """
-    Run lifecycle: `queued` → `running` → `completed` | `failed` | `suspended`. A `suspended` run is waiting on a signal or interaction; it resumes automatically when the signal is delivered or the interaction is responded to.
+    Public run lifecycle. Path-level fields explain why an active run is working, waiting, sleeping, retrying, paused, or blocked at a join.
     """
 
-    queued = 'queued'
-    running = 'running'
+    active = 'active'
     completed = 'completed'
     failed = 'failed'
-    suspended = 'suspended'
+
+
+class WorkflowRunPathState(Enum):
+    """
+    Current state of one execution path.
+    """
+
+    working = 'working'
+    waiting = 'waiting'
+    completed = 'completed'
+    failed = 'failed'
+
+
+class WorkflowRunWaitKind(Enum):
+    """
+    What a waiting path is blocked on.
+    """
+
+    sleep = 'sleep'
+    signal = 'signal'
+    interaction = 'interaction'
+    pause = 'pause'
+    join = 'join'
+    retry = 'retry'
+
+
+class WorkflowRunPathCounts(BaseModel):
+    """
+    Current path counts. Invariants: `total = working + waiting + completed + failed`; `active = working + waiting`.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    total: int
+    active: int
+    working: int
+    waiting: int
+    completed: int
+    failed: int
+
+
+class WorkflowRunWaitSummary(BaseModel):
+    """
+    Always-present aggregate of waiting paths.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    waiting_paths: int
+    kind_counts: dict[str, int] = Field(
+        ..., description='Count of waiting paths by `waiting_on.kind`.'
+    )
+    next_wake_at: datetime | None = Field(
+        ..., description='Earliest wake time among waiting paths, or null.'
+    )
+    waiting_on_signal_names: list[str]
+    interaction_ids: list[str]
+
+
+class WorkflowRunError(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    path_id: str | None = None
+    error_type: str
+    error_message: str
 
 
 class ErrorType(Enum):
     """
-    Typed run-level failure cause: `run_timeout`, `run_cancelled`, or `job_failed`. Its own vocabulary, not a superset of the job-level `error_type`. Present when `status=failed`.
+    Typed run-level failure cause: `run_timeout`, `run_cancelled`, `job_failed`, or `run_failed`. Its own vocabulary, not a superset of the job-level `error_type`. Present when `status=failed`.
     """
 
     run_timeout = 'run_timeout'
     run_cancelled = 'run_cancelled'
     job_failed = 'job_failed'
+    run_failed = 'run_failed'
 
 
 class Mode(Enum):
@@ -1412,7 +1479,7 @@ class JobStatus(Enum):
 
 class SendRunSignalRequest(BaseModel):
     """
-    Delivers an external signal to a suspended workflow run.
+    Delivers an external signal to a workflow run.
     """
 
     model_config = ConfigDict(
@@ -1437,6 +1504,33 @@ class RunSignal(BaseModel):
     run_id: str = Field(..., description='ID of the run this signal was delivered to.')
     name: str = Field(
         ..., description="Signal topic name matching the wait_signal step's topic."
+    )
+
+
+class Type1(Enum):
+    """
+    Target kind: a specific user, an agent queue, or a group.
+    """
+
+    user = 'user'
+    agent = 'agent'
+    group = 'group'
+
+
+class InteractionTarget(BaseModel):
+    """
+    Identifies who should receive an interaction request. Note: distinct from the caller/audit `Actor` vocabulary — a target is a *recipient*, not someone who has acted yet.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    type: Type1 = Field(
+        ..., description='Target kind: a specific user, an agent queue, or a group.'
+    )
+    id: str = Field(
+        ...,
+        description='User ID for user; queue name for agent; group ID or handle for group.',
     )
 
 
@@ -1825,7 +1919,7 @@ class JobHeartbeatDirectives(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    should_cancel: bool | None = Field(
+    should_cancel: bool = Field(
         False,
         description='When true, the run has received a cancellation request. The worker must stop processing immediately and call complete with `status: failed`.',
     )
@@ -1941,33 +2035,6 @@ class JobEventEntry(BaseModel):
     )
 
 
-class Type2(Enum):
-    """
-    Target kind: a specific user, an agent queue, or a group.
-    """
-
-    user = 'user'
-    agent = 'agent'
-    group = 'group'
-
-
-class InteractionTarget(BaseModel):
-    """
-    Identifies who should receive an interaction request. Note: distinct from the caller/audit `Actor` vocabulary — a target is a *recipient*, not someone who has acted yet.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    type: Type2 = Field(
-        ..., description='Target kind: a specific user, an agent queue, or a group.'
-    )
-    id: str = Field(
-        ...,
-        description='User ID for user; queue name for agent; group ID or handle for group.',
-    )
-
-
 class InteractionType(Enum):
     """
     Interaction kind: `approval` captures a decision, `review` captures acknowledgement or notes, and `input` collects free-form data.
@@ -2021,7 +2088,7 @@ class CreateJobInteractionRequest(BaseModel):
     )
 
 
-class Type3(Enum):
+class Type2(Enum):
     """
     Responder kind: a user or an agent.
     """
@@ -2038,7 +2105,7 @@ class InteractionResponder(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    type: Type3 = Field(..., description='Responder kind: a user or an agent.')
+    type: Type2 = Field(..., description='Responder kind: a user or an agent.')
     id: str = Field(..., description='User ID for user; agent ID for agent.')
 
 
@@ -2443,6 +2510,9 @@ class Trigger(BaseModel):
     created_by: str | None = Field(
         None, description='User ID of the org member who created this trigger.'
     )
+    tags: TagMap | None = Field(
+        None, description='Resource tags applied to this trigger.'
+    )
     created_at: datetime = Field(
         ..., description='Timestamp when this trigger was created.'
     )
@@ -2553,6 +2623,7 @@ class CreateScheduleTriggerRequest(BaseModel):
         None,
         description='Whether the trigger starts enabled. Defaults to true when omitted.',
     )
+    tags: TagMap | None = Field(None, description='Initial tag set.')
 
 
 class Kind3(Enum):
@@ -2591,6 +2662,7 @@ class CreateWebhookTriggerRequest(BaseModel):
         None,
         description='Whether the trigger starts enabled. Defaults to true when omitted.',
     )
+    tags: TagMap | None = Field(None, description='Initial tag set.')
 
 
 class Kind4(Enum):
@@ -2629,6 +2701,7 @@ class CreateEventTriggerRequest(BaseModel):
         None,
         description='Whether the trigger starts enabled. Defaults to true when omitted.',
     )
+    tags: TagMap | None = Field(None, description='Initial tag set.')
 
 
 class UpdateTriggerRequest(BaseModel):
@@ -2640,12 +2713,20 @@ class UpdateTriggerRequest(BaseModel):
         None,
         description='Replacement source configuration; its shape must match the trigger kind.',
     )
+    targets: list[CreateTriggerTargetRequest] | None = Field(
+        None,
+        description='Replacement target set for this trigger. Omit to leave targets unchanged; send an empty array to remove all targets.',
+    )
     concurrency_policy: ConcurrencyPolicy | None = Field(
         None,
         description='Replacement policy for overlapping runs started by this trigger.',
     )
     enabled: bool | None = Field(
         None, description='Set to false to pause the trigger without deleting it.'
+    )
+    tags: TagMap | None = Field(
+        None,
+        description='When supplied, replaces the user tag set on the trigger. System tags (`mobius:*`) are preserved.',
     )
 
 
@@ -2737,6 +2818,14 @@ class Project(BaseModel):
     created_by: str | None = Field(
         None, description='User ID of the org member who created this project.'
     )
+    archived_at: datetime | None = Field(
+        None,
+        description='Timestamp when this project was archived. `null` for active projects. Archived projects are read-only and excluded from the default project listing.',
+    )
+    tags: TagMap | None = Field(
+        None,
+        description='Resource tags applied to this project. See TagMap for syntax and limits. Keys with the `mobius:` prefix are system-managed.',
+    )
     created_at: datetime = Field(
         ..., description='Timestamp when this project was created.'
     )
@@ -2767,6 +2856,7 @@ class CreateProjectRequest(BaseModel):
     access_mode: ProjectAccessMode | None = Field(
         None, description='Initial project access policy: `org_open` or `restricted`.'
     )
+    tags: TagMap | None = Field(None, description='Initial tag set.')
 
 
 class UpdateProjectRequest(BaseModel):
@@ -2783,41 +2873,9 @@ class UpdateProjectRequest(BaseModel):
         None,
         description='When transitioning from `org_open` to `restricted`, set true to insert all current org members as project members so nobody loses visibility on the flip. Ignored on other transitions.',
     )
-
-
-class ProjectMember(BaseModel):
-    """
-    Explicit project membership used when a project is restricted. Use this record to decide who can see or operate on a project outside the default org-wide access model.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    id: str = Field(..., description='Unique identifier for this membership record.')
-    project_id: str = Field(
-        ..., description='ID of the project this membership belongs to.'
-    )
-    user_id: str = Field(..., description='ID of the user who is a member.')
-    added_by_actor_type: str | None = Field(
-        None, description='Actor type of whoever added this member, if recorded.'
-    )
-    added_by_actor_id: str | None = Field(
-        None, description='Actor ID of whoever added this member, if recorded.'
-    )
-    added_at: datetime = Field(..., description='Timestamp when the member was added.')
-
-
-class ProjectMemberListResponse(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    items: list[ProjectMember] = Field(
-        ..., description='The list of members for this project.'
-    )
-    has_more: bool = Field(..., description='Whether more results are available.')
-    next_cursor: str | None = Field(
+    tags: TagMap | None = Field(
         None,
-        description='Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.',
+        description='When supplied, replaces the user tag set on the project. System-managed tags (`mobius:*`) are preserved.',
     )
 
 
@@ -2827,6 +2885,110 @@ class AddProjectMemberRequest(BaseModel):
     )
     user_id: str = Field(
         ..., description='User ID of the org member to add to this project.'
+    )
+
+
+class Role2(Enum):
+    """
+    Org role assigned on accept. Defaults to `Member`.
+    """
+
+    Owner = 'Owner'
+    Admin = 'Admin'
+    Member = 'Member'
+
+
+class CreateProjectInviteRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    email: EmailStr = Field(..., description='Email address to invite.')
+    role: Role2 | None = Field(
+        None, description='Org role assigned on accept. Defaults to `Member`.'
+    )
+
+
+class User(BaseModel):
+    """
+    Human identity known to the organization. User records are useful for membership lists, role assignment UIs, attribution, and displaying profile information next to actions.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str = Field(
+        ..., description='Clerk user ID. Stable and globally unique across all orgs.'
+    )
+    email: str = Field(..., description='Primary email address from Clerk.')
+    first_name: str | None = Field(
+        None, description="User's first name from their Clerk profile."
+    )
+    last_name: str | None = Field(
+        None, description="User's last name from their Clerk profile."
+    )
+    avatar_url: str | None = Field(
+        None,
+        description='Profile avatar URL from Clerk (may be a Gravatar or uploaded image).',
+    )
+    created_at: datetime = Field(
+        ..., description='When the user record was first mirrored into Mobius.'
+    )
+    updated_at: datetime = Field(
+        ..., description='Timestamp when this user record was last synced from Clerk.'
+    )
+
+
+class Role3(Enum):
+    """
+    Org role the invitee will receive on accept.
+    """
+
+    Owner = 'Owner'
+    Admin = 'Admin'
+    Member = 'Member'
+
+
+class Status2(Enum):
+    """
+    Lifecycle reported by Clerk. Tokens that expired without acceptance surface as `revoked`.
+    """
+
+    pending = 'pending'
+    accepted = 'accepted'
+    revoked = 'revoked'
+
+
+class OrgInvite(BaseModel):
+    """
+    Presentation view of a Clerk Organization Invitation. Mobius does not persist invitations — Clerk owns the token, expiry, accept UX, and email delivery. `project_grants` and `invited_by` are stashed in Clerk's `publicMetadata` at create time and applied via webhook when the invitee accepts.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str = Field(..., description='Clerk invitation id (e.g. `orginv_2abc...`).')
+    org_id: str = Field(
+        ..., description='ID of the organization the invitation belongs to.'
+    )
+    email: EmailStr = Field(
+        ..., description='Email address the invitation was sent to.'
+    )
+    role: Role3 = Field(..., description='Org role the invitee will receive on accept.')
+    project_grants: list[str] | None = Field(
+        None, description='Project IDs the invitee will be added to on accept.'
+    )
+    status: Status2 = Field(
+        ...,
+        description='Lifecycle reported by Clerk. Tokens that expired without acceptance surface as `revoked`.',
+    )
+    invited_by: str | None = Field(
+        None, description='User ID of the inviter (from Clerk publicMetadata).'
+    )
+    expires_at: datetime | None = Field(
+        None, description='Clerk-managed expiry timestamp.'
+    )
+    created_at: datetime = Field(
+        ..., description='When the invitation was created in Clerk.'
     )
 
 
@@ -2865,6 +3027,9 @@ class Webhook(BaseModel):
     )
     created_by: str | None = Field(
         None, description='User ID of the org member who created this webhook.'
+    )
+    tags: TagMap | None = Field(
+        None, description='Resource tags applied to this webhook.'
     )
     created_at: datetime = Field(
         ..., description='Timestamp when this webhook was created.'
@@ -2962,6 +3127,7 @@ class CreateWebhookRequest(BaseModel):
         None,
         description='Whether the webhook starts enabled. Defaults to true when omitted.',
     )
+    tags: TagMap | None = Field(None, description='Initial tag set.')
 
 
 class UpdateWebhookRequest(BaseModel):
@@ -2981,6 +3147,10 @@ class UpdateWebhookRequest(BaseModel):
     enabled: bool | None = Field(
         None,
         description='Set to false to disable delivery without deleting the webhook.',
+    )
+    tags: TagMap | None = Field(
+        None,
+        description='When supplied, replaces the user tag set on the webhook. System tags (`mobius:*`) are preserved.',
     )
 
 
@@ -3050,6 +3220,9 @@ class Integration(BaseModel):
     created_by: str | None = Field(
         None, description='User ID of the org member who created this integration.'
     )
+    tags: TagMap | None = Field(
+        None, description='Resource tags applied to this integration.'
+    )
     created_at: datetime = Field(
         ..., description='Timestamp when this integration was created.'
     )
@@ -3092,6 +3265,7 @@ class CreateIntegrationRequest(BaseModel):
         None,
         description='Non-sensitive provider-specific settings (e.g. default bucket, from address).',
     )
+    tags: TagMap | None = Field(None, description='Initial tag set.')
 
 
 class UpdateIntegrationRequest(BaseModel):
@@ -3109,6 +3283,10 @@ class UpdateIntegrationRequest(BaseModel):
     status: IntegrationStatus | None = Field(
         None,
         description='Replacement integration state: `connected`, `disconnected`, or `error`.',
+    )
+    tags: TagMap | None = Field(
+        None,
+        description='When supplied, replaces the user tag set on the integration. System tags (`mobius:*`) are preserved.',
     )
 
 
@@ -3580,7 +3758,7 @@ class PermissionsState(BaseModel):
     )
 
 
-class Role2(BaseModel):
+class Role4(BaseModel):
     """
     Named bundle of permissions assignable to users or service accounts. Roles let admins grant workflow, project, and automation capabilities consistently without editing every actor individually.
     """
@@ -3606,6 +3784,7 @@ class Role2(BaseModel):
         ...,
         description='True for built-in platform roles that cannot be modified or deleted.',
     )
+    tags: TagMap | None = Field(None, description='Resource tags applied to this role.')
     created_at: datetime = Field(
         ..., description='Timestamp when this role was created.'
     )
@@ -3659,7 +3838,7 @@ class RoleListResponse(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    items: list[Role2] = Field(..., description='The list of results for this page.')
+    items: list[Role4] = Field(..., description='The list of results for this page.')
 
 
 class RoleAssignmentListResponse(BaseModel):
@@ -3688,6 +3867,7 @@ class CreateRoleRequest(BaseModel):
         ...,
         description='Permission strings to include (e.g. "mobius.workflow.create").',
     )
+    tags: TagMap | None = Field(None, description='Initial tag set.')
 
 
 class UpdateRoleRequest(BaseModel):
@@ -3697,6 +3877,10 @@ class UpdateRoleRequest(BaseModel):
     description: str | None = Field(None, description='Replacement description.')
     permissions: list[str] | None = Field(
         None, description='Replaces the existing permissions array entirely.'
+    )
+    tags: TagMap | None = Field(
+        None,
+        description='When supplied, replaces the user tag set on the role. System tags (`mobius:*`) are preserved.',
     )
 
 
@@ -3757,36 +3941,6 @@ class CreateRoleAssignmentRequest(
     RootModel[CreateRoleAssignmentRequest1 | CreateRoleAssignmentRequest2]
 ):
     root: CreateRoleAssignmentRequest1 | CreateRoleAssignmentRequest2
-
-
-class User(BaseModel):
-    """
-    Human identity known to the organization. User records are useful for membership lists, role assignment UIs, attribution, and displaying profile information next to actions.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    id: str = Field(
-        ..., description='Clerk user ID. Stable and globally unique across all orgs.'
-    )
-    email: str = Field(..., description='Primary email address from Clerk.')
-    first_name: str | None = Field(
-        None, description="User's first name from their Clerk profile."
-    )
-    last_name: str | None = Field(
-        None, description="User's last name from their Clerk profile."
-    )
-    avatar_url: str | None = Field(
-        None,
-        description='Profile avatar URL from Clerk (may be a Gravatar or uploaded image).',
-    )
-    created_at: datetime = Field(
-        ..., description='When the user record was first mirrored into Mobius.'
-    )
-    updated_at: datetime = Field(
-        ..., description='Timestamp when this user record was last synced from Clerk.'
-    )
 
 
 class SystemRoleName(Enum):
@@ -3898,7 +4052,7 @@ class UpdateOrgRequest(BaseModel):
     )
 
 
-class Role3(Enum):
+class Role5(Enum):
     """
     `Owner` has full control including org deletion; `Admin` can manage members and settings; `Member` has read-only org access.
     """
@@ -3918,7 +4072,7 @@ class OrgMember(BaseModel):
     )
     id: str = Field(..., description='Unique identifier for this membership record.')
     user_id: str = Field(..., description='ID of the user who is a member.')
-    role: Role3 = Field(
+    role: Role5 = Field(
         ...,
         description='`Owner` has full control including org deletion; `Admin` can manage members and settings; `Member` has read-only org access.',
     )
@@ -3947,7 +4101,7 @@ class OrgMemberListResponse(BaseModel):
     )
 
 
-class Role4(Enum):
+class Role6(Enum):
     """
     Role to assign the new member: `Owner`, `Admin`, or `Member`.
     """
@@ -3962,12 +4116,12 @@ class AddOrgMemberRequest(BaseModel):
         extra='forbid',
     )
     user_id: str = Field(..., description='Clerk user ID of the user to add.')
-    role: Role4 = Field(
+    role: Role6 = Field(
         ..., description='Role to assign the new member: `Owner`, `Admin`, or `Member`.'
     )
 
 
-class Role5(Enum):
+class Role7(Enum):
     """
     New role to assign: `Owner`, `Admin`, or `Member`.
     """
@@ -3981,8 +4135,40 @@ class UpdateOrgMemberRoleRequest(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    role: Role5 = Field(
+    role: Role7 = Field(
         ..., description='New role to assign: `Owner`, `Admin`, or `Member`.'
+    )
+
+
+class OrgInviteListResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    items: list[OrgInvite] = Field(
+        ..., description='The list of results for this page.'
+    )
+
+
+class Role8(Enum):
+    """
+    Org role assigned on accept. Defaults to `Member`.
+    """
+
+    Owner = 'Owner'
+    Admin = 'Admin'
+    Member = 'Member'
+
+
+class CreateOrgInviteRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    email: EmailStr = Field(..., description='Email address to invite.')
+    role: Role8 | None = Field(
+        None, description='Org role assigned on accept. Defaults to `Member`.'
+    )
+    project_grants: list[str] | None = Field(
+        None, description='Project IDs the invitee will be added to on accept.'
     )
 
 
@@ -4040,7 +4226,7 @@ class CreateStandaloneInteractionRequest(BaseModel):
 
 class CreateRunBackedInteractionRequest(BaseModel):
     """
-    Creates a run-backed interaction. Completion delivers `signal_name` to `run_id` so a suspended workflow branch can resume.
+    Creates a run-backed interaction. Completion delivers `signal_name` to `run_id` so a waiting run path can resume.
     """
 
     model_config = ConfigDict(
@@ -4238,7 +4424,7 @@ class CreateGroupRequest(BaseModel):
     description: str | None = Field(
         None, description='Optional human-readable description.'
     )
-    routing_policy: RoutingPolicy1 | None = Field(
+    routing_policy: RoutingPolicy1 = Field(
         'first_responder',
         description='How responses are collected from group members: `first_responder` or `all_members`. Defaults to `first_responder`.',
     )
@@ -4343,6 +4529,9 @@ class Agent(BaseModel):
     presence: AgentPresence = Field(
         ..., description='Current agent presence: `online`, `offline`, or `unknown`.'
     )
+    tags: TagMap | None = Field(
+        None, description='Resource tags applied to this agent.'
+    )
     created_at: datetime = Field(
         ..., description='Timestamp when this agent was created.'
     )
@@ -4431,6 +4620,7 @@ class CreateAgentRequest(BaseModel):
     config: dict[str, Any] | None = Field(
         None, description='Agent-specific configuration stored and returned opaquely.'
     )
+    tags: TagMap | None = Field(None, description='Initial tag set.')
 
 
 class UpdateAgentRequest(BaseModel):
@@ -4462,6 +4652,10 @@ class UpdateAgentRequest(BaseModel):
     )
     status: AgentStatus | None = Field(
         None, description='Replacement agent status: `active` or `disabled`.'
+    )
+    tags: TagMap | None = Field(
+        None,
+        description='When supplied, replaces the user tag set on the agent. System tags (`mobius:*`) are preserved.',
     )
 
 
@@ -4512,6 +4706,10 @@ class ServiceAccount(BaseModel):
         None,
         description='Arbitrary key-value metadata. Subject to size and nesting depth limits.',
     )
+    tags: TagMap | None = Field(
+        None,
+        description='Resource tags applied to this service account. Distinct from `metadata`: `tags` is the uniform string-to-string field used for filtering and reporting; `metadata` is a free-form caller-defined blob.',
+    )
     created_at: datetime = Field(
         ..., description='Timestamp when this service account was created.'
     )
@@ -4551,6 +4749,7 @@ class CreateServiceAccountRequest(BaseModel):
         description='One or more role IDs to assign at creation time. All assignments are created atomically with the service account. Requires `mobius.permission.manage`. Each role must belong to this project or be org-scoped (project_id empty).',
         min_length=1,
     )
+    tags: TagMap | None = Field(None, description='Initial tag set.')
 
 
 class UpdateServiceAccountRequest(BaseModel):
@@ -4565,6 +4764,10 @@ class UpdateServiceAccountRequest(BaseModel):
         None, description='ID of the org member responsible for this service account.'
     )
     metadata: dict[str, Any] | None = Field(None, description='Replacement metadata.')
+    tags: TagMap | None = Field(
+        None,
+        description='When supplied, replaces the user tag set on the service account. System tags (`mobius:*`) are preserved.',
+    )
 
 
 class ToolDefinition(BaseModel):
@@ -4611,7 +4814,7 @@ class ToolRunRequest(BaseModel):
     )
 
 
-class Status2(Enum):
+class Status3(Enum):
     """
     Run status: `pending`, `running`, `completed`, `failed`, or `suspended`.
     """
@@ -4632,7 +4835,7 @@ class ToolRun(BaseModel):
         extra='forbid',
     )
     run_id: str = Field(..., description='Unique run identifier for polling.')
-    status: Status2 = Field(
+    status: Status3 = Field(
         ...,
         description='Run status: `pending`, `running`, `completed`, `failed`, or `suspended`.',
     )
@@ -4873,14 +5076,71 @@ class WorkflowInteractionConfig(BaseModel):
         description='Response controls and validation rules rendered to the recipient.',
     )
     timeout: str = Field(..., description='Go duration string.')
-    target: WorkflowInteractionTarget = Field(
+    target: InteractionTarget = Field(
         ..., description='User, group, or agent that should receive the interaction.'
+    )
+    require_all: bool | None = Field(
+        None,
+        description='When true, all group members must respond before the interaction completes. Only meaningful when type is `group`.',
+    )
+
+
+class WorkflowRunWaitDetail(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    kind: WorkflowRunWaitKind
+    wake_at: datetime | None = Field(
+        None,
+        description='Earliest time the runtime should inspect or resume this path.',
+    )
+    signal_name: str | None = Field(
+        None, description='Signal name this path is waiting for.'
+    )
+    interaction_id: str | None = Field(
+        None, description='Pending interaction linked to this wait.'
+    )
+    target: InteractionTarget | None = Field(
+        None, description='Interaction target, when kind is `interaction`.'
+    )
+    reason: str | None = Field(None, description='Human-readable pause or wait reason.')
+    join_step: str | None = Field(
+        None, description='Join step this path is waiting at.'
+    )
+    waiting_for_paths: list[str] | None = Field(
+        None, description='Path IDs still required before a join can proceed.'
+    )
+    attempt: int | None = Field(
+        None, description='Retry attempt number for `retry` waits.'
+    )
+    max_attempts: int | None = Field(
+        None, description='Maximum attempts for `retry` waits.'
+    )
+
+
+class WorkflowRunPath(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    path_id: str = Field(
+        ...,
+        description='Stable execution path identifier, e.g. `main` or `main/each/0`.',
+    )
+    state: WorkflowRunPathState
+    waiting_on: WorkflowRunWaitDetail | None = Field(
+        None, description='Present when `state` is `waiting`.'
+    )
+    error_type: str | None = Field(
+        None, description='Path-local failure type when state is `failed`.'
+    )
+    error_message: str | None = Field(
+        None, description='Path-local failure message when state is `failed`.'
     )
 
 
 class StartSavedRunRequest(BaseModel):
     """
-    Run a previously-created workflow definition. Selected by `mode: saved` on `POST /v1/projects/{project}/runs`.
+    Run a previously-created workflow definition. Selected by `mode: saved` on `POST /v1/projects/{project}/runs`. The run inherits the workflow definition's tags at start time; see the `tags` field below for the override rules.
     """
 
     model_config = ConfigDict(
@@ -4902,6 +5162,10 @@ class StartSavedRunRequest(BaseModel):
     metadata: dict[str, str] | None = Field(
         None,
         description='Caller-supplied string metadata attached to the run for filtering and display.',
+    )
+    tags: TagMap | None = Field(
+        None,
+        description='Tags applied on top of the workflow definition\'s inherited tags. Caller keys override on conflict; an entry whose value is the empty string opts the inherited key out entirely (so the run does not carry it). Setting a tag value to "" is therefore reserved as the opt-out signal — use a placeholder value if you actually want a stored empty value.',
     )
     external_id: str | None = Field(
         None,
@@ -4931,6 +5195,10 @@ class StartBoundRunRequest(BaseModel):
     metadata: dict[str, str] | None = Field(
         None,
         description='Caller-supplied string metadata attached to the run for filtering and display.',
+    )
+    tags: TagMap | None = Field(
+        None,
+        description='Tags applied on top of the bound workflow definition\'s inherited tags. Caller keys override on conflict; an entry whose value is the empty string opts the inherited key out entirely (so the run does not carry it). Setting a tag value to "" is therefore reserved as the opt-out signal — use a placeholder value if you actually want a stored empty value.',
     )
     external_id: str | None = Field(
         None,
@@ -5025,7 +5293,7 @@ class Job(BaseModel):
     )
     error_type: str | None = Field(
         None,
-        description='Failure cause. Server-produced timeout and cancellation failures use stable tokens such as `claim_timeout`, `liveness_timeout`, `execution_timeout`, and `run_cancelled`; worker-reported failures may use caller-defined class names. Present when `status=failed`.',
+        description='Failure cause. Server-produced timeout and cancellation failures use stable tokens such as `claim_timeout`, `liveness_timeout`, `execution_timeout`, `run_cancelled`, `run_timeout`, and `run_failed`; worker-reported failures may use caller-defined class names. Present when `status=failed`.',
     )
     resolved_config: ResolvedConfig | None = Field(
         None, description='Job-level cascade config resolved for this job.'
@@ -5086,6 +5354,46 @@ class CreateTriggerRequest(
         ...,
         description='Creates a trigger. The request is discriminated by `kind`, and each variant requires the matching `source_config` schema.',
         discriminator='kind',
+    )
+
+
+class ProjectMember(BaseModel):
+    """
+    Explicit project membership used when a project is restricted. Use this record to decide who can see or operate on a project outside the default org-wide access model.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str = Field(..., description='Unique identifier for this membership record.')
+    project_id: str = Field(
+        ..., description='ID of the project this membership belongs to.'
+    )
+    user_id: str = Field(..., description='ID of the user who is a member.')
+    user: User | None = Field(
+        None,
+        description='Profile of the member. Embedded by `listProjectMembers` so UIs can render names, emails, and avatars without a separate user lookup. Absent on the `addProjectMember` response.',
+    )
+    added_by_actor_type: str | None = Field(
+        None, description='Actor type of whoever added this member, if recorded.'
+    )
+    added_by_actor_id: str | None = Field(
+        None, description='Actor ID of whoever added this member, if recorded.'
+    )
+    added_at: datetime = Field(..., description='Timestamp when the member was added.')
+
+
+class ProjectMemberListResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    items: list[ProjectMember] = Field(
+        ..., description='The list of members for this project.'
+    )
+    has_more: bool = Field(..., description='Whether more results are available.')
+    next_cursor: str | None = Field(
+        None,
+        description='Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.',
     )
 
 
@@ -5179,9 +5487,15 @@ class WorkflowRun(BaseModel):
     workflow_name: str = Field(
         ..., description='Name of the workflow as recorded at run creation time.'
     )
-    status: WorkflowRunStatus = Field(
-        ...,
-        description='Current run lifecycle state: `queued`, `running`, `completed`, `failed`, or `suspended`.',
+    status: WorkflowRunStatus = Field(..., description='Public lifecycle for this run.')
+    path_counts: WorkflowRunPathCounts = Field(
+        ..., description='Current path counts derived from the run projection.'
+    )
+    wait_summary: WorkflowRunWaitSummary = Field(
+        ..., description='Always-present aggregate of waiting paths.'
+    )
+    errors: list[WorkflowRunError] = Field(
+        ..., description='Run-level errors that caused a failed lifecycle.'
     )
     attempt: int = Field(
         ...,
@@ -5192,6 +5506,10 @@ class WorkflowRun(BaseModel):
     )
     metadata: dict[str, str] | None = Field(
         None, description='Caller-supplied string metadata attached to the run.'
+    )
+    tags: TagMap | None = Field(
+        None,
+        description='Resource tags applied to this run. Inherited from the parent workflow at start time, with caller-supplied overrides merged on top. System tags (`mobius:*`) are read-only.',
     )
     error_message: str | None = Field(
         None,
@@ -5213,7 +5531,10 @@ class WorkflowRun(BaseModel):
     )
     cancel_requested: bool | None = Field(
         None,
-        description='True when a cancel has been requested on this run but the run has not yet reached a terminal state. Workers observe this on their next heartbeat and stop work.',
+        description='Compatibility boolean set when cancellation was requested. Use `cancel_requested_at` for audit detail and `status` for terminal checks.',
+    )
+    cancel_requested_at: datetime | None = Field(
+        None, description='Timestamp when cancellation was requested.'
     )
     created_at: datetime = Field(
         ..., description='Timestamp when this run was created.'
@@ -5233,7 +5554,7 @@ class WorkflowRun(BaseModel):
     )
     error_type: ErrorType | None = Field(
         None,
-        description='Typed run-level failure cause: `run_timeout`, `run_cancelled`, or `job_failed`. Its own vocabulary, not a superset of the job-level `error_type`. Present when `status=failed`.',
+        description='Typed run-level failure cause: `run_timeout`, `run_cancelled`, `job_failed`, or `run_failed`. Its own vocabulary, not a superset of the job-level `error_type`. Present when `status=failed`.',
     )
     resolved_config: ResolvedConfig | None = Field(
         None, description='Run-level cascade config frozen when the run was started.'
@@ -5350,6 +5671,7 @@ class CreateWorkflowRequest(BaseModel):
     spec: WorkflowSpec = Field(
         ..., description='Executable workflow spec to persist as version 1.'
     )
+    tags: TagMap | None = Field(None, description='Initial tag set.')
 
 
 class UpdateWorkflowRequest(BaseModel):
@@ -5374,6 +5696,10 @@ class UpdateWorkflowRequest(BaseModel):
         None,
         description='Replacement executable workflow spec. Supplying this creates a new version.',
     )
+    tags: TagMap | None = Field(
+        None,
+        description="When supplied, replaces the workflow's tag set. Omit to leave tags unchanged.",
+    )
 
 
 class WorkflowVersion(WorkflowVersionSummary):
@@ -5391,6 +5717,9 @@ class WorkflowRunDetail(WorkflowRun):
     Detailed workflow run including its spec snapshot, terminal result, and jobs.
     """
 
+    paths: list[WorkflowRunPath] = Field(
+        ..., description='Current path-level execution projection for this run.'
+    )
     spec: WorkflowSpec | None = Field(
         None, description='Spec snapshot used to execute this run.'
     )
@@ -5424,6 +5753,10 @@ class StartInlineRunRequest(BaseModel):
     metadata: dict[str, str] | None = Field(
         None,
         description='Caller-supplied string metadata attached to the run for filtering and display.',
+    )
+    tags: TagMap | None = Field(
+        None,
+        description='Initial tags for this inline run. Inline runs have no parent workflow definition, so there is nothing to inherit from — every tag on the run comes from this map.',
     )
     external_id: str | None = Field(
         None,

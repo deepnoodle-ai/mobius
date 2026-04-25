@@ -66,6 +66,7 @@ func registerChannelsCommands(app *cli.App) {
 			cli.Strings("member-ids", "").Help("Optional list of user or agent IDs to add as members at creation time. All receive the `member` role; the creator is added as `admin` separately."),
 			cli.String("name", "").Help("[required] URL-safe handle, unique within the project. Immutable after creation — choose carefully."),
 			cli.Bool("private", "").Help("When true, the channel is invite-only."),
+			cli.String("tags", "").Help("Azure-style key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 50 tags per resource. Use tags to organise resources by environment, team, cost-center, or any other dimension meaningful to your organisation; tags can be filtered on most list endpoints. (JSON)"),
 			cli.String("topic", "").Help("Optional channel topic or description."),
 			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
 		).
@@ -97,6 +98,11 @@ func registerChannelsCommands(app *cli.App) {
 			if ctx.IsSet("private") {
 				v := ctx.Bool("private")
 				body.Private = &v
+			}
+			if ctx.IsSet("tags") {
+				if err := json.Unmarshal([]byte(ctx.String("tags")), &body.Tags); err != nil {
+					return fmt.Errorf("--tags: invalid JSON: %w", err)
+				}
 			}
 			if ctx.IsSet("topic") {
 				v := ctx.String("topic")
@@ -385,6 +391,7 @@ func registerChannelsCommands(app *cli.App) {
 		Flags(
 			cli.String("display-name", "").Help("Updated display name."),
 			cli.Bool("private", "").Help("Toggle invite-only visibility."),
+			cli.String("tags", "").Help("Azure-style key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 50 tags per resource. Use tags to organise resources by environment, team, cost-center, or any other dimension meaningful to your organisation; tags can be filtered on most list endpoints. (JSON)"),
 			cli.String("topic", "").Help("Updated topic or description."),
 			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
 		).
@@ -409,11 +416,16 @@ func registerChannelsCommands(app *cli.App) {
 				v := ctx.Bool("private")
 				body.Private = &v
 			}
+			if ctx.IsSet("tags") {
+				if err := json.Unmarshal([]byte(ctx.String("tags")), &body.Tags); err != nil {
+					return fmt.Errorf("--tags: invalid JSON: %w", err)
+				}
+			}
 			if ctx.IsSet("topic") {
 				v := ctx.String("topic")
 				body.Topic = &v
 			}
-			if ctx.String("file") == "" && !ctx.IsSet("display-name") && !ctx.IsSet("private") && !ctx.IsSet("topic") {
+			if ctx.String("file") == "" && !ctx.IsSet("display-name") && !ctx.IsSet("private") && !ctx.IsSet("tags") && !ctx.IsSet("topic") {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
 			resp, err := client.UpdateChannelWithResponse(ctx.Context(), p0, p1, body)
