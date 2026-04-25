@@ -766,27 +766,6 @@ func (e WorkflowInteractionConfigType) Valid() bool {
 	}
 }
 
-// Defines values for WorkflowInteractionTargetType.
-const (
-	WorkflowInteractionTargetTypeAgent WorkflowInteractionTargetType = "agent"
-	WorkflowInteractionTargetTypeGroup WorkflowInteractionTargetType = "group"
-	WorkflowInteractionTargetTypeUser  WorkflowInteractionTargetType = "user"
-)
-
-// Valid indicates whether the value is a known member of the WorkflowInteractionTargetType enum.
-func (e WorkflowInteractionTargetType) Valid() bool {
-	switch e {
-	case WorkflowInteractionTargetTypeAgent:
-		return true
-	case WorkflowInteractionTargetTypeGroup:
-		return true
-	case WorkflowInteractionTargetTypeUser:
-		return true
-	default:
-		return false
-	}
-}
-
 // Defines values for WorkflowRetryJitterStrategy.
 const (
 	WorkflowRetryJitterStrategyFULL WorkflowRetryJitterStrategy = "FULL"
@@ -809,6 +788,7 @@ func (e WorkflowRetryJitterStrategy) Valid() bool {
 const (
 	WorkflowRunErrorTypeJobFailed    WorkflowRunErrorType = "job_failed"
 	WorkflowRunErrorTypeRunCancelled WorkflowRunErrorType = "run_cancelled"
+	WorkflowRunErrorTypeRunFailed    WorkflowRunErrorType = "run_failed"
 	WorkflowRunErrorTypeRunTimeout   WorkflowRunErrorType = "run_timeout"
 )
 
@@ -818,6 +798,8 @@ func (e WorkflowRunErrorType) Valid() bool {
 	case WorkflowRunErrorTypeJobFailed:
 		return true
 	case WorkflowRunErrorTypeRunCancelled:
+		return true
+	case WorkflowRunErrorTypeRunFailed:
 		return true
 	case WorkflowRunErrorTypeRunTimeout:
 		return true
@@ -830,6 +812,7 @@ func (e WorkflowRunErrorType) Valid() bool {
 const (
 	WorkflowRunDetailErrorTypeJobFailed    WorkflowRunDetailErrorType = "job_failed"
 	WorkflowRunDetailErrorTypeRunCancelled WorkflowRunDetailErrorType = "run_cancelled"
+	WorkflowRunDetailErrorTypeRunFailed    WorkflowRunDetailErrorType = "run_failed"
 	WorkflowRunDetailErrorTypeRunTimeout   WorkflowRunDetailErrorType = "run_timeout"
 )
 
@@ -839,6 +822,8 @@ func (e WorkflowRunDetailErrorType) Valid() bool {
 	case WorkflowRunDetailErrorTypeJobFailed:
 		return true
 	case WorkflowRunDetailErrorTypeRunCancelled:
+		return true
+	case WorkflowRunDetailErrorTypeRunFailed:
 		return true
 	case WorkflowRunDetailErrorTypeRunTimeout:
 		return true
@@ -3527,6 +3512,9 @@ type WorkflowInteractionConfig struct {
 	// Message Prompt message shown to the interaction recipient.
 	Message string `json:"message"`
 
+	// RequireAll When true, all group members must respond before the interaction completes. Only meaningful when type is `group`.
+	RequireAll *bool `json:"require_all,omitempty"`
+
 	// Spec Declarative dialog contract for rendering and validating an interaction. Used at both authoring time (inside a workflow definition) and runtime (persisted on an interaction). Compatibility rules are enforced server-side:
 	//
 	// - `approval` requires `mode = confirm`
@@ -3534,8 +3522,8 @@ type WorkflowInteractionConfig struct {
 	// - `input` supports `input`, `select`, or `multi_select`
 	Spec *InteractionSpec `json:"spec,omitempty"`
 
-	// Target Recipient definition used by workflow interaction steps.
-	Target WorkflowInteractionTarget `json:"target"`
+	// Target Identifies who should receive an interaction request. Note: distinct from the caller/audit `Actor` vocabulary — a target is a *recipient*, not someone who has acted yet.
+	Target InteractionTarget `json:"target"`
 
 	// Timeout Go duration string.
 	Timeout string `json:"timeout"`
@@ -3570,21 +3558,6 @@ type WorkflowInteractionStep struct {
 	// Next Outbound edges controlling which step executes after this one.
 	Next *[]WorkflowEdge `json:"next,omitempty"`
 }
-
-// WorkflowInteractionTarget Recipient definition used by workflow interaction steps.
-type WorkflowInteractionTarget struct {
-	// Id ID of the target user, group, or agent.
-	Id string `json:"id"`
-
-	// RequireAll When true, all group members must respond before the interaction completes. Only meaningful when type is `group`.
-	RequireAll *bool `json:"require_all,omitempty"`
-
-	// Type Whether the target is an individual user, a group, or an agent.
-	Type WorkflowInteractionTargetType `json:"type"`
-}
-
-// WorkflowInteractionTargetType Whether the target is an individual user, a group, or an agent.
-type WorkflowInteractionTargetType string
 
 // WorkflowJoinConfig Waits for one or more parallel branches to complete before proceeding.
 type WorkflowJoinConfig struct {
@@ -3732,7 +3705,7 @@ type WorkflowRun struct {
 	// ErrorMessage Error message from the most recent failure. Present when status is failed.
 	ErrorMessage *string `json:"error_message,omitempty"`
 
-	// ErrorType Typed run-level failure cause: `run_timeout`, `run_cancelled`, or `job_failed`. Its own vocabulary, not a superset of the job-level `error_type`. Present when `status=failed`.
+	// ErrorType Typed run-level failure cause: `run_timeout`, `run_cancelled`, `job_failed`, or `run_failed`. Its own vocabulary, not a superset of the job-level `error_type`. Present when `status=failed`.
 	ErrorType *WorkflowRunErrorType `json:"error_type,omitempty"`
 
 	// Errors Run-level errors that caused a failed lifecycle.
@@ -3788,7 +3761,7 @@ type WorkflowRun struct {
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
-// WorkflowRunErrorType Typed run-level failure cause: `run_timeout`, `run_cancelled`, or `job_failed`. Its own vocabulary, not a superset of the job-level `error_type`. Present when `status=failed`.
+// WorkflowRunErrorType Typed run-level failure cause: `run_timeout`, `run_cancelled`, `job_failed`, or `run_failed`. Its own vocabulary, not a superset of the job-level `error_type`. Present when `status=failed`.
 type WorkflowRunErrorType string
 
 // WorkflowRunDetail defines model for WorkflowRunDetail.
@@ -3829,7 +3802,7 @@ type WorkflowRunDetail struct {
 	// ErrorMessage Error message from the most recent failure. Present when status is failed.
 	ErrorMessage *string `json:"error_message,omitempty"`
 
-	// ErrorType Typed run-level failure cause: `run_timeout`, `run_cancelled`, or `job_failed`. Its own vocabulary, not a superset of the job-level `error_type`. Present when `status=failed`.
+	// ErrorType Typed run-level failure cause: `run_timeout`, `run_cancelled`, `job_failed`, or `run_failed`. Its own vocabulary, not a superset of the job-level `error_type`. Present when `status=failed`.
 	ErrorType *WorkflowRunDetailErrorType `json:"error_type,omitempty"`
 
 	// Errors Run-level errors that caused a failed lifecycle.
@@ -3899,7 +3872,7 @@ type WorkflowRunDetail struct {
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
-// WorkflowRunDetailErrorType Typed run-level failure cause: `run_timeout`, `run_cancelled`, or `job_failed`. Its own vocabulary, not a superset of the job-level `error_type`. Present when `status=failed`.
+// WorkflowRunDetailErrorType Typed run-level failure cause: `run_timeout`, `run_cancelled`, `job_failed`, or `run_failed`. Its own vocabulary, not a superset of the job-level `error_type`. Present when `status=failed`.
 type WorkflowRunDetailErrorType string
 
 // WorkflowRunError defines model for WorkflowRunError.

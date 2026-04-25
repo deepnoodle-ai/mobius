@@ -5027,26 +5027,8 @@ components:
           type: string
           description: Go duration string.
         target:
-          $ref: '#/components/schemas/WorkflowInteractionTarget'
+          $ref: '#/components/schemas/InteractionTarget'
           description: User, group, or agent that should receive the interaction.
-    WorkflowInteractionTarget:
-      type: object
-      description: Recipient definition used by workflow interaction steps.
-      required:
-      - type
-      - id
-      additionalProperties: false
-      properties:
-        type:
-          type: string
-          enum:
-          - user
-          - group
-          - agent
-          description: Whether the target is an individual user, a group, or an agent.
-        id:
-          type: string
-          description: ID of the target user, group, or agent.
         require_all:
           type: boolean
           description: When true, all group members must respond before the interaction completes.
@@ -5511,8 +5493,9 @@ components:
           - run_timeout
           - run_cancelled
           - job_failed
-          description: 'Typed run-level failure cause: `run_timeout`, `run_cancelled`, or
-            `job_failed`. Its own vocabulary, not a superset of the job-level `error_type`.
+          - run_failed
+          description: 'Typed run-level failure cause: `run_timeout`, `run_cancelled`, `job_failed`,
+            or `run_failed`. Its own vocabulary, not a superset of the job-level `error_type`.
             Present when `status=failed`.'
         resolved_config:
           $ref: '#/components/schemas/ResolvedConfig'
