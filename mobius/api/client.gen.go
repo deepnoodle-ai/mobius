@@ -847,6 +847,51 @@ func (e WorkflowRunDetailErrorType) Valid() bool {
 	}
 }
 
+// Defines values for WorkflowRunLifecycleStatus.
+const (
+	WorkflowRunLifecycleStatusActive    WorkflowRunLifecycleStatus = "active"
+	WorkflowRunLifecycleStatusCompleted WorkflowRunLifecycleStatus = "completed"
+	WorkflowRunLifecycleStatusFailed    WorkflowRunLifecycleStatus = "failed"
+)
+
+// Valid indicates whether the value is a known member of the WorkflowRunLifecycleStatus enum.
+func (e WorkflowRunLifecycleStatus) Valid() bool {
+	switch e {
+	case WorkflowRunLifecycleStatusActive:
+		return true
+	case WorkflowRunLifecycleStatusCompleted:
+		return true
+	case WorkflowRunLifecycleStatusFailed:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for WorkflowRunPathState.
+const (
+	WorkflowRunPathStateCompleted WorkflowRunPathState = "completed"
+	WorkflowRunPathStateFailed    WorkflowRunPathState = "failed"
+	WorkflowRunPathStateWaiting   WorkflowRunPathState = "waiting"
+	WorkflowRunPathStateWorking   WorkflowRunPathState = "working"
+)
+
+// Valid indicates whether the value is a known member of the WorkflowRunPathState enum.
+func (e WorkflowRunPathState) Valid() bool {
+	switch e {
+	case WorkflowRunPathStateCompleted:
+		return true
+	case WorkflowRunPathStateFailed:
+		return true
+	case WorkflowRunPathStateWaiting:
+		return true
+	case WorkflowRunPathStateWorking:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for WorkflowRunStatus.
 const (
 	WorkflowRunStatusCompleted WorkflowRunStatus = "completed"
@@ -868,6 +913,36 @@ func (e WorkflowRunStatus) Valid() bool {
 	case WorkflowRunStatusRunning:
 		return true
 	case WorkflowRunStatusSuspended:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for WorkflowRunWaitKind.
+const (
+	WorkflowRunWaitKindInteraction WorkflowRunWaitKind = "interaction"
+	WorkflowRunWaitKindJoin        WorkflowRunWaitKind = "join"
+	WorkflowRunWaitKindPause       WorkflowRunWaitKind = "pause"
+	WorkflowRunWaitKindRetry       WorkflowRunWaitKind = "retry"
+	WorkflowRunWaitKindSignal      WorkflowRunWaitKind = "signal"
+	WorkflowRunWaitKindSleep       WorkflowRunWaitKind = "sleep"
+)
+
+// Valid indicates whether the value is a known member of the WorkflowRunWaitKind enum.
+func (e WorkflowRunWaitKind) Valid() bool {
+	switch e {
+	case WorkflowRunWaitKindInteraction:
+		return true
+	case WorkflowRunWaitKindJoin:
+		return true
+	case WorkflowRunWaitKindPause:
+		return true
+	case WorkflowRunWaitKindRetry:
+		return true
+	case WorkflowRunWaitKindSignal:
+		return true
+	case WorkflowRunWaitKindSleep:
 		return true
 	default:
 		return false
@@ -3633,6 +3708,9 @@ type WorkflowRun struct {
 	// CancelRequested True when a cancel has been requested on this run but the run has not yet reached a terminal state. Workers observe this on their next heartbeat and stop work.
 	CancelRequested *bool `json:"cancel_requested,omitempty"`
 
+	// CancelRequestedAt Timestamp when cancellation was requested.
+	CancelRequestedAt *time.Time `json:"cancel_requested_at,omitempty"`
+
 	// CompletedAt Timestamp when this run reached a terminal state.
 	CompletedAt *time.Time `json:"completed_at,omitempty"`
 
@@ -3657,6 +3735,9 @@ type WorkflowRun struct {
 	// ErrorType Typed run-level failure cause: `run_timeout`, `run_cancelled`, or `job_failed`. Its own vocabulary, not a superset of the job-level `error_type`. Present when `status=failed`.
 	ErrorType *WorkflowRunErrorType `json:"error_type,omitempty"`
 
+	// Errors Run-level errors that caused a failed lifecycle.
+	Errors []WorkflowRunError `json:"errors"`
+
 	// ExternalId Caller-supplied idempotency key or correlation ID.
 	ExternalId *string `json:"external_id,omitempty"`
 
@@ -3669,11 +3750,17 @@ type WorkflowRun struct {
 	// Inputs Input values provided when the run was started.
 	Inputs *map[string]interface{} `json:"inputs,omitempty"`
 
+	// LifecycleStatus Additive public lifecycle for PRD 036. Non-terminal legacy statuses (`queued`, `running`, `suspended`) project to `active`.
+	LifecycleStatus WorkflowRunLifecycleStatus `json:"lifecycle_status"`
+
 	// Metadata Caller-supplied string metadata attached to the run.
 	Metadata *map[string]string `json:"metadata,omitempty"`
 
 	// ParentRunId ID of the parent run, when this is a child run spawned by a fan-out step.
 	ParentRunId *string `json:"parent_run_id,omitempty"`
+
+	// PathCounts Current path counts. Invariants: `total = working + waiting + completed + failed`; `active = working + waiting`.
+	PathCounts WorkflowRunPathCounts `json:"path_counts"`
 
 	// Queue Queue this run was enqueued on.
 	Queue *string `json:"queue,omitempty"`
@@ -3689,6 +3776,9 @@ type WorkflowRun struct {
 
 	// UpdatedAt Timestamp when this run was last updated.
 	UpdatedAt time.Time `json:"updated_at"`
+
+	// WaitSummary Always-present aggregate of waiting paths.
+	WaitSummary WorkflowRunWaitSummary `json:"wait_summary"`
 
 	// WallClockDeadlineAt Deadline at which the reaper will fail this run with `error_type=run_timeout` if it has not reached a terminal state. Present only when `resolved_config` contains an entry with `category="timeouts"` and `key="wall_clock"` whose value resolves to a finite duration. Anchored to `created_at`.
 	WallClockDeadlineAt *time.Time `json:"wall_clock_deadline_at,omitempty"`
@@ -3715,6 +3805,9 @@ type WorkflowRunDetail struct {
 	// CancelRequested True when a cancel has been requested on this run but the run has not yet reached a terminal state. Workers observe this on their next heartbeat and stop work.
 	CancelRequested *bool `json:"cancel_requested,omitempty"`
 
+	// CancelRequestedAt Timestamp when cancellation was requested.
+	CancelRequestedAt *time.Time `json:"cancel_requested_at,omitempty"`
+
 	// CompletedAt Timestamp when this run reached a terminal state.
 	CompletedAt *time.Time `json:"completed_at,omitempty"`
 
@@ -3739,6 +3832,9 @@ type WorkflowRunDetail struct {
 	// ErrorType Typed run-level failure cause: `run_timeout`, `run_cancelled`, or `job_failed`. Its own vocabulary, not a superset of the job-level `error_type`. Present when `status=failed`.
 	ErrorType *WorkflowRunDetailErrorType `json:"error_type,omitempty"`
 
+	// Errors Run-level errors that caused a failed lifecycle.
+	Errors []WorkflowRunError `json:"errors"`
+
 	// ExternalId Caller-supplied idempotency key or correlation ID.
 	ExternalId *string `json:"external_id,omitempty"`
 
@@ -3754,11 +3850,20 @@ type WorkflowRunDetail struct {
 	// Jobs Jobs spawned by this run.
 	Jobs *[]Job `json:"jobs,omitempty"`
 
+	// LifecycleStatus Additive public lifecycle for PRD 036. Non-terminal legacy statuses (`queued`, `running`, `suspended`) project to `active`.
+	LifecycleStatus WorkflowRunLifecycleStatus `json:"lifecycle_status"`
+
 	// Metadata Caller-supplied string metadata attached to the run.
 	Metadata *map[string]string `json:"metadata,omitempty"`
 
 	// ParentRunId ID of the parent run, when this is a child run spawned by a fan-out step.
 	ParentRunId *string `json:"parent_run_id,omitempty"`
+
+	// PathCounts Current path counts. Invariants: `total = working + waiting + completed + failed`; `active = working + waiting`.
+	PathCounts WorkflowRunPathCounts `json:"path_counts"`
+
+	// Paths Current path-level execution projection for this run.
+	Paths []WorkflowRunPath `json:"paths"`
 
 	// Queue Queue this run was enqueued on.
 	Queue *string `json:"queue,omitempty"`
@@ -3783,6 +3888,9 @@ type WorkflowRunDetail struct {
 	// UpdatedAt Timestamp when this run was last updated.
 	UpdatedAt time.Time `json:"updated_at"`
 
+	// WaitSummary Always-present aggregate of waiting paths.
+	WaitSummary WorkflowRunWaitSummary `json:"wait_summary"`
+
 	// WallClockDeadlineAt Deadline at which the reaper will fail this run with `error_type=run_timeout` if it has not reached a terminal state. Present only when `resolved_config` contains an entry with `category="timeouts"` and `key="wall_clock"` whose value resolves to a finite duration. Anchored to `created_at`.
 	WallClockDeadlineAt *time.Time `json:"wall_clock_deadline_at,omitempty"`
 
@@ -3793,6 +3901,16 @@ type WorkflowRunDetail struct {
 
 // WorkflowRunDetailErrorType Typed run-level failure cause: `run_timeout`, `run_cancelled`, or `job_failed`. Its own vocabulary, not a superset of the job-level `error_type`. Present when `status=failed`.
 type WorkflowRunDetailErrorType string
+
+// WorkflowRunError defines model for WorkflowRunError.
+type WorkflowRunError struct {
+	ErrorMessage string `json:"error_message"`
+	ErrorType    string `json:"error_type"`
+	PathId       string `json:"path_id"`
+}
+
+// WorkflowRunLifecycleStatus Additive public lifecycle for PRD 036. Non-terminal legacy statuses (`queued`, `running`, `suspended`) project to `active`.
+type WorkflowRunLifecycleStatus string
 
 // WorkflowRunListResponse Paginated list of workflow runs.
 type WorkflowRunListResponse struct {
@@ -3806,8 +3924,86 @@ type WorkflowRunListResponse struct {
 	NextCursor *string `json:"next_cursor,omitempty"`
 }
 
+// WorkflowRunPath defines model for WorkflowRunPath.
+type WorkflowRunPath struct {
+	// ErrorMessage Path-local failure message when state is `failed`.
+	ErrorMessage *string `json:"error_message,omitempty"`
+
+	// ErrorType Path-local failure type when state is `failed`.
+	ErrorType *string `json:"error_type,omitempty"`
+
+	// PathId Stable execution path identifier, e.g. `main` or `main/each/0`.
+	PathId string `json:"path_id"`
+
+	// State Current state of one execution path.
+	State     WorkflowRunPathState   `json:"state"`
+	WaitingOn *WorkflowRunWaitDetail `json:"waiting_on,omitempty"`
+}
+
+// WorkflowRunPathCounts Current path counts. Invariants: `total = working + waiting + completed + failed`; `active = working + waiting`.
+type WorkflowRunPathCounts struct {
+	Active    int `json:"active"`
+	Completed int `json:"completed"`
+	Failed    int `json:"failed"`
+	Total     int `json:"total"`
+	Waiting   int `json:"waiting"`
+	Working   int `json:"working"`
+}
+
+// WorkflowRunPathState Current state of one execution path.
+type WorkflowRunPathState string
+
 // WorkflowRunStatus Run lifecycle: `queued` → `running` → `completed` | `failed` | `suspended`. A `suspended` run is waiting on a signal or interaction; it resumes automatically when the signal is delivered or the interaction is responded to.
 type WorkflowRunStatus string
+
+// WorkflowRunWaitDetail defines model for WorkflowRunWaitDetail.
+type WorkflowRunWaitDetail struct {
+	// Attempt Retry attempt number for `retry` waits.
+	Attempt *int `json:"attempt,omitempty"`
+
+	// InteractionId Pending interaction linked to this wait.
+	InteractionId *string `json:"interaction_id,omitempty"`
+
+	// JoinStep Join step this path is waiting at.
+	JoinStep *string `json:"join_step,omitempty"`
+
+	// Kind What a waiting path is blocked on.
+	Kind WorkflowRunWaitKind `json:"kind"`
+
+	// MaxAttempts Maximum attempts for `retry` waits.
+	MaxAttempts *int `json:"max_attempts,omitempty"`
+
+	// Reason Human-readable pause or wait reason.
+	Reason *string `json:"reason,omitempty"`
+
+	// SignalName Signal name this path is waiting for.
+	SignalName *string `json:"signal_name,omitempty"`
+
+	// Target Interaction target, when kind is `interaction`.
+	Target *map[string]interface{} `json:"target,omitempty"`
+
+	// WaitingForPaths Path IDs still required before a join can proceed.
+	WaitingForPaths *[]string `json:"waiting_for_paths,omitempty"`
+
+	// WakeAt Earliest time the runtime should inspect or resume this path.
+	WakeAt *time.Time `json:"wake_at,omitempty"`
+}
+
+// WorkflowRunWaitKind What a waiting path is blocked on.
+type WorkflowRunWaitKind string
+
+// WorkflowRunWaitSummary Always-present aggregate of waiting paths.
+type WorkflowRunWaitSummary struct {
+	InteractionIds []string `json:"interaction_ids"`
+
+	// KindCounts Count of waiting paths by `waiting_on.kind`.
+	KindCounts map[string]int `json:"kind_counts"`
+
+	// NextWakeAt Earliest wake time among waiting paths, or null.
+	NextWakeAt           *time.Time `json:"next_wake_at"`
+	WaitingOnSignalNames []string   `json:"waiting_on_signal_names"`
+	WaitingPaths         int        `json:"waiting_paths"`
+}
 
 // WorkflowSleepConfig Configuration for a sleep step.
 type WorkflowSleepConfig struct {
@@ -5241,6 +5437,14 @@ func (a *WorkflowRun) UnmarshalJSON(b []byte) error {
 		delete(object, "cancel_requested")
 	}
 
+	if raw, found := object["cancel_requested_at"]; found {
+		err = json.Unmarshal(raw, &a.CancelRequestedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'cancel_requested_at': %w", err)
+		}
+		delete(object, "cancel_requested_at")
+	}
+
 	if raw, found := object["completed_at"]; found {
 		err = json.Unmarshal(raw, &a.CompletedAt)
 		if err != nil {
@@ -5305,6 +5509,14 @@ func (a *WorkflowRun) UnmarshalJSON(b []byte) error {
 		delete(object, "error_type")
 	}
 
+	if raw, found := object["errors"]; found {
+		err = json.Unmarshal(raw, &a.Errors)
+		if err != nil {
+			return fmt.Errorf("error reading 'errors': %w", err)
+		}
+		delete(object, "errors")
+	}
+
 	if raw, found := object["external_id"]; found {
 		err = json.Unmarshal(raw, &a.ExternalId)
 		if err != nil {
@@ -5337,6 +5549,14 @@ func (a *WorkflowRun) UnmarshalJSON(b []byte) error {
 		delete(object, "inputs")
 	}
 
+	if raw, found := object["lifecycle_status"]; found {
+		err = json.Unmarshal(raw, &a.LifecycleStatus)
+		if err != nil {
+			return fmt.Errorf("error reading 'lifecycle_status': %w", err)
+		}
+		delete(object, "lifecycle_status")
+	}
+
 	if raw, found := object["metadata"]; found {
 		err = json.Unmarshal(raw, &a.Metadata)
 		if err != nil {
@@ -5351,6 +5571,14 @@ func (a *WorkflowRun) UnmarshalJSON(b []byte) error {
 			return fmt.Errorf("error reading 'parent_run_id': %w", err)
 		}
 		delete(object, "parent_run_id")
+	}
+
+	if raw, found := object["path_counts"]; found {
+		err = json.Unmarshal(raw, &a.PathCounts)
+		if err != nil {
+			return fmt.Errorf("error reading 'path_counts': %w", err)
+		}
+		delete(object, "path_counts")
 	}
 
 	if raw, found := object["queue"]; found {
@@ -5391,6 +5619,14 @@ func (a *WorkflowRun) UnmarshalJSON(b []byte) error {
 			return fmt.Errorf("error reading 'updated_at': %w", err)
 		}
 		delete(object, "updated_at")
+	}
+
+	if raw, found := object["wait_summary"]; found {
+		err = json.Unmarshal(raw, &a.WaitSummary)
+		if err != nil {
+			return fmt.Errorf("error reading 'wait_summary': %w", err)
+		}
+		delete(object, "wait_summary")
 	}
 
 	if raw, found := object["wall_clock_deadline_at"]; found {
@@ -5454,6 +5690,13 @@ func (a WorkflowRun) MarshalJSON() ([]byte, error) {
 		}
 	}
 
+	if a.CancelRequestedAt != nil {
+		object["cancel_requested_at"], err = json.Marshal(a.CancelRequestedAt)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'cancel_requested_at': %w", err)
+		}
+	}
+
 	if a.CompletedAt != nil {
 		object["completed_at"], err = json.Marshal(a.CompletedAt)
 		if err != nil {
@@ -5506,6 +5749,13 @@ func (a WorkflowRun) MarshalJSON() ([]byte, error) {
 		}
 	}
 
+	if a.Errors != nil {
+		object["errors"], err = json.Marshal(a.Errors)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'errors': %w", err)
+		}
+	}
+
 	if a.ExternalId != nil {
 		object["external_id"], err = json.Marshal(a.ExternalId)
 		if err != nil {
@@ -5532,6 +5782,11 @@ func (a WorkflowRun) MarshalJSON() ([]byte, error) {
 		}
 	}
 
+	object["lifecycle_status"], err = json.Marshal(a.LifecycleStatus)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'lifecycle_status': %w", err)
+	}
+
 	if a.Metadata != nil {
 		object["metadata"], err = json.Marshal(a.Metadata)
 		if err != nil {
@@ -5544,6 +5799,11 @@ func (a WorkflowRun) MarshalJSON() ([]byte, error) {
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'parent_run_id': %w", err)
 		}
+	}
+
+	object["path_counts"], err = json.Marshal(a.PathCounts)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'path_counts': %w", err)
 	}
 
 	if a.Queue != nil {
@@ -5575,6 +5835,11 @@ func (a WorkflowRun) MarshalJSON() ([]byte, error) {
 	object["updated_at"], err = json.Marshal(a.UpdatedAt)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling 'updated_at': %w", err)
+	}
+
+	object["wait_summary"], err = json.Marshal(a.WaitSummary)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'wait_summary': %w", err)
 	}
 
 	if a.WallClockDeadlineAt != nil {
@@ -5655,6 +5920,14 @@ func (a *WorkflowRunDetail) UnmarshalJSON(b []byte) error {
 		delete(object, "cancel_requested")
 	}
 
+	if raw, found := object["cancel_requested_at"]; found {
+		err = json.Unmarshal(raw, &a.CancelRequestedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'cancel_requested_at': %w", err)
+		}
+		delete(object, "cancel_requested_at")
+	}
+
 	if raw, found := object["completed_at"]; found {
 		err = json.Unmarshal(raw, &a.CompletedAt)
 		if err != nil {
@@ -5719,6 +5992,14 @@ func (a *WorkflowRunDetail) UnmarshalJSON(b []byte) error {
 		delete(object, "error_type")
 	}
 
+	if raw, found := object["errors"]; found {
+		err = json.Unmarshal(raw, &a.Errors)
+		if err != nil {
+			return fmt.Errorf("error reading 'errors': %w", err)
+		}
+		delete(object, "errors")
+	}
+
 	if raw, found := object["external_id"]; found {
 		err = json.Unmarshal(raw, &a.ExternalId)
 		if err != nil {
@@ -5759,6 +6040,14 @@ func (a *WorkflowRunDetail) UnmarshalJSON(b []byte) error {
 		delete(object, "jobs")
 	}
 
+	if raw, found := object["lifecycle_status"]; found {
+		err = json.Unmarshal(raw, &a.LifecycleStatus)
+		if err != nil {
+			return fmt.Errorf("error reading 'lifecycle_status': %w", err)
+		}
+		delete(object, "lifecycle_status")
+	}
+
 	if raw, found := object["metadata"]; found {
 		err = json.Unmarshal(raw, &a.Metadata)
 		if err != nil {
@@ -5773,6 +6062,22 @@ func (a *WorkflowRunDetail) UnmarshalJSON(b []byte) error {
 			return fmt.Errorf("error reading 'parent_run_id': %w", err)
 		}
 		delete(object, "parent_run_id")
+	}
+
+	if raw, found := object["path_counts"]; found {
+		err = json.Unmarshal(raw, &a.PathCounts)
+		if err != nil {
+			return fmt.Errorf("error reading 'path_counts': %w", err)
+		}
+		delete(object, "path_counts")
+	}
+
+	if raw, found := object["paths"]; found {
+		err = json.Unmarshal(raw, &a.Paths)
+		if err != nil {
+			return fmt.Errorf("error reading 'paths': %w", err)
+		}
+		delete(object, "paths")
 	}
 
 	if raw, found := object["queue"]; found {
@@ -5829,6 +6134,14 @@ func (a *WorkflowRunDetail) UnmarshalJSON(b []byte) error {
 			return fmt.Errorf("error reading 'updated_at': %w", err)
 		}
 		delete(object, "updated_at")
+	}
+
+	if raw, found := object["wait_summary"]; found {
+		err = json.Unmarshal(raw, &a.WaitSummary)
+		if err != nil {
+			return fmt.Errorf("error reading 'wait_summary': %w", err)
+		}
+		delete(object, "wait_summary")
 	}
 
 	if raw, found := object["wall_clock_deadline_at"]; found {
@@ -5892,6 +6205,13 @@ func (a WorkflowRunDetail) MarshalJSON() ([]byte, error) {
 		}
 	}
 
+	if a.CancelRequestedAt != nil {
+		object["cancel_requested_at"], err = json.Marshal(a.CancelRequestedAt)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'cancel_requested_at': %w", err)
+		}
+	}
+
 	if a.CompletedAt != nil {
 		object["completed_at"], err = json.Marshal(a.CompletedAt)
 		if err != nil {
@@ -5944,6 +6264,13 @@ func (a WorkflowRunDetail) MarshalJSON() ([]byte, error) {
 		}
 	}
 
+	if a.Errors != nil {
+		object["errors"], err = json.Marshal(a.Errors)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'errors': %w", err)
+		}
+	}
+
 	if a.ExternalId != nil {
 		object["external_id"], err = json.Marshal(a.ExternalId)
 		if err != nil {
@@ -5977,6 +6304,11 @@ func (a WorkflowRunDetail) MarshalJSON() ([]byte, error) {
 		}
 	}
 
+	object["lifecycle_status"], err = json.Marshal(a.LifecycleStatus)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'lifecycle_status': %w", err)
+	}
+
 	if a.Metadata != nil {
 		object["metadata"], err = json.Marshal(a.Metadata)
 		if err != nil {
@@ -5988,6 +6320,18 @@ func (a WorkflowRunDetail) MarshalJSON() ([]byte, error) {
 		object["parent_run_id"], err = json.Marshal(a.ParentRunId)
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'parent_run_id': %w", err)
+		}
+	}
+
+	object["path_counts"], err = json.Marshal(a.PathCounts)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'path_counts': %w", err)
+	}
+
+	if a.Paths != nil {
+		object["paths"], err = json.Marshal(a.Paths)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'paths': %w", err)
 		}
 	}
 
@@ -6034,6 +6378,11 @@ func (a WorkflowRunDetail) MarshalJSON() ([]byte, error) {
 	object["updated_at"], err = json.Marshal(a.UpdatedAt)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling 'updated_at': %w", err)
+	}
+
+	object["wait_summary"], err = json.Marshal(a.WaitSummary)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'wait_summary': %w", err)
 	}
 
 	if a.WallClockDeadlineAt != nil {

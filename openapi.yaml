@@ -789,6 +789,21 @@ paths:
                 ephemeral: false
                 workflow_name: document-review
                 status: queued
+                lifecycle_status: active
+                path_counts:
+                  total: 1
+                  active: 1
+                  working: 1
+                  waiting: 0
+                  completed: 0
+                  failed: 0
+                wait_summary:
+                  waiting_paths: 0
+                  kind_counts: {}
+                  next_wake_at: null
+                  waiting_on_signal_names: []
+                  interaction_ids: []
+                errors: []
                 attempt: 1
                 inputs:
                   document_id: doc_01hw1m9z8y7x6w5v4u3t2s1r0q
@@ -5216,6 +5231,161 @@ components:
       description: 'Run lifecycle: `queued` → `running` → `completed` | `failed` | `suspended`.
         A `suspended` run is waiting on a signal or interaction; it resumes automatically
         when the signal is delivered or the interaction is responded to.'
+    WorkflowRunLifecycleStatus:
+      type: string
+      enum:
+      - active
+      - completed
+      - failed
+      description: Additive public lifecycle for PRD 036. Non-terminal legacy statuses (`queued`,
+        `running`, `suspended`) project to `active`.
+    WorkflowRunPathState:
+      type: string
+      enum:
+      - working
+      - waiting
+      - completed
+      - failed
+      description: Current state of one execution path.
+    WorkflowRunWaitKind:
+      type: string
+      enum:
+      - sleep
+      - signal
+      - interaction
+      - pause
+      - join
+      - retry
+      description: What a waiting path is blocked on.
+    WorkflowRunWaitDetail:
+      type: object
+      additionalProperties: false
+      required:
+      - kind
+      properties:
+        kind:
+          $ref: '#/components/schemas/WorkflowRunWaitKind'
+        wake_at:
+          type: string
+          format: date-time
+          description: Earliest time the runtime should inspect or resume this path.
+        signal_name:
+          type: string
+          description: Signal name this path is waiting for.
+        interaction_id:
+          type: string
+          description: Pending interaction linked to this wait.
+        target:
+          type: object
+          additionalProperties: true
+          description: Interaction target, when kind is `interaction`.
+        reason:
+          type: string
+          description: Human-readable pause or wait reason.
+        join_step:
+          type: string
+          description: Join step this path is waiting at.
+        waiting_for_paths:
+          type: array
+          items:
+            type: string
+          description: Path IDs still required before a join can proceed.
+        attempt:
+          type: integer
+          description: Retry attempt number for `retry` waits.
+        max_attempts:
+          type: integer
+          description: Maximum attempts for `retry` waits.
+    WorkflowRunPath:
+      type: object
+      additionalProperties: false
+      required:
+      - path_id
+      - state
+      properties:
+        path_id:
+          type: string
+          description: Stable execution path identifier, e.g. `main` or `main/each/0`.
+        state:
+          $ref: '#/components/schemas/WorkflowRunPathState'
+        waiting_on:
+          $ref: '#/components/schemas/WorkflowRunWaitDetail'
+        error_type:
+          type: string
+          description: Path-local failure type when state is `failed`.
+        error_message:
+          type: string
+          description: Path-local failure message when state is `failed`.
+    WorkflowRunPathCounts:
+      type: object
+      additionalProperties: false
+      required:
+      - total
+      - active
+      - working
+      - waiting
+      - completed
+      - failed
+      description: 'Current path counts. Invariants: `total = working + waiting + completed
+        + failed`; `active = working + waiting`.'
+      properties:
+        total:
+          type: integer
+        active:
+          type: integer
+        working:
+          type: integer
+        waiting:
+          type: integer
+        completed:
+          type: integer
+        failed:
+          type: integer
+    WorkflowRunWaitSummary:
+      type: object
+      additionalProperties: false
+      required:
+      - waiting_paths
+      - kind_counts
+      - next_wake_at
+      - waiting_on_signal_names
+      - interaction_ids
+      description: Always-present aggregate of waiting paths.
+      properties:
+        waiting_paths:
+          type: integer
+        kind_counts:
+          type: object
+          additionalProperties:
+            type: integer
+          description: Count of waiting paths by `waiting_on.kind`.
+        next_wake_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Earliest wake time among waiting paths, or null.
+        waiting_on_signal_names:
+          type: array
+          items:
+            type: string
+        interaction_ids:
+          type: array
+          items:
+            type: string
+    WorkflowRunError:
+      type: object
+      additionalProperties: false
+      required:
+      - path_id
+      - error_type
+      - error_message
+      properties:
+        path_id:
+          type: string
+        error_type:
+          type: string
+        error_message:
+          type: string
     WorkflowRun:
       type: object
       description: Runtime record for one workflow execution.
@@ -5224,6 +5394,10 @@ components:
       - id
       - workflow_name
       - status
+      - lifecycle_status
+      - path_counts
+      - wait_summary
+      - errors
       - attempt
       - ephemeral
       - created_at
@@ -5259,6 +5433,20 @@ components:
           $ref: '#/components/schemas/WorkflowRunStatus'
           description: 'Current run lifecycle state: `queued`, `running`, `completed`, `failed`,
             or `suspended`.'
+        lifecycle_status:
+          $ref: '#/components/schemas/WorkflowRunLifecycleStatus'
+          description: Additive public lifecycle. Prefer this over legacy `status`.
+        path_counts:
+          $ref: '#/components/schemas/WorkflowRunPathCounts'
+          description: Current path counts derived from the run projection.
+        wait_summary:
+          $ref: '#/components/schemas/WorkflowRunWaitSummary'
+          description: Always-present aggregate of waiting paths.
+        errors:
+          type: array
+          description: Run-level errors that caused a failed lifecycle.
+          items:
+            $ref: '#/components/schemas/WorkflowRunError'
         attempt:
           type: integer
           description: Retry attempt number (1-based). Increments each time the run is retried.
@@ -5293,6 +5481,10 @@ components:
           description: True when a cancel has been requested on this run but the run has not
             yet reached a terminal state. Workers observe this on their next heartbeat and
             stop work.
+        cancel_requested_at:
+          type: string
+          format: date-time
+          description: Timestamp when cancellation was requested.
         created_at:
           type: string
           format: date-time
@@ -5358,7 +5550,14 @@ components:
       allOf:
       - $ref: '#/components/schemas/WorkflowRun'
       - type: object
+        required:
+        - paths
         properties:
+          paths:
+            type: array
+            description: Current path-level execution projection for this run.
+            items:
+              $ref: '#/components/schemas/WorkflowRunPath'
           spec:
             $ref: '#/components/schemas/WorkflowSpec'
             description: Spec snapshot used to execute this run.
