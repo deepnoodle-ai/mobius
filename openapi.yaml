@@ -788,7 +788,7 @@ paths:
                 definition_version: 3
                 ephemeral: false
                 workflow_name: document-review
-                status: queued
+                status: running
                 lifecycle_status: active
                 path_counts:
                   total: 1
@@ -1002,7 +1002,7 @@ paths:
       operationId: resumeRun
       tags:
       - runs
-      summary: Resume a waiting run path
+      summary: Resume waiting run paths
       description: Re-enters any resumable waiting paths, such as paused paths or due timer
         waits.
       parameters:
@@ -1020,7 +1020,7 @@ paths:
       operationId: sendRunSignal
       tags:
       - runs
-      summary: Deliver a signal to a waiting run path
+      summary: Deliver a run-scoped signal
       description: Durably enqueues a signal keyed by (run_id, name). If any path in the run
         is waiting on that topic, the server re-enters that path so it can consume the signal.
         Otherwise the signal remains in the store until a future path waits for it.
@@ -5275,8 +5275,7 @@ components:
           type: string
           description: Pending interaction linked to this wait.
         target:
-          type: object
-          additionalProperties: true
+          $ref: '#/components/schemas/InteractionTarget'
           description: Interaction target, when kind is `interaction`.
         reason:
           type: string
@@ -5309,6 +5308,7 @@ components:
           $ref: '#/components/schemas/WorkflowRunPathState'
         waiting_on:
           $ref: '#/components/schemas/WorkflowRunWaitDetail'
+          description: Present when `state` is `waiting`.
         error_type:
           type: string
           description: Path-local failure type when state is `failed`.
@@ -5375,7 +5375,6 @@ components:
       type: object
       additionalProperties: false
       required:
-      - path_id
       - error_type
       - error_message
       properties:
@@ -5917,8 +5916,8 @@ components:
           type: string
           description: Failure cause. Server-produced timeout and cancellation failures use
             stable tokens such as `claim_timeout`, `liveness_timeout`, `execution_timeout`,
-            `run_cancelled`, and `run_failed`; worker-reported failures may use caller-defined
-            class names. Present when `status=failed`.
+            `run_cancelled`, `run_timeout`, and `run_failed`; worker-reported failures may
+            use caller-defined class names. Present when `status=failed`.
         resolved_config:
           $ref: '#/components/schemas/ResolvedConfig'
           description: Job-level cascade config resolved for this job.
@@ -5977,6 +5976,26 @@ components:
         name:
           type: string
           description: Signal topic name matching the wait_signal step's topic.
+    InteractionTarget:
+      type: object
+      required:
+      - type
+      - id
+      additionalProperties: false
+      description: 'Identifies who should receive an interaction request. Note: distinct from
+        the caller/audit `Actor` vocabulary — a target is a *recipient*, not someone who has
+        acted yet.'
+      properties:
+        type:
+          type: string
+          enum:
+          - user
+          - agent
+          - group
+          description: 'Target kind: a specific user, an agent queue, or a group.'
+        id:
+          type: string
+          description: User ID for user; queue name for agent; group ID or handle for group.
     ActionAnnotationsRequest:
       type: object
       additionalProperties: false
@@ -6539,26 +6558,6 @@ components:
           additionalProperties: true
           description: Free-form JSON payload. Bounded by the server-side byte limit (default
             16 KiB per event); oversize payloads are rejected with 413.
-    InteractionTarget:
-      type: object
-      required:
-      - type
-      - id
-      additionalProperties: false
-      description: 'Identifies who should receive an interaction request. Note: distinct from
-        the caller/audit `Actor` vocabulary — a target is a *recipient*, not someone who has
-        acted yet.'
-      properties:
-        type:
-          type: string
-          enum:
-          - user
-          - agent
-          - group
-          description: 'Target kind: a specific user, an agent queue, or a group.'
-        id:
-          type: string
-          description: User ID for user; queue name for agent; group ID or handle for group.
     InteractionType:
       type: string
       enum:
@@ -8839,7 +8838,7 @@ components:
       - target
       - message
       description: Creates a run-backed interaction. Completion delivers `signal_name` to
-        `run_id` so a suspended workflow branch can resume.
+        `run_id` so a waiting run path can resume.
       properties:
         run_id:
           type: string

@@ -1742,7 +1742,7 @@ type CreateProjectRequest struct {
 	Name string `json:"name"`
 }
 
-// CreateRunBackedInteractionRequest Creates a run-backed interaction. Completion delivers `signal_name` to `run_id` so a suspended workflow branch can resume.
+// CreateRunBackedInteractionRequest Creates a run-backed interaction. Completion delivers `signal_name` to `run_id` so a waiting run path can resume.
 type CreateRunBackedInteractionRequest struct {
 	// Context Additional key-value context surfaced in the UI alongside the message.
 	Context *map[string]interface{} `json:"context,omitempty"`
@@ -2281,7 +2281,7 @@ type Job struct {
 	// CreatedAt Timestamp when this job was created.
 	CreatedAt time.Time `json:"created_at"`
 
-	// ErrorType Failure cause. Server-produced timeout and cancellation failures use stable tokens such as `claim_timeout`, `liveness_timeout`, `execution_timeout`, `run_cancelled`, and `run_failed`; worker-reported failures may use caller-defined class names. Present when `status=failed`.
+	// ErrorType Failure cause. Server-produced timeout and cancellation failures use stable tokens such as `claim_timeout`, `liveness_timeout`, `execution_timeout`, `run_cancelled`, `run_timeout`, and `run_failed`; worker-reported failures may use caller-defined class names. Present when `status=failed`.
 	ErrorType *string `json:"error_type,omitempty"`
 
 	// ExecutionDeadlineAt Deadline at which the reaper will fail this job with `error_type=execution_timeout` if it has not completed. Present only when `resolved_config` contains an entry with `category="timeouts"` and `key="execution"` whose value resolves to a finite duration.
@@ -3904,9 +3904,9 @@ type WorkflowRunDetailErrorType string
 
 // WorkflowRunError defines model for WorkflowRunError.
 type WorkflowRunError struct {
-	ErrorMessage string `json:"error_message"`
-	ErrorType    string `json:"error_type"`
-	PathId       string `json:"path_id"`
+	ErrorMessage string  `json:"error_message"`
+	ErrorType    string  `json:"error_type"`
+	PathId       *string `json:"path_id,omitempty"`
 }
 
 // WorkflowRunLifecycleStatus Additive public lifecycle for PRD 036. Non-terminal legacy statuses (`queued`, `running`, `suspended`) project to `active`.
@@ -3979,8 +3979,8 @@ type WorkflowRunWaitDetail struct {
 	// SignalName Signal name this path is waiting for.
 	SignalName *string `json:"signal_name,omitempty"`
 
-	// Target Interaction target, when kind is `interaction`.
-	Target *map[string]interface{} `json:"target,omitempty"`
+	// Target Identifies who should receive an interaction request. Note: distinct from the caller/audit `Actor` vocabulary — a target is a *recipient*, not someone who has acted yet.
+	Target *InteractionTarget `json:"target,omitempty"`
 
 	// WaitingForPaths Path IDs still required before a join can proceed.
 	WaitingForPaths *[]string `json:"waiting_for_paths,omitempty"`
