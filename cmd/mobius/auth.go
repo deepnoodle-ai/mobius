@@ -135,7 +135,7 @@ func runAuthLogin(ctx *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	verificationURL, err := deviceVerificationURL(ctx.String("web-url"), challenge)
+	verificationURL, err := deviceVerificationURL(apiURL, ctx.String("web-url"), challenge)
 	if err != nil {
 		return err
 	}
@@ -222,7 +222,7 @@ func postDeviceCode(ctx context.Context, client *http.Client, apiURL string, for
 	return &out, nil
 }
 
-func deviceVerificationURL(webURL string, ch *deviceCodeResponse) (string, error) {
+func deviceVerificationURL(apiURL, webURL string, ch *deviceCodeResponse) (string, error) {
 	raw := ch.VerificationURIComplete
 	if raw == "" {
 		raw = ch.VerificationURI
@@ -240,8 +240,11 @@ func deviceVerificationURL(webURL string, ch *deviceCodeResponse) (string, error
 		u.RawQuery = q.Encode()
 	}
 	webURL = strings.TrimSpace(webURL)
-	if webURL == "" {
+	if webURL == "" && sameURLOrigin(apiURL, mobius.DefaultBaseURL) {
 		return u.String(), nil
+	}
+	if webURL == "" {
+		webURL = apiURL
 	}
 	base, err := url.Parse(webURL)
 	if err != nil || base.Scheme == "" || base.Host == "" {
@@ -251,6 +254,31 @@ func deviceVerificationURL(webURL string, ch *deviceCodeResponse) (string, error
 	base.RawQuery = u.RawQuery
 	base.Fragment = u.Fragment
 	return base.String(), nil
+}
+
+func sameURLOrigin(a, b string) bool {
+	aScheme, aHostPort, aOK := urlOrigin(a)
+	bScheme, bHostPort, bOK := urlOrigin(b)
+	return aOK && bOK && aScheme == bScheme && aHostPort == bHostPort
+}
+
+func urlOrigin(raw string) (string, string, bool) {
+	u, err := url.Parse(raw)
+	if err != nil || u.Scheme == "" || u.Host == "" {
+		return "", "", false
+	}
+	scheme := strings.ToLower(u.Scheme)
+	host := strings.ToLower(u.Hostname())
+	port := u.Port()
+	if port == "" {
+		switch scheme {
+		case "http":
+			port = "80"
+		case "https":
+			port = "443"
+		}
+	}
+	return scheme, host + ":" + port, true
 }
 
 func joinURLPaths(basePath, targetPath string) string {

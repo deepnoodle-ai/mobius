@@ -186,7 +186,7 @@ func TestAuthLoginRequestsExplicitProject(t *testing.T) {
 	}
 }
 
-func TestAuthLoginKeepsServerVerificationURLWithCustomAPIURL(t *testing.T) {
+func TestAuthLoginDisplaysVerificationURLFromCustomAPIURL(t *testing.T) {
 	srv, requestedProject := newDeviceLoginServer(t)
 	defer srv.Close()
 
@@ -197,11 +197,11 @@ func TestAuthLoginKeepsServerVerificationURLWithCustomAPIURL(t *testing.T) {
 	if !result.Success() {
 		t.Fatalf("auth login failed: %v\nstderr: %s", result.Err, result.Stderr)
 	}
-	if !strings.Contains(result.Stdout, "Open this URL:          https://example.invalid/auth/device?code=ABCD-EFGH") {
-		t.Fatalf("stdout missing server verification URL:\n%s", result.Stdout)
+	if !strings.Contains(result.Stdout, "Open this URL:          "+srv.URL+"/auth/device?code=ABCD-EFGH") {
+		t.Fatalf("stdout missing custom verification URL:\n%s", result.Stdout)
 	}
-	if strings.Contains(result.Stdout, srv.URL+"/auth/device") {
-		t.Fatalf("stdout incorrectly used API URL as web URL:\n%s", result.Stdout)
+	if strings.Contains(result.Stdout, "https://example.invalid/auth/device") {
+		t.Fatalf("stdout used server-provided verification origin:\n%s", result.Stdout)
 	}
 	if got := <-requestedProject; got != "" {
 		t.Fatalf("requested project = %q, want empty", got)
@@ -256,7 +256,17 @@ func TestDeviceVerificationURLKeepsDefaultServerURL(t *testing.T) {
 		UserCode:                "ABCD-EFGH",
 		VerificationURIComplete: "https://mobiusops.ai/auth/device?code=ABCD-EFGH",
 	}
-	if got, err := deviceVerificationURL("", ch); err != nil || got != ch.VerificationURIComplete {
+	if got, err := deviceVerificationURL("https://api.mobiusops.ai", "", ch); err != nil || got != ch.VerificationURIComplete {
+		t.Fatalf("deviceVerificationURL() = %q, want %q", got, ch.VerificationURIComplete)
+	}
+}
+
+func TestDeviceVerificationURLKeepsDefaultServerURLWithExplicitPort(t *testing.T) {
+	ch := &deviceCodeResponse{
+		UserCode:                "ABCD-EFGH",
+		VerificationURIComplete: "https://mobiusops.ai/auth/device?code=ABCD-EFGH",
+	}
+	if got, err := deviceVerificationURL("https://api.mobiusops.ai:443", "", ch); err != nil || got != ch.VerificationURIComplete {
 		t.Fatalf("deviceVerificationURL() = %q, want %q", got, ch.VerificationURIComplete)
 	}
 }
