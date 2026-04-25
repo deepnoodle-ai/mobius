@@ -57,6 +57,7 @@ generate-py:
 		--use-union-operator \
 		--field-constraints \
 		--use-schema-description \
+		--strict-nullable \
 		--disable-timestamp
 
 # CI check: ensure all generated clients match the committed spec.

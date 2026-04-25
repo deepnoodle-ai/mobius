@@ -63,7 +63,7 @@ func registerAuditLogsCommands(app *cli.App) {
 				params.ActorId = &v
 			}
 			if ctx.IsSet("action") {
-				v := ctx.String("action")
+				v := api.ListAuditLogsParamsAction(ctx.String("action"))
 				params.Action = &v
 			}
 			if ctx.IsSet("cursor") {

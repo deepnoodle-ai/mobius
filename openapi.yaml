@@ -428,6 +428,12 @@ paths:
         in: query
         schema:
           type: string
+          enum:
+          - create
+          - update
+          - delete
+          - archive
+          - restore
         description: Filter by action (create, update, delete, archive, restore)
       - name: created_after
         in: query
@@ -3669,8 +3675,6 @@ components:
         Filter results by tag. Repeatable; multiple values combine with AND. Format: `Key:Value`, `Key:*` for any value, `Key:a,b,c` for IN.
 
         Tag values containing `:` or `,` cannot be filtered with this grammar — the parser splits on those literally. Constrain values to plain identifiers when you intend to filter on them.
-
-        Not supported on the runs list — runs are too high-cardinality for ad-hoc tag filtering. To narrow runs by parent workflow, use the workflow-scoped endpoint `GET /v1/projects/{project}/workflows/{id}/runs` and inspect `tags` on each run client-side.
       explode: true
       schema:
         type: array
@@ -3819,8 +3823,12 @@ components:
         50 tags per resource. Use tags to organise resources by environment, team, cost-center,
         or any other dimension meaningful to your organisation; tags can be filtered on most
         list endpoints.
+      propertyNames:
+        minLength: 1
+        maxLength: 128
       additionalProperties:
         type: string
+        minLength: 0
         maxLength: 256
       maxProperties: 50
       example:
@@ -5198,7 +5206,7 @@ components:
         require_all:
           type: boolean
           description: When true, all group members must respond before the interaction completes.
-            Only meaningful when type is `group`.
+            Only meaningful when `target.type` is `group`.
     WorkflowDefinitionSummary:
       type: object
       additionalProperties: true

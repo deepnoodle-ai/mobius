@@ -66,7 +66,7 @@ class TagMap(RootModel[dict[str, str] | None]):
     Azure-style key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 50 tags per resource. Use tags to organise resources by environment, team, cost-center, or any other dimension meaningful to your organisation; tags can be filtered on most list endpoints.
     """
 
-    root: dict[str, str] | None = Field(None, max_length=256)
+    root: dict[str, str] | None = Field(None, max_length=256, min_length=0)
 
 
 class InteractionMode(Enum):
@@ -401,9 +401,7 @@ class CreateChannelRequest(BaseModel):
         ...,
         description='Channel kind, either `dm` or `channel`. Cannot be changed after creation.',
     )
-    private: bool | None = Field(
-        False, description='When true, the channel is invite-only.'
-    )
+    private: bool = Field(False, description='When true, the channel is invite-only.')
     member_ids: list[str] | None = Field(
         None,
         description='Optional list of user or agent IDs to add as members at creation time. All receive the `member` role; the creator is added as `admin` separately.',
@@ -446,7 +444,7 @@ class AddChannelMemberRequest(BaseModel):
         extra='forbid',
     )
     user_id: str = Field(..., description='User or agent ID to add to the channel.')
-    role: Role1 | None = Field(
+    role: Role1 = Field(
         'member',
         description='Role to assign the new member, either `member` or `admin`.',
     )
@@ -478,11 +476,11 @@ class SendChannelMessageRequest(BaseModel):
         None, description='Live agent session to associate with the message.'
     )
     content: str = Field(..., description='Message body in Markdown.')
-    display: Display1 | None = Field(
+    display: Display1 = Field(
         'message',
         description='Rendering hint for the UI: `message`, `notice`, or `card`.',
     )
-    type: str | None = Field(
+    type: str = Field(
         'user.message', description='Dot-namespaced message type identifier.'
     )
     reply_to: str | None = Field(
@@ -738,7 +736,7 @@ class CreateProjectPinnedAPIKeyRequest(BaseModel):
         ...,
         description='Set `project_id` to pin this key to exactly one project. When `project_id` is omitted, the request creates an org-level key instead.',
     )
-    scope: Scope2 | None = Field(
+    scope: Scope2 = Field(
         'org',
         description='Standard API key scope for project-pinned keys; value is always `org`.',
     )
@@ -772,7 +770,7 @@ class CreateOrgOrSystemAPIKeyRequest(BaseModel):
         ...,
         description='Human-readable label, unique within the org (or project for project-pinned keys).',
     )
-    scope: Scope3 | None = Field(
+    scope: Scope3 = Field(
         'org',
         description='Standard API key scope: `org` for organization keys or `system` for platform-only keys. Project-pinned versus org-level behavior is determined separately by `project_id`.',
     )
@@ -1318,7 +1316,7 @@ class WorkflowRunWaitSummary(BaseModel):
     kind_counts: dict[str, int] = Field(
         ..., description='Count of waiting paths by `waiting_on.kind`.'
     )
-    next_wake_at: datetime = Field(
+    next_wake_at: datetime | None = Field(
         ..., description='Earliest wake time among waiting paths, or null.'
     )
     waiting_on_signal_names: list[str]
@@ -1921,7 +1919,7 @@ class JobHeartbeatDirectives(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    should_cancel: bool | None = Field(
+    should_cancel: bool = Field(
         False,
         description='When true, the run has received a cancellation request. The worker must stop processing immediately and call complete with `status: failed`.',
     )
@@ -4426,7 +4424,7 @@ class CreateGroupRequest(BaseModel):
     description: str | None = Field(
         None, description='Optional human-readable description.'
     )
-    routing_policy: RoutingPolicy1 | None = Field(
+    routing_policy: RoutingPolicy1 = Field(
         'first_responder',
         description='How responses are collected from group members: `first_responder` or `all_members`. Defaults to `first_responder`.',
     )
@@ -5083,7 +5081,7 @@ class WorkflowInteractionConfig(BaseModel):
     )
     require_all: bool | None = Field(
         None,
-        description='When true, all group members must respond before the interaction completes. Only meaningful when type is `group`.',
+        description='When true, all group members must respond before the interaction completes. Only meaningful when `target.type` is `group`.',
     )
 
 

@@ -2462,7 +2462,7 @@ export interface components {
             timeout: string;
             /** @description User, group, or agent that should receive the interaction. */
             target: components["schemas"]["InteractionTarget"];
-            /** @description When true, all group members must respond before the interaction completes. Only meaningful when type is `group`. */
+            /** @description When true, all group members must respond before the interaction completes. Only meaningful when `target.type` is `group`. */
             require_all?: boolean;
         };
         /** @description Workflow definition metadata without the executable `spec`. Returned by list endpoints; fetch a single definition via `getWorkflow` to get the full spec. */
@@ -5221,8 +5221,6 @@ export interface components {
          * @description Filter results by tag. Repeatable; multiple values combine with AND. Format: `Key:Value`, `Key:*` for any value, `Key:a,b,c` for IN.
          *
          *     Tag values containing `:` or `,` cannot be filtered with this grammar — the parser splits on those literally. Constrain values to plain identifiers when you intend to filter on them.
-         *
-         *     Not supported on the runs list — runs are too high-cardinality for ad-hoc tag filtering. To narrow runs by parent workflow, use the workflow-scoped endpoint `GET /v1/projects/{project}/workflows/{id}/runs` and inspect `tags` on each run client-side.
          */
         TagFilterParam: string[];
         /** @description Optional project scope for this request. When `project_id` is provided, the API key operation is resolved in that project's permission context. When `project_id` is omitted, the request is treated as org-level and project-pinned keys are excluded. */
@@ -5249,8 +5247,6 @@ export interface operations {
                  * @description Filter results by tag. Repeatable; multiple values combine with AND. Format: `Key:Value`, `Key:*` for any value, `Key:a,b,c` for IN.
                  *
                  *     Tag values containing `:` or `,` cannot be filtered with this grammar — the parser splits on those literally. Constrain values to plain identifiers when you intend to filter on them.
-                 *
-                 *     Not supported on the runs list — runs are too high-cardinality for ad-hoc tag filtering. To narrow runs by parent workflow, use the workflow-scoped endpoint `GET /v1/projects/{project}/workflows/{id}/runs` and inspect `tags` on each run client-side.
                  */
                 tag?: components["parameters"]["TagFilterParam"];
                 /** @description Cursor for pagination (opaque string from previous response) */
@@ -5634,7 +5630,7 @@ export interface operations {
                 /** @description Filter by actor ID */
                 actor_id?: string;
                 /** @description Filter by action (create, update, delete, archive, restore) */
-                action?: string;
+                action?: "create" | "update" | "delete" | "archive" | "restore";
                 /** @description Filter to entries created after this timestamp */
                 created_after?: string;
                 /** @description Filter to entries created before this timestamp */
@@ -5669,8 +5665,6 @@ export interface operations {
                  * @description Filter results by tag. Repeatable; multiple values combine with AND. Format: `Key:Value`, `Key:*` for any value, `Key:a,b,c` for IN.
                  *
                  *     Tag values containing `:` or `,` cannot be filtered with this grammar — the parser splits on those literally. Constrain values to plain identifiers when you intend to filter on them.
-                 *
-                 *     Not supported on the runs list — runs are too high-cardinality for ad-hoc tag filtering. To narrow runs by parent workflow, use the workflow-scoped endpoint `GET /v1/projects/{project}/workflows/{id}/runs` and inspect `tags` on each run client-side.
                  */
                 tag?: components["parameters"]["TagFilterParam"];
                 /** @description Opaque pagination cursor returned from the previous response. */
@@ -6922,8 +6916,6 @@ export interface operations {
                  * @description Filter results by tag. Repeatable; multiple values combine with AND. Format: `Key:Value`, `Key:*` for any value, `Key:a,b,c` for IN.
                  *
                  *     Tag values containing `:` or `,` cannot be filtered with this grammar — the parser splits on those literally. Constrain values to plain identifiers when you intend to filter on them.
-                 *
-                 *     Not supported on the runs list — runs are too high-cardinality for ad-hoc tag filtering. To narrow runs by parent workflow, use the workflow-scoped endpoint `GET /v1/projects/{project}/workflows/{id}/runs` and inspect `tags` on each run client-side.
                  */
                 tag?: components["parameters"]["TagFilterParam"];
                 /** @description Opaque pagination cursor returned from the previous response. */
@@ -7369,8 +7361,6 @@ export interface operations {
                  * @description Filter results by tag. Repeatable; multiple values combine with AND. Format: `Key:Value`, `Key:*` for any value, `Key:a,b,c` for IN.
                  *
                  *     Tag values containing `:` or `,` cannot be filtered with this grammar — the parser splits on those literally. Constrain values to plain identifiers when you intend to filter on them.
-                 *
-                 *     Not supported on the runs list — runs are too high-cardinality for ad-hoc tag filtering. To narrow runs by parent workflow, use the workflow-scoped endpoint `GET /v1/projects/{project}/workflows/{id}/runs` and inspect `tags` on each run client-side.
                  */
                 tag?: components["parameters"]["TagFilterParam"];
             };
@@ -7768,8 +7758,6 @@ export interface operations {
                  * @description Filter results by tag. Repeatable; multiple values combine with AND. Format: `Key:Value`, `Key:*` for any value, `Key:a,b,c` for IN.
                  *
                  *     Tag values containing `:` or `,` cannot be filtered with this grammar — the parser splits on those literally. Constrain values to plain identifiers when you intend to filter on them.
-                 *
-                 *     Not supported on the runs list — runs are too high-cardinality for ad-hoc tag filtering. To narrow runs by parent workflow, use the workflow-scoped endpoint `GET /v1/projects/{project}/workflows/{id}/runs` and inspect `tags` on each run client-side.
                  */
                 tag?: components["parameters"]["TagFilterParam"];
                 /** @description Opaque pagination cursor returned from the previous response. */
@@ -8622,8 +8610,6 @@ export interface operations {
                  * @description Filter results by tag. Repeatable; multiple values combine with AND. Format: `Key:Value`, `Key:*` for any value, `Key:a,b,c` for IN.
                  *
                  *     Tag values containing `:` or `,` cannot be filtered with this grammar — the parser splits on those literally. Constrain values to plain identifiers when you intend to filter on them.
-                 *
-                 *     Not supported on the runs list — runs are too high-cardinality for ad-hoc tag filtering. To narrow runs by parent workflow, use the workflow-scoped endpoint `GET /v1/projects/{project}/workflows/{id}/runs` and inspect `tags` on each run client-side.
                  */
                 tag?: components["parameters"]["TagFilterParam"];
                 /** @description Maximum number of items to return */
