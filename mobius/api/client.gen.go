@@ -3825,6 +3825,9 @@ type WorkflowRun struct {
 	// Inputs Input values provided when the run was started.
 	Inputs *map[string]interface{} `json:"inputs,omitempty"`
 
+	// JobCounts Current job-claim summary for this run. `ready` counts pending jobs whose `scheduled_at` has arrived and can be claimed now; `scheduled` counts pending jobs intentionally waiting for a future retry/backoff; `claimed` counts jobs currently held by workers.
+	JobCounts WorkflowRunJobCounts `json:"job_counts"`
+
 	// Metadata Caller-supplied string metadata attached to the run.
 	Metadata *map[string]string `json:"metadata,omitempty"`
 
@@ -3922,6 +3925,9 @@ type WorkflowRunDetail struct {
 	// Inputs Input values provided when the run was started.
 	Inputs *map[string]interface{} `json:"inputs,omitempty"`
 
+	// JobCounts Current job-claim summary for this run. `ready` counts pending jobs whose `scheduled_at` has arrived and can be claimed now; `scheduled` counts pending jobs intentionally waiting for a future retry/backoff; `claimed` counts jobs currently held by workers.
+	JobCounts WorkflowRunJobCounts `json:"job_counts"`
+
 	// Jobs Jobs spawned by this run.
 	Jobs *[]Job `json:"jobs,omitempty"`
 
@@ -3982,6 +3988,13 @@ type WorkflowRunError struct {
 	ErrorMessage string  `json:"error_message"`
 	ErrorType    string  `json:"error_type"`
 	PathId       *string `json:"path_id,omitempty"`
+}
+
+// WorkflowRunJobCounts Current job-claim summary for this run. `ready` counts pending jobs whose `scheduled_at` has arrived and can be claimed now; `scheduled` counts pending jobs intentionally waiting for a future retry/backoff; `claimed` counts jobs currently held by workers.
+type WorkflowRunJobCounts struct {
+	Claimed   int `json:"claimed"`
+	Ready     int `json:"ready"`
+	Scheduled int `json:"scheduled"`
 }
 
 // WorkflowRunListResponse Paginated list of workflow runs.
@@ -5702,6 +5715,14 @@ func (a *WorkflowRun) UnmarshalJSON(b []byte) error {
 		delete(object, "inputs")
 	}
 
+	if raw, found := object["job_counts"]; found {
+		err = json.Unmarshal(raw, &a.JobCounts)
+		if err != nil {
+			return fmt.Errorf("error reading 'job_counts': %w", err)
+		}
+		delete(object, "job_counts")
+	}
+
 	if raw, found := object["metadata"]; found {
 		err = json.Unmarshal(raw, &a.Metadata)
 		if err != nil {
@@ -5933,6 +5954,11 @@ func (a WorkflowRun) MarshalJSON() ([]byte, error) {
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'inputs': %w", err)
 		}
+	}
+
+	object["job_counts"], err = json.Marshal(a.JobCounts)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'job_counts': %w", err)
 	}
 
 	if a.Metadata != nil {
@@ -6185,6 +6211,14 @@ func (a *WorkflowRunDetail) UnmarshalJSON(b []byte) error {
 			return fmt.Errorf("error reading 'inputs': %w", err)
 		}
 		delete(object, "inputs")
+	}
+
+	if raw, found := object["job_counts"]; found {
+		err = json.Unmarshal(raw, &a.JobCounts)
+		if err != nil {
+			return fmt.Errorf("error reading 'job_counts': %w", err)
+		}
+		delete(object, "job_counts")
 	}
 
 	if raw, found := object["jobs"]; found {
@@ -6450,6 +6484,11 @@ func (a WorkflowRunDetail) MarshalJSON() ([]byte, error) {
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'inputs': %w", err)
 		}
+	}
+
+	object["job_counts"], err = json.Marshal(a.JobCounts)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'job_counts': %w", err)
 	}
 
 	if a.Jobs != nil {
