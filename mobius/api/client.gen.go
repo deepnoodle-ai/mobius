@@ -667,25 +667,19 @@ func (e StartSavedRunRequestMode) Valid() bool {
 
 // Defines values for ToolRunStatus.
 const (
+	ToolRunStatusActive    ToolRunStatus = "active"
 	ToolRunStatusCompleted ToolRunStatus = "completed"
 	ToolRunStatusFailed    ToolRunStatus = "failed"
-	ToolRunStatusPending   ToolRunStatus = "pending"
-	ToolRunStatusRunning   ToolRunStatus = "running"
-	ToolRunStatusSuspended ToolRunStatus = "suspended"
 )
 
 // Valid indicates whether the value is a known member of the ToolRunStatus enum.
 func (e ToolRunStatus) Valid() bool {
 	switch e {
+	case ToolRunStatusActive:
+		return true
 	case ToolRunStatusCompleted:
 		return true
 	case ToolRunStatusFailed:
-		return true
-	case ToolRunStatusPending:
-		return true
-	case ToolRunStatusRunning:
-		return true
-	case ToolRunStatusSuspended:
 		return true
 	default:
 		return false
@@ -2731,7 +2725,7 @@ type ProjectMetrics struct {
 	// QueueDepth Number of jobs currently in `pending` state waiting to be claimed.
 	QueueDepth int `json:"queue_depth"`
 
-	// RunningCount Number of workflow runs currently in `running` or `suspended` state.
+	// RunningCount Number of workflow runs currently in the `active` lifecycle.
 	RunningCount int `json:"running_count"`
 
 	// RunsPerMinute Average number of new workflow runs started per minute within the window.
@@ -3007,11 +3001,11 @@ type ToolRun struct {
 	// RunId Unique run identifier for polling.
 	RunId string `json:"run_id"`
 
-	// Status Run status: `pending`, `running`, `completed`, `failed`, or `suspended`.
+	// Status Workflow run lifecycle: `active`, `completed`, or `failed`.
 	Status ToolRunStatus `json:"status"`
 }
 
-// ToolRunStatus Run status: `pending`, `running`, `completed`, `failed`, or `suspended`.
+// ToolRunStatus Workflow run lifecycle: `active`, `completed`, or `failed`.
 type ToolRunStatus string
 
 // ToolRunRequest defines model for ToolRunRequest.
@@ -3019,7 +3013,7 @@ type ToolRunRequest struct {
 	// Input Input values matching the tool's input_schema.
 	Input *map[string]interface{} `json:"input,omitempty"`
 
-	// TimeoutSeconds How long (in seconds) to wait for synchronous completion. Default 30, max 120. If the run does not complete within this window the response is 202 with status pending.
+	// TimeoutSeconds How long (in seconds) to wait for synchronous completion. Default 30, max 120. If the run does not complete within this window the response is 202 with status active.
 	TimeoutSeconds *int `json:"timeout_seconds,omitempty"`
 }
 

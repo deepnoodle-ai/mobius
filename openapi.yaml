@@ -3490,7 +3490,7 @@ paths:
       description: 'Starts a workflow run for the named tool (workflow handle) and waits for
         it to complete up to `timeout_seconds` (default 30s, max 120s). Returns the run output
         directly when the workflow completes within the timeout. On timeout the response includes
-        the run ID and `status: pending` so the caller can switch to polling via `GET /v1/projects/{project}/tools/{handle}/runs/{run_id}`.'
+        the run ID and `status: active` so the caller can switch to polling via `GET /v1/projects/{project}/tools/{handle}/runs/{run_id}`.'
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - name: handle
@@ -3523,14 +3523,14 @@ paths:
                   summary: Ready for review.
                   approved: true
         '202':
-          description: Accepted — run is pending; poll for result
+          description: Accepted — run is active; poll for result
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ToolRun'
               example:
                 run_id: run_01hw1n1a2b3c4d5e6f7g8h9j0k
-                status: pending
+                status: active
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -8569,7 +8569,7 @@ components:
           description: Number of jobs currently in `pending` state waiting to be claimed.
         running_count:
           type: integer
-          description: Number of workflow runs currently in `running` or `suspended` state.
+          description: Number of workflow runs currently in the `active` lifecycle.
         active_workers:
           type: integer
           description: Number of workers whose `last_seen_at` is within the 2-minute staleness
@@ -9825,7 +9825,7 @@ components:
           type: integer
           description: How long (in seconds) to wait for synchronous completion. Default 30,
             max 120. If the run does not complete within this window the response is 202 with
-            status pending.
+            status active.
           minimum: 1
           maximum: 120
     ToolRun:
@@ -9843,13 +9843,11 @@ components:
           description: Unique run identifier for polling.
         status:
           type: string
-          description: 'Run status: `pending`, `running`, `completed`, `failed`, or `suspended`.'
+          description: 'Workflow run lifecycle: `active`, `completed`, or `failed`.'
           enum:
-          - pending
-          - running
+          - active
           - completed
           - failed
-          - suspended
         output:
           type: object
           description: Run output. Present when status is "completed".
