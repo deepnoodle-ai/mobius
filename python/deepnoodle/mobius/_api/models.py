@@ -63,7 +63,7 @@ class Metadata(BaseModel):
 
 class TagMap(RootModel[dict[str, str] | None]):
     """
-    Azure-style key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 50 tags per resource. Use tags to organise resources by environment, team, cost-center, or any other dimension meaningful to your organisation; tags can be filtered on most list endpoints.
+    Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints.
     """
 
     root: dict[str, str] | None = Field(None, max_length=256)
@@ -2823,8 +2823,7 @@ class Project(BaseModel):
         description='Timestamp when this project was archived. `null` for active projects. Archived projects are read-only and excluded from the default project listing.',
     )
     tags: TagMap | None = Field(
-        None,
-        description='Resource tags applied to this project. See TagMap for syntax and limits. Keys with the `mobius:` prefix are system-managed.',
+        None, description='Resource tags applied to this project.'
     )
     created_at: datetime = Field(
         ..., description='Timestamp when this project was created.'
@@ -2874,8 +2873,7 @@ class UpdateProjectRequest(BaseModel):
         description='When transitioning from `org_open` to `restricted`, set true to insert all current org members as project members so nobody loses visibility on the flip. Ignored on other transitions.',
     )
     tags: TagMap | None = Field(
-        None,
-        description='When supplied, replaces the user tag set on the project. System-managed tags (`mobius:*`) are preserved.',
+        None, description='When supplied, replaces the user tag set on the project.'
     )
 
 

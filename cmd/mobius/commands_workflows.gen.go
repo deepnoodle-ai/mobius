@@ -28,7 +28,7 @@ func registerWorkflowsCommands(app *cli.App) {
 			cli.String("name", "").Help("[required] Human-readable workflow name, unique within the project."),
 			cli.Bool("published-as-tool", "").Help("When true, expose this workflow as a callable tool via /api/tools."),
 			cli.String("spec", "").Help("[required] Workflow definition shaped like `workflow.Options`.  Authoring rule: `action` is the canonical field for executable steps. When `action_kind` is omitted, `action` uses worker/job semantics. Use `action_kind: \"server\"` for Mobius-managed server actions such as platform integrations or custom HTTP-backed actions. (JSON)"),
-			cli.String("tags", "").Help("Azure-style key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 50 tags per resource. Use tags to organise resources by environment, team, cost-center, or any other dimension meaningful to your organisation; tags can be filtered on most list endpoints. (JSON)"),
+			cli.String("tags", "").Help("Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints. (JSON)"),
 			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
 		).
 		Use(cli.RequireFlags("api-key")).
@@ -199,7 +199,7 @@ func registerWorkflowsCommands(app *cli.App) {
 			cli.String("name", "").Help("Replacement human-readable workflow name."),
 			cli.Bool("published-as-tool", "").Help("When true, expose this workflow as a callable tool via /api/tools."),
 			cli.String("spec", "").Help("Workflow definition shaped like `workflow.Options`.  Authoring rule: `action` is the canonical field for executable steps. When `action_kind` is omitted, `action` uses worker/job semantics. Use `action_kind: \"server\"` for Mobius-managed server actions such as platform integrations or custom HTTP-backed actions. (JSON)"),
-			cli.String("tags", "").Help("Azure-style key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 50 tags per resource. Use tags to organise resources by environment, team, cost-center, or any other dimension meaningful to your organisation; tags can be filtered on most list endpoints. (JSON)"),
+			cli.String("tags", "").Help("Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints. (JSON)"),
 			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
 		).
 		Use(cli.RequireFlags("api-key")).

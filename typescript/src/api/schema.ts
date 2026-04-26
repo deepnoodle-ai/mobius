@@ -1640,7 +1640,7 @@ export interface components {
             [key: string]: unknown;
         };
         /**
-         * @description Azure-style key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 50 tags per resource. Use tags to organise resources by environment, team, cost-center, or any other dimension meaningful to your organisation; tags can be filtered on most list endpoints.
+         * @description Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints.
          * @example {
          *       "Environment": "Production",
          *       "Department": "Finance",
@@ -3788,7 +3788,7 @@ export interface components {
              * @description Timestamp when this project was archived. `null` for active projects. Archived projects are read-only and excluded from the default project listing.
              */
             archived_at?: string | null;
-            /** @description Resource tags applied to this project. See TagMap for syntax and limits. Keys with the `mobius:` prefix are system-managed. */
+            /** @description Resource tags applied to this project. */
             tags?: components["schemas"]["TagMap"];
             /**
              * Format: date-time
@@ -3826,7 +3826,7 @@ export interface components {
             access_mode?: components["schemas"]["ProjectAccessMode"];
             /** @description When transitioning from `org_open` to `restricted`, set true to insert all current org members as project members so nobody loses visibility on the flip. Ignored on other transitions. */
             seed_existing_members?: boolean;
-            /** @description When supplied, replaces the user tag set on the project. System-managed tags (`mobius:*`) are preserved. */
+            /** @description When supplied, replaces the user tag set on the project. */
             tags?: components["schemas"]["TagMap"];
         };
         /** @description Explicit project membership used when a project is restricted. Use this record to decide who can see or operate on a project outside the default org-wide access model. */
