@@ -8,7 +8,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/deepnoodle-ai/wonton/cli"
@@ -26,7 +25,8 @@ func registerChannelsCommands(app *cli.App) {
 		Flags(
 			cli.String("role", "").Help("Role to assign the new member, either `member` or `admin`."),
 			cli.String("user-id", "").Help("[required] User or agent ID to add to the channel."),
-			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -51,11 +51,14 @@ func registerChannelsCommands(app *cli.App) {
 			if body.UserId == "" {
 				return fmt.Errorf("--user-id is required (or supply it via --file)")
 			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
+			}
 			resp, err := client.AddChannelMemberWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "addChannelMember", resp.StatusCode(), resp.Body)
 		})
 
 	channelsGrp.Command("create").
@@ -63,12 +66,13 @@ func registerChannelsCommands(app *cli.App) {
 		Flags(
 			cli.String("display-name", "").Help("[required] Human-facing display name shown in the UI."),
 			cli.String("kind", "").Help("[required] Channel kind, either `dm` or `channel`. Cannot be changed after creation."),
-			cli.Strings("member-ids", "").Help("Optional list of user or agent IDs to add as members at creation time. All receive the `member` role; the creator is added as `admin` separately."),
+			cli.Strings("member-ids", "").Help("Optional list of user or agent IDs to add as members at creation time. All receive the `member` rol…"),
 			cli.String("name", "").Help("[required] URL-safe handle, unique within the project. Immutable after creation — choose carefully."),
 			cli.Bool("private", "").Help("When true, the channel is invite-only."),
-			cli.String("tags", "").Help("Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints. (JSON)"),
+			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
 			cli.String("topic", "").Help("Optional channel topic or description."),
-			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -99,10 +103,11 @@ func registerChannelsCommands(app *cli.App) {
 				v := ctx.Bool("private")
 				body.Private = &v
 			}
-			if ctx.IsSet("tags") {
-				if err := json.Unmarshal([]byte(ctx.String("tags")), &body.Tags); err != nil {
-					return fmt.Errorf("--tags: invalid JSON: %w", err)
-				}
+			if tags, err := parseTagFlags(ctx); err != nil {
+				return err
+			} else if tags != nil {
+				v := api.TagMap(tags)
+				body.Tags = &v
 			}
 			if ctx.IsSet("topic") {
 				v := ctx.String("topic")
@@ -117,11 +122,14 @@ func registerChannelsCommands(app *cli.App) {
 			if body.Name == "" {
 				return fmt.Errorf("--name is required (or supply it via --file)")
 			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
+			}
 			resp, err := client.CreateChannelWithResponse(ctx.Context(), p0, body)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "createChannel", resp.StatusCode(), resp.Body)
 		})
 
 	channelsGrp.Command("delete").
@@ -140,7 +148,7 @@ func registerChannelsCommands(app *cli.App) {
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "deleteChannel", resp.StatusCode(), resp.Body)
 		})
 
 	channelsGrp.Command("get").
@@ -159,7 +167,7 @@ func registerChannelsCommands(app *cli.App) {
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "getChannel", resp.StatusCode(), resp.Body)
 		})
 
 	channelsGrp.Command("get-message").
@@ -179,7 +187,7 @@ func registerChannelsCommands(app *cli.App) {
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "getChannelMessage", resp.StatusCode(), resp.Body)
 		})
 
 	channelsGrp.Command("list").
@@ -219,7 +227,7 @@ func registerChannelsCommands(app *cli.App) {
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "listChannels", resp.StatusCode(), resp.Body)
 		})
 
 	channelsGrp.Command("list-members").
@@ -251,7 +259,7 @@ func registerChannelsCommands(app *cli.App) {
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "listChannelMembers", resp.StatusCode(), resp.Body)
 		})
 
 	channelsGrp.Command("list-messages").
@@ -298,7 +306,7 @@ func registerChannelsCommands(app *cli.App) {
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "listChannelMessages", resp.StatusCode(), resp.Body)
 		})
 
 	channelsGrp.Command("remove-member").
@@ -318,7 +326,7 @@ func registerChannelsCommands(app *cli.App) {
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "removeChannelMember", resp.StatusCode(), resp.Body)
 		})
 
 	channelsGrp.Command("send-message").
@@ -327,12 +335,13 @@ func registerChannelsCommands(app *cli.App) {
 		Flags(
 			cli.String("content", "").Help("[required] Message body in Markdown."),
 			cli.String("display", "").Help("Rendering hint for the UI: `message`, `notice`, or `card`."),
-			cli.String("metadata", "").Help("Free-form JSON object for caller-defined metadata. (JSON)"),
+			cli.String("metadata", "").Help("Free-form JSON object for caller-defined metadata. Accepts JSON, @file, or @-."),
 			cli.String("reply-to", "").Help("Parent message ID for threading (creates a reply)."),
-			cli.String("sender-agent-id", "").Help("Durable agent identity to attribute the message to. When set, `sender_type` on the resulting message is `agent`."),
+			cli.String("sender-agent-id", "").Help("Durable agent identity to attribute the message to. When set, `sender_type` on the resulting messag…"),
 			cli.String("sender-session-id", "").Help("Live agent session to associate with the message."),
 			cli.String("type", "").Help("Dot-namespaced message type identifier."),
-			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -355,8 +364,8 @@ func registerChannelsCommands(app *cli.App) {
 				body.Display = &v
 			}
 			if ctx.IsSet("metadata") {
-				if err := json.Unmarshal([]byte(ctx.String("metadata")), &body.Metadata); err != nil {
-					return fmt.Errorf("--metadata: invalid JSON: %w", err)
+				if err := decodeFlagJSON(ctx, "metadata", ctx.String("metadata"), &body.Metadata); err != nil {
+					return err
 				}
 			}
 			if ctx.IsSet("reply-to") {
@@ -378,11 +387,14 @@ func registerChannelsCommands(app *cli.App) {
 			if body.Content == "" {
 				return fmt.Errorf("--content is required (or supply it via --file)")
 			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
+			}
 			resp, err := client.SendChannelMessageWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "sendChannelMessage", resp.StatusCode(), resp.Body)
 		})
 
 	channelsGrp.Command("update").
@@ -391,9 +403,10 @@ func registerChannelsCommands(app *cli.App) {
 		Flags(
 			cli.String("display-name", "").Help("Updated display name."),
 			cli.Bool("private", "").Help("Toggle invite-only visibility."),
-			cli.String("tags", "").Help("Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints. (JSON)"),
+			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
 			cli.String("topic", "").Help("Updated topic or description."),
-			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -416,23 +429,27 @@ func registerChannelsCommands(app *cli.App) {
 				v := ctx.Bool("private")
 				body.Private = &v
 			}
-			if ctx.IsSet("tags") {
-				if err := json.Unmarshal([]byte(ctx.String("tags")), &body.Tags); err != nil {
-					return fmt.Errorf("--tags: invalid JSON: %w", err)
-				}
+			if tags, err := parseTagFlags(ctx); err != nil {
+				return err
+			} else if tags != nil {
+				v := api.TagMap(tags)
+				body.Tags = &v
 			}
 			if ctx.IsSet("topic") {
 				v := ctx.String("topic")
 				body.Topic = &v
 			}
-			if ctx.String("file") == "" && !ctx.IsSet("display-name") && !ctx.IsSet("private") && !ctx.IsSet("tags") && !ctx.IsSet("topic") {
+			if ctx.String("file") == "" && !ctx.IsSet("display-name") && !ctx.IsSet("private") && !ctx.IsSet("tag") && !ctx.IsSet("topic") {
 				return fmt.Errorf("at least one flag or --file is required")
+			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
 			}
 			resp, err := client.UpdateChannelWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "updateChannel", resp.StatusCode(), resp.Body)
 		})
 
 	channelsGrp.Command("update-message").
@@ -440,9 +457,10 @@ func registerChannelsCommands(app *cli.App) {
 		Args("id", "message-id").
 		Flags(
 			cli.String("content", "").Help("Updated Markdown content. Sets `edited_at` on the message."),
-			cli.String("metadata", "").Help("Free-form JSON object for caller-defined metadata. (JSON)"),
+			cli.String("metadata", "").Help("Free-form JSON object for caller-defined metadata. Accepts JSON, @file, or @-."),
 			cli.Bool("pinned", "").Help("Pin or unpin the message. Sets/clears `pinned_by`."),
-			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -463,8 +481,8 @@ func registerChannelsCommands(app *cli.App) {
 				body.Content = &v
 			}
 			if ctx.IsSet("metadata") {
-				if err := json.Unmarshal([]byte(ctx.String("metadata")), &body.Metadata); err != nil {
-					return fmt.Errorf("--metadata: invalid JSON: %w", err)
+				if err := decodeFlagJSON(ctx, "metadata", ctx.String("metadata"), &body.Metadata); err != nil {
+					return err
 				}
 			}
 			if ctx.IsSet("pinned") {
@@ -474,11 +492,14 @@ func registerChannelsCommands(app *cli.App) {
 			if ctx.String("file") == "" && !ctx.IsSet("content") && !ctx.IsSet("metadata") && !ctx.IsSet("pinned") {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
+			}
 			resp, err := client.UpdateChannelMessageWithResponse(ctx.Context(), p0, p1, p2, body)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "updateChannelMessage", resp.StatusCode(), resp.Body)
 		})
 
 }

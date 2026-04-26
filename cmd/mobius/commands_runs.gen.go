@@ -8,7 +8,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/deepnoodle-ai/wonton/cli"
@@ -36,7 +35,7 @@ func registerRunsCommands(app *cli.App) {
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "cancelRun", resp.StatusCode(), resp.Body)
 		})
 
 	runsGrp.Command("get").
@@ -55,7 +54,7 @@ func registerRunsCommands(app *cli.App) {
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "getRun", resp.StatusCode(), resp.Body)
 		})
 
 	runsGrp.Command("list").
@@ -115,7 +114,7 @@ func registerRunsCommands(app *cli.App) {
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "listRuns", resp.StatusCode(), resp.Body)
 		})
 
 	runsGrp.Command("list-action-log").
@@ -134,7 +133,7 @@ func registerRunsCommands(app *cli.App) {
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "listRunActionLog", resp.StatusCode(), resp.Body)
 		})
 
 	runsGrp.Command("list-jobs").
@@ -153,7 +152,7 @@ func registerRunsCommands(app *cli.App) {
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "listRunJobs", resp.StatusCode(), resp.Body)
 		})
 
 	runsGrp.Command("list-runs").
@@ -172,7 +171,7 @@ func registerRunsCommands(app *cli.App) {
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "listWorkflowRuns", resp.StatusCode(), resp.Body)
 		})
 
 	runsGrp.Command("resume").
@@ -191,7 +190,7 @@ func registerRunsCommands(app *cli.App) {
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "resumeRun", resp.StatusCode(), resp.Body)
 		})
 
 	runsGrp.Command("send-signal").
@@ -199,8 +198,9 @@ func registerRunsCommands(app *cli.App) {
 		Args("id").
 		Flags(
 			cli.String("name", "").Help("[required] Signal topic (e.g. \"approval\", \"webhook\")."),
-			cli.String("payload", "").Help("Arbitrary payload delivered to the waiting step when the signal is received. (JSON)"),
-			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
+			cli.String("payload", "").Help("Arbitrary payload delivered to the waiting step when the signal is received. Accepts JSON, @file, or @-."),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -219,24 +219,28 @@ func registerRunsCommands(app *cli.App) {
 				body.Name = ctx.String("name")
 			}
 			if ctx.IsSet("payload") {
-				if err := json.Unmarshal([]byte(ctx.String("payload")), &body.Payload); err != nil {
-					return fmt.Errorf("--payload: invalid JSON: %w", err)
+				if err := decodeFlagJSON(ctx, "payload", ctx.String("payload"), &body.Payload); err != nil {
+					return err
 				}
 			}
 			if body.Name == "" {
 				return fmt.Errorf("--name is required (or supply it via --file)")
 			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
+			}
 			resp, err := client.SendRunSignalWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "sendRunSignal", resp.StatusCode(), resp.Body)
 		})
 
 	runsGrp.Command("start").
 		Description("Start a new workflow run").
 		Flags(
-			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -253,24 +257,28 @@ func registerRunsCommands(app *cli.App) {
 			if ctx.String("file") == "" {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
+			}
 			resp, err := client.StartRunWithResponse(ctx.Context(), p0, body)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "startRun", resp.StatusCode(), resp.Body)
 		})
 
 	runsGrp.Command("start-workflow-run").
 		Description("Start a new workflow run against a saved definition").
 		Args("id").
 		Flags(
-			cli.String("config", "").Help("Flat cascade config input used outside authored workflow YAML. Each entry addresses one `(category, key)` pair. Unknown categories or unknown keys under a known category are rejected at write time. The only category shipped in Phase 1 is `timeouts`, whose keys are `claim`, `liveness`, `execution`, `wall_clock`. (JSON)"),
+			cli.String("config", "").Help("Flat cascade config input used outside authored workflow YAML. Each entry addresses one `(category,… Accepts JSON, @file, or @-."),
 			cli.String("external-id", "").Help("Caller-supplied idempotency key or correlation ID attached to the run."),
-			cli.String("inputs", "").Help("Input values to pass to the workflow. Must conform to the workflow's declared input schema. (JSON)"),
-			cli.String("metadata", "").Help("Caller-supplied string metadata attached to the run for filtering and display. (JSON)"),
+			cli.String("inputs", "").Help("Input values to pass to the workflow. Must conform to the workflow's declared input schema. Accepts JSON, @file, or @-."),
+			cli.String("metadata", "").Help("Caller-supplied string metadata attached to the run for filtering and display. Accepts JSON, @file, or @-."),
 			cli.String("queue", "").Help("Queue name to enqueue the run on. Defaults to \"default\"."),
-			cli.String("tags", "").Help("Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints. (JSON)"),
-			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
+			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -286,8 +294,8 @@ func registerRunsCommands(app *cli.App) {
 				return err
 			}
 			if ctx.IsSet("config") {
-				if err := json.Unmarshal([]byte(ctx.String("config")), &body.Config); err != nil {
-					return fmt.Errorf("--config: invalid JSON: %w", err)
+				if err := decodeFlagJSON(ctx, "config", ctx.String("config"), &body.Config); err != nil {
+					return err
 				}
 			}
 			if ctx.IsSet("external-id") {
@@ -295,32 +303,36 @@ func registerRunsCommands(app *cli.App) {
 				body.ExternalId = &v
 			}
 			if ctx.IsSet("inputs") {
-				if err := json.Unmarshal([]byte(ctx.String("inputs")), &body.Inputs); err != nil {
-					return fmt.Errorf("--inputs: invalid JSON: %w", err)
+				if err := decodeFlagJSON(ctx, "inputs", ctx.String("inputs"), &body.Inputs); err != nil {
+					return err
 				}
 			}
 			if ctx.IsSet("metadata") {
-				if err := json.Unmarshal([]byte(ctx.String("metadata")), &body.Metadata); err != nil {
-					return fmt.Errorf("--metadata: invalid JSON: %w", err)
+				if err := decodeFlagJSON(ctx, "metadata", ctx.String("metadata"), &body.Metadata); err != nil {
+					return err
 				}
 			}
 			if ctx.IsSet("queue") {
 				v := ctx.String("queue")
 				body.Queue = &v
 			}
-			if ctx.IsSet("tags") {
-				if err := json.Unmarshal([]byte(ctx.String("tags")), &body.Tags); err != nil {
-					return fmt.Errorf("--tags: invalid JSON: %w", err)
-				}
+			if tags, err := parseTagFlags(ctx); err != nil {
+				return err
+			} else if tags != nil {
+				v := api.TagMap(tags)
+				body.Tags = &v
 			}
-			if ctx.String("file") == "" && !ctx.IsSet("config") && !ctx.IsSet("external-id") && !ctx.IsSet("inputs") && !ctx.IsSet("metadata") && !ctx.IsSet("queue") && !ctx.IsSet("tags") {
+			if ctx.String("file") == "" && !ctx.IsSet("config") && !ctx.IsSet("external-id") && !ctx.IsSet("inputs") && !ctx.IsSet("metadata") && !ctx.IsSet("queue") && !ctx.IsSet("tag") {
 				return fmt.Errorf("at least one flag or --file is required")
+			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
 			}
 			resp, err := client.StartWorkflowRunWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "startWorkflowRun", resp.StatusCode(), resp.Body)
 		})
 
 	runsGrp.Command("stream-project-run-events").
@@ -345,7 +357,7 @@ func registerRunsCommands(app *cli.App) {
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "streamProjectRunEvents", resp.StatusCode(), resp.Body)
 		})
 
 	runsGrp.Command("stream-run-events").
@@ -372,7 +384,7 @@ func registerRunsCommands(app *cli.App) {
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "streamRunEvents", resp.StatusCode(), resp.Body)
 		})
 
 }

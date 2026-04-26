@@ -368,7 +368,7 @@ func runsStartWithConfigHandler(ctx *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	return printResponse(ctx, resp.StatusCode(), resp.Body)
+	return printResponse(ctx, "startRun", resp.StatusCode(), resp.Body)
 }
 
 func runsGetWithConfigHandler(ctx *cli.Context) error {
@@ -385,11 +385,11 @@ func runsGetWithConfigHandler(ctx *cli.Context) error {
 	}
 	show := ctx.String("show")
 	if show == "" || resp.StatusCode() < 200 || resp.StatusCode() >= 300 {
-		return printResponse(ctx, resp.StatusCode(), resp.Body)
+		return printResponse(ctx, "getRun", resp.StatusCode(), resp.Body)
 	}
 	var envelope map[string]any
 	if err := json.Unmarshal(resp.Body, &envelope); err != nil {
-		return printResponse(ctx, resp.StatusCode(), resp.Body)
+		return printResponse(ctx, "getRun", resp.StatusCode(), resp.Body)
 	}
 	sub, ok := envelope[show]
 	if !ok || sub == nil {
@@ -430,7 +430,7 @@ func projectsSetConfigHandler(ctx *cli.Context) error {
 		return err
 	}
 	if existing.StatusCode() < 200 || existing.StatusCode() >= 300 {
-		return printResponse(ctx, existing.StatusCode(), existing.Body)
+		return printResponse(ctx, "getProjectConfig", existing.StatusCode(), existing.Body)
 	}
 
 	merged := mergeConfigEntries(existingEntries(existing.JSON200), overlay, removals)
@@ -439,7 +439,7 @@ func projectsSetConfigHandler(ctx *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	return printResponse(ctx, resp.StatusCode(), resp.Body)
+	return printResponse(ctx, "updateProjectConfig", resp.StatusCode(), resp.Body)
 }
 
 func projectsClearConfigHandler(ctx *cli.Context) error {
@@ -456,7 +456,7 @@ func projectsClearConfigHandler(ctx *cli.Context) error {
 		return err
 	}
 	if existing.StatusCode() < 200 || existing.StatusCode() >= 300 {
-		return printResponse(ctx, existing.StatusCode(), existing.Body)
+		return printResponse(ctx, "getProjectConfig", existing.StatusCode(), existing.Body)
 	}
 
 	kept := dropCategory(existingEntries(existing.JSON200), category)
@@ -465,7 +465,7 @@ func projectsClearConfigHandler(ctx *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	return printResponse(ctx, resp.StatusCode(), resp.Body)
+	return printResponse(ctx, "updateProjectConfig", resp.StatusCode(), resp.Body)
 }
 
 func existingEntries(p *api.ConfigEntries) []api.ConfigEntry {

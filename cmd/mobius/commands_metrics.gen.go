@@ -29,7 +29,7 @@ func registerMetricsCommands(app *cli.App) {
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "getProjectMetrics", resp.StatusCode(), resp.Body)
 		})
 
 }

@@ -8,7 +8,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/deepnoodle-ai/wonton/cli"
@@ -25,7 +24,8 @@ func registerProjectsCommands(app *cli.App) {
 		Args("id").
 		Flags(
 			cli.String("user-id", "").Help("[required] User ID of the org member to add to this project."),
-			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -45,11 +45,14 @@ func registerProjectsCommands(app *cli.App) {
 			if body.UserId == "" {
 				return fmt.Errorf("--user-id is required (or supply it via --file)")
 			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
+			}
 			resp, err := client.AddProjectMemberWithResponse(ctx.Context(), p0, body)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "addProjectMember", resp.StatusCode(), resp.Body)
 		})
 
 	projectsGrp.Command("archive").
@@ -67,18 +70,19 @@ func registerProjectsCommands(app *cli.App) {
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "archiveProject", resp.StatusCode(), resp.Body)
 		})
 
 	projectsGrp.Command("create").
 		Description("Create a project").
 		Flags(
-			cli.String("access-mode", "").Help("`org_open`: every org member can see and use the project, subject to role assignments. `restricted`: only listed project members (and org owners/admins) can see or use the project."),
+			cli.String("access-mode", "").Help("`org_open`: every org member can see and use the project, subject to role assignments. `restricted`…"),
 			cli.String("description", "").Help("Optional human-readable description."),
-			cli.String("handle", "").Help("URL-safe slug for API routes. Auto-derived from name if omitted. Must be unique within the org. Cannot be changed after creation."),
+			cli.String("handle", "").Help("URL-safe slug for API routes. Auto-derived from name if omitted. Must be unique within the org. Can…"),
 			cli.String("name", "").Help("[required] Human-readable project name."),
-			cli.String("tags", "").Help("Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints. (JSON)"),
-			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
+			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -106,19 +110,23 @@ func registerProjectsCommands(app *cli.App) {
 			if ctx.IsSet("name") {
 				body.Name = ctx.String("name")
 			}
-			if ctx.IsSet("tags") {
-				if err := json.Unmarshal([]byte(ctx.String("tags")), &body.Tags); err != nil {
-					return fmt.Errorf("--tags: invalid JSON: %w", err)
-				}
+			if tags, err := parseTagFlags(ctx); err != nil {
+				return err
+			} else if tags != nil {
+				v := api.TagMap(tags)
+				body.Tags = &v
 			}
 			if body.Name == "" {
 				return fmt.Errorf("--name is required (or supply it via --file)")
+			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
 			}
 			resp, err := client.CreateProjectWithResponse(ctx.Context(), body)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "createProject", resp.StatusCode(), resp.Body)
 		})
 
 	projectsGrp.Command("delete").
@@ -136,7 +144,7 @@ func registerProjectsCommands(app *cli.App) {
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "deleteProject", resp.StatusCode(), resp.Body)
 		})
 
 	projectsGrp.Command("delete-config").
@@ -154,7 +162,7 @@ func registerProjectsCommands(app *cli.App) {
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "deleteProjectConfig", resp.StatusCode(), resp.Body)
 		})
 
 	projectsGrp.Command("get").
@@ -172,7 +180,7 @@ func registerProjectsCommands(app *cli.App) {
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "getProject", resp.StatusCode(), resp.Body)
 		})
 
 	projectsGrp.Command("get-config").
@@ -190,14 +198,14 @@ func registerProjectsCommands(app *cli.App) {
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "getProjectConfig", resp.StatusCode(), resp.Body)
 		})
 
 	projectsGrp.Command("list").
 		Description("List projects").
 		Flags(
 			cli.String("search", "").Help("Prefix-match filter applied to project name and handle."),
-			cli.String("status", "").Help("Lifecycle filter. `active` (default) returns non-archived projects; `archived` returns archived projects only; `all` returns both."),
+			cli.String("status", "").Help("Lifecycle filter. `active` (default) returns non-archived projects; `archived` returns archived pro…"),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -219,7 +227,7 @@ func registerProjectsCommands(app *cli.App) {
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "listProjects", resp.StatusCode(), resp.Body)
 		})
 
 	projectsGrp.Command("list-members").
@@ -250,7 +258,7 @@ func registerProjectsCommands(app *cli.App) {
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "listProjectMembers", resp.StatusCode(), resp.Body)
 		})
 
 	projectsGrp.Command("remove-member").
@@ -269,7 +277,7 @@ func registerProjectsCommands(app *cli.App) {
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "removeProjectMember", resp.StatusCode(), resp.Body)
 		})
 
 	projectsGrp.Command("restore").
@@ -287,19 +295,20 @@ func registerProjectsCommands(app *cli.App) {
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "restoreProject", resp.StatusCode(), resp.Body)
 		})
 
 	projectsGrp.Command("update").
 		Description("Update a project").
 		Args("id").
 		Flags(
-			cli.String("access-mode", "").Help("`org_open`: every org member can see and use the project, subject to role assignments. `restricted`: only listed project members (and org owners/admins) can see or use the project."),
+			cli.String("access-mode", "").Help("`org_open`: every org member can see and use the project, subject to role assignments. `restricted`…"),
 			cli.String("description", "").Help("Replacement description."),
 			cli.String("name", "").Help("Replacement human-readable name."),
-			cli.Bool("seed-existing-members", "").Help("When transitioning from `org_open` to `restricted`, set true to insert all current org members as project members so nobody loses visibility on the flip. Ignored on other transitions."),
-			cli.String("tags", "").Help("Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints. (JSON)"),
-			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
+			cli.Bool("seed-existing-members", "").Help("When transitioning from `org_open` to `restricted`, set true to insert all current org members as p…"),
+			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -329,26 +338,31 @@ func registerProjectsCommands(app *cli.App) {
 				v := ctx.Bool("seed-existing-members")
 				body.SeedExistingMembers = &v
 			}
-			if ctx.IsSet("tags") {
-				if err := json.Unmarshal([]byte(ctx.String("tags")), &body.Tags); err != nil {
-					return fmt.Errorf("--tags: invalid JSON: %w", err)
-				}
+			if tags, err := parseTagFlags(ctx); err != nil {
+				return err
+			} else if tags != nil {
+				v := api.TagMap(tags)
+				body.Tags = &v
 			}
-			if ctx.String("file") == "" && !ctx.IsSet("access-mode") && !ctx.IsSet("description") && !ctx.IsSet("name") && !ctx.IsSet("seed-existing-members") && !ctx.IsSet("tags") {
+			if ctx.String("file") == "" && !ctx.IsSet("access-mode") && !ctx.IsSet("description") && !ctx.IsSet("name") && !ctx.IsSet("seed-existing-members") && !ctx.IsSet("tag") {
 				return fmt.Errorf("at least one flag or --file is required")
+			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
 			}
 			resp, err := client.UpdateProjectWithResponse(ctx.Context(), p0, body)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "updateProject", resp.StatusCode(), resp.Body)
 		})
 
 	projectsGrp.Command("update-config").
 		Description("Replace project config").
 		Args("id").
 		Flags(
-			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -365,11 +379,14 @@ func registerProjectsCommands(app *cli.App) {
 			if ctx.String("file") == "" {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
+			}
 			resp, err := client.UpdateProjectConfigWithResponse(ctx.Context(), p0, body)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "updateProjectConfig", resp.StatusCode(), resp.Body)
 		})
 
 }

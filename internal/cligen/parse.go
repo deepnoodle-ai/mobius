@@ -220,23 +220,39 @@ func jsonTagKey(lit *ast.BasicLit) (string, bool) {
 	return name, omit
 }
 
-// fieldDoc returns the doc-comment text associated with a struct field, with
-// leading "// " stripped and newlines collapsed to spaces. Both the block
-// comment above the field (f.Doc) and the inline comment (f.Comment) are
-// considered, in that order.
+// fieldDoc returns the doc-comment text for a struct field. Lines within a
+// paragraph are joined with single spaces; blank "//" lines become "\n\n"
+// paragraph breaks so downstream consumers can recover the OpenAPI
+// short-summary / extended-description split.
 func fieldDoc(f *ast.Field) string {
-	var parts []string
+	var lines []string
 	if f.Doc != nil {
 		for _, c := range f.Doc.List {
-			parts = append(parts, strings.TrimSpace(strings.TrimPrefix(c.Text, "//")))
+			lines = append(lines, strings.TrimSpace(strings.TrimPrefix(c.Text, "//")))
 		}
 	}
 	if f.Comment != nil {
 		for _, c := range f.Comment.List {
-			parts = append(parts, strings.TrimSpace(strings.TrimPrefix(c.Text, "//")))
+			lines = append(lines, strings.TrimSpace(strings.TrimPrefix(c.Text, "//")))
 		}
 	}
-	return strings.Join(parts, " ")
+	var paragraphs []string
+	var current []string
+	flush := func() {
+		if len(current) > 0 {
+			paragraphs = append(paragraphs, strings.Join(current, " "))
+			current = nil
+		}
+	}
+	for _, ln := range lines {
+		if ln == "" {
+			flush()
+			continue
+		}
+		current = append(current, ln)
+	}
+	flush()
+	return strings.Join(paragraphs, "\n\n")
 }
 
 // stripLeadingDocIdent removes a leading "FieldName " token from a doc comment.

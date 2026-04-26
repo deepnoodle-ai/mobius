@@ -8,7 +8,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/deepnoodle-ai/wonton/cli"
@@ -36,13 +35,14 @@ func registerInteractionsCommands(app *cli.App) {
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "claimInteraction", resp.StatusCode(), resp.Body)
 		})
 
 	interactionsGrp.Command("create").
 		Description("Create an interaction").
 		Flags(
-			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -59,11 +59,14 @@ func registerInteractionsCommands(app *cli.App) {
 			if ctx.String("file") == "" {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
+			}
 			resp, err := client.CreateInteractionWithResponse(ctx.Context(), p0, body)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "createInteraction", resp.StatusCode(), resp.Body)
 		})
 
 	interactionsGrp.Command("get").
@@ -82,7 +85,7 @@ func registerInteractionsCommands(app *cli.App) {
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "getInteraction", resp.StatusCode(), resp.Body)
 		})
 
 	interactionsGrp.Command("list").
@@ -137,7 +140,7 @@ func registerInteractionsCommands(app *cli.App) {
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "listInteractions", resp.StatusCode(), resp.Body)
 		})
 
 	interactionsGrp.Command("release-interaction").
@@ -156,7 +159,7 @@ func registerInteractionsCommands(app *cli.App) {
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "releaseInteraction", resp.StatusCode(), resp.Body)
 		})
 
 	interactionsGrp.Command("respond-to-interaction").
@@ -164,8 +167,9 @@ func registerInteractionsCommands(app *cli.App) {
 		Args("id").
 		Flags(
 			cli.String("comment", "").Help("Optional free-text comment accompanying the response."),
-			cli.String("value", "").Help("Free-form JSON payload supplied by the responder. (JSON)"),
-			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
+			cli.String("value", "").Help("Free-form JSON payload supplied by the responder. Accepts JSON, @file, or @-."),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -185,18 +189,21 @@ func registerInteractionsCommands(app *cli.App) {
 				body.Comment = &v
 			}
 			if ctx.IsSet("value") {
-				if err := json.Unmarshal([]byte(ctx.String("value")), &body.Value); err != nil {
-					return fmt.Errorf("--value: invalid JSON: %w", err)
+				if err := decodeFlagJSON(ctx, "value", ctx.String("value"), &body.Value); err != nil {
+					return err
 				}
 			}
 			if ctx.String("file") == "" && !ctx.IsSet("comment") && !ctx.IsSet("value") {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
+			}
 			resp, err := client.RespondToInteractionWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "respondToInteraction", resp.StatusCode(), resp.Body)
 		})
 
 }

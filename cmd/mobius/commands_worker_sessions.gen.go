@@ -29,7 +29,7 @@ func registerWorkerSessionsCommands(app *cli.App) {
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "listWorkerSessions", resp.StatusCode(), resp.Body)
 		})
 
 }
