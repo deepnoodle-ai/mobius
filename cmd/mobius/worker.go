@@ -18,7 +18,7 @@ import (
 // registered, so it can run trivial and test workflows out of the box.
 func registerWorkerCommand(app *cli.App) {
 	app.Command("worker").
-		Description("Run a Mobius worker that executes queued runs").
+		Description("Run a Mobius worker that executes queued jobs").
 		Use(cli.RequireFlags("api-key")).
 		Flags(
 			cli.String("name", "").
@@ -32,7 +32,7 @@ func registerWorkerCommand(app *cli.App) {
 				Help("Queue names to poll; empty = all queues in the project"),
 			cli.Int("concurrency", "").
 				Default(10).
-				Help("Maximum runs to execute in parallel"),
+				Help("Maximum jobs to execute in parallel"),
 			cli.Int("poll-wait", "").
 				Default(20).
 				Help("Long-poll window in seconds (0-30)"),

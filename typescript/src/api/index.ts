@@ -73,7 +73,6 @@ export type CreateOrgInviteRequest = components["schemas"]["CreateOrgInviteReque
 export type CreateOrgOrSystemAPIKeyRequest = components["schemas"]["CreateOrgOrSystemAPIKeyRequest"];
 export type CreateOrgRequest = components["schemas"]["CreateOrgRequest"];
 export type CreatePortalRequest = components["schemas"]["CreatePortalRequest"];
-export type CreateProjectInviteRequest = components["schemas"]["CreateProjectInviteRequest"];
 export type CreateProjectPinnedAPIKeyRequest = components["schemas"]["CreateProjectPinnedAPIKeyRequest"];
 export type CreateProjectRequest = components["schemas"]["CreateProjectRequest"];
 export type CreateRoleAssignmentRequest = components["schemas"]["CreateRoleAssignmentRequest"];

@@ -7,7 +7,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Any, Literal
 
-from pydantic import AnyUrl, BaseModel, ConfigDict, EmailStr, Field, RootModel
+from pydantic import AnyUrl, BaseModel, ConfigDict, Field, RootModel
 
 
 class Error(BaseModel):
@@ -2888,26 +2888,6 @@ class AddProjectMemberRequest(BaseModel):
     )
 
 
-class Role2(Enum):
-    """
-    Org role assigned on accept. Defaults to `Member`.
-    """
-
-    Owner = 'Owner'
-    Admin = 'Admin'
-    Member = 'Member'
-
-
-class CreateProjectInviteRequest(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    email: EmailStr = Field(..., description='Email address to invite.')
-    role: Role2 | None = Field(
-        None, description='Org role assigned on accept. Defaults to `Member`.'
-    )
-
-
 class User(BaseModel):
     """
     Human identity known to the organization. User records are useful for membership lists, role assignment UIs, attribution, and displaying profile information next to actions.
@@ -2935,60 +2915,6 @@ class User(BaseModel):
     )
     updated_at: datetime = Field(
         ..., description='Timestamp when this user record was last synced from Clerk.'
-    )
-
-
-class Role3(Enum):
-    """
-    Org role the invitee will receive on accept.
-    """
-
-    Owner = 'Owner'
-    Admin = 'Admin'
-    Member = 'Member'
-
-
-class Status2(Enum):
-    """
-    Lifecycle reported by Clerk. Tokens that expired without acceptance surface as `revoked`.
-    """
-
-    pending = 'pending'
-    accepted = 'accepted'
-    revoked = 'revoked'
-
-
-class OrgInvite(BaseModel):
-    """
-    Presentation view of a Clerk Organization Invitation. Mobius does not persist invitations — Clerk owns the token, expiry, accept UX, and email delivery. `project_grants` and `invited_by` are stashed in Clerk's `publicMetadata` at create time and applied via webhook when the invitee accepts.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    id: str = Field(..., description='Clerk invitation id (e.g. `orginv_2abc...`).')
-    org_id: str = Field(
-        ..., description='ID of the organization the invitation belongs to.'
-    )
-    email: EmailStr = Field(
-        ..., description='Email address the invitation was sent to.'
-    )
-    role: Role3 = Field(..., description='Org role the invitee will receive on accept.')
-    project_grants: list[str] | None = Field(
-        None, description='Project IDs the invitee will be added to on accept.'
-    )
-    status: Status2 = Field(
-        ...,
-        description='Lifecycle reported by Clerk. Tokens that expired without acceptance surface as `revoked`.',
-    )
-    invited_by: str | None = Field(
-        None, description='User ID of the inviter (from Clerk publicMetadata).'
-    )
-    expires_at: datetime | None = Field(
-        None, description='Clerk-managed expiry timestamp.'
-    )
-    created_at: datetime = Field(
-        ..., description='When the invitation was created in Clerk.'
     )
 
 
@@ -3619,8 +3545,7 @@ class ProjectMetrics(BaseModel):
         description='Number of jobs currently in `pending` state waiting to be claimed.',
     )
     running_count: int = Field(
-        ...,
-        description='Number of workflow runs currently in `running` or `suspended` state.',
+        ..., description='Number of workflow runs currently in the `active` lifecycle.'
     )
     active_workers: int = Field(
         ...,
@@ -3758,7 +3683,7 @@ class PermissionsState(BaseModel):
     )
 
 
-class Role4(BaseModel):
+class Role2(BaseModel):
     """
     Named bundle of permissions assignable to users or service accounts. Roles let admins grant workflow, project, and automation capabilities consistently without editing every actor individually.
     """
@@ -3838,7 +3763,7 @@ class RoleListResponse(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    items: list[Role4] = Field(..., description='The list of results for this page.')
+    items: list[Role2] = Field(..., description='The list of results for this page.')
 
 
 class RoleAssignmentListResponse(BaseModel):
@@ -4052,7 +3977,7 @@ class UpdateOrgRequest(BaseModel):
     )
 
 
-class Role5(Enum):
+class Role3(Enum):
     """
     `Owner` has full control including org deletion; `Admin` can manage members and settings; `Member` has read-only org access.
     """
@@ -4072,7 +3997,7 @@ class OrgMember(BaseModel):
     )
     id: str = Field(..., description='Unique identifier for this membership record.')
     user_id: str = Field(..., description='ID of the user who is a member.')
-    role: Role5 = Field(
+    role: Role3 = Field(
         ...,
         description='`Owner` has full control including org deletion; `Admin` can manage members and settings; `Member` has read-only org access.',
     )
@@ -4101,7 +4026,7 @@ class OrgMemberListResponse(BaseModel):
     )
 
 
-class Role6(Enum):
+class Role4(Enum):
     """
     Role to assign the new member: `Owner`, `Admin`, or `Member`.
     """
@@ -4116,12 +4041,12 @@ class AddOrgMemberRequest(BaseModel):
         extra='forbid',
     )
     user_id: str = Field(..., description='Clerk user ID of the user to add.')
-    role: Role6 = Field(
+    role: Role4 = Field(
         ..., description='Role to assign the new member: `Owner`, `Admin`, or `Member`.'
     )
 
 
-class Role7(Enum):
+class Role5(Enum):
     """
     New role to assign: `Owner`, `Admin`, or `Member`.
     """
@@ -4135,8 +4060,60 @@ class UpdateOrgMemberRoleRequest(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    role: Role7 = Field(
+    role: Role5 = Field(
         ..., description='New role to assign: `Owner`, `Admin`, or `Member`.'
+    )
+
+
+class Role6(Enum):
+    """
+    Org role the invitee will receive on accept.
+    """
+
+    Owner = 'Owner'
+    Admin = 'Admin'
+    Member = 'Member'
+
+
+class Status2(Enum):
+    """
+    Lifecycle reported by Clerk. Tokens that expired without acceptance surface as `revoked`.
+    """
+
+    pending = 'pending'
+    accepted = 'accepted'
+    revoked = 'revoked'
+
+
+class OrgInvite(BaseModel):
+    """
+    Presentation view of a Clerk Organization Invitation. Mobius does not persist invitations — Clerk owns the token, expiry, accept UX, and email delivery. `project_grants` and `invited_by` are stashed in Clerk's `publicMetadata` at create time and applied via webhook when the invitee accepts.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str = Field(..., description='Clerk invitation id (e.g. `orginv_2abc...`).')
+    org_id: str = Field(
+        ..., description='ID of the organization the invitation belongs to.'
+    )
+    email: str = Field(..., description='Email address the invitation was sent to.')
+    role: Role6 = Field(..., description='Org role the invitee will receive on accept.')
+    project_grants: list[str] | None = Field(
+        None, description='Project IDs the invitee will be added to on accept.'
+    )
+    status: Status2 = Field(
+        ...,
+        description='Lifecycle reported by Clerk. Tokens that expired without acceptance surface as `revoked`.',
+    )
+    invited_by: str | None = Field(
+        None, description='User ID of the inviter (from Clerk publicMetadata).'
+    )
+    expires_at: datetime | None = Field(
+        None, description='Clerk-managed expiry timestamp.'
+    )
+    created_at: datetime = Field(
+        ..., description='When the invitation was created in Clerk.'
     )
 
 
@@ -4149,7 +4126,7 @@ class OrgInviteListResponse(BaseModel):
     )
 
 
-class Role8(Enum):
+class Role7(Enum):
     """
     Org role assigned on accept. Defaults to `Member`.
     """
@@ -4163,8 +4140,8 @@ class CreateOrgInviteRequest(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    email: EmailStr = Field(..., description='Email address to invite.')
-    role: Role8 | None = Field(
+    email: str = Field(..., description='Email address to invite.')
+    role: Role7 | None = Field(
         None, description='Org role assigned on accept. Defaults to `Member`.'
     )
     project_grants: list[str] | None = Field(
@@ -4808,7 +4785,7 @@ class ToolRunRequest(BaseModel):
     )
     timeout_seconds: int | None = Field(
         None,
-        description='How long (in seconds) to wait for synchronous completion. Default 30, max 120. If the run does not complete within this window the response is 202 with status pending.',
+        description='How long (in seconds) to wait for synchronous completion. Default 30, max 120. If the run does not complete within this window the response is 202 with status active.',
         ge=1,
         le=120,
     )
@@ -4816,14 +4793,12 @@ class ToolRunRequest(BaseModel):
 
 class Status3(Enum):
     """
-    Run status: `pending`, `running`, `completed`, `failed`, or `suspended`.
+    Workflow run lifecycle: `active`, `completed`, or `failed`.
     """
 
-    pending = 'pending'
-    running = 'running'
+    active = 'active'
     completed = 'completed'
     failed = 'failed'
-    suspended = 'suspended'
 
 
 class ToolRun(BaseModel):
@@ -4836,8 +4811,7 @@ class ToolRun(BaseModel):
     )
     run_id: str = Field(..., description='Unique run identifier for polling.')
     status: Status3 = Field(
-        ...,
-        description='Run status: `pending`, `running`, `completed`, `failed`, or `suspended`.',
+        ..., description='Workflow run lifecycle: `active`, `completed`, or `failed`.'
     )
     output: dict[str, Any] | None = Field(
         None, description='Run output. Present when status is "completed".'
