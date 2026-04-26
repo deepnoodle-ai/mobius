@@ -1082,26 +1082,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{id}/invites": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Invite a teammate to a project by email
-         * @description Convenience endpoint that creates a Clerk Organization Invitation carrying this project as the sole grant. The invitee joins the org on accept and is added to this project automatically.
-         */
-        post: operations["createProjectInvite"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/projects/{project}/webhooks": {
         parameters: {
             query?: never;
@@ -1605,7 +1585,7 @@ export interface paths {
         put?: never;
         /**
          * Invoke a workflow tool
-         * @description Starts a workflow run for the named tool (workflow handle) and waits for it to complete up to `timeout_seconds` (default 30s, max 120s). Returns the run output directly when the workflow completes within the timeout. On timeout the response includes the run ID and `status: pending` so the caller can switch to polling via `GET /v1/projects/{project}/tools/{handle}/runs/{run_id}`.
+         * @description Starts a workflow run for the named tool (workflow handle) and waits for it to complete up to `timeout_seconds` (default 30s, max 120s). Returns the run output directly when the workflow completes within the timeout. On timeout the response includes the run ID and `status: active` so the caller can switch to polling via `GET /v1/projects/{project}/tools/{handle}/runs/{run_id}`.
          */
         post: operations["runTool"];
         delete?: never;
@@ -3881,18 +3861,6 @@ export interface components {
             /** @description User ID of the org member to add to this project. */
             user_id: string;
         };
-        CreateProjectInviteRequest: {
-            /**
-             * Format: email
-             * @description Email address to invite.
-             */
-            email: string;
-            /**
-             * @description Org role assigned on accept. Defaults to `Member`.
-             * @enum {string}
-             */
-            role?: "Owner" | "Admin" | "Member";
-        };
         /** @description Human identity known to the organization. User records are useful for membership lists, role assignment UIs, attribution, and displaying profile information next to actions. */
         User: {
             /** @description Clerk user ID. Stable and globally unique across all orgs. */
@@ -3915,42 +3883,6 @@ export interface components {
              * @description Timestamp when this user record was last synced from Clerk.
              */
             updated_at: string;
-        };
-        /** @description Presentation view of a Clerk Organization Invitation. Mobius does not persist invitations — Clerk owns the token, expiry, accept UX, and email delivery. `project_grants` and `invited_by` are stashed in Clerk's `publicMetadata` at create time and applied via webhook when the invitee accepts. */
-        OrgInvite: {
-            /** @description Clerk invitation id (e.g. `orginv_2abc...`). */
-            id: string;
-            /** @description ID of the organization the invitation belongs to. */
-            org_id: string;
-            /**
-             * Format: email
-             * @description Email address the invitation was sent to.
-             */
-            email: string;
-            /**
-             * @description Org role the invitee will receive on accept.
-             * @enum {string}
-             */
-            role: "Owner" | "Admin" | "Member";
-            /** @description Project IDs the invitee will be added to on accept. */
-            project_grants?: string[];
-            /**
-             * @description Lifecycle reported by Clerk. Tokens that expired without acceptance surface as `revoked`.
-             * @enum {string}
-             */
-            status: "pending" | "accepted" | "revoked";
-            /** @description User ID of the inviter (from Clerk publicMetadata). */
-            invited_by?: string;
-            /**
-             * Format: date-time
-             * @description Clerk-managed expiry timestamp.
-             */
-            expires_at?: string;
-            /**
-             * Format: date-time
-             * @description When the invitation was created in Clerk.
-             */
-            created_at: string;
         };
         /**
          * @description `pending` — queued, not yet attempted. `processing` — currently being delivered. `delivered` — recipient returned 2xx. `failed` — all retry attempts exhausted.
@@ -4389,7 +4321,7 @@ export interface components {
             p95_step_seconds: number;
             /** @description Number of jobs currently in `pending` state waiting to be claimed. */
             queue_depth: number;
-            /** @description Number of workflow runs currently in `running` or `suspended` state. */
+            /** @description Number of workflow runs currently in the `active` lifecycle. */
             running_count: number;
             /** @description Number of workers whose `last_seen_at` is within the 2-minute staleness threshold. */
             active_workers: number;
@@ -4669,15 +4601,45 @@ export interface components {
              */
             role: "Owner" | "Admin" | "Member";
         };
+        /** @description Presentation view of a Clerk Organization Invitation. Mobius does not persist invitations — Clerk owns the token, expiry, accept UX, and email delivery. `project_grants` and `invited_by` are stashed in Clerk's `publicMetadata` at create time and applied via webhook when the invitee accepts. */
+        OrgInvite: {
+            /** @description Clerk invitation id (e.g. `orginv_2abc...`). */
+            id: string;
+            /** @description ID of the organization the invitation belongs to. */
+            org_id: string;
+            /** @description Email address the invitation was sent to. */
+            email: string;
+            /**
+             * @description Org role the invitee will receive on accept.
+             * @enum {string}
+             */
+            role: "Owner" | "Admin" | "Member";
+            /** @description Project IDs the invitee will be added to on accept. */
+            project_grants?: string[];
+            /**
+             * @description Lifecycle reported by Clerk. Tokens that expired without acceptance surface as `revoked`.
+             * @enum {string}
+             */
+            status: "pending" | "accepted" | "revoked";
+            /** @description User ID of the inviter (from Clerk publicMetadata). */
+            invited_by?: string;
+            /**
+             * Format: date-time
+             * @description Clerk-managed expiry timestamp.
+             */
+            expires_at?: string;
+            /**
+             * Format: date-time
+             * @description When the invitation was created in Clerk.
+             */
+            created_at: string;
+        };
         OrgInviteListResponse: {
             /** @description The list of results for this page. */
             items: components["schemas"]["OrgInvite"][];
         };
         CreateOrgInviteRequest: {
-            /**
-             * Format: email
-             * @description Email address to invite.
-             */
+            /** @description Email address to invite. */
             email: string;
             /**
              * @description Org role assigned on accept. Defaults to `Member`.
@@ -5092,7 +5054,7 @@ export interface components {
             input?: {
                 [key: string]: unknown;
             };
-            /** @description How long (in seconds) to wait for synchronous completion. Default 30, max 120. If the run does not complete within this window the response is 202 with status pending. */
+            /** @description How long (in seconds) to wait for synchronous completion. Default 30, max 120. If the run does not complete within this window the response is 202 with status active. */
             timeout_seconds?: number;
         };
         /** @description Status envelope for a tool invocation backed by a workflow run. Use it to poll asynchronous work, read completed output, or surface failure details to the caller. */
@@ -5100,10 +5062,10 @@ export interface components {
             /** @description Unique run identifier for polling. */
             run_id: string;
             /**
-             * @description Run status: `pending`, `running`, `completed`, `failed`, or `suspended`.
+             * @description Workflow run lifecycle: `active`, `completed`, or `failed`.
              * @enum {string}
              */
-            status: "pending" | "running" | "completed" | "failed" | "suspended";
+            status: "active" | "completed" | "failed";
             /** @description Run output. Present when status is "completed". */
             output?: {
                 [key: string]: unknown;
@@ -7728,37 +7690,6 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
-    createProjectInvite: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Resource ID. */
-                id: components["parameters"]["IDParam"];
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateProjectInviteRequest"];
-            };
-        };
-        responses: {
-            /** @description Created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["OrgInvite"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            409: components["responses"]["Conflict"];
-        };
-    };
     listWebhooks: {
         parameters: {
             query?: {
@@ -9011,7 +8942,7 @@ export interface operations {
                     "application/json": components["schemas"]["ToolRun"];
                 };
             };
-            /** @description Accepted — run is pending; poll for result */
+            /** @description Accepted — run is active; poll for result */
             202: {
                 headers: {
                     [name: string]: unknown;
@@ -9020,7 +8951,7 @@ export interface operations {
                     /**
                      * @example {
                      *       "run_id": "run_01hw1n1a2b3c4d5e6f7g8h9j0k",
-                     *       "status": "pending"
+                     *       "status": "active"
                      *     }
                      */
                     "application/json": components["schemas"]["ToolRun"];

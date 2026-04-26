@@ -2390,38 +2390,6 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-  /v1/projects/{id}/invites:
-    post:
-      operationId: createProjectInvite
-      tags:
-      - projects
-      summary: Invite a teammate to a project by email
-      description: Convenience endpoint that creates a Clerk Organization Invitation carrying
-        this project as the sole grant. The invitee joins the org on accept and is added to
-        this project automatically.
-      parameters:
-      - $ref: '#/components/parameters/IDParam'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateProjectInviteRequest'
-      responses:
-        '201':
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/OrgInvite'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '409':
-          $ref: '#/components/responses/Conflict'
   /v1/projects/{project}/webhooks:
     get:
       operationId: listWebhooks
@@ -7707,23 +7675,6 @@ components:
         user_id:
           type: string
           description: User ID of the org member to add to this project.
-    CreateProjectInviteRequest:
-      type: object
-      additionalProperties: false
-      required:
-      - email
-      properties:
-        email:
-          type: string
-          format: email
-          description: Email address to invite.
-        role:
-          type: string
-          enum:
-          - Owner
-          - Admin
-          - Member
-          description: Org role assigned on accept. Defaults to `Member`.
     User:
       type: object
       additionalProperties: false
@@ -7759,62 +7710,6 @@ components:
           type: string
           format: date-time
           description: Timestamp when this user record was last synced from Clerk.
-    OrgInvite:
-      type: object
-      additionalProperties: false
-      description: Presentation view of a Clerk Organization Invitation. Mobius does not persist
-        invitations — Clerk owns the token, expiry, accept UX, and email delivery. `project_grants`
-        and `invited_by` are stashed in Clerk's `publicMetadata` at create time and applied
-        via webhook when the invitee accepts.
-      required:
-      - id
-      - org_id
-      - email
-      - role
-      - status
-      - created_at
-      properties:
-        id:
-          type: string
-          description: Clerk invitation id (e.g. `orginv_2abc...`).
-        org_id:
-          type: string
-          description: ID of the organization the invitation belongs to.
-        email:
-          type: string
-          format: email
-          description: Email address the invitation was sent to.
-        role:
-          type: string
-          enum:
-          - Owner
-          - Admin
-          - Member
-          description: Org role the invitee will receive on accept.
-        project_grants:
-          type: array
-          items:
-            type: string
-          description: Project IDs the invitee will be added to on accept.
-        status:
-          type: string
-          enum:
-          - pending
-          - accepted
-          - revoked
-          description: Lifecycle reported by Clerk. Tokens that expired without acceptance
-            surface as `revoked`.
-        invited_by:
-          type: string
-          description: User ID of the inviter (from Clerk publicMetadata).
-        expires_at:
-          type: string
-          format: date-time
-          description: Clerk-managed expiry timestamp.
-        created_at:
-          type: string
-          format: date-time
-          description: When the invitation was created in Clerk.
     WebhookDeliveryStatus:
       type: string
       enum:
@@ -9083,6 +8978,61 @@ components:
           - Admin
           - Member
           description: 'New role to assign: `Owner`, `Admin`, or `Member`.'
+    OrgInvite:
+      type: object
+      additionalProperties: false
+      description: Presentation view of a Clerk Organization Invitation. Mobius does not persist
+        invitations — Clerk owns the token, expiry, accept UX, and email delivery. `project_grants`
+        and `invited_by` are stashed in Clerk's `publicMetadata` at create time and applied
+        via webhook when the invitee accepts.
+      required:
+      - id
+      - org_id
+      - email
+      - role
+      - status
+      - created_at
+      properties:
+        id:
+          type: string
+          description: Clerk invitation id (e.g. `orginv_2abc...`).
+        org_id:
+          type: string
+          description: ID of the organization the invitation belongs to.
+        email:
+          type: string
+          description: Email address the invitation was sent to.
+        role:
+          type: string
+          enum:
+          - Owner
+          - Admin
+          - Member
+          description: Org role the invitee will receive on accept.
+        project_grants:
+          type: array
+          items:
+            type: string
+          description: Project IDs the invitee will be added to on accept.
+        status:
+          type: string
+          enum:
+          - pending
+          - accepted
+          - revoked
+          description: Lifecycle reported by Clerk. Tokens that expired without acceptance
+            surface as `revoked`.
+        invited_by:
+          type: string
+          description: User ID of the inviter (from Clerk publicMetadata).
+        expires_at:
+          type: string
+          format: date-time
+          description: Clerk-managed expiry timestamp.
+        created_at:
+          type: string
+          format: date-time
+          description: When the invitation was created in Clerk.
     OrgInviteListResponse:
       type: object
       additionalProperties: false
@@ -9102,7 +9052,6 @@ components:
       properties:
         email:
           type: string
-          format: email
           description: Email address to invite.
         role:
           type: string

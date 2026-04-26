@@ -16,7 +16,6 @@ import (
 	"time"
 
 	"github.com/oapi-codegen/runtime"
-	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
 const (
@@ -275,27 +274,6 @@ func (e CreateGroupRequestRoutingPolicy) Valid() bool {
 	}
 }
 
-// Defines values for CreateProjectInviteRequestRole.
-const (
-	CreateProjectInviteRequestRoleAdmin  CreateProjectInviteRequestRole = "Admin"
-	CreateProjectInviteRequestRoleMember CreateProjectInviteRequestRole = "Member"
-	CreateProjectInviteRequestRoleOwner  CreateProjectInviteRequestRole = "Owner"
-)
-
-// Valid indicates whether the value is a known member of the CreateProjectInviteRequestRole enum.
-func (e CreateProjectInviteRequestRole) Valid() bool {
-	switch e {
-	case CreateProjectInviteRequestRoleAdmin:
-		return true
-	case CreateProjectInviteRequestRoleMember:
-		return true
-	case CreateProjectInviteRequestRoleOwner:
-		return true
-	default:
-		return false
-	}
-}
-
 // Defines values for CreateScheduleTriggerRequestKind.
 const (
 	CreateScheduleTriggerRequestKindSchedule CreateScheduleTriggerRequestKind = "schedule"
@@ -521,48 +499,6 @@ func (e JobStatus) Valid() bool {
 	case JobStatusFailed:
 		return true
 	case JobStatusPending:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for OrgInviteRole.
-const (
-	OrgInviteRoleAdmin  OrgInviteRole = "Admin"
-	OrgInviteRoleMember OrgInviteRole = "Member"
-	OrgInviteRoleOwner  OrgInviteRole = "Owner"
-)
-
-// Valid indicates whether the value is a known member of the OrgInviteRole enum.
-func (e OrgInviteRole) Valid() bool {
-	switch e {
-	case OrgInviteRoleAdmin:
-		return true
-	case OrgInviteRoleMember:
-		return true
-	case OrgInviteRoleOwner:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for OrgInviteStatus.
-const (
-	OrgInviteStatusAccepted OrgInviteStatus = "accepted"
-	OrgInviteStatusPending  OrgInviteStatus = "pending"
-	OrgInviteStatusRevoked  OrgInviteStatus = "revoked"
-)
-
-// Valid indicates whether the value is a known member of the OrgInviteStatus enum.
-func (e OrgInviteStatus) Valid() bool {
-	switch e {
-	case OrgInviteStatusAccepted:
-		return true
-	case OrgInviteStatusPending:
-		return true
-	case OrgInviteStatusRevoked:
 		return true
 	default:
 		return false
@@ -1785,18 +1721,6 @@ type CreateJobInteractionRequest struct {
 	Type InteractionType `json:"type"`
 }
 
-// CreateProjectInviteRequest defines model for CreateProjectInviteRequest.
-type CreateProjectInviteRequest struct {
-	// Email Email address to invite.
-	Email openapi_types.Email `json:"email"`
-
-	// Role Org role assigned on accept. Defaults to `Member`.
-	Role *CreateProjectInviteRequestRole `json:"role,omitempty"`
-}
-
-// CreateProjectInviteRequestRole Org role assigned on accept. Defaults to `Member`.
-type CreateProjectInviteRequestRole string
-
 // CreateProjectRequest defines model for CreateProjectRequest.
 type CreateProjectRequest struct {
 	// AccessMode `org_open`: every org member can see and use the project, subject to role assignments. `restricted`: only listed project members (and org owners/admins) can see or use the project.
@@ -2569,42 +2493,6 @@ type JobStatus string
 
 // Metadata Free-form JSON object for caller-defined metadata.
 type Metadata map[string]interface{}
-
-// OrgInvite Presentation view of a Clerk Organization Invitation. Mobius does not persist invitations — Clerk owns the token, expiry, accept UX, and email delivery. `project_grants` and `invited_by` are stashed in Clerk's `publicMetadata` at create time and applied via webhook when the invitee accepts.
-type OrgInvite struct {
-	// CreatedAt When the invitation was created in Clerk.
-	CreatedAt time.Time `json:"created_at"`
-
-	// Email Email address the invitation was sent to.
-	Email openapi_types.Email `json:"email"`
-
-	// ExpiresAt Clerk-managed expiry timestamp.
-	ExpiresAt *time.Time `json:"expires_at,omitempty"`
-
-	// Id Clerk invitation id (e.g. `orginv_2abc...`).
-	Id string `json:"id"`
-
-	// InvitedBy User ID of the inviter (from Clerk publicMetadata).
-	InvitedBy *string `json:"invited_by,omitempty"`
-
-	// OrgId ID of the organization the invitation belongs to.
-	OrgId string `json:"org_id"`
-
-	// ProjectGrants Project IDs the invitee will be added to on accept.
-	ProjectGrants *[]string `json:"project_grants,omitempty"`
-
-	// Role Org role the invitee will receive on accept.
-	Role OrgInviteRole `json:"role"`
-
-	// Status Lifecycle reported by Clerk. Tokens that expired without acceptance surface as `revoked`.
-	Status OrgInviteStatus `json:"status"`
-}
-
-// OrgInviteRole Org role the invitee will receive on accept.
-type OrgInviteRole string
-
-// OrgInviteStatus Lifecycle reported by Clerk. Tokens that expired without acceptance surface as `revoked`.
-type OrgInviteStatus string
 
 // PingWebhookRequest defines model for PingWebhookRequest.
 type PingWebhookRequest struct {
@@ -4745,9 +4633,6 @@ type UpdateProjectJSONRequestBody = UpdateProjectRequest
 
 // UpdateProjectConfigJSONRequestBody defines body for UpdateProjectConfig for application/json ContentType.
 type UpdateProjectConfigJSONRequestBody = ConfigEntries
-
-// CreateProjectInviteJSONRequestBody defines body for CreateProjectInvite for application/json ContentType.
-type CreateProjectInviteJSONRequestBody = CreateProjectInviteRequest
 
 // AddProjectMemberJSONRequestBody defines body for AddProjectMember for application/json ContentType.
 type AddProjectMemberJSONRequestBody = AddProjectMemberRequest
@@ -7866,11 +7751,6 @@ type ClientInterface interface {
 
 	UpdateProjectConfig(ctx context.Context, id IDParam, body UpdateProjectConfigJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CreateProjectInviteWithBody request with any body
-	CreateProjectInviteWithBody(ctx context.Context, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	CreateProjectInvite(ctx context.Context, id IDParam, body CreateProjectInviteJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
 	// ListProjectMembers request
 	ListProjectMembers(ctx context.Context, id IDParam, params *ListProjectMembersParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -8388,30 +8268,6 @@ func (c *Client) UpdateProjectConfigWithBody(ctx context.Context, id IDParam, co
 
 func (c *Client) UpdateProjectConfig(ctx context.Context, id IDParam, body UpdateProjectConfigJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewUpdateProjectConfigRequest(c.Server, id, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) CreateProjectInviteWithBody(ctx context.Context, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateProjectInviteRequestWithBody(c.Server, id, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) CreateProjectInvite(ctx context.Context, id IDParam, body CreateProjectInviteJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateProjectInviteRequest(c.Server, id, body)
 	if err != nil {
 		return nil, err
 	}
@@ -10627,53 +10483,6 @@ func NewUpdateProjectConfigRequestWithBody(server string, id IDParam, contentTyp
 	}
 
 	req, err := http.NewRequest("PUT", queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewCreateProjectInviteRequest calls the generic CreateProjectInvite builder with application/json body
-func NewCreateProjectInviteRequest(server string, id IDParam, body CreateProjectInviteJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewCreateProjectInviteRequestWithBody(server, id, "application/json", bodyReader)
-}
-
-// NewCreateProjectInviteRequestWithBody generates requests for CreateProjectInvite with any type of body
-func NewCreateProjectInviteRequestWithBody(server string, id IDParam, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/projects/%s/invites", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("POST", queryURL.String(), body)
 	if err != nil {
 		return nil, err
 	}
@@ -16382,11 +16191,6 @@ type ClientWithResponsesInterface interface {
 
 	UpdateProjectConfigWithResponse(ctx context.Context, id IDParam, body UpdateProjectConfigJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateProjectConfigResponse, error)
 
-	// CreateProjectInviteWithBodyWithResponse request with any body
-	CreateProjectInviteWithBodyWithResponse(ctx context.Context, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateProjectInviteResponse, error)
-
-	CreateProjectInviteWithResponse(ctx context.Context, id IDParam, body CreateProjectInviteJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateProjectInviteResponse, error)
-
 	// ListProjectMembersWithResponse request
 	ListProjectMembersWithResponse(ctx context.Context, id IDParam, params *ListProjectMembersParams, reqEditors ...RequestEditorFn) (*ListProjectMembersResponse, error)
 
@@ -16996,32 +16800,6 @@ func (r UpdateProjectConfigResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r UpdateProjectConfigResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type CreateProjectInviteResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON201      *OrgInvite
-	JSON400      *BadRequest
-	JSON401      *Unauthorized
-	JSON403      *Forbidden
-	JSON409      *Conflict
-}
-
-// Status returns HTTPResponse.Status
-func (r CreateProjectInviteResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r CreateProjectInviteResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -19582,23 +19360,6 @@ func (c *ClientWithResponses) UpdateProjectConfigWithResponse(ctx context.Contex
 	return ParseUpdateProjectConfigResponse(rsp)
 }
 
-// CreateProjectInviteWithBodyWithResponse request with arbitrary body returning *CreateProjectInviteResponse
-func (c *ClientWithResponses) CreateProjectInviteWithBodyWithResponse(ctx context.Context, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateProjectInviteResponse, error) {
-	rsp, err := c.CreateProjectInviteWithBody(ctx, id, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateProjectInviteResponse(rsp)
-}
-
-func (c *ClientWithResponses) CreateProjectInviteWithResponse(ctx context.Context, id IDParam, body CreateProjectInviteJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateProjectInviteResponse, error) {
-	rsp, err := c.CreateProjectInvite(ctx, id, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateProjectInviteResponse(rsp)
-}
-
 // ListProjectMembersWithResponse request returning *ListProjectMembersResponse
 func (c *ClientWithResponses) ListProjectMembersWithResponse(ctx context.Context, id IDParam, params *ListProjectMembersParams, reqEditors ...RequestEditorFn) (*ListProjectMembersResponse, error) {
 	rsp, err := c.ListProjectMembers(ctx, id, params, reqEditors...)
@@ -21201,60 +20962,6 @@ func ParseUpdateProjectConfigResponse(rsp *http.Response) (*UpdateProjectConfigR
 			return nil, err
 		}
 		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseCreateProjectInviteResponse parses an HTTP response from a CreateProjectInviteWithResponse call
-func ParseCreateProjectInviteResponse(rsp *http.Response) (*CreateProjectInviteResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &CreateProjectInviteResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
-		var dest OrgInvite
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON201 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest BadRequest
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
-		var dest Conflict
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON409 = &dest
 
 	}
 

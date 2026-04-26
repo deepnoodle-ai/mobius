@@ -52,7 +52,7 @@ func registerProjectsCommands(app *cli.App) {
 			return printResponse(ctx, resp.StatusCode(), resp.Body)
 		})
 
-	projectsGrp.Command("archive-project").
+	projectsGrp.Command("archive").
 		Description("Archive a project").
 		Args("id").
 		Use(cli.RequireFlags("api-key")).
@@ -115,45 +115,6 @@ func registerProjectsCommands(app *cli.App) {
 				return fmt.Errorf("--name is required (or supply it via --file)")
 			}
 			resp, err := client.CreateProjectWithResponse(ctx.Context(), body)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
-		})
-
-	projectsGrp.Command("create-invite").
-		Description("Invite a teammate to a project by email").
-		Args("id").
-		Flags(
-			cli.String("email", "").Help("[required] Email address to invite. (JSON)"),
-			cli.String("role", "").Help("Org role assigned on accept. Defaults to `Member`."),
-			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
-		).
-		Use(cli.RequireFlags("api-key")).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := ctx.Arg(0)
-			var body api.CreateProjectInviteJSONRequestBody
-			if err := readJSONBody(ctx, &body); err != nil {
-				return err
-			}
-			if ctx.IsSet("email") {
-				if err := json.Unmarshal([]byte(ctx.String("email")), &body.Email); err != nil {
-					return fmt.Errorf("--email: invalid JSON: %w", err)
-				}
-			}
-			if ctx.IsSet("role") {
-				v := api.CreateProjectInviteRequestRole(ctx.String("role"))
-				body.Role = &v
-			}
-			if ctx.String("file") == "" && !ctx.IsSet("email") {
-				return fmt.Errorf("--email is required (or supply it via --file)")
-			}
-			resp, err := client.CreateProjectInviteWithResponse(ctx.Context(), p0, body)
 			if err != nil {
 				return err
 			}
@@ -311,7 +272,7 @@ func registerProjectsCommands(app *cli.App) {
 			return printResponse(ctx, resp.StatusCode(), resp.Body)
 		})
 
-	projectsGrp.Command("restore-project").
+	projectsGrp.Command("restore").
 		Description("Restore an archived project").
 		Args("id").
 		Use(cli.RequireFlags("api-key")).

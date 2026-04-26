@@ -62,7 +62,7 @@ func registerToolsCommands(app *cli.App) {
 		Args("handle").
 		Flags(
 			cli.String("input", "").Help("Input values matching the tool's input_schema. (JSON)"),
-			cli.Int("timeout-seconds", "").Help("How long (in seconds) to wait for synchronous completion. Default 30, max 120. If the run does not complete within this window the response is 202 with status pending."),
+			cli.Int("timeout-seconds", "").Help("How long (in seconds) to wait for synchronous completion. Default 30, max 120. If the run does not complete within this window the response is 202 with status active."),
 			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
 		).
 		Use(cli.RequireFlags("api-key")).

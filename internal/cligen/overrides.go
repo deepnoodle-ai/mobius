@@ -28,9 +28,11 @@ type Override struct {
 // Entries are intentionally verbose so the reason for each override stays
 // next to the rule itself.
 var overrides = map[string]Override{
-	// --- Renamed: strip redundant noun suffix inside the "runs" group ---
-	"startRun":  {Command: "start"},
-	"resumeRun": {Command: "resume"},
+	// --- Renamed: strip redundant noun suffix inside the command group ---
+	"startRun":       {Command: "start"},
+	"resumeRun":      {Command: "resume"},
+	"archiveProject": {Command: "archive"},
+	"restoreProject": {Command: "restore"},
 
 	// --- Skipped: hand-written in cmd/mobius ---
 	// The browser-based CLI login flow is hand-written in auth.go because it
