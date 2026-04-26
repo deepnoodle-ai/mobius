@@ -190,10 +190,10 @@ func workflowsInitHandler(ctx *cli.Context) error {
 
 func workflowSkeletonYAML(name string) string {
 	return strings.TrimSpace(`
-name: ` + name + `
+name: `+name+`
 description: A short, human-readable summary of what this workflow does.
 spec:
-  name: ` + name + `
+  name: `+name+`
   description: Spec-level description (shown in the editor and run details).
   inputs: []
   outputs: []
@@ -211,10 +211,10 @@ tags:
 func workflowSkeletonJSON(name string) string {
 	return strings.TrimSpace(`
 {
-  "name": "` + name + `",
+  "name": "`+name+`",
   "description": "A short, human-readable summary of what this workflow does.",
   "spec": {
-    "name": "` + name + `",
+    "name": "`+name+`",
     "description": "Spec-level description (shown in the editor and run details).",
     "inputs": [],
     "outputs": [],
@@ -224,7 +224,7 @@ func workflowSkeletonJSON(name string) string {
         "action": "print",
         "action_kind": "server",
         "parameters": {
-          "message": "Hello from ` + name + `!"
+          "message": "Hello from `+name+`!"
         }
       }
     ]
