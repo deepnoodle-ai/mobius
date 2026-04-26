@@ -8,7 +8,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/deepnoodle-ai/wonton/cli"
@@ -27,9 +26,10 @@ func registerWorkflowsCommands(app *cli.App) {
 			cli.String("handle", "").Help("URL-safe handle for this workflow, unique within the project. Auto-derived from name if omitted."),
 			cli.String("name", "").Help("[required] Human-readable workflow name, unique within the project."),
 			cli.Bool("published-as-tool", "").Help("When true, expose this workflow as a callable tool via /api/tools."),
-			cli.String("spec", "").Help("[required] Workflow definition shaped like `workflow.Options`.  Authoring rule: `action` is the canonical field for executable steps. When `action_kind` is omitted, `action` uses worker/job semantics. Use `action_kind: \"server\"` for Mobius-managed server actions such as platform integrations or custom HTTP-backed actions. (JSON)"),
-			cli.String("tags", "").Help("Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints. (JSON)"),
-			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
+			cli.String("spec", "").Help("[required] Workflow definition shaped like `workflow.Options`. Accepts JSON, @file, or @-."),
+			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -59,14 +59,15 @@ func registerWorkflowsCommands(app *cli.App) {
 				body.PublishedAsTool = &v
 			}
 			if ctx.IsSet("spec") {
-				if err := json.Unmarshal([]byte(ctx.String("spec")), &body.Spec); err != nil {
-					return fmt.Errorf("--spec: invalid JSON: %w", err)
+				if err := decodeFlagJSON(ctx, "spec", ctx.String("spec"), &body.Spec); err != nil {
+					return err
 				}
 			}
-			if ctx.IsSet("tags") {
-				if err := json.Unmarshal([]byte(ctx.String("tags")), &body.Tags); err != nil {
-					return fmt.Errorf("--tags: invalid JSON: %w", err)
-				}
+			if tags, err := parseTagFlags(ctx); err != nil {
+				return err
+			} else if tags != nil {
+				v := api.TagMap(tags)
+				body.Tags = &v
 			}
 			if body.Name == "" {
 				return fmt.Errorf("--name is required (or supply it via --file)")
@@ -74,11 +75,14 @@ func registerWorkflowsCommands(app *cli.App) {
 			if ctx.String("file") == "" && !ctx.IsSet("spec") {
 				return fmt.Errorf("--spec is required (or supply it via --file)")
 			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
+			}
 			resp, err := client.CreateWorkflowWithResponse(ctx.Context(), p0, body)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "createWorkflow", resp.StatusCode(), resp.Body)
 		})
 
 	workflowsGrp.Command("delete").
@@ -97,7 +101,7 @@ func registerWorkflowsCommands(app *cli.App) {
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "deleteWorkflow", resp.StatusCode(), resp.Body)
 		})
 
 	workflowsGrp.Command("get").
@@ -116,7 +120,7 @@ func registerWorkflowsCommands(app *cli.App) {
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "getWorkflow", resp.StatusCode(), resp.Body)
 		})
 
 	workflowsGrp.Command("get-version").
@@ -139,7 +143,7 @@ func registerWorkflowsCommands(app *cli.App) {
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "getWorkflowVersion", resp.StatusCode(), resp.Body)
 		})
 
 	workflowsGrp.Command("list").
@@ -169,7 +173,7 @@ func registerWorkflowsCommands(app *cli.App) {
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "listWorkflows", resp.StatusCode(), resp.Body)
 		})
 
 	workflowsGrp.Command("list-versions").
@@ -188,7 +192,7 @@ func registerWorkflowsCommands(app *cli.App) {
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "listWorkflowVersions", resp.StatusCode(), resp.Body)
 		})
 
 	workflowsGrp.Command("update").
@@ -198,9 +202,10 @@ func registerWorkflowsCommands(app *cli.App) {
 			cli.String("description", "").Help("Replacement description. Omit to leave unchanged."),
 			cli.String("name", "").Help("Replacement human-readable workflow name."),
 			cli.Bool("published-as-tool", "").Help("When true, expose this workflow as a callable tool via /api/tools."),
-			cli.String("spec", "").Help("Workflow definition shaped like `workflow.Options`.  Authoring rule: `action` is the canonical field for executable steps. When `action_kind` is omitted, `action` uses worker/job semantics. Use `action_kind: \"server\"` for Mobius-managed server actions such as platform integrations or custom HTTP-backed actions. (JSON)"),
-			cli.String("tags", "").Help("Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints. (JSON)"),
-			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
+			cli.String("spec", "").Help("Workflow definition shaped like `workflow.Options`. Accepts JSON, @file, or @-."),
+			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -228,23 +233,27 @@ func registerWorkflowsCommands(app *cli.App) {
 				body.PublishedAsTool = &v
 			}
 			if ctx.IsSet("spec") {
-				if err := json.Unmarshal([]byte(ctx.String("spec")), &body.Spec); err != nil {
-					return fmt.Errorf("--spec: invalid JSON: %w", err)
+				if err := decodeFlagJSON(ctx, "spec", ctx.String("spec"), &body.Spec); err != nil {
+					return err
 				}
 			}
-			if ctx.IsSet("tags") {
-				if err := json.Unmarshal([]byte(ctx.String("tags")), &body.Tags); err != nil {
-					return fmt.Errorf("--tags: invalid JSON: %w", err)
-				}
+			if tags, err := parseTagFlags(ctx); err != nil {
+				return err
+			} else if tags != nil {
+				v := api.TagMap(tags)
+				body.Tags = &v
 			}
-			if ctx.String("file") == "" && !ctx.IsSet("description") && !ctx.IsSet("name") && !ctx.IsSet("published-as-tool") && !ctx.IsSet("spec") && !ctx.IsSet("tags") {
+			if ctx.String("file") == "" && !ctx.IsSet("description") && !ctx.IsSet("name") && !ctx.IsSet("published-as-tool") && !ctx.IsSet("spec") && !ctx.IsSet("tag") {
 				return fmt.Errorf("at least one flag or --file is required")
+			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
 			}
 			resp, err := client.UpdateWorkflowWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "updateWorkflow", resp.StatusCode(), resp.Body)
 		})
 
 }

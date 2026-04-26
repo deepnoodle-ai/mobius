@@ -8,7 +8,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/deepnoodle-ai/wonton/cli"
@@ -23,14 +22,15 @@ func registerAgentsCommands(app *cli.App) {
 	agentsGrp.Command("create").
 		Description("Create an agent").
 		Flags(
-			cli.String("capabilities", "").Help("Arbitrary capability map used by orchestrators to select suitable agents. (JSON)"),
-			cli.String("config", "").Help("Agent-specific configuration stored and returned opaquely. (JSON)"),
+			cli.String("capabilities", "").Help("Arbitrary capability map used by orchestrators to select suitable agents. Accepts JSON, @file, or @-."),
+			cli.String("config", "").Help("Agent-specific configuration stored and returned opaquely. Accepts JSON, @file, or @-."),
 			cli.String("description", "").Help("Optional human-readable description."),
 			cli.String("kind", "").Help("Freeform classification (e.g. \"llm\", \"rpa\", \"integration\")."),
 			cli.String("name", "").Help("[required] Project-scoped unique name for this agent. Free-form human-readable label, 1-63 characters."),
-			cli.String("service-account-id", "").Help("Service account that backs this agent. Must be active and belong to the same project. If omitted, a new service account is auto-created with the same name as the agent."),
-			cli.String("tags", "").Help("Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints. (JSON)"),
-			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
+			cli.String("service-account-id", "").Help("Service account that backs this agent. Must be active and belong to the same project. If omitted, a…"),
+			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -45,13 +45,13 @@ func registerAgentsCommands(app *cli.App) {
 				return err
 			}
 			if ctx.IsSet("capabilities") {
-				if err := json.Unmarshal([]byte(ctx.String("capabilities")), &body.Capabilities); err != nil {
-					return fmt.Errorf("--capabilities: invalid JSON: %w", err)
+				if err := decodeFlagJSON(ctx, "capabilities", ctx.String("capabilities"), &body.Capabilities); err != nil {
+					return err
 				}
 			}
 			if ctx.IsSet("config") {
-				if err := json.Unmarshal([]byte(ctx.String("config")), &body.Config); err != nil {
-					return fmt.Errorf("--config: invalid JSON: %w", err)
+				if err := decodeFlagJSON(ctx, "config", ctx.String("config"), &body.Config); err != nil {
+					return err
 				}
 			}
 			if ctx.IsSet("description") {
@@ -69,28 +69,33 @@ func registerAgentsCommands(app *cli.App) {
 				v := ctx.String("service-account-id")
 				body.ServiceAccountId = &v
 			}
-			if ctx.IsSet("tags") {
-				if err := json.Unmarshal([]byte(ctx.String("tags")), &body.Tags); err != nil {
-					return fmt.Errorf("--tags: invalid JSON: %w", err)
-				}
+			if tags, err := parseTagFlags(ctx); err != nil {
+				return err
+			} else if tags != nil {
+				v := api.TagMap(tags)
+				body.Tags = &v
 			}
 			if body.Name == "" {
 				return fmt.Errorf("--name is required (or supply it via --file)")
+			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
 			}
 			resp, err := client.CreateAgentWithResponse(ctx.Context(), p0, body)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "createAgent", resp.StatusCode(), resp.Body)
 		})
 
 	agentsGrp.Command("create-session").
 		Description("Register a new agent session").
 		Args("id").
 		Flags(
-			cli.String("metadata", "").Help("Optional metadata such as hostname, SDK version, or region. (JSON)"),
+			cli.String("metadata", "").Help("Optional metadata such as hostname, SDK version, or region. Accepts JSON, @file, or @-."),
 			cli.String("transport", "").Help("[required] Connection mechanism identifier (e.g. \"sse\", \"polling\")."),
-			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -106,8 +111,8 @@ func registerAgentsCommands(app *cli.App) {
 				return err
 			}
 			if ctx.IsSet("metadata") {
-				if err := json.Unmarshal([]byte(ctx.String("metadata")), &body.Metadata); err != nil {
-					return fmt.Errorf("--metadata: invalid JSON: %w", err)
+				if err := decodeFlagJSON(ctx, "metadata", ctx.String("metadata"), &body.Metadata); err != nil {
+					return err
 				}
 			}
 			if ctx.IsSet("transport") {
@@ -116,11 +121,14 @@ func registerAgentsCommands(app *cli.App) {
 			if body.Transport == "" {
 				return fmt.Errorf("--transport is required (or supply it via --file)")
 			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
+			}
 			resp, err := client.CreateAgentSessionWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "createAgentSession", resp.StatusCode(), resp.Body)
 		})
 
 	agentsGrp.Command("delete").
@@ -139,7 +147,7 @@ func registerAgentsCommands(app *cli.App) {
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "deleteAgent", resp.StatusCode(), resp.Body)
 		})
 
 	agentsGrp.Command("disconnect-session").
@@ -159,7 +167,7 @@ func registerAgentsCommands(app *cli.App) {
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "disconnectAgentSession", resp.StatusCode(), resp.Body)
 		})
 
 	agentsGrp.Command("get").
@@ -178,7 +186,7 @@ func registerAgentsCommands(app *cli.App) {
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "getAgent", resp.StatusCode(), resp.Body)
 		})
 
 	agentsGrp.Command("get-session").
@@ -198,7 +206,7 @@ func registerAgentsCommands(app *cli.App) {
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "getAgentSession", resp.StatusCode(), resp.Body)
 		})
 
 	agentsGrp.Command("heartbeat-session").
@@ -218,7 +226,7 @@ func registerAgentsCommands(app *cli.App) {
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "heartbeatAgentSession", resp.StatusCode(), resp.Body)
 		})
 
 	agentsGrp.Command("list").
@@ -253,7 +261,7 @@ func registerAgentsCommands(app *cli.App) {
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "listAgents", resp.StatusCode(), resp.Body)
 		})
 
 	agentsGrp.Command("list-sessions").
@@ -290,22 +298,23 @@ func registerAgentsCommands(app *cli.App) {
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "listAgentSessions", resp.StatusCode(), resp.Body)
 		})
 
 	agentsGrp.Command("update").
 		Description("Update an agent").
 		Args("id").
 		Flags(
-			cli.String("capabilities", "").Help("Replacement capability map. (JSON)"),
-			cli.String("config", "").Help("Replacement configuration blob. (JSON)"),
+			cli.String("capabilities", "").Help("Replacement capability map. Accepts JSON, @file, or @-."),
+			cli.String("config", "").Help("Replacement configuration blob. Accepts JSON, @file, or @-."),
 			cli.String("description", "").Help("Replacement description."),
 			cli.String("kind", "").Help("Replacement freeform agent classification (e.g. `llm`, `rpa`)."),
 			cli.String("name", "").Help("Free-form human-readable label, 1-63 characters; must be unique within the project."),
 			cli.String("service-account-id", "").Help("Replacement service account. Must be active and belong to the same project."),
 			cli.String("status", "").Help("Administrative status. Inactive agents cannot claim new jobs."),
-			cli.String("tags", "").Help("Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints. (JSON)"),
-			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
+			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -321,13 +330,13 @@ func registerAgentsCommands(app *cli.App) {
 				return err
 			}
 			if ctx.IsSet("capabilities") {
-				if err := json.Unmarshal([]byte(ctx.String("capabilities")), &body.Capabilities); err != nil {
-					return fmt.Errorf("--capabilities: invalid JSON: %w", err)
+				if err := decodeFlagJSON(ctx, "capabilities", ctx.String("capabilities"), &body.Capabilities); err != nil {
+					return err
 				}
 			}
 			if ctx.IsSet("config") {
-				if err := json.Unmarshal([]byte(ctx.String("config")), &body.Config); err != nil {
-					return fmt.Errorf("--config: invalid JSON: %w", err)
+				if err := decodeFlagJSON(ctx, "config", ctx.String("config"), &body.Config); err != nil {
+					return err
 				}
 			}
 			if ctx.IsSet("description") {
@@ -350,19 +359,23 @@ func registerAgentsCommands(app *cli.App) {
 				v := api.AgentStatus(ctx.String("status"))
 				body.Status = &v
 			}
-			if ctx.IsSet("tags") {
-				if err := json.Unmarshal([]byte(ctx.String("tags")), &body.Tags); err != nil {
-					return fmt.Errorf("--tags: invalid JSON: %w", err)
-				}
+			if tags, err := parseTagFlags(ctx); err != nil {
+				return err
+			} else if tags != nil {
+				v := api.TagMap(tags)
+				body.Tags = &v
 			}
-			if ctx.String("file") == "" && !ctx.IsSet("capabilities") && !ctx.IsSet("config") && !ctx.IsSet("description") && !ctx.IsSet("kind") && !ctx.IsSet("name") && !ctx.IsSet("service-account-id") && !ctx.IsSet("status") && !ctx.IsSet("tags") {
+			if ctx.String("file") == "" && !ctx.IsSet("capabilities") && !ctx.IsSet("config") && !ctx.IsSet("description") && !ctx.IsSet("kind") && !ctx.IsSet("name") && !ctx.IsSet("service-account-id") && !ctx.IsSet("status") && !ctx.IsSet("tag") {
 				return fmt.Errorf("at least one flag or --file is required")
+			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
 			}
 			resp, err := client.UpdateAgentWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "updateAgent", resp.StatusCode(), resp.Body)
 		})
 
 }

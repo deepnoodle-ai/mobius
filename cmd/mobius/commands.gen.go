@@ -9,12 +9,18 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
+	"sort"
+	"strings"
 
 	"github.com/deepnoodle-ai/wonton/cli"
+	"gopkg.in/yaml.v3"
 )
 
 // registerGeneratedCommands attaches every generated subcommand to app by
@@ -37,49 +43,674 @@ func registerGeneratedCommands(app *cli.App) {
 	registerWorkflowsCommands(app)
 }
 
-// readJSONBody reads a JSON request body from --file (path or '-' for stdin)
-// and unmarshals it into v. When --file is not set this is a no-op so that
-// per-field flags alone can populate the body.
+// readJSONBody reads a request body from --file (path or '-' for stdin) and
+// unmarshals it into v. JSON and YAML are both accepted; the format is
+// detected from the file extension (.yaml/.yml/.json) or, for stdin and
+// unknown extensions, by sniffing (JSON first, then YAML). When --file is not
+// set this is a no-op so per-field flags alone can populate the body.
+//
+// --var KEY=VALUE substitutions (when present) are applied to the file
+// contents before parsing.
 func readJSONBody(ctx *cli.Context, v any) error {
 	path := ctx.String("file")
 	if path == "" {
 		return nil
 	}
-	var data []byte
-	var err error
-	if path == "-" {
-		data, err = io.ReadAll(ctx.Stdin())
-	} else {
-		data, err = os.ReadFile(path)
-	}
+	data, label, err := readBodyBytes(ctx, path)
 	if err != nil {
-		return fmt.Errorf("read body: %w", err)
+		return err
 	}
-	if err := json.Unmarshal(data, v); err != nil {
-		return fmt.Errorf("decode body: %w", err)
+	data, err = applyVars(ctx, data)
+	if err != nil {
+		return err
+	}
+	return decodeJSONOrYAML(data, label, path, v)
+}
+
+// decodeFlagJSON decodes a JSON-typed flag value. The value can be:
+//   - bare JSON literal (e.g. {"k":"v"})
+//   - "@path" to read from a file (JSON or YAML)
+//   - "@-" to read from stdin
+//
+// --var substitutions are applied to file contents before parse.
+func decodeFlagJSON(ctx *cli.Context, flag, raw string, v any) error {
+	if strings.HasPrefix(raw, "@") {
+		path := raw[1:]
+		if path == "" {
+			return cli.Errorf("--%s: expected @<path> or @-, got bare @", flag)
+		}
+		data, label, err := readBodyBytes(ctx, path)
+		if err != nil {
+			return cli.Errorf("--%s: %v", flag, err)
+		}
+		data, err = applyVars(ctx, data)
+		if err != nil {
+			return cli.Errorf("--%s: %v", flag, err)
+		}
+		if err := decodeJSONOrYAML(data, label, path, v); err != nil {
+			return cli.Errorf("--%s: %v", flag, err)
+		}
+		return nil
+	}
+	if err := json.Unmarshal([]byte(raw), v); err != nil {
+		return cli.Errorf("--%s: invalid JSON: %v", flag, jsonErrLocation(err, []byte(raw)))
 	}
 	return nil
 }
 
-// printResponse prints a pretty JSON rendering of the response body to stdout.
-// Non-2xx responses are printed as-is and returned as an error so callers exit
-// with a non-zero status.
-func printResponse(ctx *cli.Context, status int, body []byte) error {
-	var pretty []byte
-	if len(body) > 0 && (body[0] == '{' || body[0] == '[') {
-		var tmp any
-		if err := json.Unmarshal(body, &tmp); err == nil {
-			pretty, _ = json.MarshalIndent(tmp, "", "  ")
+// readBodyBytes reads from a path or "-" (stdin). The returned label is
+// "json" or "yaml" when known from the extension, otherwise empty.
+func readBodyBytes(ctx *cli.Context, path string) ([]byte, string, error) {
+	if path == "-" {
+		data, err := io.ReadAll(ctx.Stdin())
+		if err != nil {
+			return nil, "", fmt.Errorf("read stdin: %w", err)
 		}
+		return data, "", nil
 	}
-	if pretty == nil {
-		pretty = body
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, "", fmt.Errorf("read %s: %w", path, err)
 	}
-	if status >= 200 && status < 300 {
-		ctx.Println(string(pretty))
+	switch strings.ToLower(filepath.Ext(path)) {
+	case ".yaml", ".yml":
+		return data, "yaml", nil
+	case ".json":
+		return data, "json", nil
+	}
+	return data, "", nil
+}
+
+// decodeJSONOrYAML unmarshals data into v, choosing the parser by label
+// (from the file extension) or by sniffing. YAML is round-tripped through
+// JSON so target types containing oneOf/union json.RawMessage fields (which
+// have no yaml tags) still hydrate correctly.
+func decodeJSONOrYAML(data []byte, label, path string, v any) error {
+	disp := displayPath(path)
+	switch label {
+	case "json":
+		if err := json.Unmarshal(data, v); err != nil {
+			return fmt.Errorf("parse %s: %w", disp, jsonErrLocation(err, data))
+		}
+		return nil
+	case "yaml":
+		return decodeYAMLViaJSON(data, disp, v)
+	}
+	if looksLikeJSON(data) {
+		if err := json.Unmarshal(data, v); err != nil {
+			return fmt.Errorf("parse %s: %w", disp, jsonErrLocation(err, data))
+		}
 		return nil
 	}
-	return fmt.Errorf("HTTP %d: %s", status, string(pretty))
+	return decodeYAMLViaJSON(data, disp, v)
+}
+
+// decodeYAMLViaJSON parses YAML into a generic structure, re-marshals it as
+// JSON, and unmarshals into v. Routing through JSON makes target types whose
+// oneOf/union fields carry json tags (but no yaml tags) work as expected.
+func decodeYAMLViaJSON(data []byte, disp string, v any) error {
+	var generic any
+	if err := yaml.Unmarshal(data, &generic); err != nil {
+		return fmt.Errorf("parse %s: %w", disp, err)
+	}
+	generic = normalizeYAMLForJSON(generic)
+	jsonBytes, err := json.Marshal(generic)
+	if err != nil {
+		return fmt.Errorf("convert %s yaml to json: %w", disp, err)
+	}
+	if err := json.Unmarshal(jsonBytes, v); err != nil {
+		return fmt.Errorf("parse %s: %w", disp, err)
+	}
+	return nil
+}
+
+// normalizeYAMLForJSON converts map[interface{}]interface{} (produced by some
+// yaml.v3 paths for nested maps) into map[string]interface{} so json.Marshal
+// can encode them.
+func normalizeYAMLForJSON(v any) any {
+	switch x := v.(type) {
+	case map[any]any:
+		out := make(map[string]any, len(x))
+		for k, vv := range x {
+			out[fmt.Sprint(k)] = normalizeYAMLForJSON(vv)
+		}
+		return out
+	case map[string]any:
+		out := make(map[string]any, len(x))
+		for k, vv := range x {
+			out[k] = normalizeYAMLForJSON(vv)
+		}
+		return out
+	case []any:
+		for i := range x {
+			x[i] = normalizeYAMLForJSON(x[i])
+		}
+		return x
+	default:
+		return v
+	}
+}
+
+// jsonErrLocation enriches a json error with a line:col when possible.
+func jsonErrLocation(err error, data []byte) error {
+	if err == nil {
+		return nil
+	}
+	var syn *json.SyntaxError
+	if errors.As(err, &syn) {
+		line, col := offsetToLineCol(data, int(syn.Offset))
+		return fmt.Errorf("%s (line %d, col %d)", syn.Error(), line, col)
+	}
+	var ute *json.UnmarshalTypeError
+	if errors.As(err, &ute) {
+		line, col := offsetToLineCol(data, int(ute.Offset))
+		return fmt.Errorf("%s (line %d, col %d, field %q)", ute.Error(), line, col, ute.Field)
+	}
+	return err
+}
+
+func offsetToLineCol(data []byte, off int) (int, int) {
+	if off > len(data) {
+		off = len(data)
+	}
+	line, col := 1, 1
+	for i := 0; i < off; i++ {
+		if data[i] == '\n' {
+			line++
+			col = 1
+		} else {
+			col++
+		}
+	}
+	return line, col
+}
+
+func looksLikeJSON(data []byte) bool {
+	for _, c := range data {
+		switch c {
+		case ' ', '\t', '\n', '\r':
+			continue
+		case '{', '[':
+			return true
+		default:
+			return false
+		}
+	}
+	return false
+}
+
+func displayPath(p string) string {
+	if p == "-" || p == "" {
+		return "<stdin>"
+	}
+	return p
+}
+
+// applyVars performs ${KEY} substitution on data using --var KEY=VALUE pairs.
+// Unknown keys are left intact (so workflow specs with intentional ${...}
+// placeholders pass through untouched). Returns data unchanged when no --var
+// flag was set.
+func applyVars(ctx *cli.Context, data []byte) ([]byte, error) {
+	if !ctx.IsSet("var") {
+		return data, nil
+	}
+	pairs := ctx.Strings("var")
+	if len(pairs) == 0 {
+		return data, nil
+	}
+	vars := make(map[string]string, len(pairs))
+	for _, p := range pairs {
+		eq := strings.IndexByte(p, '=')
+		if eq <= 0 {
+			return nil, cli.Errorf("--var %q: expected KEY=VALUE", p)
+		}
+		vars[p[:eq]] = p[eq+1:]
+	}
+	out := os.Expand(string(data), func(k string) string {
+		if v, ok := vars[k]; ok {
+			return v
+		}
+		return "${" + k + "}"
+	})
+	return []byte(out), nil
+}
+
+// printDryRun pretty-prints a request body without sending HTTP. Generated
+// handlers call this when --dry-run is set, then return its result so the
+// command exits 0.
+func printDryRun(ctx *cli.Context, body any) error {
+	pretty, err := marshalForOutput(ctx, body)
+	if err != nil {
+		return err
+	}
+	ctx.Println(string(pretty))
+	return nil
+}
+
+// parseTagFlags converts repeatable --tag KEY=VALUE flags into a map. Returns
+// nil when no --tag is set so callers can leave the field unset.
+func parseTagFlags(ctx *cli.Context) (map[string]string, error) {
+	if !ctx.IsSet("tag") {
+		return nil, nil
+	}
+	pairs := ctx.Strings("tag")
+	if len(pairs) == 0 {
+		return nil, nil
+	}
+	out := make(map[string]string, len(pairs))
+	for _, p := range pairs {
+		eq := strings.IndexByte(p, '=')
+		if eq <= 0 {
+			return nil, cli.Errorf("--tag %q: expected KEY=VALUE", p)
+		}
+		out[p[:eq]] = p[eq+1:]
+	}
+	return out, nil
+}
+
+// printResponse renders the response body according to the --output (-o)
+// global flag. The operationId lets us route to a custom per-command pretty
+// renderer (registered via RegisterResponseRenderer in a hand-written
+// sibling) when the resolved mode is "pretty"; machine-parseable modes
+// (json, yaml, id, name) always go through the generic path so scripts get a
+// stable shape. Non-2xx responses are surfaced as errors with a typed exit
+// code so callers exit with a meaningful status.
+func printResponse(ctx *cli.Context, opID string, status int, body []byte) error {
+	if status >= 200 && status < 300 {
+		if ctx.Bool("quiet") {
+			return nil
+		}
+		return renderResponse(ctx, opID, body)
+	}
+	pretty := body
+	if looksLikeJSON(body) {
+		var tmp any
+		if err := json.Unmarshal(body, &tmp); err == nil {
+			if buf, err := json.MarshalIndent(tmp, "", "  "); err == nil {
+				pretty = buf
+			}
+		}
+	}
+	return &cli.ExitError{Code: exitCodeForStatus(status), Message: fmt.Sprintf("HTTP %d: %s", status, string(pretty))}
+}
+
+func exitCodeForStatus(status int) int {
+	switch {
+	case status >= 500:
+		return 4
+	case status >= 400:
+		return 5
+	default:
+		return 1
+	}
+}
+
+// renderResponse writes the response body to ctx.Stdout() per --output mode.
+//
+// --fields, when set, projects each row down to the requested keys before
+// formatting. Unknown fields are rejected with the available field list so
+// scripts fail loudly on typos. In pretty mode (auto on a TTY, or explicit
+// --output pretty) a registered per-operation renderer takes precedence
+// over the generic shape-driven renderer — but only when --fields is unset,
+// because custom renderers don't know about field projection.
+func renderResponse(ctx *cli.Context, opID string, body []byte) error {
+	if len(body) == 0 {
+		return nil
+	}
+	format := strings.ToLower(ctx.String("output"))
+	if format == "" || format == "auto" {
+		if stdoutIsTerminal(ctx) {
+			format = "pretty"
+		} else {
+			format = "json"
+		}
+	}
+
+	fields := parseFieldsFlag(ctx)
+
+	// Custom renderers only fire when no projection is requested — they own
+	// the full shape and would lose context if we pre-projected.
+	if format == "pretty" && len(fields) == 0 {
+		if fn := responseRendererFor(opID); fn != nil {
+			return fn(ctx, body)
+		}
+	}
+
+	if !looksLikeJSON(body) {
+		// Non-JSON body: print as-is, ignore --fields.
+		ctx.Println(string(body))
+		return nil
+	}
+
+	if len(fields) > 0 {
+		// Validate up front so a bad field errors before we render
+		// anything. Pretty rendering is a non-data formatter and won't
+		// surface the typo otherwise.
+		if err := validateFieldsInBody(body, fields); err != nil {
+			return err
+		}
+		if format == "pretty" {
+			return renderPretty(ctx, body, fields...)
+		}
+		projected, err := projectBody(body, fields)
+		if err != nil {
+			return err
+		}
+		return writeFormat(ctx, format, projected)
+	}
+	return writeFormatRaw(ctx, format, body)
+}
+
+// validateFieldsInBody rejects unknown field names against the first row of
+// a list response (or the resource itself for a single object). This runs
+// before rendering so typos fail loudly regardless of the chosen format.
+func validateFieldsInBody(body []byte, fields []string) error {
+	var raw any
+	if err := json.Unmarshal(body, &raw); err != nil {
+		return nil
+	}
+	obj, ok := raw.(map[string]any)
+	if !ok {
+		return nil
+	}
+	if items, isList := obj["items"].([]any); isList {
+		if len(items) == 0 {
+			return nil
+		}
+		first, _ := items[0].(map[string]any)
+		return validateFields(first, fields)
+	}
+	return validateFields(obj, fields)
+}
+
+// parseFieldsFlag returns the requested projection. wonton's Strings flag is
+// already repeatable (--fields a --fields b); we additionally split each
+// value on "," so --fields a,b works too.
+func parseFieldsFlag(ctx *cli.Context) []string {
+	if !ctx.IsSet("fields") {
+		return nil
+	}
+	var out []string
+	for _, raw := range ctx.Strings("fields") {
+		for _, p := range strings.Split(raw, ",") {
+			if p = strings.TrimSpace(p); p != "" {
+				out = append(out, p)
+			}
+		}
+	}
+	return out
+}
+
+// projectBody returns a JSON-serializable value containing only the
+// requested fields. For a paginated list envelope we keep the envelope keys
+// (has_more, next_cursor, …) and project items[]; for a single resource we
+// project the resource itself.
+//
+// Returns an error naming the unknown field and listing what is available
+// so callers see actionable feedback on a typo.
+func projectBody(body []byte, fields []string) (any, error) {
+	var raw any
+	if err := json.Unmarshal(body, &raw); err != nil {
+		return nil, err
+	}
+	obj, ok := raw.(map[string]any)
+	if !ok {
+		return raw, nil
+	}
+	if items, isList := obj["items"].([]any); isList {
+		if len(items) > 0 {
+			first, _ := items[0].(map[string]any)
+			if err := validateFields(first, fields); err != nil {
+				return nil, err
+			}
+		}
+		projected := make([]any, len(items))
+		for i, it := range items {
+			row, _ := it.(map[string]any)
+			projected[i] = pickFields(row, fields)
+		}
+		out := make(map[string]any, len(obj))
+		for k, v := range obj {
+			out[k] = v
+		}
+		out["items"] = projected
+		return out, nil
+	}
+	if err := validateFields(obj, fields); err != nil {
+		return nil, err
+	}
+	return pickFields(obj, fields), nil
+}
+
+// validateFields errors when any requested field is missing from sample.
+// The error includes the sorted list of available fields so the user can
+// fix a typo in one shot.
+func validateFields(sample map[string]any, fields []string) error {
+	if sample == nil {
+		return nil
+	}
+	for _, f := range fields {
+		if _, ok := sample[f]; !ok {
+			available := make([]string, 0, len(sample))
+			for k := range sample {
+				available = append(available, k)
+			}
+			sort.Strings(available)
+			return cli.Errorf("--fields: unknown field %q\navailable: %s", f, strings.Join(available, ", "))
+		}
+	}
+	return nil
+}
+
+// pickFields returns a new map with only the requested keys, preserving the
+// caller-specified order via an ordered map encoded as a slice of pairs.
+// Since Go maps don't preserve insertion order, we round-trip through a
+// linked structure: easier to just emit JSON directly with explicit order.
+func pickFields(obj map[string]any, fields []string) map[string]any {
+	if obj == nil {
+		return nil
+	}
+	out := make(map[string]any, len(fields))
+	for _, f := range fields {
+		if v, ok := obj[f]; ok {
+			out[f] = v
+		}
+	}
+	return out
+}
+
+// writeFormat marshals an already-projected value in the chosen format.
+func writeFormat(ctx *cli.Context, format string, projected any) error {
+	switch format {
+	case "json", "pretty":
+		// Pretty falls back to JSON when --fields is set: there's no
+		// reasonable "table of arbitrary projected scalars" view that beats
+		// JSON for clarity, and JSON is what the user shaped.
+		buf, err := json.MarshalIndent(projected, "", "  ")
+		if err != nil {
+			return err
+		}
+		ctx.Println(string(buf))
+		return nil
+	case "yaml":
+		buf, err := yaml.Marshal(projected)
+		if err != nil {
+			return err
+		}
+		ctx.Println(strings.TrimRight(string(buf), "\n"))
+		return nil
+	case "text":
+		return writeProjectedText(ctx, projected)
+	default:
+		return cli.Errorf("--output %q: expected one of auto, pretty, json, yaml, text", format)
+	}
+}
+
+// writeFormatRaw formats the response without a projection. For text we
+// fall back to the generic auto-picked columns (same logic as the pretty
+// renderer's table).
+func writeFormatRaw(ctx *cli.Context, format string, body []byte) error {
+	switch format {
+	case "pretty":
+		return renderPretty(ctx, body)
+	case "json":
+		var tmp any
+		if err := json.Unmarshal(body, &tmp); err != nil {
+			ctx.Println(string(body))
+			return nil
+		}
+		buf, err := json.MarshalIndent(tmp, "", "  ")
+		if err != nil {
+			return err
+		}
+		ctx.Println(string(buf))
+		return nil
+	case "yaml":
+		var tmp any
+		if err := json.Unmarshal(body, &tmp); err != nil {
+			ctx.Println(string(body))
+			return nil
+		}
+		buf, err := yaml.Marshal(tmp)
+		if err != nil {
+			return err
+		}
+		ctx.Println(strings.TrimRight(string(buf), "\n"))
+		return nil
+	case "text":
+		return writeAutoText(ctx, body)
+	default:
+		return cli.Errorf("--output %q: expected one of auto, pretty, json, yaml, text", format)
+	}
+}
+
+// writeProjectedText prints projected data as tab-separated rows. Lists get
+// one row per item; single resources get one row. Field order matches the
+// --fields flag (its argument was carried through projectBody → pickFields,
+// but Go map iteration is unordered, so we re-derive order here from the
+// keys present in the projected value).
+func writeProjectedText(ctx *cli.Context, projected any) error {
+	rows := projectedRows(projected)
+	for _, row := range rows {
+		// Stable column order: sort keys alphabetically. Callers who care
+		// about column order should rely on -o yaml/json instead — text is
+		// for ad-hoc piping.
+		keys := make([]string, 0, len(row))
+		for k := range row {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+		cells := make([]string, len(keys))
+		for i, k := range keys {
+			cells[i] = fieldString(row[k])
+		}
+		ctx.Println(strings.Join(cells, "\t"))
+	}
+	return nil
+}
+
+// projectedRows extracts a flat slice of row-maps from a projected value:
+// envelope → items[], resource → [resource]. Anything else returns empty.
+func projectedRows(projected any) []map[string]any {
+	obj, ok := projected.(map[string]any)
+	if !ok {
+		return nil
+	}
+	if items, isList := obj["items"].([]any); isList {
+		out := make([]map[string]any, 0, len(items))
+		for _, it := range items {
+			if row, ok := it.(map[string]any); ok {
+				out = append(out, row)
+			}
+		}
+		return out
+	}
+	return []map[string]any{obj}
+}
+
+// writeAutoText emits tab-separated rows using the generic column picker
+// when no --fields is set. Same column choice as the pretty table.
+func writeAutoText(ctx *cli.Context, body []byte) error {
+	var raw any
+	if err := json.Unmarshal(body, &raw); err != nil {
+		ctx.Println(string(body))
+		return nil
+	}
+	obj, ok := raw.(map[string]any)
+	if !ok {
+		ctx.Println(string(body))
+		return nil
+	}
+	if items, isList := obj["items"].([]any); isList {
+		if len(items) == 0 {
+			return nil
+		}
+		cols := pickColumns(items)
+		for _, it := range items {
+			row, _ := it.(map[string]any)
+			cells := make([]string, len(cols))
+			for i, c := range cols {
+				cells[i] = fieldString(row[c])
+			}
+			ctx.Println(strings.Join(cells, "\t"))
+		}
+		return nil
+	}
+	keys := orderedKeys(obj)
+	cells := make([]string, 0, len(keys))
+	for _, k := range keys {
+		if isScalar(obj[k]) {
+			cells = append(cells, fieldString(obj[k]))
+		}
+	}
+	ctx.Println(strings.Join(cells, "\t"))
+	return nil
+}
+
+// fieldString stringifies a JSON value for tab-separated output. Nested
+// objects/arrays are JSON-encoded so each row stays single-line.
+func fieldString(v any) string {
+	switch x := v.(type) {
+	case nil:
+		return ""
+	case string:
+		return x
+	case bool:
+		if x {
+			return "true"
+		}
+		return "false"
+	case json.Number:
+		return string(x)
+	case float64:
+		if x == float64(int64(x)) {
+			return fmt.Sprintf("%d", int64(x))
+		}
+		return fmt.Sprintf("%g", x)
+	default:
+		buf, err := json.Marshal(v)
+		if err != nil {
+			return fmt.Sprintf("%v", v)
+		}
+		return string(buf)
+	}
+}
+
+// marshalForOutput renders an arbitrary value (typically a request body)
+// according to --output. Used by --dry-run.
+func marshalForOutput(ctx *cli.Context, v any) ([]byte, error) {
+	mode := strings.ToLower(ctx.String("output"))
+	if mode == "yaml" {
+		return yaml.Marshal(v)
+	}
+	var buf bytes.Buffer
+	enc := json.NewEncoder(&buf)
+	enc.SetIndent("", "  ")
+	enc.SetEscapeHTML(false)
+	if err := enc.Encode(v); err != nil {
+		return nil, err
+	}
+	return bytes.TrimRight(buf.Bytes(), "\n"), nil
 }
 
 // parseIntArg parses a positional int argument, returning a friendly error

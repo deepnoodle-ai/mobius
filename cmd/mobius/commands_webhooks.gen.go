@@ -8,7 +8,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/deepnoodle-ai/wonton/cli"
@@ -24,12 +23,13 @@ func registerWebhooksCommands(app *cli.App) {
 		Description("Create a webhook").
 		Flags(
 			cli.Bool("enabled", "").Help("Whether the webhook starts enabled. Defaults to true when omitted."),
-			cli.Strings("events", "").Help("[required] Event types to subscribe to. Use wildcards for broad subscriptions, e.g. `[\"run.*\"]` for all run events."),
+			cli.Strings("events", "").Help("[required] Event types to subscribe to. Use wildcards for broad subscriptions, e.g. `[\"run.*\"]` for all run ev…"),
 			cli.String("name", "").Help("[required] Human-readable name, unique within the project."),
-			cli.String("signing-secret", "").Help("Optional HMAC-SHA256 secret. When set, Mobius signs each POST body and includes `X-Mobius-Signature: sha256=<hex>` in the request headers."),
-			cli.String("tags", "").Help("Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints. (JSON)"),
-			cli.String("url", "").Help("The endpoint Mobius will POST event payloads to. May be left empty at creation time so a candidate URL can be tested via the ping endpoint before it is saved; events do not fire for webhooks with an empty URL."),
-			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
+			cli.String("signing-secret", "").Help("Optional HMAC-SHA256 secret. When set, Mobius signs each POST body and includes `X-Mobius-Signature…"),
+			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
+			cli.String("url", "").Help("The endpoint Mobius will POST event payloads to. May be left empty at creation time so a candidate …"),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -57,10 +57,11 @@ func registerWebhooksCommands(app *cli.App) {
 				v := ctx.String("signing-secret")
 				body.SigningSecret = &v
 			}
-			if ctx.IsSet("tags") {
-				if err := json.Unmarshal([]byte(ctx.String("tags")), &body.Tags); err != nil {
-					return fmt.Errorf("--tags: invalid JSON: %w", err)
-				}
+			if tags, err := parseTagFlags(ctx); err != nil {
+				return err
+			} else if tags != nil {
+				v := api.TagMap(tags)
+				body.Tags = &v
 			}
 			if ctx.IsSet("url") {
 				v := ctx.String("url")
@@ -72,11 +73,14 @@ func registerWebhooksCommands(app *cli.App) {
 			if body.Name == "" {
 				return fmt.Errorf("--name is required (or supply it via --file)")
 			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
+			}
 			resp, err := client.CreateWebhookWithResponse(ctx.Context(), p0, body)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "createWebhook", resp.StatusCode(), resp.Body)
 		})
 
 	webhooksGrp.Command("delete").
@@ -95,7 +99,7 @@ func registerWebhooksCommands(app *cli.App) {
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "deleteWebhook", resp.StatusCode(), resp.Body)
 		})
 
 	webhooksGrp.Command("get").
@@ -114,7 +118,7 @@ func registerWebhooksCommands(app *cli.App) {
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "getWebhook", resp.StatusCode(), resp.Body)
 		})
 
 	webhooksGrp.Command("list").
@@ -149,7 +153,7 @@ func registerWebhooksCommands(app *cli.App) {
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "listWebhooks", resp.StatusCode(), resp.Body)
 		})
 
 	webhooksGrp.Command("list-deliveries").
@@ -181,15 +185,16 @@ func registerWebhooksCommands(app *cli.App) {
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "listWebhookDeliveries", resp.StatusCode(), resp.Body)
 		})
 
 	webhooksGrp.Command("ping-webhook").
 		Description("Test a webhook URL").
 		Args("id").
 		Flags(
-			cli.String("url", "").Help("URL to test. When supplied, the ping is sent to this URL instead of the webhook's saved URL — use this to validate a candidate URL before saving it. When omitted, the webhook's current saved URL is used."),
-			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
+			cli.String("url", "").Help("URL to test. When supplied, the ping is sent to this URL instead of the webhook's saved URL — use…"),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -211,11 +216,14 @@ func registerWebhooksCommands(app *cli.App) {
 			if ctx.String("file") == "" && !ctx.IsSet("url") {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
+			}
 			resp, err := client.PingWebhookWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "pingWebhook", resp.StatusCode(), resp.Body)
 		})
 
 	webhooksGrp.Command("update").
@@ -225,10 +233,11 @@ func registerWebhooksCommands(app *cli.App) {
 			cli.Bool("enabled", "").Help("Set to false to disable delivery without deleting the webhook."),
 			cli.Strings("events", "").Help("Replacement event subscriptions. Replaces the entire current list."),
 			cli.String("name", "").Help("Replacement human-readable name."),
-			cli.String("signing-secret", "").Help("Replace the current signing secret. Set to empty string to disable signing. Omit to leave the current secret unchanged."),
-			cli.String("tags", "").Help("Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints. (JSON)"),
+			cli.String("signing-secret", "").Help("Replace the current signing secret. Set to empty string to disable signing. Omit to leave the curre…"),
+			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
 			cli.String("url", "").Help("Replacement endpoint URL."),
-			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -259,23 +268,27 @@ func registerWebhooksCommands(app *cli.App) {
 				v := ctx.String("signing-secret")
 				body.SigningSecret = &v
 			}
-			if ctx.IsSet("tags") {
-				if err := json.Unmarshal([]byte(ctx.String("tags")), &body.Tags); err != nil {
-					return fmt.Errorf("--tags: invalid JSON: %w", err)
-				}
+			if tags, err := parseTagFlags(ctx); err != nil {
+				return err
+			} else if tags != nil {
+				v := api.TagMap(tags)
+				body.Tags = &v
 			}
 			if ctx.IsSet("url") {
 				v := ctx.String("url")
 				body.Url = &v
 			}
-			if ctx.String("file") == "" && !ctx.IsSet("enabled") && !ctx.IsSet("events") && !ctx.IsSet("name") && !ctx.IsSet("signing-secret") && !ctx.IsSet("tags") && !ctx.IsSet("url") {
+			if ctx.String("file") == "" && !ctx.IsSet("enabled") && !ctx.IsSet("events") && !ctx.IsSet("name") && !ctx.IsSet("signing-secret") && !ctx.IsSet("tag") && !ctx.IsSet("url") {
 				return fmt.Errorf("at least one flag or --file is required")
+			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
 			}
 			resp, err := client.UpdateWebhookWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "updateWebhook", resp.StatusCode(), resp.Body)
 		})
 
 }

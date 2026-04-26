@@ -41,12 +41,24 @@ func newApp() *cli.App {
 			Default("info").
 			Enum("debug", "info", "warn", "error").
 			Help("Log level"),
+		cli.String("output", "o").
+			Env("MOBIUS_OUTPUT").
+			Default("auto").
+			Enum("auto", "pretty", "json", "yaml", "text").
+			Help("Response format: auto (pretty on TTY, json on pipe), pretty, json, yaml, or text (tab-separated)."),
+		cli.Strings("fields", "F").
+			Help("Comma-separated fields to project (e.g. -F id,name). Composes with --output."),
+		cli.Bool("quiet", "q").
+			Help("Suppress response output on success (errors still print)."),
+		cli.Strings("var", "").
+			Help("${KEY} substitution applied to --file/@-file contents. Repeatable: --var ENV=prod."),
 	)
 
 	registerWorkerCommand(app)
 	registerAuthCommands(app)
 	registerGeneratedCommands(app)
 	registerConfigExtensions(app)
+	registerWorkflowsExtras(app)
 
 	return app
 }

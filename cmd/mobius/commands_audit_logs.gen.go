@@ -78,7 +78,7 @@ func registerAuditLogsCommands(app *cli.App) {
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "listAuditLogs", resp.StatusCode(), resp.Body)
 		})
 
 }

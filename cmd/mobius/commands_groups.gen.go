@@ -24,7 +24,8 @@ func registerGroupsCommands(app *cli.App) {
 		Args("group").
 		Flags(
 			cli.String("user-id", "").Help("[required] Org member user ID to add. Must be a current org member."),
-			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -45,11 +46,14 @@ func registerGroupsCommands(app *cli.App) {
 			if body.UserId == "" {
 				return fmt.Errorf("--user-id is required (or supply it via --file)")
 			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
+			}
 			resp, err := client.AddGroupMemberWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "addGroupMember", resp.StatusCode(), resp.Body)
 		})
 
 	groupsGrp.Command("create").
@@ -58,8 +62,9 @@ func registerGroupsCommands(app *cli.App) {
 			cli.String("description", "").Help("Optional human-readable description."),
 			cli.String("handle", "").Help("URL-safe handle, unique within the project. Auto-derived from name if omitted."),
 			cli.String("name", "").Help("[required] Display name (1–64 chars)."),
-			cli.String("routing-policy", "").Help("How responses are collected from group members: `first_responder` or `all_members`. Defaults to `first_responder`."),
-			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
+			cli.String("routing-policy", "").Help("How responses are collected from group members: `first_responder` or `all_members`. Defaults to `fi…"),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -91,11 +96,14 @@ func registerGroupsCommands(app *cli.App) {
 			if body.Name == "" {
 				return fmt.Errorf("--name is required (or supply it via --file)")
 			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
+			}
 			resp, err := client.CreateGroupWithResponse(ctx.Context(), p0, body)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "createGroup", resp.StatusCode(), resp.Body)
 		})
 
 	groupsGrp.Command("delete").
@@ -114,7 +122,7 @@ func registerGroupsCommands(app *cli.App) {
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "deleteGroup", resp.StatusCode(), resp.Body)
 		})
 
 	groupsGrp.Command("get").
@@ -133,7 +141,7 @@ func registerGroupsCommands(app *cli.App) {
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "getGroup", resp.StatusCode(), resp.Body)
 		})
 
 	groupsGrp.Command("list").
@@ -163,7 +171,7 @@ func registerGroupsCommands(app *cli.App) {
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "listGroups", resp.StatusCode(), resp.Body)
 		})
 
 	groupsGrp.Command("list-groups").
@@ -182,7 +190,7 @@ func registerGroupsCommands(app *cli.App) {
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "listMemberGroups", resp.StatusCode(), resp.Body)
 		})
 
 	groupsGrp.Command("list-members").
@@ -214,7 +222,7 @@ func registerGroupsCommands(app *cli.App) {
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "listGroupMembers", resp.StatusCode(), resp.Body)
 		})
 
 	groupsGrp.Command("remove-member").
@@ -234,7 +242,7 @@ func registerGroupsCommands(app *cli.App) {
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "removeGroupMember", resp.StatusCode(), resp.Body)
 		})
 
 	groupsGrp.Command("update").
@@ -243,8 +251,9 @@ func registerGroupsCommands(app *cli.App) {
 		Flags(
 			cli.String("description", "").Help("Replacement description."),
 			cli.String("name", "").Help("Replacement human-readable name."),
-			cli.String("routing-policy", "").Help("Replacement routing policy, either `first_responder` or `all_members`. Affects future interactions only; in-flight interactions retain the snapshotted policy."),
-			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
+			cli.String("routing-policy", "").Help("Replacement routing policy, either `first_responder` or `all_members`. Affects future interactions …"),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -274,11 +283,14 @@ func registerGroupsCommands(app *cli.App) {
 			if ctx.String("file") == "" && !ctx.IsSet("description") && !ctx.IsSet("name") && !ctx.IsSet("routing-policy") {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
+			}
 			resp, err := client.UpdateGroupWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "updateGroup", resp.StatusCode(), resp.Body)
 		})
 
 }

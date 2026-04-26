@@ -8,7 +8,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/deepnoodle-ai/wonton/cli"
@@ -23,7 +22,8 @@ func registerTriggersCommands(app *cli.App) {
 	triggersGrp.Command("create").
 		Description("Create a trigger").
 		Flags(
-			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -40,11 +40,14 @@ func registerTriggersCommands(app *cli.App) {
 			if ctx.String("file") == "" {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
+			}
 			resp, err := client.CreateTriggerWithResponse(ctx.Context(), p0, body)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "createTrigger", resp.StatusCode(), resp.Body)
 		})
 
 	triggersGrp.Command("create-target").
@@ -53,9 +56,10 @@ func registerTriggersCommands(app *cli.App) {
 		Flags(
 			cli.String("condition", "").Help("Expression evaluated against the event payload. Omit to always run."),
 			cli.Bool("enabled", "").Help("Whether this target starts enabled. Defaults to true when omitted."),
-			cli.String("input-mapping", "").Help("Maps workflow input names to JSONPath expressions. (JSON)"),
+			cli.String("input-mapping", "").Help("Maps workflow input names to JSONPath expressions. Accepts JSON, @file, or @-."),
 			cli.String("workflow-id", "").Help("[required] ID of the workflow definition to run."),
-			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -79,8 +83,8 @@ func registerTriggersCommands(app *cli.App) {
 				body.Enabled = &v
 			}
 			if ctx.IsSet("input-mapping") {
-				if err := json.Unmarshal([]byte(ctx.String("input-mapping")), &body.InputMapping); err != nil {
-					return fmt.Errorf("--input-mapping: invalid JSON: %w", err)
+				if err := decodeFlagJSON(ctx, "input-mapping", ctx.String("input-mapping"), &body.InputMapping); err != nil {
+					return err
 				}
 			}
 			if ctx.IsSet("workflow-id") {
@@ -89,11 +93,14 @@ func registerTriggersCommands(app *cli.App) {
 			if body.WorkflowId == "" {
 				return fmt.Errorf("--workflow-id is required (or supply it via --file)")
 			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
+			}
 			resp, err := client.CreateTriggerTargetWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "createTriggerTarget", resp.StatusCode(), resp.Body)
 		})
 
 	triggersGrp.Command("delete").
@@ -112,7 +119,7 @@ func registerTriggersCommands(app *cli.App) {
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "deleteTrigger", resp.StatusCode(), resp.Body)
 		})
 
 	triggersGrp.Command("delete-target").
@@ -132,7 +139,7 @@ func registerTriggersCommands(app *cli.App) {
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "deleteTriggerTarget", resp.StatusCode(), resp.Body)
 		})
 
 	triggersGrp.Command("delete-trigger-targets").
@@ -151,7 +158,7 @@ func registerTriggersCommands(app *cli.App) {
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "deleteAllTriggerTargets", resp.StatusCode(), resp.Body)
 		})
 
 	triggersGrp.Command("get").
@@ -170,7 +177,7 @@ func registerTriggersCommands(app *cli.App) {
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "getTrigger", resp.StatusCode(), resp.Body)
 		})
 
 	triggersGrp.Command("get-target").
@@ -190,7 +197,7 @@ func registerTriggersCommands(app *cli.App) {
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "getTriggerTarget", resp.StatusCode(), resp.Body)
 		})
 
 	triggersGrp.Command("list").
@@ -230,7 +237,7 @@ func registerTriggersCommands(app *cli.App) {
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "listTriggers", resp.StatusCode(), resp.Body)
 		})
 
 	triggersGrp.Command("list-fires").
@@ -267,7 +274,7 @@ func registerTriggersCommands(app *cli.App) {
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "listTriggerFires", resp.StatusCode(), resp.Body)
 		})
 
 	triggersGrp.Command("list-targets").
@@ -286,20 +293,21 @@ func registerTriggersCommands(app *cli.App) {
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "listTriggerTargets", resp.StatusCode(), resp.Body)
 		})
 
 	triggersGrp.Command("update").
 		Description("Update a trigger").
 		Args("id").
 		Flags(
-			cli.String("concurrency-policy", "").Help("Controls overlapping runs from the same trigger: - `allow` — start new runs unconditionally. - `forbid` — skip the new fire if a run from this trigger is still active. - `replace` — cancel the active run before starting a new one."),
+			cli.String("concurrency-policy", "").Help("Controls overlapping runs from the same trigger: - `allow` — start new runs unconditionally. - `f…"),
 			cli.Bool("enabled", "").Help("Set to false to pause the trigger without deleting it."),
 			cli.String("name", "").Help("Replacement human-readable name."),
-			cli.String("source-config", "").Help("Typed source configuration. The shape is determined by the trigger's `kind` (`schedule` → `ScheduleSourceConfig`, `webhook` → `WebhookSourceConfig`, `event` → `EventSourceConfig`); mismatches are rejected with 400. (JSON)"),
-			cli.String("tags", "").Help("Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints. (JSON)"),
-			cli.String("targets", "").Help("Replacement target set for this trigger. Omit to leave targets unchanged; send an empty array to remove all targets. (JSON)"),
-			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
+			cli.String("source-config", "").Help("Typed source configuration. The shape is determined by the trigger's `kind` (`schedule` → `Schedu… Accepts JSON, @file, or @-."),
+			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
+			cli.String("targets", "").Help("Replacement target set for this trigger. Omit to leave targets unchanged; send an empty array to re… Accepts JSON, @file, or @-."),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -327,28 +335,32 @@ func registerTriggersCommands(app *cli.App) {
 				body.Name = &v
 			}
 			if ctx.IsSet("source-config") {
-				if err := json.Unmarshal([]byte(ctx.String("source-config")), &body.SourceConfig); err != nil {
-					return fmt.Errorf("--source-config: invalid JSON: %w", err)
+				if err := decodeFlagJSON(ctx, "source-config", ctx.String("source-config"), &body.SourceConfig); err != nil {
+					return err
 				}
 			}
-			if ctx.IsSet("tags") {
-				if err := json.Unmarshal([]byte(ctx.String("tags")), &body.Tags); err != nil {
-					return fmt.Errorf("--tags: invalid JSON: %w", err)
-				}
+			if tags, err := parseTagFlags(ctx); err != nil {
+				return err
+			} else if tags != nil {
+				v := api.TagMap(tags)
+				body.Tags = &v
 			}
 			if ctx.IsSet("targets") {
-				if err := json.Unmarshal([]byte(ctx.String("targets")), &body.Targets); err != nil {
-					return fmt.Errorf("--targets: invalid JSON: %w", err)
+				if err := decodeFlagJSON(ctx, "targets", ctx.String("targets"), &body.Targets); err != nil {
+					return err
 				}
 			}
-			if ctx.String("file") == "" && !ctx.IsSet("concurrency-policy") && !ctx.IsSet("enabled") && !ctx.IsSet("name") && !ctx.IsSet("source-config") && !ctx.IsSet("tags") && !ctx.IsSet("targets") {
+			if ctx.String("file") == "" && !ctx.IsSet("concurrency-policy") && !ctx.IsSet("enabled") && !ctx.IsSet("name") && !ctx.IsSet("source-config") && !ctx.IsSet("tag") && !ctx.IsSet("targets") {
 				return fmt.Errorf("at least one flag or --file is required")
+			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
 			}
 			resp, err := client.UpdateTriggerWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "updateTrigger", resp.StatusCode(), resp.Body)
 		})
 
 	triggersGrp.Command("update-target").
@@ -357,9 +369,10 @@ func registerTriggersCommands(app *cli.App) {
 		Flags(
 			cli.String("condition", "").Help("Replacement condition expression. Set to empty string to remove."),
 			cli.Bool("enabled", "").Help("Set to false to pause this target without removing it."),
-			cli.String("input-mapping", "").Help("Replacement input mapping. Set to null to clear all mappings. (JSON)"),
+			cli.String("input-mapping", "").Help("Replacement input mapping. Set to null to clear all mappings. Accepts JSON, @file, or @-."),
 			cli.String("workflow-id", "").Help("Replacement workflow definition ID."),
-			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -384,8 +397,8 @@ func registerTriggersCommands(app *cli.App) {
 				body.Enabled = &v
 			}
 			if ctx.IsSet("input-mapping") {
-				if err := json.Unmarshal([]byte(ctx.String("input-mapping")), &body.InputMapping); err != nil {
-					return fmt.Errorf("--input-mapping: invalid JSON: %w", err)
+				if err := decodeFlagJSON(ctx, "input-mapping", ctx.String("input-mapping"), &body.InputMapping); err != nil {
+					return err
 				}
 			}
 			if ctx.IsSet("workflow-id") {
@@ -395,11 +408,14 @@ func registerTriggersCommands(app *cli.App) {
 			if ctx.String("file") == "" && !ctx.IsSet("condition") && !ctx.IsSet("enabled") && !ctx.IsSet("input-mapping") && !ctx.IsSet("workflow-id") {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
+			}
 			resp, err := client.UpdateTriggerTargetWithResponse(ctx.Context(), p0, p1, p2, body)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "updateTriggerTarget", resp.StatusCode(), resp.Body)
 		})
 
 }

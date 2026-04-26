@@ -8,7 +8,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/deepnoodle-ai/wonton/cli"
@@ -37,7 +36,7 @@ func registerToolsCommands(app *cli.App) {
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "getToolRun", resp.StatusCode(), resp.Body)
 		})
 
 	toolsGrp.Command("list").
@@ -54,16 +53,17 @@ func registerToolsCommands(app *cli.App) {
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "listTools", resp.StatusCode(), resp.Body)
 		})
 
 	toolsGrp.Command("run-tool").
 		Description("Invoke a workflow tool").
 		Args("handle").
 		Flags(
-			cli.String("input", "").Help("Input values matching the tool's input_schema. (JSON)"),
-			cli.Int("timeout-seconds", "").Help("How long (in seconds) to wait for synchronous completion. Default 30, max 120. If the run does not complete within this window the response is 202 with status active."),
-			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
+			cli.String("input", "").Help("Input values matching the tool's input_schema. Accepts JSON, @file, or @-."),
+			cli.Int("timeout-seconds", "").Help("How long (in seconds) to wait for synchronous completion. Default 30, max 120. If the run does not …"),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -79,8 +79,8 @@ func registerToolsCommands(app *cli.App) {
 				return err
 			}
 			if ctx.IsSet("input") {
-				if err := json.Unmarshal([]byte(ctx.String("input")), &body.Input); err != nil {
-					return fmt.Errorf("--input: invalid JSON: %w", err)
+				if err := decodeFlagJSON(ctx, "input", ctx.String("input"), &body.Input); err != nil {
+					return err
 				}
 			}
 			if ctx.IsSet("timeout-seconds") {
@@ -90,11 +90,14 @@ func registerToolsCommands(app *cli.App) {
 			if ctx.String("file") == "" && !ctx.IsSet("input") && !ctx.IsSet("timeout-seconds") {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
+			}
 			resp, err := client.RunToolWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "runTool", resp.StatusCode(), resp.Body)
 		})
 
 }

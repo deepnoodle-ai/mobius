@@ -8,7 +8,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/deepnoodle-ai/wonton/cli"
@@ -23,15 +22,16 @@ func registerJobsCommands(app *cli.App) {
 	jobsGrp.Command("claim").
 		Description("Long-poll for the next claimable workflow job").
 		Flags(
-			cli.Strings("actions", "").Help("Action names this worker can execute. When provided, only jobs whose `action` is in this list are returned. When empty, action filtering is skipped."),
+			cli.Strings("actions", "").Help("Action names this worker can execute. When provided, only jobs whose `action` is in this list are r…"),
 			cli.String("agent-id", "").Help("Durable agent identity the worker is acting on behalf of."),
 			cli.String("agent-session-id", "").Help("Live agent session the worker is acting on behalf of."),
-			cli.Strings("queues", "").Help("Queue names the worker subscribes to. When empty the worker claims from any queue in the project. Workflow runs default to the \"default\" queue when not otherwise specified."),
-			cli.Int("wait-seconds", "").Help("How long to hold the request open waiting for a job to surface. 0 returns immediately. Capped at 30 by the server."),
-			cli.String("worker-id", "").Help("[required] Caller-assigned stable identifier for this worker process. Used as the lease fence and for worker registry tracking."),
+			cli.Strings("queues", "").Help("Queue names the worker subscribes to. When empty the worker claims from any queue in the project. W…"),
+			cli.Int("wait-seconds", "").Help("How long to hold the request open waiting for a job to surface. 0 returns immediately. Capped at 30…"),
+			cli.String("worker-id", "").Help("[required] Caller-assigned stable identifier for this worker process. Used as the lease fence and for worker r…"),
 			cli.String("worker-name", "").Help("Optional human-readable name shown in the worker list."),
 			cli.String("worker-version", "").Help("Optional version string shown in the worker list."),
-			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -79,11 +79,14 @@ func registerJobsCommands(app *cli.App) {
 			if body.WorkerId == "" {
 				return fmt.Errorf("--worker-id is required (or supply it via --file)")
 			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
+			}
 			resp, err := client.ClaimJobWithResponse(ctx.Context(), p0, body)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "claimJob", resp.StatusCode(), resp.Body)
 		})
 
 	jobsGrp.Command("complete-job").
@@ -92,11 +95,12 @@ func registerJobsCommands(app *cli.App) {
 		Flags(
 			cli.Int("attempt", "").Help("[required] Must match the `attempt` from the original claim."),
 			cli.String("error-message", "").Help("Human-readable error detail. Only relevant for failed status."),
-			cli.String("error-type", "").Help("Short error class identifier (e.g. \"TimeoutError\"). Used for observability and retry classification. Only relevant when `status: failed`."),
-			cli.String("result-b64", "").Help("Base64-encoded (standard encoding) bytes representing the job's output. The workflow engine decodes this and may pass it as input to downstream steps. Omit if the step produces no output."),
-			cli.String("status", "").Help("[required] Terminal status for this job attempt: `completed` or `failed`. `failed` triggers the workflow engine's retry logic if `attempt < max_attempts`."),
+			cli.String("error-type", "").Help("Short error class identifier (e.g. \"TimeoutError\"). Used for observability and retry classification…"),
+			cli.String("result-b64", "").Help("Base64-encoded (standard encoding) bytes representing the job's output. The workflow engine decodes…"),
+			cli.String("status", "").Help("[required] Terminal status for this job attempt: `completed` or `failed`. `failed` triggers the workflow engin…"),
 			cli.String("worker-id", "").Help("[required] Must match the `worker_id` from the original claim."),
-			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -141,28 +145,32 @@ func registerJobsCommands(app *cli.App) {
 			if body.WorkerId == "" {
 				return fmt.Errorf("--worker-id is required (or supply it via --file)")
 			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
+			}
 			resp, err := client.CompleteJobWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "completeJob", resp.StatusCode(), resp.Body)
 		})
 
 	jobsGrp.Command("create-interaction").
 		Description("Create a human-in-the-loop interaction from a claimed workflow job").
 		Args("id").
 		Flags(
-			cli.String("context", "").Help("Additional key-value context surfaced in the UI alongside the message. (JSON)"),
-			cli.String("expires-at", "").Help("Timestamp after which this interaction expires. (JSON)"),
+			cli.String("context", "").Help("Additional key-value context surfaced in the UI alongside the message. Accepts JSON, @file, or @-."),
+			cli.String("expires-at", "").Help("Timestamp after which this interaction expires. Accepts JSON, @file, or @-."),
 			cli.String("message", "").Help("[required] Message shown to the responder."),
-			cli.Bool("require-all", "").Help("When target.type is \"group\", setting require_all=true means all snapshotted group members must respond before the interaction is considered complete. Ignored for non-group targets. Defaults to false when omitted."),
-			cli.String("signal-name", "").Help("Optional signal name override. When omitted, the server derives the signal name from step_name or falls back to a default interaction signal name."),
-			cli.String("spec", "").Help("Declarative dialog contract for rendering and validating an interaction. Used at both authoring time (inside a workflow definition) and runtime (persisted on an interaction). Compatibility rules are enforced server-side:  - `approval` requires `mode = confirm` - `review` requires `mode = select` - `input` supports `input`, `select`, or `multi_select` (JSON)"),
+			cli.Bool("require-all", "").Help("When target.type is \"group\", setting require_all=true means all snapshotted group members must resp…"),
+			cli.String("signal-name", "").Help("Optional signal name override. When omitted, the server derives the signal name from step_name or f…"),
+			cli.String("spec", "").Help("Declarative dialog contract for rendering and validating an interaction. Used at both authoring tim… Accepts JSON, @file, or @-."),
 			cli.String("step-name", "").Help("Optional workflow step label for UI/debugging context"),
-			cli.String("target", "").Help("[required] Identifies who should receive an interaction request. Note: distinct from the caller/audit `Actor` vocabulary — a target is a *recipient*, not someone who has acted yet. (JSON)"),
-			cli.String("timeout", "").Help("Optional duration string (e.g. \"24h\", \"30m\") specifying how long the interaction should remain open before expiring. When absent the caller is responsible for setting expires_at directly."),
-			cli.String("type", "").Help("[required] Interaction kind: `approval` captures a decision, `review` captures acknowledgement or notes, and `input` collects free-form data."),
-			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
+			cli.String("target", "").Help("[required] Identifies who should receive an interaction request. Note: distinct from the caller/audit `Actor` … Accepts JSON, @file, or @-."),
+			cli.String("timeout", "").Help("Optional duration string (e.g. \"24h\", \"30m\") specifying how long the interaction should remain open…"),
+			cli.String("type", "").Help("[required] Interaction kind: `approval` captures a decision, `review` captures acknowledgement or notes, and `…"),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -178,13 +186,13 @@ func registerJobsCommands(app *cli.App) {
 				return err
 			}
 			if ctx.IsSet("context") {
-				if err := json.Unmarshal([]byte(ctx.String("context")), &body.Context); err != nil {
-					return fmt.Errorf("--context: invalid JSON: %w", err)
+				if err := decodeFlagJSON(ctx, "context", ctx.String("context"), &body.Context); err != nil {
+					return err
 				}
 			}
 			if ctx.IsSet("expires-at") {
-				if err := json.Unmarshal([]byte(ctx.String("expires-at")), &body.ExpiresAt); err != nil {
-					return fmt.Errorf("--expires-at: invalid JSON: %w", err)
+				if err := decodeFlagJSON(ctx, "expires-at", ctx.String("expires-at"), &body.ExpiresAt); err != nil {
+					return err
 				}
 			}
 			if ctx.IsSet("message") {
@@ -199,8 +207,8 @@ func registerJobsCommands(app *cli.App) {
 				body.SignalName = &v
 			}
 			if ctx.IsSet("spec") {
-				if err := json.Unmarshal([]byte(ctx.String("spec")), &body.Spec); err != nil {
-					return fmt.Errorf("--spec: invalid JSON: %w", err)
+				if err := decodeFlagJSON(ctx, "spec", ctx.String("spec"), &body.Spec); err != nil {
+					return err
 				}
 			}
 			if ctx.IsSet("step-name") {
@@ -208,8 +216,8 @@ func registerJobsCommands(app *cli.App) {
 				body.StepName = &v
 			}
 			if ctx.IsSet("target") {
-				if err := json.Unmarshal([]byte(ctx.String("target")), &body.Target); err != nil {
-					return fmt.Errorf("--target: invalid JSON: %w", err)
+				if err := decodeFlagJSON(ctx, "target", ctx.String("target"), &body.Target); err != nil {
+					return err
 				}
 			}
 			if ctx.IsSet("timeout") {
@@ -228,11 +236,14 @@ func registerJobsCommands(app *cli.App) {
 			if body.Type == "" {
 				return fmt.Errorf("--type is required (or supply it via --file)")
 			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
+			}
 			resp, err := client.CreateJobInteractionWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "createJobInteraction", resp.StatusCode(), resp.Body)
 		})
 
 	jobsGrp.Command("emit-job-events").
@@ -240,9 +251,10 @@ func registerJobsCommands(app *cli.App) {
 		Args("id").
 		Flags(
 			cli.Int("attempt", "").Help("[required] Must match the `attempt` from the original claim."),
-			cli.String("events", "").Help("[required] The batch of events to publish. All events are validated atomically. (JSON)"),
+			cli.String("events", "").Help("[required] The batch of events to publish. All events are validated atomically. Accepts JSON, @file, or @-."),
 			cli.String("worker-id", "").Help("[required] Must match the `worker_id` from the original claim."),
-			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -261,8 +273,8 @@ func registerJobsCommands(app *cli.App) {
 				body.Attempt = ctx.Int("attempt")
 			}
 			if ctx.IsSet("events") {
-				if err := json.Unmarshal([]byte(ctx.String("events")), &body.Events); err != nil {
-					return fmt.Errorf("--events: invalid JSON: %w", err)
+				if err := decodeFlagJSON(ctx, "events", ctx.String("events"), &body.Events); err != nil {
+					return err
 				}
 			}
 			if ctx.IsSet("worker-id") {
@@ -277,11 +289,14 @@ func registerJobsCommands(app *cli.App) {
 			if body.WorkerId == "" {
 				return fmt.Errorf("--worker-id is required (or supply it via --file)")
 			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
+			}
 			resp, err := client.EmitJobEventsWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "emitJobEvents", resp.StatusCode(), resp.Body)
 		})
 
 	jobsGrp.Command("get").
@@ -300,7 +315,7 @@ func registerJobsCommands(app *cli.App) {
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "getJob", resp.StatusCode(), resp.Body)
 		})
 
 	jobsGrp.Command("heartbeat").
@@ -309,7 +324,8 @@ func registerJobsCommands(app *cli.App) {
 		Flags(
 			cli.Int("attempt", "").Help("[required] Must match the `attempt` from the original claim."),
 			cli.String("worker-id", "").Help("[required] Must match the `worker_id` from the original claim."),
-			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -336,21 +352,24 @@ func registerJobsCommands(app *cli.App) {
 			if body.WorkerId == "" {
 				return fmt.Errorf("--worker-id is required (or supply it via --file)")
 			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
+			}
 			resp, err := client.HeartbeatJobWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "heartbeatJob", resp.StatusCode(), resp.Body)
 		})
 
 	jobsGrp.Command("run-job-action").
 		Description("Execute one server-side action for a claimed workflow job").
 		Args("id", "action-name").
 		Flags(
-			cli.Bool("dry-run", "").Help("When true, invokes the action without side effects. Only effective for actions that support dry-run mode."),
-			cli.String("parameters", "").Help("Input parameters passed to the action handler. (JSON)"),
+			cli.String("parameters", "").Help("Input parameters passed to the action handler. Accepts JSON, @file, or @-."),
 			cli.Int("timeout-seconds", "").Help("Override the default action execution timeout."),
-			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
 		Use(cli.RequireFlags("api-key")).
 		Run(func(ctx *cli.Context) error {
@@ -366,27 +385,26 @@ func registerJobsCommands(app *cli.App) {
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
 			}
-			if ctx.IsSet("dry-run") {
-				v := ctx.Bool("dry-run")
-				body.DryRun = &v
-			}
 			if ctx.IsSet("parameters") {
-				if err := json.Unmarshal([]byte(ctx.String("parameters")), &body.Parameters); err != nil {
-					return fmt.Errorf("--parameters: invalid JSON: %w", err)
+				if err := decodeFlagJSON(ctx, "parameters", ctx.String("parameters"), &body.Parameters); err != nil {
+					return err
 				}
 			}
 			if ctx.IsSet("timeout-seconds") {
 				v := ctx.Int("timeout-seconds")
 				body.TimeoutSeconds = &v
 			}
-			if ctx.String("file") == "" && !ctx.IsSet("dry-run") && !ctx.IsSet("parameters") && !ctx.IsSet("timeout-seconds") {
+			if ctx.String("file") == "" && !ctx.IsSet("parameters") && !ctx.IsSet("timeout-seconds") {
 				return fmt.Errorf("at least one flag or --file is required")
+			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
 			}
 			resp, err := client.RunJobActionWithResponse(ctx.Context(), p0, p1, p2, body)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "runJobAction", resp.StatusCode(), resp.Body)
 		})
 
 }
