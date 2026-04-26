@@ -1,14 +1,15 @@
 package mobius
 
 import (
-	"bufio"
 	"context"
-	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"time"
 
 	"github.com/deepnoodle-ai/mobius/mobius/api"
+	"github.com/deepnoodle-ai/wonton/sse"
 )
 
 // RunEventType identifies the kind of Server-Sent Event for a run.
@@ -16,13 +17,13 @@ type RunEventType string
 
 const (
 	RunEventTypeRunUpdated     RunEventType = "run_updated"
-	RunEventTypeStepProgress   RunEventType = "step_progress"
+	RunEventTypeJobUpdated     RunEventType = "job_updated"
 	RunEventTypeActionAppended RunEventType = "action_appended"
 )
 
 // RunEvent is a decoded Server-Sent Event from the run event stream.
 type RunEvent struct {
-	// Type is the event type (run_updated, step_progress, action_appended).
+	// Type is the event type (run_updated, job_updated, action_appended).
 	Type RunEventType
 	// RunID is the workflow run ID.
 	RunID string
@@ -43,9 +44,17 @@ type sseEnvelope struct {
 	Data      map[string]interface{} `json:"data"`
 }
 
+// sseReadBufferSize bounds a single SSE line. Run events embed step I/O, so
+// the bufio default (64KB) is too tight.
+const sseReadBufferSize = 8 << 20
+
 // WatchRun opens a Server-Sent Events stream for a single run and emits
 // decoded RunEvent values on the returned channel. The channel is closed
 // when ctx is cancelled or the server closes the connection.
+//
+// Pass since=0 to start from live updates only; pass a positive seq cursor
+// to replay durable events recorded since that point before switching to
+// live updates.
 //
 // Example:
 //
@@ -57,18 +66,19 @@ type sseEnvelope struct {
 //		fmt.Printf("Event: %v (seq %d)\n", ev.Type, ev.Seq)
 //	}
 func (c *Client) WatchRun(ctx context.Context, runID string, since int64) (<-chan RunEvent, error) {
-	resp, err := c.ac.StreamRunEventsWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.IDParam(runID), &api.StreamRunEventsParams{
-		Since: &since,
+	resp, err := c.ac.StreamRunEvents(ctx, api.ProjectHandleParam(c.projectHandle), api.IDParam(runID), &api.StreamRunEventsParams{
+		Since: sinceParam(since),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("mobius: open run stream: %w", err)
 	}
-	if resp.StatusCode() != http.StatusOK {
-		return nil, fmt.Errorf("mobius: stream run events: unexpected status %d", resp.StatusCode())
+	if resp.StatusCode != http.StatusOK {
+		_ = resp.Body.Close()
+		return nil, fmt.Errorf("mobius: stream run events: unexpected status %d", resp.StatusCode)
 	}
 
 	ch := make(chan RunEvent)
-	go c.readSSEStream(ctx, resp.HTTPResponse.Body, ch)
+	go c.readSSEStream(ctx, resp.Body, ch)
 	return ch, nil
 }
 
@@ -76,8 +86,9 @@ func (c *Client) WatchRun(ctx context.Context, runID string, since int64) (<-cha
 // decoded RunEvent values on the returned channel. The channel is closed
 // when ctx is cancelled or the server closes the connection.
 //
-// The since parameter allows resuming from a known sequence number.
-// Pass 0 to start from the beginning of the available history.
+// Pass since=0 to start from live updates only; pass a positive seq cursor
+// to replay durable events recorded since that point before switching to
+// live updates.
 //
 // Example:
 //
@@ -89,81 +100,72 @@ func (c *Client) WatchRun(ctx context.Context, runID string, since int64) (<-cha
 //		fmt.Printf("Run %s event: %v (seq %d)\n", ev.RunID, ev.Type, ev.Seq)
 //	}
 func (c *Client) WatchProjectRuns(ctx context.Context, since int64) (<-chan RunEvent, error) {
-	resp, err := c.ac.StreamProjectRunEventsWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), &api.StreamProjectRunEventsParams{
-		Since: &since,
+	resp, err := c.ac.StreamProjectRunEvents(ctx, api.ProjectHandleParam(c.projectHandle), &api.StreamProjectRunEventsParams{
+		Since: sinceParam(since),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("mobius: open project stream: %w", err)
 	}
-	if resp.StatusCode() != http.StatusOK {
-		return nil, fmt.Errorf("mobius: stream project events: unexpected status %d", resp.StatusCode())
+	if resp.StatusCode != http.StatusOK {
+		_ = resp.Body.Close()
+		return nil, fmt.Errorf("mobius: stream project events: unexpected status %d", resp.StatusCode)
 	}
 
 	ch := make(chan RunEvent)
-	go c.readSSEStream(ctx, resp.HTTPResponse.Body, ch)
+	go c.readSSEStream(ctx, resp.Body, ch)
 	return ch, nil
 }
 
-// readSSEStream reads from an SSE stream and emits decoded events on the channel.
-func (c *Client) readSSEStream(ctx context.Context, body interface{}, ch chan<- RunEvent) {
-	defer close(ch)
-
-	// Type assertion for body would normally be checked here.
-	// In practice, resp.HTTPResponse.Body is an io.ReadCloser.
-	rc, ok := body.(interface {
-		Read([]byte) (int, error)
-		Close() error
-	})
-	if !ok {
-		// If body doesn't match expected interface, close and return
-		return
+// sinceParam returns nil for zero so the request omits ?since=0 and the
+// server delivers live-only updates. Positive values replay from that cursor.
+func sinceParam(since int64) *int64 {
+	if since <= 0 {
+		return nil
 	}
-	defer func() { _ = rc.Close() }()
+	return &since
+}
 
-	scanner := bufio.NewScanner(rc)
-	var currentEvent *sseEnvelope
+// readSSEStream decodes SSE frames from body using wonton/sse and forwards
+// them on ch. The body is closed when the stream ends or ctx is cancelled.
+func (c *Client) readSSEStream(ctx context.Context, body io.ReadCloser, ch chan<- RunEvent) {
+	defer close(ch)
+	defer func() { _ = body.Close() }()
 
-	for scanner.Scan() {
-		select {
-		case <-ctx.Done():
+	reader := sse.NewReader(body)
+	reader.Buffer(sseReadBufferSize)
+
+	for {
+		if ctx.Err() != nil {
 			return
-		default:
 		}
 
-		line := scanner.Bytes()
-		if len(line) == 0 {
-			// Empty line signals end of event; emit if we have data
-			if currentEvent != nil {
-				select {
-				case ch <- RunEvent{
-					Type:      RunEventType(currentEvent.Type),
-					RunID:     currentEvent.RunID,
-					Seq:       currentEvent.Seq,
-					Timestamp: currentEvent.Timestamp,
-					Data:      currentEvent.Data,
-				}:
-				case <-ctx.Done():
-					return
-				}
-				currentEvent = nil
+		evt, err := reader.Read()
+		if errors.Is(err, io.EOF) {
+			return
+		}
+		if err != nil {
+			if ctx.Err() == nil {
+				c.config.Logger.Error("SSE stream error", "error", err)
 			}
+			return
+		}
+
+		var env sseEnvelope
+		if err := evt.JSON(&env); err != nil {
+			c.config.Logger.Error("failed to parse SSE event", "error", err)
 			continue
 		}
 
-		// Parse "data: <json>" line
-		if len(line) > 6 && string(line[:6]) == "data: " {
-			var env sseEnvelope
-			if err := json.Unmarshal(line[6:], &env); err != nil {
-				// Log error but continue
-				c.config.Logger.Error("failed to parse SSE event", "error", err)
-				continue
-			}
-			currentEvent = &env
+		select {
+		case ch <- RunEvent{
+			Type:      RunEventType(env.Type),
+			RunID:     env.RunID,
+			Seq:       env.Seq,
+			Timestamp: env.Timestamp,
+			Data:      env.Data,
+		}:
+		case <-ctx.Done():
+			return
 		}
-	}
-
-	// Check for scanner errors (not EOF)
-	if err := scanner.Err(); err != nil && ctx.Err() == nil {
-		c.config.Logger.Error("SSE stream error", "error", err)
 	}
 }

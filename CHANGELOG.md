@@ -6,7 +6,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 
 ## [Unreleased]
 
-## [0.0.8] - 2026-04-26
+### Changed
+
+- Go SDK: rename `RunEventTypeStepProgress` to `RunEventTypeJobUpdated` so
+  the constant matches the wire value (`job_updated`) emitted by the server
+  and documented in the spec. Source-incompatible for callers using the old
+  name.
+
+### Fixed
+
+- Go SDK: `WatchRun` and `WatchProjectRuns` now actually stream. The
+  previous implementation called the generated `*WithResponse` wrappers,
+  which buffered the body via `io.ReadAll` and closed it before returning,
+  so the goroutine read from a closed body and emitted no events. Switched
+  to the unbuffered `StreamRunEvents` / `StreamProjectRunEvents` and
+  delegated frame parsing to `wonton/sse`, which handles multi-line `data:`
+  fields, `\r\n` line endings, comment frames, and an 8 MiB line buffer for
+  larger envelopes.
+- Go SDK: `WatchRun(ctx, id, 0)` no longer sends `?since=0`; `since=0` now
+  means live-only. Pass a positive seq cursor to replay durable events.
 
 ### Added
 
