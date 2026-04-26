@@ -66,7 +66,7 @@ func registerChannelsCommands(app *cli.App) {
 			cli.Strings("member-ids", "").Help("Optional list of user or agent IDs to add as members at creation time. All receive the `member` role; the creator is added as `admin` separately."),
 			cli.String("name", "").Help("[required] URL-safe handle, unique within the project. Immutable after creation — choose carefully."),
 			cli.Bool("private", "").Help("When true, the channel is invite-only."),
-			cli.String("tags", "").Help("Azure-style key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 50 tags per resource. Use tags to organise resources by environment, team, cost-center, or any other dimension meaningful to your organisation; tags can be filtered on most list endpoints. (JSON)"),
+			cli.String("tags", "").Help("Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints. (JSON)"),
 			cli.String("topic", "").Help("Optional channel topic or description."),
 			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
 		).
@@ -391,7 +391,7 @@ func registerChannelsCommands(app *cli.App) {
 		Flags(
 			cli.String("display-name", "").Help("Updated display name."),
 			cli.Bool("private", "").Help("Toggle invite-only visibility."),
-			cli.String("tags", "").Help("Azure-style key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 50 tags per resource. Use tags to organise resources by environment, team, cost-center, or any other dimension meaningful to your organisation; tags can be filtered on most list endpoints. (JSON)"),
+			cli.String("tags", "").Help("Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints. (JSON)"),
 			cli.String("topic", "").Help("Updated topic or description."),
 			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
 		).

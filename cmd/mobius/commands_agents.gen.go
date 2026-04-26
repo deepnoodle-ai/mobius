@@ -29,7 +29,7 @@ func registerAgentsCommands(app *cli.App) {
 			cli.String("kind", "").Help("Freeform classification (e.g. \"llm\", \"rpa\", \"integration\")."),
 			cli.String("name", "").Help("[required] Project-scoped unique name for this agent. Free-form human-readable label, 1-63 characters."),
 			cli.String("service-account-id", "").Help("Service account that backs this agent. Must be active and belong to the same project. If omitted, a new service account is auto-created with the same name as the agent."),
-			cli.String("tags", "").Help("Azure-style key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 50 tags per resource. Use tags to organise resources by environment, team, cost-center, or any other dimension meaningful to your organisation; tags can be filtered on most list endpoints. (JSON)"),
+			cli.String("tags", "").Help("Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints. (JSON)"),
 			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
 		).
 		Use(cli.RequireFlags("api-key")).
@@ -304,7 +304,7 @@ func registerAgentsCommands(app *cli.App) {
 			cli.String("name", "").Help("Free-form human-readable label, 1-63 characters; must be unique within the project."),
 			cli.String("service-account-id", "").Help("Replacement service account. Must be active and belong to the same project."),
 			cli.String("status", "").Help("Administrative status. Inactive agents cannot claim new jobs."),
-			cli.String("tags", "").Help("Azure-style key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 50 tags per resource. Use tags to organise resources by environment, team, cost-center, or any other dimension meaningful to your organisation; tags can be filtered on most list endpoints. (JSON)"),
+			cli.String("tags", "").Help("Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints. (JSON)"),
 			cli.String("file", "f").Help("Request body as JSON (path to file, or '-' for stdin). Flags override file contents."),
 		).
 		Use(cli.RequireFlags("api-key")).
