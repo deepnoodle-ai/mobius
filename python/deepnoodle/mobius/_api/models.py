@@ -2406,59 +2406,33 @@ class UpdateTriggerRequest(BaseModel):
     )
 
 
-class WorkerSession(BaseModel):
+class User(BaseModel):
     """
-    Recently observed worker process for a project. Use sessions to see which machines, users, service accounts, or agents are polling for work and whether they appear stale.
+    Human identity known to the organization. User records are useful for membership lists, role assignment UIs, attribution, and displaying profile information next to actions.
     """
 
     model_config = ConfigDict(
         extra='forbid',
     )
     id: str = Field(
-        ..., description='Caller-assigned stable identifier for this worker process.'
+        ..., description='Clerk user ID. Stable and globally unique across all orgs.'
     )
-    name: str | None = Field(
-        None, description='Optional human-readable name supplied in the claim request.'
+    email: str = Field(..., description='Primary email address from Clerk.')
+    first_name: str | None = Field(
+        None, description="User's first name from their Clerk profile."
     )
-    version: str | None = Field(
-        None, description='Optional version string supplied in the claim request.'
+    last_name: str | None = Field(
+        None, description="User's last name from their Clerk profile."
     )
-    last_seen_at: datetime | None = Field(
+    avatar_url: str | None = Field(
         None,
-        description="Timestamp of this session's most recent job claim poll. Updated on every `POST /v1/projects/{project}/jobs/claim` call regardless of whether a job was returned. Used to compute `stale`.",
+        description='Profile avatar URL from Clerk (may be a Gravatar or uploaded image).',
     )
-    capabilities: list[str] | None = Field(
-        None,
-        description='Reserved for future capability-based job routing. Not currently used for filtering.',
+    created_at: datetime = Field(
+        ..., description='When the user record was first mirrored into Mobius.'
     )
-    service_account_id: str | None = Field(
-        None,
-        description='Service account this session authenticated as on register/heartbeat. Set when a machine identity is polling; mutually exclusive with `user_id`. Stable across credential rotation — use this to group sessions by identity in the admin UI.',
-    )
-    user_id: str | None = Field(
-        None,
-        description='User this session authenticated as on register/heartbeat. Set when a human is polling via the CLI; mutually exclusive with `service_account_id`.',
-    )
-    api_key_id: str | None = Field(
-        None,
-        description='ID of the specific API key this session presented on its most recent register/heartbeat. Only set for service-account-backed sessions; changes across credential rotations. Use together with `service_account_id` to see rotation progress across a fleet.',
-    )
-    agent_id: str | None = Field(
-        None,
-        description='Agent this session represents, when the polling process declared itself as a registered agent (via `agent_id` on the claim request or via inference from the service account). Absent for ad-hoc worker processes that are not tied to a declared agent.',
-    )
-    stale: bool = Field(
-        ...,
-        description='True when `last_seen_at` is older than 2 minutes or absent. Computed at read time, not stored.',
-    )
-
-
-class WorkerSessionListResponse(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    items: list[WorkerSession] = Field(
-        ..., description='The list of recently seen worker sessions.'
+    updated_at: datetime = Field(
+        ..., description='Timestamp when this user record was last synced from Clerk.'
     )
 
 
@@ -2553,42 +2527,52 @@ class UpdateProjectRequest(BaseModel):
     )
 
 
+class ProjectMember(BaseModel):
+    """
+    Explicit project membership used when a project is restricted. Use this record to decide who can see or operate on a project outside the default org-wide access model.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str = Field(..., description='Unique identifier for this membership record.')
+    project_id: str = Field(
+        ..., description='ID of the project this membership belongs to.'
+    )
+    user_id: str = Field(..., description='ID of the user who is a member.')
+    user: User | None = Field(
+        None,
+        description='Profile of the member. Embedded by `listProjectMembers` so UIs can render names, emails, and avatars without a separate user lookup. Absent on the `addProjectMember` response.',
+    )
+    added_by_actor_type: str | None = Field(
+        None, description='Actor type of whoever added this member, if recorded.'
+    )
+    added_by_actor_id: str | None = Field(
+        None, description='Actor ID of whoever added this member, if recorded.'
+    )
+    added_at: datetime = Field(..., description='Timestamp when the member was added.')
+
+
+class ProjectMemberListResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    items: list[ProjectMember] = Field(
+        ..., description='The list of members for this project.'
+    )
+    has_more: bool = Field(..., description='Whether more results are available.')
+    next_cursor: str | None = Field(
+        None,
+        description='Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.',
+    )
+
+
 class AddProjectMemberRequest(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
     user_id: str = Field(
         ..., description='User ID of the org member to add to this project.'
-    )
-
-
-class User(BaseModel):
-    """
-    Human identity known to the organization. User records are useful for membership lists, role assignment UIs, attribution, and displaying profile information next to actions.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    id: str = Field(
-        ..., description='Clerk user ID. Stable and globally unique across all orgs.'
-    )
-    email: str = Field(..., description='Primary email address from Clerk.')
-    first_name: str | None = Field(
-        None, description="User's first name from their Clerk profile."
-    )
-    last_name: str | None = Field(
-        None, description="User's last name from their Clerk profile."
-    )
-    avatar_url: str | None = Field(
-        None,
-        description='Profile avatar URL from Clerk (may be a Gravatar or uploaded image).',
-    )
-    created_at: datetime = Field(
-        ..., description='When the user record was first mirrored into Mobius.'
-    )
-    updated_at: datetime = Field(
-        ..., description='Timestamp when this user record was last synced from Clerk.'
     )
 
 
@@ -3899,43 +3883,63 @@ class CreateTriggerRequest(
     )
 
 
-class ProjectMember(BaseModel):
+class WorkerSession(BaseModel):
     """
-    Explicit project membership used when a project is restricted. Use this record to decide who can see or operate on a project outside the default org-wide access model.
+    Recently observed worker process for a project. Use sessions to see which machines, users, service accounts, or agents are polling for work and whether they appear stale.
     """
 
     model_config = ConfigDict(
         extra='forbid',
     )
-    id: str = Field(..., description='Unique identifier for this membership record.')
-    project_id: str = Field(
-        ..., description='ID of the project this membership belongs to.'
+    id: str = Field(
+        ..., description='Caller-assigned stable identifier for this worker process.'
     )
-    user_id: str = Field(..., description='ID of the user who is a member.')
+    name: str | None = Field(
+        None, description='Optional human-readable name supplied in the claim request.'
+    )
+    version: str | None = Field(
+        None, description='Optional version string supplied in the claim request.'
+    )
+    last_seen_at: datetime | None = Field(
+        None,
+        description="Timestamp of this session's most recent job claim poll. Updated on every `POST /v1/projects/{project}/jobs/claim` call regardless of whether a job was returned. Used to compute `stale`.",
+    )
+    capabilities: list[str] | None = Field(
+        None,
+        description='Reserved for future capability-based job routing. Not currently used for filtering.',
+    )
+    service_account_id: str | None = Field(
+        None,
+        description='Service account this session authenticated as on register/heartbeat. Set when a machine identity is polling; mutually exclusive with `user_id`. Stable across credential rotation — use this to group sessions by identity in the admin UI.',
+    )
+    user_id: str | None = Field(
+        None,
+        description='User this session authenticated as on register/heartbeat. Set when a human is polling via the CLI; mutually exclusive with `service_account_id`.',
+    )
     user: User | None = Field(
         None,
-        description='Profile of the member. Embedded by `listProjectMembers` so UIs can render names, emails, and avatars without a separate user lookup. Absent on the `addProjectMember` response.',
+        description='Embedded profile for `user_id` when this is a CLI-backed human worker session. Absent when the user record is unavailable or the session is service-account-backed.',
     )
-    added_by_actor_type: str | None = Field(
-        None, description='Actor type of whoever added this member, if recorded.'
+    api_key_id: str | None = Field(
+        None,
+        description='ID of the specific API key this session presented on its most recent register/heartbeat. Only set for service-account-backed sessions; changes across credential rotations. Use together with `service_account_id` to see rotation progress across a fleet.',
     )
-    added_by_actor_id: str | None = Field(
-        None, description='Actor ID of whoever added this member, if recorded.'
+    agent_id: str | None = Field(
+        None,
+        description='Agent this session represents, when the polling process declared itself as a registered agent (via `agent_id` on the claim request or via inference from the service account). Absent for ad-hoc worker processes that are not tied to a declared agent.',
     )
-    added_at: datetime = Field(..., description='Timestamp when the member was added.')
+    stale: bool = Field(
+        ...,
+        description='True when `last_seen_at` is older than 2 minutes or absent. Computed at read time, not stored.',
+    )
 
 
-class ProjectMemberListResponse(BaseModel):
+class WorkerSessionListResponse(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    items: list[ProjectMember] = Field(
-        ..., description='The list of members for this project.'
-    )
-    has_more: bool = Field(..., description='Whether more results are available.')
-    next_cursor: str | None = Field(
-        None,
-        description='Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.',
+    items: list[WorkerSession] = Field(
+        ..., description='The list of recently seen worker sessions.'
     )
 
 

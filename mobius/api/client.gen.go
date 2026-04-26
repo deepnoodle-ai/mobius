@@ -3415,6 +3415,9 @@ type WorkerSession struct {
 	// Stale True when `last_seen_at` is older than 2 minutes or absent. Computed at read time, not stored.
 	Stale bool `json:"stale"`
 
+	// User Human identity known to the organization. User records are useful for membership lists, role assignment UIs, attribution, and displaying profile information next to actions.
+	User *User `json:"user,omitempty"`
+
 	// UserId User this session authenticated as on register/heartbeat. Set when a human is polling via the CLI; mutually exclusive with `service_account_id`.
 	UserId *string `json:"user_id,omitempty"`
 

@@ -385,9 +385,28 @@ export interface paths {
         };
         /**
          * Subscribe to a project-wide stream of run events (SSE)
-         * @description Opens a Server-Sent Events connection. Each frame carries a JSON envelope `{type, run_id, seq, timestamp, data}` where `type` is one of `run_updated`, `job_updated`, or `action_appended`, and `seq` is a monotonic durable cursor.
+         * @description Opens a Server-Sent Events connection. Each frame carries a JSON envelope `{type, run_id, seq, timestamp, data}` where `seq` is a monotonic durable cursor and `type` is one of:
+         *
+         *     - `run_updated` — the run row's status, heartbeat, or
+         *     timestamps changed; `data` is a full WorkflowRun.
+         *     - `job_updated` — a single job's status or attempt
+         *     advanced; `data` is a full Job.
+         *     - `action_appended` — one entry was appended to the run
+         *     timeline (worker job completed or platform action ran);
+         *     `data` is a WorkflowActionLog row.
+         *     - `interaction_created` / `interaction_completed` /
+         *     `interaction_group_claimed` /
+         *     `interaction_group_released` — interaction lifecycle;
+         *     `data` is a full Interaction.
+         *     - `custom` — a worker emitted a domain-specific event via
+         *     `POST /v1/projects/{project}/jobs/{id}/events`. `data`
+         *     carries `{kind: "custom", type, job_id, data}` where
+         *     `type` is the worker-supplied name and inner `data` is
+         *     the worker payload.
          *
          *     Pass `?since=<seq>` on reconnect to replay any durable events the server has recorded past that cursor before switching back to live updates; clients should record the largest `seq` they have observed. Comment frames (`:keepalive`) are emitted every ~15s to keep intermediaries from closing the connection.
+         *
+         *     Unknown future event types may appear; clients should ignore types they don't recognize rather than treat the stream as malformed.
          */
         get: operations["streamProjectRunEvents"];
         put?: never;
@@ -467,7 +486,7 @@ export interface paths {
         };
         /**
          * Subscribe to a stream of events for a single run (SSE)
-         * @description Same envelope as `/v1/projects/{project}/runs/events` but filtered to a single run. The server writes one seed `run_updated` frame on connection so reconnects do not miss the latest state, and supports `?since=<seq>` replay for durable events recorded since the given seq cursor.
+         * @description Same envelope and event-type set as `/v1/projects/{project}/runs/events` (see that endpoint for the full vocabulary of `type` values), filtered to a single run. The server writes one seed `run_updated` frame on connection so reconnects do not miss the latest state, and supports `?since=<seq>` replay for durable events recorded since the given seq cursor.
          */
         get: operations["streamRunEvents"];
         put?: never;
@@ -3547,6 +3566,8 @@ export interface components {
             service_account_id?: string;
             /** @description User this session authenticated as on register/heartbeat. Set when a human is polling via the CLI; mutually exclusive with `service_account_id`. */
             user_id?: string;
+            /** @description Embedded profile for `user_id` when this is a CLI-backed human worker session. Absent when the user record is unavailable or the session is service-account-backed. */
+            user?: components["schemas"]["User"];
             /** @description ID of the specific API key this session presented on its most recent register/heartbeat. Only set for service-account-backed sessions; changes across credential rotations. Use together with `service_account_id` to see rotation progress across a fleet. */
             api_key_id?: string;
             /** @description Agent this session represents, when the polling process declared itself as a registered agent (via `agent_id` on the claim request or via inference from the service account). Absent for ad-hoc worker processes that are not tied to a declared agent. */
@@ -3557,6 +3578,29 @@ export interface components {
         WorkerSessionListResponse: {
             /** @description The list of recently seen worker sessions. */
             items: components["schemas"]["WorkerSession"][];
+        };
+        /** @description Human identity known to the organization. User records are useful for membership lists, role assignment UIs, attribution, and displaying profile information next to actions. */
+        User: {
+            /** @description Clerk user ID. Stable and globally unique across all orgs. */
+            id: string;
+            /** @description Primary email address from Clerk. */
+            email: string;
+            /** @description User's first name from their Clerk profile. */
+            first_name?: string;
+            /** @description User's last name from their Clerk profile. */
+            last_name?: string;
+            /** @description Profile avatar URL from Clerk (may be a Gravatar or uploaded image). */
+            avatar_url?: string;
+            /**
+             * Format: date-time
+             * @description When the user record was first mirrored into Mobius.
+             */
+            created_at: string;
+            /**
+             * Format: date-time
+             * @description Timestamp when this user record was last synced from Clerk.
+             */
+            updated_at: string;
         };
         /**
          * @description `org_open`: every org member can see and use the project, subject to role assignments. `restricted`: only listed project members (and org owners/admins) can see or use the project.
@@ -3654,29 +3698,6 @@ export interface components {
         AddProjectMemberRequest: {
             /** @description User ID of the org member to add to this project. */
             user_id: string;
-        };
-        /** @description Human identity known to the organization. User records are useful for membership lists, role assignment UIs, attribution, and displaying profile information next to actions. */
-        User: {
-            /** @description Clerk user ID. Stable and globally unique across all orgs. */
-            id: string;
-            /** @description Primary email address from Clerk. */
-            email: string;
-            /** @description User's first name from their Clerk profile. */
-            first_name?: string;
-            /** @description User's last name from their Clerk profile. */
-            last_name?: string;
-            /** @description Profile avatar URL from Clerk (may be a Gravatar or uploaded image). */
-            avatar_url?: string;
-            /**
-             * Format: date-time
-             * @description When the user record was first mirrored into Mobius.
-             */
-            created_at: string;
-            /**
-             * Format: date-time
-             * @description Timestamp when this user record was last synced from Clerk.
-             */
-            updated_at: string;
         };
         /**
          * @description `pending` — queued, not yet attempted. `processing` — currently being delivered. `delivered` — recipient returned 2xx. `failed` — all retry attempts exhausted.
