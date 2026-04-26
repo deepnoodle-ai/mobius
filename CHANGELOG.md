@@ -6,12 +6,30 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 
 ## [Unreleased]
 
+## [0.0.9] - 2026-04-26
+
+### Added
+
+- Spec: `WorkerSession` now carries an embedded `user` profile (id, email,
+  first/last name, avatar URL, timestamps) for CLI-backed human worker
+  sessions, so callers don't need a second lookup to display attribution.
+  Absent on service-account-backed sessions or when the user record is
+  unavailable.
+
 ### Changed
 
+- Spec docs: enumerate the full SSE run-events vocabulary
+  (`run_updated`, `job_updated`, `action_appended`,
+  `interaction_created` / `interaction_completed` /
+  `interaction_group_claimed` / `interaction_group_released`, `custom`) on
+  both project-wide and per-run streams, and instruct clients to ignore
+  unknown future types rather than treat the stream as malformed.
 - Go SDK: rename `RunEventTypeStepProgress` to `RunEventTypeJobUpdated` so
   the constant matches the wire value (`job_updated`) emitted by the server
   and documented in the spec. Source-incompatible for callers using the old
   name.
+- Regenerate Go, TypeScript, and Python SDKs from the updated OpenAPI
+  contract.
 
 ### Fixed
 
@@ -25,6 +43,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
   larger envelopes.
 - Go SDK: `WatchRun(ctx, id, 0)` no longer sends `?since=0`; `since=0` now
   means live-only. Pass a positive seq cursor to replay durable events.
+
+## [0.0.8] - 2026-04-26
 
 ### Added
 
