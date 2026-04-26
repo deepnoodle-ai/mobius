@@ -6,6 +6,43 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 
 ## [Unreleased]
 
+## [0.0.8] - 2026-04-26
+
+### Added
+
+- CLI output formatting: `--output / -o {auto,pretty,json,yaml,text}`,
+  `--fields / -F` projection, `--quiet / -q`, `--var KEY=VALUE` substitution
+  in `--file` and `@-` flag contents, `--dry-run`, `@path` / `@-` support,
+  YAML auto-detect on JSON-typed body flags, and repeatable `--tag KEY=VALUE`
+  on tag-bearing resources. Distinct exit codes for 4xx vs. 5xx.
+- `mobius workflows apply` for idempotent upsert by handle, and
+  `mobius workflows init` to scaffold a starter spec.
+- Per-command pretty renderers via `RegisterResponseRenderer` (only fire on
+  pretty + no `--fields`); `getRun` now renders a status header and a
+  per-execution-path table.
+- Auth login URL overrides: `--api-url` and a separate web-URL override are
+  honored when constructing the device-auth flow.
+
+### Changed
+
+- Trim admin/billing/org/role/integration/service-account schemas out of the
+  public client surface and rename permission strings to the new
+  `mobius.work.execute`, `mobius.project.view`, `mobius.access.manage` set.
+- Add `widget_id` path parameter and `WorkflowRunJobCounts` schema; sync
+  workflow run lifecycle/status contract.
+- Tighten `TagMap` cap from 50 to 8 per resource and enforce key/value
+  length and `propertyNames` in schema; drop redundant tag descriptions.
+- Python codegen now uses `--strict-nullable`, so required-and-nullable
+  fields produce `Optional` types and fields with non-null defaults stop
+  accepting `None`.
+- Regenerate Go, TypeScript, and Python SDKs from the updated OpenAPI
+  contract.
+
+### Fixed
+
+- Device auth stays on a custom API origin instead of falling back to the
+  production host.
+
 ## [0.0.7] - 2026-04-24
 
 ### Added
@@ -31,4 +68,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 
 ## Earlier
 
-See git tags for history before `v0.0.7`.
+See git tags for history before `v0.0.8`.
