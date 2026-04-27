@@ -79,9 +79,14 @@ The SDKs expose two layers:
 
 - A high-level surface for common application and worker workflows: start runs,
   get/list/cancel/resume runs, send signals, watch run events, wait for terminal
-  completion, claim jobs, heartbeat, complete jobs, and emit job events.
+  completion, claim jobs, heartbeat, complete jobs, emit job events, verify and
+  parse webhook deliveries, deliver synthetic local webhooks, and reconcile
+  saved workflow definitions.
 - Generated OpenAPI bindings for the full API contract when you need a lower
   level escape hatch.
+
+See [`docs/sdk-helpers.md`](./docs/sdk-helpers.md) for cross-language examples
+of the webhook and saved-workflow helpers.
 
 All three SDKs share the same retry and rate-limit handling: `429` and
 `503` responses are retried transparently (respecting `Retry-After`), and
