@@ -394,17 +394,9 @@ class Worker:
 
 
 @dataclass
-class WorkerPoolConfig:
-    name: str = ""
-    version: str = ""
-    queues: list[str] = field(default_factory=list)
-    actions: list[str] = field(default_factory=list)
+class WorkerPoolConfig(WorkerConfig):
     count: int = 1
     worker_id_prefix: str = ""
-    poll_wait_seconds: int = 20
-    heartbeat_interval: float = 10.0
-    event_queue_size: int = 256
-    event_batch_size: int = 20
 
 
 class WorkerPool:

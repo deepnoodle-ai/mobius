@@ -64,23 +64,14 @@ func registerWorkerCommand(app *cli.App) {
 				PollWaitSeconds: ctx.Int("poll-wait"),
 				Logger:          logger,
 			}
-			if workers <= 1 {
-				baseConfig.WorkerID = workerID
-				worker := client.NewWorker(baseConfig)
-				registerStockActions(worker)
-				if err := worker.Run(ctx.Context()); err != nil && !isContextCanceled(err) {
-					return fmt.Errorf("worker exited: %w", err)
-				}
-			} else {
-				pool := client.NewWorkerPool(mobius.WorkerPoolConfig{
-					WorkerConfig:   baseConfig,
-					Count:          workers,
-					WorkerIDPrefix: workerID,
-				})
-				registerStockActions(pool)
-				if err := pool.Run(ctx.Context()); err != nil && !isContextCanceled(err) {
-					return fmt.Errorf("worker pool exited: %w", err)
-				}
+			pool := client.NewWorkerPool(mobius.WorkerPoolConfig{
+				WorkerConfig:   baseConfig,
+				Count:          workers,
+				WorkerIDPrefix: workerID,
+			})
+			registerStockActions(pool)
+			if err := pool.Run(ctx.Context()); err != nil && !isContextCanceled(err) {
+				return fmt.Errorf("worker pool exited: %w", err)
 			}
 			logger.Info("worker stopped")
 			return nil

@@ -451,3 +451,54 @@ func TestWorkerPool_RunUsesDistinctSingleJobWorkers(t *testing.T) {
 	err := <-done
 	assert.True(t, errors.Is(err, context.Canceled))
 }
+
+func TestWorkerPool_RunReturnsAuthRevokedAndCancelsSiblings(t *testing.T) {
+	started := make(chan struct{})
+	cancelled := make(chan struct{})
+	var startOnce sync.Once
+	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.URL.Path == "/v1/projects/test-project/jobs/claim":
+			var sent map[string]any
+			_ = json.NewDecoder(r.Body).Decode(&sent)
+			switch sent["worker_id"] {
+			case "pool-worker-1":
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = io.WriteString(w, `{"job_id":"job_1","run_id":"run_1","workflow_name":"hello","step_name":"greet","action":"block","parameters":{},"attempt":1,"queue":"default","heartbeat_interval_seconds":3600}`)
+			case "pool-worker-2":
+				<-started
+				w.WriteHeader(http.StatusUnauthorized)
+			default:
+				w.WriteHeader(http.StatusNoContent)
+			}
+		case r.URL.Path == "/v1/projects/test-project/jobs/job_1/complete":
+			w.WriteHeader(http.StatusNoContent)
+		default:
+			http.NotFound(w, r)
+		}
+	})
+	c, _ := newTestClient(t, h)
+
+	pool := c.NewWorkerPool(WorkerPoolConfig{
+		WorkerConfig:   WorkerConfig{PollWaitSeconds: 1},
+		Count:          2,
+		WorkerIDPrefix: "pool-worker",
+	})
+	pool.Register(ActionFunc("block", func(ctx Context, params map[string]any) (any, error) {
+		startOnce.Do(func() { close(started) })
+		<-ctx.Done()
+		close(cancelled)
+		return map[string]any{"ok": true}, nil
+	}))
+
+	done := make(chan error, 1)
+	go func() { done <- pool.Run(context.Background()) }()
+
+	select {
+	case <-cancelled:
+	case <-time.After(time.Second):
+		t.Fatal("sibling worker was not cancelled after credential revocation")
+	}
+	err := <-done
+	assert.True(t, errors.Is(err, ErrAuthRevoked))
+}
