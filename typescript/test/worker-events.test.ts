@@ -17,7 +17,7 @@ class FakeClient {
   }> = [];
   public completed: JobCompleteRequest[] = [];
 
-  async claimJob(_req?: { worker_id: string }): Promise<JobClaim | null> {
+  async claimJob(_req?: { worker_instance_id?: string; worker_id?: string }): Promise<JobClaim | null> {
     return null;
   }
 
@@ -50,9 +50,9 @@ class SequencedClient extends FakeClient {
     super();
   }
 
-  override async claimJob(req?: { worker_id: string }): Promise<JobClaim | null> {
+  override async claimJob(req?: { worker_instance_id?: string; worker_id?: string }): Promise<JobClaim | null> {
     this.claims += 1;
-    if (req) this.workerIds.push(req.worker_id);
+    if (req) this.workerIds.push(req.worker_instance_id ?? req.worker_id ?? "");
     return this.jobs.shift() ?? null;
   }
 }
@@ -72,7 +72,7 @@ const blockJob = (id: string): JobClaim => ({
 test("worker: action context can emit custom events", async () => {
   const client = new FakeClient();
   const worker = new Worker(client as never, {
-    workerId: "worker-1",
+    workerInstanceId: "worker-1",
     eventBatchSize: 10,
     logger: null,
   });
@@ -115,7 +115,7 @@ test("worker: action context can emit custom events", async () => {
 test("worker: claims next job only after current job completes", async () => {
   const client = new SequencedClient([blockJob("job_1")]);
   const worker = new Worker(client as never, {
-    workerId: "worker-1",
+    workerInstanceId: "worker-1",
     pollWaitSeconds: 1,
     logger: null,
   });
@@ -147,7 +147,7 @@ test("worker pool: uses distinct single-job workers", async () => {
     blockJob("job_3"),
   ]);
   const pool = new WorkerPool(client as never, {
-    workerIdPrefix: "pool-worker",
+    workerInstanceIdPrefix: "pool-worker",
     count: 3,
     pollWaitSeconds: 1,
     logger: null,

@@ -49,7 +49,18 @@ mobius worker \
     --queues default
 ```
 
-Run more single-job workers in one process when you need more throughput:
+Hold up to N jobs in flight from one worker process — recommended for raw
+throughput, since the workers page shows it as a single saturation bar:
+
+```bash
+mobius worker \
+    --queues default \
+    --concurrency 5
+```
+
+Or scale by spawning N independent worker instances (one presence row per
+worker) when each child needs to drain or be observed independently. This is
+the advanced mode; `--concurrency` is the default and usually what you want.
 
 ```bash
 mobius worker \
@@ -57,9 +68,10 @@ mobius worker \
     --workers 5
 ```
 
-Migration note: older versions of `mobius worker` executed up to 10 jobs in
-parallel by default through one worker identity. Workers now execute one active
-job lease each; pass `--workers 10` to match the previous default throughput.
+Each worker process auto-detects a stable `worker_instance_id` from the
+runtime platform (Cloud Run revision, Kubernetes pod, Fly machine, Railway
+replica, Render instance) and falls back to a per-boot UUID. Override with
+`--instance-id` only when you need a fixed identifier across restarts.
 
 The stock worker registers built-in actions like `print`, `fail`, `json`, `time`, and `random`. Run `mobius worker --help` for the full worker flags. Global flags can also be provided via `MOBIUS_API_URL`, `MOBIUS_API_KEY`, `MOBIUS_PROJECT`, and `MOBIUS_LOG_LEVEL`.
 

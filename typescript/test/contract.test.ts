@@ -184,7 +184,10 @@ test("contract: claim_response parsed losslessly", async () => {
   const restore = installFakeFetch({ status: 200, body: fixture }, captured);
   let job;
   try {
-    job = await newClient().claimJob({ worker_id: "worker-abc" });
+    job = await newClient().claimJob({
+      worker_instance_id: "worker-abc",
+      concurrency_limit: 1,
+    });
   } finally {
     restore();
   }
@@ -199,7 +202,7 @@ test("contract: heartbeat_job_response parsed losslessly", async () => {
   let heartbeat: JobHeartbeat;
   try {
     heartbeat = await newClient().heartbeatJob("job_test", {
-      worker_id: "worker-abc",
+      worker_instance_id: "worker-abc",
       attempt: 1,
     });
   } finally {

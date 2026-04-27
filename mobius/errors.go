@@ -20,6 +20,39 @@ var ErrPayloadTooLarge = errors.New("mobius: custom event payload too large")
 // can restart under a rotated credential.
 var ErrAuthRevoked = errors.New("mobius: credential revoked")
 
+// ErrWorkerInstanceConflict is returned when the server rejects a worker
+// claim because another live process has already registered the same
+// worker_instance_id in the project. Surfaces from the run loop as a
+// hard error: the operator either configured the same instance ID in
+// two processes, or two replicas auto-detected the same identifier.
+// The message returned by [InstanceConflictError] names the offending
+// project and instance ID so the operator can resolve.
+var ErrWorkerInstanceConflict = errors.New("mobius: worker instance conflict")
+
+// InstanceConflictError carries the human-readable remediation message
+// for an [ErrWorkerInstanceConflict]. errors.Is(err, ErrWorkerInstanceConflict)
+// keeps working; errors.As(err, &ic) reads the fields.
+type InstanceConflictError struct {
+	WorkerInstanceID string
+	ProjectHandle    string
+	Message          string
+}
+
+func (e *InstanceConflictError) Error() string {
+	if e.Message != "" {
+		return e.Message
+	}
+	if e.WorkerInstanceID != "" {
+		return fmt.Sprintf(
+			"mobius: worker_instance_id %q is already registered in project %q by another live process; configure a unique instance ID per process or rely on auto-detection",
+			e.WorkerInstanceID, e.ProjectHandle,
+		)
+	}
+	return ErrWorkerInstanceConflict.Error()
+}
+
+func (e *InstanceConflictError) Unwrap() error { return ErrWorkerInstanceConflict }
+
 // ErrRateLimited is the sentinel returned for rate-limited requests (HTTP
 // 429). Rich details live on [RateLimitError]; use errors.Is to detect the
 // category and errors.As to read the fields.

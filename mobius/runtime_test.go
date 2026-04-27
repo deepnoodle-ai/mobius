@@ -114,8 +114,8 @@ func TestRuntimeClaim_Job(t *testing.T) {
 	})
 	c, _ := newTestClient(t, h)
 
-	cfg := WorkerConfig{WorkerID: "w1", Name: "name", Version: "v1", PollWaitSeconds: 1, Actions: []string{"print"}}
-	job, err := c.runtimeClaim(context.Background(), cfg)
+	cfg := WorkerConfig{WorkerInstanceID: "w1", Name: "name", Version: "v1", PollWaitSeconds: 1, Actions: []string{"print"}}
+	job, err := c.runtimeClaim(context.Background(), cfg, "tok-test")
 	assert.NoError(t, err)
 	assert.NotNil(t, job)
 	assert.Equal(t, job.JobID, "job_1")
@@ -124,13 +124,15 @@ func TestRuntimeClaim_Job(t *testing.T) {
 	assert.Equal(t, job.Attempt, 1)
 	assert.Equal(t, job.Queue, "default")
 	assert.Equal(t, job.StepName, "greet")
-	assert.Equal(t, job.WorkerID, "w1")
+	assert.Equal(t, job.WorkerInstanceID, "w1")
+	assert.Equal(t, job.SessionToken, "tok-test")
 	assert.Equal(t, job.HeartbeatInterval, 15*time.Second)
 	assert.Equal(t, h.lastHeader["/v1/projects/test-project/jobs/claim"].Get("Authorization"), "Bearer mbx_test")
 
 	var sent map[string]any
 	_ = json.Unmarshal(h.lastBody["/v1/projects/test-project/jobs/claim"], &sent)
-	assert.Equal(t, sent["worker_id"], "w1")
+	assert.Equal(t, sent["worker_instance_id"], "w1")
+	assert.Equal(t, sent["worker_session_token"], "tok-test")
 	assert.Equal(t, sent["worker_name"], "name")
 	acts, _ := sent["actions"].([]any)
 	assert.Equal(t, len(acts), 1)
@@ -156,8 +158,8 @@ func TestRuntimeClaim_EscapesProjectHandle(t *testing.T) {
 	c, err := NewClient(WithBaseURL(srv.URL), WithAPIKey("mbx_test"), WithProjectHandle(rawProject))
 	assert.NoError(t, err)
 
-	cfg := WorkerConfig{WorkerID: "w1", PollWaitSeconds: 1, Actions: []string{"print"}}
-	job, err := c.runtimeClaim(context.Background(), cfg)
+	cfg := WorkerConfig{WorkerInstanceID: "w1", PollWaitSeconds: 1, Actions: []string{"print"}}
+	job, err := c.runtimeClaim(context.Background(), cfg, "tok-test")
 	assert.NoError(t, err)
 	assert.NotNil(t, job)
 	assert.Equal(t, job.JobID, "job_1")
@@ -179,7 +181,7 @@ func TestRuntimeHeartbeat_EscapesJobID(t *testing.T) {
 	c, err := NewClient(WithBaseURL(srv.URL), WithAPIKey("mbx_test"), WithProjectHandle("test-project"))
 	assert.NoError(t, err)
 
-	job := &runtimeJob{JobID: rawJob, WorkerID: "w1", Attempt: 1}
+	job := &runtimeJob{JobID: rawJob, WorkerInstanceID: "w1", Attempt: 1}
 	_, err = c.runtimeHeartbeat(context.Background(), job)
 	assert.NoError(t, err)
 	assert.Equal(t, gotEscaped, wantEscaped)
@@ -190,7 +192,7 @@ func TestRuntimeClaim_Empty(t *testing.T) {
 		"/v1/projects/test-project/jobs/claim": {status: 204, body: ""},
 	})
 	c, _ := newTestClient(t, h)
-	job, err := c.runtimeClaim(context.Background(), WorkerConfig{WorkerID: "w1", PollWaitSeconds: 1})
+	job, err := c.runtimeClaim(context.Background(), WorkerConfig{WorkerInstanceID: "w1", PollWaitSeconds: 1}, "tok-test")
 	assert.NoError(t, err)
 	assert.Nil(t, job)
 }
@@ -200,7 +202,7 @@ func TestRuntimeHeartbeat_Directives(t *testing.T) {
 		"/v1/projects/test-project/jobs/": {status: 200, body: `{"ok":true,"directives":{"should_cancel":true}}`},
 	})
 	c, _ := newTestClient(t, h)
-	job := &runtimeJob{JobID: "job_1", Attempt: 1, WorkerID: "w1"}
+	job := &runtimeJob{JobID: "job_1", Attempt: 1, WorkerInstanceID: "w1"}
 	dirs, err := c.runtimeHeartbeat(context.Background(), job)
 	assert.NoError(t, err)
 	assert.NotNil(t, dirs)
@@ -213,7 +215,7 @@ func TestRuntimeHeartbeat_LeaseLost(t *testing.T) {
 		"/v1/projects/test-project/jobs/": {status: 409, body: ""},
 	})
 	c, _ := newTestClient(t, h)
-	_, err := c.runtimeHeartbeat(context.Background(), &runtimeJob{JobID: "job_1", Attempt: 1, WorkerID: "w1"})
+	_, err := c.runtimeHeartbeat(context.Background(), &runtimeJob{JobID: "job_1", Attempt: 1, WorkerInstanceID: "w1"})
 	assert.ErrorIs(t, err, ErrLeaseLost)
 }
 
@@ -227,7 +229,7 @@ func TestRuntimeHeartbeat_AuthRevoked(t *testing.T) {
 		"/v1/projects/test-project/jobs/": {status: 401, body: ""},
 	})
 	c, _ := newTestClient(t, h)
-	_, err := c.runtimeHeartbeat(context.Background(), &runtimeJob{JobID: "job_1", Attempt: 1, WorkerID: "w1"})
+	_, err := c.runtimeHeartbeat(context.Background(), &runtimeJob{JobID: "job_1", Attempt: 1, WorkerInstanceID: "w1"})
 	assert.ErrorIs(t, err, ErrAuthRevoked)
 }
 
@@ -236,7 +238,7 @@ func TestRuntimeComplete_AuthRevoked(t *testing.T) {
 		"/v1/projects/test-project/jobs/": {status: 401, body: ""},
 	})
 	c, _ := newTestClient(t, h)
-	err := c.runtimeCompleteSuccess(context.Background(), &runtimeJob{JobID: "job_1", Attempt: 1, WorkerID: "w1"}, nil)
+	err := c.runtimeCompleteSuccess(context.Background(), &runtimeJob{JobID: "job_1", Attempt: 1, WorkerInstanceID: "w1"}, nil)
 	assert.ErrorIs(t, err, ErrAuthRevoked)
 }
 
@@ -245,8 +247,8 @@ func TestRuntimeClaim_AuthRevoked(t *testing.T) {
 		"/v1/projects/test-project/jobs/claim": {status: 401, body: ""},
 	})
 	c, _ := newTestClient(t, h)
-	cfg := WorkerConfig{WorkerID: "w1", PollWaitSeconds: 1, Actions: []string{"print"}}
-	_, err := c.runtimeClaim(context.Background(), cfg)
+	cfg := WorkerConfig{WorkerInstanceID: "w1", PollWaitSeconds: 1, Actions: []string{"print"}}
+	_, err := c.runtimeClaim(context.Background(), cfg, "tok-test")
 	assert.ErrorIs(t, err, ErrAuthRevoked)
 }
 
@@ -255,7 +257,7 @@ func TestRuntimeCompleteSuccess(t *testing.T) {
 		"/v1/projects/test-project/jobs/": {status: 204, body: ""},
 	})
 	c, _ := newTestClient(t, h)
-	job := &runtimeJob{JobID: "job_1", Attempt: 1, WorkerID: "w1"}
+	job := &runtimeJob{JobID: "job_1", Attempt: 1, WorkerInstanceID: "w1"}
 	err := c.runtimeCompleteSuccess(context.Background(), job, map[string]any{"ok": true})
 	assert.NoError(t, err)
 
@@ -270,7 +272,7 @@ func TestRuntimeCompleteFailure_LeaseLost(t *testing.T) {
 		"/v1/projects/test-project/jobs/": {status: 409, body: ""},
 	})
 	c, _ := newTestClient(t, h)
-	err := c.runtimeCompleteFailure(context.Background(), &runtimeJob{JobID: "job_1", Attempt: 1, WorkerID: "w1"}, "Error", "boom")
+	err := c.runtimeCompleteFailure(context.Background(), &runtimeJob{JobID: "job_1", Attempt: 1, WorkerInstanceID: "w1"}, "Error", "boom")
 	assert.ErrorIs(t, err, ErrLeaseLost)
 }
 
@@ -279,7 +281,7 @@ func TestRuntimeCompleteFailure_Body(t *testing.T) {
 		"/v1/projects/test-project/jobs/": {status: 204, body: ""},
 	})
 	c, _ := newTestClient(t, h)
-	err := c.runtimeCompleteFailure(context.Background(), &runtimeJob{JobID: "job_1", Attempt: 2, WorkerID: "w1"}, "Timeout", "deadline exceeded")
+	err := c.runtimeCompleteFailure(context.Background(), &runtimeJob{JobID: "job_1", Attempt: 2, WorkerInstanceID: "w1"}, "Timeout", "deadline exceeded")
 	assert.NoError(t, err)
 
 	var sent map[string]any
@@ -294,7 +296,7 @@ func TestRuntimeEmitEvents(t *testing.T) {
 		"/v1/projects/test-project/jobs/job_1/events": {status: 204, body: ""},
 	})
 	c, _ := newTestClient(t, h)
-	job := &runtimeJob{JobID: "job_1", Attempt: 1, WorkerID: "w1"}
+	job := &runtimeJob{JobID: "job_1", Attempt: 1, WorkerInstanceID: "w1"}
 	err := c.runtimeEmitEvents(context.Background(), job, []jobEventEntry{
 		{Type: "scrape.page_done", Payload: map[string]any{"url": "https://example.com"}},
 	})
@@ -302,7 +304,7 @@ func TestRuntimeEmitEvents(t *testing.T) {
 
 	var sent map[string]any
 	_ = json.Unmarshal(h.lastBody["/v1/projects/test-project/jobs/job_1/events"], &sent)
-	assert.Equal(t, sent["worker_id"], "w1")
+	assert.Equal(t, sent["worker_instance_id"], "w1")
 	assert.Equal(t, sent["attempt"], float64(1))
 	events, _ := sent["events"].([]any)
 	assert.Len(t, events, 1)
@@ -316,7 +318,7 @@ func TestWorkerExecuteJob_EmitsCustomEvents(t *testing.T) {
 		"/v1/projects/test-project/jobs/job_1/events":   {status: 204, body: ""},
 	})
 	c, _ := newTestClient(t, h)
-	w := c.NewWorker(WorkerConfig{WorkerID: "w1", EventBatchSize: 10})
+	w := c.NewWorker(WorkerConfig{WorkerInstanceID: "w1", EventBatchSize: 10})
 	w.Register(ActionFunc("print", func(ctx Context, params map[string]any) (any, error) {
 		ctx.EmitEvent("scrape.started", map[string]any{"url": params["url"]})
 		return map[string]any{"ok": true}, nil
@@ -332,7 +334,8 @@ func TestWorkerExecuteJob_EmitsCustomEvents(t *testing.T) {
 		Parameters:        map[string]any{"url": "https://example.com"},
 		Attempt:           1,
 		Queue:             "default",
-		WorkerID:          "w1",
+		WorkerInstanceID:  "w1",
+		SessionToken:      "tok-1",
 		HeartbeatInterval: time.Hour,
 	})
 
@@ -373,7 +376,7 @@ func TestWorkerRun_ClaimsNextJobOnlyAfterCurrentCompletes(t *testing.T) {
 	defer cancel()
 	started := make(chan struct{})
 	release := make(chan struct{})
-	worker := c.NewWorker(WorkerConfig{WorkerID: "w1", PollWaitSeconds: 1})
+	worker := c.NewWorker(WorkerConfig{WorkerInstanceID: "w1", PollWaitSeconds: 1})
 	worker.Register(ActionFunc("block", func(ctx Context, params map[string]any) (any, error) {
 		close(started)
 		<-release
@@ -417,7 +420,7 @@ func TestWorkerPool_RunUsesDistinctSingleJobWorkers(t *testing.T) {
 			mu.Lock()
 			claims++
 			n := claims
-			if id, ok := sent["worker_id"].(string); ok {
+			if id, ok := sent["worker_instance_id"].(string); ok {
 				workerIDs[id] = true
 			}
 			mu.Unlock()
@@ -440,9 +443,9 @@ func TestWorkerPool_RunUsesDistinctSingleJobWorkers(t *testing.T) {
 	started := make(chan struct{}, 3)
 	release := make(chan struct{})
 	pool := c.NewWorkerPool(WorkerPoolConfig{
-		WorkerConfig:   WorkerConfig{PollWaitSeconds: 1},
-		Count:          3,
-		WorkerIDPrefix: "pool-worker",
+		WorkerConfig:           WorkerConfig{PollWaitSeconds: 1},
+		Count:                  3,
+		WorkerInstanceIDPrefix: "pool-worker",
 	})
 	pool.Register(ActionFunc("block", func(ctx Context, params map[string]any) (any, error) {
 		started <- struct{}{}
@@ -488,7 +491,7 @@ func TestWorkerPool_RunReturnsAuthRevokedAndCancelsSiblings(t *testing.T) {
 		case r.URL.Path == "/v1/projects/test-project/jobs/claim":
 			var sent map[string]any
 			_ = json.NewDecoder(r.Body).Decode(&sent)
-			switch sent["worker_id"] {
+			switch sent["worker_instance_id"] {
 			case "pool-worker-1":
 				w.Header().Set("Content-Type", "application/json")
 				_, _ = io.WriteString(w, `{"job_id":"job_1","run_id":"run_1","workflow_name":"hello","step_name":"greet","action":"block","parameters":{},"attempt":1,"queue":"default","heartbeat_interval_seconds":3600}`)
@@ -507,9 +510,9 @@ func TestWorkerPool_RunReturnsAuthRevokedAndCancelsSiblings(t *testing.T) {
 	c, _ := newTestClient(t, h)
 
 	pool := c.NewWorkerPool(WorkerPoolConfig{
-		WorkerConfig:   WorkerConfig{PollWaitSeconds: 1},
-		Count:          2,
-		WorkerIDPrefix: "pool-worker",
+		WorkerConfig:           WorkerConfig{PollWaitSeconds: 1},
+		Count:                  2,
+		WorkerInstanceIDPrefix: "pool-worker",
 	})
 	pool.Register(ActionFunc("block", func(ctx Context, params map[string]any) (any, error) {
 		startOnce.Do(func() { close(started) })
@@ -528,4 +531,116 @@ func TestWorkerPool_RunReturnsAuthRevokedAndCancelsSiblings(t *testing.T) {
 	}
 	err := <-done
 	assert.True(t, errors.Is(err, ErrAuthRevoked))
+}
+
+// TestRuntimeClaim_InstanceConflict verifies that a 409 with the
+// `worker_instance_conflict` code surfaces as ErrWorkerInstanceConflict
+// with a populated InstanceConflictError so worker.Run can crash loudly
+// instead of silently retrying into a black hole.
+func TestRuntimeClaim_InstanceConflict(t *testing.T) {
+	body := `{"code":"worker_instance_conflict","message":"another live process is using inv-abc123"}`
+	h := newRecorder(t, map[string]stubResponse{
+		"/v1/projects/test-project/jobs/claim": {status: 409, body: body},
+	})
+	c, _ := newTestClient(t, h)
+	cfg := WorkerConfig{WorkerInstanceID: "inv-abc123", PollWaitSeconds: 1}
+	_, err := c.runtimeClaim(context.Background(), cfg, "tok-test")
+	assert.ErrorIs(t, err, ErrWorkerInstanceConflict)
+	var ic *InstanceConflictError
+	assert.True(t, errors.As(err, &ic))
+	assert.Equal(t, ic.WorkerInstanceID, "inv-abc123")
+	assert.Equal(t, ic.ProjectHandle, "test-project")
+}
+
+// TestWorkerRun_ConcurrencyClaimsMultipleJobs verifies that a worker with
+// Concurrency=N keeps up to N jobs in flight under one instance ID and
+// session token — the throughput knob the new model is built around.
+func TestWorkerRun_ConcurrencyClaimsMultipleJobs(t *testing.T) {
+	var mu sync.Mutex
+	var seenTokens, seenInstances map[string]bool
+	seenTokens = map[string]bool{}
+	seenInstances = map[string]bool{}
+	var claims atomic.Int32
+	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.URL.Path == "/v1/projects/test-project/jobs/claim":
+			n := claims.Add(1)
+			var sent map[string]any
+			_ = json.NewDecoder(r.Body).Decode(&sent)
+			mu.Lock()
+			if tok, ok := sent["worker_session_token"].(string); ok {
+				seenTokens[tok] = true
+			}
+			if id, ok := sent["worker_instance_id"].(string); ok {
+				seenInstances[id] = true
+			}
+			mu.Unlock()
+			if n <= 3 {
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = io.WriteString(w, fmt.Sprintf(`{"job_id":"job_%d","run_id":"run_1","workflow_name":"hello","step_name":"greet","action":"block","parameters":{},"attempt":1,"queue":"default","heartbeat_interval_seconds":3600}`, n))
+				return
+			}
+			w.WriteHeader(http.StatusNoContent)
+		case strings.HasPrefix(r.URL.Path, "/v1/projects/test-project/jobs/job_") && strings.HasSuffix(r.URL.Path, "/complete"):
+			w.WriteHeader(http.StatusNoContent)
+		default:
+			http.NotFound(w, r)
+		}
+	})
+	c, _ := newTestClient(t, h)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	started := make(chan struct{}, 3)
+	release := make(chan struct{})
+	worker := c.NewWorker(WorkerConfig{
+		WorkerInstanceID: "throughput",
+		Concurrency:      3,
+		PollWaitSeconds:  1,
+	})
+	worker.Register(ActionFunc("block", func(ctx Context, params map[string]any) (any, error) {
+		started <- struct{}{}
+		<-release
+		return map[string]any{"ok": true}, nil
+	}))
+
+	done := make(chan error, 1)
+	go func() { done <- worker.Run(ctx) }()
+	for i := 0; i < 3; i++ {
+		select {
+		case <-started:
+		case <-time.After(time.Second):
+			t.Fatalf("worker did not start job %d under concurrency", i+1)
+		}
+	}
+	close(release)
+	cancel()
+	<-done
+	mu.Lock()
+	assert.Equal(t, len(seenTokens), 1)
+	assert.Equal(t, len(seenInstances), 1)
+	assert.True(t, seenInstances["throughput"])
+	mu.Unlock()
+}
+
+// TestWorkerRun_InstanceConflictExitsLoudly verifies that a 409 from
+// claim with the worker_instance_conflict code surfaces from Run as
+// a hard error rather than triggering the silent retry loop.
+func TestWorkerRun_InstanceConflictExitsLoudly(t *testing.T) {
+	body := `{"code":"worker_instance_conflict","message":"another live process holds inv-abc123"}`
+	h := newRecorder(t, map[string]stubResponse{
+		"/v1/projects/test-project/jobs/claim": {status: 409, body: body},
+	})
+	c, _ := newTestClient(t, h)
+	worker := c.NewWorker(WorkerConfig{WorkerInstanceID: "inv-abc123", PollWaitSeconds: 1})
+
+	done := make(chan error, 1)
+	go func() { done <- worker.Run(context.Background()) }()
+
+	select {
+	case err := <-done:
+		assert.True(t, errors.Is(err, ErrWorkerInstanceConflict))
+	case <-time.After(time.Second):
+		t.Fatal("worker did not exit on instance conflict")
+	}
 }

@@ -1398,11 +1398,13 @@ paths:
             schema:
               $ref: '#/components/schemas/JobClaimRequest'
             example:
-              worker_id: worker-us-east-1a-03
+              worker_instance_id: inv-abc123
+              worker_session_token: <worker-session-token>
+              concurrency_limit: 8
               agent_id: agt_01hw1m5q9x7r2p4n6s8t0v3y5z
               agent_session_id: ags_01hw1m7c8d9e0f1g2h3j4k5m6n
-              worker_name: summarizer-pool
-              worker_version: 2026.04.24
+              worker_name: invoice-processor
+              worker_version: 2026.04.27
               queues:
               - default
               actions:
@@ -1436,6 +1438,15 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          description: '`worker_instance_conflict` — another live process has already registered
+            with this `worker_instance_id` in the project under a different `worker_session_token`
+            and the incumbent is still within the takeover window. Resolve by configuring
+            distinct instance IDs or letting the SDK auto-detect them.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /v1/projects/{project}/jobs/{id}/heartbeat:
     post:
       operationId: heartbeatJob
@@ -1443,7 +1454,7 @@ paths:
       - jobs
       summary: Refresh the lease on a claimed workflow job
       description: |-
-        Extends the worker's lease on the job and returns server directives. Must include the `worker_id` + `attempt` fence from the original claim — a stale fence (e.g., from a previous attempt) is rejected with 409.
+        Extends the worker's lease on the job and returns server directives. Must include the `worker_session_token` + `attempt` fence from the original claim — a stale fence (e.g., from a previous attempt or from a process that has since been taken over) is rejected with 409.
 
         Returns a small JSON envelope rather than 204 so the server can attach directives (e.g., `should_cancel`) without an additional round trip. Workers should call this at the interval specified in `JobClaim.heartbeat_interval_seconds` (recommended: 30s).
 
@@ -1458,7 +1469,8 @@ paths:
             schema:
               $ref: '#/components/schemas/JobFenceRequest'
             example:
-              worker_id: worker-us-east-1a-03
+              worker_instance_id: inv-abc123
+              worker_session_token: <worker-session-token>
               attempt: 1
       responses:
         '200':
@@ -1486,7 +1498,7 @@ paths:
       - jobs
       summary: Report terminal status for a claimed workflow job
       description: |-
-        Marks the job as completed or failed and advances workflow progression. Must include the `worker_id` + `attempt` fence from the claim — a stale fence is rejected with 409.
+        Marks the job as completed or failed and advances workflow progression. Must include the `worker_session_token` + `attempt` fence from the claim — a stale fence is rejected with 409.
 
         On `status: completed`, `result_b64` (if provided) is base64- decoded and stored as the job's output bytes, which the workflow engine may pass as input to downstream steps.
 
@@ -1504,14 +1516,16 @@ paths:
               completed:
                 summary: Successful completion
                 value:
-                  worker_id: worker-us-east-1a-03
+                  worker_instance_id: inv-abc123
+                  worker_session_token: <worker-session-token>
                   attempt: 1
                   status: completed
                   result_b64: eyJzdW1tYXJ5IjoiUmVhZHkgZm9yIHJldmlldy4ifQ==
               failed:
                 summary: Failed attempt
                 value:
-                  worker_id: worker-us-east-1a-03
+                  worker_instance_id: inv-abc123
+                  worker_session_token: <worker-session-token>
                   attempt: 1
                   status: failed
                   error_type: TimeoutError
@@ -1536,7 +1550,7 @@ paths:
       description: |-
         Publishes a batch of custom run events on behalf of the worker holding the job's current lease. Events are appended to the durable run event store (so they replay via `?since=<seq>`) and fanned out to any live SSE subscribers on the run.
 
-        Authorization requires `mobius.work.execute`. Each event must present the active lease fence (`worker_id` + `attempt`); stale fences are rejected with 409.
+        Authorization requires `mobius.work.execute`. Each event must present the active lease fence (`worker_session_token` + `attempt`); stale fences are rejected with 409.
 
         `type` is a caller-chosen identifier. The `mobius.` prefix is reserved for future server-emitted well-known kinds and is rejected with 400.
 
@@ -1551,7 +1565,8 @@ paths:
             schema:
               $ref: '#/components/schemas/JobEventsRequest'
             example:
-              worker_id: worker-us-east-1a-03
+              worker_instance_id: inv-abc123
+              worker_session_token: <worker-session-token>
               attempt: 1
               events:
               - type: progress
@@ -2054,10 +2069,11 @@ paths:
       tags:
       - worker-sessions
       summary: List worker sessions
-      description: 'Returns worker sessions that have polled for jobs within the project.
-        Each session''s `stale` flag is computed at read time: if `last_seen_at` is older
-        than 2 minutes (or absent), the session is considered stale. Stale sessions are retained
-        for display but will not receive new job claims.'
+      description: 'Returns worker sessions registered against the project. Each session''s
+        `stale` flag is computed at read time: if `last_seen_at` is older than 2 minutes (or
+        absent), the session is considered stale. Stale sessions are retained for display
+        until the 30-day retention floor; rows older than that are hard-deleted by a background
+        sweeper.'
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       responses:
@@ -6134,13 +6150,36 @@ components:
     JobClaimRequest:
       type: object
       additionalProperties: false
-      required:
-      - worker_id
+      description: |-
+        Body for `POST /jobs/claim`. Workers must send either `worker_instance_id` (preferred) or `worker_id` (deprecated alias for one release). Sending neither is a 400; sending both with conflicting values is a 400.
+
+        At least one of `worker_id` / `worker_instance_id` is required — the constraint is enforced server-side rather than via JSON Schema because OpenAPI 3.0 has no clean way to express "exactly one of these two scalar fields is required" without sacrificing the single-object shape.
       properties:
         worker_id:
           type: string
-          description: Caller-assigned stable identifier for this worker process. Used as
-            the lease fence and for worker registry tracking.
+          deprecated: true
+          description: Deprecated alias for `worker_instance_id`. Accepted for one release
+            while customer SDKs migrate. New integrations must send `worker_instance_id` instead.
+        worker_instance_id:
+          type: string
+          description: Caller-configured stable identifier for the worker process. The SDK
+            auto-detects this on Cloud Run, Kubernetes, Fly, Railway and Render; otherwise
+            a UUID is generated at boot. Stored on the claimed job as `claimed_by` for human-
+            readable display.
+        worker_session_token:
+          type: string
+          description: Per-boot token generated by the SDK on Worker construction. Stamped
+            onto the claimed job and re-presented as the lease fence on heartbeat / events
+            / complete. Opaque to operators. Required for the new fence; absence falls back
+            to the legacy `worker_id`-based fence for one release.
+        concurrency_limit:
+          type: integer
+          minimum: 1
+          default: 1
+          description: Maximum number of concurrent in-flight jobs this worker process intends
+            to hold. Recorded on the worker_session row; used for the saturation bar in the
+            admin UI. The server does not enforce the limit — the worker is trusted to gate
+            its own claim loop.
         agent_id:
           type: string
           description: Durable agent identity the worker is acting on behalf of.
@@ -6258,27 +6297,52 @@ components:
     JobFenceRequest:
       type: object
       additionalProperties: false
+      description: Lease fence presented on heartbeat. Either `worker_session_token` (preferred)
+        or `worker_id` (deprecated alias) must be supplied along with `attempt`. The at-least-one
+        constraint on the worker identifier pair is enforced server-side; only `attempt` is
+        marked required at the schema level.
       required:
-      - worker_id
       - attempt
       properties:
         worker_id:
           type: string
-          description: Must match the `worker_id` from the original claim.
+          deprecated: true
+          description: Deprecated alias for `worker_instance_id`. Used as the lease fence
+            only when `worker_session_token` is absent.
+        worker_instance_id:
+          type: string
+          description: Echo of the `worker_instance_id` from the claim. Logged for audit;
+            not the fence value.
+        worker_session_token:
+          type: string
+          description: Per-boot token from the original claim. Compared against the job's
+            `claimed_by_session_token`; mismatch returns 409 lease-lost. Absence falls back
+            to legacy `worker_id` fence.
         attempt:
           type: integer
           description: Must match the `attempt` from the original claim.
     JobCompleteRequest:
       type: object
       additionalProperties: false
+      description: Terminal report for a claimed job. Either `worker_session_token` (preferred)
+        or `worker_id` (deprecated) must be supplied along with `attempt` and `status`. The
+        at-least-one constraint on the worker identifier pair is enforced server-side.
       required:
-      - worker_id
       - attempt
       - status
       properties:
         worker_id:
           type: string
-          description: Must match the `worker_id` from the original claim.
+          deprecated: true
+          description: Deprecated alias for `worker_instance_id`. Used as the fence only when
+            `worker_session_token` is absent.
+        worker_instance_id:
+          type: string
+          description: Echo of the claim's `worker_instance_id`. Audit only.
+        worker_session_token:
+          type: string
+          description: Per-boot token from the claim. Compared against the job's `claimed_by_session_token`;
+            mismatch returns 409 lease-lost.
         attempt:
           type: integer
           description: Must match the `attempt` from the original claim.
@@ -6338,16 +6402,26 @@ components:
       type: object
       additionalProperties: false
       required:
-      - worker_id
       - attempt
       - events
       description: 'Fenced batch of custom run events published by the worker holding a job''s
         lease. The fence is per-request: every event in `events` is published under the same
-        `worker_id` + `attempt` pair.'
+        fence pair (preferring `worker_session_token`, falling back to `worker_id`) and the
+        same `attempt`. The at-least-one constraint on the worker identifier pair is enforced
+        server-side.'
       properties:
         worker_id:
           type: string
-          description: Must match the `worker_id` from the original claim.
+          deprecated: true
+          description: Deprecated alias for `worker_instance_id`. Used as the fence only when
+            `worker_session_token` is absent.
+        worker_instance_id:
+          type: string
+          description: Echo of the claim's `worker_instance_id`. Audit only.
+        worker_session_token:
+          type: string
+          description: Per-boot token from the claim. Used as the lease fence in preference
+            to `worker_id`.
         attempt:
           type: integer
           description: Must match the `attempt` from the original claim.
@@ -7118,15 +7192,34 @@ components:
       type: object
       additionalProperties: false
       description: Recently observed worker process for a project. Use sessions to see which
-        machines, users, service accounts, or agents are polling for work and whether they
-        appear stale.
+        machines, users, service accounts, or agents are polling for work, what their configured
+        concurrency is, and whether they appear stale.
       required:
       - id
+      - worker_instance_id
+      - concurrency_limit
+      - instance_status
       - stale
+      - busy_job_count
+      - current_jobs
       properties:
         id:
           type: string
-          description: Caller-assigned stable identifier for this worker process.
+          description: Server-assigned session row ID (`wsess_…`). Generated by the control
+            plane on first registration; opaque to workers and stable across refreshes for
+            a given live row.
+        worker_instance_id:
+          type: string
+          description: Caller-configured stable identifier for the worker process. The SDK
+            auto-detects this from the runtime platform (Cloud Run revision, Kubernetes pod,
+            Fly machine, Railway replica, Render instance) and falls back to a UUID. Unique
+            within `(org_id, project_id)`.
+        concurrency_limit:
+          type: integer
+          minimum: 1
+          description: Configured maximum number of jobs this worker process will hold in
+            flight simultaneously. Reported by the SDK on register; rendered as a saturation
+            bar in the admin UI (`busy_job_count / concurrency_limit`).
         name:
           type: string
           description: Optional human-readable name supplied in the claim request.
@@ -7139,6 +7232,11 @@ components:
           description: Timestamp of this session's most recent job claim poll. Updated on
             every `POST /v1/projects/{project}/jobs/claim` call regardless of whether a job
             was returned. Used to compute `stale`.
+        last_activity_at:
+          type: string
+          format: date-time
+          description: Most recent observed activity for this session, derived from `last_seen_at`,
+            currently claimed job heartbeats, and the latest terminal job update.
         capabilities:
           type: array
           items:
@@ -7171,21 +7269,125 @@ components:
             as a registered agent (via `agent_id` on the claim request or via inference from
             the service account). Absent for ad-hoc worker processes that are not tied to
             a declared agent.
+        instance_status:
+          type: string
+          enum:
+          - active
+          - stale
+          - draining
+          description: |-
+            High-level lifecycle indicator for the row.
+            * `active` — recent heartbeat, healthy.
+            * `stale` — no heartbeat within the staleness window; row
+            retained for display until the 30-day delete floor.
+            * `draining` — explicit graceful-shutdown signal from the
+            SDK (reserved for future SDK releases).
+
+            Conflicts (a different process tried to register this `worker_instance_id` within the takeover window and was rejected) are surfaced inline as a 409 from the worker protocol; the previous registration's row remains `active` and never appears as a separate "conflicting" entry.
         stale:
           type: boolean
           description: True when `last_seen_at` is older than 2 minutes or absent. Computed
-            at read time, not stored.
+            at read time, not stored. Equivalent to `instance_status == "stale"`; both are
+            returned for backward compatibility while clients update.
+        busy_job_count:
+          type: integer
+          minimum: 0
+          description: Number of jobs this worker session is currently holding.
+        current_jobs:
+          type: array
+          description: Currently claimed jobs held by this worker session.
+          items:
+            $ref: '#/components/schemas/WorkerSessionJobRef'
+        last_job:
+          $ref: '#/components/schemas/WorkerSessionJobRef'
+          description: Most recent completed or failed job this worker session handled.
+    WorkerSessionJobRef:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - run_id
+      - step_name
+      - action
+      - status
+      - updated_at
+      properties:
+        id:
+          type: string
+          description: Job ID.
+        run_id:
+          type: string
+          description: Workflow run that owns the job.
+        step_name:
+          type: string
+          description: Workflow step name.
+        action:
+          type: string
+          description: Action executed by the worker.
+        status:
+          type: string
+          enum:
+          - pending
+          - claimed
+          - completed
+          - failed
+          description: Current job lifecycle state.
+        claimed_at:
+          type: string
+          format: date-time
+          description: Timestamp when the worker claimed the job.
+        heartbeat_at:
+          type: string
+          format: date-time
+          description: Most recent heartbeat timestamp while the job is claimed.
+        updated_at:
+          type: string
+          format: date-time
+          description: Last job update timestamp.
     WorkerSessionListResponse:
       type: object
       additionalProperties: false
       required:
       - items
+      - totals
       properties:
         items:
           type: array
           description: The list of recently seen worker sessions.
           items:
             $ref: '#/components/schemas/WorkerSession'
+        totals:
+          $ref: '#/components/schemas/WorkerSessionTotals'
+          description: Aggregate counts across `items`, computed by the server so UIs do not
+            need to re-derive them on every render.
+    WorkerSessionTotals:
+      type: object
+      additionalProperties: false
+      required:
+      - active_instances
+      - slots
+      - busy
+      - stale
+      description: Project-wide rollup of the rendered worker sessions. Useful for the page
+        header — "3 active instances · 18 slots · 7 busy · 1 stale" — without iterating items
+        client-side.
+      properties:
+        active_instances:
+          type: integer
+          minimum: 0
+          description: Count of `instance_status == "active"` rows.
+        slots:
+          type: integer
+          minimum: 0
+          description: Sum of `concurrency_limit` across active rows.
+        busy:
+          type: integer
+          minimum: 0
+          description: Sum of `busy_job_count` across active rows.
+        stale:
+          type: integer
+          minimum: 0
+          description: Count of `instance_status == "stale"` rows.
     User:
       type: object
       additionalProperties: false

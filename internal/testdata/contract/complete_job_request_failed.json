@@ -1,5 +1,6 @@
 {
-  "worker_id": "worker-abc",
+  "worker_instance_id": "worker-abc",
+  "worker_session_token": "tok-1",
   "attempt": 3,
   "status": "failed",
   "error_type": "Error",
