@@ -26,10 +26,6 @@ type WorkerPoolConfig struct {
 	// prefix; child workers each get their own session token, so a
 	// pool of N produces N rows on the workers page.
 	WorkerInstanceIDPrefix string
-	// WorkerIDPrefix is a deprecated alias for WorkerInstanceIDPrefix.
-	//
-	// Deprecated: use WorkerInstanceIDPrefix instead.
-	WorkerIDPrefix string
 }
 
 // WorkerPool runs multiple worker instances in one process. Prefer
@@ -45,14 +41,10 @@ func (c *Client) NewWorkerPool(cfg WorkerPoolConfig) *WorkerPool {
 	if cfg.Count <= 0 {
 		cfg.Count = 1
 	}
-	if cfg.WorkerInstanceIDPrefix == "" && cfg.WorkerIDPrefix != "" {
-		cfg.WorkerInstanceIDPrefix = cfg.WorkerIDPrefix
-	}
 	if cfg.WorkerInstanceIDPrefix == "" {
 		cfg.WorkerInstanceIDPrefix = "worker-" + uuid.NewString()
 	}
 	cfg.WorkerInstanceID = ""
-	cfg.WorkerID = ""
 	return &WorkerPool{
 		client:   c,
 		config:   cfg,
@@ -77,7 +69,6 @@ func (p *WorkerPool) Run(ctx context.Context) error {
 	for i := 1; i <= p.config.Count; i++ {
 		cfg := p.config.WorkerConfig
 		cfg.WorkerInstanceID = fmt.Sprintf("%s-%d", p.config.WorkerInstanceIDPrefix, i)
-		cfg.WorkerID = ""
 		worker := p.client.newWorkerWithRegistry(cfg, p.registry)
 
 		wg.Add(1)

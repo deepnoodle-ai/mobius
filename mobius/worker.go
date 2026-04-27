@@ -18,19 +18,13 @@ type WorkerConfig struct {
 	// the row key used for the saturation views in the admin UI.
 	// Optional — when empty the SDK auto-detects the platform-native
 	// identifier (Cloud Run revision instance, Kubernetes HOSTNAME,
-	// Fly machine, Railway replica, Render instance) and falls back
-	// to a per-boot UUID. Set this only for stable singleton workers
-	// that must keep the same row across restarts; two live processes
-	// using the same override in the same project will collide and
-	// the second will fail with [ErrWorkerInstanceConflict].
+	// Fly machine, Railway replica, Render instance, OS hostname)
+	// and falls back to a per-boot UUID. Set this only for stable
+	// singleton workers that must keep the same row across restarts;
+	// two live processes using the same override in the same project
+	// will collide and the second will fail with
+	// [ErrWorkerInstanceConflict].
 	WorkerInstanceID string
-	// WorkerID is a deprecated alias for [WorkerConfig.WorkerInstanceID].
-	// Setting it (with WorkerInstanceID empty) keeps existing
-	// integrations working for one release; the SDK logs a one-time
-	// deprecation warning. Remove uses before the next major.
-	//
-	// Deprecated: use WorkerInstanceID instead.
-	WorkerID string
 	// Concurrency is the maximum number of jobs this worker will hold
 	// in flight simultaneously. Defaults to 1 — set higher to claim
 	// multiple jobs from one worker process while still surfacing as
@@ -100,13 +94,8 @@ func (c *Client) NewWorker(cfg WorkerConfig) *Worker {
 	if cfg.Logger == nil {
 		cfg.Logger = slog.Default()
 	}
-	if cfg.WorkerInstanceID == "" && cfg.WorkerID != "" {
-		cfg.Logger.Warn("mobius: WorkerConfig.WorkerID is deprecated; use WorkerInstanceID")
-		cfg.WorkerInstanceID = cfg.WorkerID
-	}
 	resolved, source := ResolveInstanceID(cfg.WorkerInstanceID)
 	cfg.WorkerInstanceID = resolved
-	cfg.WorkerID = resolved
 	cfg.Logger.Info("mobius worker: instance id resolved",
 		"worker_instance_id", resolved,
 		"source", string(source),

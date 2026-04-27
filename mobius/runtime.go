@@ -134,45 +134,25 @@ func (c *Client) runtimeClaim(ctx context.Context, cfg WorkerConfig, sessionToke
 
 // parseInstanceConflict turns a 409 from /jobs/claim into an
 // [InstanceConflictError]. The server wraps errors as
-// {"error":{"code":"worker_instance_conflict","message":"…"}}; we
-// also tolerate a flat {"code","message"} shape so a future server
-// rev (or a custom test fixture) won't silently fall through to the
-// generic retry loop. Any other 409 is bubbled up unchanged so the
-// caller can retry-or-die normally.
+// {"error":{"code":"worker_instance_conflict","message":"…"}}.
+// Any other 409 is bubbled up unchanged so the caller can
+// retry-or-die normally.
 func parseInstanceConflict(body []byte, instanceID, projectHandle string) error {
-	code, message := extractErrorCode(body)
-	if code == "worker_instance_conflict" {
-		return &InstanceConflictError{
-			WorkerInstanceID: instanceID,
-			ProjectHandle:    projectHandle,
-			Message:          message,
-		}
-	}
-	return fmt.Errorf("mobius: claim: unexpected status 409: %s", strings.TrimSpace(string(body)))
-}
-
-// extractErrorCode reads a Mobius error envelope, returning the
-// (code, message) pair for either the standard nested shape
-// ({"error":{...}}) or a flat fallback. Returns empty strings when
-// the body is not a recognisable error.
-func extractErrorCode(body []byte) (string, string) {
-	var nested struct {
+	var envelope struct {
 		Error struct {
 			Code    string `json:"code"`
 			Message string `json:"message"`
 		} `json:"error"`
 	}
-	if err := json.Unmarshal(body, &nested); err == nil && nested.Error.Code != "" {
-		return nested.Error.Code, nested.Error.Message
+	if err := json.Unmarshal(body, &envelope); err == nil &&
+		envelope.Error.Code == "worker_instance_conflict" {
+		return &InstanceConflictError{
+			WorkerInstanceID: instanceID,
+			ProjectHandle:    projectHandle,
+			Message:          envelope.Error.Message,
+		}
 	}
-	var flat struct {
-		Code    string `json:"code"`
-		Message string `json:"message"`
-	}
-	if err := json.Unmarshal(body, &flat); err == nil && flat.Code != "" {
-		return flat.Code, flat.Message
-	}
-	return "", ""
+	return fmt.Errorf("mobius: claim: unexpected status 409: %s", strings.TrimSpace(string(body)))
 }
 
 // runtimeHeartbeat refreshes the lease on a claimed job and returns

@@ -283,24 +283,13 @@ class Client:
             body = resp.json()
         except json.JSONDecodeError:
             body = {}
-        # The backend wraps errors as {"error": {"code", "message"}};
-        # we also accept a flat {"code", "message"} shape so a future
-        # server rev or a custom test fixture won't silently fall
-        # through to the generic retry loop.
-        code, message = "", None
-        if isinstance(body, dict):
-            inner = body.get("error")
-            if isinstance(inner, dict) and inner.get("code"):
-                code = str(inner.get("code") or "")
-                message = inner.get("message")
-            elif body.get("code"):
-                code = str(body.get("code") or "")
-                message = body.get("message")
-        if code == "worker_instance_conflict":
+        # The backend wraps errors as {"error": {"code", "message"}}.
+        inner = body.get("error") if isinstance(body, dict) else None
+        if isinstance(inner, dict) and inner.get("code") == "worker_instance_conflict":
             raise WorkerInstanceConflictError(
                 worker_instance_id=req.worker_instance_id,
                 project_handle=self.project,
-                message=message,
+                message=inner.get("message"),
             )
         # Any other 409 on claim is unexpected; surface the raw body so
         # an operator can diagnose without stripping detail.

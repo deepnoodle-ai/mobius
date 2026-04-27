@@ -65,8 +65,8 @@ func registerWorkerCommand(app *cli.App) {
 				return fmt.Errorf(
 					"--workers and --concurrency are mutually exclusive: " +
 						"--workers spawns N independent presence rows, " +
-						"--concurrency keeps one row serving N concurrent jobs. " +
-						"Pick whichever matches your operational model.",
+						"--concurrency keeps one row serving N concurrent jobs — " +
+						"pick whichever matches your operational model",
 				)
 			}
 

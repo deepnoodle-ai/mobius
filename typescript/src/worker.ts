@@ -39,7 +39,10 @@ const CLOUD_RUN_METADATA_TIMEOUT_MS = 1000;
 export async function resolveInstanceID(
   explicit: string | undefined,
 ): Promise<{ id: string; source: InstanceIDSource }> {
-  if (explicit && explicit !== "") return { id: explicit, source: "configured" };
+  if (explicit) {
+    const trimmed = explicit.trim();
+    if (trimmed) return { id: trimmed, source: "configured" };
+  }
   const cloudRun = await cloudRunInstanceID();
   if (cloudRun) return { id: cloudRun, source: "cloud_run_revision_instance" };
   const hostname = (process.env.HOSTNAME ?? "").trim();
@@ -60,6 +63,11 @@ export async function resolveInstanceID(
 }
 
 async function cloudRunInstanceID(): Promise<string | null> {
+  // Returns null on any metadata-server failure rather than the bare
+  // revision — every replica sharing the same revision string would
+  // otherwise collapse onto one row and trip the conflict detector.
+  // The next strategy (HOSTNAME, which Cloud Run sets per-instance)
+  // takes over.
   const revision = (process.env.K_REVISION ?? "").trim();
   if (!revision) return null;
   try {
@@ -70,14 +78,14 @@ async function cloudRunInstanceID(): Promise<string | null> {
         "http://metadata.google.internal/computeMetadata/v1/instance/id",
         { headers: { "Metadata-Flavor": "Google" }, signal: ctrl.signal },
       );
-      if (!resp.ok) return revision;
+      if (!resp.ok) return null;
       const id = (await resp.text()).trim();
-      return id ? `${revision}-${id}` : revision;
+      return id ? `${revision}-${id}` : null;
     } finally {
       clearTimeout(timer);
     }
   } catch {
-    return revision;
+    return null;
   }
 }
 
@@ -109,18 +117,13 @@ export interface WorkerConfig {
    * Stable identifier for this worker process. Optional — when
    * omitted, the SDK auto-detects the platform-native identifier
    * (Cloud Run revision instance, Kubernetes HOSTNAME, Fly machine,
-   * Railway replica, Render instance) and falls back to a per-boot
-   * UUID. Set explicitly only for stable singleton workers; two
-   * live processes using the same override in the same project
-   * will collide and the second will fail with
+   * Railway replica, Render instance, OS hostname) and falls back
+   * to a per-boot UUID. Set explicitly only for stable singleton
+   * workers; two live processes using the same override in the
+   * same project will collide and the second will fail with
    * {@link WorkerInstanceConflictError}.
    */
   workerInstanceId?: string;
-  /**
-   * Deprecated alias for {@link WorkerConfig.workerInstanceId}.
-   * @deprecated use `workerInstanceId` instead.
-   */
-  workerId?: string;
   /**
    * Maximum number of jobs this worker holds in flight simultaneously.
    * Defaults to 1; raise to claim several jobs from one worker process
@@ -197,7 +200,7 @@ export interface ActionContext {
  */
 export class Worker {
   private readonly config: Required<
-    Omit<WorkerConfig, "logger" | "heartbeatIntervalMs" | "workerId">
+    Omit<WorkerConfig, "logger" | "heartbeatIntervalMs">
   > & {
     heartbeatIntervalMs: number | undefined;
   };
@@ -215,15 +218,8 @@ export class Worker {
   ) {
     const logger =
       config.logger === null ? silentLogger : (config.logger ?? defaultLogger);
-    let initialInstanceID = config.workerInstanceId ?? "";
-    if (initialInstanceID === "" && config.workerId && config.workerId !== "") {
-      logger.warn(
-        "[mobius] WorkerConfig.workerId is deprecated; use workerInstanceId",
-      );
-      initialInstanceID = config.workerId;
-    }
     this.config = {
-      workerInstanceId: initialInstanceID,
+      workerInstanceId: config.workerInstanceId ?? "",
       concurrency: config.concurrency && config.concurrency > 0 ? config.concurrency : 1,
       name: config.name ?? "",
       version: config.version ?? "",
@@ -277,7 +273,12 @@ export class Worker {
     while (!combined.aborted) {
       if (this.authRevoked) break;
       while (inflight.size >= this.config.concurrency && !combined.aborted) {
-        await Promise.race([...inflight, abortAsPromise(combined)]);
+        const aborted = abortAsPromise(combined);
+        try {
+          await Promise.race([...inflight, aborted.promise]);
+        } finally {
+          aborted.cancel();
+        }
       }
       if (combined.aborted) break;
 
@@ -508,8 +509,7 @@ export class Worker {
   }
 }
 
-export interface WorkerPoolConfig
-  extends Omit<WorkerConfig, "workerInstanceId" | "workerId"> {
+export interface WorkerPoolConfig extends Omit<WorkerConfig, "workerInstanceId"> {
   /** Number of worker instances to run. Defaults to 1. */
   count?: number;
   /**
@@ -519,10 +519,6 @@ export interface WorkerPoolConfig
    * on the workers page.
    */
   workerInstanceIdPrefix?: string;
-  /**
-   * @deprecated use `workerInstanceIdPrefix` instead.
-   */
-  workerIdPrefix?: string;
 }
 
 /**
@@ -537,7 +533,7 @@ export class WorkerPool {
   private readonly config: Required<
     Omit<
       WorkerPoolConfig,
-      "logger" | "heartbeatIntervalMs" | "workerInstanceIdPrefix" | "workerIdPrefix"
+      "logger" | "heartbeatIntervalMs" | "workerInstanceIdPrefix"
     >
   > & {
     workerInstanceIdPrefix: string;
@@ -552,11 +548,9 @@ export class WorkerPool {
     config: WorkerPoolConfig,
   ) {
     const prefix =
-      (config.workerInstanceIdPrefix && config.workerInstanceIdPrefix !== ""
+      config.workerInstanceIdPrefix && config.workerInstanceIdPrefix !== ""
         ? config.workerInstanceIdPrefix
-        : config.workerIdPrefix && config.workerIdPrefix !== ""
-          ? config.workerIdPrefix
-          : "") || `worker-${randomUUID()}`;
+        : `worker-${randomUUID()}`;
     this.config = {
       workerInstanceIdPrefix: prefix,
       concurrency: config.concurrency && config.concurrency > 0 ? config.concurrency : 1,
@@ -641,25 +635,44 @@ export class WorkerPool {
   }
 }
 
+// sleep resolves after ms or when the signal aborts, whichever comes
+// first. Detaches the abort listener on the natural-resolution path
+// so it doesn't accumulate on a long-lived signal across thousands of
+// poll cycles.
 function sleep(ms: number, signal: AbortSignal): Promise<void> {
   return new Promise((resolve) => {
-    const t = setTimeout(resolve, ms);
-    signal.addEventListener(
-      "abort",
-      () => {
-        clearTimeout(t);
-        resolve();
-      },
-      { once: true },
-    );
+    const onAbort = () => {
+      clearTimeout(t);
+      resolve();
+    };
+    const t = setTimeout(() => {
+      signal.removeEventListener("abort", onAbort);
+      resolve();
+    }, ms);
+    signal.addEventListener("abort", onAbort, { once: true });
   });
 }
 
-function abortAsPromise(signal: AbortSignal): Promise<void> {
-  if (signal.aborted) return Promise.resolve();
-  return new Promise((resolve) => {
-    signal.addEventListener("abort", () => resolve(), { once: true });
+// abortAsPromise returns a promise that resolves when the signal
+// aborts, plus a cancel function the caller invokes when the promise
+// is no longer needed (e.g. when something else won a Promise.race).
+// Without the cancel handle, every Promise.race in the concurrency
+// loop would leak a listener on the long-lived worker signal.
+function abortAsPromise(signal: AbortSignal): {
+  promise: Promise<void>;
+  cancel: () => void;
+} {
+  if (signal.aborted) return { promise: Promise.resolve(), cancel: () => {} };
+  let resolveFn!: () => void;
+  const promise = new Promise<void>((resolve) => {
+    resolveFn = resolve;
   });
+  const onAbort = () => resolveFn();
+  signal.addEventListener("abort", onAbort, { once: true });
+  return {
+    promise,
+    cancel: () => signal.removeEventListener("abort", onAbort),
+  };
 }
 
 function anySignal(...signals: AbortSignal[]): AbortSignal {

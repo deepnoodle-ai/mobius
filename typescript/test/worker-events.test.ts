@@ -17,7 +17,7 @@ class FakeClient {
   }> = [];
   public completed: JobCompleteRequest[] = [];
 
-  async claimJob(_req?: { worker_instance_id?: string; worker_id?: string }): Promise<JobClaim | null> {
+  async claimJob(_req?: { worker_instance_id?: string }): Promise<JobClaim | null> {
     return null;
   }
 
@@ -45,14 +45,30 @@ class FakeClient {
 class SequencedClient extends FakeClient {
   public claims = 0;
   public workerIds: string[] = [];
+  public sessionTokens: string[] = [];
+  public concurrencyLimits: number[] = [];
 
   constructor(private readonly jobs: JobClaim[]) {
     super();
   }
 
-  override async claimJob(req?: { worker_instance_id?: string; worker_id?: string }): Promise<JobClaim | null> {
+  // Strict on purpose: the SDK must send worker_instance_id on
+  // every claim. Throw when it's missing so any regression that
+  // omits the field surfaces here rather than silently in production.
+  override async claimJob(req?: {
+    worker_instance_id?: string;
+    worker_session_token?: string;
+    concurrency_limit?: number;
+  }): Promise<JobClaim | null> {
     this.claims += 1;
-    if (req) this.workerIds.push(req.worker_instance_id ?? req.worker_id ?? "");
+    if (!req || !req.worker_instance_id) {
+      throw new Error(
+        "SequencedClient.claimJob: worker_instance_id is required",
+      );
+    }
+    this.workerIds.push(req.worker_instance_id);
+    this.sessionTokens.push(req.worker_session_token ?? "");
+    this.concurrencyLimits.push(req.concurrency_limit ?? 0);
     return this.jobs.shift() ?? null;
   }
 }
@@ -174,6 +190,11 @@ test("worker pool: uses distinct single-job workers", async () => {
     "pool-worker-2",
     "pool-worker-3",
   ]));
+  // Each pool child generates its own per-boot session token; three
+  // children → three distinct, non-empty tokens.
+  const tokens = client.sessionTokens.slice(0, 3);
+  assert.equal(tokens.filter((t) => t).length, 3);
+  assert.equal(new Set(tokens).size, 3);
   release();
   controller.abort();
   await run;

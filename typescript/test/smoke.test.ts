@@ -109,6 +109,51 @@ test("smoke: completeJob 409 raises LeaseLostError", async () => {
   );
 });
 
+// Session-token is the preferred fence value (the SDK stamps it on
+// every claim and presents it on heartbeat / complete / events).
+// The tests below mirror the worker_instance_id paths above so any
+// drift in the token-bearing wire shape fails the suite.
+test("smoke: heartbeatJob with worker_session_token serializes the token", async () => {
+  let requestBody = "";
+  globalThis.fetch = (async (_input: RequestInfo | URL, init?: RequestInit) => {
+    requestBody = String(init?.body ?? "");
+    return new Response(null, { status: 409 });
+  }) as typeof fetch;
+  const client = new Client({
+    apiKey: "mbx_test",
+    baseURL: "https://api.example.invalid",
+    project: "test-project",
+  });
+  await assert.rejects(
+    () =>
+      client.heartbeatJob("job_1", {
+        worker_session_token: "tok-abc",
+        attempt: 1,
+      }),
+    LeaseLostError,
+  );
+  assert.match(requestBody, /"worker_session_token":"tok-abc"/);
+});
+
+test("smoke: completeJob with worker_session_token serializes the token", async () => {
+  let requestBody = "";
+  globalThis.fetch = (async (_input: RequestInfo | URL, init?: RequestInit) => {
+    requestBody = String(init?.body ?? "");
+    return new Response(null, { status: 204 });
+  }) as typeof fetch;
+  const client = new Client({
+    apiKey: "mbx_test",
+    baseURL: "https://api.example.invalid",
+    project: "test-project",
+  });
+  await client.completeJob("job_1", {
+    worker_session_token: "tok-abc",
+    attempt: 1,
+    status: "completed",
+  });
+  assert.match(requestBody, /"worker_session_token":"tok-abc"/);
+});
+
 test("smoke: emitJobEvent posts to project events endpoint", async () => {
   let requestedURL = "";
   let requestBody = "";

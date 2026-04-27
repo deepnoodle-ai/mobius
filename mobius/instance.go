@@ -48,8 +48,8 @@ const cloudRunMetadataTimeout = time.Second
 // The returned source is informational only — workers log it once at
 // startup so operators can confirm the right platform was picked up.
 func ResolveInstanceID(explicit string) (string, InstanceIDSource) {
-	if explicit != "" {
-		return explicit, InstanceIDSourceConfigured
+	if trimmed := strings.TrimSpace(explicit); trimmed != "" {
+		return trimmed, InstanceIDSourceConfigured
 	}
 	if id := cloudRunInstanceID(context.Background()); id != "" {
 		return id, InstanceIDSourceCloudRunRevision
@@ -77,7 +77,10 @@ func ResolveInstanceID(explicit string) (string, InstanceIDSource) {
 // cloudRunInstanceID hits the GCE metadata server for the per-instance
 // ID and combines it with K_REVISION so the same revision rolling out
 // across replicas yields one row per replica. Returns empty when not
-// running on Cloud Run or the probe times out.
+// running on Cloud Run or the probe fails — falling through to the
+// next strategy (HOSTNAME, which Cloud Run also sets per-instance)
+// rather than returning a bare revision string that would collapse
+// every replica onto the same row and trip the conflict detector.
 func cloudRunInstanceID(ctx context.Context) string {
 	revision := strings.TrimSpace(os.Getenv("K_REVISION"))
 	if revision == "" {
@@ -93,19 +96,19 @@ func cloudRunInstanceID(ctx context.Context) string {
 	req.Header.Set("Metadata-Flavor", "Google")
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return revision
+		return ""
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return revision
+		return ""
 	}
 	body, err := io.ReadAll(io.LimitReader(resp.Body, 256))
 	if err != nil {
-		return revision
+		return ""
 	}
 	id := strings.TrimSpace(string(body))
 	if id == "" {
-		return revision
+		return ""
 	}
 	return revision + "-" + id
 }

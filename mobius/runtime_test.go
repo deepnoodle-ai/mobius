@@ -554,20 +554,6 @@ func TestRuntimeClaim_InstanceConflict(t *testing.T) {
 	assert.Equal(t, ic.ProjectHandle, "test-project")
 }
 
-// TestRuntimeClaim_InstanceConflict_FlatEnvelope keeps the SDK
-// resilient to a future server rev (or a different deployment) that
-// emits the conflict body without the {"error":{...}} wrapper.
-func TestRuntimeClaim_InstanceConflict_FlatEnvelope(t *testing.T) {
-	body := `{"code":"worker_instance_conflict","message":"already in use"}`
-	h := newRecorder(t, map[string]stubResponse{
-		"/v1/projects/test-project/jobs/claim": {status: 409, body: body},
-	})
-	c, _ := newTestClient(t, h)
-	cfg := WorkerConfig{WorkerInstanceID: "inv-abc123", PollWaitSeconds: 1}
-	_, err := c.runtimeClaim(context.Background(), cfg, "tok-test")
-	assert.ErrorIs(t, err, ErrWorkerInstanceConflict)
-}
-
 // TestWorkerRun_ConcurrencyClaimsMultipleJobs verifies that a worker with
 // Concurrency=N keeps up to N jobs in flight under one instance ID and
 // session token — the throughput knob the new model is built around.

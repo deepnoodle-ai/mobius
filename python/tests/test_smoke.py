@@ -117,6 +117,45 @@ def test_complete_job_409_raises_lease_lost() -> None:
         )
 
 
+# Session-token is the canonical fence value (the SDK stamps it on
+# every claim and presents it on heartbeat / complete / events).
+# The tests below mirror the worker_instance_id paths above so any
+# drift in the token-bearing wire shape fails the suite.
+def test_heartbeat_with_session_token_serializes_token() -> None:
+    seen: dict[str, object] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen["body"] = request.read().decode()
+        return httpx.Response(409)
+
+    client = _client_with(handler)
+    with pytest.raises(LeaseLostError):
+        client.heartbeat_job(
+            "task_1",
+            JobFenceRequest(worker_session_token="tok-abc", attempt=1),
+        )
+    assert '"worker_session_token":"tok-abc"' in str(seen["body"])
+
+
+def test_complete_job_with_session_token_serializes_token() -> None:
+    seen: dict[str, object] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen["body"] = request.read().decode()
+        return httpx.Response(204)
+
+    client = _client_with(handler)
+    client.complete_job(
+        "task_1",
+        JobCompleteRequest(
+            worker_session_token="tok-abc",
+            attempt=1,
+            status=JobStatus.completed,
+        ),
+    )
+    assert '"worker_session_token":"tok-abc"' in str(seen["body"])
+
+
 def test_emit_job_event_posts_to_project_events_endpoint() -> None:
     seen: dict[str, object] = {}
 

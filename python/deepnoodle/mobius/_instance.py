@@ -49,7 +49,9 @@ def resolve_instance_id(explicit: str | None) -> tuple[str, InstanceIDSource]:
     startup so operators can confirm the right platform was picked up.
     """
     if explicit:
-        return explicit, "configured"
+        trimmed = explicit.strip()
+        if trimmed:
+            return trimmed, "configured"
     cloud_run = _cloud_run_instance_id()
     if cloud_run:
         return cloud_run, "cloud_run_revision_instance"
@@ -75,6 +77,14 @@ def resolve_instance_id(explicit: str | None) -> tuple[str, InstanceIDSource]:
 
 
 def _cloud_run_instance_id() -> str | None:
+    """Return the per-instance Cloud Run ID, or None when unavailable.
+
+    Falls through (returns None) on any metadata-server failure rather
+    than returning the bare revision — every replica sharing the same
+    revision string would otherwise collapse onto a single row and
+    trip the conflict detector. The next strategy (HOSTNAME, which
+    Cloud Run also sets per-instance) takes over.
+    """
     revision = (os.environ.get("K_REVISION") or "").strip()
     if not revision:
         return None
@@ -85,10 +95,10 @@ def _cloud_run_instance_id() -> str | None:
             timeout=_CLOUD_RUN_METADATA_TIMEOUT,
         )
     except httpx.HTTPError:
-        return revision
+        return None
     if resp.status_code != 200:
-        return revision
+        return None
     instance = (resp.text or "").strip()
     if not instance:
-        return revision
+        return None
     return f"{revision}-{instance}"

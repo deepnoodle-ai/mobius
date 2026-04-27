@@ -38,15 +38,12 @@ class WorkerConfig:
     # key used by the saturation views in the admin UI. Optional —
     # when empty the SDK auto-detects the platform-native identifier
     # (Cloud Run revision instance, Kubernetes HOSTNAME, Fly machine,
-    # Railway replica, Render instance) and falls back to a per-boot
-    # UUID. Set explicitly only for stable singleton workers; two
-    # live processes using the same override in the same project
-    # will collide and the second will fail with WorkerInstanceConflictError.
+    # Railway replica, Render instance, OS hostname) and falls back
+    # to a per-boot UUID. Set explicitly only for stable singleton
+    # workers; two live processes using the same override in the
+    # same project will collide and the second will fail with
+    # WorkerInstanceConflictError.
     worker_instance_id: str = ""
-    # Deprecated alias for worker_instance_id. Setting it (with
-    # worker_instance_id empty) keeps existing integrations working
-    # for one release; the SDK logs a one-time deprecation warning.
-    worker_id: str = ""
     # Maximum number of jobs this worker holds in flight simultaneously.
     # Defaults to 1; raise to claim several jobs from one worker process
     # while still surfacing as a single row on the workers page.
@@ -120,14 +117,8 @@ class Worker:
         actions: dict[str, ActionFunc] | None = None,
     ) -> None:
         self._client = client
-        if not config.worker_instance_id and config.worker_id:
-            logger.warning(
-                "WorkerConfig.worker_id is deprecated; use worker_instance_id"
-            )
-            config.worker_instance_id = config.worker_id
         resolved, source = resolve_instance_id(config.worker_instance_id or None)
         config.worker_instance_id = resolved
-        config.worker_id = resolved
         logger.info(
             "mobius worker: instance id %s (source: %s)", resolved, source
         )
@@ -475,8 +466,6 @@ class WorkerPoolConfig(WorkerConfig):
 
     count: int = 1
     worker_instance_id_prefix: str = ""
-    # Deprecated alias for worker_instance_id_prefix.
-    worker_id_prefix: str = ""
 
 
 class WorkerPool:
@@ -492,8 +481,6 @@ class WorkerPool:
         self._config = config
         if self._config.count <= 0:
             self._config.count = 1
-        if not self._config.worker_instance_id_prefix and self._config.worker_id_prefix:
-            self._config.worker_instance_id_prefix = self._config.worker_id_prefix
         if not self._config.worker_instance_id_prefix:
             self._config.worker_instance_id_prefix = f"worker-{uuid.uuid4()}"
         self._actions: dict[str, ActionFunc] = {}
