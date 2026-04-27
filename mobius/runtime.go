@@ -65,11 +65,10 @@ func (c *Client) runtimeClaim(ctx context.Context, cfg WorkerConfig, sessionToke
 	}
 	wait := cfg.PollWaitSeconds
 	instanceID := cfg.WorkerInstanceID
-	concurrency := cfg.Concurrency
 	data := api.JobClaimRequest{
-		WorkerInstanceId:   &instanceID,
-		WorkerSessionToken: &sessionToken,
-		ConcurrencyLimit:   &concurrency,
+		WorkerInstanceId:   instanceID,
+		WorkerSessionToken: sessionToken,
+		ConcurrencyLimit:   cfg.Concurrency,
 		WaitSeconds:        &wait,
 	}
 	if cfg.Name != "" {
@@ -164,7 +163,7 @@ func (c *Client) runtimeHeartbeat(ctx context.Context, job *runtimeJob) (*api.Jo
 	sessionToken := job.SessionToken
 	resp, err := c.runtimeRequest(ctx, http.MethodPost, fmt.Sprintf("/v1/projects/%s/jobs/%s/heartbeat", url.PathEscape(c.projectHandle), url.PathEscape(job.JobID)), api.JobFenceRequest{
 		WorkerInstanceId:   &instanceID,
-		WorkerSessionToken: &sessionToken,
+		WorkerSessionToken: sessionToken,
 		Attempt:            job.Attempt,
 	})
 	if err != nil {
@@ -195,7 +194,7 @@ func (c *Client) runtimeCompleteSuccess(ctx context.Context, job *runtimeJob, re
 	sessionToken := job.SessionToken
 	data := api.JobCompleteRequest{
 		WorkerInstanceId:   &instanceID,
-		WorkerSessionToken: &sessionToken,
+		WorkerSessionToken: sessionToken,
 		Attempt:            job.Attempt,
 		Status:             api.JobCompleteRequestStatusCompleted,
 	}
@@ -218,7 +217,7 @@ func (c *Client) runtimeCompleteFailure(ctx context.Context, job *runtimeJob, er
 	sessionToken := job.SessionToken
 	data := api.JobCompleteRequest{
 		WorkerInstanceId:   &instanceID,
-		WorkerSessionToken: &sessionToken,
+		WorkerSessionToken: sessionToken,
 		Attempt:            job.Attempt,
 		Status:             api.JobCompleteRequestStatusFailed,
 		ErrorMessage:       strPtr(message),

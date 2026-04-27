@@ -54,7 +54,11 @@ test("smoke: defaults to the production API host", async () => {
   }) as typeof fetch;
 
   const client = new Client({ apiKey: "mbx_test", project: "test-project" });
-  await client.claimJob({ worker_instance_id: "worker-1", concurrency_limit: 1 });
+  await client.claimJob({
+    worker_instance_id: "worker-1",
+    worker_session_token: "test-session-token",
+    concurrency_limit: 1,
+  });
 
   assert.equal(
     requestedURL,
@@ -64,7 +68,11 @@ test("smoke: defaults to the production API host", async () => {
 
 test("smoke: claimJob returns null on 204", async () => {
   const client = clientWithFakeFetch({ status: 204 });
-  const job = await client.claimJob({ worker_instance_id: "worker-1", concurrency_limit: 1 });
+  const job = await client.claimJob({
+    worker_instance_id: "worker-1",
+    worker_session_token: "test-session-token",
+    concurrency_limit: 1,
+  });
   assert.equal(job, null);
 });
 
@@ -82,7 +90,11 @@ test("smoke: claimJob returns job on 200", async () => {
       queue: "default",
     },
   });
-  const job = await client.claimJob({ worker_instance_id: "worker-1", concurrency_limit: 1 });
+  const job = await client.claimJob({
+    worker_instance_id: "worker-1",
+    worker_session_token: "test-session-token",
+    concurrency_limit: 1,
+  });
   assert.ok(job);
   assert.equal(job!.job_id, "job_1");
   assert.equal(job!.action, "print");
@@ -91,7 +103,12 @@ test("smoke: claimJob returns job on 200", async () => {
 test("smoke: heartbeatJob 409 raises LeaseLostError", async () => {
   const client = clientWithFakeFetch({ status: 409 });
   await assert.rejects(
-    () => client.heartbeatJob("job_1", { worker_instance_id: "w", attempt: 1 }),
+    () =>
+      client.heartbeatJob("job_1", {
+        worker_instance_id: "w",
+        worker_session_token: "test-session-token",
+        attempt: 1,
+      }),
     LeaseLostError,
   );
 });
@@ -102,6 +119,7 @@ test("smoke: completeJob 409 raises LeaseLostError", async () => {
     () =>
       client.completeJob("job_1", {
         worker_instance_id: "w",
+        worker_session_token: "test-session-token",
         attempt: 1,
         status: "completed",
       }),

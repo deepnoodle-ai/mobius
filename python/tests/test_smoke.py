@@ -58,7 +58,13 @@ def test_claim_job_returns_none_on_204() -> None:
         return httpx.Response(204)
 
     client = _client_with(handler)
-    job = client.claim_job(JobClaimRequest(worker_instance_id="worker-1"))
+    job = client.claim_job(
+        JobClaimRequest(
+            worker_instance_id="worker-1",
+            worker_session_token="test-session-token",
+            concurrency_limit=1,
+        )
+    )
     assert job is None
 
 
@@ -85,7 +91,13 @@ def test_claim_job_returns_job_on_200() -> None:
         )
 
     client = _client_with(handler)
-    job = client.claim_job(JobClaimRequest(worker_instance_id="worker-1"))
+    job = client.claim_job(
+        JobClaimRequest(
+            worker_instance_id="worker-1",
+            worker_session_token="test-session-token",
+            concurrency_limit=1,
+        )
+    )
     assert job is not None
     assert job.job_id == "job_1"
     assert job.action == "print"
@@ -99,7 +111,12 @@ def test_heartbeat_409_raises_lease_lost() -> None:
     client = _client_with(handler)
     with pytest.raises(LeaseLostError):
         client.heartbeat_job(
-            "task_1", JobFenceRequest(worker_instance_id="w", attempt=1)
+            "task_1",
+            JobFenceRequest(
+                worker_instance_id="w",
+                worker_session_token="test-session-token",
+                attempt=1,
+            ),
         )
 
 
@@ -112,7 +129,10 @@ def test_complete_job_409_raises_lease_lost() -> None:
         client.complete_job(
             "task_1",
             JobCompleteRequest(
-                worker_instance_id="w", attempt=1, status=JobStatus.completed
+                worker_instance_id="w",
+                worker_session_token="test-session-token",
+                attempt=1,
+                status=JobStatus.completed,
             ),
         )
 

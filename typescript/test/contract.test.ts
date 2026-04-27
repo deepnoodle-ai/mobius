@@ -186,6 +186,7 @@ test("contract: claim_response parsed losslessly", async () => {
   try {
     job = await newClient().claimJob({
       worker_instance_id: "worker-abc",
+      worker_session_token: "test-session-token",
       concurrency_limit: 1,
     });
   } finally {
@@ -203,6 +204,7 @@ test("contract: heartbeat_job_response parsed losslessly", async () => {
   try {
     heartbeat = await newClient().heartbeatJob("job_test", {
       worker_instance_id: "worker-abc",
+      worker_session_token: "test-session-token",
       attempt: 1,
     });
   } finally {
