@@ -49,6 +49,18 @@ mobius worker \
     --queues default
 ```
 
+Run more single-job workers in one process when you need more throughput:
+
+```bash
+mobius worker \
+    --queues default \
+    --workers 5
+```
+
+Migration note: older versions of `mobius worker` executed up to 10 jobs in
+parallel by default through one worker identity. Workers now execute one active
+job lease each; pass `--workers 10` to match the previous default throughput.
+
 The stock worker registers built-in actions like `print`, `fail`, `json`, `time`, and `random`. Run `mobius worker --help` for the full worker flags. Global flags can also be provided via `MOBIUS_API_URL`, `MOBIUS_API_KEY`, `MOBIUS_PROJECT`, and `MOBIUS_LOG_LEVEL`.
 
 ## Documentation

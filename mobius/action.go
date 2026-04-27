@@ -13,6 +13,8 @@
 //	worker := client.NewWorker(mobius.WorkerConfig{})
 //	mobius.RegisterAction(worker, "send_email", sendEmail)
 //	worker.Run(ctx)
+//
+// Use WorkerPool when a process should run multiple single-job workers.
 package mobius
 
 import (
@@ -133,16 +135,17 @@ func (r *ActionRegistry) Names() []string {
 	return names
 }
 
-// RegisterAction registers a typed action function with a Worker.
+// RegisterAction registers a typed action function with a Worker or WorkerPool.
 // P is the parameter type and R is the return type.
-func RegisterAction[P, R any](w *Worker, name string, fn func(ctx Context, params P) (R, error)) {
-	w.registry.MustRegister(NewTypedAction(name, fn))
+func RegisterAction[P, R any](w interface{ Register(Action) }, name string, fn func(ctx Context, params P) (R, error)) {
+	w.Register(NewTypedAction(name, fn))
 }
 
 // Register attaches a pre-constructed Action to the Worker. Use this
 // for actions that need constructor arguments or for actions from
 // the mobius/actions package. For plain typed functions, prefer
-// RegisterAction.
+// RegisterAction. It panics on invalid setup so workers fail fast at
+// startup instead of discovering missing actions after claiming jobs.
 func (w *Worker) Register(a Action) {
 	w.registry.MustRegister(a)
 }

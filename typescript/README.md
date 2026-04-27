@@ -24,24 +24,24 @@ Requires Node.js 18+.
 ### Worker
 
 ```ts
-import { Client, Worker } from "@deepnoodle/mobius";
+import { Client, WorkerPool } from "@deepnoodle/mobius";
 
 const client = new Client({ apiKey: process.env.MOBIUS_API_KEY! });
 
-const worker = new Worker(client, {
-  workerId: "my-worker-1",
+const workers = new WorkerPool(client, {
+  workerIdPrefix: "email-sender",
   name: "email-sender",
   version: "1.0.0",
   queues: ["emails"],
-  concurrency: 5,
+  count: 5,
 });
 
-worker.register("send_email", async (params, signal) => {
+workers.register("send_email", async (params, signal) => {
   // send email...
   return { sent: true };
 });
 
-await worker.run();
+await workers.run();
 ```
 
 ### Low-level client

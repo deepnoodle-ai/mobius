@@ -34,9 +34,6 @@ type WorkerConfig struct {
 	// will claim. When empty the worker advertises every action in
 	// its registry — set this only if you want to claim a subset.
 	Actions []string
-	// Concurrency is the maximum number of jobs to execute in parallel.
-	// Defaults to 10.
-	Concurrency int
 	// PollWaitSeconds is the long-poll window per claim request (0–30s).
 	// The server holds the connection open until a job is available or
 	// the window closes. Defaults to 20.
@@ -80,9 +77,6 @@ func (c *Client) NewWorker(cfg WorkerConfig) *Worker {
 	if cfg.WorkerID == "" {
 		cfg.WorkerID = uuid.NewString()
 	}
-	if cfg.Concurrency <= 0 {
-		cfg.Concurrency = 10
-	}
 	if cfg.PollWaitSeconds <= 0 {
 		cfg.PollWaitSeconds = 20
 	}
@@ -102,14 +96,20 @@ func (c *Client) NewWorker(cfg WorkerConfig) *Worker {
 	}
 }
 
+func (c *Client) newWorkerWithRegistry(cfg WorkerConfig, registry *ActionRegistry) *Worker {
+	w := c.NewWorker(cfg)
+	if registry != nil {
+		w.registry = registry
+	}
+	return w
+}
+
 // Run starts the claim–execute–heartbeat–complete loop and blocks
 // until ctx is cancelled or the server revokes the worker's
 // credential. Returns [ErrAuthRevoked] in the latter case so a
 // process supervisor (k8s, systemd) can restart the worker under a
 // rotated credential.
 func (w *Worker) Run(ctx context.Context) error {
-	sem := make(chan struct{}, w.config.Concurrency)
-
 	for {
 		if w.authRevoked.Load() {
 			return ErrAuthRevoked
@@ -117,12 +117,11 @@ func (w *Worker) Run(ctx context.Context) error {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
-		case sem <- struct{}{}:
+		default:
 		}
 
 		job, err := w.client.runtimeClaim(ctx, w.config)
 		if err != nil {
-			<-sem
 			if ctx.Err() != nil {
 				return ctx.Err()
 			}
@@ -139,14 +138,10 @@ func (w *Worker) Run(ctx context.Context) error {
 			continue
 		}
 		if job == nil {
-			<-sem
 			continue
 		}
 
-		go func() {
-			defer func() { <-sem }()
-			w.executeJob(ctx, job)
-		}()
+		w.executeJob(ctx, job)
 	}
 }
 

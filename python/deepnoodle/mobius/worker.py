@@ -9,7 +9,6 @@ import signal
 import threading
 import time
 import uuid
-from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from typing import Any, Callable
 
@@ -44,7 +43,6 @@ class WorkerConfig:
     version: str = ""
     queues: list[str] = field(default_factory=list)
     actions: list[str] = field(default_factory=list)
-    concurrency: int = 10
     poll_wait_seconds: int = 20
     # Fallback heartbeat interval used when the server does not advertise one
     # in the claim response. Value is in seconds.
@@ -103,12 +101,17 @@ class Worker:
     action at a time and report its result.
     """
 
-    def __init__(self, client: Client, config: WorkerConfig) -> None:
+    def __init__(
+        self,
+        client: Client,
+        config: WorkerConfig,
+        actions: dict[str, ActionFunc] | None = None,
+    ) -> None:
         self._client = client
         if not config.worker_id:
             config.worker_id = str(uuid.uuid4())
         self._config = config
-        self._actions: dict[str, ActionFunc] = {}
+        self._actions: dict[str, ActionFunc] = actions if actions is not None else {}
         self._stop_event = threading.Event()
         self._auth_revoked = threading.Event()
 
@@ -130,36 +133,24 @@ class Worker:
         logger.info("worker %s started", self._config.worker_id)
         claim_req = self._build_claim_request()
 
-        # Manage the pool explicitly so we can drop `wait=False,
-        # cancel_futures=True` when a credential is revoked mid-flight —
-        # pending submissions are dropped immediately, and running jobs
-        # see ``ActionContext.cancelled`` flip so they can unwind rather
-        # than being joined on by the default ``wait=True`` shutdown.
-        pool = ThreadPoolExecutor(max_workers=self._config.concurrency)
-        try:
-            while not self._stop_event.is_set():
-                if self._auth_revoked.is_set():
-                    raise AuthRevokedError()
-                try:
-                    job = self._client.claim_job(claim_req)
-                except AuthRevokedError:
-                    logger.error("claim rejected: credential revoked")
-                    self._auth_revoked.set()
-                    raise
-                except Exception as exc:
-                    logger.error("claim error: %s", exc)
-                    time.sleep(2)
-                    continue
-
-                if job is None:
-                    continue
-
-                pool.submit(self._execute_job, job)
-        finally:
+        while not self._stop_event.is_set():
             if self._auth_revoked.is_set():
-                pool.shutdown(wait=False, cancel_futures=True)
-            else:
-                pool.shutdown(wait=True)
+                raise AuthRevokedError()
+            try:
+                job = self._client.claim_job(claim_req)
+            except AuthRevokedError:
+                logger.error("claim rejected: credential revoked")
+                self._auth_revoked.set()
+                raise
+            except Exception as exc:
+                logger.error("claim error: %s", exc)
+                time.sleep(2)
+                continue
+
+            if job is None:
+                continue
+
+            self._execute_job(job)
 
         logger.info("worker %s stopped", self._config.worker_id)
 
@@ -400,3 +391,88 @@ class Worker:
         if len(positional) >= 2:
             return fn(ctx, params)  # type: ignore[misc]
         return fn(params)
+
+
+@dataclass
+class WorkerPoolConfig(WorkerConfig):
+    count: int = 1
+    worker_id_prefix: str = ""
+
+
+class WorkerPool:
+    """Runs multiple single-job workers in one process."""
+
+    def __init__(self, client: Client, config: WorkerPoolConfig) -> None:
+        self._client = client
+        self._config = config
+        if self._config.count <= 0:
+            self._config.count = 1
+        if not self._config.worker_id_prefix:
+            self._config.worker_id_prefix = f"worker-{uuid.uuid4()}"
+        self._actions: dict[str, ActionFunc] = {}
+        self._workers: list[Worker] = []
+        self._auth_revoked = threading.Event()
+
+    def register(self, name: str, fn: ActionFunc) -> None:
+        """Register an action function for every worker in the pool."""
+        self._actions[name] = fn
+
+    def run(self) -> None:
+        """Start all workers and block until stop() or credential revocation."""
+        if threading.current_thread() is threading.main_thread():
+            signal.signal(signal.SIGINT, lambda *_: self.stop())
+            signal.signal(signal.SIGTERM, lambda *_: self.stop())
+
+        errors: list[BaseException] = []
+        lock = threading.Lock()
+        self._workers = []
+
+        def run_worker(worker: Worker) -> None:
+            try:
+                worker.run()
+            except AuthRevokedError as exc:
+                self._auth_revoked.set()
+                self.stop()
+                with lock:
+                    errors.append(exc)
+            # Catch process-level interruption exceptions here so one worker
+            # can still trigger an orderly pool-wide stop before run() returns.
+            except BaseException as exc:
+                self.stop()
+                with lock:
+                    errors.append(exc)
+
+        threads: list[threading.Thread] = []
+        for i in range(1, self._config.count + 1):
+            worker = Worker(
+                self._client,
+                WorkerConfig(
+                    worker_id=f"{self._config.worker_id_prefix}-{i}",
+                    name=self._config.name,
+                    version=self._config.version,
+                    queues=list(self._config.queues),
+                    actions=list(self._config.actions),
+                    poll_wait_seconds=self._config.poll_wait_seconds,
+                    heartbeat_interval=self._config.heartbeat_interval,
+                    event_queue_size=self._config.event_queue_size,
+                    event_batch_size=self._config.event_batch_size,
+                ),
+                self._actions,
+            )
+            self._workers.append(worker)
+            thread = threading.Thread(target=run_worker, args=(worker,))
+            thread.start()
+            threads.append(thread)
+
+        for thread in threads:
+            thread.join()
+
+        if self._auth_revoked.is_set():
+            raise AuthRevokedError()
+        if errors:
+            raise errors[0]
+
+    def stop(self) -> None:
+        """Signal every worker in the pool to stop after in-flight jobs complete."""
+        for worker in self._workers:
+            worker.stop()

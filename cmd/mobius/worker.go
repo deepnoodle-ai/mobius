@@ -30,9 +30,9 @@ func registerWorkerCommand(app *cli.App) {
 			cli.Strings("queues", "q").
 				Env("MOBIUS_QUEUES").
 				Help("Queue names to poll; empty = all queues in the project"),
-			cli.Int("concurrency", "").
-				Default(10).
-				Help("Maximum jobs to execute in parallel"),
+			cli.Int("workers", "").
+				Default(1).
+				Help("Number of single-job workers to run"),
 			cli.Int("poll-wait", "").
 				Default(20).
 				Help("Long-poll window in seconds (0-30)"),
@@ -47,29 +47,31 @@ func registerWorkerCommand(app *cli.App) {
 			name := ctx.String("name")
 			workerID := fmt.Sprintf("%s_%s", name, uuid.New().String()[:8])
 			queues := ctx.Strings("queues")
-
-			worker := client.NewWorker(mobius.WorkerConfig{
-				WorkerID:        workerID,
-				Name:            name,
-				Version:         ctx.String("worker-version"),
-				Queues:          queues,
-				Concurrency:     ctx.Int("concurrency"),
-				PollWaitSeconds: ctx.Int("poll-wait"),
-				Logger:          logger,
-			})
-
-			registerStockActions(worker)
+			workers := ctx.Int("workers")
 
 			logger.Info("starting worker",
 				"worker_id", workerID,
 				"api_url", ctx.String("api-url"),
 				"project", ctx.String("project"),
 				"queues", queues,
-				"concurrency", ctx.Int("concurrency"),
+				"workers", workers,
 			)
 
-			if err := worker.Run(ctx.Context()); err != nil && !isContextCanceled(err) {
-				return fmt.Errorf("worker exited: %w", err)
+			baseConfig := mobius.WorkerConfig{
+				Name:            name,
+				Version:         ctx.String("worker-version"),
+				Queues:          queues,
+				PollWaitSeconds: ctx.Int("poll-wait"),
+				Logger:          logger,
+			}
+			pool := client.NewWorkerPool(mobius.WorkerPoolConfig{
+				WorkerConfig:   baseConfig,
+				Count:          workers,
+				WorkerIDPrefix: workerID,
+			})
+			registerStockActions(pool)
+			if err := pool.Run(ctx.Context()); err != nil && !isContextCanceled(err) {
+				return fmt.Errorf("worker pool exited: %w", err)
 			}
 			logger.Info("worker stopped")
 			return nil
@@ -79,7 +81,11 @@ func registerWorkerCommand(app *cli.App) {
 // registerStockActions attaches every general-purpose action from
 // github.com/deepnoodle-ai/mobius/mobius/action to the worker. These cover most trivial and
 // test workflows without requiring custom code.
-func registerStockActions(w *mobius.Worker) {
+type actionRegistrar interface {
+	Register(mobius.Action)
+}
+
+func registerStockActions(w actionRegistrar) {
 	stock := []mobius.Action{
 		action.NewPrintAction(),
 		action.NewFailAction(),

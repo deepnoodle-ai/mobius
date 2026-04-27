@@ -1,7 +1,7 @@
 import { strict as assert } from "node:assert";
 import { test } from "node:test";
 
-import { Worker } from "../src/worker.js";
+import { Worker, WorkerPool } from "../src/worker.js";
 import type {
   JobClaim,
   JobCompleteRequest,
@@ -17,7 +17,7 @@ class FakeClient {
   }> = [];
   public completed: JobCompleteRequest[] = [];
 
-  async claimJob(): Promise<JobClaim | null> {
+  async claimJob(_req?: { worker_id: string }): Promise<JobClaim | null> {
     return null;
   }
 
@@ -41,6 +41,33 @@ class FakeClient {
     this.completed.push(req);
   }
 }
+
+class SequencedClient extends FakeClient {
+  public claims = 0;
+  public workerIds: string[] = [];
+
+  constructor(private readonly jobs: JobClaim[]) {
+    super();
+  }
+
+  override async claimJob(req?: { worker_id: string }): Promise<JobClaim | null> {
+    this.claims += 1;
+    if (req) this.workerIds.push(req.worker_id);
+    return this.jobs.shift() ?? null;
+  }
+}
+
+const blockJob = (id: string): JobClaim => ({
+  job_id: id,
+  run_id: "run_1",
+  workflow_name: "demo",
+  step_name: "scrape",
+  action: "demo.block",
+  parameters: {},
+  attempt: 1,
+  queue: "default",
+  heartbeat_interval_seconds: 3600,
+});
 
 test("worker: action context can emit custom events", async () => {
   const client = new FakeClient();
@@ -83,4 +110,71 @@ test("worker: action context can emit custom events", async () => {
   ]);
   assert.equal(client.completed.length, 1);
   assert.equal(client.completed[0].status, "completed");
+});
+
+test("worker: claims next job only after current job completes", async () => {
+  const client = new SequencedClient([blockJob("job_1")]);
+  const worker = new Worker(client as never, {
+    workerId: "worker-1",
+    pollWaitSeconds: 1,
+    logger: null,
+  });
+  const controller = new AbortController();
+  let release!: () => void;
+  const started = new Promise<void>((resolve) => {
+    worker.register("demo.block", async () => {
+      resolve();
+      await new Promise<void>((r) => {
+        release = r;
+      });
+      controller.abort();
+      return { ok: true };
+    });
+  });
+
+  const run = worker.run(controller.signal);
+  await started;
+  await new Promise((resolve) => setTimeout(resolve, 25));
+  assert.equal(client.claims, 1);
+  release();
+  await run;
+});
+
+test("worker pool: uses distinct single-job workers", async () => {
+  const client = new SequencedClient([
+    blockJob("job_1"),
+    blockJob("job_2"),
+    blockJob("job_3"),
+  ]);
+  const pool = new WorkerPool(client as never, {
+    workerIdPrefix: "pool-worker",
+    count: 3,
+    pollWaitSeconds: 1,
+    logger: null,
+  });
+  const controller = new AbortController();
+  let started = 0;
+  let release!: () => void;
+  const releasePromise = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const allStarted = new Promise<void>((resolve) => {
+    pool.register("demo.block", async () => {
+      started += 1;
+      if (started === 3) resolve();
+      await releasePromise;
+      return { ok: true };
+    });
+  });
+
+  const run = pool.run(controller.signal);
+  await allStarted;
+  assert.deepStrictEqual(new Set(client.workerIds), new Set([
+    "pool-worker-1",
+    "pool-worker-2",
+    "pool-worker-3",
+  ]));
+  release();
+  controller.abort();
+  await run;
 });
