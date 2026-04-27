@@ -43,12 +43,8 @@ func (c *Client) NewWorkerPool(cfg WorkerPoolConfig) *WorkerPool {
 }
 
 // Register attaches a pre-constructed Action to every worker in the pool.
+// It panics on invalid setup, matching Worker.Register.
 func (p *WorkerPool) Register(a Action) {
-	p.registry.MustRegister(a)
-}
-
-// MustRegister attaches a pre-constructed Action to every worker in the pool.
-func (p *WorkerPool) MustRegister(a Action) {
 	p.registry.MustRegister(a)
 }
 

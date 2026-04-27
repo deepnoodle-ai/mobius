@@ -144,7 +144,8 @@ func RegisterAction[P, R any](w interface{ Register(Action) }, name string, fn f
 // Register attaches a pre-constructed Action to the Worker. Use this
 // for actions that need constructor arguments or for actions from
 // the mobius/actions package. For plain typed functions, prefer
-// RegisterAction.
+// RegisterAction. It panics on invalid setup so workers fail fast at
+// startup instead of discovering missing actions after claiming jobs.
 func (w *Worker) Register(a Action) {
 	w.registry.MustRegister(a)
 }

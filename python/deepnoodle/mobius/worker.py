@@ -435,6 +435,8 @@ class WorkerPool:
                 self.stop()
                 with lock:
                     errors.append(exc)
+            # Catch process-level interruption exceptions here so one worker
+            # can still trigger an orderly pool-wide stop before run() returns.
             except BaseException as exc:
                 self.stop()
                 with lock:

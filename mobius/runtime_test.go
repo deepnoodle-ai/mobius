@@ -346,6 +346,7 @@ func TestWorkerExecuteJob_EmitsCustomEvents(t *testing.T) {
 
 func TestWorkerRun_ClaimsNextJobOnlyAfterCurrentCompletes(t *testing.T) {
 	var claims atomic.Int32
+	extraClaim := make(chan struct{}, 1)
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case r.URL.Path == "/v1/projects/test-project/jobs/claim":
@@ -354,6 +355,10 @@ func TestWorkerRun_ClaimsNextJobOnlyAfterCurrentCompletes(t *testing.T) {
 				w.Header().Set("Content-Type", "application/json")
 				_, _ = io.WriteString(w, `{"job_id":"job_1","run_id":"run_1","workflow_name":"hello","step_name":"greet","action":"block","parameters":{},"attempt":1,"queue":"default","heartbeat_interval_seconds":3600}`)
 				return
+			}
+			select {
+			case extraClaim <- struct{}{}:
+			default:
 			}
 			w.WriteHeader(http.StatusNoContent)
 		case r.URL.Path == "/v1/projects/test-project/jobs/job_1/complete":
@@ -379,11 +384,24 @@ func TestWorkerRun_ClaimsNextJobOnlyAfterCurrentCompletes(t *testing.T) {
 	done := make(chan error, 1)
 	go func() { done <- worker.Run(ctx) }()
 
-	<-started
-	time.Sleep(50 * time.Millisecond)
+	select {
+	case <-started:
+	case <-time.After(time.Second):
+		t.Fatal("worker did not start executing first job")
+	}
+	select {
+	case <-extraClaim:
+		t.Fatal("worker claimed another job before the current job completed")
+	case <-time.After(50 * time.Millisecond):
+	}
 	assert.Equal(t, int(claims.Load()), 1)
 	close(release)
-	err := <-done
+	var err error
+	select {
+	case err = <-done:
+	case <-time.After(time.Second):
+		t.Fatal("worker did not stop after release")
+	}
 	assert.True(t, errors.Is(err, context.Canceled))
 }
 
@@ -436,7 +454,11 @@ func TestWorkerPool_RunUsesDistinctSingleJobWorkers(t *testing.T) {
 	go func() { done <- pool.Run(ctx) }()
 
 	for i := 0; i < 3; i++ {
-		<-started
+		select {
+		case <-started:
+		case <-time.After(time.Second):
+			t.Fatal("pool worker did not start executing job")
+		}
 	}
 	mu.Lock()
 	assert.Equal(t, claims, 3)
@@ -448,7 +470,12 @@ func TestWorkerPool_RunUsesDistinctSingleJobWorkers(t *testing.T) {
 
 	close(release)
 	cancel()
-	err := <-done
+	var err error
+	select {
+	case err = <-done:
+	case <-time.After(time.Second):
+		t.Fatal("worker pool did not stop after release")
+	}
 	assert.True(t, errors.Is(err, context.Canceled))
 }
 
