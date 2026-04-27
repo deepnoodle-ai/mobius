@@ -6,6 +6,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 
 ## [Unreleased]
 
+## [0.0.14] - 2026-04-27
+
+### Fixed
+
+- Go worker: claim loop now honors the server's `Retry-After` after a
+  `RateLimitError` (429) instead of sleeping a hardcoded 2s, clamped to
+  `MaxClaimRateLimitSleep` (5 min). Prevents fleets from extending an
+  active rate-limit window by polling through it. Python and TypeScript
+  workers will mirror this behaviour in a follow-up.
+
+### Documentation
+
+- `docs/retries.md`: add a "Worker claim loop" section documenting how
+  workers react to `RateLimitError` from claim, so SDKs in other
+  languages can match the Go behaviour.
+
 ## [0.0.13] - 2026-04-27
 
 ### Added
