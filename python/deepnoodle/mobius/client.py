@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import json
 import re
+import time
 from dataclasses import dataclass
+from collections.abc import Iterator
 from typing import Any
 from urllib.parse import quote
 
@@ -10,11 +13,22 @@ from pydantic import BaseModel
 
 # Generated models from make generate-py
 from ._api.models import (
+    ConfigEntries,
     JobClaim,
     JobClaimRequest,
     JobCompleteRequest,
     JobFenceRequest,
     JobHeartbeat,
+    RunSignal,
+    SendRunSignalRequest,
+    StartBoundRunRequest,
+    StartInlineRunRequest,
+    TagMap,
+    WorkflowRun,
+    WorkflowRunDetail,
+    WorkflowRunListResponse,
+    WorkflowRunStatus,
+    WorkflowSpec,
 )
 from .errors import AuthRevokedError, RateLimitError
 from .retry import DEFAULT_MAX_RETRIES, RetryingTransport
@@ -43,6 +57,44 @@ class ClientOptions:
         if self.namespace and self.project == "default":
             self.project = self.namespace
         self.namespace = self.project
+
+
+@dataclass
+class StartRunOptions:
+    queue: str | None = None
+    inputs: dict[str, Any] | None = None
+    metadata: dict[str, str] | None = None
+    tags: TagMap | None = None
+    external_id: str | None = None
+    config: ConfigEntries | None = None
+
+
+@dataclass
+class ListRunsOptions:
+    status: WorkflowRunStatus | None = None
+    workflow_type: str | None = None
+    queue: str | None = None
+    parent_run_id: str | None = None
+    initiated_by: str | None = None
+    external_id: str | None = None
+    cursor: str | None = None
+    limit: int | None = None
+
+
+@dataclass
+class WaitRunOptions:
+    since: int = 0
+    reconnect_delay: float = 1.0
+    timeout: float | None = None
+
+
+@dataclass
+class RunEvent:
+    type: str
+    run_id: str
+    seq: int
+    timestamp: str
+    data: dict[str, Any]
 
 
 class LeaseLostError(Exception):
@@ -246,6 +298,118 @@ class Client:
             ),
         )
 
+    def start_run(
+        self,
+        spec: WorkflowSpec,
+        opts: StartRunOptions | None = None,
+    ) -> WorkflowRun:
+        req = StartInlineRunRequest(mode="inline", spec=spec, **_start_opts(opts))
+        project = quote(self.namespace, safe="")
+        resp = self._http.post(f"/v1/projects/{project}/runs", json=_dump(req))
+        resp.raise_for_status()
+        return WorkflowRun.model_validate(resp.json())
+
+    def start_workflow_run(
+        self,
+        workflow_id: str,
+        opts: StartRunOptions | None = None,
+    ) -> WorkflowRun:
+        project = quote(self.namespace, safe="")
+        workflow = quote(workflow_id, safe="")
+        req = StartBoundRunRequest(**_start_opts(opts))
+        resp = self._http.post(
+            f"/v1/projects/{project}/workflows/{workflow}/runs",
+            json=_dump(req),
+        )
+        resp.raise_for_status()
+        return WorkflowRun.model_validate(resp.json())
+
+    def list_runs(
+        self,
+        opts: ListRunsOptions | None = None,
+    ) -> WorkflowRunListResponse:
+        project = quote(self.namespace, safe="")
+        resp = self._http.get(
+            f"/v1/projects/{project}/runs",
+            params=_list_runs_params(opts),
+        )
+        resp.raise_for_status()
+        return WorkflowRunListResponse.model_validate(resp.json())
+
+    def get_run(self, run_id: str) -> WorkflowRunDetail:
+        project = quote(self.namespace, safe="")
+        run = quote(run_id, safe="")
+        resp = self._http.get(f"/v1/projects/{project}/runs/{run}")
+        resp.raise_for_status()
+        return WorkflowRunDetail.model_validate(resp.json())
+
+    def cancel_run(self, run_id: str) -> None:
+        project = quote(self.namespace, safe="")
+        run = quote(run_id, safe="")
+        resp = self._http.post(f"/v1/projects/{project}/runs/{run}/cancellations")
+        resp.raise_for_status()
+
+    def resume_run(self, run_id: str) -> None:
+        project = quote(self.namespace, safe="")
+        run = quote(run_id, safe="")
+        resp = self._http.post(f"/v1/projects/{project}/runs/{run}/resumptions")
+        resp.raise_for_status()
+
+    def send_run_signal(
+        self,
+        run_id: str,
+        name: str,
+        payload: dict[str, Any] | None = None,
+    ) -> RunSignal:
+        project = quote(self.namespace, safe="")
+        run = quote(run_id, safe="")
+        req = SendRunSignalRequest(name=name, payload=payload)
+        resp = self._http.post(
+            f"/v1/projects/{project}/runs/{run}/signals",
+            json=_dump(req),
+        )
+        resp.raise_for_status()
+        return RunSignal.model_validate(resp.json())
+
+    def watch_run(self, run_id: str, since: int = 0) -> Iterator[RunEvent]:
+        project = quote(self.namespace, safe="")
+        run = quote(run_id, safe="")
+        params = {"since": since} if since > 0 else None
+        with self._http.stream(
+            "GET",
+            f"/v1/projects/{project}/runs/{run}/events",
+            params=params,
+        ) as resp:
+            resp.raise_for_status()
+            yield from _parse_sse(resp.iter_lines())
+
+    def wait_run(
+        self,
+        run_id: str,
+        opts: WaitRunOptions | None = None,
+    ) -> WorkflowRunDetail:
+        opts = opts or WaitRunOptions()
+        since = opts.since
+        deadline = time.monotonic() + opts.timeout if opts.timeout is not None else None
+        while True:
+            run = self.get_run(run_id)
+            if is_terminal_run_status(run.status):
+                return run
+            try:
+                for event in self.watch_run(run_id, since=since):
+                    since = max(since, event.seq)
+                    if event.type != "run_updated":
+                        continue
+                    status = event.data.get("status")
+                    if status == "completed" or status == "failed":
+                        return self.get_run(run_id)
+            except httpx.HTTPError:
+                if deadline is not None and time.monotonic() >= deadline:
+                    raise
+            if deadline is not None and time.monotonic() >= deadline:
+                raise TimeoutError(f"timed out waiting for Mobius run {run_id}")
+            time.sleep(opts.reconnect_delay)
+
     def close(self) -> None:
         self._http.close()
 
@@ -258,6 +422,89 @@ class Client:
 
 def _dump(model: BaseModel) -> dict[str, Any]:
     return model.model_dump(mode="json", exclude_none=True)
+
+
+def _start_opts(opts: StartRunOptions | None) -> dict[str, Any]:
+    if opts is None:
+        return {}
+    return {
+        k: v
+        for k, v in {
+            "queue": opts.queue,
+            "inputs": opts.inputs,
+            "metadata": opts.metadata,
+            "tags": opts.tags,
+            "external_id": opts.external_id,
+            "config": opts.config,
+        }.items()
+        if v is not None
+    }
+
+
+def _list_runs_params(opts: ListRunsOptions | None) -> dict[str, Any]:
+    if opts is None:
+        return {}
+    return {
+        k: v.value if isinstance(v, WorkflowRunStatus) else v
+        for k, v in {
+            "status": opts.status,
+            "workflow_type": opts.workflow_type,
+            "queue": opts.queue,
+            "parent_run_id": opts.parent_run_id,
+            "initiated_by": opts.initiated_by,
+            "external_id": opts.external_id,
+            "cursor": opts.cursor,
+            "limit": opts.limit,
+        }.items()
+        if v is not None and v != ""
+    }
+
+
+def _parse_sse(lines: Iterator[str]) -> Iterator[RunEvent]:
+    event_type = ""
+    data_lines: list[str] = []
+
+    def dispatch() -> RunEvent | None:
+        nonlocal event_type, data_lines
+        if not data_lines:
+            event_type = ""
+            return None
+        raw = "\n".join(data_lines)
+        data_lines = []
+        event_type = ""
+        payload = json.loads(raw)
+        return RunEvent(
+            type=str(payload.get("type", "")),
+            run_id=str(payload.get("run_id", "")),
+            seq=int(payload.get("seq", 0)),
+            timestamp=str(payload.get("timestamp", "")),
+            data=dict(payload.get("data") or {}),
+        )
+
+    for raw_line in lines:
+        line = raw_line.rstrip("\r")
+        if line == "":
+            evt = dispatch()
+            if evt is not None:
+                yield evt
+            continue
+        if line.startswith(":"):
+            continue
+        field, _, value = line.partition(":")
+        if value.startswith(" "):
+            value = value[1:]
+        if field == "event":
+            event_type = value
+        elif field == "data":
+            data_lines.append(value)
+    evt = dispatch()
+    if evt is not None:
+        yield evt
+
+
+def is_terminal_run_status(status: WorkflowRunStatus | str) -> bool:
+    value = status.value if isinstance(status, WorkflowRunStatus) else status
+    return value == "completed" or value == "failed"
 
 
 def _extract_handle_from_api_key(api_key: str | None) -> str | None:

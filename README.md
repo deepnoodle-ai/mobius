@@ -75,6 +75,14 @@ The stock worker registers built-in actions like `print`, `fail`, `json`, `time`
 - Python: [`deepnoodle-mobius`](https://pypi.org/project/deepnoodle-mobius/)
 - TypeScript: [`@deepnoodle/mobius`](https://www.npmjs.com/package/@deepnoodle/mobius)
 
+The SDKs expose two layers:
+
+- A high-level surface for common application and worker workflows: start runs,
+  get/list/cancel/resume runs, send signals, watch run events, wait for terminal
+  completion, claim jobs, heartbeat, complete jobs, and emit job events.
+- Generated OpenAPI bindings for the full API contract when you need a lower
+  level escape hatch.
+
 All three SDKs share the same retry and rate-limit handling: `429` and
 `503` responses are retried transparently (respecting `Retry-After`), and
 `429`s that can't be retried surface as a typed `RateLimitError` carrying

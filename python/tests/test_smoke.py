@@ -15,10 +15,13 @@ from deepnoodle.mobius import (
     Client,
     ClientOptions,
     LeaseLostError,
+    ListRunsOptions,
     PayloadTooLargeError,
     RateLimitedError,
+    StartRunOptions,
+    WaitRunOptions,
 )
-from deepnoodle.mobius._api.models import JobClaimRequest, JobCompleteRequest, JobFenceRequest, Status as JobStatus
+from deepnoodle.mobius._api.models import JobClaimRequest, JobCompleteRequest, JobFenceRequest, Status as JobStatus, WorkflowRunStatus, WorkflowSpec
 
 
 def _client_with(handler) -> Client:
@@ -151,3 +154,153 @@ def test_emit_job_events_429_raises_rate_limited() -> None:
             payload={"pct": 5},
         )
     assert exc.value.retry_after == 3
+
+
+def test_start_run_posts_correlated_request() -> None:
+    seen: dict[str, object] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen["path"] = request.url.path
+        seen["body"] = request.read().decode()
+        return httpx.Response(202, json=_run_body("run_1", "active"))
+
+    client = _client_with(handler)
+    run = client.start_run(
+        WorkflowSpec(name="demo", steps=[]),
+        StartRunOptions(
+            queue="research",
+            external_id="external-1",
+            metadata={"org_id": "org_1"},
+            inputs={"topic": "sdk"},
+        ),
+    )
+
+    assert run.id == "run_1"
+    assert seen["path"] == "/v1/projects/test-project/runs"
+    assert '"mode":"inline"' in str(seen["body"])
+    assert '"queue":"research"' in str(seen["body"])
+    assert '"external_id":"external-1"' in str(seen["body"])
+
+
+def test_start_workflow_run_uses_workflow_bound_route() -> None:
+    seen: dict[str, object] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen["path"] = request.url.path
+        seen["body"] = request.read().decode()
+        return httpx.Response(202, json=_run_body("run_1", "active"))
+
+    client = _client_with(handler)
+    run = client.start_workflow_run(
+        "wf_1",
+        StartRunOptions(
+            external_id="external-1",
+            inputs={"topic": "sdk"},
+        ),
+    )
+
+    assert run.id == "run_1"
+    assert seen["path"] == "/v1/projects/test-project/workflows/wf_1/runs"
+    assert '"external_id":"external-1"' in str(seen["body"])
+    assert '"mode"' not in str(seen["body"])
+    assert '"definition_id"' not in str(seen["body"])
+
+
+def test_run_control_helpers_use_project_scoped_paths() -> None:
+    seen: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append(str(request.url))
+        path = request.url.path
+        if path.endswith("/signals"):
+            return httpx.Response(
+                202, json={"id": "sig_1", "run_id": "run_1", "name": "approval"}
+            )
+        if path.endswith("/cancellations") or path.endswith("/resumptions"):
+            return httpx.Response(204)
+        if path.endswith("/runs/run_1"):
+            return httpx.Response(200, json=_run_detail_body("run_1", "completed"))
+        return httpx.Response(
+            200, json={"items": [_run_body("run_1", "completed")], "has_more": False}
+        )
+
+    client = _client_with(handler)
+    assert client.get_run("run_1").status is WorkflowRunStatus.completed
+    assert (
+        len(
+            client.list_runs(
+                ListRunsOptions(
+                    status=WorkflowRunStatus.completed,
+                    external_id="external-1",
+                )
+            ).items
+        )
+        == 1
+    )
+    client.cancel_run("run_1")
+    client.resume_run("run_1")
+    assert client.send_run_signal("run_1", "approval", {"ok": True}).id == "sig_1"
+
+    assert any("/runs?status=completed" in url for url in seen)
+    assert any(url.endswith("/runs/run_1/cancellations") for url in seen)
+    assert any(url.endswith("/runs/run_1/resumptions") for url in seen)
+    assert any(url.endswith("/runs/run_1/signals") for url in seen)
+
+
+def test_wait_run_fetches_after_stream_closes_before_terminal() -> None:
+    calls = {"get": 0}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path.endswith("/events"):
+            return httpx.Response(
+                200,
+                text='event: run_updated\nid: 7\ndata: {"type":"run_updated","run_id":"run_1","seq":7,"timestamp":"2026-04-27T00:00:00Z","data":{"status":"active"}}\n\n',
+                headers={"Content-Type": "text/event-stream"},
+            )
+        calls["get"] += 1
+        status = "active" if calls["get"] == 1 else "completed"
+        return httpx.Response(200, json=_run_detail_body("run_1", status))
+
+    client = _client_with(handler)
+    run = client.wait_run(
+        "run_1",
+        WaitRunOptions(reconnect_delay=0.001, timeout=1),
+    )
+
+    assert run.status is WorkflowRunStatus.completed
+    assert calls["get"] == 2
+
+
+def _run_body(run_id: str, status: str) -> dict[str, object]:
+    return {
+        "id": run_id,
+        "ephemeral": True,
+        "workflow_name": "demo",
+        "status": status,
+        "path_counts": {
+            "total": 1,
+            "active": 1 if status == "active" else 0,
+            "working": 1 if status == "active" else 0,
+            "waiting": 0,
+            "completed": 1 if status == "completed" else 0,
+            "failed": 1 if status == "failed" else 0,
+        },
+        "job_counts": {"ready": 0, "scheduled": 0, "claimed": 0},
+        "wait_summary": {
+            "waiting_paths": 0,
+            "kind_counts": {},
+            "next_wake_at": None,
+            "waiting_on_signal_names": [],
+            "interaction_ids": [],
+        },
+        "errors": [],
+        "attempt": 1,
+        "created_at": "2026-04-27T00:00:00Z",
+        "updated_at": "2026-04-27T00:00:00Z",
+    }
+
+
+def _run_detail_body(run_id: str, status: str) -> dict[str, object]:
+    body = _run_body(run_id, status)
+    body["paths"] = []
+    return body

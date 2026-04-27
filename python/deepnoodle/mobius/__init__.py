@@ -1,4 +1,4 @@
-"""Mobius SDK for Python — build workers that poll Mobius for jobs."""
+"""Mobius SDK for Python - build workers and control workflow runs."""
 
 from .action import action
 from .client import (
@@ -6,8 +6,13 @@ from .client import (
     Client,
     ClientOptions,
     LeaseLostError,
+    ListRunsOptions,
     PayloadTooLargeError,
     RateLimitedError,
+    RunEvent,
+    StartRunOptions,
+    WaitRunOptions,
+    is_terminal_run_status,
 )
 from .errors import AuthRevokedError, RateLimitError
 from .retry import RetryingTransport
@@ -20,13 +25,18 @@ __all__ = [
     "ClientOptions",
     "DEFAULT_BASE_URL",
     "LeaseLostError",
+    "ListRunsOptions",
     "PayloadTooLargeError",
+    "RunEvent",
     "RateLimitError",
     "RateLimitedError",
     "RetryingTransport",
+    "StartRunOptions",
+    "WaitRunOptions",
     "Worker",
     "WorkerConfig",
     "WorkerPool",
     "WorkerPoolConfig",
     "action",
+    "is_terminal_run_status",
 ]

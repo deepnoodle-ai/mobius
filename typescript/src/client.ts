@@ -1,9 +1,19 @@
 import type {
+  ConfigEntries,
   JobClaim,
   JobClaimRequest,
   JobCompleteRequest,
   JobFenceRequest,
   JobHeartbeat,
+  RunSignal,
+  SendRunSignalRequest,
+  StartBoundRunRequest,
+  TagMap,
+  WorkflowRun,
+  WorkflowRunListResponse,
+  WorkflowRunStatus,
+  WorkflowSpec,
+  components,
 } from "./api/index.js";
 import {
   DEFAULT_MAX_RETRIES,
@@ -130,6 +140,47 @@ export interface JobEventsRequest {
   events: JobEventEntry[];
 }
 
+export type WorkflowRunDetail = components["schemas"]["WorkflowRunDetail"];
+
+export interface StartRunOptions {
+  queue?: string;
+  inputs?: Record<string, unknown>;
+  metadata?: Record<string, string>;
+  tags?: TagMap;
+  external_id?: string;
+  config?: ConfigEntries;
+}
+
+export interface ListRunsOptions {
+  status?: WorkflowRunStatus;
+  workflow_type?: string;
+  queue?: string;
+  parent_run_id?: string;
+  initiated_by?: string;
+  external_id?: string;
+  cursor?: string;
+  limit?: number;
+}
+
+export interface RunEvent {
+  type: string;
+  run_id: string;
+  seq: number;
+  timestamp: string;
+  data: Record<string, unknown>;
+}
+
+export interface WatchRunOptions {
+  since?: number;
+  signal?: AbortSignal;
+}
+
+export interface WaitRunOptions {
+  since?: number;
+  signal?: AbortSignal;
+  reconnectDelayMs?: number;
+}
+
 /**
  * Low-level Mobius runtime API client. Prefer {@link Worker} in worker.ts
  * rather than calling these methods directly.
@@ -246,6 +297,125 @@ export class Client {
     });
   }
 
+  async startRun(
+    spec: WorkflowSpec,
+    opts: StartRunOptions = {},
+  ): Promise<WorkflowRun> {
+    const resp = await this.request(
+      `/v1/projects/${encodeURIComponent(this.project)}/runs`,
+      { method: "POST", body: { mode: "inline", spec, ...opts } },
+    );
+    return (await resp.json()) as WorkflowRun;
+  }
+
+  async startWorkflowRun(
+    workflowId: string,
+    opts: StartRunOptions = {},
+  ): Promise<WorkflowRun> {
+    const resp = await this.request(
+      `/v1/projects/${encodeURIComponent(this.project)}/workflows/${encodeURIComponent(workflowId)}/runs`,
+      { method: "POST", body: opts satisfies StartBoundRunRequest },
+    );
+    return (await resp.json()) as WorkflowRun;
+  }
+
+  async listRuns(opts: ListRunsOptions = {}): Promise<WorkflowRunListResponse> {
+    const path = withQuery(
+      `/v1/projects/${encodeURIComponent(this.project)}/runs`,
+      opts,
+    );
+    const resp = await this.request(path, { method: "GET" });
+    return (await resp.json()) as WorkflowRunListResponse;
+  }
+
+  async getRun(runId: string): Promise<WorkflowRunDetail> {
+    const resp = await this.request(
+      `/v1/projects/${encodeURIComponent(this.project)}/runs/${encodeURIComponent(runId)}`,
+      { method: "GET" },
+    );
+    return (await resp.json()) as WorkflowRunDetail;
+  }
+
+  async cancelRun(runId: string): Promise<void> {
+    await this.request(
+      `/v1/projects/${encodeURIComponent(this.project)}/runs/${encodeURIComponent(runId)}/cancellations`,
+      { method: "POST" },
+    );
+  }
+
+  async resumeRun(runId: string): Promise<void> {
+    await this.request(
+      `/v1/projects/${encodeURIComponent(this.project)}/runs/${encodeURIComponent(runId)}/resumptions`,
+      { method: "POST" },
+    );
+  }
+
+  async sendRunSignal(
+    runId: string,
+    req: SendRunSignalRequest,
+  ): Promise<RunSignal> {
+    const resp = await this.request(
+      `/v1/projects/${encodeURIComponent(this.project)}/runs/${encodeURIComponent(runId)}/signals`,
+      { method: "POST", body: req },
+    );
+    return (await resp.json()) as RunSignal;
+  }
+
+  async *watchRun(
+    runId: string,
+    opts: WatchRunOptions = {},
+  ): AsyncGenerator<RunEvent> {
+    const path = withQuery(
+      `/v1/projects/${encodeURIComponent(this.project)}/runs/${encodeURIComponent(runId)}/events`,
+      opts.since && opts.since > 0 ? { since: opts.since } : {},
+    );
+    const resp = await this.fetchFn(this.baseURL + path, {
+      method: "GET",
+      headers: this.headers,
+      signal: opts.signal,
+    });
+    if (!resp.ok) {
+      const text = await resp.text().catch(() => "");
+      throw new Error(`mobius API GET ${path}: HTTP ${resp.status}: ${text}`);
+    }
+    if (!resp.body) {
+      throw new Error("mobius API GET run events: response body is not readable");
+    }
+    for await (const evt of parseSSE(resp.body)) {
+      if (!evt.data) continue;
+      yield JSON.parse(evt.data) as RunEvent;
+    }
+  }
+
+  async waitRun(
+    runId: string,
+    opts: WaitRunOptions = {},
+  ): Promise<WorkflowRunDetail> {
+    let since = opts.since ?? 0;
+    const reconnectDelayMs = opts.reconnectDelayMs ?? 1000;
+    for (;;) {
+      const run = await this.getRun(runId);
+      if (isTerminalRunStatus(run.status)) return run;
+
+      try {
+        for await (const ev of this.watchRun(runId, {
+          since,
+          signal: opts.signal,
+        })) {
+          if (ev.seq > since) since = ev.seq;
+          if (ev.type !== "run_updated") continue;
+          const status = ev.data.status;
+          if (status === "completed" || status === "failed") {
+            return await this.getRun(runId);
+          }
+        }
+      } catch (err) {
+        if (opts.signal?.aborted) throw err;
+      }
+      await delay(reconnectDelayMs, opts.signal);
+    }
+  }
+
   private async request(
     path: string,
     opts: { method: string; body?: unknown; signal?: AbortSignal | undefined },
@@ -281,6 +451,15 @@ export class Client {
 
 export type { JobClaim, JobHeartbeat };
 
+export type {
+  RunSignal,
+  SendRunSignalRequest,
+  WorkflowRun,
+  WorkflowRunListResponse,
+  WorkflowRunStatus,
+  WorkflowSpec,
+};
+
 function anySignal(...signals: AbortSignal[]): AbortSignal {
   const controller = new AbortController();
   for (const s of signals) {
@@ -293,4 +472,100 @@ function anySignal(...signals: AbortSignal[]): AbortSignal {
     });
   }
   return controller.signal;
+}
+
+export function isTerminalRunStatus(status: WorkflowRunStatus): boolean {
+  return status === "completed" || status === "failed";
+}
+
+function withQuery(path: string, params: object): string {
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value == null || value === "") continue;
+    query.set(key, String(value));
+  }
+  const qs = query.toString();
+  return qs ? `${path}?${qs}` : path;
+}
+
+interface ParsedSSEEvent {
+  event?: string;
+  id?: string;
+  data: string;
+}
+
+async function* parseSSE(
+  body: ReadableStream<Uint8Array>,
+): AsyncGenerator<ParsedSSEEvent> {
+  const reader = body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let event = "";
+  let id = "";
+  let dataLines: string[] = [];
+
+  const dispatch = (): ParsedSSEEvent | null => {
+    if (dataLines.length === 0) {
+      event = "";
+      return null;
+    }
+    const out: ParsedSSEEvent = {
+      event: event || "message",
+      id,
+      data: dataLines.join("\n"),
+    };
+    event = "";
+    dataLines = [];
+    return out;
+  };
+
+  const processLine = (rawLine: string): ParsedSSEEvent | null => {
+    const line = rawLine.endsWith("\r") ? rawLine.slice(0, -1) : rawLine;
+    if (line === "") return dispatch();
+    if (line.startsWith(":")) return null;
+    const colon = line.indexOf(":");
+    const field = colon >= 0 ? line.slice(0, colon) : line;
+    let value = colon >= 0 ? line.slice(colon + 1) : "";
+    if (value.startsWith(" ")) value = value.slice(1);
+    if (field === "event") event = value;
+    if (field === "id" && !value.includes("\0")) id = value;
+    if (field === "data") dataLines.push(value);
+    return null;
+  };
+
+  for (;;) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    for (;;) {
+      const newline = buffer.indexOf("\n");
+      if (newline < 0) break;
+      const line = buffer.slice(0, newline);
+      buffer = buffer.slice(newline + 1);
+      const evt = processLine(line);
+      if (evt) yield evt;
+    }
+  }
+  buffer += decoder.decode();
+  if (buffer.length > 0) {
+    const evt = processLine(buffer);
+    if (evt) yield evt;
+  }
+  const evt = dispatch();
+  if (evt) yield evt;
+}
+
+function delay(ms: number, signal?: AbortSignal): Promise<void> {
+  if (signal?.aborted) return Promise.reject(signal.reason);
+  return new Promise((resolve, reject) => {
+    const timeout = setTimeout(resolve, ms);
+    signal?.addEventListener(
+      "abort",
+      () => {
+        clearTimeout(timeout);
+        reject(signal.reason);
+      },
+      { once: true },
+    );
+  });
 }
