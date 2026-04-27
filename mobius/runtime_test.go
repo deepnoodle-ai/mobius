@@ -3,11 +3,15 @@ package mobius
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -338,4 +342,112 @@ func TestWorkerExecuteJob_EmitsCustomEvents(t *testing.T) {
 	assert.Len(t, events, 1)
 	first, _ := events[0].(map[string]any)
 	assert.Equal(t, first["type"], "scrape.started")
+}
+
+func TestWorkerRun_ClaimsNextJobOnlyAfterCurrentCompletes(t *testing.T) {
+	var claims atomic.Int32
+	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.URL.Path == "/v1/projects/test-project/jobs/claim":
+			n := claims.Add(1)
+			if n == 1 {
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = io.WriteString(w, `{"job_id":"job_1","run_id":"run_1","workflow_name":"hello","step_name":"greet","action":"block","parameters":{},"attempt":1,"queue":"default","heartbeat_interval_seconds":3600}`)
+				return
+			}
+			w.WriteHeader(http.StatusNoContent)
+		case r.URL.Path == "/v1/projects/test-project/jobs/job_1/complete":
+			w.WriteHeader(http.StatusNoContent)
+		default:
+			http.NotFound(w, r)
+		}
+	})
+	c, _ := newTestClient(t, h)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	started := make(chan struct{})
+	release := make(chan struct{})
+	worker := c.NewWorker(WorkerConfig{WorkerID: "w1", PollWaitSeconds: 1})
+	worker.Register(ActionFunc("block", func(ctx Context, params map[string]any) (any, error) {
+		close(started)
+		<-release
+		cancel()
+		return map[string]any{"ok": true}, nil
+	}))
+
+	done := make(chan error, 1)
+	go func() { done <- worker.Run(ctx) }()
+
+	<-started
+	time.Sleep(50 * time.Millisecond)
+	assert.Equal(t, int(claims.Load()), 1)
+	close(release)
+	err := <-done
+	assert.True(t, errors.Is(err, context.Canceled))
+}
+
+func TestWorkerPool_RunUsesDistinctSingleJobWorkers(t *testing.T) {
+	var mu sync.Mutex
+	var claims int
+	workerIDs := map[string]bool{}
+	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.URL.Path == "/v1/projects/test-project/jobs/claim":
+			var sent map[string]any
+			_ = json.NewDecoder(r.Body).Decode(&sent)
+			mu.Lock()
+			claims++
+			n := claims
+			if id, ok := sent["worker_id"].(string); ok {
+				workerIDs[id] = true
+			}
+			mu.Unlock()
+			if n <= 3 {
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = io.WriteString(w, fmt.Sprintf(`{"job_id":"job_%d","run_id":"run_1","workflow_name":"hello","step_name":"greet","action":"block","parameters":{},"attempt":1,"queue":"default","heartbeat_interval_seconds":3600}`, n))
+				return
+			}
+			w.WriteHeader(http.StatusNoContent)
+		case strings.HasPrefix(r.URL.Path, "/v1/projects/test-project/jobs/job_") && strings.HasSuffix(r.URL.Path, "/complete"):
+			w.WriteHeader(http.StatusNoContent)
+		default:
+			http.NotFound(w, r)
+		}
+	})
+	c, _ := newTestClient(t, h)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	started := make(chan struct{}, 3)
+	release := make(chan struct{})
+	pool := c.NewWorkerPool(WorkerPoolConfig{
+		WorkerConfig:   WorkerConfig{PollWaitSeconds: 1},
+		Count:          3,
+		WorkerIDPrefix: "pool-worker",
+	})
+	pool.Register(ActionFunc("block", func(ctx Context, params map[string]any) (any, error) {
+		started <- struct{}{}
+		<-release
+		return map[string]any{"ok": true}, nil
+	}))
+
+	done := make(chan error, 1)
+	go func() { done <- pool.Run(ctx) }()
+
+	for i := 0; i < 3; i++ {
+		<-started
+	}
+	mu.Lock()
+	assert.Equal(t, claims, 3)
+	assert.Equal(t, len(workerIDs), 3)
+	assert.True(t, workerIDs["pool-worker-1"])
+	assert.True(t, workerIDs["pool-worker-2"])
+	assert.True(t, workerIDs["pool-worker-3"])
+	mu.Unlock()
+
+	close(release)
+	cancel()
+	err := <-done
+	assert.True(t, errors.Is(err, context.Canceled))
 }

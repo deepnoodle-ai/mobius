@@ -1,4 +1,4 @@
-"""Mobius SDK for Python — build workflow workers that poll Mobius for runs."""
+"""Mobius SDK for Python — build workers that poll Mobius for jobs."""
 
 from .action import action
 from .client import (
@@ -11,7 +11,7 @@ from .client import (
 )
 from .errors import AuthRevokedError, RateLimitError
 from .retry import RetryingTransport
-from .worker import ActionContext, Worker, WorkerConfig
+from .worker import ActionContext, Worker, WorkerConfig, WorkerPool, WorkerPoolConfig
 
 __all__ = [
     "ActionContext",
@@ -26,5 +26,7 @@ __all__ = [
     "RetryingTransport",
     "Worker",
     "WorkerConfig",
+    "WorkerPool",
+    "WorkerPoolConfig",
     "action",
 ]

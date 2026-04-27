@@ -22,9 +22,10 @@ export {
   type WrapRetryOptions,
 } from "./retry.js";
 
-export { Worker } from "./worker.js";
+export { Worker, WorkerPool } from "./worker.js";
 export type {
   WorkerConfig,
+  WorkerPoolConfig,
   ActionFn,
   Logger,
   ActionContext,

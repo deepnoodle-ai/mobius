@@ -49,6 +49,14 @@ mobius worker \
     --queues default
 ```
 
+Run more single-job workers in one process when you need more throughput:
+
+```bash
+mobius worker \
+    --queues default \
+    --workers 5
+```
+
 The stock worker registers built-in actions like `print`, `fail`, `json`, `time`, and `random`. Run `mobius worker --help` for the full worker flags. Global flags can also be provided via `MOBIUS_API_URL`, `MOBIUS_API_KEY`, `MOBIUS_PROJECT`, and `MOBIUS_LOG_LEVEL`.
 
 ## Documentation

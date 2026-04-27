@@ -61,8 +61,6 @@ export interface WorkerConfig {
    * worker will only claim jobs for actions it has registered.
    */
   actions?: string[];
-  /** Maximum parallel executions. Defaults to 10. */
-  concurrency?: number;
   /** Long-poll window per claim request in seconds (0–30). Defaults to 20. */
   pollWaitSeconds?: number;
   /**
@@ -118,21 +116,22 @@ export class Worker {
     heartbeatIntervalMs: number | undefined;
   };
   private readonly logger: Logger;
-  private readonly actions = new Map<string, ActionFn>();
+  private readonly actions: Map<string, ActionFn>;
   private abortController = new AbortController();
   private authRevoked = false;
 
   constructor(
     private readonly client: Client,
     config: WorkerConfig,
+    actions?: Map<string, ActionFn>,
   ) {
     this.config = {
-      workerId: config.workerId && config.workerId !== "" ? config.workerId : randomUUID(),
+      workerId:
+        config.workerId && config.workerId !== "" ? config.workerId : randomUUID(),
       name: config.name ?? "",
       version: config.version ?? "",
       queues: config.queues ?? [],
       actions: config.actions ?? [],
-      concurrency: config.concurrency ?? 10,
       pollWaitSeconds: config.pollWaitSeconds ?? 20,
       heartbeatIntervalMs: config.heartbeatIntervalMs,
       eventQueueSize: config.eventQueueSize ?? 256,
@@ -140,6 +139,7 @@ export class Worker {
     };
     this.logger =
       config.logger === null ? silentLogger : (config.logger ?? defaultLogger);
+    this.actions = actions ?? new Map<string, ActionFn>();
   }
 
   /** Register an action function under the given name. */
@@ -160,13 +160,8 @@ export class Worker {
 
     this.logger.info(`[mobius] worker ${this.config.workerId} started`);
 
-    const running = new Set<Promise<void>>();
-
     while (!combined.aborted) {
       if (this.authRevoked) break;
-      if (running.size >= this.config.concurrency) {
-        await Promise.race(running);
-      }
 
       let job: JobClaim | null;
       try {
@@ -184,7 +179,6 @@ export class Worker {
         if (combined.aborted) break;
         if (err instanceof AuthRevokedError) {
           this.logger.error("[mobius] claim rejected: credential revoked");
-          await Promise.allSettled(running);
           throw err;
         }
         this.logger.error("[mobius] claim error:", err);
@@ -197,13 +191,9 @@ export class Worker {
         continue;
       }
 
-      const p = this.executeJob(job, combined).finally(() =>
-        running.delete(p),
-      );
-      running.add(p);
+      await this.executeJob(job, combined);
     }
 
-    await Promise.allSettled(running);
     this.logger.info(`[mobius] worker ${this.config.workerId} stopped`);
     if (this.authRevoked) {
       throw new AuthRevokedError();
@@ -365,6 +355,119 @@ export class Worker {
         err,
       );
     }
+  }
+}
+
+export interface WorkerPoolConfig extends Omit<WorkerConfig, "workerId"> {
+  /** Number of single-job workers to run. Defaults to 1. */
+  count?: number;
+  /**
+   * Prefix used to derive child worker IDs as `<prefix>-<index>`. When omitted,
+   * the SDK generates a per-boot prefix.
+   */
+  workerIdPrefix?: string;
+}
+
+/**
+ * WorkerPool runs multiple single-job workers in one process.
+ */
+export class WorkerPool {
+  private readonly config: Required<
+    Omit<WorkerPoolConfig, "logger" | "heartbeatIntervalMs" | "workerIdPrefix">
+  > & {
+    workerIdPrefix: string;
+    heartbeatIntervalMs: number | undefined;
+    logger: Logger | null | undefined;
+  };
+  private readonly actions = new Map<string, ActionFn>();
+  private abortController = new AbortController();
+
+  constructor(
+    private readonly client: Client,
+    config: WorkerPoolConfig,
+  ) {
+    this.config = {
+      workerIdPrefix:
+        config.workerIdPrefix && config.workerIdPrefix !== ""
+          ? config.workerIdPrefix
+          : `worker-${randomUUID()}`,
+      name: config.name ?? "",
+      version: config.version ?? "",
+      queues: config.queues ?? [],
+      actions: config.actions ?? [],
+      count: config.count && config.count > 0 ? config.count : 1,
+      pollWaitSeconds: config.pollWaitSeconds ?? 20,
+      heartbeatIntervalMs: config.heartbeatIntervalMs,
+      logger: config.logger,
+      eventQueueSize: config.eventQueueSize ?? 256,
+      eventBatchSize: config.eventBatchSize ?? 20,
+    };
+  }
+
+  /** Register an action function under the given name for every pool worker. */
+  register(name: string, fn: ActionFn): this {
+    this.actions.set(name, fn);
+    return this;
+  }
+
+  /**
+   * Start all workers in the pool. Rejects with AuthRevokedError if any child
+   * worker sees credential revocation.
+   */
+  async run(signal?: AbortSignal): Promise<void> {
+    this.abortController = new AbortController();
+    const combined = signal
+      ? anySignal(signal, this.abortController.signal)
+      : this.abortController.signal;
+
+    let authRevoked = false;
+    let firstError: unknown;
+    const workers = Array.from({ length: this.config.count }, (_, i) => {
+      return new Worker(
+        this.client,
+        {
+          workerId: `${this.config.workerIdPrefix}-${i + 1}`,
+          name: this.config.name,
+          version: this.config.version,
+          queues: this.config.queues,
+          actions: this.config.actions,
+          pollWaitSeconds: this.config.pollWaitSeconds,
+          heartbeatIntervalMs: this.config.heartbeatIntervalMs,
+          logger: this.config.logger,
+          eventQueueSize: this.config.eventQueueSize,
+          eventBatchSize: this.config.eventBatchSize,
+        },
+        this.actions,
+      );
+    });
+
+    await Promise.allSettled(
+      workers.map(async (worker) => {
+        try {
+          await worker.run(combined);
+        } catch (err) {
+          if (err instanceof AuthRevokedError) {
+            authRevoked = true;
+            this.abortController.abort();
+          } else if (!combined.aborted) {
+            firstError ??= err;
+            this.abortController.abort();
+          }
+        }
+      }),
+    );
+
+    if (authRevoked) {
+      throw new AuthRevokedError();
+    }
+    if (firstError != null) {
+      throw firstError;
+    }
+  }
+
+  /** Gracefully stop every worker in the pool after in-flight jobs complete. */
+  stop(): void {
+    this.abortController.abort();
   }
 }
 
