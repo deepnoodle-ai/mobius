@@ -534,11 +534,13 @@ func TestWorkerPool_RunReturnsAuthRevokedAndCancelsSiblings(t *testing.T) {
 }
 
 // TestRuntimeClaim_InstanceConflict verifies that a 409 with the
-// `worker_instance_conflict` code surfaces as ErrWorkerInstanceConflict
-// with a populated InstanceConflictError so worker.Run can crash loudly
-// instead of silently retrying into a black hole.
+// `worker_instance_conflict` code in the real server envelope shape
+// surfaces as ErrWorkerInstanceConflict with a populated
+// InstanceConflictError so worker.Run can crash loudly instead of
+// silently retrying into a black hole. Uses the nested
+// {"error":{"code","message"}} envelope the backend actually emits.
 func TestRuntimeClaim_InstanceConflict(t *testing.T) {
-	body := `{"code":"worker_instance_conflict","message":"another live process is using inv-abc123"}`
+	body := `{"error":{"code":"worker_instance_conflict","message":"another live process is using inv-abc123"}}`
 	h := newRecorder(t, map[string]stubResponse{
 		"/v1/projects/test-project/jobs/claim": {status: 409, body: body},
 	})
@@ -550,6 +552,20 @@ func TestRuntimeClaim_InstanceConflict(t *testing.T) {
 	assert.True(t, errors.As(err, &ic))
 	assert.Equal(t, ic.WorkerInstanceID, "inv-abc123")
 	assert.Equal(t, ic.ProjectHandle, "test-project")
+}
+
+// TestRuntimeClaim_InstanceConflict_FlatEnvelope keeps the SDK
+// resilient to a future server rev (or a different deployment) that
+// emits the conflict body without the {"error":{...}} wrapper.
+func TestRuntimeClaim_InstanceConflict_FlatEnvelope(t *testing.T) {
+	body := `{"code":"worker_instance_conflict","message":"already in use"}`
+	h := newRecorder(t, map[string]stubResponse{
+		"/v1/projects/test-project/jobs/claim": {status: 409, body: body},
+	})
+	c, _ := newTestClient(t, h)
+	cfg := WorkerConfig{WorkerInstanceID: "inv-abc123", PollWaitSeconds: 1}
+	_, err := c.runtimeClaim(context.Background(), cfg, "tok-test")
+	assert.ErrorIs(t, err, ErrWorkerInstanceConflict)
 }
 
 // TestWorkerRun_ConcurrencyClaimsMultipleJobs verifies that a worker with
@@ -627,7 +643,7 @@ func TestWorkerRun_ConcurrencyClaimsMultipleJobs(t *testing.T) {
 // claim with the worker_instance_conflict code surfaces from Run as
 // a hard error rather than triggering the silent retry loop.
 func TestWorkerRun_InstanceConflictExitsLoudly(t *testing.T) {
-	body := `{"code":"worker_instance_conflict","message":"another live process holds inv-abc123"}`
+	body := `{"error":{"code":"worker_instance_conflict","message":"another live process holds inv-abc123"}}`
 	h := newRecorder(t, map[string]stubResponse{
 		"/v1/projects/test-project/jobs/claim": {status: 409, body: body},
 	})

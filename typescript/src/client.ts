@@ -310,17 +310,26 @@ export class Client {
     if (resp.status === 401) throw new AuthRevokedError();
     if (resp.status === 409) {
       const text = await resp.text().catch(() => "");
-      let parsed: { code?: string; message?: string } = {};
+      // The backend wraps errors as {"error":{"code","message"}};
+      // also accept a flat {"code","message"} shape so a future
+      // server rev (or test fixture) doesn't silently fall through.
+      let body: {
+        code?: string;
+        message?: string;
+        error?: { code?: string; message?: string };
+      } = {};
       try {
-        parsed = text ? (JSON.parse(text) as typeof parsed) : {};
+        body = text ? (JSON.parse(text) as typeof body) : {};
       } catch {
-        parsed = {};
+        body = {};
       }
-      if (parsed.code === "worker_instance_conflict") {
+      const code = body.error?.code ?? body.code;
+      const message = body.error?.message ?? body.message;
+      if (code === "worker_instance_conflict") {
         throw new WorkerInstanceConflictError(
           req.worker_instance_id ?? req.worker_id,
           this.project,
-          parsed.message,
+          message,
         );
       }
       throw new Error(
