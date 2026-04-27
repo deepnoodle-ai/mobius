@@ -177,3 +177,192 @@ test("smoke: emitJobEvents 429 raises RateLimitError", async () => {
     "RateLimitError",
   );
 });
+
+test("smoke: startRun posts a correlated run request", async () => {
+  let requestedURL = "";
+  let requestBody = "";
+  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    requestedURL = typeof input === "string" ? input : input.toString();
+    requestBody = String(init?.body ?? "");
+    return new Response(JSON.stringify(runBody("run_1", "active")), {
+      status: 202,
+      headers: { "Content-Type": "application/json" },
+    });
+  }) as typeof fetch;
+
+  const client = new Client({
+    apiKey: "mbx_test",
+    baseURL: "https://api.example.invalid",
+    project: "test-project",
+  });
+  const run = await client.startRun(
+    { name: "demo", steps: [] },
+    {
+      queue: "research",
+      external_id: "external-1",
+      metadata: { org_id: "org_1" },
+      inputs: { topic: "sdk" },
+    },
+  );
+
+  assert.equal(
+    requestedURL,
+    "https://api.example.invalid/v1/projects/test-project/runs",
+  );
+  assert.equal(run.id, "run_1");
+  const body = JSON.parse(requestBody);
+  assert.equal(body.mode, "inline");
+  assert.equal(body.queue, "research");
+  assert.equal(body.external_id, "external-1");
+});
+
+test("smoke: startWorkflowRun uses the workflow-bound route", async () => {
+  let requestedURL = "";
+  let requestBody = "";
+  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    requestedURL = typeof input === "string" ? input : input.toString();
+    requestBody = String(init?.body ?? "");
+    return new Response(JSON.stringify(runBody("run_1", "active")), {
+      status: 202,
+      headers: { "Content-Type": "application/json" },
+    });
+  }) as typeof fetch;
+
+  const client = new Client({
+    apiKey: "mbx_test",
+    baseURL: "https://api.example.invalid",
+    project: "test-project",
+  });
+  const run = await client.startWorkflowRun("wf_1", {
+    external_id: "external-1",
+    inputs: { topic: "sdk" },
+  });
+
+  assert.equal(
+    requestedURL,
+    "https://api.example.invalid/v1/projects/test-project/workflows/wf_1/runs",
+  );
+  assert.equal(run.id, "run_1");
+  const body = JSON.parse(requestBody);
+  assert.equal(body.external_id, "external-1");
+  assert.equal(body.mode, undefined);
+  assert.equal(body.definition_id, undefined);
+});
+
+test("smoke: run control helpers use project-scoped paths", async () => {
+  const seen: string[] = [];
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    const url = typeof input === "string" ? input : input.toString();
+    seen.push(url);
+    const path = new URL(url).pathname;
+    if (path.endsWith("/signals")) {
+      return new Response(
+        JSON.stringify({ id: "sig_1", run_id: "run_1", name: "approval" }),
+        { status: 202, headers: { "Content-Type": "application/json" } },
+      );
+    }
+    if (path.endsWith("/cancellations") || path.endsWith("/resumptions")) {
+      return new Response(null, { status: 204 });
+    }
+    if (path.endsWith("/runs/run_1")) {
+      return new Response(JSON.stringify(runDetailBody("run_1", "completed")), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    return new Response(
+      JSON.stringify({ items: [runBody("run_1", "completed")], has_more: false }),
+      { status: 200, headers: { "Content-Type": "application/json" } },
+    );
+  }) as typeof fetch;
+
+  const client = new Client({
+    apiKey: "mbx_test",
+    baseURL: "https://api.example.invalid",
+    project: "test-project",
+  });
+
+  assert.equal((await client.getRun("run_1")).status, "completed");
+  assert.equal(
+    (await client.listRuns({ status: "completed", external_id: "external-1" }))
+      .items.length,
+    1,
+  );
+  await client.cancelRun("run_1");
+  await client.resumeRun("run_1");
+  assert.equal(
+    (await client.sendRunSignal("run_1", { name: "approval" })).id,
+    "sig_1",
+  );
+
+  assert.ok(seen.some((url) => url.includes("/runs?status=completed")));
+  assert.ok(seen.some((url) => url.endsWith("/runs/run_1/cancellations")));
+  assert.ok(seen.some((url) => url.endsWith("/runs/run_1/resumptions")));
+  assert.ok(seen.some((url) => url.endsWith("/runs/run_1/signals")));
+});
+
+test("smoke: waitRun fetches after stream closes before terminal", async () => {
+  let getCalls = 0;
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    const url = typeof input === "string" ? input : input.toString();
+    const path = new URL(url).pathname;
+    if (path.endsWith("/events")) {
+      return new Response(
+        `event: run_updated
+id: 7
+data: {"type":"run_updated","run_id":"run_1","seq":7,"timestamp":"2026-04-27T00:00:00Z","data":{"status":"active"}}
+
+`,
+        { status: 200, headers: { "Content-Type": "text/event-stream" } },
+      );
+    }
+    getCalls += 1;
+    return new Response(
+      JSON.stringify(runDetailBody("run_1", getCalls === 1 ? "active" : "completed")),
+      { status: 200, headers: { "Content-Type": "application/json" } },
+    );
+  }) as typeof fetch;
+
+  const client = new Client({
+    apiKey: "mbx_test",
+    baseURL: "https://api.example.invalid",
+    project: "test-project",
+  });
+  const run = await client.waitRun("run_1", { reconnectDelayMs: 1 });
+
+  assert.equal(run.status, "completed");
+  assert.equal(getCalls, 2);
+});
+
+function runBody(id: string, status: "active" | "completed" | "failed") {
+  return {
+    id,
+    ephemeral: true,
+    workflow_name: "demo",
+    status,
+    path_counts: {
+      total: 1,
+      active: status === "active" ? 1 : 0,
+      working: status === "active" ? 1 : 0,
+      waiting: 0,
+      completed: status === "completed" ? 1 : 0,
+      failed: status === "failed" ? 1 : 0,
+    },
+    job_counts: { ready: 0, scheduled: 0, claimed: 0 },
+    wait_summary: {
+      waiting_paths: 0,
+      kind_counts: {},
+      next_wake_at: null,
+      waiting_on_signal_names: [],
+      interaction_ids: [],
+    },
+    errors: [],
+    attempt: 1,
+    created_at: "2026-04-27T00:00:00Z",
+    updated_at: "2026-04-27T00:00:00Z",
+  };
+}
+
+function runDetailBody(id: string, status: "active" | "completed" | "failed") {
+  return { ...runBody(id, status), paths: [] };
+}

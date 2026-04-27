@@ -6,6 +6,7 @@ export {
   PayloadTooLargeError,
   RateLimitedError,
   RateLimitError,
+  isTerminalRunStatus,
 } from "./client.js";
 export {
   DEFAULT_BASE_URL,
@@ -14,6 +15,12 @@ export {
   type ClientOptions,
   type JobEventEntry,
   type JobEventsRequest,
+  type ListRunsOptions,
+  type RunEvent,
+  type StartRunOptions,
+  type WaitRunOptions,
+  type WatchRunOptions,
+  type WorkflowRunDetail,
 } from "./client.js";
 export {
   DEFAULT_MAX_RETRIES,
@@ -38,4 +45,10 @@ export type {
   JobFenceRequest,
   JobHeartbeat,
   JobHeartbeatDirectives,
+  RunSignal,
+  SendRunSignalRequest,
+  WorkflowRun,
+  WorkflowRunListResponse,
+  WorkflowRunStatus,
+  WorkflowSpec,
 } from "./api/index.js";

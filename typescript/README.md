@@ -4,7 +4,8 @@ TypeScript SDK for [Mobius](https://www.mobiusops.ai/) — a work coordination
 platform for mixed teams of humans, systems, and AI agents.
 
 This package contains the runtime client and worker used to claim and execute
-tasks against the Mobius API. Types are generated from the canonical
+tasks against the Mobius API, plus high-level helpers for starting, observing,
+and controlling workflow runs. Types are generated from the canonical
 [OpenAPI spec](https://github.com/deepnoodle-ai/mobius/blob/main/openapi.yaml)
 and round-tripped against the same cross-language contract fixtures as the Go
 and Python SDKs.
@@ -56,6 +57,24 @@ const claim = await client.claimJob({
   queues: ["default"],
   wait_seconds: 20,
 });
+```
+
+### Run control
+
+```ts
+const run = await client.startRun(
+  {
+    name: "demo",
+    steps: [],
+  },
+  {
+    external_id: "customer-run-123",
+    metadata: { org_id: "org_123" },
+  },
+);
+
+const terminal = await client.waitRun(run.id);
+console.log(terminal.status, terminal.result_b64, terminal.error_message);
 ```
 
 ## Rate limiting
