@@ -6,6 +6,36 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 
 ## [Unreleased]
 
+## [0.0.13] - 2026-04-27
+
+### Added
+
+- Worker SDKs (Go, Python, TypeScript): add `concurrency` knob to
+  `WorkerConfig` (default 1) with semaphore-gated claim loop, so a single
+  worker process can hold N jobs in flight under one presence row.
+- Worker SDKs: generate a per-boot `worker_session_token` UUID at `Worker`
+  construction and send it as the lease fence on every claim, heartbeat,
+  complete, and events call.
+- Worker SDKs: auto-detect `worker_instance_id` from the runtime platform
+  (Cloud Run revision + metadata, `HOSTNAME`, `FLY_MACHINE_ID`,
+  `RAILWAY_REPLICA_ID`, `RENDER_INSTANCE_ID`), falling back to a generated
+  UUID; the source is logged once at startup.
+- CLI: add `--concurrency N` (primary, default 1) and `--instance-id`
+  (advanced override) flags to the `worker` subcommand. `--workers` is
+  retained for the multi-instance pool case and is mutually exclusive with
+  `--concurrency`.
+
+### Changed
+
+- Worker protocol: `worker_id` is renamed to `worker_instance_id` on the
+  wire. SDKs keep a deprecated alias on `WorkerConfig` (Go `WorkerID`,
+  Python `worker_id`, TypeScript `workerId`) that logs a one-time
+  deprecation warning.
+- Worker SDKs: a 409 `worker_instance_conflict` from claim now surfaces as
+  a hard `WorkerInstanceConflictError` out of `Worker.run` with a
+  remediation message, replacing the previous log-and-keep-polling
+  behaviour.
+
 ## [0.0.12] - 2026-04-27
 
 ### Added
