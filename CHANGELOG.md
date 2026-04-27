@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 
 ## [Unreleased]
 
+## [0.0.11] - 2026-04-27
+
+### Added
+
+- Go, TypeScript, and Python SDKs: add high-level run-control helpers for
+  starting runs, starting workflow-definition runs, getting/listing runs,
+  cancelling/resuming runs, sending signals, watching run events, and waiting
+  for terminal completion.
+- TypeScript and Python SDKs: add run-event watching and `wait` recovery logic
+  on top of the generated OpenAPI bindings.
+
 ## [0.0.10] - 2026-04-27
 
 ### Added
