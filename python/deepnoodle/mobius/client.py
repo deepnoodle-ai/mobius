@@ -14,6 +14,7 @@ from pydantic import BaseModel
 # Generated models from make generate-py
 from ._api.models import (
     ConfigEntries,
+    CreateWorkflowRequest,
     JobClaim,
     JobClaimRequest,
     JobCompleteRequest,
@@ -24,6 +25,10 @@ from ._api.models import (
     StartBoundRunRequest,
     StartInlineRunRequest,
     TagMap,
+    UpdateWorkflowRequest,
+    WorkflowDefinition,
+    WorkflowDefinitionListResponse,
+    WorkflowDefinitionSummary,
     WorkflowRun,
     WorkflowRunDetail,
     WorkflowRunListResponse,
@@ -86,6 +91,44 @@ class WaitRunOptions:
     since: int = 0
     reconnect_delay: float = 1.0
     timeout: float | None = None
+
+
+@dataclass
+class WorkflowOptions:
+    name: str | None = None
+    handle: str | None = None
+    description: str | None = None
+    published_as_tool: bool | None = None
+    tags: TagMap | dict[str, str] | None = None
+
+
+@dataclass
+class UpdateWorkflowOptions:
+    name: str | None = None
+    description: str | None = None
+    published_as_tool: bool | None = None
+    spec: WorkflowSpec | None = None
+    tags: TagMap | dict[str, str] | None = None
+
+
+@dataclass
+class ListWorkflowsOptions:
+    cursor: str | None = None
+    limit: int | None = None
+    tag: list[str] | None = None
+
+
+@dataclass
+class WorkflowSyncResult:
+    definition: WorkflowDefinition
+    created: bool = False
+    updated: bool = False
+
+
+@dataclass
+class WorkflowDefinitionConfig:
+    spec: WorkflowSpec
+    options: WorkflowOptions | None = None
 
 
 @dataclass
@@ -410,6 +453,103 @@ class Client:
                 raise TimeoutError(f"timed out waiting for Mobius run {run_id}")
             time.sleep(opts.reconnect_delay)
 
+    def list_workflows(
+        self,
+        opts: ListWorkflowsOptions | None = None,
+    ) -> WorkflowDefinitionListResponse:
+        project = quote(self.namespace, safe="")
+        resp = self._http.get(
+            f"/v1/projects/{project}/workflows",
+            params=_list_workflows_params(opts),
+        )
+        resp.raise_for_status()
+        return WorkflowDefinitionListResponse.model_validate(resp.json())
+
+    def get_workflow(self, workflow_id: str) -> WorkflowDefinition:
+        project = quote(self.namespace, safe="")
+        workflow = quote(workflow_id, safe="")
+        resp = self._http.get(f"/v1/projects/{project}/workflows/{workflow}")
+        resp.raise_for_status()
+        return WorkflowDefinition.model_validate(resp.json())
+
+    def create_workflow(
+        self,
+        spec: WorkflowSpec,
+        opts: WorkflowOptions | None = None,
+    ) -> WorkflowDefinition:
+        project = quote(self.namespace, safe="")
+        req = _create_workflow_request(spec, opts)
+        resp = self._http.post(
+            f"/v1/projects/{project}/workflows",
+            json=_dump(req),
+        )
+        resp.raise_for_status()
+        return WorkflowDefinition.model_validate(resp.json())
+
+    def update_workflow(
+        self,
+        workflow_id: str,
+        opts: UpdateWorkflowOptions | None = None,
+    ) -> WorkflowDefinition:
+        project = quote(self.namespace, safe="")
+        workflow = quote(workflow_id, safe="")
+        req = _update_workflow_request(opts)
+        resp = self._http.patch(
+            f"/v1/projects/{project}/workflows/{workflow}",
+            json=_dump(req),
+        )
+        resp.raise_for_status()
+        return WorkflowDefinition.model_validate(resp.json())
+
+    def ensure_workflow(
+        self,
+        spec: WorkflowSpec,
+        opts: WorkflowOptions | None = None,
+    ) -> WorkflowSyncResult:
+        desired = _normalize_workflow_options(spec, opts)
+        existing = self._find_workflow(desired)
+        if existing is None:
+            return WorkflowSyncResult(
+                definition=self.create_workflow(spec, desired),
+                created=True,
+            )
+
+        current = self.get_workflow(existing.id)
+        update = _workflow_update_for_diff(current, spec, desired)
+        if update is None:
+            return WorkflowSyncResult(definition=current)
+        return WorkflowSyncResult(
+            definition=self.update_workflow(current.id, update),
+            updated=True,
+        )
+
+    def sync_workflows(
+        self,
+        defs: list[WorkflowDefinitionConfig],
+    ) -> list[WorkflowSyncResult]:
+        return [
+            self.ensure_workflow(defn.spec, defn.options)
+            for defn in defs
+        ]
+
+    def _find_workflow(
+        self,
+        desired: WorkflowOptions,
+    ) -> WorkflowDefinitionSummary | None:
+        if not desired.handle and not desired.name:
+            raise ValueError("mobius: ensure workflow requires a handle, name, or spec name")
+        cursor = ""
+        while True:
+            page = self.list_workflows(ListWorkflowsOptions(cursor=cursor, limit=100))
+            for item in page.items:
+                if desired.handle and item.handle == desired.handle:
+                    return item
+                if not desired.handle and item.name == desired.name:
+                    return item
+            if not page.has_more or not page.next_cursor:
+                return None
+            cursor = page.next_cursor
+
     def close(self) -> None:
         self._http.close()
 
@@ -458,6 +598,104 @@ def _list_runs_params(opts: ListRunsOptions | None) -> dict[str, Any]:
         }.items()
         if v is not None and v != ""
     }
+
+
+def _create_workflow_request(
+    spec: WorkflowSpec,
+    opts: WorkflowOptions | None,
+) -> CreateWorkflowRequest:
+    normalized = _normalize_workflow_options(spec, opts)
+    return CreateWorkflowRequest(
+        name=normalized.name or spec.name,
+        handle=normalized.handle,
+        description=normalized.description,
+        published_as_tool=normalized.published_as_tool,
+        spec=spec,
+        tags=normalized.tags,
+    )
+
+
+def _update_workflow_request(
+    opts: UpdateWorkflowOptions | None,
+) -> UpdateWorkflowRequest:
+    if opts is None:
+        return UpdateWorkflowRequest()
+    return UpdateWorkflowRequest(
+        name=opts.name,
+        description=opts.description,
+        published_as_tool=opts.published_as_tool,
+        spec=opts.spec,
+        tags=opts.tags,
+    )
+
+
+def _list_workflows_params(opts: ListWorkflowsOptions | None) -> dict[str, Any]:
+    if opts is None:
+        return {}
+    return {
+        k: v
+        for k, v in {
+            "cursor": opts.cursor,
+            "limit": opts.limit,
+            "tag": opts.tag,
+        }.items()
+        if v is not None and v != ""
+    }
+
+
+def _normalize_workflow_options(
+    spec: WorkflowSpec,
+    opts: WorkflowOptions | None,
+) -> WorkflowOptions:
+    if opts is None:
+        return WorkflowOptions(name=spec.name)
+    return WorkflowOptions(
+        name=opts.name or spec.name,
+        handle=opts.handle,
+        description=opts.description,
+        published_as_tool=opts.published_as_tool,
+        tags=opts.tags,
+    )
+
+
+def _workflow_update_for_diff(
+    current: WorkflowDefinition,
+    spec: WorkflowSpec,
+    desired: WorkflowOptions,
+) -> UpdateWorkflowOptions | None:
+    update = UpdateWorkflowOptions()
+    changed = False
+    if desired.name and current.name != desired.name:
+        update.name = desired.name
+        changed = True
+    if desired.description and current.description != desired.description:
+        update.description = desired.description
+        changed = True
+    if (
+        desired.published_as_tool is not None
+        and current.published_as_tool != desired.published_as_tool
+    ):
+        update.published_as_tool = desired.published_as_tool
+        changed = True
+    if desired.tags is not None and _tag_dict(current.tags) != _tag_dict(desired.tags):
+        update.tags = desired.tags
+        changed = True
+    if _model_json(current.spec) != _model_json(spec):
+        update.spec = spec
+        changed = True
+    return update if changed else None
+
+
+def _model_json(model: BaseModel) -> str:
+    return model.model_dump_json(exclude_none=True)
+
+
+def _tag_dict(tags: TagMap | dict[str, str] | None) -> dict[str, str] | None:
+    if tags is None:
+        return None
+    if isinstance(tags, TagMap):
+        return tags.root
+    return tags
 
 
 def _parse_sse(lines: Iterator[str]) -> Iterator[RunEvent]:

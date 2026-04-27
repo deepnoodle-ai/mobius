@@ -77,6 +77,31 @@ const terminal = await client.waitRun(run.id);
 console.log(terminal.status, terminal.result_b64, terminal.error_message);
 ```
 
+### Webhooks
+
+```ts
+import {
+  parseSignedWebhookRequest,
+} from "@deepnoodle/mobius";
+
+const signed = await parseSignedWebhookRequest(
+  request,
+  process.env.MOBIUS_WEBHOOK_SECRET!,
+);
+console.log(signed.event.type, signed.event.data);
+```
+
+### Saved workflows
+
+```ts
+const result = await client.ensureWorkflow(
+  { name: "customer-onboarding", steps: [] },
+  { handle: "customer-onboarding" },
+);
+
+console.log(result.created, result.updated, result.definition.id);
+```
+
 ## Rate limiting
 
 The client retries `429 Too Many Requests` and `503 Service Unavailable`

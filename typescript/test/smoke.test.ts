@@ -9,6 +9,16 @@ import {
   RateLimitError,
   RateLimitedError,
 } from "../src/client.js";
+import {
+  WEBHOOK_EVENT_TYPE_HEADER,
+  WEBHOOK_SIGNATURE_HEADER,
+  buildSyntheticWebhookPayload,
+  deliverSyntheticWebhook,
+  parseSignedWebhookRequest,
+  parseWebhookEvent,
+  signWebhookPayload,
+  verifyWebhookSignature,
+} from "../src/webhook.js";
 
 // Smoke tests for the hand-written Client wrapper: verify the error
 // translation layer around 409 lease-lost responses and 204 empty claims.
@@ -334,6 +344,139 @@ data: {"type":"run_updated","run_id":"run_1","seq":7,"timestamp":"2026-04-27T00:
   assert.equal(getCalls, 2);
 });
 
+test("smoke: webhook helpers verify and parse signed requests", async () => {
+  const body = `{"type":"run.completed","data":{"id":"run_1"}}`;
+  const signature = signWebhookPayload("secret", body);
+
+  verifyWebhookSignature("secret", body, signature);
+  const parsed = parseWebhookEvent<{ id: string }>(body);
+  assert.equal(parsed.type, "run.completed");
+  assert.equal(parsed.data.id, "run_1");
+
+  const req = new Request("https://example.invalid/webhooks/mobius", {
+    method: "POST",
+    body,
+    headers: { [WEBHOOK_SIGNATURE_HEADER]: signature },
+  });
+  const signed = await parseSignedWebhookRequest<{ id: string }>(req, "secret");
+  assert.equal(signed.event.data.id, "run_1");
+  assert.equal(Buffer.from(signed.body).toString("utf8"), body);
+
+  assert.throws(() =>
+    verifyWebhookSignature(
+      "secret",
+      body,
+      "sha256=0000000000000000000000000000000000000000000000000000000000000000",
+    ),
+  );
+});
+
+test("smoke: synthetic webhook delivery posts signed Mobius envelope", async () => {
+  let requestedURL = "";
+  let requestBody = "";
+  let eventType = "";
+  let signature = "";
+
+  const fetchFn = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    requestedURL = typeof input === "string" ? input : input.toString();
+    requestBody = String(init?.body ?? "");
+    const headers = new Headers(init?.headers);
+    eventType = headers.get(WEBHOOK_EVENT_TYPE_HEADER) ?? "";
+    signature = headers.get(WEBHOOK_SIGNATURE_HEADER) ?? "";
+    return new Response(null, { status: 204 });
+  }) as typeof fetch;
+
+  await deliverSyntheticWebhook({
+    url: "https://example.invalid/webhooks/mobius",
+    secret: "secret",
+    eventType: "run.completed",
+    data: { id: "run_1" },
+    fetch: fetchFn,
+  });
+
+  assert.equal(requestedURL, "https://example.invalid/webhooks/mobius");
+  assert.equal(eventType, "run.completed");
+  assert.equal(signature, signWebhookPayload("secret", requestBody));
+  assert.equal(
+    requestBody,
+    buildSyntheticWebhookPayload("run.completed", { id: "run_1" }),
+  );
+});
+
+test("smoke: workflow helpers create, update, and ensure definitions", async () => {
+  const requests: Array<{ method: string; path: string; body: unknown }> = [];
+  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = typeof input === "string" ? input : input.toString();
+    const path = new URL(url).pathname;
+    const body = init?.body ? JSON.parse(String(init.body)) : undefined;
+    requests.push({ method: init?.method ?? "GET", path, body });
+
+    if (path === "/v1/projects/test-project/workflows" && init?.method === "POST") {
+      return jsonResponse(
+        workflowDefinitionBody("wf_1", body.name, body.handle, body.spec),
+      );
+    }
+    if (
+      path === "/v1/projects/test-project/workflows/wf_1" &&
+      init?.method === "PATCH"
+    ) {
+      return jsonResponse(
+        workflowDefinitionBody(
+          "wf_1",
+          body.name ?? "research",
+          "research",
+          body.spec,
+        ),
+      );
+    }
+    if (path === "/v1/projects/test-project/workflows/wf_1") {
+      return jsonResponse(
+        workflowDefinitionBody("wf_1", "research", "research", {
+          name: "old",
+          steps: [],
+        }),
+      );
+    }
+    return jsonResponse({
+      items: [workflowDefinitionSummaryBody("wf_1", "research", "research")],
+      has_more: false,
+    });
+  }) as typeof fetch;
+
+  const client = new Client({
+    apiKey: "mbx_test",
+    baseURL: "https://api.example.invalid",
+    project: "test-project",
+  });
+
+  assert.equal(
+    (
+      await client.createWorkflow(
+        { name: "research", steps: [] },
+        { handle: "research" },
+      )
+    ).id,
+    "wf_1",
+  );
+  assert.equal(
+    (
+      await client.updateWorkflow("wf_1", {
+        name: "research v2",
+        spec: { name: "research v2", steps: [] },
+      })
+    ).name,
+    "research v2",
+  );
+  const result = await client.ensureWorkflow(
+    { name: "research", steps: [] },
+    { handle: "research" },
+  );
+
+  assert.equal(result.created, false);
+  assert.equal(result.updated, true);
+  assert.ok(requests.some((req) => req.method === "PATCH"));
+});
+
 function runBody(id: string, status: "active" | "completed" | "failed") {
   return {
     id,
@@ -365,4 +508,32 @@ function runBody(id: string, status: "active" | "completed" | "failed") {
 
 function runDetailBody(id: string, status: "active" | "completed" | "failed") {
   return { ...runBody(id, status), paths: [] };
+}
+
+function jsonResponse(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
+function workflowDefinitionSummaryBody(id: string, name: string, handle: string) {
+  return {
+    id,
+    name,
+    handle,
+    latest_version: 1,
+    created_by: "user_1",
+    created_at: "2026-04-27T00:00:00Z",
+    updated_at: "2026-04-27T00:00:00Z",
+  };
+}
+
+function workflowDefinitionBody(
+  id: string,
+  name: string,
+  handle: string,
+  spec: unknown,
+) {
+  return { ...workflowDefinitionSummaryBody(id, name, handle), spec };
 }

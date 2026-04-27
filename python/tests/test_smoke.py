@@ -7,6 +7,8 @@ Go and TypeScript wrappers.
 
 from __future__ import annotations
 
+import json
+
 import httpx
 import pytest
 
@@ -16,10 +18,22 @@ from deepnoodle.mobius import (
     ClientOptions,
     LeaseLostError,
     ListRunsOptions,
+    ListWorkflowsOptions,
     PayloadTooLargeError,
     RateLimitedError,
     StartRunOptions,
+    SyntheticWebhookDelivery,
+    UpdateWorkflowOptions,
+    WEBHOOK_EVENT_TYPE_HEADER,
+    WEBHOOK_SIGNATURE_HEADER,
     WaitRunOptions,
+    WorkflowOptions,
+    build_synthetic_webhook_payload,
+    deliver_synthetic_webhook,
+    parse_signed_webhook_request,
+    parse_webhook_event,
+    sign_webhook_payload,
+    verify_webhook_signature,
 )
 from deepnoodle.mobius._api.models import JobClaimRequest, JobCompleteRequest, JobFenceRequest, Status as JobStatus, WorkflowRunStatus, WorkflowSpec
 
@@ -271,6 +285,136 @@ def test_wait_run_fetches_after_stream_closes_before_terminal() -> None:
     assert calls["get"] == 2
 
 
+def test_webhook_helpers_verify_and_parse_signed_requests() -> None:
+    body = b'{"type":"run.completed","data":{"id":"run_1"}}'
+    signature = sign_webhook_payload("secret", body)
+
+    verify_webhook_signature("secret", body, signature)
+    event = parse_webhook_event(body)
+    assert event.type == "run.completed"
+    assert event.data["id"] == "run_1"
+
+    signed = parse_signed_webhook_request(
+        body,
+        {WEBHOOK_SIGNATURE_HEADER: signature},
+        "secret",
+    )
+    assert signed.body == body
+    assert signed.event.data["id"] == "run_1"
+
+    with pytest.raises(ValueError):
+        verify_webhook_signature("secret", body, "sha256=00")
+
+
+def test_synthetic_webhook_delivery_posts_signed_envelope() -> None:
+    seen: dict[str, object] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen["path"] = request.url.path
+        seen["body"] = request.read()
+        seen["event_type"] = request.headers[WEBHOOK_EVENT_TYPE_HEADER]
+        seen["signature"] = request.headers[WEBHOOK_SIGNATURE_HEADER]
+        return httpx.Response(204)
+
+    client = httpx.Client(
+        transport=httpx.MockTransport(handler),
+        base_url="https://api.example.invalid",
+    )
+
+    deliver_synthetic_webhook(
+        SyntheticWebhookDelivery(
+            url="https://api.example.invalid/webhooks/mobius",
+            secret="secret",
+            event_type="run.completed",
+            data={"id": "run_1"},
+            http_client=client,
+        )
+    )
+
+    assert seen["path"] == "/webhooks/mobius"
+    assert seen["event_type"] == "run.completed"
+    assert seen["signature"] == sign_webhook_payload("secret", seen["body"])
+    assert seen["body"] == build_synthetic_webhook_payload(
+        "run.completed",
+        {"id": "run_1"},
+    )
+
+
+def test_workflow_helpers_create_update_and_ensure_definitions() -> None:
+    requests: list[tuple[str, str, str]] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        body = request.read().decode()
+        requests.append((request.method, request.url.path, body))
+        if request.method == "POST":
+            payload = json.loads(body)
+            return httpx.Response(
+                201,
+                json=_workflow_definition_body(
+                    "wf_1",
+                    payload["name"],
+                    payload["handle"],
+                    payload["spec"],
+                ),
+            )
+        if request.method == "PATCH":
+            payload = json.loads(body)
+            return httpx.Response(
+                200,
+                json=_workflow_definition_body(
+                    "wf_1",
+                    payload.get("name", "research"),
+                    "research",
+                    payload.get("spec", _workflow_spec("research")),
+                ),
+            )
+        if request.url.path.endswith("/workflows/wf_1"):
+            return httpx.Response(
+                200,
+                json=_workflow_definition_body(
+                    "wf_1",
+                    "research",
+                    "research",
+                    _workflow_spec("old"),
+                ),
+            )
+        return httpx.Response(
+            200,
+            json={
+                "items": [_workflow_definition_summary_body("wf_1", "research", "research")],
+                "has_more": False,
+            },
+        )
+
+    client = _client_with(handler)
+    assert (
+        client.create_workflow(
+            WorkflowSpec(name="research", steps=[]),
+            WorkflowOptions(handle="research"),
+        ).id
+        == "wf_1"
+    )
+    assert (
+        client.update_workflow(
+            "wf_1",
+            UpdateWorkflowOptions(
+                name="research v2",
+                spec=WorkflowSpec(name="research v2", steps=[]),
+            ),
+        ).name
+        == "research v2"
+    )
+    assert len(client.list_workflows(ListWorkflowsOptions(limit=10)).items) == 1
+    result = client.ensure_workflow(
+        WorkflowSpec(name="research", steps=[]),
+        WorkflowOptions(handle="research"),
+    )
+
+    assert result.created is False
+    assert result.updated is True
+    assert any(method == "PATCH" for method, _, _ in requests)
+
+
 def _run_body(run_id: str, status: str) -> dict[str, object]:
     return {
         "id": run_id,
@@ -304,3 +448,35 @@ def _run_detail_body(run_id: str, status: str) -> dict[str, object]:
     body = _run_body(run_id, status)
     body["paths"] = []
     return body
+
+
+def _workflow_spec(name: str) -> dict[str, object]:
+    return {"name": name, "steps": []}
+
+
+def _workflow_definition_summary_body(
+    workflow_id: str,
+    name: str,
+    handle: str,
+) -> dict[str, object]:
+    return {
+        "id": workflow_id,
+        "name": name,
+        "handle": handle,
+        "latest_version": 1,
+        "created_by": "user_1",
+        "created_at": "2026-04-27T00:00:00Z",
+        "updated_at": "2026-04-27T00:00:00Z",
+    }
+
+
+def _workflow_definition_body(
+    workflow_id: str,
+    name: str,
+    handle: str,
+    spec: dict[str, object],
+) -> dict[str, object]:
+    return {
+        **_workflow_definition_summary_body(workflow_id, name, handle),
+        "spec": spec,
+    }

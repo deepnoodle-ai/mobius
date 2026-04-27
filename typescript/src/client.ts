@@ -1,5 +1,6 @@
 import type {
   ConfigEntries,
+  CreateWorkflowRequest,
   JobClaim,
   JobClaimRequest,
   JobCompleteRequest,
@@ -9,6 +10,9 @@ import type {
   SendRunSignalRequest,
   StartBoundRunRequest,
   TagMap,
+  UpdateWorkflowRequest,
+  WorkflowDefinitionListResponse,
+  WorkflowDefinitionSummary,
   WorkflowRun,
   WorkflowRunListResponse,
   WorkflowRunStatus,
@@ -141,6 +145,7 @@ export interface JobEventsRequest {
 }
 
 export type WorkflowRunDetail = components["schemas"]["WorkflowRunDetail"];
+export type WorkflowDefinition = components["schemas"]["WorkflowDefinition"];
 
 export interface StartRunOptions {
   queue?: string;
@@ -179,6 +184,41 @@ export interface WaitRunOptions {
   since?: number;
   signal?: AbortSignal;
   reconnectDelayMs?: number;
+}
+
+export interface WorkflowOptions {
+  /** Defaults to spec.name when omitted. */
+  name?: string;
+  /** Stable URL-safe workflow identifier. Server-derived from name when omitted on create. */
+  handle?: string;
+  description?: string;
+  published_as_tool?: boolean;
+  tags?: TagMap;
+}
+
+export interface UpdateWorkflowOptions {
+  name?: string;
+  description?: string;
+  published_as_tool?: boolean;
+  spec?: WorkflowSpec;
+  tags?: TagMap;
+}
+
+export interface ListWorkflowsOptions {
+  cursor?: string;
+  limit?: number;
+  tag?: string[];
+}
+
+export interface WorkflowSyncResult {
+  definition: WorkflowDefinition;
+  created: boolean;
+  updated: boolean;
+}
+
+export interface WorkflowDefinitionConfig {
+  spec: WorkflowSpec;
+  options?: WorkflowOptions;
 }
 
 /**
@@ -416,6 +456,91 @@ export class Client {
     }
   }
 
+  async listWorkflows(
+    opts: ListWorkflowsOptions = {},
+  ): Promise<WorkflowDefinitionListResponse> {
+    const path = withQuery(
+      `/v1/projects/${encodeURIComponent(this.project)}/workflows`,
+      opts,
+    );
+    const resp = await this.request(path, { method: "GET" });
+    return (await resp.json()) as WorkflowDefinitionListResponse;
+  }
+
+  async getWorkflow(workflowId: string): Promise<WorkflowDefinition> {
+    const resp = await this.request(
+      `/v1/projects/${encodeURIComponent(this.project)}/workflows/${encodeURIComponent(workflowId)}`,
+      { method: "GET" },
+    );
+    return (await resp.json()) as WorkflowDefinition;
+  }
+
+  async createWorkflow(
+    spec: WorkflowSpec,
+    opts: WorkflowOptions = {},
+  ): Promise<WorkflowDefinition> {
+    const body: CreateWorkflowRequest = createWorkflowRequest(spec, opts);
+    const resp = await this.request(
+      `/v1/projects/${encodeURIComponent(this.project)}/workflows`,
+      { method: "POST", body },
+    );
+    return (await resp.json()) as WorkflowDefinition;
+  }
+
+  async updateWorkflow(
+    workflowId: string,
+    opts: UpdateWorkflowOptions = {},
+  ): Promise<WorkflowDefinition> {
+    const body: UpdateWorkflowRequest = removeUndefined({
+      name: opts.name,
+      description: opts.description,
+      published_as_tool: opts.published_as_tool,
+      spec: opts.spec,
+      tags: opts.tags,
+    });
+    const resp = await this.request(
+      `/v1/projects/${encodeURIComponent(this.project)}/workflows/${encodeURIComponent(workflowId)}`,
+      { method: "PATCH", body },
+    );
+    return (await resp.json()) as WorkflowDefinition;
+  }
+
+  async ensureWorkflow(
+    spec: WorkflowSpec,
+    opts: WorkflowOptions = {},
+  ): Promise<WorkflowSyncResult> {
+    const desired = normalizeWorkflowOptions(spec, opts);
+    const existing = await this.findWorkflow(desired);
+    if (!existing) {
+      return {
+        definition: await this.createWorkflow(spec, desired),
+        created: true,
+        updated: false,
+      };
+    }
+
+    const current = await this.getWorkflow(existing.id);
+    const update = workflowUpdateForDiff(current, spec, desired);
+    if (!update) {
+      return { definition: current, created: false, updated: false };
+    }
+    return {
+      definition: await this.updateWorkflow(current.id, update),
+      created: false,
+      updated: true,
+    };
+  }
+
+  async syncWorkflows(
+    defs: WorkflowDefinitionConfig[],
+  ): Promise<WorkflowSyncResult[]> {
+    const results: WorkflowSyncResult[] = [];
+    for (const def of defs) {
+      results.push(await this.ensureWorkflow(def.spec, def.options ?? {}));
+    }
+    return results;
+  }
+
   private async request(
     path: string,
     opts: { method: string; body?: unknown; signal?: AbortSignal | undefined },
@@ -447,6 +572,24 @@ export class Client {
     }
     return resp;
   }
+
+  private async findWorkflow(
+    desired: Required<Pick<WorkflowOptions, "name">> & WorkflowOptions,
+  ): Promise<WorkflowDefinitionSummary | null> {
+    if (!desired.handle && !desired.name) {
+      throw new Error("mobius: ensure workflow requires a handle, name, or spec name");
+    }
+    let cursor = "";
+    for (;;) {
+      const page = await this.listWorkflows({ cursor, limit: 100 });
+      for (const item of page.items) {
+        if (desired.handle && item.handle === desired.handle) return item;
+        if (!desired.handle && item.name === desired.name) return item;
+      }
+      if (!page.has_more || !page.next_cursor) return null;
+      cursor = page.next_cursor;
+    }
+  }
 }
 
 export type { JobClaim, JobHeartbeat };
@@ -454,6 +597,8 @@ export type { JobClaim, JobHeartbeat };
 export type {
   RunSignal,
   SendRunSignalRequest,
+  WorkflowDefinitionListResponse,
+  WorkflowDefinitionSummary,
   WorkflowRun,
   WorkflowRunListResponse,
   WorkflowRunStatus,
@@ -482,10 +627,84 @@ function withQuery(path: string, params: object): string {
   const query = new URLSearchParams();
   for (const [key, value] of Object.entries(params)) {
     if (value == null || value === "") continue;
-    query.set(key, String(value));
+    if (Array.isArray(value)) {
+      for (const item of value) query.append(key, String(item));
+    } else {
+      query.set(key, String(value));
+    }
   }
   const qs = query.toString();
   return qs ? `${path}?${qs}` : path;
+}
+
+function createWorkflowRequest(
+  spec: WorkflowSpec,
+  opts: WorkflowOptions,
+): CreateWorkflowRequest {
+  const normalized = normalizeWorkflowOptions(spec, opts);
+  return removeUndefined({
+    name: normalized.name,
+    handle: normalized.handle,
+    description: normalized.description,
+    published_as_tool: normalized.published_as_tool,
+    spec,
+    tags: normalized.tags,
+  });
+}
+
+function normalizeWorkflowOptions(
+  spec: WorkflowSpec,
+  opts: WorkflowOptions,
+): Required<Pick<WorkflowOptions, "name">> & WorkflowOptions {
+  return { ...opts, name: opts.name || spec.name };
+}
+
+function workflowUpdateForDiff(
+  current: WorkflowDefinition,
+  spec: WorkflowSpec,
+  desired: Required<Pick<WorkflowOptions, "name">> & WorkflowOptions,
+): UpdateWorkflowOptions | null {
+  const update: UpdateWorkflowOptions = {};
+  if (desired.name && current.name !== desired.name) update.name = desired.name;
+  if (desired.description && current.description !== desired.description) {
+    update.description = desired.description;
+  }
+  if (
+    desired.published_as_tool !== undefined &&
+    current.published_as_tool !== desired.published_as_tool
+  ) {
+    update.published_as_tool = desired.published_as_tool;
+  }
+  if (desired.tags !== undefined && !jsonEqual(current.tags, desired.tags)) {
+    update.tags = desired.tags;
+  }
+  if (!jsonEqual(current.spec, spec)) update.spec = spec;
+  return Object.keys(update).length > 0 ? update : null;
+}
+
+function jsonEqual(a: unknown, b: unknown): boolean {
+  return stableJsonStringify(a) === stableJsonStringify(b);
+}
+
+function stableJsonStringify(value: unknown): string | undefined {
+  if (value === null || typeof value !== "object") {
+    return JSON.stringify(value);
+  }
+  if (Array.isArray(value)) {
+    return `[${value.map((item) => stableJsonStringify(item) ?? "null").join(",")}]`;
+  }
+  const obj = value as Record<string, unknown>;
+  const entries = Object.keys(obj)
+    .sort()
+    .filter((key) => obj[key] !== undefined)
+    .map((key) => `${JSON.stringify(key)}:${stableJsonStringify(obj[key])}`);
+  return `{${entries.join(",")}}`;
+}
+
+function removeUndefined<T extends Record<string, unknown>>(obj: T): T {
+  return Object.fromEntries(
+    Object.entries(obj).filter(([, value]) => value !== undefined),
+  ) as T;
 }
 
 interface ParsedSSEEvent {
