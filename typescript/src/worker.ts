@@ -247,11 +247,25 @@ export class Worker {
    * {@link AuthRevokedError} when the credential is revoked mid-flight
    * and {@link WorkerInstanceConflictError} when another live process
    * has already registered this worker_instance_id.
+   *
+   * Cancellation has two distinct shapes:
+   *
+   * - {@link stop} aborts the claim loop only — in-flight jobs continue
+   *   to run to natural completion and the returned promise resolves
+   *   once they all settle. This is graceful drain.
+   * - The caller's `signal`, when aborted, propagates into both the
+   *   claim loop and every running action. This is the emergency-stop
+   *   path (e.g. SIGTERM with a hard deadline).
    */
   async run(signal?: AbortSignal): Promise<void> {
     this.abortController = new AbortController();
-    const combined = signal
-      ? anySignal(signal, this.abortController.signal)
+    // The claim loop watches both signals so stop() and the caller's
+    // emergency abort both halt new claims; executeJob only watches the
+    // caller's signal so stop() doesn't kill jobs that have already
+    // been claimed.
+    const callerSignal = signal;
+    const combined = callerSignal
+      ? anySignal(callerSignal, this.abortController.signal)
       : this.abortController.signal;
 
     if (!this.instanceIDResolved) {
@@ -318,7 +332,7 @@ export class Worker {
         continue;
       }
 
-      const task = this.executeJob(job, combined).finally(() => {
+      const task = this.executeJob(job, callerSignal).finally(() => {
         inflight.delete(task);
       });
       inflight.add(task);
@@ -340,7 +354,7 @@ export class Worker {
 
   private async executeJob(
     job: JobClaim,
-    signal: AbortSignal,
+    signal: AbortSignal | undefined,
   ): Promise<void> {
     const jobId = job.job_id;
     const workerInstanceId = this.config.workerInstanceId;
@@ -367,7 +381,9 @@ export class Worker {
 
     const actionController = new AbortController();
     const onAbort = () => actionController.abort();
-    signal.addEventListener("abort", onAbort, { once: true });
+    // Only the caller's signal (passed to run()) propagates into actions.
+    // stop() does not flow through here — that's how graceful drain works.
+    signal?.addEventListener("abort", onAbort, { once: true });
     const eventer = new JobEventer(this.client, job, {
       workerInstanceId,
       sessionToken,
@@ -428,7 +444,7 @@ export class Worker {
         actionContext,
       );
       clearInterval(heartbeatTimer);
-      signal.removeEventListener("abort", onAbort);
+      signal?.removeEventListener("abort", onAbort);
       eventer.stop();
       await eventerPromise;
       if (hbLost) return;
@@ -447,7 +463,7 @@ export class Worker {
       this.logger.info(`[mobius] job ${jobId} completed`);
     } catch (err) {
       clearInterval(heartbeatTimer);
-      signal.removeEventListener("abort", onAbort);
+      signal?.removeEventListener("abort", onAbort);
       eventer.stop();
       await eventerPromise;
       if (err instanceof AuthRevokedError) {
@@ -640,6 +656,10 @@ export class WorkerPool {
 // so it doesn't accumulate on a long-lived signal across thousands of
 // poll cycles.
 function sleep(ms: number, signal: AbortSignal): Promise<void> {
+  // AbortSignal does not retroactively dispatch abort to listeners
+  // added after the signal already fired, so an already-aborted signal
+  // would otherwise wait the full ms before resolving.
+  if (signal.aborted) return Promise.resolve();
   return new Promise((resolve) => {
     const onAbort = () => {
       clearTimeout(t);

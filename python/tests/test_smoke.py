@@ -27,6 +27,7 @@ from deepnoodle.mobius import (
     WEBHOOK_EVENT_TYPE_HEADER,
     WEBHOOK_SIGNATURE_HEADER,
     WaitRunOptions,
+    WorkerInstanceConflictError,
     WorkflowOptions,
     build_synthetic_webhook_payload,
     deliver_synthetic_webhook,
@@ -102,6 +103,30 @@ def test_claim_job_returns_job_on_200() -> None:
     assert job.job_id == "job_1"
     assert job.action == "print"
     assert job.parameters == {"msg": "hi"}
+
+
+def test_claim_job_409_with_worker_instance_conflict_envelope_raises_typed_error() -> None:
+    def handler(_: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            409,
+            json={
+                "error": {
+                    "code": "worker_instance_conflict",
+                    "message": "worker_instance_id worker-1 is already registered",
+                },
+            },
+        )
+
+    client = _client_with(handler)
+    with pytest.raises(WorkerInstanceConflictError) as excinfo:
+        client.claim_job(
+            JobClaimRequest(
+                worker_instance_id="worker-1",
+                worker_session_token="test-session-token",
+                concurrency_limit=1,
+            )
+        )
+    assert excinfo.value.worker_instance_id == "worker-1"
 
 
 def test_heartbeat_409_raises_lease_lost() -> None:

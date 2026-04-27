@@ -8,6 +8,7 @@ import {
   PayloadTooLargeError,
   RateLimitError,
   RateLimitedError,
+  WorkerInstanceConflictError,
 } from "../src/client.js";
 import {
   WEBHOOK_EVENT_TYPE_HEADER,
@@ -98,6 +99,29 @@ test("smoke: claimJob returns job on 200", async () => {
   assert.ok(job);
   assert.equal(job!.job_id, "job_1");
   assert.equal(job!.action, "print");
+});
+
+test("smoke: claimJob 409 with worker_instance_conflict envelope raises typed error", async () => {
+  const client = clientWithFakeFetch({
+    status: 409,
+    body: {
+      error: {
+        code: "worker_instance_conflict",
+        message: "worker_instance_id worker-1 is already registered",
+      },
+    },
+  });
+  await assert.rejects(
+    () =>
+      client.claimJob({
+        worker_instance_id: "worker-1",
+        worker_session_token: "test-session-token",
+        concurrency_limit: 1,
+      }),
+    (err: unknown) =>
+      err instanceof WorkerInstanceConflictError &&
+      err.workerInstanceId === "worker-1",
+  );
 });
 
 test("smoke: heartbeatJob 409 raises LeaseLostError", async () => {

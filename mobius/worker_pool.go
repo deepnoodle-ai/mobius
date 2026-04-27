@@ -37,9 +37,18 @@ type WorkerPool struct {
 }
 
 // NewWorkerPool creates a pool of worker instances bound to the client.
+//
+// A configured WorkerInstanceID is reinterpreted as the per-pool
+// prefix when WorkerInstanceIDPrefix is empty — so a CLI invocation
+// like `mobius worker --instance-id rig --workers 3` produces children
+// named rig-1, rig-2, rig-3 instead of being silently dropped. If both
+// are set, WorkerInstanceIDPrefix wins (it's the more specific knob).
 func (c *Client) NewWorkerPool(cfg WorkerPoolConfig) *WorkerPool {
 	if cfg.Count <= 0 {
 		cfg.Count = 1
+	}
+	if cfg.WorkerInstanceIDPrefix == "" && cfg.WorkerInstanceID != "" {
+		cfg.WorkerInstanceIDPrefix = cfg.WorkerInstanceID
 	}
 	if cfg.WorkerInstanceIDPrefix == "" {
 		cfg.WorkerInstanceIDPrefix = "worker-" + uuid.NewString()
