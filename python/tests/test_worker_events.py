@@ -54,7 +54,7 @@ def test_worker_supports_action_context_emit_event() -> None:
     worker = Worker(
         client,  # type: ignore[arg-type]
         WorkerConfig(
-            worker_id="worker-1",
+            worker_instance_id="worker-1",
             poll_wait_seconds=0,
             event_batch_size=10,
         ),
@@ -85,11 +85,17 @@ class SequencedClient(FakeClient):
         self.jobs = list(jobs)
         self.lock = threading.Lock()
         self.worker_ids: list[str] = []
+        # Capture the new fence + capacity fields too so any future
+        # drift in the claim contract surfaces in this test suite.
+        self.session_tokens: list[str | None] = []
+        self.concurrency_limits: list[int] = []
 
     def claim_job(self, req):
         with self.lock:
             self.claims += 1
-            self.worker_ids.append(req.worker_id)
+            self.worker_ids.append(req.worker_instance_id)
+            self.session_tokens.append(req.worker_session_token)
+            self.concurrency_limits.append(req.concurrency_limit)
             if self.jobs:
                 return self.jobs.pop(0)
         return None
@@ -113,7 +119,7 @@ def test_worker_claims_next_job_only_after_current_completes() -> None:
     client = SequencedClient([_block_job("job_1")])
     worker = Worker(
         client,  # type: ignore[arg-type]
-        WorkerConfig(worker_id="worker-1", poll_wait_seconds=0),
+        WorkerConfig(worker_instance_id="worker-1", poll_wait_seconds=0),
     )
     started = threading.Event()
     release = threading.Event()
@@ -144,7 +150,7 @@ def test_worker_pool_uses_distinct_single_job_workers() -> None:
     pool = WorkerPool(
         client,  # type: ignore[arg-type]
         WorkerPoolConfig(
-            worker_id_prefix="pool-worker",
+            worker_instance_id_prefix="pool-worker",
             count=3,
             poll_wait_seconds=0,
         ),
@@ -166,6 +172,13 @@ def test_worker_pool_uses_distinct_single_job_workers() -> None:
         "pool-worker-2",
         "pool-worker-3",
     }
+    # Each pool child generates its own per-boot session token; three
+    # children → three distinct tokens, all non-empty.
+    tokens = client.session_tokens[:3]
+    assert all(tok for tok in tokens)
+    assert len(set(tokens)) == 3
+    # concurrency_limit defaults to 1 per child unless overridden.
+    assert client.concurrency_limits[:3] == [1, 1, 1]
     release.set()
     pool.stop()
     thread.join(timeout=2)

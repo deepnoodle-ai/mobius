@@ -27,6 +27,7 @@ from deepnoodle.mobius import (
     WEBHOOK_EVENT_TYPE_HEADER,
     WEBHOOK_SIGNATURE_HEADER,
     WaitRunOptions,
+    WorkerInstanceConflictError,
     WorkflowOptions,
     build_synthetic_webhook_payload,
     deliver_synthetic_webhook,
@@ -58,7 +59,13 @@ def test_claim_job_returns_none_on_204() -> None:
         return httpx.Response(204)
 
     client = _client_with(handler)
-    job = client.claim_job(JobClaimRequest(worker_id="worker-1"))
+    job = client.claim_job(
+        JobClaimRequest(
+            worker_instance_id="worker-1",
+            worker_session_token="test-session-token",
+            concurrency_limit=1,
+        )
+    )
     assert job is None
 
 
@@ -85,11 +92,41 @@ def test_claim_job_returns_job_on_200() -> None:
         )
 
     client = _client_with(handler)
-    job = client.claim_job(JobClaimRequest(worker_id="worker-1"))
+    job = client.claim_job(
+        JobClaimRequest(
+            worker_instance_id="worker-1",
+            worker_session_token="test-session-token",
+            concurrency_limit=1,
+        )
+    )
     assert job is not None
     assert job.job_id == "job_1"
     assert job.action == "print"
     assert job.parameters == {"msg": "hi"}
+
+
+def test_claim_job_409_with_worker_instance_conflict_envelope_raises_typed_error() -> None:
+    def handler(_: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            409,
+            json={
+                "error": {
+                    "code": "worker_instance_conflict",
+                    "message": "worker_instance_id worker-1 is already registered",
+                },
+            },
+        )
+
+    client = _client_with(handler)
+    with pytest.raises(WorkerInstanceConflictError) as excinfo:
+        client.claim_job(
+            JobClaimRequest(
+                worker_instance_id="worker-1",
+                worker_session_token="test-session-token",
+                concurrency_limit=1,
+            )
+        )
+    assert excinfo.value.worker_instance_id == "worker-1"
 
 
 def test_heartbeat_409_raises_lease_lost() -> None:
@@ -99,7 +136,12 @@ def test_heartbeat_409_raises_lease_lost() -> None:
     client = _client_with(handler)
     with pytest.raises(LeaseLostError):
         client.heartbeat_job(
-            "task_1", JobFenceRequest(worker_id="w", attempt=1)
+            "task_1",
+            JobFenceRequest(
+                worker_instance_id="w",
+                worker_session_token="test-session-token",
+                attempt=1,
+            ),
         )
 
 
@@ -112,9 +154,51 @@ def test_complete_job_409_raises_lease_lost() -> None:
         client.complete_job(
             "task_1",
             JobCompleteRequest(
-                worker_id="w", attempt=1, status=JobStatus.completed
+                worker_instance_id="w",
+                worker_session_token="test-session-token",
+                attempt=1,
+                status=JobStatus.completed,
             ),
         )
+
+
+# Session-token is the canonical fence value (the SDK stamps it on
+# every claim and presents it on heartbeat / complete / events).
+# The tests below mirror the worker_instance_id paths above so any
+# drift in the token-bearing wire shape fails the suite.
+def test_heartbeat_with_session_token_serializes_token() -> None:
+    seen: dict[str, object] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen["body"] = request.read().decode()
+        return httpx.Response(409)
+
+    client = _client_with(handler)
+    with pytest.raises(LeaseLostError):
+        client.heartbeat_job(
+            "task_1",
+            JobFenceRequest(worker_session_token="tok-abc", attempt=1),
+        )
+    assert '"worker_session_token":"tok-abc"' in str(seen["body"])
+
+
+def test_complete_job_with_session_token_serializes_token() -> None:
+    seen: dict[str, object] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen["body"] = request.read().decode()
+        return httpx.Response(204)
+
+    client = _client_with(handler)
+    client.complete_job(
+        "task_1",
+        JobCompleteRequest(
+            worker_session_token="tok-abc",
+            attempt=1,
+            status=JobStatus.completed,
+        ),
+    )
+    assert '"worker_session_token":"tok-abc"' in str(seen["body"])
 
 
 def test_emit_job_event_posts_to_project_events_endpoint() -> None:
@@ -128,7 +212,7 @@ def test_emit_job_event_posts_to_project_events_endpoint() -> None:
     client = _client_with(handler)
     client.emit_job_event(
         "task_1",
-        worker_id="worker-1",
+        worker_instance_id="worker-1",
         attempt=2,
         type="scrape.page_done",
         payload={"url": "https://example.com"},
@@ -147,7 +231,7 @@ def test_emit_job_events_413_raises_payload_too_large() -> None:
     with pytest.raises(PayloadTooLargeError):
         client.emit_job_event(
             "task_1",
-            worker_id="worker-1",
+            worker_instance_id="worker-1",
             attempt=1,
             type="too.big",
             payload={"size": "x"},
@@ -162,7 +246,7 @@ def test_emit_job_events_429_raises_rate_limited() -> None:
     with pytest.raises(RateLimitedError) as exc:
         client.emit_job_event(
             "task_1",
-            worker_id="worker-1",
+            worker_instance_id="worker-1",
             attempt=1,
             type="progress",
             payload={"pct": 5},

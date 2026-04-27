@@ -19,6 +19,7 @@ from ._api.models import (
     JobFenceRequest,
     Status as JobStatus,
 )
+from ._instance import resolve_instance_id
 from .client import (
     Client,
     JobEventEntry,
@@ -26,19 +27,27 @@ from .client import (
     LeaseLostError,
     PayloadTooLargeError,
 )
-from .errors import AuthRevokedError, RateLimitError
+from .errors import AuthRevokedError, RateLimitError, WorkerInstanceConflictError
 
 logger = logging.getLogger(__name__)
 
 
 @dataclass
 class WorkerConfig:
-    # worker_id is optional — when empty, the Worker constructor fills
-    # it with a per-boot UUID so two processes running the same image
-    # surface as two distinct rows on the workers page. Set explicitly
-    # only for singleton workers that want stable identity across
-    # restarts; two processes with the same override collide on one row.
-    worker_id: str = ""
+    # worker_instance_id identifies this worker process and is the row
+    # key used by the saturation views in the admin UI. Optional —
+    # when empty the SDK auto-detects the platform-native identifier
+    # (Cloud Run revision instance, Kubernetes HOSTNAME, Fly machine,
+    # Railway replica, Render instance, OS hostname) and falls back
+    # to a per-boot UUID. Set explicitly only for stable singleton
+    # workers; two live processes using the same override in the
+    # same project will collide and the second will fail with
+    # WorkerInstanceConflictError.
+    worker_instance_id: str = ""
+    # Maximum number of jobs this worker holds in flight simultaneously.
+    # Defaults to 1; raise to claim several jobs from one worker process
+    # while still surfacing as a single row on the workers page.
+    concurrency: int = 1
     name: str = ""
     version: str = ""
     queues: list[str] = field(default_factory=list)
@@ -62,7 +71,7 @@ class ActionContext:
     job_id: str
     run_id: str
     project_id: str | None
-    worker_id: str
+    worker_instance_id: str
     attempt: int
     queue: str | None
     workflow_name: str | None
@@ -108,51 +117,88 @@ class Worker:
         actions: dict[str, ActionFunc] | None = None,
     ) -> None:
         self._client = client
-        if not config.worker_id:
-            config.worker_id = str(uuid.uuid4())
+        resolved, source = resolve_instance_id(config.worker_instance_id or None)
+        config.worker_instance_id = resolved
+        logger.info(
+            "mobius worker: instance id %s (source: %s)", resolved, source
+        )
+        if config.concurrency <= 0:
+            config.concurrency = 1
         self._config = config
+        self._session_token = str(uuid.uuid4())
         self._actions: dict[str, ActionFunc] = actions if actions is not None else {}
         self._stop_event = threading.Event()
         self._auth_revoked = threading.Event()
+        self._slots = threading.BoundedSemaphore(config.concurrency)
 
     def register(self, name: str, fn: ActionFunc) -> None:
         """Register an action function under the given name."""
         self._actions[name] = fn
 
     def run(self) -> None:
-        """Start the claim loop. Blocks until SIGINT/SIGTERM, stop(), or
-        an [AuthRevokedError][deepnoodle.mobius.errors.AuthRevokedError]
-        from the server — in the last case the credential is gone and
-        the process needs to restart under a rotated credential, so
-        we raise out of run() rather than silently looping.
+        """Start the claim loop. Blocks until SIGINT/SIGTERM, stop(), an
+        [AuthRevokedError][deepnoodle.mobius.errors.AuthRevokedError]
+        from the server, or a
+        [WorkerInstanceConflictError][deepnoodle.mobius.errors.WorkerInstanceConflictError]
+        rejection from claim. Conflict crashes loudly so the operator
+        notices the duplicate worker_instance_id rather than the worker
+        polling into a black hole.
+
+        With ``concurrency > 1`` the worker holds up to N jobs in flight
+        simultaneously, all reporting the same ``worker_instance_id`` and
+        session token; a per-job thread runs each action.
         """
         if threading.current_thread() is threading.main_thread():
             signal.signal(signal.SIGINT, lambda *_: self.stop())
             signal.signal(signal.SIGTERM, lambda *_: self.stop())
 
-        logger.info("worker %s started", self._config.worker_id)
+        logger.info("worker %s started", self._config.worker_instance_id)
         claim_req = self._build_claim_request()
+        in_flight: list[threading.Thread] = []
 
         while not self._stop_event.is_set():
             if self._auth_revoked.is_set():
                 raise AuthRevokedError()
+            # Block until a slot is free; this is what makes
+            # concurrency=N a hard ceiling on in-flight jobs.
+            if not self._slots.acquire(timeout=0.5):
+                in_flight = [t for t in in_flight if t.is_alive()]
+                continue
             try:
                 job = self._client.claim_job(claim_req)
             except AuthRevokedError:
+                self._slots.release()
                 logger.error("claim rejected: credential revoked")
                 self._auth_revoked.set()
                 raise
+            except WorkerInstanceConflictError:
+                self._slots.release()
+                logger.error(
+                    "claim rejected: worker_instance_id %s is already in use",
+                    self._config.worker_instance_id,
+                )
+                raise
             except Exception as exc:
+                self._slots.release()
                 logger.error("claim error: %s", exc)
                 time.sleep(2)
                 continue
 
             if job is None:
+                self._slots.release()
                 continue
 
-            self._execute_job(job)
+            thread = threading.Thread(
+                target=self._run_job_with_slot, args=(job,), daemon=True
+            )
+            thread.start()
+            in_flight.append(thread)
+            in_flight = [t for t in in_flight if t.is_alive()]
 
-        logger.info("worker %s stopped", self._config.worker_id)
+        for t in in_flight:
+            t.join()
+
+        logger.info("worker %s stopped", self._config.worker_instance_id)
 
     def stop(self) -> None:
         """Signal the claim loop to stop after in-flight jobs complete."""
@@ -162,13 +208,21 @@ class Worker:
 
     def _build_claim_request(self) -> JobClaimRequest:
         return JobClaimRequest(
-            worker_id=self._config.worker_id,
+            worker_instance_id=self._config.worker_instance_id,
+            worker_session_token=self._session_token,
+            concurrency_limit=self._config.concurrency,
             worker_name=self._config.name or None,
             worker_version=self._config.version or None,
             queues=list(self._config.queues) or None,
             actions=list(self._config.actions) or None,
             wait_seconds=self._config.poll_wait_seconds,
         )
+
+    def _run_job_with_slot(self, job: JobClaim) -> None:
+        try:
+            self._execute_job(job)
+        finally:
+            self._slots.release()
 
     def _execute_job(self, job: JobClaim) -> None:
         log: logging.LoggerAdapter[logging.Logger] = logging.LoggerAdapter(
@@ -199,7 +253,7 @@ class Worker:
             job_id=job.job_id,
             run_id=job.run_id,
             project_id=self._client.project,
-            worker_id=self._config.worker_id,
+            worker_instance_id=self._config.worker_instance_id,
             attempt=job.attempt,
             queue=job.queue,
             workflow_name=job.workflow_name,
@@ -245,7 +299,8 @@ class Worker:
             self._client.complete_job(
                 job.job_id,
                 JobCompleteRequest(
-                    worker_id=self._config.worker_id,
+                    worker_instance_id=self._config.worker_instance_id,
+                    worker_session_token=self._session_token,
                     attempt=job.attempt,
                     status=JobStatus.completed,
                     result_b64=result_b64,
@@ -272,7 +327,9 @@ class Worker:
             else self._config.heartbeat_interval
         )
         fence = JobFenceRequest(
-            worker_id=self._config.worker_id, attempt=job.attempt
+            worker_instance_id=self._config.worker_instance_id,
+            worker_session_token=self._session_token,
+            attempt=job.attempt,
         )
         while not stop.wait(timeout=float(interval)):
             try:
@@ -310,7 +367,8 @@ class Worker:
             self._client.complete_job(
                 job.job_id,
                 JobCompleteRequest(
-                    worker_id=self._config.worker_id,
+                    worker_instance_id=self._config.worker_instance_id,
+                    worker_session_token=self._session_token,
                     attempt=job.attempt,
                     status=JobStatus.failed,
                     error_type=error_type,
@@ -351,7 +409,8 @@ class Worker:
                 self._client.emit_job_events(
                     job.job_id,
                     JobEventsRequest(
-                        worker_id=self._config.worker_id,
+                        worker_instance_id=self._config.worker_instance_id,
+                        worker_session_token=self._session_token,
                         attempt=job.attempt,
                         events=batch,
                     ),
@@ -395,20 +454,35 @@ class Worker:
 
 @dataclass
 class WorkerPoolConfig(WorkerConfig):
+    """Configures an in-process pool of worker instances.
+
+    Most callers do not need a pool. To run several jobs from one
+    process, set :attr:`WorkerConfig.concurrency` on a single
+    :class:`Worker` and the admin UI will show one row with a
+    saturation bar. Reach for a pool only when each child should
+    surface as its own row — for independent draining or in-flight
+    isolation.
+    """
+
     count: int = 1
-    worker_id_prefix: str = ""
+    worker_instance_id_prefix: str = ""
 
 
 class WorkerPool:
-    """Runs multiple single-job workers in one process."""
+    """Runs multiple worker instances in one process.
+
+    Prefer :attr:`WorkerConfig.concurrency` on a single :class:`Worker`
+    for raw throughput. Use this only when each child must surface as
+    its own row on the workers page.
+    """
 
     def __init__(self, client: Client, config: WorkerPoolConfig) -> None:
         self._client = client
         self._config = config
         if self._config.count <= 0:
             self._config.count = 1
-        if not self._config.worker_id_prefix:
-            self._config.worker_id_prefix = f"worker-{uuid.uuid4()}"
+        if not self._config.worker_instance_id_prefix:
+            self._config.worker_instance_id_prefix = f"worker-{uuid.uuid4()}"
         self._actions: dict[str, ActionFunc] = {}
         self._workers: list[Worker] = []
         self._auth_revoked = threading.Event()
@@ -447,7 +521,8 @@ class WorkerPool:
             worker = Worker(
                 self._client,
                 WorkerConfig(
-                    worker_id=f"{self._config.worker_id_prefix}-{i}",
+                    worker_instance_id=f"{self._config.worker_instance_id_prefix}-{i}",
+                    concurrency=self._config.concurrency,
                     name=self._config.name,
                     version=self._config.version,
                     queues=list(self._config.queues),

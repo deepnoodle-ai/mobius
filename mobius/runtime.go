@@ -33,7 +33,8 @@ type runtimeJob struct {
 	Parameters        map[string]any
 	Attempt           int
 	Queue             string
-	WorkerID          string
+	WorkerInstanceID  string
+	SessionToken      string
 	HeartbeatInterval time.Duration
 }
 
@@ -47,22 +48,28 @@ type jobEventEntry struct {
 }
 
 type jobEventsRequest struct {
-	WorkerID string          `json:"worker_id"`
-	Attempt  int             `json:"attempt"`
-	Events   []jobEventEntry `json:"events"`
+	WorkerInstanceID   string          `json:"worker_instance_id,omitempty"`
+	WorkerSessionToken string          `json:"worker_session_token,omitempty"`
+	Attempt            int             `json:"attempt"`
+	Events             []jobEventEntry `json:"events"`
 }
 
 // runtimeClaim long-polls for the next available job matching the
 // worker's queue and action filters. Returns nil when the poll
-// window closes empty.
-func (c *Client) runtimeClaim(ctx context.Context, cfg WorkerConfig) (*runtimeJob, error) {
+// window closes empty. Returns [ErrWorkerInstanceConflict] when the
+// server rejects the registration because another live process is
+// already holding this worker_instance_id.
+func (c *Client) runtimeClaim(ctx context.Context, cfg WorkerConfig, sessionToken string) (*runtimeJob, error) {
 	if c.projectHandle == "" {
 		return nil, fmt.Errorf("mobius: claim: no project configured — set MOBIUS_PROJECT or pass --project")
 	}
 	wait := cfg.PollWaitSeconds
+	instanceID := cfg.WorkerInstanceID
 	data := api.JobClaimRequest{
-		WorkerId:    cfg.WorkerID,
-		WaitSeconds: &wait,
+		WorkerInstanceId:   instanceID,
+		WorkerSessionToken: sessionToken,
+		ConcurrencyLimit:   cfg.Concurrency,
+		WaitSeconds:        &wait,
 	}
 	if cfg.Name != "" {
 		data.WorkerName = &cfg.Name
@@ -92,6 +99,10 @@ func (c *Client) runtimeClaim(ctx context.Context, cfg WorkerConfig) (*runtimeJo
 	if resp.StatusCode == http.StatusUnauthorized {
 		return nil, ErrAuthRevoked
 	}
+	if resp.StatusCode == http.StatusConflict {
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 1024))
+		return nil, parseInstanceConflict(body, instanceID, c.projectHandle)
+	}
 	if resp.StatusCode >= 400 {
 		body, _ := io.ReadAll(io.LimitReader(resp.Body, 512))
 		return nil, fmt.Errorf("mobius: claim: unexpected status %d: %s", resp.StatusCode, strings.TrimSpace(string(body)))
@@ -114,9 +125,33 @@ func (c *Client) runtimeClaim(ctx context.Context, cfg WorkerConfig) (*runtimeJo
 		Parameters:        claim.Parameters,
 		Attempt:           claim.Attempt,
 		Queue:             claim.Queue,
-		WorkerID:          cfg.WorkerID,
+		WorkerInstanceID:  cfg.WorkerInstanceID,
+		SessionToken:      sessionToken,
 		HeartbeatInterval: hb,
 	}, nil
+}
+
+// parseInstanceConflict turns a 409 from /jobs/claim into an
+// [InstanceConflictError]. The server wraps errors as
+// {"error":{"code":"worker_instance_conflict","message":"…"}}.
+// Any other 409 is bubbled up unchanged so the caller can
+// retry-or-die normally.
+func parseInstanceConflict(body []byte, instanceID, projectHandle string) error {
+	var envelope struct {
+		Error struct {
+			Code    string `json:"code"`
+			Message string `json:"message"`
+		} `json:"error"`
+	}
+	if err := json.Unmarshal(body, &envelope); err == nil &&
+		envelope.Error.Code == "worker_instance_conflict" {
+		return &InstanceConflictError{
+			WorkerInstanceID: instanceID,
+			ProjectHandle:    projectHandle,
+			Message:          envelope.Error.Message,
+		}
+	}
+	return fmt.Errorf("mobius: claim: unexpected status 409: %s", strings.TrimSpace(string(body)))
 }
 
 // runtimeHeartbeat refreshes the lease on a claimed job and returns
@@ -124,9 +159,12 @@ func (c *Client) runtimeClaim(ctx context.Context, cfg WorkerConfig) (*runtimeJo
 // ErrAuthRevoked on 401 so the caller can cancel in-flight work and
 // exit the claim loop for the process supervisor to restart.
 func (c *Client) runtimeHeartbeat(ctx context.Context, job *runtimeJob) (*api.JobHeartbeatDirectives, error) {
+	instanceID := job.WorkerInstanceID
+	sessionToken := job.SessionToken
 	resp, err := c.runtimeRequest(ctx, http.MethodPost, fmt.Sprintf("/v1/projects/%s/jobs/%s/heartbeat", url.PathEscape(c.projectHandle), url.PathEscape(job.JobID)), api.JobFenceRequest{
-		WorkerId: job.WorkerID,
-		Attempt:  job.Attempt,
+		WorkerInstanceId:   &instanceID,
+		WorkerSessionToken: sessionToken,
+		Attempt:            job.Attempt,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("mobius: heartbeat: %w", err)
@@ -152,10 +190,13 @@ func (c *Client) runtimeHeartbeat(ctx context.Context, job *runtimeJob) (*api.Jo
 // with its action result. The result is JSON-encoded and delivered
 // as a base64-encoded blob.
 func (c *Client) runtimeCompleteSuccess(ctx context.Context, job *runtimeJob, result any) error {
+	instanceID := job.WorkerInstanceID
+	sessionToken := job.SessionToken
 	data := api.JobCompleteRequest{
-		WorkerId: job.WorkerID,
-		Attempt:  job.Attempt,
-		Status:   api.JobCompleteRequestStatusCompleted,
+		WorkerInstanceId:   &instanceID,
+		WorkerSessionToken: sessionToken,
+		Attempt:            job.Attempt,
+		Status:             api.JobCompleteRequestStatusCompleted,
 	}
 	if result != nil {
 		b, err := json.Marshal(result)
@@ -172,11 +213,14 @@ func (c *Client) runtimeCompleteSuccess(ctx context.Context, job *runtimeJob, re
 // and optional error type. The server uses the error type to decide
 // whether the job is retryable.
 func (c *Client) runtimeCompleteFailure(ctx context.Context, job *runtimeJob, errorType, message string) error {
+	instanceID := job.WorkerInstanceID
+	sessionToken := job.SessionToken
 	data := api.JobCompleteRequest{
-		WorkerId:     job.WorkerID,
-		Attempt:      job.Attempt,
-		Status:       api.JobCompleteRequestStatusFailed,
-		ErrorMessage: strPtr(message),
+		WorkerInstanceId:   &instanceID,
+		WorkerSessionToken: sessionToken,
+		Attempt:            job.Attempt,
+		Status:             api.JobCompleteRequestStatusFailed,
+		ErrorMessage:       strPtr(message),
 	}
 	if errorType != "" {
 		data.ErrorType = &errorType
@@ -207,9 +251,10 @@ func (c *Client) runtimeEmitEvents(ctx context.Context, job *runtimeJob, events 
 		return nil
 	}
 	resp, err := c.runtimeRequest(ctx, http.MethodPost, fmt.Sprintf("/v1/projects/%s/jobs/%s/events", url.PathEscape(c.projectHandle), url.PathEscape(job.JobID)), jobEventsRequest{
-		WorkerID: job.WorkerID,
-		Attempt:  job.Attempt,
-		Events:   events,
+		WorkerInstanceID:   job.WorkerInstanceID,
+		WorkerSessionToken: job.SessionToken,
+		Attempt:            job.Attempt,
+		Events:             events,
 	})
 	if err != nil {
 		return fmt.Errorf("mobius: emit events: %w", err)

@@ -25,25 +25,37 @@ Requires Node.js 18+.
 ### Worker
 
 ```ts
-import { Client, WorkerPool } from "@deepnoodle/mobius";
+import { Client, Worker } from "@deepnoodle/mobius";
 
 const client = new Client({ apiKey: process.env.MOBIUS_API_KEY! });
 
-const workers = new WorkerPool(client, {
-  workerIdPrefix: "email-sender",
+const worker = new Worker(client, {
   name: "email-sender",
   version: "1.0.0",
   queues: ["emails"],
-  count: 5,
+  // Hold up to 5 jobs in flight from one process. Surfaces as a
+  // single row on the workers page with a saturation bar.
+  concurrency: 5,
 });
 
-workers.register("send_email", async (params, signal) => {
+worker.register("send_email", async (params, signal) => {
   // send email...
   return { sent: true };
 });
 
-await workers.run();
+await worker.run();
 ```
+
+The `worker_instance_id` is auto-detected from the runtime platform
+(Cloud Run revision, Kubernetes pod, Fly machine, Railway replica,
+Render instance) and falls back to a per-boot UUID. Set
+`workerInstanceId` explicitly only for stable singleton workers — two
+live processes using the same override in the same project will
+collide and the second will throw `WorkerInstanceConflictError`.
+
+For independent presence rows (one row per worker) — e.g. graceful
+draining or in-flight isolation — use `WorkerPool` with `count` and
+optionally `workerInstanceIdPrefix` instead.
 
 ### Low-level client
 
@@ -53,7 +65,9 @@ import { Client } from "@deepnoodle/mobius";
 const client = new Client({ apiKey: process.env.MOBIUS_API_KEY! });
 
 const claim = await client.claimJob({
-  worker_id: "my-worker-1",
+  worker_instance_id: "my-worker-1",
+  worker_session_token: crypto.randomUUID(),
+  concurrency_limit: 1,
   queues: ["default"],
   wait_seconds: 20,
 });
@@ -120,7 +134,12 @@ const client = new Client({
 });
 
 try {
-  await client.claimJob({ worker_id: "w1", queues: ["default"] });
+  await client.claimJob({
+    worker_instance_id: "w1",
+    worker_session_token: crypto.randomUUID(),
+    concurrency_limit: 1,
+    queues: ["default"],
+  });
 } catch (err) {
   if (err instanceof RateLimitError) {
     console.warn(

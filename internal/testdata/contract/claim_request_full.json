@@ -1,5 +1,7 @@
 {
-  "worker_id": "worker-abc",
+  "worker_instance_id": "worker-abc",
+  "worker_session_token": "tok-1",
+  "concurrency_limit": 4,
   "worker_name": "billing-worker",
   "worker_version": "1.2.3",
   "queues": ["billing", "reports"],

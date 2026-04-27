@@ -19,7 +19,7 @@ from .client import (
     WorkflowSyncResult,
     is_terminal_run_status,
 )
-from .errors import AuthRevokedError, RateLimitError
+from .errors import AuthRevokedError, RateLimitError, WorkerInstanceConflictError
 from .retry import RetryingTransport
 from .webhook import (
     WEBHOOK_EVENT_PING,
@@ -62,6 +62,7 @@ __all__ = [
     "WorkflowSyncResult",
     "Worker",
     "WorkerConfig",
+    "WorkerInstanceConflictError",
     "WorkerPool",
     "WorkerPoolConfig",
     "action",

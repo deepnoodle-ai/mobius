@@ -35,7 +35,7 @@ from ._api.models import (
     WorkflowRunStatus,
     WorkflowSpec,
 )
-from .errors import AuthRevokedError, RateLimitError
+from .errors import AuthRevokedError, RateLimitError, WorkerInstanceConflictError
 from .retry import DEFAULT_MAX_RETRIES, RetryingTransport
 
 DEFAULT_BASE_URL = "https://api.mobiusops.ai"
@@ -175,7 +175,8 @@ class JobEventEntry(BaseModel):
 
 
 class JobEventsRequest(BaseModel):
-    worker_id: str
+    worker_instance_id: str | None = None
+    worker_session_token: str | None = None
     attempt: int
     events: list[JobEventEntry]
 
@@ -270,8 +271,29 @@ class Client:
             return None
         if resp.status_code == 401:
             raise AuthRevokedError()
+        if resp.status_code == 409:
+            self._raise_instance_conflict(resp, req)
         resp.raise_for_status()
         return JobClaim.model_validate(resp.json())
+
+    def _raise_instance_conflict(
+        self, resp: httpx.Response, req: JobClaimRequest
+    ) -> None:
+        try:
+            body = resp.json()
+        except json.JSONDecodeError:
+            body = {}
+        # The backend wraps errors as {"error": {"code", "message"}}.
+        inner = body.get("error") if isinstance(body, dict) else None
+        if isinstance(inner, dict) and inner.get("code") == "worker_instance_conflict":
+            raise WorkerInstanceConflictError(
+                worker_instance_id=req.worker_instance_id,
+                project_handle=self.project,
+                message=inner.get("message"),
+            )
+        # Any other 409 on claim is unexpected; surface the raw body so
+        # an operator can diagnose without stripping detail.
+        resp.raise_for_status()
 
     def heartbeat_job(
         self, job_id: str, req: JobFenceRequest
@@ -327,7 +349,8 @@ class Client:
         self,
         job_id: str,
         *,
-        worker_id: str,
+        worker_instance_id: str | None = None,
+        worker_session_token: str | None = None,
         attempt: int,
         type: str,
         payload: dict[str, Any],
@@ -335,7 +358,8 @@ class Client:
         self.emit_job_events(
             job_id,
             JobEventsRequest(
-                worker_id=worker_id,
+                worker_instance_id=worker_instance_id,
+                worker_session_token=worker_session_token,
                 attempt=attempt,
                 events=[JobEventEntry(type=type, payload=payload)],
             ),

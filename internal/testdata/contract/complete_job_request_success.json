@@ -1,5 +1,6 @@
 {
-  "worker_id": "worker-abc",
+  "worker_instance_id": "worker-abc",
+  "worker_session_token": "tok-1",
   "attempt": 1,
   "status": "completed",
   "result_b64": "eyJvayI6dHJ1ZX0="

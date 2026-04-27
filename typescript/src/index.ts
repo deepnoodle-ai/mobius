@@ -6,6 +6,7 @@ export {
   PayloadTooLargeError,
   RateLimitedError,
   RateLimitError,
+  WorkerInstanceConflictError,
   isTerminalRunStatus,
 } from "./client.js";
 export {
@@ -53,11 +54,12 @@ export {
   type WrapRetryOptions,
 } from "./retry.js";
 
-export { Worker, WorkerPool } from "./worker.js";
+export { Worker, WorkerPool, resolveInstanceID } from "./worker.js";
 export type {
   WorkerConfig,
   WorkerPoolConfig,
   ActionFn,
+  InstanceIDSource,
   Logger,
   ActionContext,
 } from "./worker.js";

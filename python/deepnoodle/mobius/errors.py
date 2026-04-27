@@ -37,6 +37,38 @@ class AuthRevokedError(Exception):
         self.job_id = job_id
 
 
+class WorkerInstanceConflictError(Exception):
+    """Raised when the server returns HTTP 409 ``worker_instance_conflict`` on claim.
+
+    Another live process has already registered this ``worker_instance_id``
+    in the project under a different session token. Surfaces from
+    :meth:`Worker.run` as a hard error so the operator notices the
+    misconfiguration instead of the worker silently retrying — fix by
+    configuring a unique instance ID per process or by relying on the
+    SDK's auto-detection.
+    """
+
+    def __init__(
+        self,
+        *,
+        worker_instance_id: str | None = None,
+        project_handle: str | None = None,
+        message: str | None = None,
+    ) -> None:
+        self.worker_instance_id = worker_instance_id
+        self.project_handle = project_handle
+        if message is None:
+            if worker_instance_id and project_handle:
+                message = (
+                    f"mobius: worker_instance_id {worker_instance_id!r} is already "
+                    f"registered in project {project_handle!r} by another live process; "
+                    "configure a unique instance ID per process or rely on auto-detection"
+                )
+            else:
+                message = "mobius: worker instance conflict"
+        super().__init__(message)
+
+
 class RateLimitError(Exception):
     """Raised when the server returns HTTP 429 and the request cannot be retried.
 

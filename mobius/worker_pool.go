@@ -9,32 +9,51 @@ import (
 	"github.com/google/uuid"
 )
 
-// WorkerPoolConfig configures an in-process pool of single-job workers.
+// WorkerPoolConfig configures an in-process pool of worker instances.
+//
+// Most callers do not need a pool. To run several jobs from one
+// process, set [WorkerConfig.Concurrency] on a single [Worker]; the
+// admin UI shows one row with a saturation bar. Reach for a pool
+// only when you need each child to surface as its own row on the
+// workers page — for example when child workers should drain
+// independently or when isolation between in-flight jobs matters.
 type WorkerPoolConfig struct {
 	WorkerConfig
-	// Count is the number of single-job workers to run. Defaults to 1.
+	// Count is the number of worker instances to run. Defaults to 1.
 	Count int
-	// WorkerIDPrefix is used to derive child worker IDs as
-	// "<prefix>-<index>". When empty, the SDK generates a per-boot prefix.
-	WorkerIDPrefix string
+	// WorkerInstanceIDPrefix is used to derive child instance IDs as
+	// "<prefix>-<index>". When empty, the SDK generates a per-boot
+	// prefix; child workers each get their own session token, so a
+	// pool of N produces N rows on the workers page.
+	WorkerInstanceIDPrefix string
 }
 
-// WorkerPool runs multiple single-job workers in one process.
+// WorkerPool runs multiple worker instances in one process. Prefer
+// [WorkerConfig.Concurrency] on a single [Worker] for raw throughput.
 type WorkerPool struct {
 	client   *Client
 	config   WorkerPoolConfig
 	registry *ActionRegistry
 }
 
-// NewWorkerPool creates a pool of single-job workers bound to the client.
+// NewWorkerPool creates a pool of worker instances bound to the client.
+//
+// A configured WorkerInstanceID is reinterpreted as the per-pool
+// prefix when WorkerInstanceIDPrefix is empty — so a CLI invocation
+// like `mobius worker --instance-id rig --workers 3` produces children
+// named rig-1, rig-2, rig-3 instead of being silently dropped. If both
+// are set, WorkerInstanceIDPrefix wins (it's the more specific knob).
 func (c *Client) NewWorkerPool(cfg WorkerPoolConfig) *WorkerPool {
 	if cfg.Count <= 0 {
 		cfg.Count = 1
 	}
-	if cfg.WorkerIDPrefix == "" {
-		cfg.WorkerIDPrefix = "worker-" + uuid.NewString()
+	if cfg.WorkerInstanceIDPrefix == "" && cfg.WorkerInstanceID != "" {
+		cfg.WorkerInstanceIDPrefix = cfg.WorkerInstanceID
 	}
-	cfg.WorkerID = ""
+	if cfg.WorkerInstanceIDPrefix == "" {
+		cfg.WorkerInstanceIDPrefix = "worker-" + uuid.NewString()
+	}
+	cfg.WorkerInstanceID = ""
 	return &WorkerPool{
 		client:   c,
 		config:   cfg,
@@ -58,7 +77,7 @@ func (p *WorkerPool) Run(ctx context.Context) error {
 	var wg sync.WaitGroup
 	for i := 1; i <= p.config.Count; i++ {
 		cfg := p.config.WorkerConfig
-		cfg.WorkerID = fmt.Sprintf("%s-%d", p.config.WorkerIDPrefix, i)
+		cfg.WorkerInstanceID = fmt.Sprintf("%s-%d", p.config.WorkerInstanceIDPrefix, i)
 		worker := p.client.newWorkerWithRegistry(cfg, p.registry)
 
 		wg.Add(1)

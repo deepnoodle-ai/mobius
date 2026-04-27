@@ -75,6 +75,31 @@ export class AuthRevokedError extends Error {
 }
 
 /**
+ * Thrown when the server returns HTTP 409 with `worker_instance_conflict`
+ * on a claim. Another live process has already registered this
+ * `worker_instance_id` in the project under a different session token.
+ * Surfaces from {@link Worker.run} as a hard error so the operator
+ * notices the misconfiguration instead of the worker silently retrying —
+ * fix by configuring a unique instance ID per process or by relying on
+ * the SDK's auto-detection.
+ */
+export class WorkerInstanceConflictError extends Error {
+  constructor(
+    public readonly workerInstanceId: string | undefined,
+    public readonly projectHandle: string,
+    message?: string,
+  ) {
+    super(
+      message ??
+        (workerInstanceId
+          ? `mobius: worker_instance_id ${JSON.stringify(workerInstanceId)} is already registered in project ${JSON.stringify(projectHandle)} by another live process; configure a unique instance ID per process or rely on auto-detection`
+          : "mobius: worker instance conflict"),
+    );
+    this.name = "WorkerInstanceConflictError";
+  }
+}
+
+/**
  * Thrown from {@link Client} construction when the API key or project
  * options are malformed (e.g. a project-pinned key whose handle prefix
  * doesn't match the server's handle regex, or a handle conflict
@@ -139,7 +164,8 @@ export interface JobEventEntry {
 }
 
 export interface JobEventsRequest {
-  worker_id: string;
+  worker_instance_id?: string;
+  worker_session_token?: string;
   attempt: number;
   events: JobEventEntry[];
 }
@@ -282,6 +308,26 @@ export class Client {
     );
     if (resp.status === 204) return null;
     if (resp.status === 401) throw new AuthRevokedError();
+    if (resp.status === 409) {
+      const text = await resp.text().catch(() => "");
+      // The backend wraps errors as {"error":{"code","message"}}.
+      let body: { error?: { code?: string; message?: string } } = {};
+      try {
+        body = text ? (JSON.parse(text) as typeof body) : {};
+      } catch {
+        body = {};
+      }
+      if (body.error?.code === "worker_instance_conflict") {
+        throw new WorkerInstanceConflictError(
+          req.worker_instance_id,
+          this.project,
+          body.error.message,
+        );
+      }
+      throw new Error(
+        `mobius API POST /jobs/claim: HTTP 409: ${text || "(no body)"}`,
+      );
+    }
     return (await resp.json()) as JobClaim;
   }
 
@@ -324,14 +370,16 @@ export class Client {
   async emitJobEvent(
     jobId: string,
     req: {
-      worker_id: string;
+      worker_instance_id?: string;
+      worker_session_token?: string;
       attempt: number;
       type: string;
       payload: Record<string, unknown>;
     },
   ): Promise<void> {
     await this.emitJobEvents(jobId, {
-      worker_id: req.worker_id,
+      worker_instance_id: req.worker_instance_id,
+      worker_session_token: req.worker_session_token,
       attempt: req.attempt,
       events: [{ type: req.type, payload: req.payload }],
     });

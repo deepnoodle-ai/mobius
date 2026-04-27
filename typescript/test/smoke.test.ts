@@ -8,6 +8,7 @@ import {
   PayloadTooLargeError,
   RateLimitError,
   RateLimitedError,
+  WorkerInstanceConflictError,
 } from "../src/client.js";
 import {
   WEBHOOK_EVENT_TYPE_HEADER,
@@ -54,7 +55,11 @@ test("smoke: defaults to the production API host", async () => {
   }) as typeof fetch;
 
   const client = new Client({ apiKey: "mbx_test", project: "test-project" });
-  await client.claimJob({ worker_id: "worker-1" });
+  await client.claimJob({
+    worker_instance_id: "worker-1",
+    worker_session_token: "test-session-token",
+    concurrency_limit: 1,
+  });
 
   assert.equal(
     requestedURL,
@@ -64,7 +69,11 @@ test("smoke: defaults to the production API host", async () => {
 
 test("smoke: claimJob returns null on 204", async () => {
   const client = clientWithFakeFetch({ status: 204 });
-  const job = await client.claimJob({ worker_id: "worker-1" });
+  const job = await client.claimJob({
+    worker_instance_id: "worker-1",
+    worker_session_token: "test-session-token",
+    concurrency_limit: 1,
+  });
   assert.equal(job, null);
 });
 
@@ -82,16 +91,48 @@ test("smoke: claimJob returns job on 200", async () => {
       queue: "default",
     },
   });
-  const job = await client.claimJob({ worker_id: "worker-1" });
+  const job = await client.claimJob({
+    worker_instance_id: "worker-1",
+    worker_session_token: "test-session-token",
+    concurrency_limit: 1,
+  });
   assert.ok(job);
   assert.equal(job!.job_id, "job_1");
   assert.equal(job!.action, "print");
 });
 
+test("smoke: claimJob 409 with worker_instance_conflict envelope raises typed error", async () => {
+  const client = clientWithFakeFetch({
+    status: 409,
+    body: {
+      error: {
+        code: "worker_instance_conflict",
+        message: "worker_instance_id worker-1 is already registered",
+      },
+    },
+  });
+  await assert.rejects(
+    () =>
+      client.claimJob({
+        worker_instance_id: "worker-1",
+        worker_session_token: "test-session-token",
+        concurrency_limit: 1,
+      }),
+    (err: unknown) =>
+      err instanceof WorkerInstanceConflictError &&
+      err.workerInstanceId === "worker-1",
+  );
+});
+
 test("smoke: heartbeatJob 409 raises LeaseLostError", async () => {
   const client = clientWithFakeFetch({ status: 409 });
   await assert.rejects(
-    () => client.heartbeatJob("job_1", { worker_id: "w", attempt: 1 }),
+    () =>
+      client.heartbeatJob("job_1", {
+        worker_instance_id: "w",
+        worker_session_token: "test-session-token",
+        attempt: 1,
+      }),
     LeaseLostError,
   );
 });
@@ -101,12 +142,58 @@ test("smoke: completeJob 409 raises LeaseLostError", async () => {
   await assert.rejects(
     () =>
       client.completeJob("job_1", {
-        worker_id: "w",
+        worker_instance_id: "w",
+        worker_session_token: "test-session-token",
         attempt: 1,
         status: "completed",
       }),
     LeaseLostError,
   );
+});
+
+// Session-token is the preferred fence value (the SDK stamps it on
+// every claim and presents it on heartbeat / complete / events).
+// The tests below mirror the worker_instance_id paths above so any
+// drift in the token-bearing wire shape fails the suite.
+test("smoke: heartbeatJob with worker_session_token serializes the token", async () => {
+  let requestBody = "";
+  globalThis.fetch = (async (_input: RequestInfo | URL, init?: RequestInit) => {
+    requestBody = String(init?.body ?? "");
+    return new Response(null, { status: 409 });
+  }) as typeof fetch;
+  const client = new Client({
+    apiKey: "mbx_test",
+    baseURL: "https://api.example.invalid",
+    project: "test-project",
+  });
+  await assert.rejects(
+    () =>
+      client.heartbeatJob("job_1", {
+        worker_session_token: "tok-abc",
+        attempt: 1,
+      }),
+    LeaseLostError,
+  );
+  assert.match(requestBody, /"worker_session_token":"tok-abc"/);
+});
+
+test("smoke: completeJob with worker_session_token serializes the token", async () => {
+  let requestBody = "";
+  globalThis.fetch = (async (_input: RequestInfo | URL, init?: RequestInit) => {
+    requestBody = String(init?.body ?? "");
+    return new Response(null, { status: 204 });
+  }) as typeof fetch;
+  const client = new Client({
+    apiKey: "mbx_test",
+    baseURL: "https://api.example.invalid",
+    project: "test-project",
+  });
+  await client.completeJob("job_1", {
+    worker_session_token: "tok-abc",
+    attempt: 1,
+    status: "completed",
+  });
+  assert.match(requestBody, /"worker_session_token":"tok-abc"/);
 });
 
 test("smoke: emitJobEvent posts to project events endpoint", async () => {
@@ -124,7 +211,7 @@ test("smoke: emitJobEvent posts to project events endpoint", async () => {
     project: "test-project",
   });
   await client.emitJobEvent("job_1", {
-    worker_id: "worker-1",
+    worker_instance_id: "worker-1",
     attempt: 1,
     type: "scrape.page_done",
     payload: { url: "https://example.com" },
@@ -142,7 +229,7 @@ test("smoke: emitJobEvents 413 raises PayloadTooLargeError", async () => {
   await assert.rejects(
     () =>
       client.emitJobEvent("job_1", {
-        worker_id: "w",
+        worker_instance_id: "w",
         attempt: 1,
         type: "oversize",
         payload: { blob: "x" },
@@ -174,7 +261,7 @@ test("smoke: emitJobEvents 429 raises RateLimitError", async () => {
   await assert.rejects(
     () =>
       client.emitJobEvent("job_1", {
-        worker_id: "w",
+        worker_instance_id: "w",
         attempt: 1,
         type: "progress",
         payload: { pct: 10 },

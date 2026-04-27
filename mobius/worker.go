@@ -14,13 +14,23 @@ import (
 
 // WorkerConfig configures a Worker.
 type WorkerConfig struct {
-	// WorkerID is a stable, unique identifier for this worker instance.
-	// Optional — when empty, the SDK generates a per-boot UUID so two
-	// processes running the same image surface as two distinct rows
-	// on the workers page. Set this only when you want stable identity
-	// across restarts (singleton workers); two processes with the same
-	// override collide on one row.
-	WorkerID string
+	// WorkerInstanceID identifies this worker process to Mobius and is
+	// the row key used for the saturation views in the admin UI.
+	// Optional — when empty the SDK auto-detects the platform-native
+	// identifier (Cloud Run revision instance, Kubernetes HOSTNAME,
+	// Fly machine, Railway replica, Render instance, OS hostname)
+	// and falls back to a per-boot UUID. Set this only for stable
+	// singleton workers that must keep the same row across restarts;
+	// two live processes using the same override in the same project
+	// will collide and the second will fail with
+	// [ErrWorkerInstanceConflict].
+	WorkerInstanceID string
+	// Concurrency is the maximum number of jobs this worker will hold
+	// in flight simultaneously. Defaults to 1 — set higher to claim
+	// multiple jobs from one worker process while still surfacing as
+	// a single row on the workers page. The server records this as
+	// the configured capacity and renders it as the saturation bar.
+	Concurrency int
 	// Name is the human-readable process name reported to Mobius
 	// (e.g. "billing-worker"). Optional but recommended for observability.
 	Name string
@@ -63,25 +73,38 @@ type Worker struct {
 	client   *Client
 	config   WorkerConfig
 	registry *ActionRegistry
+	// sessionToken is generated once at worker construction and sent
+	// as the lease fence on every claim/heartbeat/complete/events call.
+	// A graceful takeover by another process invalidates this token;
+	// any call we make afterwards returns ErrLeaseLost and the affected
+	// jobs surface as orphans for the scheduler to retry.
+	sessionToken string
 	// authRevoked latches the first ErrAuthRevoked observed by any
 	// background loop (heartbeat, eventer) so the top-level Run can
 	// exit non-zero after the in-flight action finishes cancelling.
 	authRevoked atomic.Bool
 }
 
-// NewWorker creates a Worker bound to the client. A missing WorkerID is
-// filled with a per-boot UUID so two processes running the same image
-// appear as two rows on the workers page — stable identity across
-// restarts requires an explicit override.
+// NewWorker creates a Worker bound to the client. The worker_instance_id
+// is resolved from the runtime environment when WorkerInstanceID is
+// empty (Cloud Run revision → HOSTNAME → Fly/Railway/Render env →
+// generated UUID); a one-time log line records which source produced
+// the value so operators can confirm the right platform was picked up.
 func (c *Client) NewWorker(cfg WorkerConfig) *Worker {
-	if cfg.WorkerID == "" {
-		cfg.WorkerID = uuid.NewString()
+	if cfg.Logger == nil {
+		cfg.Logger = slog.Default()
+	}
+	resolved, source := ResolveInstanceID(cfg.WorkerInstanceID)
+	cfg.WorkerInstanceID = resolved
+	cfg.Logger.Info("mobius worker: instance id resolved",
+		"worker_instance_id", resolved,
+		"source", string(source),
+	)
+	if cfg.Concurrency <= 0 {
+		cfg.Concurrency = 1
 	}
 	if cfg.PollWaitSeconds <= 0 {
 		cfg.PollWaitSeconds = 20
-	}
-	if cfg.Logger == nil {
-		cfg.Logger = slog.Default()
 	}
 	if cfg.EventQueueSize <= 0 {
 		cfg.EventQueueSize = 256
@@ -90,9 +113,10 @@ func (c *Client) NewWorker(cfg WorkerConfig) *Worker {
 		cfg.EventBatchSize = 20
 	}
 	return &Worker{
-		client:   c,
-		config:   cfg,
-		registry: NewActionRegistry(),
+		client:       c,
+		config:       cfg,
+		registry:     NewActionRegistry(),
+		sessionToken: uuid.NewString(),
 	}
 }
 
@@ -106,10 +130,18 @@ func (c *Client) newWorkerWithRegistry(cfg WorkerConfig, registry *ActionRegistr
 
 // Run starts the claim–execute–heartbeat–complete loop and blocks
 // until ctx is cancelled or the server revokes the worker's
-// credential. Returns [ErrAuthRevoked] in the latter case so a
-// process supervisor (k8s, systemd) can restart the worker under a
-// rotated credential.
+// credential. With Concurrency > 1 the worker holds up to N jobs in
+// flight simultaneously, all reporting the same worker_instance_id and
+// session token. Returns [ErrAuthRevoked] when the credential is
+// revoked mid-flight and [ErrWorkerInstanceConflict] when another live
+// process has already registered this worker_instance_id — both let a
+// process supervisor (k8s, systemd) restart with a rotated credential
+// or a corrected configuration.
 func (w *Worker) Run(ctx context.Context) error {
+	slots := make(chan struct{}, w.config.Concurrency)
+	var wg sync.WaitGroup
+	defer wg.Wait()
+
 	for {
 		if w.authRevoked.Load() {
 			return ErrAuthRevoked
@@ -117,17 +149,25 @@ func (w *Worker) Run(ctx context.Context) error {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
-		default:
+		case slots <- struct{}{}:
 		}
 
-		job, err := w.client.runtimeClaim(ctx, w.config)
+		job, err := w.client.runtimeClaim(ctx, w.config, w.sessionToken)
 		if err != nil {
+			<-slots
 			if ctx.Err() != nil {
 				return ctx.Err()
 			}
 			if errors.Is(err, ErrAuthRevoked) {
 				w.config.Logger.Error("claim rejected: credential revoked")
 				return ErrAuthRevoked
+			}
+			if errors.Is(err, ErrWorkerInstanceConflict) {
+				w.config.Logger.Error("claim rejected: worker instance conflict",
+					"worker_instance_id", w.config.WorkerInstanceID,
+					"error", err,
+				)
+				return err
 			}
 			w.config.Logger.Error("claim error", "error", err)
 			select {
@@ -138,10 +178,16 @@ func (w *Worker) Run(ctx context.Context) error {
 			continue
 		}
 		if job == nil {
+			<-slots
 			continue
 		}
 
-		w.executeJob(ctx, job)
+		wg.Add(1)
+		go func(job *runtimeJob) {
+			defer wg.Done()
+			defer func() { <-slots }()
+			w.executeJob(ctx, job)
+		}(job)
 	}
 }
 
