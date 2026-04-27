@@ -25,6 +25,7 @@ const (
 	InstanceIDSourceFlyMachine       InstanceIDSource = "fly_machine_id"
 	InstanceIDSourceRailwayReplica   InstanceIDSource = "railway_replica_id"
 	InstanceIDSourceRenderInstance   InstanceIDSource = "render_instance_id"
+	InstanceIDSourceSystemHostname   InstanceIDSource = "system_hostname"
 	InstanceIDSourceGeneratedUUID    InstanceIDSource = "generated_uuid"
 )
 
@@ -37,11 +38,12 @@ const cloudRunMetadataTimeout = time.Second
 //
 //  1. explicit (caller-configured value)
 //  2. K_REVISION + Cloud Run instance metadata
-//  3. HOSTNAME (Kubernetes pod, Docker container)
+//  3. HOSTNAME env (Kubernetes pod, Docker container — exported by bash)
 //  4. FLY_MACHINE_ID
 //  5. RAILWAY_REPLICA_ID
 //  6. RENDER_INSTANCE_ID
-//  7. generated UUID (per-process boot)
+//  7. system hostname via os.Hostname() (laptops, dev VMs, bare metal)
+//  8. generated UUID (per-process boot, last resort)
 //
 // The returned source is informational only — workers log it once at
 // startup so operators can confirm the right platform was picked up.
@@ -63,6 +65,11 @@ func ResolveInstanceID(explicit string) (string, InstanceIDSource) {
 	}
 	if id := strings.TrimSpace(os.Getenv("RENDER_INSTANCE_ID")); id != "" {
 		return id, InstanceIDSourceRenderInstance
+	}
+	if host, err := os.Hostname(); err == nil {
+		if h := strings.TrimSpace(host); h != "" {
+			return h, InstanceIDSourceSystemHostname
+		}
 	}
 	return uuid.NewString(), InstanceIDSourceGeneratedUUID
 }

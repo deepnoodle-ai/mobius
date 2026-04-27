@@ -9,16 +9,18 @@ Resolution order matches the Go and TypeScript SDKs:
 
 1. explicit (caller-configured value)
 2. ``K_REVISION`` + Cloud Run instance metadata
-3. ``HOSTNAME`` (Kubernetes pod, Docker container)
+3. ``HOSTNAME`` env (Kubernetes pod, Docker container — exported by bash)
 4. ``FLY_MACHINE_ID``
 5. ``RAILWAY_REPLICA_ID``
 6. ``RENDER_INSTANCE_ID``
-7. UUID per boot
+7. system hostname via ``socket.gethostname()`` (laptops, dev VMs, bare metal)
+8. UUID per boot (last resort)
 """
 
 from __future__ import annotations
 
 import os
+import socket
 import uuid
 from typing import Literal
 
@@ -31,6 +33,7 @@ InstanceIDSource = Literal[
     "fly_machine_id",
     "railway_replica_id",
     "render_instance_id",
+    "system_hostname",
     "generated_uuid",
 ]
 
@@ -62,6 +65,12 @@ def resolve_instance_id(explicit: str | None) -> tuple[str, InstanceIDSource]:
     render = (os.environ.get("RENDER_INSTANCE_ID") or "").strip()
     if render:
         return render, "render_instance_id"
+    try:
+        host = socket.gethostname().strip()
+    except OSError:
+        host = ""
+    if host:
+        return host, "system_hostname"
     return str(uuid.uuid4()), "generated_uuid"
 
 

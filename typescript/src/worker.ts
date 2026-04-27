@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { hostname as systemHostname } from "node:os";
 import type {
   JobClaim,
   JobClaimRequest,
@@ -21,6 +22,7 @@ export type InstanceIDSource =
   | "fly_machine_id"
   | "railway_replica_id"
   | "render_instance_id"
+  | "system_hostname"
   | "generated_uuid";
 
 const CLOUD_RUN_METADATA_TIMEOUT_MS = 1000;
@@ -28,10 +30,11 @@ const CLOUD_RUN_METADATA_TIMEOUT_MS = 1000;
 /**
  * Resolve a stable per-process `worker_instance_id` from the runtime
  * environment. Order: explicit → Cloud Run K_REVISION + metadata →
- * HOSTNAME → FLY_MACHINE_ID → RAILWAY_REPLICA_ID → RENDER_INSTANCE_ID
- * → generated UUID. The returned source is informational only —
- * workers log it once at startup so operators can confirm the right
- * platform was picked up.
+ * HOSTNAME env → FLY_MACHINE_ID → RAILWAY_REPLICA_ID →
+ * RENDER_INSTANCE_ID → system hostname (`os.hostname()`, for laptops
+ * and bare metal) → generated UUID. The returned source is
+ * informational only — workers log it once at startup so operators
+ * can confirm the right platform was picked up.
  */
 export async function resolveInstanceID(
   explicit: string | undefined,
@@ -47,6 +50,12 @@ export async function resolveInstanceID(
   if (railway) return { id: railway, source: "railway_replica_id" };
   const render = (process.env.RENDER_INSTANCE_ID ?? "").trim();
   if (render) return { id: render, source: "render_instance_id" };
+  try {
+    const host = systemHostname().trim();
+    if (host) return { id: host, source: "system_hostname" };
+  } catch {
+    // fall through to UUID
+  }
   return { id: randomUUID(), source: "generated_uuid" };
 }
 
