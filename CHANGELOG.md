@@ -6,6 +6,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 
 ## [Unreleased]
 
+## [0.0.10] - 2026-04-27
+
+### Added
+
+- Go, TypeScript, and Python SDKs: add `WorkerPool` helpers for running
+  multiple single-job workers in one process, with distinct worker identities
+  and shared action registration.
+
+### Changed
+
+- Breaking: each SDK `Worker` now executes at most one active job lease at a
+  time. Scale throughput with `WorkerPool`, multiple worker instances, or the
+  CLI `--workers` option instead of per-worker job concurrency.
+- CLI: replace the worker `--concurrency` option with `--workers` and update
+  examples to show the new pool-oriented execution model.
+
 ## [0.0.9] - 2026-04-26
 
 ### Added
