@@ -6,6 +6,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 
 ## [Unreleased]
 
+## [0.0.12] - 2026-04-27
+
+### Added
+
+- Go SDK: add outgoing webhook helpers for HMAC signing and verification,
+  generic event-envelope parsing with raw JSON event data, and signed request
+  parsing.
+- Go SDK: add synthetic webhook envelope and delivery helpers for local/test
+  bridges that need to post Mobius-shaped signed webhook requests.
+- Go SDK: add saved workflow-definition helpers for list/get/create/update,
+  plus `EnsureWorkflow` and `SyncWorkflows` reconciliation helpers.
+- TypeScript and Python SDKs: add parity for webhook signature verification,
+  event parsing, signed request helpers, synthetic webhook delivery helpers,
+  and saved workflow-definition list/get/create/update/ensure/sync helpers.
+- Docs: add cross-language SDK helper documentation and TypeScript README
+  examples for the new webhook and workflow helper surfaces.
+
 ## [0.0.11] - 2026-04-27
 
 ### Added
