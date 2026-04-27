@@ -134,3 +134,19 @@ the next request. A client that ignores `Retry-After` and retries
 aggressively will just get more 429s — the bucket doesn't refill
 mid-window. The SDK retry layer exists precisely so customers don't have to
 think about this.
+
+## Worker claim loop
+
+The Go worker (`mobius/worker.go`) runs its own loop above the transport,
+so the 60-second transport cap does not apply: when the transport
+surfaces a `RateLimitError`, the worker sleeps the server-provided
+`RetryAfter` before re-claiming, clamped to `MaxClaimRateLimitSleep`
+(5 minutes). On any other claim error it falls back to a 2-second
+backoff. The clamp keeps a runaway header from pinning a worker for
+hours and bounds the time before context cancellation takes effect;
+when the actual window is longer than the clamp, the next claim
+returns a fresh `429` with the remaining `Retry-After`, so the worker
+sleeps again — bounded polling, not a hot loop.
+
+The Python and TypeScript worker loops should mirror this: honor
+`RetryAfter` after a 429 instead of using a uniform error backoff.

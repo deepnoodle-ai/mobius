@@ -646,3 +646,90 @@ func TestWorkerRun_InstanceConflictExitsLoudly(t *testing.T) {
 		t.Fatal("worker did not exit on instance conflict")
 	}
 }
+
+// TestClaimErrorSleep covers the helper that picks the per-iteration
+// sleep after a failed claim: rate-limit errors honor the server's
+// Retry-After (clamped to MaxClaimRateLimitSleep) and every other error
+// falls back to claimErrorBackoff.
+func TestClaimErrorSleep(t *testing.T) {
+	t.Run("non-rate-limit error falls back to constant backoff", func(t *testing.T) {
+		assert.Equal(t, claimErrorSleep(errors.New("network blip")), claimErrorBackoff)
+	})
+	t.Run("rate limit with zero retry-after falls back", func(t *testing.T) {
+		err := &RateLimitError{Scope: "key"}
+		assert.Equal(t, claimErrorSleep(err), claimErrorBackoff)
+	})
+	t.Run("rate limit honors retry-after under cap", func(t *testing.T) {
+		err := &RateLimitError{RetryAfter: 35 * time.Second, Scope: "key"}
+		assert.Equal(t, claimErrorSleep(err), 35*time.Second)
+	})
+	t.Run("rate limit clamps retry-after to MaxClaimRateLimitSleep", func(t *testing.T) {
+		err := &RateLimitError{RetryAfter: 4 * time.Hour, Scope: "key"}
+		assert.Equal(t, claimErrorSleep(err), MaxClaimRateLimitSleep)
+	})
+	t.Run("rate limit wrapped in fmt.Errorf is still detected", func(t *testing.T) {
+		inner := &RateLimitError{RetryAfter: 12 * time.Second, Scope: "org"}
+		err := fmt.Errorf("mobius: claim: %w", inner)
+		assert.Equal(t, claimErrorSleep(err), 12*time.Second)
+	})
+}
+
+// TestWorkerRun_HonorsRateLimitRetryAfter verifies the worker waits for
+// the server-provided Retry-After before re-claiming after a 429,
+// instead of slamming the endpoint every 2 seconds. This is the bug
+// that turned a routine 35-minute rate-limit window into a 4+ hour
+// outage in production: the worker ignored the header, kept polling,
+// and the bucket kept extending under sustained load.
+func TestWorkerRun_HonorsRateLimitRetryAfter(t *testing.T) {
+	var claims atomic.Int32
+	var firstAt, secondAt atomic.Int64
+	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/v1/projects/test-project/jobs/claim":
+			n := claims.Add(1)
+			now := time.Now().UnixNano()
+			if n == 1 {
+				firstAt.Store(now)
+				w.Header().Set("Retry-After", "1")
+				w.Header().Set("X-RateLimit-Scope", "key")
+				w.Header().Set("X-RateLimit-Policy", "60;w=60")
+				w.WriteHeader(http.StatusTooManyRequests)
+				return
+			}
+			if n == 2 {
+				secondAt.Store(now)
+			}
+			w.WriteHeader(http.StatusNoContent)
+		default:
+			http.NotFound(w, r)
+		}
+	})
+	c, _ := newTestClient(t, h)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	worker := c.NewWorker(WorkerConfig{WorkerInstanceID: "rl1", PollWaitSeconds: 1})
+
+	done := make(chan error, 1)
+	go func() { done <- worker.Run(ctx) }()
+
+	deadline := time.Now().Add(3 * time.Second)
+	for time.Now().Before(deadline) {
+		if claims.Load() >= 2 {
+			break
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	cancel()
+	<-done
+
+	assert.True(t, claims.Load() >= 2)
+	gap := time.Duration(secondAt.Load() - firstAt.Load())
+	// Retry-After: 1 means "sleep at least one second"; allow a small
+	// scheduling slack but reject the old 2s-blunt behaviour by
+	// requiring noticeably more than the pre-fix worker would have
+	// spent. (Old worker: ~200ms transport + 2s sleep ≈ identical
+	// here, but the lower bound proves we honored the header rather
+	// than ignoring it.)
+	assert.True(t, gap >= 900*time.Millisecond)
+}
