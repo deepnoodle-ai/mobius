@@ -12,6 +12,21 @@ import (
 	"github.com/google/uuid"
 )
 
+// claimErrorBackoff is the fall-back sleep between claim retries when the
+// server returns a non-rate-limit error (network blip, 5xx). Rate-limited
+// claims sleep the server-provided Retry-After instead — see
+// [MaxClaimRateLimitSleep].
+const claimErrorBackoff = 2 * time.Second
+
+// MaxClaimRateLimitSleep caps the worker's per-iteration sleep when a
+// 429 carries a long Retry-After. The worker honors shorter waits in
+// full; longer waits are split into MaxClaimRateLimitSleep chunks so a
+// single response can't pin a worker for hours and so context
+// cancellation takes effect within that bound. Set high enough that
+// repeated polling against a long window does not itself become a
+// hot loop.
+const MaxClaimRateLimitSleep = 5 * time.Minute
+
 // WorkerConfig configures a Worker.
 type WorkerConfig struct {
 	// WorkerInstanceID identifies this worker process to Mobius and is
@@ -170,10 +185,20 @@ func (w *Worker) Run(ctx context.Context) error {
 				return err
 			}
 			w.config.Logger.Error("claim error", "error", err)
+			sleep := claimErrorSleep(err)
+			var rle *RateLimitError
+			if errors.As(err, &rle) && rle.RetryAfter > 0 {
+				w.config.Logger.Warn("claim rate-limited; honoring Retry-After",
+					"retry_after", rle.RetryAfter,
+					"scope", rle.Scope,
+					"policy", rle.Policy,
+					"sleep", sleep,
+				)
+			}
 			select {
 			case <-ctx.Done():
 				return ctx.Err()
-			case <-time.After(2 * time.Second):
+			case <-time.After(sleep):
 			}
 			continue
 		}
@@ -319,6 +344,23 @@ func safeExecute(a Action, ctx Context, params map[string]any) (result any, err 
 		}
 	}()
 	return a.Execute(ctx, params)
+}
+
+// claimErrorSleep picks the sleep duration after a failed claim attempt.
+// On a [RateLimitError] it returns the server's Retry-After (clamped to
+// [MaxClaimRateLimitSleep] so a long window can't pin the worker for
+// hours). On any other error it returns the constant
+// [claimErrorBackoff], matching the original blunt retry cadence for
+// transient network blips and 5xx.
+func claimErrorSleep(err error) time.Duration {
+	var rle *RateLimitError
+	if errors.As(err, &rle) && rle.RetryAfter > 0 {
+		if rle.RetryAfter > MaxClaimRateLimitSleep {
+			return MaxClaimRateLimitSleep
+		}
+		return rle.RetryAfter
+	}
+	return claimErrorBackoff
 }
 
 // classifyError chooses the error_type reported to the server. It
