@@ -20,6 +20,10 @@ class Error(BaseModel):
     )
     code: str = Field(..., description='Machine-readable error code')
     message: str = Field(..., description='Human-readable error message')
+    details: dict[str, Any] | None = Field(
+        None,
+        description='Optional structured details specific to a `code`. Endpoints that set this document the per-code shape inline. Absent for codes whose `code` + `message` are sufficient.',
+    )
 
 
 class ErrorResponse(BaseModel):
@@ -988,7 +992,7 @@ class WorkflowRunWaitSummary(BaseModel):
 
 class WorkflowRunJobCounts(BaseModel):
     """
-    Current job-claim summary for this run. `ready` counts pending jobs whose `scheduled_at` has arrived and can be claimed now; `scheduled` counts pending jobs intentionally waiting for a future retry/backoff; `claimed` counts jobs currently held by workers.
+    Live work-pool summary for this run. Reflects the transient state of the worker job queue, not durable step progress — terminal jobs are swept on a TTL and stop contributing to these counts. Use `step_counts` for run-progress UI; use this field to answer "is anything claimable right now and is a worker holding it?". `ready` counts pending jobs whose `scheduled_at` has arrived and can be claimed now; `scheduled` counts pending jobs intentionally waiting for a future retry/backoff; `claimed` counts jobs currently held by workers.
     """
 
     model_config = ConfigDict(
@@ -997,6 +1001,21 @@ class WorkflowRunJobCounts(BaseModel):
     ready: int
     scheduled: int
     claimed: int
+
+
+class WorkflowRunStepCounts(BaseModel):
+    """
+    Aggregate count of run-step rows for this run grouped by status. Counts every attempt of every step (one row per step × attempt × path), so it reflects durable progress rather than the live worker pool. Use this for run-progress UI; use `job_counts` for live claimability.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    pending: int
+    running: int
+    completed: int
+    failed: int
+    cancelled: int
 
 
 class WorkflowRunError(BaseModel):
@@ -1010,13 +1029,134 @@ class WorkflowRunError(BaseModel):
 
 class ErrorType(Enum):
     """
-    Typed run-level failure cause: `run_timeout`, `run_cancelled`, `job_failed`, or `run_failed`. Its own vocabulary, not a superset of the job-level `error_type`. Present when `status=failed`.
+    Typed run-level failure cause: `run_timeout`, `run_cancelled`, `step_failed`, or `run_failed`. Its own vocabulary, not a superset of the job-level `error_type`. Present when `status=failed`.
     """
 
     run_timeout = 'run_timeout'
     run_cancelled = 'run_cancelled'
-    job_failed = 'job_failed'
+    step_failed = 'step_failed'
     run_failed = 'run_failed'
+
+
+class RunForkLineage(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    run_id: str
+    step_id: str
+    path_id: str
+    step_name: str
+
+
+class RunForkRequest(BaseModel):
+    """
+    Fork creation request. Tags are inherited from the source run and then overlaid with request tags using the same tag inheritance rules as run creation: request values replace matching source keys, and an empty string removes the inherited key. `definition_version_id` changes only the post-fork execution version; it does not affect inherited history.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    from_step_id: str = Field(
+        ...,
+        description='Run-step identifier to fork from. Use the `id` returned by `RunStep`.',
+    )
+    external_id: str = Field(
+        ...,
+        description='Logical external identifier for the new forked run. It must be unique within the project, just like other workflow-run `external_id` values.',
+    )
+    definition_version_id: str | None = Field(
+        None,
+        description='Optional target workflow definition version for post-fork execution. Inherited history remains tied to the source run.',
+    )
+    tags: TagMap | None = Field(
+        None,
+        description='Tags to overlay on the inherited source-run tags. Empty string values remove inherited keys.',
+    )
+
+
+class RunStepSource(Enum):
+    executed = 'executed'
+    inherited = 'inherited'
+
+
+class RunStepStatus(Enum):
+    pending = 'pending'
+    running = 'running'
+    completed = 'completed'
+    failed = 'failed'
+    cancelled = 'cancelled'
+
+
+class RunStep(BaseModel):
+    """
+    Durable execution-history row for one step attempt on one workflow path. RunStep is the canonical source for run history; linked Job rows are transient worker-claim records and may be TTL-swept after terminal retention.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str = Field(
+        ...,
+        description='Stable run-step identifier. Use this value as `{step_id}` in `GET /runs/{id}/steps/{step_id}` and as `from_step_id` in `POST /runs/{id}/forks`.',
+    )
+    run_id: str = Field(..., description='Workflow run that owns this step row.')
+    path_id: str = Field(
+        ..., description='Workflow path identifier for branch/fanout execution.'
+    )
+    step_name: str = Field(..., description='Step name from the workflow definition.')
+    action: str = Field(
+        ...,
+        description='Action identifier for executable steps; empty for control-only steps.',
+    )
+    attempt: int = Field(
+        ..., description='Zero-based retry attempt for this step/path pair.'
+    )
+    source: RunStepSource = Field(
+        ...,
+        description='Whether this row was executed in this run or inherited from a source run during fork creation.',
+    )
+    status: RunStepStatus
+    parameters: dict[str, Any] = Field(
+        ..., description='Resolved parameters/input for this step attempt.'
+    )
+    job_id: str | None = Field(
+        None,
+        description='Linked live worker job when one exists. Terminal jobs may be reaped while the RunStep remains.',
+    )
+    result_b64: str | None = Field(
+        None, description='Base64-encoded serialized step result, when present.'
+    )
+    run_state_after_b64: str | None = Field(
+        None,
+        description='Base64-encoded serialized run state immediately after this step completed. Omitted unless requested with `include=run_state_after`.',
+    )
+    error_type: str | None = None
+    error_message: str | None = None
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
+    source_run_id: str | None = Field(
+        None,
+        description='Originating run ID when this row was inherited or derived from another run.',
+    )
+    source_step_id: str | None = Field(
+        None,
+        description='Originating step ID when this row was inherited or derived from another run.',
+    )
+    created_at: datetime
+    updated_at: datetime
+
+
+class RunStepListResponse(BaseModel):
+    """
+    Paginated durable run-step history. Use this response for historical run inspection because linked job rows are live worker state and may be TTL-swept.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    items: list[RunStep]
+    has_more: bool
+    next_cursor: str | None = None
 
 
 class Mode(Enum):
@@ -1860,7 +2000,7 @@ class InteractionPartialResponse(BaseModel):
     )
 
 
-class Status1(Enum):
+class Status2(Enum):
     """
     Current status of the interaction: pending, completed, or expired.
     """
@@ -1899,7 +2039,7 @@ class Interaction(BaseModel):
         ...,
         description='Interaction kind that determines the expected response experience.',
     )
-    status: Status1 = Field(
+    status: Status2 = Field(
         ...,
         description='Current status of the interaction: pending, completed, or expired.',
     )
@@ -2453,7 +2593,7 @@ class InstanceStatus(Enum):
     draining = 'draining'
 
 
-class Status2(Enum):
+class Status3(Enum):
     """
     Current job lifecycle state.
     """
@@ -2472,7 +2612,7 @@ class WorkerSessionJobRef(BaseModel):
     run_id: str = Field(..., description='Workflow run that owns the job.')
     step_name: str = Field(..., description='Workflow step name.')
     action: str = Field(..., description='Action executed by the worker.')
-    status: Status2 = Field(..., description='Current job lifecycle state.')
+    status: Status3 = Field(..., description='Current job lifecycle state.')
     claimed_at: datetime | None = Field(
         None, description='Timestamp when the worker claimed the job.'
     )
@@ -3450,7 +3590,7 @@ class ToolRunRequest(BaseModel):
     )
 
 
-class Status3(Enum):
+class Status4(Enum):
     """
     Workflow run lifecycle: `active`, `completed`, or `failed`.
     """
@@ -3469,7 +3609,7 @@ class ToolRun(BaseModel):
         extra='forbid',
     )
     run_id: str = Field(..., description='Unique run identifier for polling.')
-    status: Status3 = Field(
+    status: Status4 = Field(
         ..., description='Workflow run lifecycle: `active`, `completed`, or `failed`.'
     )
     output: dict[str, Any] | None = Field(
@@ -3793,7 +3933,7 @@ class StartSavedRunRequest(BaseModel):
     )
     external_id: str | None = Field(
         None,
-        description='Caller-supplied idempotency key or correlation ID attached to the run.',
+        description='Caller-supplied logical correlation key for this run. Unique within (project, external_id). If the same external_id is reused while the prior run is still active, the existing run is returned idempotently. Once the prior run is terminal (completed or failed), a duplicate POST returns 409 with code `external_id_conflict` and the existing `run_id` and status carried in `details`. To launch a fresh attempt for the same logical job after a terminal run, use a new external_id (e.g. suffix with an attempt counter).',
     )
     config: ConfigEntries | None = Field(
         None,
@@ -3826,7 +3966,7 @@ class StartBoundRunRequest(BaseModel):
     )
     external_id: str | None = Field(
         None,
-        description='Caller-supplied idempotency key or correlation ID attached to the run.',
+        description='Caller-supplied logical correlation key for this run. Unique within (project, external_id). If the same external_id is reused while the prior run is still active, the existing run is returned idempotently. Once the prior run is terminal (completed or failed), a duplicate POST returns 409 with code `external_id_conflict` and the existing `run_id` and status carried in `details`. To launch a fresh attempt for the same logical job after a terminal run, use a new external_id (e.g. suffix with an attempt counter).',
     )
     config: ConfigEntries | None = Field(
         None,
@@ -4160,7 +4300,12 @@ class WorkflowRun(BaseModel):
         ..., description='Current path counts derived from the run projection.'
     )
     job_counts: WorkflowRunJobCounts = Field(
-        ..., description='Current job claim summary derived from the run projection.'
+        ...,
+        description='Live work-pool summary derived from the run projection. See `WorkflowRunJobCounts`.',
+    )
+    step_counts: WorkflowRunStepCounts = Field(
+        ...,
+        description='Durable run-step counts grouped by status. See `WorkflowRunStepCounts`.',
     )
     wait_summary: WorkflowRunWaitSummary = Field(
         ..., description='Always-present aggregate of waiting paths.'
@@ -4198,7 +4343,8 @@ class WorkflowRun(BaseModel):
         description='Human-readable label for the initiator (e.g. trigger name, API key name).',
     )
     external_id: str | None = Field(
-        None, description='Caller-supplied idempotency key or correlation ID.'
+        None,
+        description='Caller-supplied logical correlation key for this run. Unique within (project, external_id); identifies a logical job across attempts. See the `external_id` description on `POST /runs` for the conflict semantics that govern duplicate values.',
     )
     cancel_requested: bool | None = Field(
         None,
@@ -4225,14 +4371,17 @@ class WorkflowRun(BaseModel):
     )
     error_type: ErrorType | None = Field(
         None,
-        description='Typed run-level failure cause: `run_timeout`, `run_cancelled`, `job_failed`, or `run_failed`. Its own vocabulary, not a superset of the job-level `error_type`. Present when `status=failed`.',
+        description='Typed run-level failure cause: `run_timeout`, `run_cancelled`, `step_failed`, or `run_failed`. Its own vocabulary, not a superset of the job-level `error_type`. Present when `status=failed`.',
     )
     resolved_config: ResolvedConfig | None = Field(
         None, description='Run-level cascade config frozen when the run was started.'
     )
-    default_job_config: ResolvedConfig | None = Field(
+    default_step_config: ResolvedConfig | None = Field(
         None,
-        description='Default job-level cascade config inherited by jobs unless a step overrides it.',
+        description="Default step-level cascade config inherited by each run step unless the step's own spec overrides it.",
+    )
+    forked_from: RunForkLineage | None = Field(
+        None, description='Source run and step this run was forked from.'
     )
 
 
@@ -4385,7 +4534,7 @@ class WorkflowVersion(WorkflowVersionSummary):
 
 class WorkflowRunDetail(WorkflowRun):
     """
-    Detailed workflow run including its spec snapshot, terminal result, and jobs.
+    Detailed workflow run including its spec snapshot, terminal result, and the first page of run steps.
     """
 
     paths: list[WorkflowRunPath] = Field(
@@ -4397,7 +4546,13 @@ class WorkflowRunDetail(WorkflowRun):
     result_b64: str | None = Field(
         None, description='Base64-encoded terminal result blob'
     )
-    jobs: list[Job] | None = Field(None, description='Jobs spawned by this run.')
+    steps: list[RunStep] | None = Field(
+        None,
+        description='First page of durable run-step history. Use this canonical history for execution inspection and fork planning, including after terminal job rows have been TTL-swept.',
+    )
+    steps_next_cursor: str | None = Field(
+        None, description='Cursor for the next page of durable run-step history.'
+    )
 
 
 class StartInlineRunRequest(BaseModel):
@@ -4431,7 +4586,7 @@ class StartInlineRunRequest(BaseModel):
     )
     external_id: str | None = Field(
         None,
-        description='Caller-supplied idempotency key or correlation ID attached to the run.',
+        description='Caller-supplied logical correlation key for this run. Unique within (project, external_id). If the same external_id is reused while the prior run is still active, the existing run is returned idempotently. Once the prior run is terminal (completed or failed), a duplicate POST returns 409 with code `external_id_conflict` and the existing `run_id` and status carried in `details`. To launch a fresh attempt for the same logical job after a terminal run, use a new external_id (e.g. suffix with an attempt counter).',
     )
     config: ConfigEntries | None = Field(
         None,
