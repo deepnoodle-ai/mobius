@@ -2840,9 +2840,9 @@ type RunForkLineage struct {
 	StepName string `json:"step_name"`
 }
 
-// RunForkRequest Fork creation request. Tags are inherited from the source run and then overlaid with request tags using the same tag inheritance rules as run creation: request values replace matching source keys, and an empty string removes the inherited key. `definition_version_id` changes only the post-fork execution version; it does not affect inherited history.
+// RunForkRequest Fork creation request. Tags are inherited from the source run and then overlaid with request tags using the same tag inheritance rules as run creation: request values replace matching source keys, and an empty string removes the inherited key. `definition_version_id` changes only the post-fork execution version; it does not affect inherited history. When omitted, the fork uses the source run's definition version.
 type RunForkRequest struct {
-	// DefinitionVersionId Optional target workflow definition version for post-fork execution. Inherited history remains tied to the source run.
+	// DefinitionVersionId Optional target workflow definition version for post-fork execution. It must belong to the same workflow definition as the source run. Omit it to use the source run's original definition version. Inherited history remains tied to the source run.
 	DefinitionVersionId *string `json:"definition_version_id,omitempty"`
 
 	// ExternalId Logical external identifier for the new forked run. It must be unique within the project, just like other workflow-run `external_id` values.
@@ -2979,7 +2979,7 @@ type StartBoundRunRequest struct {
 	// Config Flat cascade config input used outside authored workflow YAML. Each entry addresses one `(category, key)` pair. Unknown categories or unknown keys under a known category are rejected at write time. The only category shipped in Phase 1 is `timeouts`, whose keys are `claim`, `liveness`, `execution`, `wall_clock`.
 	Config *ConfigEntries `json:"config,omitempty"`
 
-	// ExternalId Caller-supplied logical correlation key for this run. Unique within (project, external_id). If the same external_id is reused while the prior run is still active, the existing run is returned idempotently. Once the prior run is terminal (completed or failed), a duplicate POST returns 409 with code `external_id_conflict` and the existing `run_id` and status carried in `details`. To launch a fresh attempt for the same logical job after a terminal run, use a new external_id (e.g. suffix with an attempt counter).
+	// ExternalId Caller-supplied logical correlation key for this run. Unique within the project. If the same external_id is reused while the prior run is still active, the existing run is returned idempotently. Once the prior run is terminal (completed or failed), a duplicate POST returns 409 with code `external_id_conflict` and the `existing_run_id` and `status` carried in `details`. To launch a fresh attempt for the same logical job after a terminal run, use a new external_id (e.g. suffix with an attempt counter).
 	ExternalId *string `json:"external_id,omitempty"`
 
 	// Inputs Input values to pass to the workflow. Must conform to the workflow's declared input schema.
@@ -3000,7 +3000,7 @@ type StartInlineRunRequest struct {
 	// Config Flat cascade config input used outside authored workflow YAML. Each entry addresses one `(category, key)` pair. Unknown categories or unknown keys under a known category are rejected at write time. The only category shipped in Phase 1 is `timeouts`, whose keys are `claim`, `liveness`, `execution`, `wall_clock`.
 	Config *ConfigEntries `json:"config,omitempty"`
 
-	// ExternalId Caller-supplied logical correlation key for this run. Unique within (project, external_id). If the same external_id is reused while the prior run is still active, the existing run is returned idempotently. Once the prior run is terminal (completed or failed), a duplicate POST returns 409 with code `external_id_conflict` and the existing `run_id` and status carried in `details`. To launch a fresh attempt for the same logical job after a terminal run, use a new external_id (e.g. suffix with an attempt counter).
+	// ExternalId Caller-supplied logical correlation key for this run. Unique within the project. If the same external_id is reused while the prior run is still active, the existing run is returned idempotently. Once the prior run is terminal (completed or failed), a duplicate POST returns 409 with code `external_id_conflict` and the `existing_run_id` and `status` carried in `details`. To launch a fresh attempt for the same logical job after a terminal run, use a new external_id (e.g. suffix with an attempt counter).
 	ExternalId *string `json:"external_id,omitempty"`
 
 	// Inputs Input values to pass to the workflow. Must conform to the workflow's declared input schema.
@@ -3043,7 +3043,7 @@ type StartSavedRunRequest struct {
 	// DefinitionId ID of an existing workflow definition to run.
 	DefinitionId string `json:"definition_id"`
 
-	// ExternalId Caller-supplied logical correlation key for this run. Unique within (project, external_id). If the same external_id is reused while the prior run is still active, the existing run is returned idempotently. Once the prior run is terminal (completed or failed), a duplicate POST returns 409 with code `external_id_conflict` and the existing `run_id` and status carried in `details`. To launch a fresh attempt for the same logical job after a terminal run, use a new external_id (e.g. suffix with an attempt counter).
+	// ExternalId Caller-supplied logical correlation key for this run. Unique within the project. If the same external_id is reused while the prior run is still active, the existing run is returned idempotently. Once the prior run is terminal (completed or failed), a duplicate POST returns 409 with code `external_id_conflict` and the `existing_run_id` and `status` carried in `details`. To launch a fresh attempt for the same logical job after a terminal run, use a new external_id (e.g. suffix with an attempt counter).
 	ExternalId *string `json:"external_id,omitempty"`
 
 	// Inputs Input values to pass to the workflow. Must conform to the workflow's declared input schema.
@@ -4108,7 +4108,7 @@ type WorkflowRun struct {
 	// Errors Run-level errors that caused a failed lifecycle.
 	Errors []WorkflowRunError `json:"errors"`
 
-	// ExternalId Caller-supplied logical correlation key for this run. Unique within (project, external_id); identifies a logical job across attempts. See the `external_id` description on `POST /runs` for the conflict semantics that govern duplicate values.
+	// ExternalId Caller-supplied logical correlation key for this run. Unique within the project; identifies a logical job across attempts. See the `external_id` description on `POST /runs` for the conflict semantics that govern duplicate values.
 	ExternalId *string         `json:"external_id,omitempty"`
 	ForkedFrom *RunForkLineage `json:"forked_from,omitempty"`
 
@@ -4145,7 +4145,7 @@ type WorkflowRun struct {
 	// Status Public run lifecycle. Path-level fields explain why an active run is working, waiting, sleeping, retrying, paused, or blocked at a join.
 	Status WorkflowRunStatus `json:"status"`
 
-	// StepCounts Aggregate count of run-step rows for this run grouped by status. Counts every attempt of every step (one row per step × attempt × path), so it reflects durable progress rather than the live worker pool. Use this for run-progress UI; use `job_counts` for live claimability.
+	// StepCounts Aggregate count of run-step rows for this run grouped by status. Counts every attempt of every step (one row per step x attempt x path), so it reflects durable progress rather than the live worker pool. Use this for run-progress UI; use `job_counts` for live claimability.
 	StepCounts WorkflowRunStepCounts `json:"step_counts"`
 
 	// Tags Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints.
@@ -4212,7 +4212,7 @@ type WorkflowRunDetail struct {
 	// Errors Run-level errors that caused a failed lifecycle.
 	Errors []WorkflowRunError `json:"errors"`
 
-	// ExternalId Caller-supplied logical correlation key for this run. Unique within (project, external_id); identifies a logical job across attempts. See the `external_id` description on `POST /runs` for the conflict semantics that govern duplicate values.
+	// ExternalId Caller-supplied logical correlation key for this run. Unique within the project; identifies a logical job across attempts. See the `external_id` description on `POST /runs` for the conflict semantics that govern duplicate values.
 	ExternalId *string         `json:"external_id,omitempty"`
 	ForkedFrom *RunForkLineage `json:"forked_from,omitempty"`
 
@@ -4260,11 +4260,11 @@ type WorkflowRunDetail struct {
 	// Status Public run lifecycle. Path-level fields explain why an active run is working, waiting, sleeping, retrying, paused, or blocked at a join.
 	Status WorkflowRunStatus `json:"status"`
 
-	// StepCounts Aggregate count of run-step rows for this run grouped by status. Counts every attempt of every step (one row per step × attempt × path), so it reflects durable progress rather than the live worker pool. Use this for run-progress UI; use `job_counts` for live claimability.
+	// StepCounts Aggregate count of run-step rows for this run grouped by status. Counts every attempt of every step (one row per step x attempt x path), so it reflects durable progress rather than the live worker pool. Use this for run-progress UI; use `job_counts` for live claimability.
 	StepCounts WorkflowRunStepCounts `json:"step_counts"`
 
 	// Steps First page of durable run-step history. Use this canonical history for execution inspection and fork planning, including after terminal job rows have been TTL-swept.
-	Steps *[]RunStep `json:"steps,omitempty"`
+	Steps []RunStep `json:"steps"`
 
 	// StepsNextCursor Cursor for the next page of durable run-step history.
 	StepsNextCursor *string `json:"steps_next_cursor,omitempty"`
@@ -4347,7 +4347,7 @@ type WorkflowRunPathState string
 // WorkflowRunStatus Public run lifecycle. Path-level fields explain why an active run is working, waiting, sleeping, retrying, paused, or blocked at a join.
 type WorkflowRunStatus string
 
-// WorkflowRunStepCounts Aggregate count of run-step rows for this run grouped by status. Counts every attempt of every step (one row per step × attempt × path), so it reflects durable progress rather than the live worker pool. Use this for run-progress UI; use `job_counts` for live claimability.
+// WorkflowRunStepCounts Aggregate count of run-step rows for this run grouped by status. Counts every attempt of every step (one row per step x attempt x path), so it reflects durable progress rather than the live worker pool. Use this for run-progress UI; use `job_counts` for live claimability.
 type WorkflowRunStepCounts struct {
 	Cancelled int `json:"cancelled"`
 	Completed int `json:"completed"`

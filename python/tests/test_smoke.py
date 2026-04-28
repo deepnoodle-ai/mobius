@@ -538,6 +538,7 @@ def _run_body(run_id: str, status: str) -> dict[str, object]:
 def _run_detail_body(run_id: str, status: str) -> dict[str, object]:
     body = _run_body(run_id, status)
     body["paths"] = []
+    body["steps"] = []
     return body
 
 

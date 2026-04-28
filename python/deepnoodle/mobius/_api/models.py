@@ -1005,7 +1005,7 @@ class WorkflowRunJobCounts(BaseModel):
 
 class WorkflowRunStepCounts(BaseModel):
     """
-    Aggregate count of run-step rows for this run grouped by status. Counts every attempt of every step (one row per step × attempt × path), so it reflects durable progress rather than the live worker pool. Use this for run-progress UI; use `job_counts` for live claimability.
+    Aggregate count of run-step rows for this run grouped by status. Counts every attempt of every step (one row per step x attempt x path), so it reflects durable progress rather than the live worker pool. Use this for run-progress UI; use `job_counts` for live claimability.
     """
 
     model_config = ConfigDict(
@@ -1050,7 +1050,7 @@ class RunForkLineage(BaseModel):
 
 class RunForkRequest(BaseModel):
     """
-    Fork creation request. Tags are inherited from the source run and then overlaid with request tags using the same tag inheritance rules as run creation: request values replace matching source keys, and an empty string removes the inherited key. `definition_version_id` changes only the post-fork execution version; it does not affect inherited history.
+    Fork creation request. Tags are inherited from the source run and then overlaid with request tags using the same tag inheritance rules as run creation: request values replace matching source keys, and an empty string removes the inherited key. `definition_version_id` changes only the post-fork execution version; it does not affect inherited history. When omitted, the fork uses the source run's definition version.
     """
 
     model_config = ConfigDict(
@@ -1066,7 +1066,7 @@ class RunForkRequest(BaseModel):
     )
     definition_version_id: str | None = Field(
         None,
-        description='Optional target workflow definition version for post-fork execution. Inherited history remains tied to the source run.',
+        description="Optional target workflow definition version for post-fork execution. It must belong to the same workflow definition as the source run. Omit it to use the source run's original definition version. Inherited history remains tied to the source run.",
     )
     tags: TagMap | None = Field(
         None,
@@ -3933,7 +3933,7 @@ class StartSavedRunRequest(BaseModel):
     )
     external_id: str | None = Field(
         None,
-        description='Caller-supplied logical correlation key for this run. Unique within (project, external_id). If the same external_id is reused while the prior run is still active, the existing run is returned idempotently. Once the prior run is terminal (completed or failed), a duplicate POST returns 409 with code `external_id_conflict` and the existing `run_id` and status carried in `details`. To launch a fresh attempt for the same logical job after a terminal run, use a new external_id (e.g. suffix with an attempt counter).',
+        description='Caller-supplied logical correlation key for this run. Unique within the project. If the same external_id is reused while the prior run is still active, the existing run is returned idempotently. Once the prior run is terminal (completed or failed), a duplicate POST returns 409 with code `external_id_conflict` and the `existing_run_id` and `status` carried in `details`. To launch a fresh attempt for the same logical job after a terminal run, use a new external_id (e.g. suffix with an attempt counter).',
     )
     config: ConfigEntries | None = Field(
         None,
@@ -3966,7 +3966,7 @@ class StartBoundRunRequest(BaseModel):
     )
     external_id: str | None = Field(
         None,
-        description='Caller-supplied logical correlation key for this run. Unique within (project, external_id). If the same external_id is reused while the prior run is still active, the existing run is returned idempotently. Once the prior run is terminal (completed or failed), a duplicate POST returns 409 with code `external_id_conflict` and the existing `run_id` and status carried in `details`. To launch a fresh attempt for the same logical job after a terminal run, use a new external_id (e.g. suffix with an attempt counter).',
+        description='Caller-supplied logical correlation key for this run. Unique within the project. If the same external_id is reused while the prior run is still active, the existing run is returned idempotently. Once the prior run is terminal (completed or failed), a duplicate POST returns 409 with code `external_id_conflict` and the `existing_run_id` and `status` carried in `details`. To launch a fresh attempt for the same logical job after a terminal run, use a new external_id (e.g. suffix with an attempt counter).',
     )
     config: ConfigEntries | None = Field(
         None,
@@ -4344,7 +4344,7 @@ class WorkflowRun(BaseModel):
     )
     external_id: str | None = Field(
         None,
-        description='Caller-supplied logical correlation key for this run. Unique within (project, external_id); identifies a logical job across attempts. See the `external_id` description on `POST /runs` for the conflict semantics that govern duplicate values.',
+        description='Caller-supplied logical correlation key for this run. Unique within the project; identifies a logical job across attempts. See the `external_id` description on `POST /runs` for the conflict semantics that govern duplicate values.',
     )
     cancel_requested: bool | None = Field(
         None,
@@ -4546,8 +4546,8 @@ class WorkflowRunDetail(WorkflowRun):
     result_b64: str | None = Field(
         None, description='Base64-encoded terminal result blob'
     )
-    steps: list[RunStep] | None = Field(
-        None,
+    steps: list[RunStep] = Field(
+        ...,
         description='First page of durable run-step history. Use this canonical history for execution inspection and fork planning, including after terminal job rows have been TTL-swept.',
     )
     steps_next_cursor: str | None = Field(
@@ -4586,7 +4586,7 @@ class StartInlineRunRequest(BaseModel):
     )
     external_id: str | None = Field(
         None,
-        description='Caller-supplied logical correlation key for this run. Unique within (project, external_id). If the same external_id is reused while the prior run is still active, the existing run is returned idempotently. Once the prior run is terminal (completed or failed), a duplicate POST returns 409 with code `external_id_conflict` and the existing `run_id` and status carried in `details`. To launch a fresh attempt for the same logical job after a terminal run, use a new external_id (e.g. suffix with an attempt counter).',
+        description='Caller-supplied logical correlation key for this run. Unique within the project. If the same external_id is reused while the prior run is still active, the existing run is returned idempotently. Once the prior run is terminal (completed or failed), a duplicate POST returns 409 with code `external_id_conflict` and the `existing_run_id` and `status` carried in `details`. To launch a fresh attempt for the same logical job after a terminal run, use a new external_id (e.g. suffix with an attempt counter).',
     )
     config: ConfigEntries | None = Field(
         None,

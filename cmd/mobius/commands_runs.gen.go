@@ -42,7 +42,7 @@ func registerRunsCommands(app *cli.App) {
 		Description("Fork a terminal run from a specific step").
 		Args("id").
 		Flags(
-			cli.String("definition-version-id", "").Help("Optional target workflow definition version for post-fork execution. Inherited history remains tied…"),
+			cli.String("definition-version-id", "").Help("Optional target workflow definition version for post-fork execution. It must belong to the same wor…"),
 			cli.String("external-id", "").Help("[required] Logical external identifier for the new forked run. It must be unique within the project, just like…"),
 			cli.String("from-step-id", "").Help("[required] Run-step identifier to fork from. Use the `id` returned by `RunStep`."),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
@@ -408,7 +408,7 @@ func registerRunsCommands(app *cli.App) {
 		Args("id").
 		Flags(
 			cli.String("config", "").Help("Flat cascade config input used outside authored workflow YAML. Each entry addresses one `(category,… Accepts JSON, @file, or @-."),
-			cli.String("external-id", "").Help("Caller-supplied logical correlation key for this run. Unique within (project, external_id). If the …"),
+			cli.String("external-id", "").Help("Caller-supplied logical correlation key for this run. Unique within the project. If the same extern…"),
 			cli.String("inputs", "").Help("Input values to pass to the workflow. Must conform to the workflow's declared input schema. Accepts JSON, @file, or @-."),
 			cli.String("metadata", "").Help("Caller-supplied string metadata attached to the run for filtering and display. Accepts JSON, @file, or @-."),
 			cli.String("queue", "").Help("Queue name to enqueue the run on. Defaults to \"default\"."),

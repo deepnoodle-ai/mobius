@@ -347,7 +347,7 @@ export interface paths {
         put?: never;
         /**
          * Fork a terminal run from a specific step
-         * @description Creates a new active run that inherits step history before `from_step_id` and resumes execution at that step. The request must provide a new logical `external_id`. `external_id` keeps the normal project-wide run uniqueness semantics; retrying the same fork request with the same source run, fork step, `external_id`, and target definition version is idempotent and returns the existing forked run with `202` whether that fork is still active or already terminal.
+         * @description Creates a new active run that inherits step history before `from_step_id` and resumes execution at that step. The request must provide a new logical `external_id`. `external_id` keeps the normal project-wide run uniqueness semantics; retrying the same fork request with the same source run, fork step, `external_id`, and effective target definition version is idempotent and returns the existing forked run with `202` whether that fork is still active or already terminal. Omitting `definition_version_id` keeps the source run's definition version; supplying it pins post-fork execution to that explicit version, and a retry that changes this value is an `idempotency_conflict`.
          */
         post: operations["forkRun"];
         delete?: never;
@@ -383,7 +383,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get one run step */
+        /**
+         * Get one run step
+         * @description Returns a single durable `RunStep` row for a workflow run. Run steps are the canonical execution history; linked job state, when present, is live worker-claim metadata and may disappear after terminal job retention.
+         */
         get: operations["getRunStep"];
         put?: never;
         post?: never;
@@ -2496,7 +2499,7 @@ export interface components {
             scheduled: number;
             claimed: number;
         };
-        /** @description Aggregate count of run-step rows for this run grouped by status. Counts every attempt of every step (one row per step × attempt × path), so it reflects durable progress rather than the live worker pool. Use this for run-progress UI; use `job_counts` for live claimability. */
+        /** @description Aggregate count of run-step rows for this run grouped by status. Counts every attempt of every step (one row per step x attempt x path), so it reflects durable progress rather than the live worker pool. Use this for run-progress UI; use `job_counts` for live claimability. */
         WorkflowRunStepCounts: {
             pending: number;
             running: number;
@@ -2557,7 +2560,7 @@ export interface components {
             actor_id?: string;
             /** @description Human-readable label for the initiator (e.g. trigger name, API key name). */
             initiated_by?: string;
-            /** @description Caller-supplied logical correlation key for this run. Unique within (project, external_id); identifies a logical job across attempts. See the `external_id` description on `POST /runs` for the conflict semantics that govern duplicate values. */
+            /** @description Caller-supplied logical correlation key for this run. Unique within the project; identifies a logical job across attempts. See the `external_id` description on `POST /runs` for the conflict semantics that govern duplicate values. */
             external_id?: string;
             /** @description Compatibility boolean set when cancellation was requested. Use `cancel_requested_at` for audit detail and `status` for terminal checks. */
             cancel_requested?: boolean;
@@ -2611,13 +2614,13 @@ export interface components {
             path_id: string;
             step_name: string;
         };
-        /** @description Fork creation request. Tags are inherited from the source run and then overlaid with request tags using the same tag inheritance rules as run creation: request values replace matching source keys, and an empty string removes the inherited key. `definition_version_id` changes only the post-fork execution version; it does not affect inherited history. */
+        /** @description Fork creation request. Tags are inherited from the source run and then overlaid with request tags using the same tag inheritance rules as run creation: request values replace matching source keys, and an empty string removes the inherited key. `definition_version_id` changes only the post-fork execution version; it does not affect inherited history. When omitted, the fork uses the source run's definition version. */
         RunForkRequest: {
             /** @description Run-step identifier to fork from. Use the `id` returned by `RunStep`. */
             from_step_id: string;
             /** @description Logical external identifier for the new forked run. It must be unique within the project, just like other workflow-run `external_id` values. */
             external_id: string;
-            /** @description Optional target workflow definition version for post-fork execution. Inherited history remains tied to the source run. */
+            /** @description Optional target workflow definition version for post-fork execution. It must belong to the same workflow definition as the source run. Omit it to use the source run's original definition version. Inherited history remains tied to the source run. */
             definition_version_id?: string;
             /** @description Tags to overlay on the inherited source-run tags. Empty string values remove inherited keys. */
             tags?: components["schemas"]["TagMap"];
@@ -2692,7 +2695,7 @@ export interface components {
             /** @description Base64-encoded terminal result blob */
             result_b64?: string;
             /** @description First page of durable run-step history. Use this canonical history for execution inspection and fork planning, including after terminal job rows have been TTL-swept. */
-            steps?: components["schemas"]["RunStep"][];
+            steps: components["schemas"]["RunStep"][];
             /** @description Cursor for the next page of durable run-step history. */
             steps_next_cursor?: string;
         };
@@ -2717,7 +2720,7 @@ export interface components {
             };
             /** @description Tags applied on top of the workflow definition's inherited tags. Caller keys override on conflict; an entry whose value is the empty string opts the inherited key out entirely (so the run does not carry it). Setting a tag value to "" is therefore reserved as the opt-out signal — use a placeholder value if you actually want a stored empty value. */
             tags?: components["schemas"]["TagMap"];
-            /** @description Caller-supplied logical correlation key for this run. Unique within (project, external_id). If the same external_id is reused while the prior run is still active, the existing run is returned idempotently. Once the prior run is terminal (completed or failed), a duplicate POST returns 409 with code `external_id_conflict` and the existing `run_id` and status carried in `details`. To launch a fresh attempt for the same logical job after a terminal run, use a new external_id (e.g. suffix with an attempt counter). */
+            /** @description Caller-supplied logical correlation key for this run. Unique within the project. If the same external_id is reused while the prior run is still active, the existing run is returned idempotently. Once the prior run is terminal (completed or failed), a duplicate POST returns 409 with code `external_id_conflict` and the `existing_run_id` and `status` carried in `details`. To launch a fresh attempt for the same logical job after a terminal run, use a new external_id (e.g. suffix with an attempt counter). */
             external_id?: string;
             /** @description Run-level cascade config overrides applied when starting the run. */
             config?: components["schemas"]["ConfigEntries"];
@@ -2743,7 +2746,7 @@ export interface components {
             };
             /** @description Initial tags for this inline run. Inline runs have no parent workflow definition, so there is nothing to inherit from — every tag on the run comes from this map. */
             tags?: components["schemas"]["TagMap"];
-            /** @description Caller-supplied logical correlation key for this run. Unique within (project, external_id). If the same external_id is reused while the prior run is still active, the existing run is returned idempotently. Once the prior run is terminal (completed or failed), a duplicate POST returns 409 with code `external_id_conflict` and the existing `run_id` and status carried in `details`. To launch a fresh attempt for the same logical job after a terminal run, use a new external_id (e.g. suffix with an attempt counter). */
+            /** @description Caller-supplied logical correlation key for this run. Unique within the project. If the same external_id is reused while the prior run is still active, the existing run is returned idempotently. Once the prior run is terminal (completed or failed), a duplicate POST returns 409 with code `external_id_conflict` and the `existing_run_id` and `status` carried in `details`. To launch a fresh attempt for the same logical job after a terminal run, use a new external_id (e.g. suffix with an attempt counter). */
             external_id?: string;
             /** @description Run-level cascade config overrides applied when starting the run. */
             config?: components["schemas"]["ConfigEntries"];
@@ -2769,7 +2772,7 @@ export interface components {
             };
             /** @description Tags applied on top of the bound workflow definition's inherited tags. Caller keys override on conflict; an entry whose value is the empty string opts the inherited key out entirely (so the run does not carry it). Setting a tag value to "" is therefore reserved as the opt-out signal — use a placeholder value if you actually want a stored empty value. */
             tags?: components["schemas"]["TagMap"];
-            /** @description Caller-supplied logical correlation key for this run. Unique within (project, external_id). If the same external_id is reused while the prior run is still active, the existing run is returned idempotently. Once the prior run is terminal (completed or failed), a duplicate POST returns 409 with code `external_id_conflict` and the existing `run_id` and status carried in `details`. To launch a fresh attempt for the same logical job after a terminal run, use a new external_id (e.g. suffix with an attempt counter). */
+            /** @description Caller-supplied logical correlation key for this run. Unique within the project. If the same external_id is reused while the prior run is still active, the existing run is returned idempotently. Once the prior run is terminal (completed or failed), a duplicate POST returns 409 with code `external_id_conflict` and the `existing_run_id` and `status` carried in `details`. To launch a fresh attempt for the same logical job after a terminal run, use a new external_id (e.g. suffix with an attempt counter). */
             external_id?: string;
             /** @description Run-level cascade config overrides applied when starting the bound workflow. */
             config?: components["schemas"]["ConfigEntries"];
@@ -5421,6 +5424,18 @@ export interface operations {
                      *         "completed": 0,
                      *         "failed": 0
                      *       },
+                     *       "job_counts": {
+                     *         "ready": 1,
+                     *         "scheduled": 0,
+                     *         "claimed": 0
+                     *       },
+                     *       "step_counts": {
+                     *         "pending": 1,
+                     *         "running": 0,
+                     *         "completed": 0,
+                     *         "failed": 0,
+                     *         "cancelled": 0
+                     *       },
                      *       "wait_summary": {
                      *         "waiting_paths": 0,
                      *         "kind_counts": {},
@@ -5520,7 +5535,7 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Fork created, or an existing fork returned for an idempotent retry with the same source run, `from_step_id`, `external_id`, and `definition_version_id`. */
+            /** @description Fork created, or an existing fork returned for an idempotent retry with the same source run, `from_step_id`, `external_id`, and effective target definition version. */
             202: {
                 headers: {
                     [name: string]: unknown;

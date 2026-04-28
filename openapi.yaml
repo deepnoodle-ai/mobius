@@ -818,6 +818,16 @@ paths:
                   waiting: 0
                   completed: 0
                   failed: 0
+                job_counts:
+                  ready: 1
+                  scheduled: 0
+                  claimed: 0
+                step_counts:
+                  pending: 1
+                  running: 0
+                  completed: 0
+                  failed: 0
+                  cancelled: 0
                 wait_summary:
                   waiting_paths: 0
                   kind_counts: {}
@@ -950,9 +960,11 @@ paths:
       description: Creates a new active run that inherits step history before `from_step_id`
         and resumes execution at that step. The request must provide a new logical `external_id`.
         `external_id` keeps the normal project-wide run uniqueness semantics; retrying the
-        same fork request with the same source run, fork step, `external_id`, and target definition
-        version is idempotent and returns the existing forked run with `202` whether that
-        fork is still active or already terminal.
+        same fork request with the same source run, fork step, `external_id`, and effective
+        target definition version is idempotent and returns the existing forked run with `202`
+        whether that fork is still active or already terminal. Omitting `definition_version_id`
+        keeps the source run's definition version; supplying it pins post-fork execution to
+        that explicit version, and a retry that changes this value is an `idempotency_conflict`.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/IDParam'
@@ -965,7 +977,8 @@ paths:
       responses:
         '202':
           description: Fork created, or an existing fork returned for an idempotent retry
-            with the same source run, `from_step_id`, `external_id`, and `definition_version_id`.
+            with the same source run, `from_step_id`, `external_id`, and effective target
+            definition version.
           content:
             application/json:
               schema:
@@ -1029,6 +1042,9 @@ paths:
       tags:
       - runs
       summary: Get one run step
+      description: Returns a single durable `RunStep` row for a workflow run. Run steps are
+        the canonical execution history; linked job state, when present, is live worker-claim
+        metadata and may disappear after terminal job retention.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/IDParam'
@@ -5351,7 +5367,7 @@ components:
       - failed
       - cancelled
       description: Aggregate count of run-step rows for this run grouped by status. Counts
-        every attempt of every step (one row per step × attempt × path), so it reflects durable
+        every attempt of every step (one row per step x attempt x path), so it reflects durable
         progress rather than the live worker pool. Use this for run-progress UI; use `job_counts`
         for live claimability.
       properties:
@@ -5476,8 +5492,8 @@ components:
         external_id:
           type: string
           description: Caller-supplied logical correlation key for this run. Unique within
-            (project, external_id); identifies a logical job across attempts. See the `external_id`
-            description on `POST /runs` for the conflict semantics that govern duplicate values.
+            the project; identifies a logical job across attempts. See the `external_id` description
+            on `POST /runs` for the conflict semantics that govern duplicate values.
         cancel_requested:
           type: boolean
           description: Compatibility boolean set when cancellation was requested. Use `cancel_requested_at`
@@ -5556,7 +5572,8 @@ components:
         overlaid with request tags using the same tag inheritance rules as run creation: request
         values replace matching source keys, and an empty string removes the inherited key.
         `definition_version_id` changes only the post-fork execution version; it does not
-        affect inherited history.'
+        affect inherited history. When omitted, the fork uses the source run''s definition
+        version.'
       properties:
         from_step_id:
           type: string
@@ -5568,7 +5585,9 @@ components:
         definition_version_id:
           type: string
           description: Optional target workflow definition version for post-fork execution.
-            Inherited history remains tied to the source run.
+            It must belong to the same workflow definition as the source run. Omit it to use
+            the source run's original definition version. Inherited history remains tied to
+            the source run.
         tags:
           description: Tags to overlay on the inherited source-run tags. Empty string values
             remove inherited keys.
@@ -5717,6 +5736,7 @@ components:
       - type: object
         required:
         - paths
+        - steps
         properties:
           paths:
             type: array
@@ -5781,10 +5801,10 @@ components:
         external_id:
           type: string
           description: Caller-supplied logical correlation key for this run. Unique within
-            (project, external_id). If the same external_id is reused while the prior run
-            is still active, the existing run is returned idempotently. Once the prior run
-            is terminal (completed or failed), a duplicate POST returns 409 with code `external_id_conflict`
-            and the existing `run_id` and status carried in `details`. To launch a fresh attempt
+            the project. If the same external_id is reused while the prior run is still active,
+            the existing run is returned idempotently. Once the prior run is terminal (completed
+            or failed), a duplicate POST returns 409 with code `external_id_conflict` and
+            the `existing_run_id` and `status` carried in `details`. To launch a fresh attempt
             for the same logical job after a terminal run, use a new external_id (e.g. suffix
             with an attempt counter).
         config:
@@ -5830,10 +5850,10 @@ components:
         external_id:
           type: string
           description: Caller-supplied logical correlation key for this run. Unique within
-            (project, external_id). If the same external_id is reused while the prior run
-            is still active, the existing run is returned idempotently. Once the prior run
-            is terminal (completed or failed), a duplicate POST returns 409 with code `external_id_conflict`
-            and the existing `run_id` and status carried in `details`. To launch a fresh attempt
+            the project. If the same external_id is reused while the prior run is still active,
+            the existing run is returned idempotently. Once the prior run is terminal (completed
+            or failed), a duplicate POST returns 409 with code `external_id_conflict` and
+            the `existing_run_id` and `status` carried in `details`. To launch a fresh attempt
             for the same logical job after a terminal run, use a new external_id (e.g. suffix
             with an attempt counter).
         config:
@@ -5885,10 +5905,10 @@ components:
         external_id:
           type: string
           description: Caller-supplied logical correlation key for this run. Unique within
-            (project, external_id). If the same external_id is reused while the prior run
-            is still active, the existing run is returned idempotently. Once the prior run
-            is terminal (completed or failed), a duplicate POST returns 409 with code `external_id_conflict`
-            and the existing `run_id` and status carried in `details`. To launch a fresh attempt
+            the project. If the same external_id is reused while the prior run is still active,
+            the existing run is returned idempotently. Once the prior run is terminal (completed
+            or failed), a duplicate POST returns 409 with code `external_id_conflict` and
+            the `existing_run_id` and `status` carried in `details`. To launch a fresh attempt
             for the same logical job after a terminal run, use a new external_id (e.g. suffix
             with an attempt counter).
         config:
