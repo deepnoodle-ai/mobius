@@ -2,6 +2,7 @@ package mobius
 
 import (
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/deepnoodle-ai/wonton/assert"
@@ -16,8 +17,9 @@ func TestResolveInstanceID_ExplicitWins(t *testing.T) {
 }
 
 // TestResolveInstanceID_FallsBackToSystemHostname makes sure laptops
-// and dev VMs (no platform env vars set) get a stable, human-readable
-// identifier from os.Hostname() rather than a fresh UUID per boot.
+// and dev VMs (no platform env vars set) get a human-readable hostname
+// prefix plus a per-boot random suffix, so two processes on the same
+// host never auto-detect to the same worker_instance_id.
 func TestResolveInstanceID_FallsBackToSystemHostname(t *testing.T) {
 	t.Setenv("K_REVISION", "")
 	t.Setenv("HOSTNAME", "")
@@ -31,8 +33,13 @@ func TestResolveInstanceID_FallsBackToSystemHostname(t *testing.T) {
 	}
 
 	id, source := ResolveInstanceID("")
-	assert.Equal(t, id, host)
 	assert.Equal(t, source, InstanceIDSourceSystemHostname)
+	assert.True(t, strings.HasPrefix(id, host+"-"),
+		"expected id %q to start with %q-", id, host)
+	assert.Equal(t, len(id), len(host)+1+8)
+
+	id2, _ := ResolveInstanceID("")
+	assert.NotEqual(t, id, id2, "back-to-back resolutions must differ")
 }
 
 // TestResolveInstanceID_HostnameEnvBeatsSystemHostname confirms the

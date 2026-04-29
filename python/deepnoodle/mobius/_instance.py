@@ -1,6 +1,6 @@
 """Worker instance ID auto-detection.
 
-The Mobius SDK identifies each running worker process by a stable
+The Mobius SDK identifies each running worker process by a per-process
 ``worker_instance_id``. Operators can configure one explicitly, but the
 common case is "let the SDK figure it out from the runtime platform" so
 that two replicas of the same image surface as two distinct rows.
@@ -13,8 +13,14 @@ Resolution order matches the Go and TypeScript SDKs:
 4. ``FLY_MACHINE_ID``
 5. ``RAILWAY_REPLICA_ID``
 6. ``RENDER_INSTANCE_ID``
-7. system hostname via ``socket.gethostname()`` (laptops, dev VMs, bare metal)
+7. ``socket.gethostname()`` suffixed with a per-boot random tag
+   (laptops, dev VMs, bare metal — without the suffix two processes on
+   the same host would auto-detect to the same identifier)
 8. UUID per boot (last resort)
+
+Set the explicit value only when a stable identity across restarts is
+desired (named singleton workers); the auto-detected identifier is
+unique per process, so two processes on the same host never collide.
 """
 
 from __future__ import annotations
@@ -72,7 +78,7 @@ def resolve_instance_id(explicit: str | None) -> tuple[str, InstanceIDSource]:
     except OSError:
         host = ""
     if host:
-        return host, "system_hostname"
+        return f"{host}-{uuid.uuid4().hex[:8]}", "system_hostname"
     return str(uuid.uuid4()), "generated_uuid"
 
 
