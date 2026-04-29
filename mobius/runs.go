@@ -27,8 +27,10 @@ type ListRunsOptions struct {
 	WorkflowType string
 	Queue        string
 	ParentRunID  string
-	InitiatedBy  string
+	SourceType   string
+	SourceID     string
 	ExternalID   string
+	ForkedFrom   string
 	Cursor       string
 	Limit        int
 }
@@ -241,11 +243,17 @@ func listRunsParams(opts *ListRunsOptions) *api.ListRunsParams {
 	if opts.ParentRunID != "" {
 		params.ParentRunId = &opts.ParentRunID
 	}
-	if opts.InitiatedBy != "" {
-		params.InitiatedBy = &opts.InitiatedBy
+	if opts.SourceType != "" {
+		params.SourceType = &opts.SourceType
+	}
+	if opts.SourceID != "" {
+		params.SourceId = &opts.SourceID
 	}
 	if opts.ExternalID != "" {
 		params.ExternalId = &opts.ExternalID
+	}
+	if opts.ForkedFrom != "" {
+		params.ForkedFrom = &opts.ForkedFrom
 	}
 	if opts.Cursor != "" {
 		cursor := api.CursorParam(opts.Cursor)

@@ -550,6 +550,27 @@ func (e ResolvedConfigEntrySource) Valid() bool {
 	}
 }
 
+// Defines values for RunStepKind.
+const (
+	RunStepKindControl      RunStepKind = "control"
+	RunStepKindServerAction RunStepKind = "server_action"
+	RunStepKindWorkerAction RunStepKind = "worker_action"
+)
+
+// Valid indicates whether the value is a known member of the RunStepKind enum.
+func (e RunStepKind) Valid() bool {
+	switch e {
+	case RunStepKindControl:
+		return true
+	case RunStepKindServerAction:
+		return true
+	case RunStepKindWorkerAction:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for RunStepSource.
 const (
 	RunStepSourceExecuted  RunStepSource = "executed"
@@ -1257,42 +1278,6 @@ type ActionListResponse struct {
 
 	// NextCursor Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.
 	NextCursor *string `json:"next_cursor,omitempty"`
-}
-
-// ActionLogEntry One server-side action invocation recorded for a workflow run.
-type ActionLogEntry struct {
-	// Action Action name that was executed.
-	Action string `json:"action"`
-
-	// BranchId Execution branch this entry belongs to.
-	BranchId string `json:"branch_id"`
-
-	// DurationMs Elapsed time in milliseconds from start to completion.
-	DurationMs int `json:"duration_ms"`
-
-	// Error Error message when the action failed.
-	Error *string `json:"error,omitempty"`
-
-	// Id Unique identifier for this action log entry.
-	Id string `json:"id"`
-
-	// Parameters Input parameters that were passed to the action.
-	Parameters *map[string]interface{} `json:"parameters,omitempty"`
-
-	// Result Output returned by the action. Present on success.
-	Result *map[string]interface{} `json:"result,omitempty"`
-
-	// StartedAt Timestamp when the action execution started.
-	StartedAt time.Time `json:"started_at"`
-
-	// StepName Workflow step name that produced this action log entry.
-	StepName string `json:"step_name"`
-}
-
-// ActionLogListResponse Unpaginated action log for one workflow run. Entries are scoped to a single run and ordered for inspection rather than broad search.
-type ActionLogListResponse struct {
-	// Items The list of action log entries for this run.
-	Items []ActionLogEntry `json:"items"`
 }
 
 // AddChannelMemberRequest Member identity and role to add to a channel.
@@ -2398,6 +2383,9 @@ type Job struct {
 	// CreatedAt Timestamp when this job was created.
 	CreatedAt time.Time `json:"created_at"`
 
+	// ErrorMessage Error detail from the most recent failed attempt.
+	ErrorMessage *string `json:"error_message,omitempty"`
+
 	// ErrorType Failure cause. Server-produced timeout and cancellation failures use stable tokens such as `claim_timeout`, `liveness_timeout`, `execution_timeout`, `run_cancelled`, `run_timeout`, and `run_failed`; worker-reported failures may use caller-defined class names. Present when `status=failed`.
 	ErrorType *string `json:"error_type,omitempty"`
 
@@ -2409,9 +2397,6 @@ type Job struct {
 
 	// Id Unique identifier for this job.
 	Id string `json:"id"`
-
-	// LastError Error detail from the most recent failed attempt.
-	LastError *string `json:"last_error,omitempty"`
 
 	// LivenessDeadlineAt Deadline at which the reaper will either reset (retries remain) or fail this job with `error_type=liveness_timeout` if the worker has not heartbeated in time. Present only when `resolved_config` contains an entry with `category="timeouts"` and `key="liveness"` whose value resolves to a finite duration and the job is claimed.
 	LivenessDeadlineAt *time.Time `json:"liveness_deadline_at,omitempty"`
@@ -2885,6 +2870,9 @@ type RunStep struct {
 	// JobId Linked live worker job when one exists. Terminal jobs may be reaped while the RunStep remains.
 	JobId *string `json:"job_id,omitempty"`
 
+	// Kind Why this ledger row exists: worker-claimable action, synchronous server action, or Mobius control transition.
+	Kind RunStepKind `json:"kind"`
+
 	// Parameters Resolved parameters/input for this step attempt.
 	Parameters map[string]interface{} `json:"parameters"`
 
@@ -2912,9 +2900,15 @@ type RunStep struct {
 	Status       RunStepStatus `json:"status"`
 
 	// StepName Step name from the workflow definition.
-	StepName  string    `json:"step_name"`
-	UpdatedAt time.Time `json:"updated_at"`
+	StepName string `json:"step_name"`
+
+	// TransitionSeq Per-run monotonic transition order for projection and fork reconstruction.
+	TransitionSeq int64     `json:"transition_seq"`
+	UpdatedAt     time.Time `json:"updated_at"`
 }
+
+// RunStepKind defines model for RunStepKind.
+type RunStepKind string
 
 // RunStepListResponse Paginated durable run-step history. Use this response for historical run inspection because linked job rows are live worker state and may be TTL-swept.
 type RunStepListResponse struct {
@@ -4075,9 +4069,6 @@ type WorkflowRun struct {
 	// Attempt Retry attempt number (1-based). Increments each time the run is retried.
 	Attempt int `json:"attempt"`
 
-	// CancelRequested Compatibility boolean set when cancellation was requested. Use `cancel_requested_at` for audit detail and `status` for terminal checks.
-	CancelRequested *bool `json:"cancel_requested,omitempty"`
-
 	// CancelRequestedAt Timestamp when cancellation was requested.
 	CancelRequestedAt *time.Time `json:"cancel_requested_at,omitempty"`
 
@@ -4115,9 +4106,6 @@ type WorkflowRun struct {
 	// Id Unique identifier for this run.
 	Id string `json:"id"`
 
-	// InitiatedBy Human-readable label for the initiator (e.g. trigger name, API key name).
-	InitiatedBy *string `json:"initiated_by,omitempty"`
-
 	// Inputs Input values provided when the run was started.
 	Inputs *map[string]interface{} `json:"inputs,omitempty"`
 
@@ -4138,6 +4126,15 @@ type WorkflowRun struct {
 
 	// ResolvedConfig Frozen cascade resolution in flat entry form. Keys unset at every layer are omitted. See PRD 035.
 	ResolvedConfig *ResolvedConfig `json:"resolved_config,omitempty"`
+
+	// SourceId Identifier for the run source within its source type.
+	SourceId *string `json:"source_id,omitempty"`
+
+	// SourceLabel Human-readable label for the run source.
+	SourceLabel *string `json:"source_label,omitempty"`
+
+	// SourceType Type of source that requested this run (api, trigger, slack, fork, tool).
+	SourceType *string `json:"source_type,omitempty"`
 
 	// StartedAt Timestamp when a worker first claimed this run.
 	StartedAt *time.Time `json:"started_at,omitempty"`
@@ -4179,9 +4176,6 @@ type WorkflowRunDetail struct {
 	// Attempt Retry attempt number (1-based). Increments each time the run is retried.
 	Attempt int `json:"attempt"`
 
-	// CancelRequested Compatibility boolean set when cancellation was requested. Use `cancel_requested_at` for audit detail and `status` for terminal checks.
-	CancelRequested *bool `json:"cancel_requested,omitempty"`
-
 	// CancelRequestedAt Timestamp when cancellation was requested.
 	CancelRequestedAt *time.Time `json:"cancel_requested_at,omitempty"`
 
@@ -4219,9 +4213,6 @@ type WorkflowRunDetail struct {
 	// Id Unique identifier for this run.
 	Id string `json:"id"`
 
-	// InitiatedBy Human-readable label for the initiator (e.g. trigger name, API key name).
-	InitiatedBy *string `json:"initiated_by,omitempty"`
-
 	// Inputs Input values provided when the run was started.
 	Inputs *map[string]interface{} `json:"inputs,omitempty"`
 
@@ -4249,6 +4240,15 @@ type WorkflowRunDetail struct {
 	// ResultB64 Base64-encoded terminal result blob
 	ResultB64 *string `json:"result_b64,omitempty"`
 
+	// SourceId Identifier for the run source within its source type.
+	SourceId *string `json:"source_id,omitempty"`
+
+	// SourceLabel Human-readable label for the run source.
+	SourceLabel *string `json:"source_label,omitempty"`
+
+	// SourceType Type of source that requested this run (api, trigger, slack, fork, tool).
+	SourceType *string `json:"source_type,omitempty"`
+
 	// Spec Workflow definition shaped like `workflow.Options`.
 	//
 	// Authoring rule: `action` is the canonical field for executable steps. When `action_kind` is omitted, `action` uses worker/job semantics. Use `action_kind: "server"` for Mobius-managed server actions such as platform integrations or custom HTTP-backed actions.
@@ -4263,7 +4263,7 @@ type WorkflowRunDetail struct {
 	// StepCounts Aggregate count of run-step rows for this run grouped by status. Counts every attempt of every step (one row per step x attempt x path), so it reflects durable progress rather than the live worker pool. Use this for run-progress UI; use `job_counts` for live claimability.
 	StepCounts WorkflowRunStepCounts `json:"step_counts"`
 
-	// Steps First page of durable run-step history. Use this canonical history for execution inspection and fork planning, including after terminal job rows have been TTL-swept.
+	// Steps First page of durable run-step history, ordered by `transition_seq` ascending. Use this canonical history for execution inspection and fork planning, including after terminal job rows have been TTL-swept.
 	Steps []RunStep `json:"steps"`
 
 	// StepsNextCursor Cursor for the next page of durable run-step history.
@@ -4850,8 +4850,11 @@ type ListRunsParams struct {
 	// ParentRunId Filter to child runs of the specified parent run.
 	ParentRunId *string `form:"parent_run_id,omitempty" json:"parent_run_id,omitempty"`
 
-	// InitiatedBy Filter by the initiator label (e.g. trigger name, API key name).
-	InitiatedBy *string `form:"initiated_by,omitempty" json:"initiated_by,omitempty"`
+	// SourceType Filter by run source type (e.g. api, trigger, slack, fork).
+	SourceType *string `form:"source_type,omitempty" json:"source_type,omitempty"`
+
+	// SourceId Filter by the source identifier for the source type.
+	SourceId *string `form:"source_id,omitempty" json:"source_id,omitempty"`
 
 	// ExternalId Filter by caller-supplied external ID or correlation key.
 	ExternalId *string `form:"external_id,omitempty" json:"external_id,omitempty"`
@@ -5943,14 +5946,6 @@ func (a *WorkflowRun) UnmarshalJSON(b []byte) error {
 		delete(object, "attempt")
 	}
 
-	if raw, found := object["cancel_requested"]; found {
-		err = json.Unmarshal(raw, &a.CancelRequested)
-		if err != nil {
-			return fmt.Errorf("error reading 'cancel_requested': %w", err)
-		}
-		delete(object, "cancel_requested")
-	}
-
 	if raw, found := object["cancel_requested_at"]; found {
 		err = json.Unmarshal(raw, &a.CancelRequestedAt)
 		if err != nil {
@@ -6055,14 +6050,6 @@ func (a *WorkflowRun) UnmarshalJSON(b []byte) error {
 		delete(object, "id")
 	}
 
-	if raw, found := object["initiated_by"]; found {
-		err = json.Unmarshal(raw, &a.InitiatedBy)
-		if err != nil {
-			return fmt.Errorf("error reading 'initiated_by': %w", err)
-		}
-		delete(object, "initiated_by")
-	}
-
 	if raw, found := object["inputs"]; found {
 		err = json.Unmarshal(raw, &a.Inputs)
 		if err != nil {
@@ -6117,6 +6104,30 @@ func (a *WorkflowRun) UnmarshalJSON(b []byte) error {
 			return fmt.Errorf("error reading 'resolved_config': %w", err)
 		}
 		delete(object, "resolved_config")
+	}
+
+	if raw, found := object["source_id"]; found {
+		err = json.Unmarshal(raw, &a.SourceId)
+		if err != nil {
+			return fmt.Errorf("error reading 'source_id': %w", err)
+		}
+		delete(object, "source_id")
+	}
+
+	if raw, found := object["source_label"]; found {
+		err = json.Unmarshal(raw, &a.SourceLabel)
+		if err != nil {
+			return fmt.Errorf("error reading 'source_label': %w", err)
+		}
+		delete(object, "source_label")
+	}
+
+	if raw, found := object["source_type"]; found {
+		err = json.Unmarshal(raw, &a.SourceType)
+		if err != nil {
+			return fmt.Errorf("error reading 'source_type': %w", err)
+		}
+		delete(object, "source_type")
 	}
 
 	if raw, found := object["started_at"]; found {
@@ -6221,13 +6232,6 @@ func (a WorkflowRun) MarshalJSON() ([]byte, error) {
 		return nil, fmt.Errorf("error marshaling 'attempt': %w", err)
 	}
 
-	if a.CancelRequested != nil {
-		object["cancel_requested"], err = json.Marshal(a.CancelRequested)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'cancel_requested': %w", err)
-		}
-	}
-
 	if a.CancelRequestedAt != nil {
 		object["cancel_requested_at"], err = json.Marshal(a.CancelRequestedAt)
 		if err != nil {
@@ -6313,13 +6317,6 @@ func (a WorkflowRun) MarshalJSON() ([]byte, error) {
 		return nil, fmt.Errorf("error marshaling 'id': %w", err)
 	}
 
-	if a.InitiatedBy != nil {
-		object["initiated_by"], err = json.Marshal(a.InitiatedBy)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'initiated_by': %w", err)
-		}
-	}
-
 	if a.Inputs != nil {
 		object["inputs"], err = json.Marshal(a.Inputs)
 		if err != nil {
@@ -6362,6 +6359,27 @@ func (a WorkflowRun) MarshalJSON() ([]byte, error) {
 		object["resolved_config"], err = json.Marshal(a.ResolvedConfig)
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'resolved_config': %w", err)
+		}
+	}
+
+	if a.SourceId != nil {
+		object["source_id"], err = json.Marshal(a.SourceId)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'source_id': %w", err)
+		}
+	}
+
+	if a.SourceLabel != nil {
+		object["source_label"], err = json.Marshal(a.SourceLabel)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'source_label': %w", err)
+		}
+	}
+
+	if a.SourceType != nil {
+		object["source_type"], err = json.Marshal(a.SourceType)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'source_type': %w", err)
 		}
 	}
 
@@ -6469,14 +6487,6 @@ func (a *WorkflowRunDetail) UnmarshalJSON(b []byte) error {
 		delete(object, "attempt")
 	}
 
-	if raw, found := object["cancel_requested"]; found {
-		err = json.Unmarshal(raw, &a.CancelRequested)
-		if err != nil {
-			return fmt.Errorf("error reading 'cancel_requested': %w", err)
-		}
-		delete(object, "cancel_requested")
-	}
-
 	if raw, found := object["cancel_requested_at"]; found {
 		err = json.Unmarshal(raw, &a.CancelRequestedAt)
 		if err != nil {
@@ -6581,14 +6591,6 @@ func (a *WorkflowRunDetail) UnmarshalJSON(b []byte) error {
 		delete(object, "id")
 	}
 
-	if raw, found := object["initiated_by"]; found {
-		err = json.Unmarshal(raw, &a.InitiatedBy)
-		if err != nil {
-			return fmt.Errorf("error reading 'initiated_by': %w", err)
-		}
-		delete(object, "initiated_by")
-	}
-
 	if raw, found := object["inputs"]; found {
 		err = json.Unmarshal(raw, &a.Inputs)
 		if err != nil {
@@ -6659,6 +6661,30 @@ func (a *WorkflowRunDetail) UnmarshalJSON(b []byte) error {
 			return fmt.Errorf("error reading 'result_b64': %w", err)
 		}
 		delete(object, "result_b64")
+	}
+
+	if raw, found := object["source_id"]; found {
+		err = json.Unmarshal(raw, &a.SourceId)
+		if err != nil {
+			return fmt.Errorf("error reading 'source_id': %w", err)
+		}
+		delete(object, "source_id")
+	}
+
+	if raw, found := object["source_label"]; found {
+		err = json.Unmarshal(raw, &a.SourceLabel)
+		if err != nil {
+			return fmt.Errorf("error reading 'source_label': %w", err)
+		}
+		delete(object, "source_label")
+	}
+
+	if raw, found := object["source_type"]; found {
+		err = json.Unmarshal(raw, &a.SourceType)
+		if err != nil {
+			return fmt.Errorf("error reading 'source_type': %w", err)
+		}
+		delete(object, "source_type")
 	}
 
 	if raw, found := object["spec"]; found {
@@ -6787,13 +6813,6 @@ func (a WorkflowRunDetail) MarshalJSON() ([]byte, error) {
 		return nil, fmt.Errorf("error marshaling 'attempt': %w", err)
 	}
 
-	if a.CancelRequested != nil {
-		object["cancel_requested"], err = json.Marshal(a.CancelRequested)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'cancel_requested': %w", err)
-		}
-	}
-
 	if a.CancelRequestedAt != nil {
 		object["cancel_requested_at"], err = json.Marshal(a.CancelRequestedAt)
 		if err != nil {
@@ -6879,13 +6898,6 @@ func (a WorkflowRunDetail) MarshalJSON() ([]byte, error) {
 		return nil, fmt.Errorf("error marshaling 'id': %w", err)
 	}
 
-	if a.InitiatedBy != nil {
-		object["initiated_by"], err = json.Marshal(a.InitiatedBy)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'initiated_by': %w", err)
-		}
-	}
-
 	if a.Inputs != nil {
 		object["inputs"], err = json.Marshal(a.Inputs)
 		if err != nil {
@@ -6942,6 +6954,27 @@ func (a WorkflowRunDetail) MarshalJSON() ([]byte, error) {
 		object["result_b64"], err = json.Marshal(a.ResultB64)
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'result_b64': %w", err)
+		}
+	}
+
+	if a.SourceId != nil {
+		object["source_id"], err = json.Marshal(a.SourceId)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'source_id': %w", err)
+		}
+	}
+
+	if a.SourceLabel != nil {
+		object["source_label"], err = json.Marshal(a.SourceLabel)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'source_label': %w", err)
+		}
+	}
+
+	if a.SourceType != nil {
+		object["source_type"], err = json.Marshal(a.SourceType)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'source_type': %w", err)
 		}
 	}
 
@@ -8441,9 +8474,6 @@ type ClientInterface interface {
 	// GetRun request
 	GetRun(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListRunActionLog request
-	ListRunActionLog(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
-
 	// CancelRun request
 	CancelRun(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -9757,18 +9787,6 @@ func (c *Client) StreamProjectRunEvents(ctx context.Context, project ProjectHand
 
 func (c *Client) GetRun(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetRunRequest(c.Server, project, id)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) ListRunActionLog(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListRunActionLogRequest(c.Server, project, id)
 	if err != nil {
 		return nil, err
 	}
@@ -14393,9 +14411,25 @@ func NewListRunsRequest(server string, project ProjectHandleParam, params *ListR
 
 		}
 
-		if params.InitiatedBy != nil {
+		if params.SourceType != nil {
 
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "initiated_by", *params.InitiatedBy, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "source_type", *params.SourceType, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.SourceId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "source_id", *params.SourceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
 				return nil, err
 			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
 				return nil, err
@@ -14611,47 +14645,6 @@ func NewGetRunRequest(server string, project ProjectHandleParam, id IDParam) (*h
 	}
 
 	operationPath := fmt.Sprintf("/v1/projects/%s/runs/%s", pathParam0, pathParam1)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("GET", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewListRunActionLogRequest generates requests for ListRunActionLog
-func NewListRunActionLogRequest(server string, project ProjectHandleParam, id IDParam) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/projects/%s/runs/%s/action-log", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -17207,9 +17200,6 @@ type ClientWithResponsesInterface interface {
 	// GetRunWithResponse request
 	GetRunWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*GetRunResponse, error)
 
-	// ListRunActionLogWithResponse request
-	ListRunActionLogWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*ListRunActionLogResponse, error)
-
 	// CancelRunWithResponse request
 	CancelRunWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*CancelRunResponse, error)
 
@@ -19118,30 +19108,6 @@ func (r GetRunResponse) StatusCode() int {
 	return 0
 }
 
-type ListRunActionLogResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *ActionLogListResponse
-	JSON401      *Unauthorized
-	JSON404      *NotFound
-}
-
-// Status returns HTTPResponse.Status
-func (r ListRunActionLogResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ListRunActionLogResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
 type CancelRunResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -20970,15 +20936,6 @@ func (c *ClientWithResponses) GetRunWithResponse(ctx context.Context, project Pr
 		return nil, err
 	}
 	return ParseGetRunResponse(rsp)
-}
-
-// ListRunActionLogWithResponse request returning *ListRunActionLogResponse
-func (c *ClientWithResponses) ListRunActionLogWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*ListRunActionLogResponse, error) {
-	rsp, err := c.ListRunActionLog(ctx, project, id, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseListRunActionLogResponse(rsp)
 }
 
 // CancelRunWithResponse request returning *CancelRunResponse
@@ -24532,46 +24489,6 @@ func ParseGetRunResponse(rsp *http.Response) (*GetRunResponse, error) {
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest WorkflowRunDetail
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseListRunActionLogResponse parses an HTTP response from a ListRunActionLogWithResponse call
-func ParseListRunActionLogResponse(rsp *http.Response) (*ListRunActionLogResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ListRunActionLogResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest ActionLogListResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

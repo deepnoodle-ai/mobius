@@ -187,8 +187,10 @@ export interface ListRunsOptions {
   workflow_type?: string;
   queue?: string;
   parent_run_id?: string;
-  initiated_by?: string;
+  source_type?: string;
+  source_id?: string;
   external_id?: string;
+  forked_from?: string;
   cursor?: string;
   limit?: number;
 }

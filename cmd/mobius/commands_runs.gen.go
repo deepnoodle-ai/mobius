@@ -148,7 +148,8 @@ func registerRunsCommands(app *cli.App) {
 			cli.String("workflow-type", "").Help("Filter by workflow type name."),
 			cli.String("queue", "").Help("Filter by queue name."),
 			cli.String("parent-run-id", "").Help("Filter to child runs of the specified parent run."),
-			cli.String("initiated-by", "").Help("Filter by the initiator label (e.g. trigger name, API key name)."),
+			cli.String("source-type", "").Help("Filter by run source type (e.g. api, trigger, slack, fork)."),
+			cli.String("source-id", "").Help("Filter by the source identifier for the source type."),
 			cli.String("external-id", "").Help("Filter by caller-supplied external ID or correlation key."),
 			cli.String("forked-from", "").Help("Filter to runs forked from the specified source run."),
 			cli.String("cursor", "").Help("cursor"),
@@ -179,9 +180,13 @@ func registerRunsCommands(app *cli.App) {
 				v := ctx.String("parent-run-id")
 				params.ParentRunId = &v
 			}
-			if ctx.IsSet("initiated-by") {
-				v := ctx.String("initiated-by")
-				params.InitiatedBy = &v
+			if ctx.IsSet("source-type") {
+				v := ctx.String("source-type")
+				params.SourceType = &v
+			}
+			if ctx.IsSet("source-id") {
+				v := ctx.String("source-id")
+				params.SourceId = &v
 			}
 			if ctx.IsSet("external-id") {
 				v := ctx.String("external-id")
@@ -204,25 +209,6 @@ func registerRunsCommands(app *cli.App) {
 				return err
 			}
 			return printResponse(ctx, "listRuns", resp.StatusCode(), resp.Body)
-		})
-
-	runsGrp.Command("list-action-log").
-		Description("List action log entries for a run").
-		Args("id").
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			resp, err := client.ListRunActionLogWithResponse(ctx.Context(), p0, p1)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "listRunActionLog", resp.StatusCode(), resp.Body)
 		})
 
 	runsGrp.Command("list-jobs").

@@ -6,6 +6,39 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 
 ## [Unreleased]
 
+## [0.0.16] - 2026-04-29
+
+### Added
+
+- `RunStep` now carries required `transition_seq` (per-run monotonic
+  ledger order) and `kind` (`worker_action` / `server_action` /
+  `control`) fields. New `RunStepKind` enum surfaced in all SDKs.
+- `WorkflowRun` gains structured run-source fields: `source_type`
+  (`api` / `trigger` / `slack` / `fork` / `tool`), `source_id`, and
+  `source_label`.
+- `GET /v1/projects/{project}/runs` filters: `source_type` and
+  `source_id`.
+- List run steps is documented as ordered by `transition_seq`
+  ascending so paginated reads can replay or reconstruct the ledger.
+
+### Changed
+
+- Spec rename: `Job.last_error` → `Job.error_message`. Generated
+  Go/Python/TypeScript types follow.
+- SDKs (Go, Python, TypeScript): `ListRunsOptions.initiated_by` removed
+  in favor of `source_type` + `source_id`; `forked_from` is also
+  exposed alongside.
+
+### Removed
+
+- `GET /v1/projects/{project}/runs/{id}/action-log` and the
+  `ActionLogEntry` / `ActionLogListResponse` schemas. Run history is
+  served by the durable run-step endpoints added in v0.0.15.
+- The `action_appended` SSE event on the run-events stream.
+- `WorkflowRun.initiated_by` (replaced by `source_type` /
+  `source_id` / `source_label`) and `WorkflowRun.cancel_requested`
+  (use `cancel_requested_at` and `status` instead).
+
 ## [0.0.15] - 2026-04-28
 
 ### Added
