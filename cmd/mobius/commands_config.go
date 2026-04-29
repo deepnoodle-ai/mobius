@@ -40,7 +40,7 @@ func registerConfigExtensions(app *cli.App) {
 
 	getCmd := runsGrp.Command("get")
 	getCmd.Flags(
-		cli.String("show", "").Enum("resolved_config", "default_job_config").Help("Pretty-print a specific frozen cascade field from the response instead of the whole run."),
+		cli.String("show", "").Enum("resolved_config", "default_step_config").Help("Pretty-print a specific frozen cascade field from the response instead of the whole run."),
 	)
 	getCmd.Run(runsGetWithConfigHandler)
 
