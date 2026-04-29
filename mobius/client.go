@@ -199,3 +199,10 @@ func hasCredentialSuffix(key string) bool {
 func (c *Client) RawClient() *api.ClientWithResponses {
 	return c.ac
 }
+
+// ProjectHandle returns the project handle this client is bound to,
+// either from WithProjectHandle or extracted from a project-pinned API
+// key. Returns "" if no handle has been resolved.
+func (c *Client) ProjectHandle() string {
+	return c.projectHandle
+}

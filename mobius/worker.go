@@ -254,7 +254,7 @@ func (w *Worker) executeJob(ctx context.Context, job *runtimeJob) {
 	go w.heartbeatLoop(execCtx, job, cancel, hbDone)
 	go eventer.run(execCtx, eventDone)
 
-	ctxVal := newContext(execCtx, job, log, eventer.emit)
+	ctxVal := newContext(execCtx, w.client, job, log, eventer.emit)
 
 	result, err := safeExecute(action, ctxVal, job.Parameters)
 
