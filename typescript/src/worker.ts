@@ -27,6 +27,13 @@ export type InstanceIDSource =
 
 const CLOUD_RUN_METADATA_TIMEOUT_MS = 1000;
 
+// Generated once per process and reused by both the system_hostname
+// rung (as an 8-char suffix) and the generated_uuid rung (full value).
+// worker_instance_id is process identity and must be stable across
+// calls within the same boot — without the cache, a caller that
+// resolved twice would observe two different IDs.
+const BOOT_INSTANCE_ID = randomUUID();
+
 /**
  * Resolve a per-process `worker_instance_id` from the runtime
  * environment. Order: explicit → Cloud Run K_REVISION + metadata →
@@ -65,13 +72,13 @@ export async function resolveInstanceID(
   try {
     const host = systemHostname().trim();
     if (host) {
-      const suffix = randomUUID().replace(/-/g, "").slice(0, 8);
+      const suffix = BOOT_INSTANCE_ID.replace(/-/g, "").slice(0, 8);
       return { id: `${host}-${suffix}`, source: "system_hostname" };
     }
   } catch {
     // fall through to UUID
   }
-  return { id: randomUUID(), source: "generated_uuid" };
+  return { id: BOOT_INSTANCE_ID, source: "generated_uuid" };
 }
 
 async function cloudRunInstanceID(): Promise<string | null> {

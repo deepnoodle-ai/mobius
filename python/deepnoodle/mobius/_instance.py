@@ -47,6 +47,13 @@ InstanceIDSource = Literal[
 # full TCP timeout on startup.
 _CLOUD_RUN_METADATA_TIMEOUT = 1.0
 
+# Generated once per process and reused by both the system_hostname
+# rung (as an 8-char suffix) and the generated_uuid rung (full value).
+# worker_instance_id is process identity and must be stable across
+# calls within the same boot — without the cache, a caller that
+# resolved twice would observe two different IDs.
+_BOOT_INSTANCE_ID = str(uuid.uuid4())
+
 
 def resolve_instance_id(explicit: str | None) -> tuple[str, InstanceIDSource]:
     """Resolve the per-process ``worker_instance_id`` plus its source label.
@@ -78,8 +85,8 @@ def resolve_instance_id(explicit: str | None) -> tuple[str, InstanceIDSource]:
     except OSError:
         host = ""
     if host:
-        return f"{host}-{uuid.uuid4().hex[:8]}", "system_hostname"
-    return str(uuid.uuid4()), "generated_uuid"
+        return f"{host}-{_BOOT_INSTANCE_ID.replace('-', '')[:8]}", "system_hostname"
+    return _BOOT_INSTANCE_ID, "generated_uuid"
 
 
 def _cloud_run_instance_id() -> str | None:

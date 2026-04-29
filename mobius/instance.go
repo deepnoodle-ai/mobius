@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/google/uuid"
@@ -32,6 +33,13 @@ const (
 // cloudRunMetadataTimeout caps the metadata-server probe so a
 // non-Cloud-Run host doesn't pay a full TCP timeout on startup.
 const cloudRunMetadataTimeout = time.Second
+
+// bootInstanceID is generated once per process and reused by both the
+// system_hostname rung (as an 8-char suffix) and the generated_uuid
+// rung (full value). worker_instance_id is process identity and must
+// be stable across calls within the same boot — without the cache,
+// a caller that resolved twice would observe two different IDs.
+var bootInstanceID = sync.OnceValue(uuid.NewString)
 
 // ResolveInstanceID derives a per-process worker_instance_id from the
 // runtime environment. Resolution order:
@@ -77,10 +85,10 @@ func ResolveInstanceID(explicit string) (string, InstanceIDSource) {
 	}
 	if host, err := os.Hostname(); err == nil {
 		if h := strings.TrimSpace(host); h != "" {
-			return h + "-" + uuid.NewString()[:8], InstanceIDSourceSystemHostname
+			return h + "-" + bootInstanceID()[:8], InstanceIDSourceSystemHostname
 		}
 	}
-	return uuid.NewString(), InstanceIDSourceGeneratedUUID
+	return bootInstanceID(), InstanceIDSourceGeneratedUUID
 }
 
 // cloudRunInstanceID hits the GCE metadata server for the per-instance

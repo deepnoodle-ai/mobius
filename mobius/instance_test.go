@@ -18,8 +18,10 @@ func TestResolveInstanceID_ExplicitWins(t *testing.T) {
 
 // TestResolveInstanceID_FallsBackToSystemHostname makes sure laptops
 // and dev VMs (no platform env vars set) get a human-readable hostname
-// prefix plus a per-boot random suffix, so two processes on the same
-// host never auto-detect to the same worker_instance_id.
+// prefix plus a per-boot random suffix. Two processes on the same host
+// auto-detect to different IDs (each boots its own suffix); within one
+// process the resolution is idempotent so a caller that resolves twice
+// observes the same identity.
 func TestResolveInstanceID_FallsBackToSystemHostname(t *testing.T) {
 	t.Setenv("K_REVISION", "")
 	t.Setenv("HOSTNAME", "")
@@ -39,7 +41,7 @@ func TestResolveInstanceID_FallsBackToSystemHostname(t *testing.T) {
 	assert.Equal(t, len(id), len(host)+1+8)
 
 	id2, _ := ResolveInstanceID("")
-	assert.NotEqual(t, id, id2, "back-to-back resolutions must differ")
+	assert.Equal(t, id, id2, "resolution must be idempotent within a process")
 }
 
 // TestResolveInstanceID_HostnameEnvBeatsSystemHostname confirms the
