@@ -53,7 +53,7 @@ func registerConfigExtensions(app *cli.App) {
 			cli.Strings("config", "").Help("Dotted path: <category>.<key>=<value>. Repeatable. Set value to null to remove the key."),
 			cli.String("config-file", "").Help("YAML/JSON file containing a nested config object; merged client-side with --config."),
 		).
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(projectsSetConfigHandler)
 
 	projectsGrp.Command("clear-config").
@@ -62,7 +62,7 @@ func registerConfigExtensions(app *cli.App) {
 		Flags(
 			cli.String("category", "").Required().Help("Category to clear (e.g. `timeouts`)."),
 		).
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(projectsClearConfigHandler)
 }
 
@@ -248,7 +248,7 @@ func runsStartWithConfigHandler(ctx *cli.Context) error {
 		return err
 	}
 	client := mc.RawClient()
-	p0 := ctx.String("project")
+	p0 := authFor(ctx).Project
 
 	// Build cascade config entries first so a bad --config fails before we
 	// bother picking a mode.
@@ -377,7 +377,7 @@ func runsGetWithConfigHandler(ctx *cli.Context) error {
 		return err
 	}
 	client := mc.RawClient()
-	p0 := ctx.String("project")
+	p0 := authFor(ctx).Project
 	p1 := ctx.Arg(0)
 	resp, err := client.GetRunWithResponse(ctx.Context(), p0, p1)
 	if err != nil {

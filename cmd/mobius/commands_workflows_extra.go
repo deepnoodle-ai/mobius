@@ -28,7 +28,7 @@ func registerWorkflowsExtras(app *cli.App) {
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin)."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(workflowsApplyHandler)
 
 	grp.Command("init").
@@ -46,7 +46,7 @@ func workflowsApplyHandler(ctx *cli.Context) error {
 		return err
 	}
 	client := mc.RawClient()
-	project := ctx.String("project")
+	project := authFor(ctx).Project
 
 	// Build a CreateWorkflowRequest from --file + per-field flags. The same
 	// shape carries everything we need — for an update we drop the Handle

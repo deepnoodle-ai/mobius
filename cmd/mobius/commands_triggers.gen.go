@@ -25,14 +25,14 @@ func registerTriggersCommands(app *cli.App) {
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			var body api.CreateTriggerJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -61,14 +61,14 @@ func registerTriggersCommands(app *cli.App) {
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			var body api.CreateTriggerTargetJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
@@ -106,14 +106,14 @@ func registerTriggersCommands(app *cli.App) {
 	triggersGrp.Command("delete").
 		Description("Delete a trigger").
 		Args("id").
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			resp, err := client.DeleteTriggerWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
@@ -125,14 +125,14 @@ func registerTriggersCommands(app *cli.App) {
 	triggersGrp.Command("delete-target").
 		Description("Remove a target from a trigger").
 		Args("id", "target-id").
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			p2 := ctx.Arg(1)
 			resp, err := client.DeleteTriggerTargetWithResponse(ctx.Context(), p0, p1, p2)
@@ -145,14 +145,14 @@ func registerTriggersCommands(app *cli.App) {
 	triggersGrp.Command("delete-trigger-targets").
 		Description("Remove all targets from a trigger").
 		Args("id").
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			resp, err := client.DeleteAllTriggerTargetsWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
@@ -164,14 +164,14 @@ func registerTriggersCommands(app *cli.App) {
 	triggersGrp.Command("get").
 		Description("Get a trigger").
 		Args("id").
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			resp, err := client.GetTriggerWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
@@ -183,14 +183,14 @@ func registerTriggersCommands(app *cli.App) {
 	triggersGrp.Command("get-target").
 		Description("Get a trigger target").
 		Args("id", "target-id").
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			p2 := ctx.Arg(1)
 			resp, err := client.GetTriggerTargetWithResponse(ctx.Context(), p0, p1, p2)
@@ -208,14 +208,14 @@ func registerTriggersCommands(app *cli.App) {
 			cli.String("cursor", "").Help("Opaque pagination cursor returned from the previous response."),
 			cli.Int("limit", "").Help("Maximum number of results to return per page."),
 		).
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			params := &api.ListTriggersParams{}
 			if ctx.IsSet("kind") {
 				v := api.TriggerKind(ctx.String("kind"))
@@ -248,14 +248,14 @@ func registerTriggersCommands(app *cli.App) {
 			cli.String("cursor", "").Help("Opaque pagination cursor returned from the previous response."),
 			cli.Int("limit", "").Help("Maximum number of results to return per page."),
 		).
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			params := &api.ListTriggerFiresParams{}
 			if ctx.IsSet("status") {
@@ -280,14 +280,14 @@ func registerTriggersCommands(app *cli.App) {
 	triggersGrp.Command("list-targets").
 		Description("List targets for a trigger").
 		Args("id").
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			resp, err := client.ListTriggerTargetsWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
@@ -309,14 +309,14 @@ func registerTriggersCommands(app *cli.App) {
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			var body api.UpdateTriggerJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
@@ -374,14 +374,14 @@ func registerTriggersCommands(app *cli.App) {
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			p2 := ctx.Arg(1)
 			var body api.UpdateTriggerTargetJSONRequestBody

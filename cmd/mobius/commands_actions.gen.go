@@ -32,14 +32,14 @@ func registerActionsCommands(app *cli.App) {
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			var body api.CreateActionJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -92,14 +92,14 @@ func registerActionsCommands(app *cli.App) {
 	actionsGrp.Command("delete").
 		Description("Delete an action").
 		Args("action-name").
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			resp, err := client.DeleteActionWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
@@ -111,14 +111,14 @@ func registerActionsCommands(app *cli.App) {
 	actionsGrp.Command("get").
 		Description("Get an action by name").
 		Args("action-name").
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			resp, err := client.GetActionWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
@@ -130,14 +130,14 @@ func registerActionsCommands(app *cli.App) {
 	actionsGrp.Command("get-action").
 		Description("Get one catalog action by name").
 		Args("action-name").
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			resp, err := client.GetCatalogActionWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
@@ -152,14 +152,14 @@ func registerActionsCommands(app *cli.App) {
 			cli.String("cursor", "").Help("cursor"),
 			cli.Int("limit", "").Help("limit"),
 		).
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			params := &api.ListActionsParams{}
 			if ctx.IsSet("cursor") {
 				v := api.CursorParam(ctx.String("cursor"))
@@ -178,14 +178,14 @@ func registerActionsCommands(app *cli.App) {
 
 	actionsGrp.Command("list-actions").
 		Description("List the action catalog").
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			resp, err := client.ListCatalogActionsWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
@@ -202,14 +202,14 @@ func registerActionsCommands(app *cli.App) {
 			cli.String("action-name", "").Help("Filter to invocations of a specific action."),
 			cli.String("status", "").Help("Filter by terminal status (e.g. \"success\", \"failed\")."),
 		).
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			params := &api.ListActionAuditLogParams{}
 			if ctx.IsSet("cursor") {
 				v := api.CursorParam(ctx.String("cursor"))
@@ -241,14 +241,14 @@ func registerActionsCommands(app *cli.App) {
 	actionsGrp.Command("rotate-secret").
 		Description("Rotate an action signing secret").
 		Args("action-name").
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			resp, err := client.RotateActionSecretWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
@@ -270,14 +270,14 @@ func registerActionsCommands(app *cli.App) {
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			var body api.UpdateActionJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {

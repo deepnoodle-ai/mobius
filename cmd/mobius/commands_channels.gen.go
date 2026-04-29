@@ -28,14 +28,14 @@ func registerChannelsCommands(app *cli.App) {
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			var body api.AddChannelMemberJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
@@ -74,14 +74,14 @@ func registerChannelsCommands(app *cli.App) {
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			var body api.CreateChannelJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -135,14 +135,14 @@ func registerChannelsCommands(app *cli.App) {
 	channelsGrp.Command("delete").
 		Description("Delete a channel").
 		Args("id").
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			resp, err := client.DeleteChannelWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
@@ -154,14 +154,14 @@ func registerChannelsCommands(app *cli.App) {
 	channelsGrp.Command("get").
 		Description("Get a channel").
 		Args("id").
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			resp, err := client.GetChannelWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
@@ -173,14 +173,14 @@ func registerChannelsCommands(app *cli.App) {
 	channelsGrp.Command("get-message").
 		Description("Get a channel message").
 		Args("id", "message-id").
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			p2 := ctx.Arg(1)
 			resp, err := client.GetChannelMessageWithResponse(ctx.Context(), p0, p1, p2)
@@ -198,14 +198,14 @@ func registerChannelsCommands(app *cli.App) {
 			cli.String("cursor", "").Help("cursor"),
 			cli.Int("limit", "").Help("limit"),
 		).
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			params := &api.ListChannelsParams{}
 			if ctx.IsSet("kind") {
 				v := api.ListChannelsParamsKind(ctx.String("kind"))
@@ -237,14 +237,14 @@ func registerChannelsCommands(app *cli.App) {
 			cli.String("cursor", "").Help("cursor"),
 			cli.Int("limit", "").Help("limit"),
 		).
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			params := &api.ListChannelMembersParams{}
 			if ctx.IsSet("cursor") {
@@ -272,14 +272,14 @@ func registerChannelsCommands(app *cli.App) {
 			cli.String("cursor", "").Help("cursor"),
 			cli.Int("limit", "").Help("limit"),
 		).
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			params := &api.ListChannelMessagesParams{}
 			if ctx.IsSet("sender-id") {
@@ -312,14 +312,14 @@ func registerChannelsCommands(app *cli.App) {
 	channelsGrp.Command("remove-member").
 		Description("Remove a member from a channel").
 		Args("id", "member-id").
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			p2 := ctx.Arg(1)
 			resp, err := client.RemoveChannelMemberWithResponse(ctx.Context(), p0, p1, p2)
@@ -343,14 +343,14 @@ func registerChannelsCommands(app *cli.App) {
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			var body api.SendChannelMessageJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
@@ -408,14 +408,14 @@ func registerChannelsCommands(app *cli.App) {
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			var body api.UpdateChannelJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
@@ -462,14 +462,14 @@ func registerChannelsCommands(app *cli.App) {
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			p2 := ctx.Arg(1)
 			var body api.UpdateChannelMessageJSONRequestBody

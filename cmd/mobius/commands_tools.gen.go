@@ -22,14 +22,14 @@ func registerToolsCommands(app *cli.App) {
 	toolsGrp.Command("get-run").
 		Description("Get an async tool run result").
 		Args("handle", "run-id").
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			p2 := ctx.Arg(1)
 			resp, err := client.GetToolRunWithResponse(ctx.Context(), p0, p1, p2)
@@ -41,14 +41,14 @@ func registerToolsCommands(app *cli.App) {
 
 	toolsGrp.Command("list").
 		Description("List workflow tools").
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			resp, err := client.ListToolsWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
@@ -65,14 +65,14 @@ func registerToolsCommands(app *cli.App) {
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			var body api.RunToolJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {

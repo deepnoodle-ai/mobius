@@ -25,7 +25,7 @@ import (
 func registerWorkerCommand(app *cli.App) {
 	app.Command("worker").
 		Description("Run a Mobius worker that executes queued jobs").
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Flags(
 			cli.String("name", "").
 				Default("mobius-worker").
@@ -80,10 +80,11 @@ func registerWorkerCommand(app *cli.App) {
 				Logger:           logger,
 			}
 
+			auth := authFor(ctx)
 			logger.Info("starting worker",
 				"name", name,
-				"api_url", ctx.String("api-url"),
-				"project", ctx.String("project"),
+				"api_url", auth.APIURL,
+				"project", auth.Project,
 				"queues", queues,
 				"concurrency", concurrency,
 				"workers", workers,

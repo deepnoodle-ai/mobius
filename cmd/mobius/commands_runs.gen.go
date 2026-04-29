@@ -22,14 +22,14 @@ func registerRunsCommands(app *cli.App) {
 	runsGrp.Command("cancel").
 		Description("Request cancellation of an in-flight run").
 		Args("id").
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			resp, err := client.CancelRunWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
@@ -49,14 +49,14 @@ func registerRunsCommands(app *cli.App) {
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			var body api.ForkRunJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
@@ -97,14 +97,14 @@ func registerRunsCommands(app *cli.App) {
 	runsGrp.Command("get").
 		Description("Get a workflow run").
 		Args("id").
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			resp, err := client.GetRunWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
@@ -119,14 +119,14 @@ func registerRunsCommands(app *cli.App) {
 		Flags(
 			cli.String("include", "").Help("Pass `run_state_after` to include `run_state_after_b64`; it is omitted otherwise."),
 		).
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			p2 := ctx.Arg(1)
 			params := &api.GetRunStepParams{}
@@ -154,14 +154,14 @@ func registerRunsCommands(app *cli.App) {
 			cli.String("cursor", "").Help("cursor"),
 			cli.Int("limit", "").Help("limit"),
 		).
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			params := &api.ListRunsParams{}
 			if ctx.IsSet("status") {
 				v := api.WorkflowRunStatus(ctx.String("status"))
@@ -209,14 +209,14 @@ func registerRunsCommands(app *cli.App) {
 	runsGrp.Command("list-action-log").
 		Description("List action log entries for a run").
 		Args("id").
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			resp, err := client.ListRunActionLogWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
@@ -228,14 +228,14 @@ func registerRunsCommands(app *cli.App) {
 	runsGrp.Command("list-jobs").
 		Description("List jobs for a run").
 		Args("id").
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			resp, err := client.ListRunJobsWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
@@ -247,14 +247,14 @@ func registerRunsCommands(app *cli.App) {
 	runsGrp.Command("list-runs").
 		Description("List runs for a workflow definition").
 		Args("id").
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			resp, err := client.ListWorkflowRunsWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
@@ -273,14 +273,14 @@ func registerRunsCommands(app *cli.App) {
 			cli.String("cursor", "").Help("cursor"),
 			cli.Int("limit", "").Help("limit"),
 		).
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			params := &api.ListRunStepsParams{}
 			if ctx.IsSet("path-id") {
@@ -313,14 +313,14 @@ func registerRunsCommands(app *cli.App) {
 	runsGrp.Command("resume").
 		Description("Resume waiting run paths").
 		Args("id").
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			resp, err := client.ResumeRunWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
@@ -338,14 +338,14 @@ func registerRunsCommands(app *cli.App) {
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			var body api.SendRunSignalJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
@@ -378,14 +378,14 @@ func registerRunsCommands(app *cli.App) {
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			var body api.StartRunJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -416,14 +416,14 @@ func registerRunsCommands(app *cli.App) {
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			var body api.StartWorkflowRunJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
@@ -476,14 +476,14 @@ func registerRunsCommands(app *cli.App) {
 		Flags(
 			cli.Int("since", "").Help("Durable event seq cursor to replay from."),
 		).
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			params := &api.StreamProjectRunEventsParams{}
 			if ctx.IsSet("since") {
 				v := int64(ctx.Int("since"))
@@ -502,14 +502,14 @@ func registerRunsCommands(app *cli.App) {
 		Flags(
 			cli.Int("since", "").Help("Durable event seq cursor to replay from."),
 		).
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			params := &api.StreamRunEventsParams{}
 			if ctx.IsSet("since") {

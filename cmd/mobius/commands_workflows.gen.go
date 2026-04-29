@@ -31,14 +31,14 @@ func registerWorkflowsCommands(app *cli.App) {
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			var body api.CreateWorkflowJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -88,14 +88,14 @@ func registerWorkflowsCommands(app *cli.App) {
 	workflowsGrp.Command("delete").
 		Description("Delete a workflow definition").
 		Args("id").
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			resp, err := client.DeleteWorkflowWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
@@ -107,14 +107,14 @@ func registerWorkflowsCommands(app *cli.App) {
 	workflowsGrp.Command("get").
 		Description("Get a workflow definition").
 		Args("id").
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			resp, err := client.GetWorkflowWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
@@ -126,14 +126,14 @@ func registerWorkflowsCommands(app *cli.App) {
 	workflowsGrp.Command("get-version").
 		Description("Get a specific version of a workflow definition").
 		Args("id", "version").
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			p2, err := parseIntArg(ctx.Arg(1), "version")
 			if err != nil {
@@ -152,14 +152,14 @@ func registerWorkflowsCommands(app *cli.App) {
 			cli.String("cursor", "").Help("Opaque pagination cursor returned from the previous response."),
 			cli.Int("limit", "").Help("Maximum number of results to return per page."),
 		).
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			params := &api.ListWorkflowsParams{}
 			if ctx.IsSet("cursor") {
 				v := ctx.String("cursor")
@@ -179,14 +179,14 @@ func registerWorkflowsCommands(app *cli.App) {
 	workflowsGrp.Command("list-versions").
 		Description("List versions of a workflow definition").
 		Args("id").
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			resp, err := client.ListWorkflowVersionsWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
@@ -207,14 +207,14 @@ func registerWorkflowsCommands(app *cli.App) {
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			var body api.UpdateWorkflowJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {

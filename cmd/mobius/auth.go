@@ -408,37 +408,26 @@ func runAuthUse(ctx *cli.Context) error {
 }
 
 // runAuthStatus prints which credential source the next CLI call would use.
-// The precedence here mirrors clientFromContext: --api-key, then
-// MOBIUS_API_KEY, then the selected saved profile.
+// It reads from the credential resolved by authMiddleware so reporting and
+// actual request behavior cannot disagree.
 func runAuthStatus(ctx *cli.Context) error {
-	ctx.Printf("API URL: %s\n", ctx.String("api-url"))
+	auth := authFor(ctx)
+	ctx.Printf("API URL: %s\n", auth.APIURL)
 
-	if appliedSavedCredential != nil && ctx.String("api-key") == appliedSavedCredential.RequestToken() {
-		printSavedCredentialStatus(ctx, appliedSavedCredential)
-		return nil
-	}
-
-	if ctx.IsSet("api-key") {
-		// Distinguish between flag and env var as best we can.
-		if _, ok := os.LookupEnv("MOBIUS_API_KEY"); ok && os.Getenv("MOBIUS_API_KEY") == ctx.String("api-key") {
-			ctx.Println("Auth source: MOBIUS_API_KEY environment variable")
-		} else {
-			ctx.Println("Auth source: --api-key flag")
-		}
+	switch auth.Source {
+	case authSourceProfile:
+		printSavedCredentialStatus(ctx, auth.Profile)
+	case authSourceEnv:
+		ctx.Println("Auth source: MOBIUS_API_KEY environment variable")
 		printAuthVerification(ctx, "raw API key")
-		return nil
-	}
-
-	// ResolveProfile errors are shown as "not authenticated" here so status
-	// stays diagnostic; printSavedCredentialStatus runs only with a profile.
-	cred, err := authstore.ResolveProfile(ctx.String("profile"))
-	if err != nil {
+	case authSourceFlag:
+		ctx.Println("Auth source: --api-key flag")
+		printAuthVerification(ctx, "raw API key")
+	default:
 		ctx.Println("Auth source: none")
 		ctx.Println("Authenticated: no")
 		ctx.Println("Run `mobius auth login --profile <name>` to sign in from the browser.")
-		return nil
 	}
-	printSavedCredentialStatus(ctx, cred)
 	return nil
 }
 
@@ -625,26 +614,19 @@ func runAuthRevoke(ctx *cli.Context) error {
 	// If the user revoked the credential they are currently using, the
 	// saved profile is now useless — wipe it so the next command fails fast
 	// with a clear "not logged in" rather than a 401.
-	profileName := ctx.String("profile")
-	if cred, err := authstore.ResolveProfile(profileName); err == nil && cred != nil && cred.CredentialID == id {
-		_ = authstore.DeleteProfile(cred.Name)
+	if active := authFor(ctx); active.Profile != nil && active.Profile.CredentialID == id {
+		_ = authstore.DeleteProfile(active.Profile.Name)
 	}
 	return nil
 }
 
 func authAPIURL(ctx *cli.Context, path string) string {
-	base := strings.TrimRight(ctx.String("api-url"), "/")
+	base := strings.TrimRight(authFor(ctx).APIURL, "/")
 	return base + path
 }
 
 func authAPISetHeaders(ctx *cli.Context, req *http.Request) {
-	key := ctx.String("api-key")
-	if key == "" {
-		if cred, err := authstore.ResolveProfile(ctx.String("profile")); err == nil && cred != nil {
-			key = cred.RequestToken()
-		}
-	}
-	if key != "" {
+	if key := authFor(ctx).APIKey; key != "" {
 		req.Header.Set("Authorization", "Bearer "+key)
 	}
 }
@@ -663,7 +645,7 @@ func authAPIGetWithClient(ctx *cli.Context, path string, client *http.Client) (*
 }
 
 func verifyAuthenticatedRequest(ctx *cli.Context) (authProbeResult, error) {
-	path := authProbePath(ctx.String("api-key"))
+	path := authProbePath(authFor(ctx).APIKey)
 	result := authProbeResult{Path: path}
 	client := &http.Client{Timeout: 15 * time.Second}
 	resp, err := authAPIGetWithClient(ctx, path, client)
@@ -689,14 +671,7 @@ func projectHandleFromCLIToken(apiKey string) (string, bool) {
 
 // hasAuth reports whether clientFromContext will have a usable token.
 func hasAuth(ctx *cli.Context) bool {
-	if ctx.IsSet("api-key") {
-		return true
-	}
-	cred, err := authstore.ResolveProfile(ctx.String("profile"))
-	if err != nil {
-		return false
-	}
-	return cred != nil && cred.Token != ""
+	return authFor(ctx).APIKey != ""
 }
 
 func errLoginRequired() error {

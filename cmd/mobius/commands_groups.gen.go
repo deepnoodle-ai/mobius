@@ -27,14 +27,14 @@ func registerGroupsCommands(app *cli.App) {
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			var body api.AddGroupMemberJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
@@ -66,14 +66,14 @@ func registerGroupsCommands(app *cli.App) {
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			var body api.CreateGroupJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -109,14 +109,14 @@ func registerGroupsCommands(app *cli.App) {
 	groupsGrp.Command("delete").
 		Description("Delete a group").
 		Args("group").
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			resp, err := client.DeleteGroupWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
@@ -128,14 +128,14 @@ func registerGroupsCommands(app *cli.App) {
 	groupsGrp.Command("get").
 		Description("Get a group").
 		Args("group").
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			resp, err := client.GetGroupWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
@@ -150,14 +150,14 @@ func registerGroupsCommands(app *cli.App) {
 			cli.String("cursor", "").Help("cursor"),
 			cli.Int("limit", "").Help("limit"),
 		).
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			params := &api.ListGroupsParams{}
 			if ctx.IsSet("cursor") {
 				v := api.CursorParam(ctx.String("cursor"))
@@ -177,14 +177,14 @@ func registerGroupsCommands(app *cli.App) {
 	groupsGrp.Command("list-groups").
 		Description("List groups a member belongs to").
 		Args("user-id").
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			resp, err := client.ListMemberGroupsWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
@@ -200,14 +200,14 @@ func registerGroupsCommands(app *cli.App) {
 			cli.String("cursor", "").Help("cursor"),
 			cli.Int("limit", "").Help("limit"),
 		).
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			params := &api.ListGroupMembersParams{}
 			if ctx.IsSet("cursor") {
@@ -228,14 +228,14 @@ func registerGroupsCommands(app *cli.App) {
 	groupsGrp.Command("remove-member").
 		Description("Remove a member from a group").
 		Args("group", "user-id").
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			p2 := ctx.Arg(1)
 			resp, err := client.RemoveGroupMemberWithResponse(ctx.Context(), p0, p1, p2)
@@ -255,14 +255,14 @@ func registerGroupsCommands(app *cli.App) {
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			var body api.UpdateGroupJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {

@@ -32,14 +32,14 @@ func registerAgentsCommands(app *cli.App) {
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			var body api.CreateAgentJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -97,14 +97,14 @@ func registerAgentsCommands(app *cli.App) {
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			var body api.CreateAgentSessionJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
@@ -134,14 +134,14 @@ func registerAgentsCommands(app *cli.App) {
 	agentsGrp.Command("delete").
 		Description("Delete an agent").
 		Args("id").
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			resp, err := client.DeleteAgentWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
@@ -153,14 +153,14 @@ func registerAgentsCommands(app *cli.App) {
 	agentsGrp.Command("disconnect-session").
 		Description("Mark an agent session as disconnected").
 		Args("id", "session-id").
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			p2 := ctx.Arg(1)
 			resp, err := client.DisconnectAgentSessionWithResponse(ctx.Context(), p0, p1, p2)
@@ -173,14 +173,14 @@ func registerAgentsCommands(app *cli.App) {
 	agentsGrp.Command("get").
 		Description("Get an agent").
 		Args("id").
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			resp, err := client.GetAgentWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
@@ -192,14 +192,14 @@ func registerAgentsCommands(app *cli.App) {
 	agentsGrp.Command("get-session").
 		Description("Get an agent session").
 		Args("id", "session-id").
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			p2 := ctx.Arg(1)
 			resp, err := client.GetAgentSessionWithResponse(ctx.Context(), p0, p1, p2)
@@ -212,14 +212,14 @@ func registerAgentsCommands(app *cli.App) {
 	agentsGrp.Command("heartbeat-session").
 		Description("Refresh an agent session heartbeat").
 		Args("id", "session-id").
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			p2 := ctx.Arg(1)
 			resp, err := client.HeartbeatAgentSessionWithResponse(ctx.Context(), p0, p1, p2)
@@ -236,14 +236,14 @@ func registerAgentsCommands(app *cli.App) {
 			cli.String("status", "").Help("Filter by administrative status (active/inactive), independent of presence."),
 			cli.Int("limit", "").Help("limit"),
 		).
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			params := &api.ListAgentsParams{}
 			if ctx.IsSet("service-account-id") {
 				v := ctx.String("service-account-id")
@@ -272,14 +272,14 @@ func registerAgentsCommands(app *cli.App) {
 			cli.String("transport", "").Help("Filter by transport type (e.g. \"sse\", \"polling\")."),
 			cli.Int("limit", "").Help("limit"),
 		).
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			params := &api.ListAgentSessionsParams{}
 			if ctx.IsSet("status") {
@@ -316,14 +316,14 @@ func registerAgentsCommands(app *cli.App) {
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			var body api.UpdateAgentJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {

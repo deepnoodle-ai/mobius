@@ -22,14 +22,14 @@ func registerInteractionsCommands(app *cli.App) {
 	interactionsGrp.Command("claim").
 		Description("Claim a pending first-responder group interaction").
 		Args("id").
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			resp, err := client.ClaimInteractionWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
@@ -44,14 +44,14 @@ func registerInteractionsCommands(app *cli.App) {
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			var body api.CreateInteractionJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -72,14 +72,14 @@ func registerInteractionsCommands(app *cli.App) {
 	interactionsGrp.Command("get").
 		Description("Get an interaction").
 		Args("id").
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			resp, err := client.GetInteractionWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
@@ -99,14 +99,14 @@ func registerInteractionsCommands(app *cli.App) {
 			cli.String("cursor", "").Help("cursor"),
 			cli.Int("limit", "").Help("limit"),
 		).
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			params := &api.ListInteractionsParams{}
 			if ctx.IsSet("status") {
 				v := api.ListInteractionsParamsStatus(ctx.String("status"))
@@ -146,14 +146,14 @@ func registerInteractionsCommands(app *cli.App) {
 	interactionsGrp.Command("release-interaction").
 		Description("Release a claimed first-responder group interaction").
 		Args("id").
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			resp, err := client.ReleaseInteractionWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
@@ -171,14 +171,14 @@ func registerInteractionsCommands(app *cli.App) {
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			var body api.RespondToInteractionJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
