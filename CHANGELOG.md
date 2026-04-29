@@ -6,6 +6,40 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 
 ## [Unreleased]
 
+## [0.0.18] - 2026-04-29
+
+### Added
+
+- Go SDK: typed `Context` helpers for the remaining worker-callable
+  endpoints. `Context.RunServerAction(name, params, opts)` and
+  `Context.RequestInteraction(req)` mirror the existing `EmitEvent`
+  shape and auto-thread project handle, job ID, and step name, so
+  callers no longer have to drop down to `client.RawClient()` and
+  pointer-wrap optional fields. New `RunServerActionOptions`,
+  `InteractionRequest`, `InteractionTarget`, and `InteractionKind`
+  types.
+- Go SDK: action-catalog wrappers `Client.ListActionCatalog` and
+  `Client.GetActionCatalogEntry`, exposing the `Available` /
+  `Integration` fields so callers can distinguish *missing action*
+  from *action exists but the required integration is not configured*.
+- Go SDK: `RunEventTypeCustom` and `RunEventTypeRunStepUpdated` SSE
+  constants (the server emits both; the SDK previously didn't list
+  them). `RunEvent.AsCustom()` unpacks the doubly-nested custom event
+  envelope. `RunEvent.JobID` lifted from the wire envelope to the
+  struct.
+- Go SDK: `Context.ProjectHandle()` and `Client.ProjectHandle()`
+  return the project handle (e.g. `"default"`) — what `ProjectID()`
+  was actually returning all along.
+
+### Changed
+
+- Go SDK: `Context.ProjectID()` is deprecated in favor of
+  `ProjectHandle()` (kept as a source-compatible alias). The internal
+  `runtimeJob.ProjectID` field is renamed to `ProjectHandle` for
+  consistency.
+- Go SDK: `RunEventTypeActionAppended` is marked deprecated — the
+  server does not actually emit this event.
+
 ## [0.0.17] - 2026-04-29
 
 ### Fixed
