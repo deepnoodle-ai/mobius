@@ -327,7 +327,7 @@ func TestWorkerExecuteJob_EmitsCustomEvents(t *testing.T) {
 	w.executeJob(context.Background(), &runtimeJob{
 		JobID:             "job_1",
 		RunID:             "run_1",
-		ProjectID:         "prj_1",
+		ProjectHandle:     "test-project",
 		WorkflowName:      "hello",
 		StepName:          "greet",
 		Action:            "print",

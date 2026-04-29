@@ -26,7 +26,7 @@ var ErrLeaseLost = errors.New("mobius: lease lost")
 type runtimeJob struct {
 	JobID             string
 	RunID             string
-	ProjectID         string
+	ProjectHandle     string
 	WorkflowName      string
 	StepName          string
 	Action            string
@@ -118,7 +118,7 @@ func (c *Client) runtimeClaim(ctx context.Context, cfg WorkerConfig, sessionToke
 	return &runtimeJob{
 		JobID:             claim.JobId,
 		RunID:             claim.RunId,
-		ProjectID:         c.projectHandle,
+		ProjectHandle:     c.projectHandle,
 		WorkflowName:      claim.WorkflowName,
 		StepName:          claim.StepName,
 		Action:            claim.Action,
