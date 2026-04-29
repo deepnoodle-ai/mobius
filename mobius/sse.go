@@ -77,7 +77,10 @@ func (e RunEvent) AsCustom() (subtype string, payload map[string]interface{}, ok
 	if subtype == "" {
 		return "", nil, false
 	}
-	payload, _ = e.Data["data"].(map[string]interface{})
+	payload, ok = e.Data["data"].(map[string]interface{})
+	if !ok || payload == nil {
+		return "", nil, false
+	}
 	return subtype, payload, true
 }
 

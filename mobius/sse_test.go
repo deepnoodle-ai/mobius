@@ -57,16 +57,38 @@ func TestRunEvent_AsCustom_MissingSubtypeReturnsFalse(t *testing.T) {
 	assert.False(t, ok)
 }
 
-func TestRunEventTypeConstants_CoverServerEmittedKinds(t *testing.T) {
-	// Sanity check that the constants block enumerates every kind the
-	// server actively emits today. Update this list when the server
-	// gains a new run-stream event type.
-	for _, kind := range []RunEventType{
-		RunEventTypeRunUpdated,
-		RunEventTypeJobUpdated,
-		RunEventTypeRunStepUpdated,
-		RunEventTypeCustom,
-	} {
-		assert.True(t, string(kind) != "")
+func TestRunEvent_AsCustom_MissingPayloadReturnsFalse(t *testing.T) {
+	// Subtype present but inner `data` missing entirely — wire format
+	// always carries the user payload, so missing data is malformed.
+	ev := RunEvent{
+		Type: RunEventTypeCustom,
+		Data: map[string]interface{}{"type": "progress"},
 	}
+	_, payload, ok := ev.AsCustom()
+	assert.False(t, ok)
+	assert.Nil(t, payload)
+}
+
+func TestRunEvent_AsCustom_NonObjectPayloadReturnsFalse(t *testing.T) {
+	// `data` present but not a JSON object (e.g. user erroneously
+	// emitted a string) — AsCustom contract is to return ok=false so
+	// callers don't dereference a nil map.
+	ev := RunEvent{
+		Type: RunEventTypeCustom,
+		Data: map[string]interface{}{"type": "progress", "data": "not-a-map"},
+	}
+	_, payload, ok := ev.AsCustom()
+	assert.False(t, ok)
+	assert.Nil(t, payload)
+}
+
+func TestRunEventTypeConstants_CoverServerEmittedKinds(t *testing.T) {
+	// Pin the wire-string values so a rename of a constant in Go does
+	// not silently change the SSE type clients dispatch on. Update both
+	// the SDK constant and this test (and the server emitter) when an
+	// event kind is renamed.
+	assert.Equal(t, string(RunEventTypeRunUpdated), "run_updated")
+	assert.Equal(t, string(RunEventTypeJobUpdated), "job_updated")
+	assert.Equal(t, string(RunEventTypeRunStepUpdated), "run_step_updated")
+	assert.Equal(t, string(RunEventTypeCustom), "custom")
 }
