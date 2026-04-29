@@ -6,6 +6,36 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 
 ## [Unreleased]
 
+## [0.0.15] - 2026-04-28
+
+### Added
+
+- SDKs (Go, Python, TypeScript): new run-history endpoints —
+  `GET /v1/projects/{project}/runs/{id}/steps`,
+  `GET .../steps/{step_id}`, and `POST .../runs/{id}/forks` — for
+  inspecting durable per-step execution history and forking a terminal
+  run from a chosen step.
+- `WorkflowRun` and `WorkflowRunDetail` now carry a required
+  `step_counts` field grouping run steps by status.
+
+### Changed
+
+- Spec rename: `default_job_config` → `default_step_config` on run
+  detail, and the `job_failed` run-error type → `step_failed`. Generated
+  Go/Python/TypeScript types follow.
+- CLI: `runs get --show` enum updated to accept `default_step_config`
+  in place of the renamed `default_job_config`.
+
+### Fixed
+
+- CLI: `--profile <name>` now overrides the default profile instead of
+  silently using the default. Credential resolution moved out of
+  pre-parse env mutation into an `authMiddleware` that runs after flag
+  parsing, exposed via `authFor(ctx)`. Generated commands and `worker`
+  use a new `requireAuth()` middleware in place of
+  `cli.RequireFlags("api-key")`, so a saved browser-login session
+  satisfies the auth gate without a redundant `--api-key`.
+
 ## [0.0.14] - 2026-04-27
 
 ### Fixed

@@ -1,6 +1,6 @@
 [project]
 name = "deepnoodle-mobius"
-version = "0.0.14"
+version = "0.0.15"
 description = "Python SDK for Mobius workflow orchestration"
 requires-python = ">=3.11"
 dependencies = [
