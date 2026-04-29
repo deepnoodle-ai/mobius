@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/google/uuid"
@@ -33,8 +34,15 @@ const (
 // non-Cloud-Run host doesn't pay a full TCP timeout on startup.
 const cloudRunMetadataTimeout = time.Second
 
-// ResolveInstanceID derives a stable per-process worker_instance_id
-// from the runtime environment. Resolution order:
+// bootInstanceID is generated once per process and reused by both the
+// system_hostname rung (as an 8-char suffix) and the generated_uuid
+// rung (full value). worker_instance_id is process identity and must
+// be stable across calls within the same boot — without the cache,
+// a caller that resolved twice would observe two different IDs.
+var bootInstanceID = sync.OnceValue(uuid.NewString)
+
+// ResolveInstanceID derives a per-process worker_instance_id from the
+// runtime environment. Resolution order:
 //
 //  1. explicit (caller-configured value)
 //  2. K_REVISION + Cloud Run instance metadata
@@ -42,8 +50,17 @@ const cloudRunMetadataTimeout = time.Second
 //  4. FLY_MACHINE_ID
 //  5. RAILWAY_REPLICA_ID
 //  6. RENDER_INSTANCE_ID
-//  7. system hostname via os.Hostname() (laptops, dev VMs, bare metal)
+//  7. system hostname via os.Hostname() suffixed with a per-boot
+//     random tag (laptops, dev VMs, bare metal)
 //  8. generated UUID (per-process boot, last resort)
+//
+// The system_hostname rung carries a random suffix because os.Hostname()
+// identifies the host, not the process — two processes started on the
+// same machine (back-to-back tests, parallel CI workers, dev box with
+// a daemon already running) would otherwise auto-detect the same
+// worker_instance_id and trip the server's conflict detector. Operators
+// who want a stable identity across restarts (named singleton workers)
+// should set [WorkerConfig.WorkerInstanceID] explicitly.
 //
 // The returned source is informational only — workers log it once at
 // startup so operators can confirm the right platform was picked up.
@@ -68,10 +85,10 @@ func ResolveInstanceID(explicit string) (string, InstanceIDSource) {
 	}
 	if host, err := os.Hostname(); err == nil {
 		if h := strings.TrimSpace(host); h != "" {
-			return h, InstanceIDSourceSystemHostname
+			return h + "-" + bootInstanceID()[:8], InstanceIDSourceSystemHostname
 		}
 	}
-	return uuid.NewString(), InstanceIDSourceGeneratedUUID
+	return bootInstanceID(), InstanceIDSourceGeneratedUUID
 }
 
 // cloudRunInstanceID hits the GCE metadata server for the per-instance

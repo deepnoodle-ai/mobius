@@ -27,14 +27,30 @@ export type InstanceIDSource =
 
 const CLOUD_RUN_METADATA_TIMEOUT_MS = 1000;
 
+// Generated once per process and reused by both the system_hostname
+// rung (as an 8-char suffix) and the generated_uuid rung (full value).
+// worker_instance_id is process identity and must be stable across
+// calls within the same boot — without the cache, a caller that
+// resolved twice would observe two different IDs.
+const BOOT_INSTANCE_ID = randomUUID();
+
 /**
- * Resolve a stable per-process `worker_instance_id` from the runtime
+ * Resolve a per-process `worker_instance_id` from the runtime
  * environment. Order: explicit → Cloud Run K_REVISION + metadata →
  * HOSTNAME env → FLY_MACHINE_ID → RAILWAY_REPLICA_ID →
- * RENDER_INSTANCE_ID → system hostname (`os.hostname()`, for laptops
- * and bare metal) → generated UUID. The returned source is
- * informational only — workers log it once at startup so operators
- * can confirm the right platform was picked up.
+ * RENDER_INSTANCE_ID → `os.hostname()` suffixed with a per-boot
+ * random tag (laptops and bare metal) → generated UUID.
+ *
+ * The system_hostname rung carries a random suffix because
+ * `os.hostname()` identifies the host, not the process — two
+ * processes started on the same machine would otherwise auto-detect
+ * the same identifier and collide on the server's conflict detector.
+ * Set {@link WorkerConfig.workerInstanceId} explicitly only when a
+ * stable identity across restarts is desired (named singleton
+ * workers).
+ *
+ * The returned source is informational only — workers log it once at
+ * startup so operators can confirm the right platform was picked up.
  */
 export async function resolveInstanceID(
   explicit: string | undefined,
@@ -55,11 +71,14 @@ export async function resolveInstanceID(
   if (render) return { id: render, source: "render_instance_id" };
   try {
     const host = systemHostname().trim();
-    if (host) return { id: host, source: "system_hostname" };
+    if (host) {
+      const suffix = BOOT_INSTANCE_ID.replace(/-/g, "").slice(0, 8);
+      return { id: `${host}-${suffix}`, source: "system_hostname" };
+    }
   } catch {
     // fall through to UUID
   }
-  return { id: randomUUID(), source: "generated_uuid" };
+  return { id: BOOT_INSTANCE_ID, source: "generated_uuid" };
 }
 
 async function cloudRunInstanceID(): Promise<string | null> {
@@ -114,13 +133,19 @@ const defaultLogger: Logger = {
 
 export interface WorkerConfig {
   /**
-   * Stable identifier for this worker process. Optional — when
-   * omitted, the SDK auto-detects the platform-native identifier
-   * (Cloud Run revision instance, Kubernetes HOSTNAME, Fly machine,
-   * Railway replica, Render instance, OS hostname) and falls back
-   * to a per-boot UUID. Set explicitly only for stable singleton
-   * workers; two live processes using the same override in the
-   * same project will collide and the second will fail with
+   * Identifier for this worker process. Leave omitted for the
+   * common case: the SDK auto-detects an identifier that is unique
+   * per running process. Resolution prefers platform-native IDs
+   * that are unique-per-replica by design (Cloud Run revision
+   * instance, Kubernetes HOSTNAME, Fly machine, Railway replica,
+   * Render instance), then falls back to OS hostname plus a
+   * per-boot random suffix so two processes on the same host
+   * (back-to-back tests, parallel CI workers) cannot collide.
+   *
+   * Set this explicitly only when you want a stable identity
+   * across restarts of a named singleton worker. Two live
+   * processes using the same explicit value in the same project
+   * will collide and the second will fail with
    * {@link WorkerInstanceConflictError}.
    */
   workerInstanceId?: string;

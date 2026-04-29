@@ -44,7 +44,7 @@ func (e *InstanceConflictError) Error() string {
 	}
 	if e.WorkerInstanceID != "" {
 		return fmt.Sprintf(
-			"mobius: worker_instance_id %q is already registered in project %q by another live process; configure a unique instance ID per process or rely on auto-detection",
+			"mobius: worker_instance_id %q is already registered in project %q by another live process; set WorkerConfig.WorkerInstanceID to a unique value per process, or wait for the existing registration to age out",
 			e.WorkerInstanceID, e.ProjectHandle,
 		)
 	}

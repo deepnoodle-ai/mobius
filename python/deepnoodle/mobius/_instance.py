@@ -1,6 +1,6 @@
 """Worker instance ID auto-detection.
 
-The Mobius SDK identifies each running worker process by a stable
+The Mobius SDK identifies each running worker process by a per-process
 ``worker_instance_id``. Operators can configure one explicitly, but the
 common case is "let the SDK figure it out from the runtime platform" so
 that two replicas of the same image surface as two distinct rows.
@@ -13,8 +13,14 @@ Resolution order matches the Go and TypeScript SDKs:
 4. ``FLY_MACHINE_ID``
 5. ``RAILWAY_REPLICA_ID``
 6. ``RENDER_INSTANCE_ID``
-7. system hostname via ``socket.gethostname()`` (laptops, dev VMs, bare metal)
+7. ``socket.gethostname()`` suffixed with a per-boot random tag
+   (laptops, dev VMs, bare metal — without the suffix two processes on
+   the same host would auto-detect to the same identifier)
 8. UUID per boot (last resort)
+
+Set the explicit value only when a stable identity across restarts is
+desired (named singleton workers); the auto-detected identifier is
+unique per process, so two processes on the same host never collide.
 """
 
 from __future__ import annotations
@@ -40,6 +46,13 @@ InstanceIDSource = Literal[
 # Cap the metadata-server probe so a non-Cloud-Run host doesn't pay a
 # full TCP timeout on startup.
 _CLOUD_RUN_METADATA_TIMEOUT = 1.0
+
+# Generated once per process and reused by both the system_hostname
+# rung (as an 8-char suffix) and the generated_uuid rung (full value).
+# worker_instance_id is process identity and must be stable across
+# calls within the same boot — without the cache, a caller that
+# resolved twice would observe two different IDs.
+_BOOT_INSTANCE_ID = str(uuid.uuid4())
 
 
 def resolve_instance_id(explicit: str | None) -> tuple[str, InstanceIDSource]:
@@ -72,8 +85,8 @@ def resolve_instance_id(explicit: str | None) -> tuple[str, InstanceIDSource]:
     except OSError:
         host = ""
     if host:
-        return host, "system_hostname"
-    return str(uuid.uuid4()), "generated_uuid"
+        return f"{host}-{_BOOT_INSTANCE_ID.replace('-', '')[:8]}", "system_hostname"
+    return _BOOT_INSTANCE_ID, "generated_uuid"
 
 
 def _cloud_run_instance_id() -> str | None:

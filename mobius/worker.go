@@ -31,14 +31,21 @@ const MaxClaimRateLimitSleep = 5 * time.Minute
 type WorkerConfig struct {
 	// WorkerInstanceID identifies this worker process to Mobius and is
 	// the row key used for the saturation views in the admin UI.
-	// Optional — when empty the SDK auto-detects the platform-native
-	// identifier (Cloud Run revision instance, Kubernetes HOSTNAME,
-	// Fly machine, Railway replica, Render instance, OS hostname)
-	// and falls back to a per-boot UUID. Set this only for stable
-	// singleton workers that must keep the same row across restarts;
-	// two live processes using the same override in the same project
-	// will collide and the second will fail with
-	// [ErrWorkerInstanceConflict].
+	//
+	// Leave empty for the common case: the SDK auto-detects an
+	// identifier that is unique per running process. Resolution prefers
+	// platform-native IDs that are unique-per-replica by design (Cloud
+	// Run revision instance, Kubernetes HOSTNAME, Fly machine, Railway
+	// replica, Render instance), then falls back to OS hostname plus a
+	// per-boot random suffix so two processes on the same host (back-
+	// to-back tests, dev box with a daemon already running, parallel
+	// CI workers) cannot collide.
+	//
+	// Set this explicitly only when you want a stable identity across
+	// restarts of a named singleton worker (e.g. to preserve the
+	// saturation row's history). Two live processes using the same
+	// explicit value in the same project will collide and the second
+	// will fail with [ErrWorkerInstanceConflict].
 	WorkerInstanceID string
 	// Concurrency is the maximum number of jobs this worker will hold
 	// in flight simultaneously. Defaults to 1 — set higher to claim
@@ -103,8 +110,9 @@ type Worker struct {
 // NewWorker creates a Worker bound to the client. The worker_instance_id
 // is resolved from the runtime environment when WorkerInstanceID is
 // empty (Cloud Run revision → HOSTNAME → Fly/Railway/Render env →
-// generated UUID); a one-time log line records which source produced
-// the value so operators can confirm the right platform was picked up.
+// hostname+random → generated UUID); a one-time log line records which
+// source produced the value so operators can confirm the right platform
+// was picked up. See [ResolveInstanceID] for the full order.
 func (c *Client) NewWorker(cfg WorkerConfig) *Worker {
 	if cfg.Logger == nil {
 		cfg.Logger = slog.Default()
