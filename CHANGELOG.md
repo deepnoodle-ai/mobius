@@ -6,6 +6,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 
 ## [Unreleased]
 
+## [0.0.17] - 2026-04-29
+
+### Fixed
+
+- SDKs (Go, Python, TypeScript): the `system_hostname` rung of
+  `worker_instance_id` auto-detect now appends a per-boot 8-char random
+  suffix so two workers booted on the same host never collide and trip
+  the server's 60s instance-takeover window. Platform-aware rungs above
+  it (Cloud Run, K8s `HOSTNAME`, Fly machine, Railway/Render replica
+  IDs) already produced unique-per-replica IDs and are unchanged.
+
+### Changed
+
+- `WorkerInstanceID` / `workerInstanceId` config is documented as
+  opt-in for stable identity across restarts (named singleton workers);
+  the auto-detected default is now unique per process.
+- `InstanceConflictError` message now points at the two concrete
+  remediations (set an explicit instance ID, or wait for the existing
+  registration to age out).
+
 ## [0.0.16] - 2026-04-29
 
 ### Added
