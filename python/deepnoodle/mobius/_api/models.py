@@ -1079,6 +1079,12 @@ class RunStepSource(Enum):
     inherited = 'inherited'
 
 
+class RunStepKind(Enum):
+    worker_action = 'worker_action'
+    server_action = 'server_action'
+    control = 'control'
+
+
 class RunStepStatus(Enum):
     pending = 'pending'
     running = 'running'
@@ -1110,6 +1116,14 @@ class RunStep(BaseModel):
     )
     attempt: int = Field(
         ..., description='Zero-based retry attempt for this step/path pair.'
+    )
+    transition_seq: int = Field(
+        ...,
+        description='Per-run monotonic transition order for projection and fork reconstruction.',
+    )
+    kind: RunStepKind = Field(
+        ...,
+        description='Why this ledger row exists: worker-claimable action, synchronous server action, or Mobius control transition.',
     )
     source: RunStepSource = Field(
         ...,
@@ -1233,48 +1247,6 @@ class ResolvedConfigEntry(BaseModel):
     source: Source = Field(
         ...,
         description='Cascade layer that supplied the winning value: service, project, workflow, run, or step.',
-    )
-
-
-class ActionLogEntry(BaseModel):
-    """
-    One server-side action invocation recorded for a workflow run.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    id: str = Field(..., description='Unique identifier for this action log entry.')
-    action: str = Field(..., description='Action name that was executed.')
-    step_name: str = Field(
-        ..., description='Workflow step name that produced this action log entry.'
-    )
-    branch_id: str = Field(..., description='Execution branch this entry belongs to.')
-    parameters: dict[str, Any] | None = Field(
-        None, description='Input parameters that were passed to the action.'
-    )
-    result: dict[str, Any] | None = Field(
-        None, description='Output returned by the action. Present on success.'
-    )
-    error: str | None = Field(None, description='Error message when the action failed.')
-    started_at: datetime = Field(
-        ..., description='Timestamp when the action execution started.'
-    )
-    duration_ms: int = Field(
-        ..., description='Elapsed time in milliseconds from start to completion.'
-    )
-
-
-class ActionLogListResponse(BaseModel):
-    """
-    Unpaginated action log for one workflow run. Entries are scoped to a single run and ordered for inspection rather than broad search.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    items: list[ActionLogEntry] = Field(
-        ..., description='The list of action log entries for this run.'
     )
 
 
@@ -2433,7 +2405,7 @@ class TriggerFireListResponse(BaseModel):
     has_more: bool = Field(..., description='Whether additional pages are available.')
 
 
-class Kind2(Enum):
+class Kind3(Enum):
     """
     Discriminator value — must be `schedule`.
     """
@@ -2472,7 +2444,7 @@ class CreateScheduleTriggerRequest(BaseModel):
     tags: TagMap | None = Field(None, description='Initial tag set.')
 
 
-class Kind3(Enum):
+class Kind4(Enum):
     """
     Discriminator value — must be `webhook`.
     """
@@ -2511,7 +2483,7 @@ class CreateWebhookTriggerRequest(BaseModel):
     tags: TagMap | None = Field(None, description='Initial tag set.')
 
 
-class Kind4(Enum):
+class Kind5(Enum):
     """
     Discriminator value — must be `event`.
     """
@@ -4040,7 +4012,7 @@ class Job(BaseModel):
     scheduled_at: datetime = Field(
         ..., description='Earliest time at which this job may be claimed.'
     )
-    last_error: str | None = Field(
+    error_message: str | None = Field(
         None, description='Error detail from the most recent failed attempt.'
     )
     claim_deadline_at: datetime | None = Field(
@@ -4338,17 +4310,19 @@ class WorkflowRun(BaseModel):
     actor_id: str | None = Field(
         None, description='ID of the actor that started this run.'
     )
-    initiated_by: str | None = Field(
+    source_type: str | None = Field(
         None,
-        description='Human-readable label for the initiator (e.g. trigger name, API key name).',
+        description='Type of source that requested this run (api, trigger, slack, fork, tool).',
+    )
+    source_id: str | None = Field(
+        None, description='Identifier for the run source within its source type.'
+    )
+    source_label: str | None = Field(
+        None, description='Human-readable label for the run source.'
     )
     external_id: str | None = Field(
         None,
         description='Caller-supplied logical correlation key for this run. Unique within the project; identifies a logical job across attempts. See the `external_id` description on `POST /runs` for the conflict semantics that govern duplicate values.',
-    )
-    cancel_requested: bool | None = Field(
-        None,
-        description='Compatibility boolean set when cancellation was requested. Use `cancel_requested_at` for audit detail and `status` for terminal checks.',
     )
     cancel_requested_at: datetime | None = Field(
         None, description='Timestamp when cancellation was requested.'
@@ -4548,7 +4522,7 @@ class WorkflowRunDetail(WorkflowRun):
     )
     steps: list[RunStep] = Field(
         ...,
-        description='First page of durable run-step history. Use this canonical history for execution inspection and fork planning, including after terminal job rows have been TTL-swept.',
+        description='First page of durable run-step history, ordered by `transition_seq` ascending. Use this canonical history for execution inspection and fork planning, including after terminal job rows have been TTL-swept.',
     )
     steps_next_cursor: str | None = Field(
         None, description='Cursor for the next page of durable run-step history.'

@@ -80,8 +80,10 @@ class ListRunsOptions:
     workflow_type: str | None = None
     queue: str | None = None
     parent_run_id: str | None = None
-    initiated_by: str | None = None
+    source_type: str | None = None
+    source_id: str | None = None
     external_id: str | None = None
+    forked_from: str | None = None
     cursor: str | None = None
     limit: int | None = None
 
@@ -615,8 +617,10 @@ def _list_runs_params(opts: ListRunsOptions | None) -> dict[str, Any]:
             "workflow_type": opts.workflow_type,
             "queue": opts.queue,
             "parent_run_id": opts.parent_run_id,
-            "initiated_by": opts.initiated_by,
+            "source_type": opts.source_type,
+            "source_id": opts.source_id,
             "external_id": opts.external_id,
+            "forked_from": opts.forked_from,
             "cursor": opts.cursor,
             "limit": opts.limit,
         }.items()

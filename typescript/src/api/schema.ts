@@ -295,7 +295,7 @@ export interface paths {
         };
         /**
          * List workflow runs
-         * @description Supports cursor-based pagination and keyset filtering by status, workflow type, queue, parent run, and initiator. When `has_more` is true, pass the returned `next_cursor` back on the next call to walk the result set.
+         * @description Supports cursor-based pagination and keyset filtering by status, workflow type, queue, parent run, and source. When `has_more` is true, pass the returned `next_cursor` back on the next call to walk the result set.
          */
         get: operations["listRuns"];
         put?: never;
@@ -365,7 +365,7 @@ export interface paths {
         };
         /**
          * List run steps
-         * @description Lists durable `RunStep` records for a run. Run steps are the canonical execution history and remain available after terminal job rows are TTL-swept; use jobs only for live worker claim state.
+         * @description Lists durable `RunStep` records for a run. Run steps are the canonical execution history and are returned in ascending `transition_seq` order. Pagination continues from that same order so clients can replay or reconstruct the ledger incrementally. Run steps remain available after terminal job rows are TTL-swept; use jobs only for live worker claim state.
          */
         get: operations["listRunSteps"];
         put?: never;
@@ -388,26 +388,6 @@ export interface paths {
          * @description Returns a single durable `RunStep` row for a workflow run. Run steps are the canonical execution history; linked job state, when present, is live worker-claim metadata and may disappear after terminal job retention.
          */
         get: operations["getRunStep"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/projects/{project}/runs/{id}/action-log": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List action log entries for a run
-         * @description Returns durable action log entries for the run in execution order. Entries include the step, branch, parameters, result or error, and duration for each server-side action invocation.
-         */
-        get: operations["listRunActionLog"];
         put?: never;
         post?: never;
         delete?: never;
@@ -453,9 +433,6 @@ export interface paths {
          *     advanced; `data` is a full Job.
          *     - `run_step_updated` — a durable run-step row was created
          *     or advanced; `data` is a full RunStep.
-         *     - `action_appended` — one entry was appended to the run
-         *     timeline (worker job completed or platform action ran);
-         *     `data` is a WorkflowActionLog row.
          *     - `interaction_created` / `interaction_completed` /
          *     `interaction_group_claimed` /
          *     `interaction_group_released` — interaction lifecycle;
@@ -494,7 +471,7 @@ export interface paths {
         put?: never;
         /**
          * Request cancellation of an in-flight run
-         * @description Records `cancel_requested_at`, terminalizes the run as failed with `error_type=run_cancelled`, and closes any non-terminal jobs created by the run. During migration, `cancel_requested` remains populated as an audit/compatibility field.
+         * @description Records `cancel_requested_at`, terminalizes the run as failed with `error_type=run_cancelled`, and closes any non-terminal jobs created by the run.
          */
         post: operations["cancelRun"];
         delete?: never;
@@ -2558,12 +2535,14 @@ export interface components {
             actor_type?: string;
             /** @description ID of the actor that started this run. */
             actor_id?: string;
-            /** @description Human-readable label for the initiator (e.g. trigger name, API key name). */
-            initiated_by?: string;
+            /** @description Type of source that requested this run (api, trigger, slack, fork, tool). */
+            source_type?: string;
+            /** @description Identifier for the run source within its source type. */
+            source_id?: string;
+            /** @description Human-readable label for the run source. */
+            source_label?: string;
             /** @description Caller-supplied logical correlation key for this run. Unique within the project; identifies a logical job across attempts. See the `external_id` description on `POST /runs` for the conflict semantics that govern duplicate values. */
             external_id?: string;
-            /** @description Compatibility boolean set when cancellation was requested. Use `cancel_requested_at` for audit detail and `status` for terminal checks. */
-            cancel_requested?: boolean;
             /**
              * Format: date-time
              * @description Timestamp when cancellation was requested.
@@ -2628,6 +2607,8 @@ export interface components {
         /** @enum {string} */
         RunStepSource: "executed" | "inherited";
         /** @enum {string} */
+        RunStepKind: "worker_action" | "server_action" | "control";
+        /** @enum {string} */
         RunStepStatus: "pending" | "running" | "completed" | "failed" | "cancelled";
         /** @description Durable execution-history row for one step attempt on one workflow path. RunStep is the canonical source for run history; linked Job rows are transient worker-claim records and may be TTL-swept after terminal retention. */
         RunStep: {
@@ -2643,6 +2624,13 @@ export interface components {
             action: string;
             /** @description Zero-based retry attempt for this step/path pair. */
             attempt: number;
+            /**
+             * Format: int64
+             * @description Per-run monotonic transition order for projection and fork reconstruction.
+             */
+            transition_seq: number;
+            /** @description Why this ledger row exists: worker-claimable action, synchronous server action, or Mobius control transition. */
+            kind: components["schemas"]["RunStepKind"];
             /** @description Whether this row was executed in this run or inherited from a source run during fork creation. */
             source: components["schemas"]["RunStepSource"];
             status: components["schemas"]["RunStepStatus"];
@@ -2694,7 +2682,7 @@ export interface components {
             spec?: components["schemas"]["WorkflowSpec"];
             /** @description Base64-encoded terminal result blob */
             result_b64?: string;
-            /** @description First page of durable run-step history. Use this canonical history for execution inspection and fork planning, including after terminal job rows have been TTL-swept. */
+            /** @description First page of durable run-step history, ordered by `transition_seq` ascending. Use this canonical history for execution inspection and fork planning, including after terminal job rows have been TTL-swept. */
             steps: components["schemas"]["RunStep"][];
             /** @description Cursor for the next page of durable run-step history. */
             steps_next_cursor?: string;
@@ -2804,39 +2792,6 @@ export interface components {
              */
             source: "service" | "project" | "workflow" | "run" | "step";
         };
-        /** @description One server-side action invocation recorded for a workflow run. */
-        ActionLogEntry: {
-            /** @description Unique identifier for this action log entry. */
-            id: string;
-            /** @description Action name that was executed. */
-            action: string;
-            /** @description Workflow step name that produced this action log entry. */
-            step_name: string;
-            /** @description Execution branch this entry belongs to. */
-            branch_id: string;
-            /** @description Input parameters that were passed to the action. */
-            parameters?: {
-                [key: string]: unknown;
-            };
-            /** @description Output returned by the action. Present on success. */
-            result?: {
-                [key: string]: unknown;
-            };
-            /** @description Error message when the action failed. */
-            error?: string;
-            /**
-             * Format: date-time
-             * @description Timestamp when the action execution started.
-             */
-            started_at: string;
-            /** @description Elapsed time in milliseconds from start to completion. */
-            duration_ms: number;
-        };
-        /** @description Unpaginated action log for one workflow run. Entries are scoped to a single run and ordered for inspection rather than broad search. */
-        ActionLogListResponse: {
-            /** @description The list of action log entries for this run. */
-            items: components["schemas"]["ActionLogEntry"][];
-        };
         /**
          * @description Job lifecycle state:
          *     - `pending`   — created, not yet claimed by a worker.
@@ -2894,7 +2849,7 @@ export interface components {
              */
             scheduled_at: string;
             /** @description Error detail from the most recent failed attempt. */
-            last_error?: string;
+            error_message?: string;
             /**
              * Format: date-time
              * @description Deadline at which the reaper will fail this job with `error_type=claim_timeout` if no worker has claimed it. Present only when `resolved_config` contains an entry with `category="timeouts"` and `key="claim"` whose value resolves to a finite duration. Re-stamped whenever the job returns to `pending`.
@@ -5353,8 +5308,10 @@ export interface operations {
                 queue?: string;
                 /** @description Filter to child runs of the specified parent run. */
                 parent_run_id?: string;
-                /** @description Filter by the initiator label (e.g. trigger name, API key name). */
-                initiated_by?: string;
+                /** @description Filter by run source type (e.g. api, trigger, slack, fork). */
+                source_type?: string;
+                /** @description Filter by the source identifier for the source type. */
+                source_id?: string;
                 /** @description Filter by caller-supplied external ID or correlation key. */
                 external_id?: string;
                 /** @description Filter to runs forked from the specified source run. */
@@ -5454,9 +5411,10 @@ export interface operations {
                      *       },
                      *       "actor_type": "api_key",
                      *       "actor_id": "key_01hw1q2r3s4t5u6v7w8x9y0z1a",
-                     *       "initiated_by": "review-service",
+                     *       "source_type": "api",
+                     *       "source_id": "review-service",
+                     *       "source_label": "review-service",
                      *       "external_id": "review-2026-04-24-001",
-                     *       "cancel_requested": false,
                      *       "created_at": "2026-04-24T14:30:00Z",
                      *       "updated_at": "2026-04-24T14:30:00Z"
                      *     }
@@ -5621,33 +5579,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RunStep"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    listRunActionLog: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
-                /** @description Resource ID. */
-                id: components["parameters"]["IDParam"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ActionLogListResponse"];
                 };
             };
             401: components["responses"]["Unauthorized"];
@@ -5839,7 +5770,7 @@ export interface operations {
                     /**
                      * @example event: run_step_updated
                      *     id: 43
-                     *     data: {"type":"run_step_updated","run_id":"run_01hw1n1a2b3c4d5e6f7g8h9j0k","seq":43,"timestamp":"2026-04-24T14:46:00Z","data":{"id":"step_01hw1n2p3q4r5s6t7u8v9w0x1y","run_id":"run_01hw1n1a2b3c4d5e6f7g8h9j0k","path_id":"main","step_name":"summarize","action":"summarize-document","attempt":1,"source":"executed","status":"completed","parameters":{"document_id":"doc_01hw1m9z8y7x6w5v4u3t2s1r0q"},"job_id":"job_01hw1n2a3b4c5d6e7f8g9h0j1k","created_at":"2026-04-24T14:45:10Z","started_at":"2026-04-24T14:45:12Z","completed_at":"2026-04-24T14:46:00Z","updated_at":"2026-04-24T14:46:00Z"}}
+                     *     data: {"type":"run_step_updated","run_id":"run_01hw1n1a2b3c4d5e6f7g8h9j0k","seq":43,"timestamp":"2026-04-24T14:46:00Z","data":{"id":"step_01hw1n2p3q4r5s6t7u8v9w0x1y","run_id":"run_01hw1n1a2b3c4d5e6f7g8h9j0k","path_id":"main","step_name":"summarize","action":"summarize-document","attempt":1,"transition_seq":7,"kind":"worker_action","source":"executed","status":"completed","parameters":{"document_id":"doc_01hw1m9z8y7x6w5v4u3t2s1r0q"},"job_id":"job_01hw1n2a3b4c5d6e7f8g9h0j1k","created_at":"2026-04-24T14:45:10Z","started_at":"2026-04-24T14:45:12Z","completed_at":"2026-04-24T14:46:00Z","updated_at":"2026-04-24T14:46:00Z"}}
                      */
                     "text/event-stream": string;
                 };
