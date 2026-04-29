@@ -693,17 +693,22 @@ func renderCommand(b *bytes.Buffer, group string, c PlannedCommand) error {
 		fmt.Fprintf(b, "\t\t).\n")
 	}
 
-	fmt.Fprintf(b, "\t\tUse(cli.RequireFlags(\"api-key\")).\n")
+	fmt.Fprintf(b, "\t\tUse(requireAuth()).\n")
 	fmt.Fprintf(b, "\t\tRun(func(ctx *cli.Context) error {\n")
 	fmt.Fprintf(b, "\t\t\tmc, err := clientFromContext(ctx)\n")
 	fmt.Fprintf(b, "\t\t\tif err != nil { return err }\n")
 	fmt.Fprintf(b, "\t\t\tclient := mc.RawClient()\n")
 
 	// Collect path-param locals. Positional path params consume args in
-	// order; flag-backed ones (e.g. --project) read from their flag.
+	// order; flag-backed ones (e.g. --project) read from their flag — except
+	// "project" itself, which we read through authFor so a saved profile's
+	// project handle still flows through when --project / MOBIUS_PROJECT
+	// aren't explicitly set.
 	argIdx := 0
 	for i, p := range c.PathParams {
 		switch {
+		case p.AsFlag && p.FlagName == "project":
+			fmt.Fprintf(b, "\t\t\tp%d := authFor(ctx).Project\n", i)
 		case p.AsFlag:
 			fmt.Fprintf(b, "\t\t\tp%d := ctx.String(%q)\n", i, p.FlagName)
 		case p.IsInt:

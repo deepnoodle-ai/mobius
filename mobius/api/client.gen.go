@@ -550,6 +550,51 @@ func (e ResolvedConfigEntrySource) Valid() bool {
 	}
 }
 
+// Defines values for RunStepSource.
+const (
+	RunStepSourceExecuted  RunStepSource = "executed"
+	RunStepSourceInherited RunStepSource = "inherited"
+)
+
+// Valid indicates whether the value is a known member of the RunStepSource enum.
+func (e RunStepSource) Valid() bool {
+	switch e {
+	case RunStepSourceExecuted:
+		return true
+	case RunStepSourceInherited:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RunStepStatus.
+const (
+	RunStepStatusCancelled RunStepStatus = "cancelled"
+	RunStepStatusCompleted RunStepStatus = "completed"
+	RunStepStatusFailed    RunStepStatus = "failed"
+	RunStepStatusPending   RunStepStatus = "pending"
+	RunStepStatusRunning   RunStepStatus = "running"
+)
+
+// Valid indicates whether the value is a known member of the RunStepStatus enum.
+func (e RunStepStatus) Valid() bool {
+	switch e {
+	case RunStepStatusCancelled:
+		return true
+	case RunStepStatusCompleted:
+		return true
+	case RunStepStatusFailed:
+		return true
+	case RunStepStatusPending:
+		return true
+	case RunStepStatusRunning:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for SendChannelMessageRequestDisplay.
 const (
 	SendChannelMessageRequestDisplayCard    SendChannelMessageRequestDisplay = "card"
@@ -831,22 +876,22 @@ func (e WorkflowRetryJitterStrategy) Valid() bool {
 
 // Defines values for WorkflowRunErrorType.
 const (
-	WorkflowRunErrorTypeJobFailed    WorkflowRunErrorType = "job_failed"
 	WorkflowRunErrorTypeRunCancelled WorkflowRunErrorType = "run_cancelled"
 	WorkflowRunErrorTypeRunFailed    WorkflowRunErrorType = "run_failed"
 	WorkflowRunErrorTypeRunTimeout   WorkflowRunErrorType = "run_timeout"
+	WorkflowRunErrorTypeStepFailed   WorkflowRunErrorType = "step_failed"
 )
 
 // Valid indicates whether the value is a known member of the WorkflowRunErrorType enum.
 func (e WorkflowRunErrorType) Valid() bool {
 	switch e {
-	case WorkflowRunErrorTypeJobFailed:
-		return true
 	case WorkflowRunErrorTypeRunCancelled:
 		return true
 	case WorkflowRunErrorTypeRunFailed:
 		return true
 	case WorkflowRunErrorTypeRunTimeout:
+		return true
+	case WorkflowRunErrorTypeStepFailed:
 		return true
 	default:
 		return false
@@ -855,22 +900,22 @@ func (e WorkflowRunErrorType) Valid() bool {
 
 // Defines values for WorkflowRunDetailErrorType.
 const (
-	WorkflowRunDetailErrorTypeJobFailed    WorkflowRunDetailErrorType = "job_failed"
 	WorkflowRunDetailErrorTypeRunCancelled WorkflowRunDetailErrorType = "run_cancelled"
 	WorkflowRunDetailErrorTypeRunFailed    WorkflowRunDetailErrorType = "run_failed"
 	WorkflowRunDetailErrorTypeRunTimeout   WorkflowRunDetailErrorType = "run_timeout"
+	WorkflowRunDetailErrorTypeStepFailed   WorkflowRunDetailErrorType = "step_failed"
 )
 
 // Valid indicates whether the value is a known member of the WorkflowRunDetailErrorType enum.
 func (e WorkflowRunDetailErrorType) Valid() bool {
 	switch e {
-	case WorkflowRunDetailErrorTypeJobFailed:
-		return true
 	case WorkflowRunDetailErrorTypeRunCancelled:
 		return true
 	case WorkflowRunDetailErrorTypeRunFailed:
 		return true
 	case WorkflowRunDetailErrorTypeRunTimeout:
+		return true
+	case WorkflowRunDetailErrorTypeStepFailed:
 		return true
 	default:
 		return false
@@ -1027,6 +1072,21 @@ func (e ListInteractionsParamsTargetType) Valid() bool {
 	case ListInteractionsParamsTargetTypeGroup:
 		return true
 	case ListInteractionsParamsTargetTypeUser:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GetRunStepParamsInclude.
+const (
+	GetRunStepParamsIncludeRunStateAfter GetRunStepParamsInclude = "run_state_after"
+)
+
+// Valid indicates whether the value is a known member of the GetRunStepParamsInclude enum.
+func (e GetRunStepParamsInclude) Valid() bool {
+	switch e {
+	case GetRunStepParamsIncludeRunStateAfter:
 		return true
 	default:
 		return false
@@ -1977,6 +2037,9 @@ type ErrorResponse struct {
 		// Code Machine-readable error code
 		Code string `json:"code"`
 
+		// Details Optional structured details specific to a `code`. Endpoints that set this document the per-code shape inline. Absent for codes whose `code` + `message` are sufficient.
+		Details *map[string]interface{} `json:"details,omitempty"`
+
 		// Message Human-readable error message
 		Message string `json:"message"`
 	} `json:"error"`
@@ -2769,6 +2832,29 @@ type RunActionResult_Output struct {
 	union json.RawMessage
 }
 
+// RunForkLineage defines model for RunForkLineage.
+type RunForkLineage struct {
+	PathId   string `json:"path_id"`
+	RunId    string `json:"run_id"`
+	StepId   string `json:"step_id"`
+	StepName string `json:"step_name"`
+}
+
+// RunForkRequest Fork creation request. Tags are inherited from the source run and then overlaid with request tags using the same tag inheritance rules as run creation: request values replace matching source keys, and an empty string removes the inherited key. `definition_version_id` changes only the post-fork execution version; it does not affect inherited history. When omitted, the fork uses the source run's definition version.
+type RunForkRequest struct {
+	// DefinitionVersionId Optional target workflow definition version for post-fork execution. It must belong to the same workflow definition as the source run. Omit it to use the source run's original definition version. Inherited history remains tied to the source run.
+	DefinitionVersionId *string `json:"definition_version_id,omitempty"`
+
+	// ExternalId Logical external identifier for the new forked run. It must be unique within the project, just like other workflow-run `external_id` values.
+	ExternalId string `json:"external_id"`
+
+	// FromStepId Run-step identifier to fork from. Use the `id` returned by `RunStep`.
+	FromStepId string `json:"from_step_id"`
+
+	// Tags Tags to overlay on the inherited source-run tags. Empty string values remove inherited keys.
+	Tags *TagMap `json:"tags,omitempty"`
+}
+
 // RunSignal Persisted external signal delivered to a workflow run.
 type RunSignal struct {
 	// Id Unique identifier for this signal.
@@ -2780,6 +2866,68 @@ type RunSignal struct {
 	// RunId ID of the run this signal was delivered to.
 	RunId string `json:"run_id"`
 }
+
+// RunStep Durable execution-history row for one step attempt on one workflow path. RunStep is the canonical source for run history; linked Job rows are transient worker-claim records and may be TTL-swept after terminal retention.
+type RunStep struct {
+	// Action Action identifier for executable steps; empty for control-only steps.
+	Action string `json:"action"`
+
+	// Attempt Zero-based retry attempt for this step/path pair.
+	Attempt      int        `json:"attempt"`
+	CompletedAt  *time.Time `json:"completed_at,omitempty"`
+	CreatedAt    time.Time  `json:"created_at"`
+	ErrorMessage *string    `json:"error_message,omitempty"`
+	ErrorType    *string    `json:"error_type,omitempty"`
+
+	// Id Stable run-step identifier. Use this value as `{step_id}` in `GET /runs/{id}/steps/{step_id}` and as `from_step_id` in `POST /runs/{id}/forks`.
+	Id string `json:"id"`
+
+	// JobId Linked live worker job when one exists. Terminal jobs may be reaped while the RunStep remains.
+	JobId *string `json:"job_id,omitempty"`
+
+	// Parameters Resolved parameters/input for this step attempt.
+	Parameters map[string]interface{} `json:"parameters"`
+
+	// PathId Workflow path identifier for branch/fanout execution.
+	PathId string `json:"path_id"`
+
+	// ResultB64 Base64-encoded serialized step result, when present.
+	ResultB64 *string `json:"result_b64,omitempty"`
+
+	// RunId Workflow run that owns this step row.
+	RunId string `json:"run_id"`
+
+	// RunStateAfterB64 Base64-encoded serialized run state immediately after this step completed. Omitted unless requested with `include=run_state_after`.
+	RunStateAfterB64 *string `json:"run_state_after_b64,omitempty"`
+
+	// Source Whether this row was executed in this run or inherited from a source run during fork creation.
+	Source RunStepSource `json:"source"`
+
+	// SourceRunId Originating run ID when this row was inherited or derived from another run.
+	SourceRunId *string `json:"source_run_id,omitempty"`
+
+	// SourceStepId Originating step ID when this row was inherited or derived from another run.
+	SourceStepId *string       `json:"source_step_id,omitempty"`
+	StartedAt    *time.Time    `json:"started_at,omitempty"`
+	Status       RunStepStatus `json:"status"`
+
+	// StepName Step name from the workflow definition.
+	StepName  string    `json:"step_name"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+// RunStepListResponse Paginated durable run-step history. Use this response for historical run inspection because linked job rows are live worker state and may be TTL-swept.
+type RunStepListResponse struct {
+	HasMore    bool      `json:"has_more"`
+	Items      []RunStep `json:"items"`
+	NextCursor *string   `json:"next_cursor,omitempty"`
+}
+
+// RunStepSource defines model for RunStepSource.
+type RunStepSource string
+
+// RunStepStatus defines model for RunStepStatus.
+type RunStepStatus string
 
 // ScheduleSourceConfig Source configuration for `schedule` triggers. Provide exactly one of `cron` or `interval`.
 type ScheduleSourceConfig struct {
@@ -2831,7 +2979,7 @@ type StartBoundRunRequest struct {
 	// Config Flat cascade config input used outside authored workflow YAML. Each entry addresses one `(category, key)` pair. Unknown categories or unknown keys under a known category are rejected at write time. The only category shipped in Phase 1 is `timeouts`, whose keys are `claim`, `liveness`, `execution`, `wall_clock`.
 	Config *ConfigEntries `json:"config,omitempty"`
 
-	// ExternalId Caller-supplied idempotency key or correlation ID attached to the run.
+	// ExternalId Caller-supplied logical correlation key for this run. Unique within the project. If the same external_id is reused while the prior run is still active, the existing run is returned idempotently. Once the prior run is terminal (completed or failed), a duplicate POST returns 409 with code `external_id_conflict` and the `existing_run_id` and `status` carried in `details`. To launch a fresh attempt for the same logical job after a terminal run, use a new external_id (e.g. suffix with an attempt counter).
 	ExternalId *string `json:"external_id,omitempty"`
 
 	// Inputs Input values to pass to the workflow. Must conform to the workflow's declared input schema.
@@ -2852,7 +3000,7 @@ type StartInlineRunRequest struct {
 	// Config Flat cascade config input used outside authored workflow YAML. Each entry addresses one `(category, key)` pair. Unknown categories or unknown keys under a known category are rejected at write time. The only category shipped in Phase 1 is `timeouts`, whose keys are `claim`, `liveness`, `execution`, `wall_clock`.
 	Config *ConfigEntries `json:"config,omitempty"`
 
-	// ExternalId Caller-supplied idempotency key or correlation ID attached to the run.
+	// ExternalId Caller-supplied logical correlation key for this run. Unique within the project. If the same external_id is reused while the prior run is still active, the existing run is returned idempotently. Once the prior run is terminal (completed or failed), a duplicate POST returns 409 with code `external_id_conflict` and the `existing_run_id` and `status` carried in `details`. To launch a fresh attempt for the same logical job after a terminal run, use a new external_id (e.g. suffix with an attempt counter).
 	ExternalId *string `json:"external_id,omitempty"`
 
 	// Inputs Input values to pass to the workflow. Must conform to the workflow's declared input schema.
@@ -2895,7 +3043,7 @@ type StartSavedRunRequest struct {
 	// DefinitionId ID of an existing workflow definition to run.
 	DefinitionId string `json:"definition_id"`
 
-	// ExternalId Caller-supplied idempotency key or correlation ID attached to the run.
+	// ExternalId Caller-supplied logical correlation key for this run. Unique within the project. If the same external_id is reused while the prior run is still active, the existing run is returned idempotently. Once the prior run is terminal (completed or failed), a duplicate POST returns 409 with code `external_id_conflict` and the `existing_run_id` and `status` carried in `details`. To launch a fresh attempt for the same logical job after a terminal run, use a new external_id (e.g. suffix with an attempt counter).
 	ExternalId *string `json:"external_id,omitempty"`
 
 	// Inputs Input values to pass to the workflow. Must conform to the workflow's declared input schema.
@@ -3939,8 +4087,8 @@ type WorkflowRun struct {
 	// CreatedAt Timestamp when this run was created.
 	CreatedAt time.Time `json:"created_at"`
 
-	// DefaultJobConfig Frozen cascade resolution in flat entry form. Keys unset at every layer are omitted. See PRD 035.
-	DefaultJobConfig *ResolvedConfig `json:"default_job_config,omitempty"`
+	// DefaultStepConfig Frozen cascade resolution in flat entry form. Keys unset at every layer are omitted. See PRD 035.
+	DefaultStepConfig *ResolvedConfig `json:"default_step_config,omitempty"`
 
 	// DefinitionId ID of the workflow definition this run was started from. Present only when `ephemeral` is false; omitted for ephemeral runs started from an inline spec.
 	DefinitionId *string `json:"definition_id,omitempty"`
@@ -3954,14 +4102,15 @@ type WorkflowRun struct {
 	// ErrorMessage Error message from the most recent failure. Present when status is failed.
 	ErrorMessage *string `json:"error_message,omitempty"`
 
-	// ErrorType Typed run-level failure cause: `run_timeout`, `run_cancelled`, `job_failed`, or `run_failed`. Its own vocabulary, not a superset of the job-level `error_type`. Present when `status=failed`.
+	// ErrorType Typed run-level failure cause: `run_timeout`, `run_cancelled`, `step_failed`, or `run_failed`. Its own vocabulary, not a superset of the job-level `error_type`. Present when `status=failed`.
 	ErrorType *WorkflowRunErrorType `json:"error_type,omitempty"`
 
 	// Errors Run-level errors that caused a failed lifecycle.
 	Errors []WorkflowRunError `json:"errors"`
 
-	// ExternalId Caller-supplied idempotency key or correlation ID.
-	ExternalId *string `json:"external_id,omitempty"`
+	// ExternalId Caller-supplied logical correlation key for this run. Unique within the project; identifies a logical job across attempts. See the `external_id` description on `POST /runs` for the conflict semantics that govern duplicate values.
+	ExternalId *string         `json:"external_id,omitempty"`
+	ForkedFrom *RunForkLineage `json:"forked_from,omitempty"`
 
 	// Id Unique identifier for this run.
 	Id string `json:"id"`
@@ -3972,7 +4121,7 @@ type WorkflowRun struct {
 	// Inputs Input values provided when the run was started.
 	Inputs *map[string]interface{} `json:"inputs,omitempty"`
 
-	// JobCounts Current job-claim summary for this run. `ready` counts pending jobs whose `scheduled_at` has arrived and can be claimed now; `scheduled` counts pending jobs intentionally waiting for a future retry/backoff; `claimed` counts jobs currently held by workers.
+	// JobCounts Live work-pool summary for this run. Reflects the transient state of the worker job queue, not durable step progress — terminal jobs are swept on a TTL and stop contributing to these counts. Use `step_counts` for run-progress UI; use this field to answer "is anything claimable right now and is a worker holding it?". `ready` counts pending jobs whose `scheduled_at` has arrived and can be claimed now; `scheduled` counts pending jobs intentionally waiting for a future retry/backoff; `claimed` counts jobs currently held by workers.
 	JobCounts WorkflowRunJobCounts `json:"job_counts"`
 
 	// Metadata Caller-supplied string metadata attached to the run.
@@ -3996,6 +4145,9 @@ type WorkflowRun struct {
 	// Status Public run lifecycle. Path-level fields explain why an active run is working, waiting, sleeping, retrying, paused, or blocked at a join.
 	Status WorkflowRunStatus `json:"status"`
 
+	// StepCounts Aggregate count of run-step rows for this run grouped by status. Counts every attempt of every step (one row per step x attempt x path), so it reflects durable progress rather than the live worker pool. Use this for run-progress UI; use `job_counts` for live claimability.
+	StepCounts WorkflowRunStepCounts `json:"step_counts"`
+
 	// Tags Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints.
 	Tags *TagMap `json:"tags,omitempty"`
 
@@ -4013,7 +4165,7 @@ type WorkflowRun struct {
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
-// WorkflowRunErrorType Typed run-level failure cause: `run_timeout`, `run_cancelled`, `job_failed`, or `run_failed`. Its own vocabulary, not a superset of the job-level `error_type`. Present when `status=failed`.
+// WorkflowRunErrorType Typed run-level failure cause: `run_timeout`, `run_cancelled`, `step_failed`, or `run_failed`. Its own vocabulary, not a superset of the job-level `error_type`. Present when `status=failed`.
 type WorkflowRunErrorType string
 
 // WorkflowRunDetail defines model for WorkflowRunDetail.
@@ -4039,8 +4191,8 @@ type WorkflowRunDetail struct {
 	// CreatedAt Timestamp when this run was created.
 	CreatedAt time.Time `json:"created_at"`
 
-	// DefaultJobConfig Frozen cascade resolution in flat entry form. Keys unset at every layer are omitted. See PRD 035.
-	DefaultJobConfig *ResolvedConfig `json:"default_job_config,omitempty"`
+	// DefaultStepConfig Frozen cascade resolution in flat entry form. Keys unset at every layer are omitted. See PRD 035.
+	DefaultStepConfig *ResolvedConfig `json:"default_step_config,omitempty"`
 
 	// DefinitionId ID of the workflow definition this run was started from. Present only when `ephemeral` is false; omitted for ephemeral runs started from an inline spec.
 	DefinitionId *string `json:"definition_id,omitempty"`
@@ -4054,14 +4206,15 @@ type WorkflowRunDetail struct {
 	// ErrorMessage Error message from the most recent failure. Present when status is failed.
 	ErrorMessage *string `json:"error_message,omitempty"`
 
-	// ErrorType Typed run-level failure cause: `run_timeout`, `run_cancelled`, `job_failed`, or `run_failed`. Its own vocabulary, not a superset of the job-level `error_type`. Present when `status=failed`.
+	// ErrorType Typed run-level failure cause: `run_timeout`, `run_cancelled`, `step_failed`, or `run_failed`. Its own vocabulary, not a superset of the job-level `error_type`. Present when `status=failed`.
 	ErrorType *WorkflowRunDetailErrorType `json:"error_type,omitempty"`
 
 	// Errors Run-level errors that caused a failed lifecycle.
 	Errors []WorkflowRunError `json:"errors"`
 
-	// ExternalId Caller-supplied idempotency key or correlation ID.
-	ExternalId *string `json:"external_id,omitempty"`
+	// ExternalId Caller-supplied logical correlation key for this run. Unique within the project; identifies a logical job across attempts. See the `external_id` description on `POST /runs` for the conflict semantics that govern duplicate values.
+	ExternalId *string         `json:"external_id,omitempty"`
+	ForkedFrom *RunForkLineage `json:"forked_from,omitempty"`
 
 	// Id Unique identifier for this run.
 	Id string `json:"id"`
@@ -4072,11 +4225,8 @@ type WorkflowRunDetail struct {
 	// Inputs Input values provided when the run was started.
 	Inputs *map[string]interface{} `json:"inputs,omitempty"`
 
-	// JobCounts Current job-claim summary for this run. `ready` counts pending jobs whose `scheduled_at` has arrived and can be claimed now; `scheduled` counts pending jobs intentionally waiting for a future retry/backoff; `claimed` counts jobs currently held by workers.
+	// JobCounts Live work-pool summary for this run. Reflects the transient state of the worker job queue, not durable step progress — terminal jobs are swept on a TTL and stop contributing to these counts. Use `step_counts` for run-progress UI; use this field to answer "is anything claimable right now and is a worker holding it?". `ready` counts pending jobs whose `scheduled_at` has arrived and can be claimed now; `scheduled` counts pending jobs intentionally waiting for a future retry/backoff; `claimed` counts jobs currently held by workers.
 	JobCounts WorkflowRunJobCounts `json:"job_counts"`
-
-	// Jobs Jobs spawned by this run.
-	Jobs *[]Job `json:"jobs,omitempty"`
 
 	// Metadata Caller-supplied string metadata attached to the run.
 	Metadata *map[string]string `json:"metadata,omitempty"`
@@ -4110,6 +4260,15 @@ type WorkflowRunDetail struct {
 	// Status Public run lifecycle. Path-level fields explain why an active run is working, waiting, sleeping, retrying, paused, or blocked at a join.
 	Status WorkflowRunStatus `json:"status"`
 
+	// StepCounts Aggregate count of run-step rows for this run grouped by status. Counts every attempt of every step (one row per step x attempt x path), so it reflects durable progress rather than the live worker pool. Use this for run-progress UI; use `job_counts` for live claimability.
+	StepCounts WorkflowRunStepCounts `json:"step_counts"`
+
+	// Steps First page of durable run-step history. Use this canonical history for execution inspection and fork planning, including after terminal job rows have been TTL-swept.
+	Steps []RunStep `json:"steps"`
+
+	// StepsNextCursor Cursor for the next page of durable run-step history.
+	StepsNextCursor *string `json:"steps_next_cursor,omitempty"`
+
 	// Tags Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints.
 	Tags *TagMap `json:"tags,omitempty"`
 
@@ -4127,7 +4286,7 @@ type WorkflowRunDetail struct {
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
-// WorkflowRunDetailErrorType Typed run-level failure cause: `run_timeout`, `run_cancelled`, `job_failed`, or `run_failed`. Its own vocabulary, not a superset of the job-level `error_type`. Present when `status=failed`.
+// WorkflowRunDetailErrorType Typed run-level failure cause: `run_timeout`, `run_cancelled`, `step_failed`, or `run_failed`. Its own vocabulary, not a superset of the job-level `error_type`. Present when `status=failed`.
 type WorkflowRunDetailErrorType string
 
 // WorkflowRunError defines model for WorkflowRunError.
@@ -4137,7 +4296,7 @@ type WorkflowRunError struct {
 	PathId       *string `json:"path_id,omitempty"`
 }
 
-// WorkflowRunJobCounts Current job-claim summary for this run. `ready` counts pending jobs whose `scheduled_at` has arrived and can be claimed now; `scheduled` counts pending jobs intentionally waiting for a future retry/backoff; `claimed` counts jobs currently held by workers.
+// WorkflowRunJobCounts Live work-pool summary for this run. Reflects the transient state of the worker job queue, not durable step progress — terminal jobs are swept on a TTL and stop contributing to these counts. Use `step_counts` for run-progress UI; use this field to answer "is anything claimable right now and is a worker holding it?". `ready` counts pending jobs whose `scheduled_at` has arrived and can be claimed now; `scheduled` counts pending jobs intentionally waiting for a future retry/backoff; `claimed` counts jobs currently held by workers.
 type WorkflowRunJobCounts struct {
 	Claimed   int `json:"claimed"`
 	Ready     int `json:"ready"`
@@ -4187,6 +4346,15 @@ type WorkflowRunPathState string
 
 // WorkflowRunStatus Public run lifecycle. Path-level fields explain why an active run is working, waiting, sleeping, retrying, paused, or blocked at a join.
 type WorkflowRunStatus string
+
+// WorkflowRunStepCounts Aggregate count of run-step rows for this run grouped by status. Counts every attempt of every step (one row per step x attempt x path), so it reflects durable progress rather than the live worker pool. Use this for run-progress UI; use `job_counts` for live claimability.
+type WorkflowRunStepCounts struct {
+	Cancelled int `json:"cancelled"`
+	Completed int `json:"completed"`
+	Failed    int `json:"failed"`
+	Pending   int `json:"pending"`
+	Running   int `json:"running"`
+}
 
 // WorkflowRunWaitDetail defines model for WorkflowRunWaitDetail.
 type WorkflowRunWaitDetail struct {
@@ -4688,6 +4856,9 @@ type ListRunsParams struct {
 	// ExternalId Filter by caller-supplied external ID or correlation key.
 	ExternalId *string `form:"external_id,omitempty" json:"external_id,omitempty"`
 
+	// ForkedFrom Filter to runs forked from the specified source run.
+	ForkedFrom *string `form:"forked_from,omitempty" json:"forked_from,omitempty"`
+
 	// Cursor Cursor for pagination (opaque string from previous response)
 	Cursor *CursorParam `form:"cursor,omitempty" json:"cursor,omitempty"`
 
@@ -4706,6 +4877,33 @@ type StreamRunEventsParams struct {
 	// Since Durable event seq cursor to replay from.
 	Since *int64 `form:"since,omitempty" json:"since,omitempty"`
 }
+
+// ListRunStepsParams defines parameters for ListRunSteps.
+type ListRunStepsParams struct {
+	// PathId Filter steps by workflow path identifier.
+	PathId *string `form:"path_id,omitempty" json:"path_id,omitempty"`
+
+	// StepName Filter steps by workflow step name.
+	StepName *string `form:"step_name,omitempty" json:"step_name,omitempty"`
+
+	// Status Filter steps by current run-step status.
+	Status *RunStepStatus `form:"status,omitempty" json:"status,omitempty"`
+
+	// Cursor Cursor for pagination (opaque string from previous response)
+	Cursor *CursorParam `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Limit Maximum number of items to return
+	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// GetRunStepParams defines parameters for GetRunStep.
+type GetRunStepParams struct {
+	// Include Pass `run_state_after` to include `run_state_after_b64`; it is omitted otherwise.
+	Include *GetRunStepParamsInclude `form:"include,omitempty" json:"include,omitempty"`
+}
+
+// GetRunStepParamsInclude defines parameters for GetRunStep.
+type GetRunStepParamsInclude string
 
 // ListTriggersParams defines parameters for ListTriggers.
 type ListTriggersParams struct {
@@ -4862,6 +5060,9 @@ type CreateJobInteractionJSONRequestBody = CreateJobInteractionRequest
 
 // StartRunJSONRequestBody defines body for StartRun for application/json ContentType.
 type StartRunJSONRequestBody = StartRunRequest
+
+// ForkRunJSONRequestBody defines body for ForkRun for application/json ContentType.
+type ForkRunJSONRequestBody = RunForkRequest
 
 // SendRunSignalJSONRequestBody defines body for SendRunSignal for application/json ContentType.
 type SendRunSignalJSONRequestBody = SendRunSignalRequest
@@ -5774,12 +5975,12 @@ func (a *WorkflowRun) UnmarshalJSON(b []byte) error {
 		delete(object, "created_at")
 	}
 
-	if raw, found := object["default_job_config"]; found {
-		err = json.Unmarshal(raw, &a.DefaultJobConfig)
+	if raw, found := object["default_step_config"]; found {
+		err = json.Unmarshal(raw, &a.DefaultStepConfig)
 		if err != nil {
-			return fmt.Errorf("error reading 'default_job_config': %w", err)
+			return fmt.Errorf("error reading 'default_step_config': %w", err)
 		}
-		delete(object, "default_job_config")
+		delete(object, "default_step_config")
 	}
 
 	if raw, found := object["definition_id"]; found {
@@ -5836,6 +6037,14 @@ func (a *WorkflowRun) UnmarshalJSON(b []byte) error {
 			return fmt.Errorf("error reading 'external_id': %w", err)
 		}
 		delete(object, "external_id")
+	}
+
+	if raw, found := object["forked_from"]; found {
+		err = json.Unmarshal(raw, &a.ForkedFrom)
+		if err != nil {
+			return fmt.Errorf("error reading 'forked_from': %w", err)
+		}
+		delete(object, "forked_from")
 	}
 
 	if raw, found := object["id"]; found {
@@ -5924,6 +6133,14 @@ func (a *WorkflowRun) UnmarshalJSON(b []byte) error {
 			return fmt.Errorf("error reading 'status': %w", err)
 		}
 		delete(object, "status")
+	}
+
+	if raw, found := object["step_counts"]; found {
+		err = json.Unmarshal(raw, &a.StepCounts)
+		if err != nil {
+			return fmt.Errorf("error reading 'step_counts': %w", err)
+		}
+		delete(object, "step_counts")
 	}
 
 	if raw, found := object["tags"]; found {
@@ -6030,10 +6247,10 @@ func (a WorkflowRun) MarshalJSON() ([]byte, error) {
 		return nil, fmt.Errorf("error marshaling 'created_at': %w", err)
 	}
 
-	if a.DefaultJobConfig != nil {
-		object["default_job_config"], err = json.Marshal(a.DefaultJobConfig)
+	if a.DefaultStepConfig != nil {
+		object["default_step_config"], err = json.Marshal(a.DefaultStepConfig)
 		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'default_job_config': %w", err)
+			return nil, fmt.Errorf("error marshaling 'default_step_config': %w", err)
 		}
 	}
 
@@ -6081,6 +6298,13 @@ func (a WorkflowRun) MarshalJSON() ([]byte, error) {
 		object["external_id"], err = json.Marshal(a.ExternalId)
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'external_id': %w", err)
+		}
+	}
+
+	if a.ForkedFrom != nil {
+		object["forked_from"], err = json.Marshal(a.ForkedFrom)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'forked_from': %w", err)
 		}
 	}
 
@@ -6151,6 +6375,11 @@ func (a WorkflowRun) MarshalJSON() ([]byte, error) {
 	object["status"], err = json.Marshal(a.Status)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling 'status': %w", err)
+	}
+
+	object["step_counts"], err = json.Marshal(a.StepCounts)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'step_counts': %w", err)
 	}
 
 	if a.Tags != nil {
@@ -6272,12 +6501,12 @@ func (a *WorkflowRunDetail) UnmarshalJSON(b []byte) error {
 		delete(object, "created_at")
 	}
 
-	if raw, found := object["default_job_config"]; found {
-		err = json.Unmarshal(raw, &a.DefaultJobConfig)
+	if raw, found := object["default_step_config"]; found {
+		err = json.Unmarshal(raw, &a.DefaultStepConfig)
 		if err != nil {
-			return fmt.Errorf("error reading 'default_job_config': %w", err)
+			return fmt.Errorf("error reading 'default_step_config': %w", err)
 		}
-		delete(object, "default_job_config")
+		delete(object, "default_step_config")
 	}
 
 	if raw, found := object["definition_id"]; found {
@@ -6336,6 +6565,14 @@ func (a *WorkflowRunDetail) UnmarshalJSON(b []byte) error {
 		delete(object, "external_id")
 	}
 
+	if raw, found := object["forked_from"]; found {
+		err = json.Unmarshal(raw, &a.ForkedFrom)
+		if err != nil {
+			return fmt.Errorf("error reading 'forked_from': %w", err)
+		}
+		delete(object, "forked_from")
+	}
+
 	if raw, found := object["id"]; found {
 		err = json.Unmarshal(raw, &a.Id)
 		if err != nil {
@@ -6366,14 +6603,6 @@ func (a *WorkflowRunDetail) UnmarshalJSON(b []byte) error {
 			return fmt.Errorf("error reading 'job_counts': %w", err)
 		}
 		delete(object, "job_counts")
-	}
-
-	if raw, found := object["jobs"]; found {
-		err = json.Unmarshal(raw, &a.Jobs)
-		if err != nil {
-			return fmt.Errorf("error reading 'jobs': %w", err)
-		}
-		delete(object, "jobs")
 	}
 
 	if raw, found := object["metadata"]; found {
@@ -6454,6 +6683,30 @@ func (a *WorkflowRunDetail) UnmarshalJSON(b []byte) error {
 			return fmt.Errorf("error reading 'status': %w", err)
 		}
 		delete(object, "status")
+	}
+
+	if raw, found := object["step_counts"]; found {
+		err = json.Unmarshal(raw, &a.StepCounts)
+		if err != nil {
+			return fmt.Errorf("error reading 'step_counts': %w", err)
+		}
+		delete(object, "step_counts")
+	}
+
+	if raw, found := object["steps"]; found {
+		err = json.Unmarshal(raw, &a.Steps)
+		if err != nil {
+			return fmt.Errorf("error reading 'steps': %w", err)
+		}
+		delete(object, "steps")
+	}
+
+	if raw, found := object["steps_next_cursor"]; found {
+		err = json.Unmarshal(raw, &a.StepsNextCursor)
+		if err != nil {
+			return fmt.Errorf("error reading 'steps_next_cursor': %w", err)
+		}
+		delete(object, "steps_next_cursor")
 	}
 
 	if raw, found := object["tags"]; found {
@@ -6560,10 +6813,10 @@ func (a WorkflowRunDetail) MarshalJSON() ([]byte, error) {
 		return nil, fmt.Errorf("error marshaling 'created_at': %w", err)
 	}
 
-	if a.DefaultJobConfig != nil {
-		object["default_job_config"], err = json.Marshal(a.DefaultJobConfig)
+	if a.DefaultStepConfig != nil {
+		object["default_step_config"], err = json.Marshal(a.DefaultStepConfig)
 		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'default_job_config': %w", err)
+			return nil, fmt.Errorf("error marshaling 'default_step_config': %w", err)
 		}
 	}
 
@@ -6614,6 +6867,13 @@ func (a WorkflowRunDetail) MarshalJSON() ([]byte, error) {
 		}
 	}
 
+	if a.ForkedFrom != nil {
+		object["forked_from"], err = json.Marshal(a.ForkedFrom)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'forked_from': %w", err)
+		}
+	}
+
 	object["id"], err = json.Marshal(a.Id)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling 'id': %w", err)
@@ -6636,13 +6896,6 @@ func (a WorkflowRunDetail) MarshalJSON() ([]byte, error) {
 	object["job_counts"], err = json.Marshal(a.JobCounts)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling 'job_counts': %w", err)
-	}
-
-	if a.Jobs != nil {
-		object["jobs"], err = json.Marshal(a.Jobs)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'jobs': %w", err)
-		}
 	}
 
 	if a.Metadata != nil {
@@ -6709,6 +6962,25 @@ func (a WorkflowRunDetail) MarshalJSON() ([]byte, error) {
 	object["status"], err = json.Marshal(a.Status)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling 'status': %w", err)
+	}
+
+	object["step_counts"], err = json.Marshal(a.StepCounts)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'step_counts': %w", err)
+	}
+
+	if a.Steps != nil {
+		object["steps"], err = json.Marshal(a.Steps)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'steps': %w", err)
+		}
+	}
+
+	if a.StepsNextCursor != nil {
+		object["steps_next_cursor"], err = json.Marshal(a.StepsNextCursor)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'steps_next_cursor': %w", err)
+		}
 	}
 
 	if a.Tags != nil {
@@ -8178,6 +8450,11 @@ type ClientInterface interface {
 	// StreamRunEvents request
 	StreamRunEvents(ctx context.Context, project ProjectHandleParam, id IDParam, params *StreamRunEventsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ForkRunWithBody request with any body
+	ForkRunWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	ForkRun(ctx context.Context, project ProjectHandleParam, id IDParam, body ForkRunJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListRunJobs request
 	ListRunJobs(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -8188,6 +8465,12 @@ type ClientInterface interface {
 	SendRunSignalWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	SendRunSignal(ctx context.Context, project ProjectHandleParam, id IDParam, body SendRunSignalJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListRunSteps request
+	ListRunSteps(ctx context.Context, project ProjectHandleParam, id IDParam, params *ListRunStepsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetRunStep request
+	GetRunStep(ctx context.Context, project ProjectHandleParam, id IDParam, stepId string, params *GetRunStepParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListTools request
 	ListTools(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -9520,6 +9803,30 @@ func (c *Client) StreamRunEvents(ctx context.Context, project ProjectHandleParam
 	return c.Client.Do(req)
 }
 
+func (c *Client) ForkRunWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewForkRunRequestWithBody(c.Server, project, id, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ForkRun(ctx context.Context, project ProjectHandleParam, id IDParam, body ForkRunJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewForkRunRequest(c.Server, project, id, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) ListRunJobs(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListRunJobsRequest(c.Server, project, id)
 	if err != nil {
@@ -9558,6 +9865,30 @@ func (c *Client) SendRunSignalWithBody(ctx context.Context, project ProjectHandl
 
 func (c *Client) SendRunSignal(ctx context.Context, project ProjectHandleParam, id IDParam, body SendRunSignalJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewSendRunSignalRequest(c.Server, project, id, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListRunSteps(ctx context.Context, project ProjectHandleParam, id IDParam, params *ListRunStepsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListRunStepsRequest(c.Server, project, id, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetRunStep(ctx context.Context, project ProjectHandleParam, id IDParam, stepId string, params *GetRunStepParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetRunStepRequest(c.Server, project, id, stepId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -14094,6 +14425,22 @@ func NewListRunsRequest(server string, project ProjectHandleParam, params *ListR
 
 		}
 
+		if params.ForkedFrom != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "forked_from", *params.ForkedFrom, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
 		if params.Cursor != nil {
 
 			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "cursor", *params.Cursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
@@ -14426,6 +14773,60 @@ func NewStreamRunEventsRequest(server string, project ProjectHandleParam, id IDP
 	return req, nil
 }
 
+// NewForkRunRequest calls the generic ForkRun builder with application/json body
+func NewForkRunRequest(server string, project ProjectHandleParam, id IDParam, body ForkRunJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewForkRunRequestWithBody(server, project, id, "application/json", bodyReader)
+}
+
+// NewForkRunRequestWithBody generates requests for ForkRun with any type of body
+func NewForkRunRequestWithBody(server string, project ProjectHandleParam, id IDParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/runs/%s/forks", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewListRunJobsRequest generates requests for ListRunJobs
 func NewListRunJobsRequest(server string, project ProjectHandleParam, id IDParam) (*http.Request, error) {
 	var err error
@@ -14558,6 +14959,203 @@ func NewSendRunSignalRequestWithBody(server string, project ProjectHandleParam, 
 	}
 
 	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewListRunStepsRequest generates requests for ListRunSteps
+func NewListRunStepsRequest(server string, project ProjectHandleParam, id IDParam, params *ListRunStepsParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/runs/%s/steps", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.PathId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "path_id", *params.PathId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.StepName != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "step_name", *params.StepName, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Status != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "status", *params.Status, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Cursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "cursor", *params.Cursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetRunStepRequest generates requests for GetRunStep
+func NewGetRunStepRequest(server string, project ProjectHandleParam, id IDParam, stepId string, params *GetRunStepParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam2 string
+
+	pathParam2, err = runtime.StyleParamWithOptions("simple", false, "step_id", stepId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/runs/%s/steps/%s", pathParam0, pathParam1, pathParam2)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Include != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "include", *params.Include, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
 
 	return req, nil
 }
@@ -16618,6 +17216,11 @@ type ClientWithResponsesInterface interface {
 	// StreamRunEventsWithResponse request
 	StreamRunEventsWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, params *StreamRunEventsParams, reqEditors ...RequestEditorFn) (*StreamRunEventsResponse, error)
 
+	// ForkRunWithBodyWithResponse request with any body
+	ForkRunWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ForkRunResponse, error)
+
+	ForkRunWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body ForkRunJSONRequestBody, reqEditors ...RequestEditorFn) (*ForkRunResponse, error)
+
 	// ListRunJobsWithResponse request
 	ListRunJobsWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*ListRunJobsResponse, error)
 
@@ -16628,6 +17231,12 @@ type ClientWithResponsesInterface interface {
 	SendRunSignalWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SendRunSignalResponse, error)
 
 	SendRunSignalWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body SendRunSignalJSONRequestBody, reqEditors ...RequestEditorFn) (*SendRunSignalResponse, error)
+
+	// ListRunStepsWithResponse request
+	ListRunStepsWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, params *ListRunStepsParams, reqEditors ...RequestEditorFn) (*ListRunStepsResponse, error)
+
+	// GetRunStepWithResponse request
+	GetRunStepWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, stepId string, params *GetRunStepParams, reqEditors ...RequestEditorFn) (*GetRunStepResponse, error)
 
 	// ListToolsWithResponse request
 	ListToolsWithResponse(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*ListToolsResponse, error)
@@ -18579,6 +19188,32 @@ func (r StreamRunEventsResponse) StatusCode() int {
 	return 0
 }
 
+type ForkRunResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON202      *WorkflowRun
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+	JSON409      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r ForkRunResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ForkRunResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type ListRunJobsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -18645,6 +19280,54 @@ func (r SendRunSignalResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r SendRunSignalResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ListRunStepsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *RunStepListResponse
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r ListRunStepsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListRunStepsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetRunStepResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *RunStep
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r GetRunStepResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetRunStepResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -20316,6 +20999,23 @@ func (c *ClientWithResponses) StreamRunEventsWithResponse(ctx context.Context, p
 	return ParseStreamRunEventsResponse(rsp)
 }
 
+// ForkRunWithBodyWithResponse request with arbitrary body returning *ForkRunResponse
+func (c *ClientWithResponses) ForkRunWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ForkRunResponse, error) {
+	rsp, err := c.ForkRunWithBody(ctx, project, id, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseForkRunResponse(rsp)
+}
+
+func (c *ClientWithResponses) ForkRunWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body ForkRunJSONRequestBody, reqEditors ...RequestEditorFn) (*ForkRunResponse, error) {
+	rsp, err := c.ForkRun(ctx, project, id, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseForkRunResponse(rsp)
+}
+
 // ListRunJobsWithResponse request returning *ListRunJobsResponse
 func (c *ClientWithResponses) ListRunJobsWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*ListRunJobsResponse, error) {
 	rsp, err := c.ListRunJobs(ctx, project, id, reqEditors...)
@@ -20349,6 +21049,24 @@ func (c *ClientWithResponses) SendRunSignalWithResponse(ctx context.Context, pro
 		return nil, err
 	}
 	return ParseSendRunSignalResponse(rsp)
+}
+
+// ListRunStepsWithResponse request returning *ListRunStepsResponse
+func (c *ClientWithResponses) ListRunStepsWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, params *ListRunStepsParams, reqEditors ...RequestEditorFn) (*ListRunStepsResponse, error) {
+	rsp, err := c.ListRunSteps(ctx, project, id, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListRunStepsResponse(rsp)
+}
+
+// GetRunStepWithResponse request returning *GetRunStepResponse
+func (c *ClientWithResponses) GetRunStepWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, stepId string, params *GetRunStepParams, reqEditors ...RequestEditorFn) (*GetRunStepResponse, error) {
+	rsp, err := c.GetRunStep(ctx, project, id, stepId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetRunStepResponse(rsp)
 }
 
 // ListToolsWithResponse request returning *ListToolsResponse
@@ -23944,6 +24662,60 @@ func ParseStreamRunEventsResponse(rsp *http.Response) (*StreamRunEventsResponse,
 	return response, nil
 }
 
+// ParseForkRunResponse parses an HTTP response from a ForkRunWithResponse call
+func ParseForkRunResponse(rsp *http.Response) (*ForkRunResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ForkRunResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+		var dest WorkflowRun
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseListRunJobsResponse parses an HTTP response from a ListRunJobsWithResponse call
 func ParseListRunJobsResponse(rsp *http.Response) (*ListRunJobsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -24044,6 +24816,86 @@ func ParseSendRunSignalResponse(rsp *http.Response) (*SendRunSignalResponse, err
 			return nil, err
 		}
 		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListRunStepsResponse parses an HTTP response from a ListRunStepsWithResponse call
+func ParseListRunStepsResponse(rsp *http.Response) (*ListRunStepsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListRunStepsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest RunStepListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetRunStepResponse parses an HTTP response from a GetRunStepWithResponse call
+func ParseGetRunStepResponse(rsp *http.Response) (*GetRunStepResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetRunStepResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest RunStep
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
 		var dest Unauthorized

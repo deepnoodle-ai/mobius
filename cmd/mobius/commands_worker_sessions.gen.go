@@ -17,14 +17,14 @@ func registerWorkerSessionsCommands(app *cli.App) {
 	workerSessionsGrp.Alias("worker-session")
 	workerSessionsGrp.Command("list-sessions").
 		Description("List worker sessions").
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			resp, err := client.ListWorkerSessionsWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err

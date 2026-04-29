@@ -336,6 +336,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/projects/{project}/runs/{id}/forks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Fork a terminal run from a specific step
+         * @description Creates a new active run that inherits step history before `from_step_id` and resumes execution at that step. The request must provide a new logical `external_id`. `external_id` keeps the normal project-wide run uniqueness semantics; retrying the same fork request with the same source run, fork step, `external_id`, and effective target definition version is idempotent and returns the existing forked run with `202` whether that fork is still active or already terminal. Omitting `definition_version_id` keeps the source run's definition version; supplying it pins post-fork execution to that explicit version, and a retry that changes this value is an `idempotency_conflict`.
+         */
+        post: operations["forkRun"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project}/runs/{id}/steps": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List run steps
+         * @description Lists durable `RunStep` records for a run. Run steps are the canonical execution history and remain available after terminal job rows are TTL-swept; use jobs only for live worker claim state.
+         */
+        get: operations["listRunSteps"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project}/runs/{id}/steps/{step_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get one run step
+         * @description Returns a single durable `RunStep` row for a workflow run. Run steps are the canonical execution history; linked job state, when present, is live worker-claim metadata and may disappear after terminal job retention.
+         */
+        get: operations["getRunStep"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/projects/{project}/runs/{id}/action-log": {
         parameters: {
             query?: never;
@@ -391,6 +451,8 @@ export interface paths {
          *     timestamps changed; `data` is a full WorkflowRun.
          *     - `job_updated` — a single job's status or attempt
          *     advanced; `data` is a full Job.
+         *     - `run_step_updated` — a durable run-step row was created
+         *     or advanced; `data` is a full RunStep.
          *     - `action_appended` — one entry was appended to the run
          *     timeline (worker job completed or platform action ran);
          *     `data` is a WorkflowActionLog row.
@@ -400,9 +462,13 @@ export interface paths {
          *     `data` is a full Interaction.
          *     - `custom` — a worker emitted a domain-specific event via
          *     `POST /v1/projects/{project}/jobs/{id}/events`. `data`
-         *     carries `{kind: "custom", type, job_id, data}` where
-         *     `type` is the worker-supplied name and inner `data` is
-         *     the worker payload.
+         *     carries `{kind: "custom", type, job_id, data, step_id?,
+         *     path_id?}` where `type` is the worker-supplied name and
+         *     inner `data` is the worker payload. `step_id` is set when
+         *     the originating job is owned by a workflow step and lets
+         *     consumers correlate the event to the durable run step
+         *     after the job is reaped on TTL; `path_id` mirrors the
+         *     run's execution path for path-scoped consumers.
          *
          *     Pass `?since=<seq>` on reconnect to replay any durable events the server has recorded past that cursor before switching back to live updates; clients should record the largest `seq` they have observed. Comment frames (`:keepalive`) are emitted every ~15s to keep intermediaries from closing the connection.
          *
@@ -1645,6 +1711,10 @@ export interface components {
                 code: string;
                 /** @description Human-readable error message */
                 message: string;
+                /** @description Optional structured details specific to a `code`. Endpoints that set this document the per-code shape inline. Absent for codes whose `code` + `message` are sufficient. */
+                details?: {
+                    [key: string]: unknown;
+                };
             };
         };
         /** @description Project ID. */
@@ -2423,11 +2493,19 @@ export interface components {
             waiting_on_signal_names: string[];
             interaction_ids: string[];
         };
-        /** @description Current job-claim summary for this run. `ready` counts pending jobs whose `scheduled_at` has arrived and can be claimed now; `scheduled` counts pending jobs intentionally waiting for a future retry/backoff; `claimed` counts jobs currently held by workers. */
+        /** @description Live work-pool summary for this run. Reflects the transient state of the worker job queue, not durable step progress — terminal jobs are swept on a TTL and stop contributing to these counts. Use `step_counts` for run-progress UI; use this field to answer "is anything claimable right now and is a worker holding it?". `ready` counts pending jobs whose `scheduled_at` has arrived and can be claimed now; `scheduled` counts pending jobs intentionally waiting for a future retry/backoff; `claimed` counts jobs currently held by workers. */
         WorkflowRunJobCounts: {
             ready: number;
             scheduled: number;
             claimed: number;
+        };
+        /** @description Aggregate count of run-step rows for this run grouped by status. Counts every attempt of every step (one row per step x attempt x path), so it reflects durable progress rather than the live worker pool. Use this for run-progress UI; use `job_counts` for live claimability. */
+        WorkflowRunStepCounts: {
+            pending: number;
+            running: number;
+            completed: number;
+            failed: number;
+            cancelled: number;
         };
         WorkflowRunError: {
             path_id?: string;
@@ -2454,8 +2532,10 @@ export interface components {
             status: components["schemas"]["WorkflowRunStatus"];
             /** @description Current path counts derived from the run projection. */
             path_counts: components["schemas"]["WorkflowRunPathCounts"];
-            /** @description Current job claim summary derived from the run projection. */
+            /** @description Live work-pool summary derived from the run projection. See `WorkflowRunJobCounts`. */
             job_counts: components["schemas"]["WorkflowRunJobCounts"];
+            /** @description Durable run-step counts grouped by status. See `WorkflowRunStepCounts`. */
+            step_counts: components["schemas"]["WorkflowRunStepCounts"];
             /** @description Always-present aggregate of waiting paths. */
             wait_summary: components["schemas"]["WorkflowRunWaitSummary"];
             /** @description Run-level errors that caused a failed lifecycle. */
@@ -2480,7 +2560,7 @@ export interface components {
             actor_id?: string;
             /** @description Human-readable label for the initiator (e.g. trigger name, API key name). */
             initiated_by?: string;
-            /** @description Caller-supplied idempotency key or correlation ID. */
+            /** @description Caller-supplied logical correlation key for this run. Unique within the project; identifies a logical job across attempts. See the `external_id` description on `POST /runs` for the conflict semantics that govern duplicate values. */
             external_id?: string;
             /** @description Compatibility boolean set when cancellation was requested. Use `cancel_requested_at` for audit detail and `status` for terminal checks. */
             cancel_requested?: boolean;
@@ -2515,16 +2595,87 @@ export interface components {
              */
             wall_clock_deadline_at?: string;
             /**
-             * @description Typed run-level failure cause: `run_timeout`, `run_cancelled`, `job_failed`, or `run_failed`. Its own vocabulary, not a superset of the job-level `error_type`. Present when `status=failed`.
+             * @description Typed run-level failure cause: `run_timeout`, `run_cancelled`, `step_failed`, or `run_failed`. Its own vocabulary, not a superset of the job-level `error_type`. Present when `status=failed`.
              * @enum {string}
              */
-            error_type?: "run_timeout" | "run_cancelled" | "job_failed" | "run_failed";
+            error_type?: "run_timeout" | "run_cancelled" | "step_failed" | "run_failed";
             /** @description Run-level cascade config frozen when the run was started. */
             resolved_config?: components["schemas"]["ResolvedConfig"];
-            /** @description Default job-level cascade config inherited by jobs unless a step overrides it. */
-            default_job_config?: components["schemas"]["ResolvedConfig"];
+            /** @description Default step-level cascade config inherited by each run step unless the step's own spec overrides it. */
+            default_step_config?: components["schemas"]["ResolvedConfig"];
+            /** @description Source run and step this run was forked from. */
+            forked_from?: components["schemas"]["RunForkLineage"];
         } & {
             [key: string]: unknown;
+        };
+        RunForkLineage: {
+            run_id: string;
+            step_id: string;
+            path_id: string;
+            step_name: string;
+        };
+        /** @description Fork creation request. Tags are inherited from the source run and then overlaid with request tags using the same tag inheritance rules as run creation: request values replace matching source keys, and an empty string removes the inherited key. `definition_version_id` changes only the post-fork execution version; it does not affect inherited history. When omitted, the fork uses the source run's definition version. */
+        RunForkRequest: {
+            /** @description Run-step identifier to fork from. Use the `id` returned by `RunStep`. */
+            from_step_id: string;
+            /** @description Logical external identifier for the new forked run. It must be unique within the project, just like other workflow-run `external_id` values. */
+            external_id: string;
+            /** @description Optional target workflow definition version for post-fork execution. It must belong to the same workflow definition as the source run. Omit it to use the source run's original definition version. Inherited history remains tied to the source run. */
+            definition_version_id?: string;
+            /** @description Tags to overlay on the inherited source-run tags. Empty string values remove inherited keys. */
+            tags?: components["schemas"]["TagMap"];
+        };
+        /** @enum {string} */
+        RunStepSource: "executed" | "inherited";
+        /** @enum {string} */
+        RunStepStatus: "pending" | "running" | "completed" | "failed" | "cancelled";
+        /** @description Durable execution-history row for one step attempt on one workflow path. RunStep is the canonical source for run history; linked Job rows are transient worker-claim records and may be TTL-swept after terminal retention. */
+        RunStep: {
+            /** @description Stable run-step identifier. Use this value as `{step_id}` in `GET /runs/{id}/steps/{step_id}` and as `from_step_id` in `POST /runs/{id}/forks`. */
+            id: string;
+            /** @description Workflow run that owns this step row. */
+            run_id: string;
+            /** @description Workflow path identifier for branch/fanout execution. */
+            path_id: string;
+            /** @description Step name from the workflow definition. */
+            step_name: string;
+            /** @description Action identifier for executable steps; empty for control-only steps. */
+            action: string;
+            /** @description Zero-based retry attempt for this step/path pair. */
+            attempt: number;
+            /** @description Whether this row was executed in this run or inherited from a source run during fork creation. */
+            source: components["schemas"]["RunStepSource"];
+            status: components["schemas"]["RunStepStatus"];
+            /** @description Resolved parameters/input for this step attempt. */
+            parameters: {
+                [key: string]: unknown;
+            };
+            /** @description Linked live worker job when one exists. Terminal jobs may be reaped while the RunStep remains. */
+            job_id?: string;
+            /** @description Base64-encoded serialized step result, when present. */
+            result_b64?: string;
+            /** @description Base64-encoded serialized run state immediately after this step completed. Omitted unless requested with `include=run_state_after`. */
+            run_state_after_b64?: string;
+            error_type?: string;
+            error_message?: string;
+            /** Format: date-time */
+            started_at?: string;
+            /** Format: date-time */
+            completed_at?: string;
+            /** @description Originating run ID when this row was inherited or derived from another run. */
+            source_run_id?: string;
+            /** @description Originating step ID when this row was inherited or derived from another run. */
+            source_step_id?: string;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        /** @description Paginated durable run-step history. Use this response for historical run inspection because linked job rows are live worker state and may be TTL-swept. */
+        RunStepListResponse: {
+            items: components["schemas"]["RunStep"][];
+            has_more: boolean;
+            next_cursor?: string;
         };
         /** @description Paginated list of workflow runs. */
         WorkflowRunListResponse: {
@@ -2535,7 +2686,7 @@ export interface components {
             /** @description Opaque cursor for fetching the next page. Present only when has_more is true. */
             next_cursor?: string;
         };
-        /** @description Detailed workflow run including its spec snapshot, terminal result, and jobs. */
+        /** @description Detailed workflow run including its spec snapshot, terminal result, and the first page of run steps. */
         WorkflowRunDetail: components["schemas"]["WorkflowRun"] & {
             /** @description Current path-level execution projection for this run. */
             paths: components["schemas"]["WorkflowRunPath"][];
@@ -2543,8 +2694,10 @@ export interface components {
             spec?: components["schemas"]["WorkflowSpec"];
             /** @description Base64-encoded terminal result blob */
             result_b64?: string;
-            /** @description Jobs spawned by this run. */
-            jobs?: components["schemas"]["Job"][];
+            /** @description First page of durable run-step history. Use this canonical history for execution inspection and fork planning, including after terminal job rows have been TTL-swept. */
+            steps: components["schemas"]["RunStep"][];
+            /** @description Cursor for the next page of durable run-step history. */
+            steps_next_cursor?: string;
         };
         /** @description Run a previously-created workflow definition. Selected by `mode: saved` on `POST /v1/projects/{project}/runs`. The run inherits the workflow definition's tags at start time; see the `tags` field below for the override rules. */
         StartSavedRunRequest: {
@@ -2567,7 +2720,7 @@ export interface components {
             };
             /** @description Tags applied on top of the workflow definition's inherited tags. Caller keys override on conflict; an entry whose value is the empty string opts the inherited key out entirely (so the run does not carry it). Setting a tag value to "" is therefore reserved as the opt-out signal — use a placeholder value if you actually want a stored empty value. */
             tags?: components["schemas"]["TagMap"];
-            /** @description Caller-supplied idempotency key or correlation ID attached to the run. */
+            /** @description Caller-supplied logical correlation key for this run. Unique within the project. If the same external_id is reused while the prior run is still active, the existing run is returned idempotently. Once the prior run is terminal (completed or failed), a duplicate POST returns 409 with code `external_id_conflict` and the `existing_run_id` and `status` carried in `details`. To launch a fresh attempt for the same logical job after a terminal run, use a new external_id (e.g. suffix with an attempt counter). */
             external_id?: string;
             /** @description Run-level cascade config overrides applied when starting the run. */
             config?: components["schemas"]["ConfigEntries"];
@@ -2593,7 +2746,7 @@ export interface components {
             };
             /** @description Initial tags for this inline run. Inline runs have no parent workflow definition, so there is nothing to inherit from — every tag on the run comes from this map. */
             tags?: components["schemas"]["TagMap"];
-            /** @description Caller-supplied idempotency key or correlation ID attached to the run. */
+            /** @description Caller-supplied logical correlation key for this run. Unique within the project. If the same external_id is reused while the prior run is still active, the existing run is returned idempotently. Once the prior run is terminal (completed or failed), a duplicate POST returns 409 with code `external_id_conflict` and the `existing_run_id` and `status` carried in `details`. To launch a fresh attempt for the same logical job after a terminal run, use a new external_id (e.g. suffix with an attempt counter). */
             external_id?: string;
             /** @description Run-level cascade config overrides applied when starting the run. */
             config?: components["schemas"]["ConfigEntries"];
@@ -2619,7 +2772,7 @@ export interface components {
             };
             /** @description Tags applied on top of the bound workflow definition's inherited tags. Caller keys override on conflict; an entry whose value is the empty string opts the inherited key out entirely (so the run does not carry it). Setting a tag value to "" is therefore reserved as the opt-out signal — use a placeholder value if you actually want a stored empty value. */
             tags?: components["schemas"]["TagMap"];
-            /** @description Caller-supplied idempotency key or correlation ID attached to the run. */
+            /** @description Caller-supplied logical correlation key for this run. Unique within the project. If the same external_id is reused while the prior run is still active, the existing run is returned idempotently. Once the prior run is terminal (completed or failed), a duplicate POST returns 409 with code `external_id_conflict` and the `existing_run_id` and `status` carried in `details`. To launch a fresh attempt for the same logical job after a terminal run, use a new external_id (e.g. suffix with an attempt counter). */
             external_id?: string;
             /** @description Run-level cascade config overrides applied when starting the bound workflow. */
             config?: components["schemas"]["ConfigEntries"];
@@ -5154,7 +5307,7 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Accepted */
+            /** @description Accepted. When `external_id` is set and matches an active run, the existing run is returned idempotently with this same status code instead of creating a new one. */
             202: {
                 headers: {
                     [name: string]: unknown;
@@ -5166,7 +5319,18 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
-            /** @description Conflict — the target project is archived. Code `project_archived`. Restore the project before starting new runs; in-flight runs continue regardless. */
+            /**
+             * @description Conflict. Possible codes:
+             *
+             *     - `project_archived` — the target project is archived. Restore
+             *     the project before starting new runs; in-flight runs continue
+             *     regardless.
+             *     - `external_id_conflict` — `external_id` already belongs to a
+             *     terminal run in this project. The response `details` carry
+             *     `existing_run_id` (string), `status` (`completed` | `failed`),
+             *     and the offending `external_id`. Fetch the prior run for its
+             *     result, or POST a new attempt with a different external_id.
+             */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -5193,6 +5357,8 @@ export interface operations {
                 initiated_by?: string;
                 /** @description Filter by caller-supplied external ID or correlation key. */
                 external_id?: string;
+                /** @description Filter to runs forked from the specified source run. */
+                forked_from?: string;
                 /** @description Cursor for pagination (opaque string from previous response) */
                 cursor?: components["parameters"]["CursorParam"];
                 /** @description Maximum number of items to return */
@@ -5235,7 +5401,7 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Accepted */
+            /** @description Accepted. When `external_id` is set and matches an active run in this project, the existing run is returned idempotently with this same status code instead of creating a new one. */
             202: {
                 headers: {
                     [name: string]: unknown;
@@ -5257,6 +5423,18 @@ export interface operations {
                      *         "waiting": 0,
                      *         "completed": 0,
                      *         "failed": 0
+                     *       },
+                     *       "job_counts": {
+                     *         "ready": 1,
+                     *         "scheduled": 0,
+                     *         "claimed": 0
+                     *       },
+                     *       "step_counts": {
+                     *         "pending": 1,
+                     *         "running": 0,
+                     *         "completed": 0,
+                     *         "failed": 0,
+                     *         "cancelled": 0
                      *       },
                      *       "wait_summary": {
                      *         "waiting_paths": 0,
@@ -5289,7 +5467,18 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
-            /** @description Conflict — the target project is archived. Code `project_archived`. Restore the project before starting new runs; in-flight runs continue regardless. */
+            /**
+             * @description Conflict. Possible codes:
+             *
+             *     - `project_archived` — the target project is archived. Restore
+             *     the project before starting new runs; in-flight runs continue
+             *     regardless.
+             *     - `external_id_conflict` — `external_id` already belongs to a
+             *     terminal run in this project. The response `details` carry
+             *     `existing_run_id` (string), `status` (`completed` | `failed`),
+             *     and the offending `external_id`. Fetch the prior run for its
+             *     result, or POST a new attempt with a different external_id.
+             */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -5322,6 +5511,116 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WorkflowRunDetail"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    forkRun: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
+                id: components["parameters"]["IDParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RunForkRequest"];
+            };
+        };
+        responses: {
+            /** @description Fork created, or an existing fork returned for an idempotent retry with the same source run, `from_step_id`, `external_id`, and effective target definition version. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkflowRun"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description Conflict. Expected fork-specific codes include `fork_source_active`, `idempotency_conflict`, and `external_id_conflict`. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listRunSteps: {
+        parameters: {
+            query?: {
+                /** @description Filter steps by workflow path identifier. */
+                path_id?: string;
+                /** @description Filter steps by workflow step name. */
+                step_name?: string;
+                /** @description Filter steps by current run-step status. */
+                status?: components["schemas"]["RunStepStatus"];
+                /** @description Cursor for pagination (opaque string from previous response) */
+                cursor?: components["parameters"]["CursorParam"];
+                /** @description Maximum number of items to return */
+                limit?: components["parameters"]["LimitParam"];
+            };
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
+                id: components["parameters"]["IDParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RunStepListResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getRunStep: {
+        parameters: {
+            query?: {
+                /** @description Pass `run_state_after` to include `run_state_after_b64`; it is omitted otherwise. */
+                include?: "run_state_after";
+            };
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
+                id: components["parameters"]["IDParam"];
+                step_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RunStep"];
                 };
             };
             401: components["responses"]["Unauthorized"];
@@ -5538,9 +5837,9 @@ export interface operations {
                 };
                 content: {
                     /**
-                     * @example event: job_updated
+                     * @example event: run_step_updated
                      *     id: 43
-                     *     data: {"type":"job_updated","run_id":"run_01hw1n1a2b3c4d5e6f7g8h9j0k","seq":43,"timestamp":"2026-04-24T14:46:00Z","data":{"job_id":"job_01hw1n2p3q4r5s6t7u8v9w0x1y","status":"completed"}}
+                     *     data: {"type":"run_step_updated","run_id":"run_01hw1n1a2b3c4d5e6f7g8h9j0k","seq":43,"timestamp":"2026-04-24T14:46:00Z","data":{"id":"step_01hw1n2p3q4r5s6t7u8v9w0x1y","run_id":"run_01hw1n1a2b3c4d5e6f7g8h9j0k","path_id":"main","step_name":"summarize","action":"summarize-document","attempt":1,"source":"executed","status":"completed","parameters":{"document_id":"doc_01hw1m9z8y7x6w5v4u3t2s1r0q"},"job_id":"job_01hw1n2a3b4c5d6e7f8g9h0j1k","created_at":"2026-04-24T14:45:10Z","started_at":"2026-04-24T14:45:12Z","completed_at":"2026-04-24T14:46:00Z","updated_at":"2026-04-24T14:46:00Z"}}
                      */
                     "text/event-stream": string;
                 };

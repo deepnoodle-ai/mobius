@@ -22,14 +22,14 @@ func registerRunsCommands(app *cli.App) {
 	runsGrp.Command("cancel").
 		Description("Request cancellation of an in-flight run").
 		Args("id").
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			resp, err := client.CancelRunWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
@@ -38,23 +38,107 @@ func registerRunsCommands(app *cli.App) {
 			return printResponse(ctx, "cancelRun", resp.StatusCode(), resp.Body)
 		})
 
-	runsGrp.Command("get").
-		Description("Get a workflow run").
+	runsGrp.Command("fork-run").
+		Description("Fork a terminal run from a specific step").
 		Args("id").
-		Use(cli.RequireFlags("api-key")).
+		Flags(
+			cli.String("definition-version-id", "").Help("Optional target workflow definition version for post-fork execution. It must belong to the same wor…"),
+			cli.String("external-id", "").Help("[required] Logical external identifier for the new forked run. It must be unique within the project, just like…"),
+			cli.String("from-step-id", "").Help("[required] Run-step identifier to fork from. Use the `id` returned by `RunStep`."),
+			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
+		).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
+			p1 := ctx.Arg(0)
+			var body api.ForkRunJSONRequestBody
+			if err := readJSONBody(ctx, &body); err != nil {
+				return err
+			}
+			if ctx.IsSet("definition-version-id") {
+				v := ctx.String("definition-version-id")
+				body.DefinitionVersionId = &v
+			}
+			if ctx.IsSet("external-id") {
+				body.ExternalId = ctx.String("external-id")
+			}
+			if ctx.IsSet("from-step-id") {
+				body.FromStepId = ctx.String("from-step-id")
+			}
+			if tags, err := parseTagFlags(ctx); err != nil {
+				return err
+			} else if tags != nil {
+				v := api.TagMap(tags)
+				body.Tags = &v
+			}
+			if body.ExternalId == "" {
+				return fmt.Errorf("--external-id is required (or supply it via --file)")
+			}
+			if body.FromStepId == "" {
+				return fmt.Errorf("--from-step-id is required (or supply it via --file)")
+			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
+			}
+			resp, err := client.ForkRunWithResponse(ctx.Context(), p0, p1, body)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "forkRun", resp.StatusCode(), resp.Body)
+		})
+
+	runsGrp.Command("get").
+		Description("Get a workflow run").
+		Args("id").
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			resp, err := client.GetRunWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}
 			return printResponse(ctx, "getRun", resp.StatusCode(), resp.Body)
+		})
+
+	runsGrp.Command("get-step").
+		Description("Get one run step").
+		Args("id", "step-id").
+		Flags(
+			cli.String("include", "").Help("Pass `run_state_after` to include `run_state_after_b64`; it is omitted otherwise."),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			p1 := ctx.Arg(0)
+			p2 := ctx.Arg(1)
+			params := &api.GetRunStepParams{}
+			if ctx.IsSet("include") {
+				v := api.GetRunStepParamsInclude(ctx.String("include"))
+				params.Include = &v
+			}
+			resp, err := client.GetRunStepWithResponse(ctx.Context(), p0, p1, p2, params)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "getRunStep", resp.StatusCode(), resp.Body)
 		})
 
 	runsGrp.Command("list").
@@ -66,17 +150,18 @@ func registerRunsCommands(app *cli.App) {
 			cli.String("parent-run-id", "").Help("Filter to child runs of the specified parent run."),
 			cli.String("initiated-by", "").Help("Filter by the initiator label (e.g. trigger name, API key name)."),
 			cli.String("external-id", "").Help("Filter by caller-supplied external ID or correlation key."),
+			cli.String("forked-from", "").Help("Filter to runs forked from the specified source run."),
 			cli.String("cursor", "").Help("cursor"),
 			cli.Int("limit", "").Help("limit"),
 		).
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			params := &api.ListRunsParams{}
 			if ctx.IsSet("status") {
 				v := api.WorkflowRunStatus(ctx.String("status"))
@@ -102,6 +187,10 @@ func registerRunsCommands(app *cli.App) {
 				v := ctx.String("external-id")
 				params.ExternalId = &v
 			}
+			if ctx.IsSet("forked-from") {
+				v := ctx.String("forked-from")
+				params.ForkedFrom = &v
+			}
 			if ctx.IsSet("cursor") {
 				v := api.CursorParam(ctx.String("cursor"))
 				params.Cursor = &v
@@ -120,14 +209,14 @@ func registerRunsCommands(app *cli.App) {
 	runsGrp.Command("list-action-log").
 		Description("List action log entries for a run").
 		Args("id").
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			resp, err := client.ListRunActionLogWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
@@ -139,14 +228,14 @@ func registerRunsCommands(app *cli.App) {
 	runsGrp.Command("list-jobs").
 		Description("List jobs for a run").
 		Args("id").
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			resp, err := client.ListRunJobsWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
@@ -158,14 +247,14 @@ func registerRunsCommands(app *cli.App) {
 	runsGrp.Command("list-runs").
 		Description("List runs for a workflow definition").
 		Args("id").
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			resp, err := client.ListWorkflowRunsWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
@@ -174,17 +263,64 @@ func registerRunsCommands(app *cli.App) {
 			return printResponse(ctx, "listWorkflowRuns", resp.StatusCode(), resp.Body)
 		})
 
-	runsGrp.Command("resume").
-		Description("Resume waiting run paths").
+	runsGrp.Command("list-steps").
+		Description("List run steps").
 		Args("id").
-		Use(cli.RequireFlags("api-key")).
+		Flags(
+			cli.String("path-id", "").Help("Filter steps by workflow path identifier."),
+			cli.String("step-name", "").Help("Filter steps by workflow step name."),
+			cli.String("status", "").Help("Filter steps by current run-step status."),
+			cli.String("cursor", "").Help("cursor"),
+			cli.Int("limit", "").Help("limit"),
+		).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
+			p1 := ctx.Arg(0)
+			params := &api.ListRunStepsParams{}
+			if ctx.IsSet("path-id") {
+				v := ctx.String("path-id")
+				params.PathId = &v
+			}
+			if ctx.IsSet("step-name") {
+				v := ctx.String("step-name")
+				params.StepName = &v
+			}
+			if ctx.IsSet("status") {
+				v := api.RunStepStatus(ctx.String("status"))
+				params.Status = &v
+			}
+			if ctx.IsSet("cursor") {
+				v := api.CursorParam(ctx.String("cursor"))
+				params.Cursor = &v
+			}
+			if ctx.IsSet("limit") {
+				v := api.LimitParam(ctx.Int("limit"))
+				params.Limit = &v
+			}
+			resp, err := client.ListRunStepsWithResponse(ctx.Context(), p0, p1, params)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "listRunSteps", resp.StatusCode(), resp.Body)
+		})
+
+	runsGrp.Command("resume").
+		Description("Resume waiting run paths").
+		Args("id").
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			resp, err := client.ResumeRunWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
@@ -202,14 +338,14 @@ func registerRunsCommands(app *cli.App) {
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			var body api.SendRunSignalJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
@@ -242,14 +378,14 @@ func registerRunsCommands(app *cli.App) {
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			var body api.StartRunJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -272,7 +408,7 @@ func registerRunsCommands(app *cli.App) {
 		Args("id").
 		Flags(
 			cli.String("config", "").Help("Flat cascade config input used outside authored workflow YAML. Each entry addresses one `(category,… Accepts JSON, @file, or @-."),
-			cli.String("external-id", "").Help("Caller-supplied idempotency key or correlation ID attached to the run."),
+			cli.String("external-id", "").Help("Caller-supplied logical correlation key for this run. Unique within the project. If the same extern…"),
 			cli.String("inputs", "").Help("Input values to pass to the workflow. Must conform to the workflow's declared input schema. Accepts JSON, @file, or @-."),
 			cli.String("metadata", "").Help("Caller-supplied string metadata attached to the run for filtering and display. Accepts JSON, @file, or @-."),
 			cli.String("queue", "").Help("Queue name to enqueue the run on. Defaults to \"default\"."),
@@ -280,14 +416,14 @@ func registerRunsCommands(app *cli.App) {
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			var body api.StartWorkflowRunJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
@@ -340,14 +476,14 @@ func registerRunsCommands(app *cli.App) {
 		Flags(
 			cli.Int("since", "").Help("Durable event seq cursor to replay from."),
 		).
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			params := &api.StreamProjectRunEventsParams{}
 			if ctx.IsSet("since") {
 				v := int64(ctx.Int("since"))
@@ -366,14 +502,14 @@ func registerRunsCommands(app *cli.App) {
 		Flags(
 			cli.Int("since", "").Help("Durable event seq cursor to replay from."),
 		).
-		Use(cli.RequireFlags("api-key")).
+		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
 			if err != nil {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.String("project")
+			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			params := &api.StreamRunEventsParams{}
 			if ctx.IsSet("since") {

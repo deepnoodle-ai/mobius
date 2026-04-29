@@ -514,6 +514,13 @@ def _run_body(run_id: str, status: str) -> dict[str, object]:
             "failed": 1 if status == "failed" else 0,
         },
         "job_counts": {"ready": 0, "scheduled": 0, "claimed": 0},
+        "step_counts": {
+            "pending": 0,
+            "running": 1 if status == "active" else 0,
+            "completed": 1 if status == "completed" else 0,
+            "failed": 1 if status == "failed" else 0,
+            "cancelled": 0,
+        },
         "wait_summary": {
             "waiting_paths": 0,
             "kind_counts": {},
@@ -531,6 +538,7 @@ def _run_body(run_id: str, status: str) -> dict[str, object]:
 def _run_detail_body(run_id: str, status: str) -> dict[str, object]:
     body = _run_body(run_id, status)
     body["paths"] = []
+    body["steps"] = []
     return body
 
 

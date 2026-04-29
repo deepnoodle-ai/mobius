@@ -18,7 +18,7 @@ func TestAuthStatusReportsSavedCredentialAfterInjection(t *testing.T) {
 	unsetEnv(t, "MOBIUS_API_KEY")
 	unsetEnv(t, "MOBIUS_API_URL")
 	t.Setenv("MOBIUS_CONFIG_DIR", t.TempDir())
-	resetAppliedSavedCredential(t)
+	resetActiveAuth(t)
 	srv := newAuthProbeServer(t, "mbc_saved.default", "/v1/projects/default/workflows", http.StatusOK)
 	defer srv.Close()
 
@@ -36,7 +36,6 @@ func TestAuthStatusReportsSavedCredentialAfterInjection(t *testing.T) {
 		t.Fatalf("save credential: %v", err)
 	}
 
-	applySavedCredential()
 	result := newApp().Test(t, cli.TestArgs("auth", "status"))
 	if !result.Success() {
 		t.Fatalf("auth status failed: %v\nstderr: %s", result.Err, result.Stderr)
@@ -64,7 +63,7 @@ func TestAuthStatusReportsRealAPIKeyEnv(t *testing.T) {
 	t.Setenv("MOBIUS_API_KEY", "mbx_env")
 	t.Setenv("MOBIUS_API_URL", srv.URL)
 	t.Setenv("MOBIUS_CONFIG_DIR", t.TempDir())
-	resetAppliedSavedCredential(t)
+	resetActiveAuth(t)
 
 	err := authstore.Save(&authstore.Credential{
 		Source: authstore.SourceBrowserLogin,
@@ -75,7 +74,6 @@ func TestAuthStatusReportsRealAPIKeyEnv(t *testing.T) {
 		t.Fatalf("save credential: %v", err)
 	}
 
-	applySavedCredential()
 	result := newApp().Test(t, cli.TestArgs("auth", "status"))
 	if !result.Success() {
 		t.Fatalf("auth status failed: %v\nstderr: %s", result.Err, result.Stderr)
@@ -100,7 +98,7 @@ func TestAuthStatusReportsRejectedCredential(t *testing.T) {
 	t.Setenv("MOBIUS_API_KEY", "mbx_env")
 	t.Setenv("MOBIUS_API_URL", srv.URL)
 	t.Setenv("MOBIUS_CONFIG_DIR", t.TempDir())
-	resetAppliedSavedCredential(t)
+	resetActiveAuth(t)
 
 	result := newApp().Test(t, cli.TestArgs("auth", "status"))
 	if !result.Success() {
@@ -230,6 +228,67 @@ func TestAuthLoginDisplaysVerificationURLFromWebURL(t *testing.T) {
 	}
 }
 
+// TestProfileFlagOverridesDefaultProfile pins the regression that triggered
+// this refactor: passing --profile <name> on a non-auth command must route
+// the request through that profile's API URL and credential, even when a
+// different profile is marked default.
+func TestProfileFlagOverridesDefaultProfile(t *testing.T) {
+	unsetEnv(t, "MOBIUS_API_KEY")
+	unsetEnv(t, "MOBIUS_API_URL")
+	unsetEnv(t, "MOBIUS_PROFILE")
+	t.Setenv("MOBIUS_CONFIG_DIR", t.TempDir())
+	resetActiveAuth(t)
+
+	prodHits := make(chan string, 1)
+	prodSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		prodHits <- r.Method + " " + r.URL.RequestURI() + " " + r.Header.Get("Authorization")
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"items":[]}`))
+	}))
+	defer prodSrv.Close()
+
+	localHits := make(chan string, 1)
+	localSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		localHits <- r.Method + " " + r.URL.RequestURI() + " " + r.Header.Get("Authorization")
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"items":[]}`))
+	}))
+	defer localSrv.Close()
+
+	if err := authstore.PutProfile("default", authstore.Profile{
+		Source: authstore.SourceBrowserLogin,
+		APIURL: prodSrv.URL,
+		Token:  "mbx_prod",
+	}, true); err != nil {
+		t.Fatalf("save default profile: %v", err)
+	}
+	if err := authstore.PutProfile("local", authstore.Profile{
+		Source: authstore.SourceBrowserLogin,
+		APIURL: localSrv.URL,
+		Token:  "mbx_local",
+	}, false); err != nil {
+		t.Fatalf("save local profile: %v", err)
+	}
+
+	result := newApp().Test(t, cli.TestArgs("projects", "list", "--profile", "local"))
+	if !result.Success() {
+		t.Fatalf("projects list --profile local failed: %v\nstderr: %s", result.Err, result.Stderr)
+	}
+	select {
+	case got := <-localHits:
+		if got != "GET /v1/projects Bearer mbx_local" {
+			t.Fatalf("local server saw %q, want local profile request", got)
+		}
+	default:
+		t.Fatalf("local server received no request — --profile flag was ignored")
+	}
+	select {
+	case got := <-prodHits:
+		t.Fatalf("default (prod) server received an unexpected request: %q", got)
+	default:
+	}
+}
+
 func TestGeneratedCommandUsesCustomAPIURL(t *testing.T) {
 	seen := make(chan string, 1)
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -339,11 +398,11 @@ func unsetEnv(t *testing.T, key string) {
 	})
 }
 
-func resetAppliedSavedCredential(t *testing.T) {
+func resetActiveAuth(t *testing.T) {
 	t.Helper()
-	old := appliedSavedCredential
-	appliedSavedCredential = nil
+	old := getActiveAuth()
+	setActiveAuth(nil)
 	t.Cleanup(func() {
-		appliedSavedCredential = old
+		setActiveAuth(old)
 	})
 }
