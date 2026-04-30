@@ -454,7 +454,14 @@ func printSavedCredentialStatus(ctx *cli.Context, cred *authstore.Profile) {
 	if cred.UserEmail != "" || cred.UserName != "" || cred.UserID != "" {
 		ctx.Printf("User: %s\n", firstNonEmpty(cred.UserEmail, cred.UserName, cred.UserID))
 	}
-	printAuthVerification(ctx, "browser-based CLI credential")
+	if cred.AgentName != "" || cred.AgentID != "" {
+		ctx.Printf("Agent: %s\n", firstNonEmpty(cred.AgentName, cred.AgentID))
+	}
+	kind := "browser-based CLI credential"
+	if cred.Source == authstore.SourceAgentInstall {
+		kind = "agent credential"
+	}
+	printAuthVerification(ctx, kind)
 }
 
 func printAuthVerification(ctx *cli.Context, credentialKind string) {
@@ -536,6 +543,15 @@ func printProfiles(ctx *cli.Context, store *authstore.Store) error {
 		names = append(names, name)
 	}
 	sort.Strings(names)
+	// Only render the AGENT column when at least one profile is an agent
+	// profile — keeps the table narrow in the common user-only case.
+	showAgent := false
+	for _, name := range names {
+		if p := store.Profiles[name]; p.AgentName != "" || p.AgentID != "" {
+			showAgent = true
+			break
+		}
+	}
 	rows := make([][]string, 0, len(names))
 	for _, name := range names {
 		p := store.Profiles[name]
@@ -545,17 +561,25 @@ func printProfiles(ctx *cli.Context, store *authstore.Store) error {
 		}
 		project := firstNonEmpty(p.ProjectHandle, "all projects")
 		lastUsed := firstNonEmpty(p.LastUsedAt, "never")
-		rows = append(rows, []string{def, name, firstNonEmpty(p.OrgName, p.OrgID), project, p.APIURL, lastUsed})
+		row := []string{def, name, firstNonEmpty(p.OrgName, p.OrgID), project, p.APIURL, lastUsed}
+		if showAgent {
+			row = append(row, firstNonEmpty(p.AgentName, p.AgentID))
+		}
+		rows = append(rows, row)
 	}
-	sel := -1
-	view := tui.Table([]tui.TableColumn{
+	cols := []tui.TableColumn{
 		{Title: "DEFAULT"},
 		{Title: "PROFILE"},
 		{Title: "ORG"},
 		{Title: "PROJECT"},
 		{Title: "ENDPOINT"},
 		{Title: "LAST USED"},
-	}, &sel).Rows(rows)
+	}
+	if showAgent {
+		cols = append(cols, tui.TableColumn{Title: "AGENT"})
+	}
+	sel := -1
+	view := tui.Table(cols, &sel).Rows(rows)
 	if err := tui.Fprint(ctx.Stdout(), view); err != nil {
 		return err
 	}
