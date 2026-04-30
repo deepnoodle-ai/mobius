@@ -61,6 +61,7 @@ func newApp() *cli.App {
 	registerGeneratedCommands(app)
 	registerConfigExtensions(app)
 	registerWorkflowsExtras(app)
+	registerAgentsExtras(app)
 
 	return app
 }

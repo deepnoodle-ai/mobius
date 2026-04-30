@@ -50,6 +50,13 @@ var overrides = map[string]Override{
 	"listCLICredentials":  {Skip: true},
 	"revokeCLICredential": {Skip: true},
 
+	// `agents create` is hand-written in commands_agents_extra.go so it can
+	// optionally mint an API key for the agent's service account and write a
+	// matching local credential profile in one CLI call (PRD 048 §2.2). The
+	// hand-written form preserves all the generated flags and adds
+	// --install-credentials and --profile-name on top.
+	"createAgent": {Skip: true},
+
 	// --- Skipped: low-value or webhook-style endpoints ---
 	// These accept opaque payloads and are intended for external callers
 	// (Slack, third-party webhooks), not interactive CLI use.
