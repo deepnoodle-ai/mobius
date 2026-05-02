@@ -19,6 +19,44 @@ import (
 func registerInteractionsCommands(app *cli.App) {
 	interactionsGrp := app.Group("interactions").Description("Approval, review, and input prompts")
 	interactionsGrp.Alias("interaction")
+	interactionsGrp.Command("cancel").
+		Description("Cancel an open interaction").
+		Args("id").
+		Flags(
+			cli.String("reason", "").Help("Free-text reason recorded on the interaction."),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			p1 := ctx.Arg(0)
+			var body api.CancelInteractionJSONRequestBody
+			if err := readJSONBody(ctx, &body); err != nil {
+				return err
+			}
+			if ctx.IsSet("reason") {
+				v := ctx.String("reason")
+				body.Reason = &v
+			}
+			if ctx.String("file") == "" && !ctx.IsSet("reason") {
+				return fmt.Errorf("at least one flag or --file is required")
+			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
+			}
+			resp, err := client.CancelInteractionWithResponse(ctx.Context(), p0, p1, body)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "cancelInteraction", resp.StatusCode(), resp.Body)
+		})
+
 	interactionsGrp.Command("claim").
 		Description("Claim a pending first-responder group interaction").
 		Args("id").
@@ -167,7 +205,8 @@ func registerInteractionsCommands(app *cli.App) {
 		Args("id").
 		Flags(
 			cli.String("comment", "").Help("Optional free-text comment accompanying the response."),
-			cli.String("value", "").Help("Free-form JSON payload supplied by the responder. Accepts JSON, @file, or @-."),
+			cli.String("confidence", "").Help("Optional 0..1 confidence score the responder attaches to their answer. Required when the interactio… Accepts JSON, @file, or @-."),
+			cli.String("value", "").Help("[required] Free-form JSON payload. Used both for responder-supplied values and for policy-derived values (e.g.… Accepts JSON, @file, or @-."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -188,13 +227,18 @@ func registerInteractionsCommands(app *cli.App) {
 				v := ctx.String("comment")
 				body.Comment = &v
 			}
+			if ctx.IsSet("confidence") {
+				if err := decodeFlagJSON(ctx, "confidence", ctx.String("confidence"), &body.Confidence); err != nil {
+					return err
+				}
+			}
 			if ctx.IsSet("value") {
 				if err := decodeFlagJSON(ctx, "value", ctx.String("value"), &body.Value); err != nil {
 					return err
 				}
 			}
-			if ctx.String("file") == "" && !ctx.IsSet("comment") && !ctx.IsSet("value") {
-				return fmt.Errorf("at least one flag or --file is required")
+			if ctx.String("file") == "" && !ctx.IsSet("value") {
+				return fmt.Errorf("--value is required (or supply it via --file)")
 			}
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)

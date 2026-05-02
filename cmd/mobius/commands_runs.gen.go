@@ -146,6 +146,7 @@ func registerRunsCommands(app *cli.App) {
 		Flags(
 			cli.String("status", "").Help("Filter by run status."),
 			cli.String("workflow-type", "").Help("Filter by workflow type name."),
+			cli.String("definition-id", "").Help("Filter by workflow definition ID."),
 			cli.String("queue", "").Help("Filter by queue name."),
 			cli.String("parent-run-id", "").Help("Filter to child runs of the specified parent run."),
 			cli.String("source-type", "").Help("Filter by run source type (e.g. api, trigger, slack, fork)."),
@@ -171,6 +172,10 @@ func registerRunsCommands(app *cli.App) {
 			if ctx.IsSet("workflow-type") {
 				v := ctx.String("workflow-type")
 				params.WorkflowType = &v
+			}
+			if ctx.IsSet("definition-id") {
+				v := ctx.String("definition-id")
+				params.DefinitionId = &v
 			}
 			if ctx.IsSet("queue") {
 				v := ctx.String("queue")

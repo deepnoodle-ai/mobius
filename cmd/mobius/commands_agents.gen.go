@@ -27,7 +27,8 @@ func registerAgentsCommands(app *cli.App) {
 			cli.String("description", "").Help("Optional human-readable description."),
 			cli.String("kind", "").Help("Freeform classification (e.g. \"llm\", \"rpa\", \"integration\")."),
 			cli.String("name", "").Help("[required] Project-scoped unique name for this agent. Free-form human-readable label, 1-63 characters."),
-			cli.String("service-account-id", "").Help("Service account that backs this agent. Must be active and belong to the same project. If omitted, a…"),
+			cli.Strings("role-ids", "").Help("Roles to assign to the auto-created service account. Mutually exclusive with `service_account_id` (…"),
+			cli.String("service-account-id", "").Help("Service account that backs this agent. Must be active, belong to the same project, and currently ba…"),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
@@ -64,6 +65,10 @@ func registerAgentsCommands(app *cli.App) {
 			}
 			if ctx.IsSet("name") {
 				body.Name = ctx.String("name")
+			}
+			if ctx.IsSet("role-ids") {
+				v := ctx.Strings("role-ids")
+				body.RoleIds = &v
 			}
 			if ctx.IsSet("service-account-id") {
 				v := ctx.String("service-account-id")
@@ -310,7 +315,6 @@ func registerAgentsCommands(app *cli.App) {
 			cli.String("description", "").Help("Replacement description."),
 			cli.String("kind", "").Help("Replacement freeform agent classification (e.g. `llm`, `rpa`)."),
 			cli.String("name", "").Help("Free-form human-readable label, 1-63 characters; must be unique within the project."),
-			cli.String("service-account-id", "").Help("Replacement service account. Must be active and belong to the same project."),
 			cli.String("status", "").Help("Administrative status. Inactive agents cannot claim new jobs."),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
@@ -351,10 +355,6 @@ func registerAgentsCommands(app *cli.App) {
 				v := ctx.String("name")
 				body.Name = &v
 			}
-			if ctx.IsSet("service-account-id") {
-				v := ctx.String("service-account-id")
-				body.ServiceAccountId = &v
-			}
 			if ctx.IsSet("status") {
 				v := api.AgentStatus(ctx.String("status"))
 				body.Status = &v
@@ -365,7 +365,7 @@ func registerAgentsCommands(app *cli.App) {
 				v := api.TagMap(tags)
 				body.Tags = &v
 			}
-			if ctx.String("file") == "" && !ctx.IsSet("capabilities") && !ctx.IsSet("config") && !ctx.IsSet("description") && !ctx.IsSet("kind") && !ctx.IsSet("name") && !ctx.IsSet("service-account-id") && !ctx.IsSet("status") && !ctx.IsSet("tag") {
+			if ctx.String("file") == "" && !ctx.IsSet("capabilities") && !ctx.IsSet("config") && !ctx.IsSet("description") && !ctx.IsSet("kind") && !ctx.IsSet("name") && !ctx.IsSet("status") && !ctx.IsSet("tag") {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
 			if ctx.Bool("dry-run") {

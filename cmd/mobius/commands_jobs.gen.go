@@ -23,8 +23,6 @@ func registerJobsCommands(app *cli.App) {
 		Description("Long-poll for the next claimable workflow job").
 		Flags(
 			cli.Strings("actions", "").Help("Action names this worker can execute. When provided, only jobs whose `action` is in this list are r…"),
-			cli.String("agent-id", "").Help("Durable agent identity the worker is acting on behalf of."),
-			cli.String("agent-session-id", "").Help("Live agent session the worker is acting on behalf of."),
 			cli.Int("concurrency-limit", "").Help("[required] Maximum number of concurrent in-flight jobs this worker process intends to hold. Recorded on the wo…"),
 			cli.Strings("queues", "").Help("Queue names the worker subscribes to. When empty the worker claims from any queue in the project. W…"),
 			cli.Int("wait-seconds", "").Help("How long to hold the request open waiting for a job to surface. 0 returns immediately. Capped at 30…"),
@@ -50,14 +48,6 @@ func registerJobsCommands(app *cli.App) {
 			if ctx.IsSet("actions") {
 				v := ctx.Strings("actions")
 				body.Actions = &v
-			}
-			if ctx.IsSet("agent-id") {
-				v := ctx.String("agent-id")
-				body.AgentId = &v
-			}
-			if ctx.IsSet("agent-session-id") {
-				v := ctx.String("agent-session-id")
-				body.AgentSessionId = &v
 			}
 			if ctx.IsSet("concurrency-limit") {
 				body.ConcurrencyLimit = ctx.Int("concurrency-limit")
@@ -182,6 +172,7 @@ func registerJobsCommands(app *cli.App) {
 			cli.String("expires-at", "").Help("Timestamp after which this interaction expires. Accepts JSON, @file, or @-."),
 			cli.String("message", "").Help("[required] Message shown to the responder."),
 			cli.Bool("require-all", "").Help("When target.type is \"group\", setting require_all=true means all snapshotted group members must resp…"),
+			cli.String("resolution-policy", "").Help("Declarative resolution rule attached to an Interaction. Determines how participant responses become… Accepts JSON, @file, or @-."),
 			cli.String("signal-name", "").Help("Optional signal name override. When omitted, the server derives the signal name from step_name or f…"),
 			cli.String("spec", "").Help("Declarative dialog contract for rendering and validating an interaction. Used at both authoring tim… Accepts JSON, @file, or @-."),
 			cli.String("step-name", "").Help("Optional workflow step label for UI/debugging context"),
@@ -220,6 +211,11 @@ func registerJobsCommands(app *cli.App) {
 			if ctx.IsSet("require-all") {
 				v := ctx.Bool("require-all")
 				body.RequireAll = &v
+			}
+			if ctx.IsSet("resolution-policy") {
+				if err := decodeFlagJSON(ctx, "resolution-policy", ctx.String("resolution-policy"), &body.ResolutionPolicy); err != nil {
+					return err
+				}
 			}
 			if ctx.IsSet("signal-name") {
 				v := ctx.String("signal-name")
