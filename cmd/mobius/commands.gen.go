@@ -30,12 +30,15 @@ func registerGeneratedCommands(app *cli.App) {
 	registerAgentsCommands(app)
 	registerAuditLogsCommands(app)
 	registerChannelsCommands(app)
+	registerGenerateCommands(app)
 	registerGroupsCommands(app)
 	registerInteractionsCommands(app)
 	registerJobsCommands(app)
+	registerMessagesCommands(app)
 	registerMetricsCommands(app)
 	registerProjectsCommands(app)
 	registerRunsCommands(app)
+	registerSpansCommands(app)
 	registerToolsCommands(app)
 	registerTriggersCommands(app)
 	registerWebhooksCommands(app)
@@ -320,6 +323,9 @@ func printResponse(ctx *cli.Context, opID string, status int, body []byte) error
 		if ctx.Bool("quiet") {
 			return nil
 		}
+		if status == 204 && opID == "claimJob" {
+			return renderClaimJobNoMatch(ctx)
+		}
 		return renderResponse(ctx, opID, body)
 	}
 	pretty := body
@@ -332,6 +338,23 @@ func printResponse(ctx *cli.Context, opID string, status int, body []byte) error
 		}
 	}
 	return &cli.ExitError{Code: exitCodeForStatus(status), Message: fmt.Sprintf("HTTP %d: %s", status, string(pretty))}
+}
+
+func renderClaimJobNoMatch(ctx *cli.Context) error {
+	format := strings.ToLower(ctx.String("output"))
+	if format == "" || format == "auto" {
+		if stdoutIsTerminal(ctx) {
+			format = "pretty"
+		} else {
+			format = "json"
+		}
+	}
+	body := []byte("{\"claimed\":false,\"reason\":\"no_matching_job\"}")
+	if format == "pretty" {
+		ctx.Println("no matching job available")
+		return nil
+	}
+	return writeFormatRaw(ctx, format, body)
 }
 
 func exitCodeForStatus(status int) int {
