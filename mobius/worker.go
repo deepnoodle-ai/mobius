@@ -165,6 +165,7 @@ func (w *Worker) Run(ctx context.Context) error {
 	var wg sync.WaitGroup
 	defer wg.Wait()
 
+	claimWaitSeconds := w.config.PollWaitSeconds
 	for {
 		if w.authRevoked.Load() {
 			return ErrAuthRevoked
@@ -175,9 +176,12 @@ func (w *Worker) Run(ctx context.Context) error {
 		case slots <- struct{}{}:
 		}
 
-		job, err := w.client.runtimeClaim(ctx, w.config, w.sessionToken)
+		claimConfig := w.config
+		claimConfig.PollWaitSeconds = claimWaitSeconds
+		job, err := w.client.runtimeClaim(ctx, claimConfig, w.sessionToken)
 		if err != nil {
 			<-slots
+			claimWaitSeconds = w.config.PollWaitSeconds
 			if ctx.Err() != nil {
 				return ctx.Err()
 			}
@@ -212,9 +216,11 @@ func (w *Worker) Run(ctx context.Context) error {
 		}
 		if job == nil {
 			<-slots
+			claimWaitSeconds = w.config.PollWaitSeconds
 			continue
 		}
 
+		claimWaitSeconds = 0
 		wg.Add(1)
 		go func(job *runtimeJob) {
 			defer wg.Done()
