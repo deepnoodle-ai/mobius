@@ -14,11 +14,11 @@ import (
 	"github.com/deepnoodle-ai/mobius/mobius/api"
 )
 
-// registerConfigExtensions layers cascade-aware flags and commands on top of
+// registerConfigExtensions layers config-aware flags and commands on top of
 // the generated CLI. It augments `runs start` with --config / --config-file,
 // adds `--show` to `runs get`, and adds `projects set-config` +
 // `projects clear-config`. The wire shape is a flat list of ConfigEntries
-// (category/key/value); nested maps from --config-file are flattened before
+// (key/value); nested maps from --config-file are flattened before
 // the request is sent. The server does no merging on `runs start`, so
 // set-config reads the current config, overlays the new entries, and PUTs
 // the result.
@@ -33,8 +33,8 @@ func registerConfigExtensions(app *cli.App) {
 		cli.String("metadata", "").Help("Caller-supplied string metadata attached to the run (JSON object)."),
 		cli.String("queue", "").Help("Queue name to enqueue the run on. Defaults to \"default\"."),
 		cli.String("spec", "").Help("Inline workflow spec (JSON). Switches the request to inline mode."),
-		cli.Strings("config", "").Help("Cascade config override as dotted path: <category>.<key>=<value>. Repeatable. Example: --config timeouts.wall_clock=30m"),
-		cli.String("config-file", "").Help("Path to a YAML or JSON file containing a cascade config object (merged client-side with --config flags before send)."),
+		cli.Strings("config", "").Help("Config override as dotted key: <key>=<value>. Repeatable. Example: --config runs.timeouts.execution=30m"),
+		cli.String("config-file", "").Help("Path to a YAML or JSON file containing a config object (merged client-side with --config flags before send)."),
 	)
 	startCmd.Run(runsStartWithConfigHandler)
 
@@ -47,27 +47,27 @@ func registerConfigExtensions(app *cli.App) {
 	projectsGrp := app.Group("projects")
 
 	projectsGrp.Command("set-config").
-		Description("Set cascade config values on a project. Reads current config, overlays the supplied entries, and PUTs the result.").
+		Description("Set config values on a project. Reads current config, overlays the supplied entries, and PUTs the result.").
 		Args("id").
 		Flags(
-			cli.Strings("config", "").Help("Dotted path: <category>.<key>=<value>. Repeatable. Set value to null to remove the key."),
+			cli.Strings("config", "").Help("Dotted key: <key>=<value>. Repeatable. Set value to null to remove the key."),
 			cli.String("config-file", "").Help("YAML/JSON file containing a nested config object; merged client-side with --config."),
 		).
 		Use(requireAuth()).
 		Run(projectsSetConfigHandler)
 
 	projectsGrp.Command("clear-config").
-		Description("Clear a cascade category on a project (drops every stored entry whose category matches, so the project inherits from service defaults for that category).").
+		Description("Clear project config, or entries under a key prefix. Without --key-prefix this calls DELETE and clears everything.").
 		Args("id").
 		Flags(
-			cli.String("category", "").Required().Help("Category to clear (e.g. `timeouts`)."),
+			cli.String("key-prefix", "").Help("Optional key prefix to clear (e.g. `jobs.timeouts.`)."),
 		).
 		Use(requireAuth()).
 		Run(projectsClearConfigHandler)
 }
 
 // parseConfigInput merges optional --config-file and repeated --config flags
-// into a single cascade config object. Dotted-path flags override file keys.
+// into a single config object. Dotted-key flags override file keys.
 func parseConfigInput(ctx *cli.Context) (map[string]any, error) {
 	var fileBytes []byte
 	if path := ctx.String("config-file"); path != "" {
@@ -81,8 +81,8 @@ func parseConfigInput(ctx *cli.Context) (map[string]any, error) {
 }
 
 // mergeConfigInput is the pure-input core of parseConfigInput. Given optional
-// file bytes (YAML or JSON) and a list of dotted-path flags, it returns the
-// merged cascade input as a nested map. Dotted-path flags override file keys
+// file bytes (YAML or JSON) and a list of dotted-key flags, it returns the
+// merged config input as a nested map. Dotted-key flags override file keys
 // on conflict.
 func mergeConfigInput(fileBytes []byte, flags []string) (map[string]any, error) {
 	out := map[string]any{}
@@ -93,37 +93,30 @@ func mergeConfigInput(fileBytes []byte, flags []string) (map[string]any, error) 
 		out = normalizeYAMLMap(out)
 	}
 	for _, entry := range flags {
-		cat, key, val, err := splitDottedConfig(entry)
+		key, val, err := splitDottedConfig(entry)
 		if err != nil {
 			return nil, err
 		}
-		catMap, _ := out[cat].(map[string]any)
-		if catMap == nil {
-			catMap = map[string]any{}
-		}
-		catMap[key] = val
-		out[cat] = catMap
+		setNestedConfigKey(out, key, val)
 	}
 	return out, nil
 }
 
-// splitDottedConfig parses a "<cat>.<key>=<value>" flag. The value is left as
+// splitDottedConfig parses a "<key>=<value>" flag. The value is left as
 // a string unless it parses as a JSON scalar (null, number, bool, quoted string)
-// — the server parses and validates it per category.
-func splitDottedConfig(entry string) (category, key string, value any, err error) {
+// — the server parses and validates it per key.
+func splitDottedConfig(entry string) (key string, value any, err error) {
 	eq := strings.IndexByte(entry, '=')
 	if eq < 0 {
-		return "", "", nil, fmt.Errorf("--config %q: expected <category>.<key>=<value>", entry)
+		return "", nil, fmt.Errorf("--config %q: expected <key>=<value>", entry)
 	}
-	path, raw := entry[:eq], entry[eq+1:]
-	dot := strings.IndexByte(path, '.')
+	key, raw := entry[:eq], entry[eq+1:]
+	dot := strings.IndexByte(key, '.')
 	if dot < 0 {
-		return "", "", nil, fmt.Errorf("--config %q: key must be dotted (e.g. timeouts.wall_clock=30m)", entry)
+		return "", nil, fmt.Errorf("--config %q: key must be dotted (e.g. runs.timeouts.execution=30m)", entry)
 	}
-	category = path[:dot]
-	key = path[dot+1:]
-	if category == "" || key == "" {
-		return "", "", nil, fmt.Errorf("--config %q: empty category or key", entry)
+	if key[:dot] == "" || key[dot+1:] == "" {
+		return "", nil, fmt.Errorf("--config %q: empty key segment", entry)
 	}
 	// Accept JSON scalars so callers can pass `null`, numbers, or booleans.
 	var parsed any
@@ -132,7 +125,21 @@ func splitDottedConfig(entry string) (category, key string, value any, err error
 	} else {
 		value = raw
 	}
-	return category, key, value, nil
+	return key, value, nil
+}
+
+func setNestedConfigKey(out map[string]any, key string, value any) {
+	parts := strings.Split(key, ".")
+	cursor := out
+	for _, part := range parts[:len(parts)-1] {
+		next, _ := cursor[part].(map[string]any)
+		if next == nil {
+			next = map[string]any{}
+			cursor[part] = next
+		}
+		cursor = next
+	}
+	cursor[parts[len(parts)-1]] = value
 }
 
 // normalizeYAMLMap converts map[interface{}]interface{} values (produced by
@@ -167,53 +174,64 @@ func normalizeYAMLValue(v any) any {
 	}
 }
 
-// configKey is a flat (category, key) coordinate used to identify an entry
-// for removal or overlay.
+// configKey is a flat key coordinate used to identify an entry for removal
+// or overlay.
 type configKey struct {
-	Category string
-	Key      string
+	Key string
 }
 
-// flattenConfigInput turns a nested cascade map (as produced by
+// flattenConfigInput turns a nested config map (as produced by
 // parseConfigInput) into a flat list of ConfigEntries plus a set of keys
-// whose value was explicitly null. The entry list is sorted by (category,
-// key) so output is deterministic.
+// whose value was explicitly null. The entry list is sorted by key.
 //
 // Rejects non-scalar values (lists, maps, objects) under a key: the server
-// expects strings keyed under (category, key). Stringifies bools and numbers
+// expects string values for each registered key. Stringifies bools and numbers
 // using the Go default formatting.
 func flattenConfigInput(in map[string]any) ([]api.ConfigEntry, []configKey, error) {
 	var entries []api.ConfigEntry
 	var removals []configKey
-	categories := make([]string, 0, len(in))
-	for cat := range in {
-		categories = append(categories, cat)
+	if err := flattenConfigKey(&entries, &removals, "", in); err != nil {
+		return nil, nil, err
 	}
-	sort.Strings(categories)
-	for _, cat := range categories {
-		raw, ok := in[cat].(map[string]any)
-		if !ok {
-			return nil, nil, fmt.Errorf("config category %q: expected object, got %T", cat, in[cat])
+	sort.Slice(entries, func(i, j int) bool { return entries[i].Key < entries[j].Key })
+	sort.Slice(removals, func(i, j int) bool { return removals[i].Key < removals[j].Key })
+	return entries, removals, nil
+}
+
+func flattenConfigKey(entries *[]api.ConfigEntry, removals *[]configKey, prefix string, raw any) error {
+	if raw == nil {
+		if prefix == "" {
+			return nil
 		}
-		keys := make([]string, 0, len(raw))
-		for k := range raw {
+		*removals = append(*removals, configKey{Key: prefix})
+		return nil
+	}
+	if m, ok := raw.(map[string]any); ok {
+		keys := make([]string, 0, len(m))
+		for k := range m {
 			keys = append(keys, k)
 		}
 		sort.Strings(keys)
 		for _, k := range keys {
-			v := raw[k]
-			if v == nil {
-				removals = append(removals, configKey{Category: cat, Key: k})
-				continue
+			key := k
+			if prefix != "" {
+				key = prefix + "." + k
 			}
-			s, err := stringifyConfigValue(v)
-			if err != nil {
-				return nil, nil, fmt.Errorf("config %s.%s: %w", cat, k, err)
+			if err := flattenConfigKey(entries, removals, key, m[k]); err != nil {
+				return err
 			}
-			entries = append(entries, api.ConfigEntry{Category: cat, Key: k, Value: s})
 		}
+		return nil
 	}
-	return entries, removals, nil
+	if prefix == "" {
+		return fmt.Errorf("config root: expected object, got %T", raw)
+	}
+	s, err := stringifyConfigValue(raw)
+	if err != nil {
+		return fmt.Errorf("config %s: %w", prefix, err)
+	}
+	*entries = append(*entries, api.ConfigEntry{Key: prefix, Value: s})
+	return nil
 }
 
 func stringifyConfigValue(v any) (string, error) {
@@ -449,7 +467,14 @@ func projectsClearConfigHandler(ctx *cli.Context) error {
 	}
 	client := mc.RawClient()
 	id := ctx.Arg(0)
-	category := ctx.String("category")
+	prefix := ctx.String("key-prefix")
+	if prefix == "" {
+		resp, err := client.DeleteProjectConfigWithResponse(ctx.Context(), id)
+		if err != nil {
+			return err
+		}
+		return printResponse(ctx, "deleteProjectConfig", resp.StatusCode(), resp.Body)
+	}
 
 	existing, err := client.GetProjectConfigWithResponse(ctx.Context(), id)
 	if err != nil {
@@ -459,7 +484,7 @@ func projectsClearConfigHandler(ctx *cli.Context) error {
 		return printResponse(ctx, "getProjectConfig", existing.StatusCode(), existing.Body)
 	}
 
-	kept := dropCategory(existingEntries(existing.JSON200), category)
+	kept := dropKeyPrefix(existingEntries(existing.JSON200), prefix)
 	body := api.UpdateProjectConfigJSONRequestBody(kept)
 	resp, err := client.UpdateProjectConfigWithResponse(ctx.Context(), id, body)
 	if err != nil {
@@ -475,16 +500,16 @@ func existingEntries(p *api.ConfigEntries) []api.ConfigEntry {
 	return []api.ConfigEntry(*p)
 }
 
-// mergeConfigEntries overlays `overlay` on top of `base`, keyed by (category,
-// key). Entries listed in `removals` are dropped from the result. Order is
-// sorted by (category, key) so the PUT payload is deterministic.
+// mergeConfigEntries overlays `overlay` on top of `base`, keyed by config key.
+// Entries listed in `removals` are dropped from the result. Order is sorted
+// by key so the PUT payload is deterministic.
 func mergeConfigEntries(base, overlay []api.ConfigEntry, removals []configKey) []api.ConfigEntry {
 	byKey := map[configKey]api.ConfigEntry{}
 	for _, e := range base {
-		byKey[configKey{Category: e.Category, Key: e.Key}] = e
+		byKey[configKey{Key: e.Key}] = e
 	}
 	for _, e := range overlay {
-		byKey[configKey{Category: e.Category, Key: e.Key}] = e
+		byKey[configKey{Key: e.Key}] = e
 	}
 	for _, k := range removals {
 		delete(byKey, k)
@@ -494,18 +519,15 @@ func mergeConfigEntries(base, overlay []api.ConfigEntry, removals []configKey) [
 		out = append(out, e)
 	}
 	sort.Slice(out, func(i, j int) bool {
-		if out[i].Category != out[j].Category {
-			return out[i].Category < out[j].Category
-		}
 		return out[i].Key < out[j].Key
 	})
 	return out
 }
 
-func dropCategory(base []api.ConfigEntry, category string) []api.ConfigEntry {
+func dropKeyPrefix(base []api.ConfigEntry, prefix string) []api.ConfigEntry {
 	out := make([]api.ConfigEntry, 0, len(base))
 	for _, e := range base {
-		if e.Category == category {
+		if strings.HasPrefix(e.Key, prefix) {
 			continue
 		}
 		out = append(out, e)

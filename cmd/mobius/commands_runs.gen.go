@@ -398,7 +398,7 @@ func registerRunsCommands(app *cli.App) {
 		Description("Start a new workflow run against a saved definition").
 		Args("id").
 		Flags(
-			cli.String("config", "").Help("Flat cascade config input used outside authored workflow YAML. Each entry addresses one `(category,… Accepts JSON, @file, or @-."),
+			cli.String("config", "").Help("Flat config input used outside authored workflow YAML. Each entry addresses one registered key. Unk… Accepts JSON, @file, or @-."),
 			cli.String("external-id", "").Help("Caller-supplied logical correlation key for this run. Unique within the project. If the same extern…"),
 			cli.String("inputs", "").Help("Input values to pass to the workflow. Must conform to the workflow's declared input schema. Accepts JSON, @file, or @-."),
 			cli.String("metadata", "").Help("Caller-supplied string metadata attached to the run for filtering and display. Accepts JSON, @file, or @-."),

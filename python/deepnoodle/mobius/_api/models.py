@@ -1560,31 +1560,29 @@ class Mode1(Enum):
 
 class ConfigEntry(BaseModel):
     """
-    One cascade config override entry.
+    One config override entry.
     """
 
     model_config = ConfigDict(
         extra='forbid',
     )
-    category: str = Field(
-        ..., description='Config category token, for example `timeouts`.'
-    )
     key: str = Field(
-        ..., description='Config key within the category, for example `execution`.'
+        ...,
+        description='Registered config key, for example `jobs.timeouts.execution` or `runs.timeouts.execution`.',
     )
     value: str = Field(
-        ..., description='Raw string value interpreted by the category-specific parser.'
+        ..., description='Raw string value interpreted by the key parser.'
     )
 
 
 class ConfigEntries(RootModel[list[ConfigEntry]]):
     """
-    Flat cascade config input used outside authored workflow YAML. Each entry addresses one `(category, key)` pair. Unknown categories or unknown keys under a known category are rejected at write time. The only category shipped in Phase 1 is `timeouts`, whose keys are `claim`, `liveness`, `execution`, `wall_clock`.
+    Flat config input used outside authored workflow YAML. Each entry addresses one registered key. Unknown keys are rejected at write time. Phase 1 ships: `jobs.timeouts.claim`, `jobs.timeouts.execution`, `jobs.timeouts.heartbeat`, and `runs.timeouts.execution`.
     """
 
     root: list[ConfigEntry] = Field(
         ...,
-        description='Flat cascade config input used outside authored workflow YAML. Each entry addresses one `(category, key)` pair. Unknown categories or unknown keys under a known category are rejected at write time. The only category shipped in Phase 1 is `timeouts`, whose keys are `claim`, `liveness`, `execution`, `wall_clock`.',
+        description='Flat config input used outside authored workflow YAML. Each entry addresses one registered key. Unknown keys are rejected at write time. Phase 1 ships: `jobs.timeouts.claim`, `jobs.timeouts.execution`, `jobs.timeouts.heartbeat`, and `runs.timeouts.execution`.',
     )
 
 
@@ -1602,16 +1600,13 @@ class Source(Enum):
 
 class ResolvedConfigEntry(BaseModel):
     """
-    One cascade config value after layer resolution.
+    One config value after layer resolution.
     """
 
     model_config = ConfigDict(
         extra='forbid',
     )
-    category: str = Field(
-        ..., description='Config category token, for example `timeouts`.'
-    )
-    key: str = Field(..., description='Resolved key within the category.')
+    key: str = Field(..., description='Registered config key that was resolved.')
     value: str = Field(..., description='Resolved raw string value.')
     source: Source = Field(
         ...,
@@ -4332,12 +4327,12 @@ class StartBoundRunRequest(BaseModel):
 
 class ResolvedConfig(RootModel[list[ResolvedConfigEntry]]):
     """
-    Frozen cascade resolution in flat entry form. Keys unset at every layer are omitted. See PRD 035.
+    Frozen config resolution in flat entry form. Keys unset at every layer are omitted. See PRD 035.
     """
 
     root: list[ResolvedConfigEntry] = Field(
         ...,
-        description='Frozen cascade resolution in flat entry form. Keys unset at every layer are omitted. See PRD 035.',
+        description='Frozen config resolution in flat entry form. Keys unset at every layer are omitted. See PRD 035.',
     )
 
 
@@ -4401,15 +4396,15 @@ class Job(BaseModel):
     )
     claim_deadline_at: datetime | None = Field(
         None,
-        description='Deadline at which the reaper will fail this job with `error_type=claim_timeout` if no worker has claimed it. Present only when `resolved_config` contains an entry with `category="timeouts"` and `key="claim"` whose value resolves to a finite duration. Re-stamped whenever the job returns to `pending`.',
+        description='Deadline at which the reaper will fail this job with `error_type=claim_timeout` if no worker has claimed it. Present only when `resolved_config` contains `key="jobs.timeouts.claim"` whose value resolves to a finite duration. Re-stamped whenever the job returns to `pending`.',
     )
     liveness_deadline_at: datetime | None = Field(
         None,
-        description='Deadline at which the reaper will either reset (retries remain) or fail this job with `error_type=liveness_timeout` if the worker has not heartbeated in time. Present only when `resolved_config` contains an entry with `category="timeouts"` and `key="liveness"` whose value resolves to a finite duration and the job is claimed.',
+        description='Deadline at which the reaper will either reset (retries remain) or fail this job with `error_type=liveness_timeout` if the worker has not heartbeated in time. Present only when `resolved_config` contains `key="jobs.timeouts.heartbeat"` whose value resolves to a finite duration and the job is claimed.',
     )
     execution_deadline_at: datetime | None = Field(
         None,
-        description='Deadline at which the reaper will fail this job with `error_type=execution_timeout` if it has not completed. Present only when `resolved_config` contains an entry with `category="timeouts"` and `key="execution"` whose value resolves to a finite duration.',
+        description='Deadline at which the reaper will fail this job with `error_type=execution_timeout` if it has not completed. Present only when `resolved_config` contains `key="jobs.timeouts.execution"` whose value resolves to a finite duration.',
     )
     error_type: str | None = Field(
         None,
@@ -4715,7 +4710,7 @@ class WorkflowRun(BaseModel):
     )
     wall_clock_deadline_at: datetime | None = Field(
         None,
-        description='Deadline at which the reaper will fail this run with `error_type=run_timeout` if it has not reached a terminal state. Present only when `resolved_config` contains an entry with `category="timeouts"` and `key="wall_clock"` whose value resolves to a finite duration. Anchored to `created_at`.',
+        description='Deadline at which the reaper will fail this run with `error_type=run_timeout` if it has not reached a terminal state. Present only when `resolved_config` contains a `key="runs.timeouts.execution"` entry whose value resolves to a finite duration. Anchored to `created_at`.',
     )
     error_type: ErrorType | None = Field(
         None,

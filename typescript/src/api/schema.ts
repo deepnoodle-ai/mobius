@@ -1204,7 +1204,7 @@ export interface paths {
         };
         /**
          * Get project config
-         * @description Returns the project's stored flat cascade config entries. When the project has no stored config, this returns `[]`.
+         * @description Returns the project's stored flat config entries. When the project has no stored config, this returns `[]`.
          */
         get: operations["getProjectConfig"];
         /**
@@ -1215,7 +1215,7 @@ export interface paths {
         post?: never;
         /**
          * Clear project config
-         * @description Deletes all stored project-layer cascade config so the project inherits service defaults for every category.
+         * @description Deletes all stored project-layer config so the project inherits service defaults for every registered key.
          */
         delete: operations["deleteProjectConfig"];
         options?: never;
@@ -3127,7 +3127,7 @@ export interface components {
             updated_at: string;
             /**
              * Format: date-time
-             * @description Deadline at which the reaper will fail this run with `error_type=run_timeout` if it has not reached a terminal state. Present only when `resolved_config` contains an entry with `category="timeouts"` and `key="wall_clock"` whose value resolves to a finite duration. Anchored to `created_at`.
+             * @description Deadline at which the reaper will fail this run with `error_type=run_timeout` if it has not reached a terminal state. Present only when `resolved_config` contains a `key="runs.timeouts.execution"` entry whose value resolves to a finite duration. Anchored to `created_at`.
              */
             wall_clock_deadline_at?: string;
             /**
@@ -3322,24 +3322,20 @@ export interface components {
             /** @description Run-level cascade config overrides applied when starting the bound workflow. */
             config?: components["schemas"]["ConfigEntries"];
         };
-        /** @description One cascade config override entry. */
+        /** @description One config override entry. */
         ConfigEntry: {
-            /** @description Config category token, for example `timeouts`. */
-            category: string;
-            /** @description Config key within the category, for example `execution`. */
+            /** @description Registered config key, for example `jobs.timeouts.execution` or `runs.timeouts.execution`. */
             key: string;
-            /** @description Raw string value interpreted by the category-specific parser. */
+            /** @description Raw string value interpreted by the key parser. */
             value: string;
         };
-        /** @description Flat cascade config input used outside authored workflow YAML. Each entry addresses one `(category, key)` pair. Unknown categories or unknown keys under a known category are rejected at write time. The only category shipped in Phase 1 is `timeouts`, whose keys are `claim`, `liveness`, `execution`, `wall_clock`. */
+        /** @description Flat config input used outside authored workflow YAML. Each entry addresses one registered key. Unknown keys are rejected at write time. Phase 1 ships: `jobs.timeouts.claim`, `jobs.timeouts.execution`, `jobs.timeouts.heartbeat`, and `runs.timeouts.execution`. */
         ConfigEntries: components["schemas"]["ConfigEntry"][];
-        /** @description Frozen cascade resolution in flat entry form. Keys unset at every layer are omitted. See PRD 035. */
+        /** @description Frozen config resolution in flat entry form. Keys unset at every layer are omitted. See PRD 035. */
         ResolvedConfig: components["schemas"]["ResolvedConfigEntry"][];
-        /** @description One cascade config value after layer resolution. */
+        /** @description One config value after layer resolution. */
         ResolvedConfigEntry: {
-            /** @description Config category token, for example `timeouts`. */
-            category: string;
-            /** @description Resolved key within the category. */
+            /** @description Registered config key that was resolved. */
             key: string;
             /** @description Resolved raw string value. */
             value: string;
@@ -3409,17 +3405,17 @@ export interface components {
             error_message?: string;
             /**
              * Format: date-time
-             * @description Deadline at which the reaper will fail this job with `error_type=claim_timeout` if no worker has claimed it. Present only when `resolved_config` contains an entry with `category="timeouts"` and `key="claim"` whose value resolves to a finite duration. Re-stamped whenever the job returns to `pending`.
+             * @description Deadline at which the reaper will fail this job with `error_type=claim_timeout` if no worker has claimed it. Present only when `resolved_config` contains `key="jobs.timeouts.claim"` whose value resolves to a finite duration. Re-stamped whenever the job returns to `pending`.
              */
             claim_deadline_at?: string;
             /**
              * Format: date-time
-             * @description Deadline at which the reaper will either reset (retries remain) or fail this job with `error_type=liveness_timeout` if the worker has not heartbeated in time. Present only when `resolved_config` contains an entry with `category="timeouts"` and `key="liveness"` whose value resolves to a finite duration and the job is claimed.
+             * @description Deadline at which the reaper will either reset (retries remain) or fail this job with `error_type=liveness_timeout` if the worker has not heartbeated in time. Present only when `resolved_config` contains `key="jobs.timeouts.heartbeat"` whose value resolves to a finite duration and the job is claimed.
              */
             liveness_deadline_at?: string;
             /**
              * Format: date-time
-             * @description Deadline at which the reaper will fail this job with `error_type=execution_timeout` if it has not completed. Present only when `resolved_config` contains an entry with `category="timeouts"` and `key="execution"` whose value resolves to a finite duration.
+             * @description Deadline at which the reaper will fail this job with `error_type=execution_timeout` if it has not completed. Present only when `resolved_config` contains `key="jobs.timeouts.execution"` whose value resolves to a finite duration.
              */
             execution_deadline_at?: string;
             /** @description Failure cause. Server-produced timeout and cancellation failures use stable tokens such as `claim_timeout`, `liveness_timeout`, `execution_timeout`, `run_cancelled`, `run_timeout`, and `run_failed`; worker-reported failures may use caller-defined class names. Present when `status=failed`. */

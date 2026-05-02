@@ -2147,18 +2147,15 @@ type ChannelMessageSenderType string
 // - `replace` — cancel the active run before starting a new one.
 type ConcurrencyPolicy string
 
-// ConfigEntries Flat cascade config input used outside authored workflow YAML. Each entry addresses one `(category, key)` pair. Unknown categories or unknown keys under a known category are rejected at write time. The only category shipped in Phase 1 is `timeouts`, whose keys are `claim`, `liveness`, `execution`, `wall_clock`.
+// ConfigEntries Flat config input used outside authored workflow YAML. Each entry addresses one registered key. Unknown keys are rejected at write time. Phase 1 ships: `jobs.timeouts.claim`, `jobs.timeouts.execution`, `jobs.timeouts.heartbeat`, and `runs.timeouts.execution`.
 type ConfigEntries = []ConfigEntry
 
-// ConfigEntry One cascade config override entry.
+// ConfigEntry One config override entry.
 type ConfigEntry struct {
-	// Category Config category token, for example `timeouts`.
-	Category string `json:"category"`
-
-	// Key Config key within the category, for example `execution`.
+	// Key Registered config key, for example `jobs.timeouts.execution` or `runs.timeouts.execution`.
 	Key string `json:"key"`
 
-	// Value Raw string value interpreted by the category-specific parser.
+	// Value Raw string value interpreted by the key parser.
 	Value string `json:"value"`
 }
 
@@ -3053,7 +3050,7 @@ type Job struct {
 	// Attempt Current attempt number (1-based). Increments on each retry.
 	Attempt int `json:"attempt"`
 
-	// ClaimDeadlineAt Deadline at which the reaper will fail this job with `error_type=claim_timeout` if no worker has claimed it. Present only when `resolved_config` contains an entry with `category="timeouts"` and `key="claim"` whose value resolves to a finite duration. Re-stamped whenever the job returns to `pending`.
+	// ClaimDeadlineAt Deadline at which the reaper will fail this job with `error_type=claim_timeout` if no worker has claimed it. Present only when `resolved_config` contains `key="jobs.timeouts.claim"` whose value resolves to a finite duration. Re-stamped whenever the job returns to `pending`.
 	ClaimDeadlineAt *time.Time `json:"claim_deadline_at,omitempty"`
 
 	// ClaimedAt Timestamp when this job was claimed by a worker.
@@ -3071,7 +3068,7 @@ type Job struct {
 	// ErrorType Failure cause. Server-produced timeout and cancellation failures use stable tokens such as `claim_timeout`, `liveness_timeout`, `execution_timeout`, `run_cancelled`, `run_timeout`, and `run_failed`; worker-reported failures may use caller-defined class names. Present when `status=failed`.
 	ErrorType *string `json:"error_type,omitempty"`
 
-	// ExecutionDeadlineAt Deadline at which the reaper will fail this job with `error_type=execution_timeout` if it has not completed. Present only when `resolved_config` contains an entry with `category="timeouts"` and `key="execution"` whose value resolves to a finite duration.
+	// ExecutionDeadlineAt Deadline at which the reaper will fail this job with `error_type=execution_timeout` if it has not completed. Present only when `resolved_config` contains `key="jobs.timeouts.execution"` whose value resolves to a finite duration.
 	ExecutionDeadlineAt *time.Time `json:"execution_deadline_at,omitempty"`
 
 	// HeartbeatAt Timestamp of the most recent heartbeat. Used to detect stale claims.
@@ -3080,7 +3077,7 @@ type Job struct {
 	// Id Unique identifier for this job.
 	Id string `json:"id"`
 
-	// LivenessDeadlineAt Deadline at which the reaper will either reset (retries remain) or fail this job with `error_type=liveness_timeout` if the worker has not heartbeated in time. Present only when `resolved_config` contains an entry with `category="timeouts"` and `key="liveness"` whose value resolves to a finite duration and the job is claimed.
+	// LivenessDeadlineAt Deadline at which the reaper will either reset (retries remain) or fail this job with `error_type=liveness_timeout` if the worker has not heartbeated in time. Present only when `resolved_config` contains `key="jobs.timeouts.heartbeat"` whose value resolves to a finite duration and the job is claimed.
 	LivenessDeadlineAt *time.Time `json:"liveness_deadline_at,omitempty"`
 
 	// MaxAttempts Maximum number of attempts before the job is permanently failed.
@@ -3098,7 +3095,7 @@ type Job struct {
 	// Queue Queue the job was placed in. Workers subscribe to queues to receive jobs.
 	Queue string `json:"queue"`
 
-	// ResolvedConfig Frozen cascade resolution in flat entry form. Keys unset at every layer are omitted. See PRD 035.
+	// ResolvedConfig Frozen config resolution in flat entry form. Keys unset at every layer are omitted. See PRD 035.
 	ResolvedConfig *ResolvedConfig `json:"resolved_config,omitempty"`
 
 	// RunId The workflow run this job belongs to.
@@ -3504,15 +3501,12 @@ type ResolutionPolicyType string
 // ResolutionPolicyWeightBy Where `weighted_vote` reads weights from.
 type ResolutionPolicyWeightBy string
 
-// ResolvedConfig Frozen cascade resolution in flat entry form. Keys unset at every layer are omitted. See PRD 035.
+// ResolvedConfig Frozen config resolution in flat entry form. Keys unset at every layer are omitted. See PRD 035.
 type ResolvedConfig = []ResolvedConfigEntry
 
-// ResolvedConfigEntry One cascade config value after layer resolution.
+// ResolvedConfigEntry One config value after layer resolution.
 type ResolvedConfigEntry struct {
-	// Category Config category token, for example `timeouts`.
-	Category string `json:"category"`
-
-	// Key Resolved key within the category.
+	// Key Registered config key that was resolved.
 	Key string `json:"key"`
 
 	// Source Cascade layer that supplied the winning value: service, project, workflow, run, or step.
@@ -3855,7 +3849,7 @@ type SpanStatusCode string
 
 // StartBoundRunRequest Request body for `POST /v1/projects/{project}/workflows/{id}/runs`. The definition to run is identified by the path parameter, so neither `mode` nor `definition_id` appear here. Inline specs are not allowed on this route — use `POST /v1/projects/{project}/runs` with `mode: inline` instead.
 type StartBoundRunRequest struct {
-	// Config Flat cascade config input used outside authored workflow YAML. Each entry addresses one `(category, key)` pair. Unknown categories or unknown keys under a known category are rejected at write time. The only category shipped in Phase 1 is `timeouts`, whose keys are `claim`, `liveness`, `execution`, `wall_clock`.
+	// Config Flat config input used outside authored workflow YAML. Each entry addresses one registered key. Unknown keys are rejected at write time. Phase 1 ships: `jobs.timeouts.claim`, `jobs.timeouts.execution`, `jobs.timeouts.heartbeat`, and `runs.timeouts.execution`.
 	Config *ConfigEntries `json:"config,omitempty"`
 
 	// ExternalId Caller-supplied logical correlation key for this run. Unique within the project. If the same external_id is reused while the prior run is still active, the existing run is returned idempotently. Once the prior run is terminal (completed or failed), a duplicate POST returns 409 with code `external_id_conflict` and the `existing_run_id` and `status` carried in `details`. To launch a fresh attempt for the same logical job after a terminal run, use a new external_id (e.g. suffix with an attempt counter).
@@ -3876,7 +3870,7 @@ type StartBoundRunRequest struct {
 
 // StartInlineRunRequest Run an ephemeral workflow from an inline spec. Selected by `mode: inline` on `POST /v1/projects/{project}/runs`. No `WorkflowDefinition` is persisted; the spec is snapshotted onto the returned run.
 type StartInlineRunRequest struct {
-	// Config Flat cascade config input used outside authored workflow YAML. Each entry addresses one `(category, key)` pair. Unknown categories or unknown keys under a known category are rejected at write time. The only category shipped in Phase 1 is `timeouts`, whose keys are `claim`, `liveness`, `execution`, `wall_clock`.
+	// Config Flat config input used outside authored workflow YAML. Each entry addresses one registered key. Unknown keys are rejected at write time. Phase 1 ships: `jobs.timeouts.claim`, `jobs.timeouts.execution`, `jobs.timeouts.heartbeat`, and `runs.timeouts.execution`.
 	Config *ConfigEntries `json:"config,omitempty"`
 
 	// ExternalId Caller-supplied logical correlation key for this run. Unique within the project. If the same external_id is reused while the prior run is still active, the existing run is returned idempotently. Once the prior run is terminal (completed or failed), a duplicate POST returns 409 with code `external_id_conflict` and the `existing_run_id` and `status` carried in `details`. To launch a fresh attempt for the same logical job after a terminal run, use a new external_id (e.g. suffix with an attempt counter).
@@ -3916,7 +3910,7 @@ type StartRunRequest struct {
 
 // StartSavedRunRequest Run a previously-created workflow definition. Selected by `mode: saved` on `POST /v1/projects/{project}/runs`. The run inherits the workflow definition's tags at start time; see the `tags` field below for the override rules.
 type StartSavedRunRequest struct {
-	// Config Flat cascade config input used outside authored workflow YAML. Each entry addresses one `(category, key)` pair. Unknown categories or unknown keys under a known category are rejected at write time. The only category shipped in Phase 1 is `timeouts`, whose keys are `claim`, `liveness`, `execution`, `wall_clock`.
+	// Config Flat config input used outside authored workflow YAML. Each entry addresses one registered key. Unknown keys are rejected at write time. Phase 1 ships: `jobs.timeouts.claim`, `jobs.timeouts.execution`, `jobs.timeouts.heartbeat`, and `runs.timeouts.execution`.
 	Config *ConfigEntries `json:"config,omitempty"`
 
 	// DefinitionId ID of an existing workflow definition to run.
@@ -5074,7 +5068,7 @@ type WorkflowRun struct {
 	// CreatedAt Timestamp when this run was created.
 	CreatedAt time.Time `json:"created_at"`
 
-	// DefaultStepConfig Frozen cascade resolution in flat entry form. Keys unset at every layer are omitted. See PRD 035.
+	// DefaultStepConfig Frozen config resolution in flat entry form. Keys unset at every layer are omitted. See PRD 035.
 	DefaultStepConfig *ResolvedConfig `json:"default_step_config,omitempty"`
 
 	// DefinitionId ID of the workflow definition this run was started from. Present only when `ephemeral` is false; omitted for ephemeral runs started from an inline spec.
@@ -5120,7 +5114,7 @@ type WorkflowRun struct {
 	// Queue Queue this run was enqueued on.
 	Queue *string `json:"queue,omitempty"`
 
-	// ResolvedConfig Frozen cascade resolution in flat entry form. Keys unset at every layer are omitted. See PRD 035.
+	// ResolvedConfig Frozen config resolution in flat entry form. Keys unset at every layer are omitted. See PRD 035.
 	ResolvedConfig *ResolvedConfig `json:"resolved_config,omitempty"`
 
 	// SourceId Identifier for the run source within its source type.
@@ -5150,7 +5144,7 @@ type WorkflowRun struct {
 	// WaitSummary Always-present aggregate of waiting paths.
 	WaitSummary WorkflowRunWaitSummary `json:"wait_summary"`
 
-	// WallClockDeadlineAt Deadline at which the reaper will fail this run with `error_type=run_timeout` if it has not reached a terminal state. Present only when `resolved_config` contains an entry with `category="timeouts"` and `key="wall_clock"` whose value resolves to a finite duration. Anchored to `created_at`.
+	// WallClockDeadlineAt Deadline at which the reaper will fail this run with `error_type=run_timeout` if it has not reached a terminal state. Present only when `resolved_config` contains a `key="runs.timeouts.execution"` entry whose value resolves to a finite duration. Anchored to `created_at`.
 	WallClockDeadlineAt *time.Time `json:"wall_clock_deadline_at,omitempty"`
 
 	// WorkflowName Name of the workflow as recorded at run creation time.
@@ -5181,7 +5175,7 @@ type WorkflowRunDetail struct {
 	// CreatedAt Timestamp when this run was created.
 	CreatedAt time.Time `json:"created_at"`
 
-	// DefaultStepConfig Frozen cascade resolution in flat entry form. Keys unset at every layer are omitted. See PRD 035.
+	// DefaultStepConfig Frozen config resolution in flat entry form. Keys unset at every layer are omitted. See PRD 035.
 	DefaultStepConfig *ResolvedConfig `json:"default_step_config,omitempty"`
 
 	// DefinitionId ID of the workflow definition this run was started from. Present only when `ephemeral` is false; omitted for ephemeral runs started from an inline spec.
@@ -5230,7 +5224,7 @@ type WorkflowRunDetail struct {
 	// Queue Queue this run was enqueued on.
 	Queue *string `json:"queue,omitempty"`
 
-	// ResolvedConfig Frozen cascade resolution in flat entry form. Keys unset at every layer are omitted. See PRD 035.
+	// ResolvedConfig Frozen config resolution in flat entry form. Keys unset at every layer are omitted. See PRD 035.
 	ResolvedConfig *ResolvedConfig `json:"resolved_config,omitempty"`
 
 	// ResultB64 Base64-encoded terminal result blob
@@ -5274,7 +5268,7 @@ type WorkflowRunDetail struct {
 	// WaitSummary Always-present aggregate of waiting paths.
 	WaitSummary WorkflowRunWaitSummary `json:"wait_summary"`
 
-	// WallClockDeadlineAt Deadline at which the reaper will fail this run with `error_type=run_timeout` if it has not reached a terminal state. Present only when `resolved_config` contains an entry with `category="timeouts"` and `key="wall_clock"` whose value resolves to a finite duration. Anchored to `created_at`.
+	// WallClockDeadlineAt Deadline at which the reaper will fail this run with `error_type=run_timeout` if it has not reached a terminal state. Present only when `resolved_config` contains a `key="runs.timeouts.execution"` entry whose value resolves to a finite duration. Anchored to `created_at`.
 	WallClockDeadlineAt *time.Time `json:"wall_clock_deadline_at,omitempty"`
 
 	// WorkflowName Name of the workflow as recorded at run creation time.
