@@ -204,7 +204,7 @@ func registerInteractionsCommands(app *cli.App) {
 		Description("Submit a response to an interaction").
 		Args("id").
 		Flags(
-			cli.String("comment", "").Help("Optional free-text comment accompanying the response."),
+			cli.String("comment", "").Help("Optional free-text comment accompanying the response. Available on every interaction kind (approval…"),
 			cli.String("confidence", "").Help("Optional 0..1 confidence score the responder attaches to their answer. Required when the interactio… Accepts JSON, @file, or @-."),
 			cli.String("value", "").Help("[required] Free-form JSON payload. Used both for responder-supplied values and for policy-derived values (e.g.… Accepts JSON, @file, or @-."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
