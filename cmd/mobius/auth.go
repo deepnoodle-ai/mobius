@@ -428,7 +428,20 @@ func runAuthStatus(ctx *cli.Context) error {
 		ctx.Println("Authenticated: no")
 		ctx.Println("Run `mobius auth login --profile <name>` to sign in from the browser.")
 	}
+	maybeWarnStaleBuild(ctx)
 	return nil
+}
+
+// maybeWarnStaleBuild nudges the user to reinstall when this binary is
+// older than the threshold. The check is best-effort: if no reliable
+// build timestamp is available, stay quiet rather than nag.
+func maybeWarnStaleBuild(ctx *cli.Context) {
+	age, ok := staleBuildAge(time.Now())
+	if !ok || age < staleBuildThreshold {
+		return
+	}
+	days := int(age / (24 * time.Hour))
+	ctx.Warn("This mobius CLI is %d days old. New subcommands and bug fixes ship often — run `go install github.com/deepnoodle-ai/mobius/cmd/mobius@latest` to refresh.", days)
 }
 
 func printSavedCredentialStatus(ctx *cli.Context, cred *authstore.Profile) {
