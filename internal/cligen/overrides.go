@@ -34,6 +34,17 @@ var overrides = map[string]Override{
 	"archiveProject": {Command: "archive"},
 	"restoreProject": {Command: "restore"},
 
+	// `tables` group: the row operations use verbs the auto-derivation
+	// doesn't recognise (insert/query/search/upsert) or that produce an
+	// awkward leaf when combined with the `Table` resource word
+	// (bulkInsertTableRows → bulk-table-rows). Spell out the leaf names so
+	// every command in the group reads as `<verb>-row(s)`.
+	"insertTableRow":      {Command: "insert-row"},
+	"upsertTableRow":      {Command: "upsert-row"},
+	"queryTableRows":      {Command: "query-rows"},
+	"searchTableRows":     {Command: "search-rows"},
+	"bulkInsertTableRows": {Command: "bulk-insert-rows"},
+
 	// --- Skipped: hand-written in cmd/mobius ---
 	// The browser-based CLI login flow is hand-written in auth.go because it
 	// needs to drive the device challenge, open the browser, poll for
@@ -73,7 +84,6 @@ var groupDescriptions = map[string]string{
 	"artifacts":           "Run output artifacts and storage settings",
 	"audit-logs":          "Organization and project audit log entries",
 	"channels":            "Chat channels, members, and messages",
-	"data-tables":         "Project-scoped data tables and rows",
 	"events":              "Live event streams for runs and projects (SSE)",
 	"generate":            "LLM message generation",
 	"groups":              "Member groups for routing interactions",
@@ -88,6 +98,7 @@ var groupDescriptions = map[string]string{
 	"references":          "Reference lookup and resolution",
 	"runs":                "Workflow runs",
 	"spans":               "Distributed tracing spans and traces",
+	"tables":              "Project-scoped tables and rows",
 	"tools":               "Workflows published as callable tools",
 	"triggers":            "Event, schedule, and webhook triggers",
 	"webhooks":            "Outgoing webhook subscriptions",

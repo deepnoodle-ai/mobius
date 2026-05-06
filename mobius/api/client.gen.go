@@ -659,21 +659,6 @@ func (e CreateChannelRequestKind) Valid() bool {
 	}
 }
 
-// Defines values for CreateDataTableRowTriggerRequestKind.
-const (
-	CreateDataTableRowTriggerRequestKindDataTableRow CreateDataTableRowTriggerRequestKind = "data_table_row"
-)
-
-// Valid indicates whether the value is a known member of the CreateDataTableRowTriggerRequestKind enum.
-func (e CreateDataTableRowTriggerRequestKind) Valid() bool {
-	switch e {
-	case CreateDataTableRowTriggerRequestKindDataTableRow:
-		return true
-	default:
-		return false
-	}
-}
-
 // Defines values for CreateEmailTriggerRequestKind.
 const (
 	CreateEmailTriggerRequestKindEmail CreateEmailTriggerRequestKind = "email"
@@ -737,6 +722,21 @@ func (e CreateScheduleTriggerRequestKind) Valid() bool {
 	}
 }
 
+// Defines values for CreateTableRowTriggerRequestKind.
+const (
+	CreateTableRowTriggerRequestKindTableRow CreateTableRowTriggerRequestKind = "table_row"
+)
+
+// Valid indicates whether the value is a known member of the CreateTableRowTriggerRequestKind enum.
+func (e CreateTableRowTriggerRequestKind) Valid() bool {
+	switch e {
+	case CreateTableRowTriggerRequestKindTableRow:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for CreateTriggerTargetRequestKind.
 const (
 	CreateTriggerTargetRequestKindLaunchRun CreateTriggerTargetRequestKind = "launch_run"
@@ -764,27 +764,6 @@ const (
 func (e CreateWebhookTriggerRequestKind) Valid() bool {
 	switch e {
 	case CreateWebhookTriggerRequestKindWebhook:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for DataTableRowSourceConfigEvents.
-const (
-	DataTableRowSourceConfigEventsDeleted  DataTableRowSourceConfigEvents = "deleted"
-	DataTableRowSourceConfigEventsInserted DataTableRowSourceConfigEvents = "inserted"
-	DataTableRowSourceConfigEventsUpdated  DataTableRowSourceConfigEvents = "updated"
-)
-
-// Valid indicates whether the value is a known member of the DataTableRowSourceConfigEvents enum.
-func (e DataTableRowSourceConfigEvents) Valid() bool {
-	switch e {
-	case DataTableRowSourceConfigEventsDeleted:
-		return true
-	case DataTableRowSourceConfigEventsInserted:
-		return true
-	case DataTableRowSourceConfigEventsUpdated:
 		return true
 	default:
 		return false
@@ -1706,6 +1685,27 @@ func (e SystemTextBlockType) Valid() bool {
 	}
 }
 
+// Defines values for TableRowSourceConfigEvents.
+const (
+	TableRowSourceConfigEventsDeleted  TableRowSourceConfigEvents = "deleted"
+	TableRowSourceConfigEventsInserted TableRowSourceConfigEvents = "inserted"
+	TableRowSourceConfigEventsUpdated  TableRowSourceConfigEvents = "updated"
+)
+
+// Valid indicates whether the value is a known member of the TableRowSourceConfigEvents enum.
+func (e TableRowSourceConfigEvents) Valid() bool {
+	switch e {
+	case TableRowSourceConfigEventsDeleted:
+		return true
+	case TableRowSourceConfigEventsInserted:
+		return true
+	case TableRowSourceConfigEventsUpdated:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for TestFireTargetResultKind.
 const (
 	TestFireTargetResultKindLaunchRun TestFireTargetResultKind = "launch_run"
@@ -1892,10 +1892,10 @@ func (e TriggerFireTargetStatus) Valid() bool {
 // Defines values for TriggerKind.
 const (
 	TriggerKindChannelMessage TriggerKind = "channel_message"
-	TriggerKindDataTableRow   TriggerKind = "data_table_row"
 	TriggerKindEmail          TriggerKind = "email"
 	TriggerKindEvent          TriggerKind = "event"
 	TriggerKindSchedule       TriggerKind = "schedule"
+	TriggerKindTableRow       TriggerKind = "table_row"
 	TriggerKindWebhook        TriggerKind = "webhook"
 )
 
@@ -1904,13 +1904,13 @@ func (e TriggerKind) Valid() bool {
 	switch e {
 	case TriggerKindChannelMessage:
 		return true
-	case TriggerKindDataTableRow:
-		return true
 	case TriggerKindEmail:
 		return true
 	case TriggerKindEvent:
 		return true
 	case TriggerKindSchedule:
+		return true
+	case TriggerKindTableRow:
 		return true
 	case TriggerKindWebhook:
 		return true
@@ -2962,7 +2962,7 @@ type AgentInvocationToolCall struct {
 	// Count Number of times the tool was invoked during the loop.
 	Count int `json:"count"`
 
-	// Name Tool name (e.g. `mobius_query_data_table`).
+	// Name Tool name (e.g. `mobius_query_table`).
 	Name string `json:"name"`
 }
 
@@ -3181,8 +3181,8 @@ type BulkInsertRowsRequest struct {
 
 // BulkInsertRowsResponse defines model for BulkInsertRowsResponse.
 type BulkInsertRowsResponse struct {
-	Inserted int            `json:"inserted"`
-	Rows     []DataTableRow `json:"rows"`
+	Inserted int        `json:"inserted"`
+	Rows     []TableRow `json:"rows"`
 }
 
 // CancelInteractionRequest Optional payload accompanying a cancel request. The reason is recorded on the interaction and forwarded in the cancellation signal so workflows can route to a fallback.
@@ -3592,43 +3592,6 @@ type CreateChannelRequest struct {
 // CreateChannelRequestKind Channel kind, either `dm` or `channel`. Cannot be changed after creation.
 type CreateChannelRequestKind string
 
-// CreateDataTableRequest defines model for CreateDataTableRequest.
-type CreateDataTableRequest struct {
-	Description *string         `json:"description,omitempty"`
-	Name        string          `json:"name"`
-	Schema      DataTableSchema `json:"schema"`
-}
-
-// CreateDataTableRowTriggerRequest Creates a trigger that fires when a data table row is inserted, updated, or deleted.
-type CreateDataTableRowTriggerRequest struct {
-	// ConcurrencyPolicy Controls overlapping runs from the same trigger:
-	// - `allow` — start new runs unconditionally.
-	// - `forbid` — skip the new fire if a run from this trigger is still active.
-	// - `replace` — cancel the active run before starting a new one.
-	ConcurrencyPolicy *ConcurrencyPolicy `json:"concurrency_policy,omitempty"`
-
-	// Enabled Whether the trigger starts enabled. Defaults to true when omitted.
-	Enabled *bool `json:"enabled,omitempty"`
-
-	// Kind Discriminator value — must be `data_table_row`.
-	Kind CreateDataTableRowTriggerRequestKind `json:"kind"`
-
-	// Name Human-readable trigger name, unique within the project.
-	Name string `json:"name"`
-
-	// SourceConfig Source configuration for `data_table_row` triggers.
-	SourceConfig DataTableRowSourceConfig `json:"source_config"`
-
-	// Tags Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints.
-	Tags *TagMap `json:"tags,omitempty"`
-
-	// Targets Workflows to start when this trigger fires (inline convenience; stored as sub-resources).
-	Targets *[]CreateTriggerTargetRequest `json:"targets,omitempty"`
-}
-
-// CreateDataTableRowTriggerRequestKind Discriminator value — must be `data_table_row`.
-type CreateDataTableRowTriggerRequestKind string
-
 // CreateEmailTriggerRequest Creates a trigger that fires when an inbound email arrives at the agent's inbox.
 type CreateEmailTriggerRequest struct {
 	// ConcurrencyPolicy Controls overlapping runs from the same trigger:
@@ -3880,6 +3843,43 @@ type CreateStandaloneInteractionRequest struct {
 	Type InteractionType `json:"type"`
 }
 
+// CreateTableRequest defines model for CreateTableRequest.
+type CreateTableRequest struct {
+	Description *string     `json:"description,omitempty"`
+	Name        string      `json:"name"`
+	Schema      TableSchema `json:"schema"`
+}
+
+// CreateTableRowTriggerRequest Creates a trigger that fires when a table row is inserted, updated, or deleted.
+type CreateTableRowTriggerRequest struct {
+	// ConcurrencyPolicy Controls overlapping runs from the same trigger:
+	// - `allow` — start new runs unconditionally.
+	// - `forbid` — skip the new fire if a run from this trigger is still active.
+	// - `replace` — cancel the active run before starting a new one.
+	ConcurrencyPolicy *ConcurrencyPolicy `json:"concurrency_policy,omitempty"`
+
+	// Enabled Whether the trigger starts enabled. Defaults to true when omitted.
+	Enabled *bool `json:"enabled,omitempty"`
+
+	// Kind Discriminator value — must be `table_row`.
+	Kind CreateTableRowTriggerRequestKind `json:"kind"`
+
+	// Name Human-readable trigger name, unique within the project.
+	Name string `json:"name"`
+
+	// SourceConfig Source configuration for `table_row` triggers.
+	SourceConfig TableRowSourceConfig `json:"source_config"`
+
+	// Tags Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints.
+	Tags *TagMap `json:"tags,omitempty"`
+
+	// Targets Workflows to start when this trigger fires (inline convenience; stored as sub-resources).
+	Targets *[]CreateTriggerTargetRequest `json:"targets,omitempty"`
+}
+
+// CreateTableRowTriggerRequestKind Discriminator value — must be `table_row`.
+type CreateTableRowTriggerRequestKind string
+
 // CreateTriggerRequest Creates a trigger. The request is discriminated by `kind`, and each variant requires the matching `source_config` schema.
 type CreateTriggerRequest struct {
 	union json.RawMessage
@@ -3988,68 +3988,6 @@ type CreateWorkflowRequest struct {
 
 	// Tags Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints.
 	Tags *TagMap `json:"tags,omitempty"`
-}
-
-// DataTable defines model for DataTable.
-type DataTable struct {
-	CreatedAt   time.Time          `json:"created_at"`
-	Description *string            `json:"description,omitempty"`
-	Id          string             `json:"id"`
-	Name        string             `json:"name"`
-	OrgId       string             `json:"org_id"`
-	ProjectId   string             `json:"project_id"`
-	Schema      DataTableSchema    `json:"schema"`
-	Tags        *map[string]string `json:"tags,omitempty"`
-	UpdatedAt   time.Time          `json:"updated_at"`
-}
-
-// DataTableListResponse defines model for DataTableListResponse.
-type DataTableListResponse struct {
-	HasMore    bool        `json:"has_more"`
-	Items      []DataTable `json:"items"`
-	NextCursor *string     `json:"next_cursor,omitempty"`
-}
-
-// DataTableRow defines model for DataTableRow.
-type DataTableRow struct {
-	CreatedAt time.Time              `json:"created_at"`
-	Data      map[string]interface{} `json:"data"`
-	Id        string                 `json:"id"`
-	TableId   string                 `json:"table_id"`
-	UpdatedAt time.Time              `json:"updated_at"`
-	Version   int                    `json:"version"`
-}
-
-// DataTableRowSourceConfig Source configuration for `data_table_row` triggers.
-type DataTableRowSourceConfig struct {
-	// Events Row change events that fire the trigger. When omitted, all three events (inserted, updated, deleted) fire the trigger.
-	Events *[]DataTableRowSourceConfigEvents `json:"events,omitempty"`
-
-	// TableName Name of the data table to watch. When omitted, the trigger fires for row changes in any table within the project.
-	TableName *string `json:"table_name,omitempty"`
-}
-
-// DataTableRowSourceConfigEvents defines model for DataTableRowSourceConfig.Events.
-type DataTableRowSourceConfigEvents string
-
-// DataTableSchema defines model for DataTableSchema.
-type DataTableSchema struct {
-	Columns []ColumnDef `json:"columns"`
-	Indexes *[]IndexDef `json:"indexes,omitempty"`
-}
-
-// DataTableStats defines model for DataTableStats.
-type DataTableStats struct {
-	ApproxDataBytes    int64      `json:"approx_data_bytes"`
-	ApproxIndexBytes   int64      `json:"approx_index_bytes"`
-	DeclaredIndexCount int        `json:"declared_index_count"`
-	GeneratedAt        time.Time  `json:"generated_at"`
-	IndexedColumnCount int        `json:"indexed_column_count"`
-	NewestRowUpdatedAt *time.Time `json:"newest_row_updated_at,omitempty"`
-	OldestRowCreatedAt *time.Time `json:"oldest_row_created_at,omitempty"`
-	RowCount           int64      `json:"row_count"`
-	SearchIndexPresent bool       `json:"search_index_present"`
-	TableId            string     `json:"table_id"`
 }
 
 // EmailSourceConfig Source configuration for `email` triggers.
@@ -5270,10 +5208,10 @@ type QueryRowsRequestSortOrder string
 
 // QueryRowsResponse defines model for QueryRowsResponse.
 type QueryRowsResponse struct {
-	HasMore    bool           `json:"has_more"`
-	Limit      *int           `json:"limit,omitempty"`
-	NextCursor *string        `json:"next_cursor,omitempty"`
-	Rows       []DataTableRow `json:"rows"`
+	HasMore    bool       `json:"has_more"`
+	Limit      *int       `json:"limit,omitempty"`
+	NextCursor *string    `json:"next_cursor,omitempty"`
+	Rows       []TableRow `json:"rows"`
 }
 
 // ReferenceCandidate defines model for ReferenceCandidate.
@@ -5611,10 +5549,10 @@ type SearchRowsRequest struct {
 
 // SearchRowsResponse defines model for SearchRowsResponse.
 type SearchRowsResponse struct {
-	HasMore    bool           `json:"has_more"`
-	Limit      *int           `json:"limit,omitempty"`
-	NextCursor *string        `json:"next_cursor,omitempty"`
-	Rows       []DataTableRow `json:"rows"`
+	HasMore    bool       `json:"has_more"`
+	Limit      *int       `json:"limit,omitempty"`
+	NextCursor *string    `json:"next_cursor,omitempty"`
+	Rows       []TableRow `json:"rows"`
 }
 
 // SendChannelMessageRequest Fields used to post a new channel message. Sender attribution is determined entirely by the authenticated credential and cannot be overridden via this request body.
@@ -5892,6 +5830,68 @@ type SystemTextBlock struct {
 // SystemTextBlockType defines model for SystemTextBlock.Type.
 type SystemTextBlockType string
 
+// Table defines model for Table.
+type Table struct {
+	CreatedAt   time.Time          `json:"created_at"`
+	Description *string            `json:"description,omitempty"`
+	Id          string             `json:"id"`
+	Name        string             `json:"name"`
+	OrgId       string             `json:"org_id"`
+	ProjectId   string             `json:"project_id"`
+	Schema      TableSchema        `json:"schema"`
+	Tags        *map[string]string `json:"tags,omitempty"`
+	UpdatedAt   time.Time          `json:"updated_at"`
+}
+
+// TableListResponse defines model for TableListResponse.
+type TableListResponse struct {
+	HasMore    bool    `json:"has_more"`
+	Items      []Table `json:"items"`
+	NextCursor *string `json:"next_cursor,omitempty"`
+}
+
+// TableRow defines model for TableRow.
+type TableRow struct {
+	CreatedAt time.Time              `json:"created_at"`
+	Data      map[string]interface{} `json:"data"`
+	Id        string                 `json:"id"`
+	TableId   string                 `json:"table_id"`
+	UpdatedAt time.Time              `json:"updated_at"`
+	Version   int                    `json:"version"`
+}
+
+// TableRowSourceConfig Source configuration for `table_row` triggers.
+type TableRowSourceConfig struct {
+	// Events Row change events that fire the trigger. When omitted, all three events (inserted, updated, deleted) fire the trigger.
+	Events *[]TableRowSourceConfigEvents `json:"events,omitempty"`
+
+	// TableName Name of the table to watch. When omitted, the trigger fires for row changes in any table within the project.
+	TableName *string `json:"table_name,omitempty"`
+}
+
+// TableRowSourceConfigEvents defines model for TableRowSourceConfig.Events.
+type TableRowSourceConfigEvents string
+
+// TableSchema defines model for TableSchema.
+type TableSchema struct {
+	Columns []ColumnDef `json:"columns"`
+	Indexes *[]IndexDef `json:"indexes,omitempty"`
+}
+
+// TableStats defines model for TableStats.
+type TableStats struct {
+	ApproxDataBytes    int64      `json:"approx_data_bytes"`
+	ApproxIndexBytes   int64      `json:"approx_index_bytes"`
+	DeclaredIndexCount int        `json:"declared_index_count"`
+	GeneratedAt        time.Time  `json:"generated_at"`
+	IndexedColumnCount int        `json:"indexed_column_count"`
+	NewestRowUpdatedAt *time.Time `json:"newest_row_updated_at,omitempty"`
+	OldestRowCreatedAt *time.Time `json:"oldest_row_created_at,omitempty"`
+	RowCount           int64      `json:"row_count"`
+	SearchIndexPresent bool       `json:"search_index_present"`
+	TableId            string     `json:"table_id"`
+}
+
 // TagMap Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints.
 type TagMap map[string]string
 
@@ -6082,7 +6082,7 @@ type Trigger struct {
 	// Id Unique identifier for this trigger.
 	Id string `json:"id"`
 
-	// Kind Determines the event source and required `source_config` shape: schedule, webhook, event, channel_message, data_table_row, or email.
+	// Kind Determines the event source and required `source_config` shape: schedule, webhook, event, channel_message, table_row, or email.
 	Kind TriggerKind `json:"kind"`
 
 	// LastFireAt Timestamp of the most recent fire attempt.
@@ -6094,7 +6094,7 @@ type Trigger struct {
 	// NextFireAt Computed next scheduled fire time (schedule triggers only).
 	NextFireAt *time.Time `json:"next_fire_at,omitempty"`
 
-	// SourceConfig Typed source configuration. The shape is determined by the trigger's `kind` (`schedule` → `ScheduleSourceConfig`, `webhook` → `WebhookSourceConfig`, `event` → `EventSourceConfig`, `channel_message` → `ChannelMessageSourceConfig`, `data_table_row` → `DataTableRowSourceConfig`, `email` → `EmailSourceConfig`); mismatches are rejected with 400.
+	// SourceConfig Typed source configuration. The shape is determined by the trigger's `kind` (`schedule` → `ScheduleSourceConfig`, `webhook` → `WebhookSourceConfig`, `event` → `EventSourceConfig`, `channel_message` → `ChannelMessageSourceConfig`, `table_row` → `TableRowSourceConfig`, `email` → `EmailSourceConfig`); mismatches are rejected with 400.
 	SourceConfig *TriggerSourceConfig `json:"source_config,omitempty"`
 
 	// Tags Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints.
@@ -6193,7 +6193,7 @@ type TriggerFireTargetResultKind string
 // TriggerFireTargetStatus Outcome for a single target within a trigger fire activation. Per-target results never aggregate, so `partial_failure` cannot appear here.
 type TriggerFireTargetStatus string
 
-// TriggerKind Determines the event source and required `source_config` shape: schedule, webhook, event, channel_message, data_table_row, or email.
+// TriggerKind Determines the event source and required `source_config` shape: schedule, webhook, event, channel_message, table_row, or email.
 type TriggerKind string
 
 // TriggerListResponse Paginated list of triggers.
@@ -6208,7 +6208,7 @@ type TriggerListResponse struct {
 	NextCursor *string `json:"next_cursor,omitempty"`
 }
 
-// TriggerSourceConfig Typed source configuration. The shape is determined by the trigger's `kind` (`schedule` → `ScheduleSourceConfig`, `webhook` → `WebhookSourceConfig`, `event` → `EventSourceConfig`, `channel_message` → `ChannelMessageSourceConfig`, `data_table_row` → `DataTableRowSourceConfig`, `email` → `EmailSourceConfig`); mismatches are rejected with 400.
+// TriggerSourceConfig Typed source configuration. The shape is determined by the trigger's `kind` (`schedule` → `ScheduleSourceConfig`, `webhook` → `WebhookSourceConfig`, `event` → `EventSourceConfig`, `channel_message` → `ChannelMessageSourceConfig`, `table_row` → `TableRowSourceConfig`, `email` → `EmailSourceConfig`); mismatches are rejected with 400.
 type TriggerSourceConfig struct {
 	union json.RawMessage
 }
@@ -6361,12 +6361,6 @@ type UpdateChannelRequest struct {
 	Topic *string `json:"topic,omitempty"`
 }
 
-// UpdateDataTableRequest defines model for UpdateDataTableRequest.
-type UpdateDataTableRequest struct {
-	Description *string          `json:"description,omitempty"`
-	Schema      *DataTableSchema `json:"schema,omitempty"`
-}
-
 // UpdateGroupRequest defines model for UpdateGroupRequest.
 type UpdateGroupRequest struct {
 	// Description Replacement description.
@@ -6423,6 +6417,12 @@ type UpdateRowRequest struct {
 	Version *int `json:"version,omitempty"`
 }
 
+// UpdateTableRequest defines model for UpdateTableRequest.
+type UpdateTableRequest struct {
+	Description *string      `json:"description,omitempty"`
+	Schema      *TableSchema `json:"schema,omitempty"`
+}
+
 // UpdateTriggerRequest defines model for UpdateTriggerRequest.
 type UpdateTriggerRequest struct {
 	// ConcurrencyPolicy Controls overlapping runs from the same trigger:
@@ -6437,7 +6437,7 @@ type UpdateTriggerRequest struct {
 	// Name Replacement human-readable name.
 	Name *string `json:"name,omitempty"`
 
-	// SourceConfig Typed source configuration. The shape is determined by the trigger's `kind` (`schedule` → `ScheduleSourceConfig`, `webhook` → `WebhookSourceConfig`, `event` → `EventSourceConfig`, `channel_message` → `ChannelMessageSourceConfig`, `data_table_row` → `DataTableRowSourceConfig`, `email` → `EmailSourceConfig`); mismatches are rejected with 400.
+	// SourceConfig Typed source configuration. The shape is determined by the trigger's `kind` (`schedule` → `ScheduleSourceConfig`, `webhook` → `WebhookSourceConfig`, `event` → `EventSourceConfig`, `channel_message` → `ChannelMessageSourceConfig`, `table_row` → `TableRowSourceConfig`, `email` → `EmailSourceConfig`); mismatches are rejected with 400.
 	SourceConfig *TriggerSourceConfig `json:"source_config,omitempty"`
 
 	// Tags Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints.
@@ -6548,8 +6548,8 @@ type UpsertRowRequest struct {
 // UpsertRowResponse defines model for UpsertRowResponse.
 type UpsertRowResponse struct {
 	// Created True when a new row was inserted; false when an existing row was updated.
-	Created bool         `json:"created"`
-	Row     DataTableRow `json:"row"`
+	Created bool     `json:"created"`
+	Row     TableRow `json:"row"`
 }
 
 // User Human identity known to the organization. User records are useful for membership lists, role assignment UIs, attribution, and displaying profile information next to actions.
@@ -8397,8 +8397,8 @@ type GetProjectStepSpanCountsParams struct {
 	RunId string `form:"run_id" json:"run_id"`
 }
 
-// ListDataTablesParams defines parameters for ListDataTables.
-type ListDataTablesParams struct {
+// ListTablesParams defines parameters for ListTables.
+type ListTablesParams struct {
 	// Cursor Cursor for pagination (opaque string from previous response)
 	Cursor *CursorParam `form:"cursor,omitempty" json:"cursor,omitempty"`
 
@@ -8637,29 +8637,29 @@ type SendRunSignalJSONRequestBody = SendRunSignalRequest
 // UpdateArtifactStorageSettingsJSONRequestBody defines body for UpdateArtifactStorageSettings for application/json ContentType.
 type UpdateArtifactStorageSettingsJSONRequestBody = ArtifactStorageSettingsUpdate
 
-// CreateDataTableJSONRequestBody defines body for CreateDataTable for application/json ContentType.
-type CreateDataTableJSONRequestBody = CreateDataTableRequest
+// CreateTableJSONRequestBody defines body for CreateTable for application/json ContentType.
+type CreateTableJSONRequestBody = CreateTableRequest
 
-// UpdateDataTableJSONRequestBody defines body for UpdateDataTable for application/json ContentType.
-type UpdateDataTableJSONRequestBody = UpdateDataTableRequest
+// UpdateTableJSONRequestBody defines body for UpdateTable for application/json ContentType.
+type UpdateTableJSONRequestBody = UpdateTableRequest
 
-// InsertDataTableRowJSONRequestBody defines body for InsertDataTableRow for application/json ContentType.
-type InsertDataTableRowJSONRequestBody = InsertRowRequest
+// InsertTableRowJSONRequestBody defines body for InsertTableRow for application/json ContentType.
+type InsertTableRowJSONRequestBody = InsertRowRequest
 
-// BulkInsertDataTableRowsJSONRequestBody defines body for BulkInsertDataTableRows for application/json ContentType.
-type BulkInsertDataTableRowsJSONRequestBody = BulkInsertRowsRequest
+// BulkInsertTableRowsJSONRequestBody defines body for BulkInsertTableRows for application/json ContentType.
+type BulkInsertTableRowsJSONRequestBody = BulkInsertRowsRequest
 
-// QueryDataTableRowsJSONRequestBody defines body for QueryDataTableRows for application/json ContentType.
-type QueryDataTableRowsJSONRequestBody = QueryRowsRequest
+// QueryTableRowsJSONRequestBody defines body for QueryTableRows for application/json ContentType.
+type QueryTableRowsJSONRequestBody = QueryRowsRequest
 
-// SearchDataTableRowsJSONRequestBody defines body for SearchDataTableRows for application/json ContentType.
-type SearchDataTableRowsJSONRequestBody = SearchRowsRequest
+// SearchTableRowsJSONRequestBody defines body for SearchTableRows for application/json ContentType.
+type SearchTableRowsJSONRequestBody = SearchRowsRequest
 
-// UpsertDataTableRowJSONRequestBody defines body for UpsertDataTableRow for application/json ContentType.
-type UpsertDataTableRowJSONRequestBody = UpsertRowRequest
+// UpsertTableRowJSONRequestBody defines body for UpsertTableRow for application/json ContentType.
+type UpsertTableRowJSONRequestBody = UpsertRowRequest
 
-// UpdateDataTableRowJSONRequestBody defines body for UpdateDataTableRow for application/json ContentType.
-type UpdateDataTableRowJSONRequestBody = UpdateRowRequest
+// UpdateTableRowJSONRequestBody defines body for UpdateTableRow for application/json ContentType.
+type UpdateTableRowJSONRequestBody = UpdateRowRequest
 
 // CreateTriggerJSONRequestBody defines body for CreateTrigger for application/json ContentType.
 type CreateTriggerJSONRequestBody = CreateTriggerRequest
@@ -11466,24 +11466,24 @@ func (t *CreateTriggerRequest) MergeCreateChannelMessageTriggerRequest(v CreateC
 	return err
 }
 
-// AsCreateDataTableRowTriggerRequest returns the union data inside the CreateTriggerRequest as a CreateDataTableRowTriggerRequest
-func (t CreateTriggerRequest) AsCreateDataTableRowTriggerRequest() (CreateDataTableRowTriggerRequest, error) {
-	var body CreateDataTableRowTriggerRequest
+// AsCreateTableRowTriggerRequest returns the union data inside the CreateTriggerRequest as a CreateTableRowTriggerRequest
+func (t CreateTriggerRequest) AsCreateTableRowTriggerRequest() (CreateTableRowTriggerRequest, error) {
+	var body CreateTableRowTriggerRequest
 	err := json.Unmarshal(t.union, &body)
 	return body, err
 }
 
-// FromCreateDataTableRowTriggerRequest overwrites any union data inside the CreateTriggerRequest as the provided CreateDataTableRowTriggerRequest
-func (t *CreateTriggerRequest) FromCreateDataTableRowTriggerRequest(v CreateDataTableRowTriggerRequest) error {
-	v.Kind = "data_table_row"
+// FromCreateTableRowTriggerRequest overwrites any union data inside the CreateTriggerRequest as the provided CreateTableRowTriggerRequest
+func (t *CreateTriggerRequest) FromCreateTableRowTriggerRequest(v CreateTableRowTriggerRequest) error {
+	v.Kind = "table_row"
 	b, err := json.Marshal(v)
 	t.union = b
 	return err
 }
 
-// MergeCreateDataTableRowTriggerRequest performs a merge with any union data inside the CreateTriggerRequest, using the provided CreateDataTableRowTriggerRequest
-func (t *CreateTriggerRequest) MergeCreateDataTableRowTriggerRequest(v CreateDataTableRowTriggerRequest) error {
-	v.Kind = "data_table_row"
+// MergeCreateTableRowTriggerRequest performs a merge with any union data inside the CreateTriggerRequest, using the provided CreateTableRowTriggerRequest
+func (t *CreateTriggerRequest) MergeCreateTableRowTriggerRequest(v CreateTableRowTriggerRequest) error {
+	v.Kind = "table_row"
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -11538,14 +11538,14 @@ func (t CreateTriggerRequest) ValueByDiscriminator() (interface{}, error) {
 	switch discriminator {
 	case "channel_message":
 		return t.AsCreateChannelMessageTriggerRequest()
-	case "data_table_row":
-		return t.AsCreateDataTableRowTriggerRequest()
 	case "email":
 		return t.AsCreateEmailTriggerRequest()
 	case "event":
 		return t.AsCreateEventTriggerRequest()
 	case "schedule":
 		return t.AsCreateScheduleTriggerRequest()
+	case "table_row":
+		return t.AsCreateTableRowTriggerRequest()
 	case "webhook":
 		return t.AsCreateWebhookTriggerRequest()
 	default:
@@ -12357,22 +12357,22 @@ func (t *TriggerSourceConfig) MergeChannelMessageSourceConfig(v ChannelMessageSo
 	return err
 }
 
-// AsDataTableRowSourceConfig returns the union data inside the TriggerSourceConfig as a DataTableRowSourceConfig
-func (t TriggerSourceConfig) AsDataTableRowSourceConfig() (DataTableRowSourceConfig, error) {
-	var body DataTableRowSourceConfig
+// AsTableRowSourceConfig returns the union data inside the TriggerSourceConfig as a TableRowSourceConfig
+func (t TriggerSourceConfig) AsTableRowSourceConfig() (TableRowSourceConfig, error) {
+	var body TableRowSourceConfig
 	err := json.Unmarshal(t.union, &body)
 	return body, err
 }
 
-// FromDataTableRowSourceConfig overwrites any union data inside the TriggerSourceConfig as the provided DataTableRowSourceConfig
-func (t *TriggerSourceConfig) FromDataTableRowSourceConfig(v DataTableRowSourceConfig) error {
+// FromTableRowSourceConfig overwrites any union data inside the TriggerSourceConfig as the provided TableRowSourceConfig
+func (t *TriggerSourceConfig) FromTableRowSourceConfig(v TableRowSourceConfig) error {
 	b, err := json.Marshal(v)
 	t.union = b
 	return err
 }
 
-// MergeDataTableRowSourceConfig performs a merge with any union data inside the TriggerSourceConfig, using the provided DataTableRowSourceConfig
-func (t *TriggerSourceConfig) MergeDataTableRowSourceConfig(v DataTableRowSourceConfig) error {
+// MergeTableRowSourceConfig performs a merge with any union data inside the TriggerSourceConfig, using the provided TableRowSourceConfig
+func (t *TriggerSourceConfig) MergeTableRowSourceConfig(v TableRowSourceConfig) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -13262,63 +13262,63 @@ type ClientInterface interface {
 	// GetProjectStepSpanCounts request
 	GetProjectStepSpanCounts(ctx context.Context, project ProjectHandleParam, params *GetProjectStepSpanCountsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListDataTables request
-	ListDataTables(ctx context.Context, project ProjectHandleParam, params *ListDataTablesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// ListTables request
+	ListTables(ctx context.Context, project ProjectHandleParam, params *ListTablesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CreateDataTableWithBody request with any body
-	CreateDataTableWithBody(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// CreateTableWithBody request with any body
+	CreateTableWithBody(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	CreateDataTable(ctx context.Context, project ProjectHandleParam, body CreateDataTableJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateTable(ctx context.Context, project ProjectHandleParam, body CreateTableJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// DeleteDataTable request
-	DeleteDataTable(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// DeleteTable request
+	DeleteTable(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetDataTable request
-	GetDataTable(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// GetTable request
+	GetTable(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// UpdateDataTableWithBody request with any body
-	UpdateDataTableWithBody(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// UpdateTableWithBody request with any body
+	UpdateTableWithBody(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	UpdateDataTable(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body UpdateDataTableJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateTable(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body UpdateTableJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// InsertDataTableRowWithBody request with any body
-	InsertDataTableRowWithBody(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// InsertTableRowWithBody request with any body
+	InsertTableRowWithBody(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	InsertDataTableRow(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body InsertDataTableRowJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	InsertTableRow(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body InsertTableRowJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// BulkInsertDataTableRowsWithBody request with any body
-	BulkInsertDataTableRowsWithBody(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// BulkInsertTableRowsWithBody request with any body
+	BulkInsertTableRowsWithBody(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	BulkInsertDataTableRows(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body BulkInsertDataTableRowsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	BulkInsertTableRows(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body BulkInsertTableRowsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// QueryDataTableRowsWithBody request with any body
-	QueryDataTableRowsWithBody(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// QueryTableRowsWithBody request with any body
+	QueryTableRowsWithBody(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	QueryDataTableRows(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body QueryDataTableRowsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	QueryTableRows(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body QueryTableRowsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// SearchDataTableRowsWithBody request with any body
-	SearchDataTableRowsWithBody(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// SearchTableRowsWithBody request with any body
+	SearchTableRowsWithBody(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	SearchDataTableRows(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body SearchDataTableRowsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	SearchTableRows(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body SearchTableRowsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// UpsertDataTableRowWithBody request with any body
-	UpsertDataTableRowWithBody(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// UpsertTableRowWithBody request with any body
+	UpsertTableRowWithBody(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	UpsertDataTableRow(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body UpsertDataTableRowJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpsertTableRow(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body UpsertTableRowJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// DeleteDataTableRow request
-	DeleteDataTableRow(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// DeleteTableRow request
+	DeleteTableRow(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetDataTableRow request
-	GetDataTableRow(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// GetTableRow request
+	GetTableRow(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// UpdateDataTableRowWithBody request with any body
-	UpdateDataTableRowWithBody(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// UpdateTableRowWithBody request with any body
+	UpdateTableRowWithBody(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	UpdateDataTableRow(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, body UpdateDataTableRowJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateTableRow(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, body UpdateTableRowJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetDataTableStats request
-	GetDataTableStats(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// GetTableStats request
+	GetTableStats(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListProjectTraces request
 	ListProjectTraces(ctx context.Context, project ProjectHandleParam, params *ListProjectTracesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -15479,8 +15479,8 @@ func (c *Client) GetProjectStepSpanCounts(ctx context.Context, project ProjectHa
 	return c.Client.Do(req)
 }
 
-func (c *Client) ListDataTables(ctx context.Context, project ProjectHandleParam, params *ListDataTablesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListDataTablesRequest(c.Server, project, params)
+func (c *Client) ListTables(ctx context.Context, project ProjectHandleParam, params *ListTablesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListTablesRequest(c.Server, project, params)
 	if err != nil {
 		return nil, err
 	}
@@ -15491,8 +15491,8 @@ func (c *Client) ListDataTables(ctx context.Context, project ProjectHandleParam,
 	return c.Client.Do(req)
 }
 
-func (c *Client) CreateDataTableWithBody(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateDataTableRequestWithBody(c.Server, project, contentType, body)
+func (c *Client) CreateTableWithBody(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateTableRequestWithBody(c.Server, project, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -15503,8 +15503,8 @@ func (c *Client) CreateDataTableWithBody(ctx context.Context, project ProjectHan
 	return c.Client.Do(req)
 }
 
-func (c *Client) CreateDataTable(ctx context.Context, project ProjectHandleParam, body CreateDataTableJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateDataTableRequest(c.Server, project, body)
+func (c *Client) CreateTable(ctx context.Context, project ProjectHandleParam, body CreateTableJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateTableRequest(c.Server, project, body)
 	if err != nil {
 		return nil, err
 	}
@@ -15515,8 +15515,8 @@ func (c *Client) CreateDataTable(ctx context.Context, project ProjectHandleParam
 	return c.Client.Do(req)
 }
 
-func (c *Client) DeleteDataTable(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDeleteDataTableRequest(c.Server, project, tableName)
+func (c *Client) DeleteTable(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteTableRequest(c.Server, project, tableName)
 	if err != nil {
 		return nil, err
 	}
@@ -15527,8 +15527,8 @@ func (c *Client) DeleteDataTable(ctx context.Context, project ProjectHandleParam
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetDataTable(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetDataTableRequest(c.Server, project, tableName)
+func (c *Client) GetTable(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetTableRequest(c.Server, project, tableName)
 	if err != nil {
 		return nil, err
 	}
@@ -15539,8 +15539,8 @@ func (c *Client) GetDataTable(ctx context.Context, project ProjectHandleParam, t
 	return c.Client.Do(req)
 }
 
-func (c *Client) UpdateDataTableWithBody(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateDataTableRequestWithBody(c.Server, project, tableName, contentType, body)
+func (c *Client) UpdateTableWithBody(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateTableRequestWithBody(c.Server, project, tableName, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -15551,8 +15551,8 @@ func (c *Client) UpdateDataTableWithBody(ctx context.Context, project ProjectHan
 	return c.Client.Do(req)
 }
 
-func (c *Client) UpdateDataTable(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body UpdateDataTableJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateDataTableRequest(c.Server, project, tableName, body)
+func (c *Client) UpdateTable(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body UpdateTableJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateTableRequest(c.Server, project, tableName, body)
 	if err != nil {
 		return nil, err
 	}
@@ -15563,8 +15563,8 @@ func (c *Client) UpdateDataTable(ctx context.Context, project ProjectHandleParam
 	return c.Client.Do(req)
 }
 
-func (c *Client) InsertDataTableRowWithBody(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewInsertDataTableRowRequestWithBody(c.Server, project, tableName, contentType, body)
+func (c *Client) InsertTableRowWithBody(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewInsertTableRowRequestWithBody(c.Server, project, tableName, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -15575,8 +15575,8 @@ func (c *Client) InsertDataTableRowWithBody(ctx context.Context, project Project
 	return c.Client.Do(req)
 }
 
-func (c *Client) InsertDataTableRow(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body InsertDataTableRowJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewInsertDataTableRowRequest(c.Server, project, tableName, body)
+func (c *Client) InsertTableRow(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body InsertTableRowJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewInsertTableRowRequest(c.Server, project, tableName, body)
 	if err != nil {
 		return nil, err
 	}
@@ -15587,8 +15587,8 @@ func (c *Client) InsertDataTableRow(ctx context.Context, project ProjectHandlePa
 	return c.Client.Do(req)
 }
 
-func (c *Client) BulkInsertDataTableRowsWithBody(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewBulkInsertDataTableRowsRequestWithBody(c.Server, project, tableName, contentType, body)
+func (c *Client) BulkInsertTableRowsWithBody(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewBulkInsertTableRowsRequestWithBody(c.Server, project, tableName, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -15599,8 +15599,8 @@ func (c *Client) BulkInsertDataTableRowsWithBody(ctx context.Context, project Pr
 	return c.Client.Do(req)
 }
 
-func (c *Client) BulkInsertDataTableRows(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body BulkInsertDataTableRowsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewBulkInsertDataTableRowsRequest(c.Server, project, tableName, body)
+func (c *Client) BulkInsertTableRows(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body BulkInsertTableRowsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewBulkInsertTableRowsRequest(c.Server, project, tableName, body)
 	if err != nil {
 		return nil, err
 	}
@@ -15611,8 +15611,8 @@ func (c *Client) BulkInsertDataTableRows(ctx context.Context, project ProjectHan
 	return c.Client.Do(req)
 }
 
-func (c *Client) QueryDataTableRowsWithBody(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewQueryDataTableRowsRequestWithBody(c.Server, project, tableName, contentType, body)
+func (c *Client) QueryTableRowsWithBody(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewQueryTableRowsRequestWithBody(c.Server, project, tableName, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -15623,8 +15623,8 @@ func (c *Client) QueryDataTableRowsWithBody(ctx context.Context, project Project
 	return c.Client.Do(req)
 }
 
-func (c *Client) QueryDataTableRows(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body QueryDataTableRowsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewQueryDataTableRowsRequest(c.Server, project, tableName, body)
+func (c *Client) QueryTableRows(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body QueryTableRowsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewQueryTableRowsRequest(c.Server, project, tableName, body)
 	if err != nil {
 		return nil, err
 	}
@@ -15635,8 +15635,8 @@ func (c *Client) QueryDataTableRows(ctx context.Context, project ProjectHandlePa
 	return c.Client.Do(req)
 }
 
-func (c *Client) SearchDataTableRowsWithBody(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewSearchDataTableRowsRequestWithBody(c.Server, project, tableName, contentType, body)
+func (c *Client) SearchTableRowsWithBody(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSearchTableRowsRequestWithBody(c.Server, project, tableName, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -15647,8 +15647,8 @@ func (c *Client) SearchDataTableRowsWithBody(ctx context.Context, project Projec
 	return c.Client.Do(req)
 }
 
-func (c *Client) SearchDataTableRows(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body SearchDataTableRowsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewSearchDataTableRowsRequest(c.Server, project, tableName, body)
+func (c *Client) SearchTableRows(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body SearchTableRowsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSearchTableRowsRequest(c.Server, project, tableName, body)
 	if err != nil {
 		return nil, err
 	}
@@ -15659,8 +15659,8 @@ func (c *Client) SearchDataTableRows(ctx context.Context, project ProjectHandleP
 	return c.Client.Do(req)
 }
 
-func (c *Client) UpsertDataTableRowWithBody(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpsertDataTableRowRequestWithBody(c.Server, project, tableName, contentType, body)
+func (c *Client) UpsertTableRowWithBody(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpsertTableRowRequestWithBody(c.Server, project, tableName, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -15671,8 +15671,8 @@ func (c *Client) UpsertDataTableRowWithBody(ctx context.Context, project Project
 	return c.Client.Do(req)
 }
 
-func (c *Client) UpsertDataTableRow(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body UpsertDataTableRowJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpsertDataTableRowRequest(c.Server, project, tableName, body)
+func (c *Client) UpsertTableRow(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body UpsertTableRowJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpsertTableRowRequest(c.Server, project, tableName, body)
 	if err != nil {
 		return nil, err
 	}
@@ -15683,8 +15683,8 @@ func (c *Client) UpsertDataTableRow(ctx context.Context, project ProjectHandlePa
 	return c.Client.Do(req)
 }
 
-func (c *Client) DeleteDataTableRow(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDeleteDataTableRowRequest(c.Server, project, tableName, rowId)
+func (c *Client) DeleteTableRow(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteTableRowRequest(c.Server, project, tableName, rowId)
 	if err != nil {
 		return nil, err
 	}
@@ -15695,8 +15695,8 @@ func (c *Client) DeleteDataTableRow(ctx context.Context, project ProjectHandlePa
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetDataTableRow(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetDataTableRowRequest(c.Server, project, tableName, rowId)
+func (c *Client) GetTableRow(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetTableRowRequest(c.Server, project, tableName, rowId)
 	if err != nil {
 		return nil, err
 	}
@@ -15707,8 +15707,8 @@ func (c *Client) GetDataTableRow(ctx context.Context, project ProjectHandleParam
 	return c.Client.Do(req)
 }
 
-func (c *Client) UpdateDataTableRowWithBody(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateDataTableRowRequestWithBody(c.Server, project, tableName, rowId, contentType, body)
+func (c *Client) UpdateTableRowWithBody(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateTableRowRequestWithBody(c.Server, project, tableName, rowId, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -15719,8 +15719,8 @@ func (c *Client) UpdateDataTableRowWithBody(ctx context.Context, project Project
 	return c.Client.Do(req)
 }
 
-func (c *Client) UpdateDataTableRow(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, body UpdateDataTableRowJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateDataTableRowRequest(c.Server, project, tableName, rowId, body)
+func (c *Client) UpdateTableRow(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, body UpdateTableRowJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateTableRowRequest(c.Server, project, tableName, rowId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -15731,8 +15731,8 @@ func (c *Client) UpdateDataTableRow(ctx context.Context, project ProjectHandlePa
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetDataTableStats(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetDataTableStatsRequest(c.Server, project, tableName)
+func (c *Client) GetTableStats(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetTableStatsRequest(c.Server, project, tableName)
 	if err != nil {
 		return nil, err
 	}
@@ -23848,8 +23848,8 @@ func NewGetProjectStepSpanCountsRequest(server string, project ProjectHandlePara
 	return req, nil
 }
 
-// NewListDataTablesRequest generates requests for ListDataTables
-func NewListDataTablesRequest(server string, project ProjectHandleParam, params *ListDataTablesParams) (*http.Request, error) {
+// NewListTablesRequest generates requests for ListTables
+func NewListTablesRequest(server string, project ProjectHandleParam, params *ListTablesParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -23920,19 +23920,19 @@ func NewListDataTablesRequest(server string, project ProjectHandleParam, params 
 	return req, nil
 }
 
-// NewCreateDataTableRequest calls the generic CreateDataTable builder with application/json body
-func NewCreateDataTableRequest(server string, project ProjectHandleParam, body CreateDataTableJSONRequestBody) (*http.Request, error) {
+// NewCreateTableRequest calls the generic CreateTable builder with application/json body
+func NewCreateTableRequest(server string, project ProjectHandleParam, body CreateTableJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewCreateDataTableRequestWithBody(server, project, "application/json", bodyReader)
+	return NewCreateTableRequestWithBody(server, project, "application/json", bodyReader)
 }
 
-// NewCreateDataTableRequestWithBody generates requests for CreateDataTable with any type of body
-func NewCreateDataTableRequestWithBody(server string, project ProjectHandleParam, contentType string, body io.Reader) (*http.Request, error) {
+// NewCreateTableRequestWithBody generates requests for CreateTable with any type of body
+func NewCreateTableRequestWithBody(server string, project ProjectHandleParam, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -23967,8 +23967,8 @@ func NewCreateDataTableRequestWithBody(server string, project ProjectHandleParam
 	return req, nil
 }
 
-// NewDeleteDataTableRequest generates requests for DeleteDataTable
-func NewDeleteDataTableRequest(server string, project ProjectHandleParam, tableName TableNameParam) (*http.Request, error) {
+// NewDeleteTableRequest generates requests for DeleteTable
+func NewDeleteTableRequest(server string, project ProjectHandleParam, tableName TableNameParam) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -24008,8 +24008,8 @@ func NewDeleteDataTableRequest(server string, project ProjectHandleParam, tableN
 	return req, nil
 }
 
-// NewGetDataTableRequest generates requests for GetDataTable
-func NewGetDataTableRequest(server string, project ProjectHandleParam, tableName TableNameParam) (*http.Request, error) {
+// NewGetTableRequest generates requests for GetTable
+func NewGetTableRequest(server string, project ProjectHandleParam, tableName TableNameParam) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -24049,19 +24049,19 @@ func NewGetDataTableRequest(server string, project ProjectHandleParam, tableName
 	return req, nil
 }
 
-// NewUpdateDataTableRequest calls the generic UpdateDataTable builder with application/json body
-func NewUpdateDataTableRequest(server string, project ProjectHandleParam, tableName TableNameParam, body UpdateDataTableJSONRequestBody) (*http.Request, error) {
+// NewUpdateTableRequest calls the generic UpdateTable builder with application/json body
+func NewUpdateTableRequest(server string, project ProjectHandleParam, tableName TableNameParam, body UpdateTableJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewUpdateDataTableRequestWithBody(server, project, tableName, "application/json", bodyReader)
+	return NewUpdateTableRequestWithBody(server, project, tableName, "application/json", bodyReader)
 }
 
-// NewUpdateDataTableRequestWithBody generates requests for UpdateDataTable with any type of body
-func NewUpdateDataTableRequestWithBody(server string, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader) (*http.Request, error) {
+// NewUpdateTableRequestWithBody generates requests for UpdateTable with any type of body
+func NewUpdateTableRequestWithBody(server string, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -24103,19 +24103,19 @@ func NewUpdateDataTableRequestWithBody(server string, project ProjectHandleParam
 	return req, nil
 }
 
-// NewInsertDataTableRowRequest calls the generic InsertDataTableRow builder with application/json body
-func NewInsertDataTableRowRequest(server string, project ProjectHandleParam, tableName TableNameParam, body InsertDataTableRowJSONRequestBody) (*http.Request, error) {
+// NewInsertTableRowRequest calls the generic InsertTableRow builder with application/json body
+func NewInsertTableRowRequest(server string, project ProjectHandleParam, tableName TableNameParam, body InsertTableRowJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewInsertDataTableRowRequestWithBody(server, project, tableName, "application/json", bodyReader)
+	return NewInsertTableRowRequestWithBody(server, project, tableName, "application/json", bodyReader)
 }
 
-// NewInsertDataTableRowRequestWithBody generates requests for InsertDataTableRow with any type of body
-func NewInsertDataTableRowRequestWithBody(server string, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader) (*http.Request, error) {
+// NewInsertTableRowRequestWithBody generates requests for InsertTableRow with any type of body
+func NewInsertTableRowRequestWithBody(server string, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -24157,19 +24157,19 @@ func NewInsertDataTableRowRequestWithBody(server string, project ProjectHandlePa
 	return req, nil
 }
 
-// NewBulkInsertDataTableRowsRequest calls the generic BulkInsertDataTableRows builder with application/json body
-func NewBulkInsertDataTableRowsRequest(server string, project ProjectHandleParam, tableName TableNameParam, body BulkInsertDataTableRowsJSONRequestBody) (*http.Request, error) {
+// NewBulkInsertTableRowsRequest calls the generic BulkInsertTableRows builder with application/json body
+func NewBulkInsertTableRowsRequest(server string, project ProjectHandleParam, tableName TableNameParam, body BulkInsertTableRowsJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewBulkInsertDataTableRowsRequestWithBody(server, project, tableName, "application/json", bodyReader)
+	return NewBulkInsertTableRowsRequestWithBody(server, project, tableName, "application/json", bodyReader)
 }
 
-// NewBulkInsertDataTableRowsRequestWithBody generates requests for BulkInsertDataTableRows with any type of body
-func NewBulkInsertDataTableRowsRequestWithBody(server string, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader) (*http.Request, error) {
+// NewBulkInsertTableRowsRequestWithBody generates requests for BulkInsertTableRows with any type of body
+func NewBulkInsertTableRowsRequestWithBody(server string, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -24211,19 +24211,19 @@ func NewBulkInsertDataTableRowsRequestWithBody(server string, project ProjectHan
 	return req, nil
 }
 
-// NewQueryDataTableRowsRequest calls the generic QueryDataTableRows builder with application/json body
-func NewQueryDataTableRowsRequest(server string, project ProjectHandleParam, tableName TableNameParam, body QueryDataTableRowsJSONRequestBody) (*http.Request, error) {
+// NewQueryTableRowsRequest calls the generic QueryTableRows builder with application/json body
+func NewQueryTableRowsRequest(server string, project ProjectHandleParam, tableName TableNameParam, body QueryTableRowsJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewQueryDataTableRowsRequestWithBody(server, project, tableName, "application/json", bodyReader)
+	return NewQueryTableRowsRequestWithBody(server, project, tableName, "application/json", bodyReader)
 }
 
-// NewQueryDataTableRowsRequestWithBody generates requests for QueryDataTableRows with any type of body
-func NewQueryDataTableRowsRequestWithBody(server string, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader) (*http.Request, error) {
+// NewQueryTableRowsRequestWithBody generates requests for QueryTableRows with any type of body
+func NewQueryTableRowsRequestWithBody(server string, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -24265,19 +24265,19 @@ func NewQueryDataTableRowsRequestWithBody(server string, project ProjectHandlePa
 	return req, nil
 }
 
-// NewSearchDataTableRowsRequest calls the generic SearchDataTableRows builder with application/json body
-func NewSearchDataTableRowsRequest(server string, project ProjectHandleParam, tableName TableNameParam, body SearchDataTableRowsJSONRequestBody) (*http.Request, error) {
+// NewSearchTableRowsRequest calls the generic SearchTableRows builder with application/json body
+func NewSearchTableRowsRequest(server string, project ProjectHandleParam, tableName TableNameParam, body SearchTableRowsJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewSearchDataTableRowsRequestWithBody(server, project, tableName, "application/json", bodyReader)
+	return NewSearchTableRowsRequestWithBody(server, project, tableName, "application/json", bodyReader)
 }
 
-// NewSearchDataTableRowsRequestWithBody generates requests for SearchDataTableRows with any type of body
-func NewSearchDataTableRowsRequestWithBody(server string, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader) (*http.Request, error) {
+// NewSearchTableRowsRequestWithBody generates requests for SearchTableRows with any type of body
+func NewSearchTableRowsRequestWithBody(server string, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -24319,19 +24319,19 @@ func NewSearchDataTableRowsRequestWithBody(server string, project ProjectHandleP
 	return req, nil
 }
 
-// NewUpsertDataTableRowRequest calls the generic UpsertDataTableRow builder with application/json body
-func NewUpsertDataTableRowRequest(server string, project ProjectHandleParam, tableName TableNameParam, body UpsertDataTableRowJSONRequestBody) (*http.Request, error) {
+// NewUpsertTableRowRequest calls the generic UpsertTableRow builder with application/json body
+func NewUpsertTableRowRequest(server string, project ProjectHandleParam, tableName TableNameParam, body UpsertTableRowJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewUpsertDataTableRowRequestWithBody(server, project, tableName, "application/json", bodyReader)
+	return NewUpsertTableRowRequestWithBody(server, project, tableName, "application/json", bodyReader)
 }
 
-// NewUpsertDataTableRowRequestWithBody generates requests for UpsertDataTableRow with any type of body
-func NewUpsertDataTableRowRequestWithBody(server string, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader) (*http.Request, error) {
+// NewUpsertTableRowRequestWithBody generates requests for UpsertTableRow with any type of body
+func NewUpsertTableRowRequestWithBody(server string, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -24373,8 +24373,8 @@ func NewUpsertDataTableRowRequestWithBody(server string, project ProjectHandlePa
 	return req, nil
 }
 
-// NewDeleteDataTableRowRequest generates requests for DeleteDataTableRow
-func NewDeleteDataTableRowRequest(server string, project ProjectHandleParam, tableName TableNameParam, rowId string) (*http.Request, error) {
+// NewDeleteTableRowRequest generates requests for DeleteTableRow
+func NewDeleteTableRowRequest(server string, project ProjectHandleParam, tableName TableNameParam, rowId string) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -24421,8 +24421,8 @@ func NewDeleteDataTableRowRequest(server string, project ProjectHandleParam, tab
 	return req, nil
 }
 
-// NewGetDataTableRowRequest generates requests for GetDataTableRow
-func NewGetDataTableRowRequest(server string, project ProjectHandleParam, tableName TableNameParam, rowId string) (*http.Request, error) {
+// NewGetTableRowRequest generates requests for GetTableRow
+func NewGetTableRowRequest(server string, project ProjectHandleParam, tableName TableNameParam, rowId string) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -24469,19 +24469,19 @@ func NewGetDataTableRowRequest(server string, project ProjectHandleParam, tableN
 	return req, nil
 }
 
-// NewUpdateDataTableRowRequest calls the generic UpdateDataTableRow builder with application/json body
-func NewUpdateDataTableRowRequest(server string, project ProjectHandleParam, tableName TableNameParam, rowId string, body UpdateDataTableRowJSONRequestBody) (*http.Request, error) {
+// NewUpdateTableRowRequest calls the generic UpdateTableRow builder with application/json body
+func NewUpdateTableRowRequest(server string, project ProjectHandleParam, tableName TableNameParam, rowId string, body UpdateTableRowJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewUpdateDataTableRowRequestWithBody(server, project, tableName, rowId, "application/json", bodyReader)
+	return NewUpdateTableRowRequestWithBody(server, project, tableName, rowId, "application/json", bodyReader)
 }
 
-// NewUpdateDataTableRowRequestWithBody generates requests for UpdateDataTableRow with any type of body
-func NewUpdateDataTableRowRequestWithBody(server string, project ProjectHandleParam, tableName TableNameParam, rowId string, contentType string, body io.Reader) (*http.Request, error) {
+// NewUpdateTableRowRequestWithBody generates requests for UpdateTableRow with any type of body
+func NewUpdateTableRowRequestWithBody(server string, project ProjectHandleParam, tableName TableNameParam, rowId string, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -24530,8 +24530,8 @@ func NewUpdateDataTableRowRequestWithBody(server string, project ProjectHandlePa
 	return req, nil
 }
 
-// NewGetDataTableStatsRequest generates requests for GetDataTableStats
-func NewGetDataTableStatsRequest(server string, project ProjectHandleParam, tableName TableNameParam) (*http.Request, error) {
+// NewGetTableStatsRequest generates requests for GetTableStats
+func NewGetTableStatsRequest(server string, project ProjectHandleParam, tableName TableNameParam) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -26877,63 +26877,63 @@ type ClientWithResponsesInterface interface {
 	// GetProjectStepSpanCountsWithResponse request
 	GetProjectStepSpanCountsWithResponse(ctx context.Context, project ProjectHandleParam, params *GetProjectStepSpanCountsParams, reqEditors ...RequestEditorFn) (*GetProjectStepSpanCountsResponse, error)
 
-	// ListDataTablesWithResponse request
-	ListDataTablesWithResponse(ctx context.Context, project ProjectHandleParam, params *ListDataTablesParams, reqEditors ...RequestEditorFn) (*ListDataTablesResponse, error)
+	// ListTablesWithResponse request
+	ListTablesWithResponse(ctx context.Context, project ProjectHandleParam, params *ListTablesParams, reqEditors ...RequestEditorFn) (*ListTablesResponse, error)
 
-	// CreateDataTableWithBodyWithResponse request with any body
-	CreateDataTableWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateDataTableResponse, error)
+	// CreateTableWithBodyWithResponse request with any body
+	CreateTableWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateTableResponse, error)
 
-	CreateDataTableWithResponse(ctx context.Context, project ProjectHandleParam, body CreateDataTableJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateDataTableResponse, error)
+	CreateTableWithResponse(ctx context.Context, project ProjectHandleParam, body CreateTableJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateTableResponse, error)
 
-	// DeleteDataTableWithResponse request
-	DeleteDataTableWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, reqEditors ...RequestEditorFn) (*DeleteDataTableResponse, error)
+	// DeleteTableWithResponse request
+	DeleteTableWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, reqEditors ...RequestEditorFn) (*DeleteTableResponse, error)
 
-	// GetDataTableWithResponse request
-	GetDataTableWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, reqEditors ...RequestEditorFn) (*GetDataTableResponse, error)
+	// GetTableWithResponse request
+	GetTableWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, reqEditors ...RequestEditorFn) (*GetTableResponse, error)
 
-	// UpdateDataTableWithBodyWithResponse request with any body
-	UpdateDataTableWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateDataTableResponse, error)
+	// UpdateTableWithBodyWithResponse request with any body
+	UpdateTableWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateTableResponse, error)
 
-	UpdateDataTableWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body UpdateDataTableJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateDataTableResponse, error)
+	UpdateTableWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body UpdateTableJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateTableResponse, error)
 
-	// InsertDataTableRowWithBodyWithResponse request with any body
-	InsertDataTableRowWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*InsertDataTableRowResponse, error)
+	// InsertTableRowWithBodyWithResponse request with any body
+	InsertTableRowWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*InsertTableRowResponse, error)
 
-	InsertDataTableRowWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body InsertDataTableRowJSONRequestBody, reqEditors ...RequestEditorFn) (*InsertDataTableRowResponse, error)
+	InsertTableRowWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body InsertTableRowJSONRequestBody, reqEditors ...RequestEditorFn) (*InsertTableRowResponse, error)
 
-	// BulkInsertDataTableRowsWithBodyWithResponse request with any body
-	BulkInsertDataTableRowsWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*BulkInsertDataTableRowsResponse, error)
+	// BulkInsertTableRowsWithBodyWithResponse request with any body
+	BulkInsertTableRowsWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*BulkInsertTableRowsResponse, error)
 
-	BulkInsertDataTableRowsWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body BulkInsertDataTableRowsJSONRequestBody, reqEditors ...RequestEditorFn) (*BulkInsertDataTableRowsResponse, error)
+	BulkInsertTableRowsWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body BulkInsertTableRowsJSONRequestBody, reqEditors ...RequestEditorFn) (*BulkInsertTableRowsResponse, error)
 
-	// QueryDataTableRowsWithBodyWithResponse request with any body
-	QueryDataTableRowsWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*QueryDataTableRowsResponse, error)
+	// QueryTableRowsWithBodyWithResponse request with any body
+	QueryTableRowsWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*QueryTableRowsResponse, error)
 
-	QueryDataTableRowsWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body QueryDataTableRowsJSONRequestBody, reqEditors ...RequestEditorFn) (*QueryDataTableRowsResponse, error)
+	QueryTableRowsWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body QueryTableRowsJSONRequestBody, reqEditors ...RequestEditorFn) (*QueryTableRowsResponse, error)
 
-	// SearchDataTableRowsWithBodyWithResponse request with any body
-	SearchDataTableRowsWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SearchDataTableRowsResponse, error)
+	// SearchTableRowsWithBodyWithResponse request with any body
+	SearchTableRowsWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SearchTableRowsResponse, error)
 
-	SearchDataTableRowsWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body SearchDataTableRowsJSONRequestBody, reqEditors ...RequestEditorFn) (*SearchDataTableRowsResponse, error)
+	SearchTableRowsWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body SearchTableRowsJSONRequestBody, reqEditors ...RequestEditorFn) (*SearchTableRowsResponse, error)
 
-	// UpsertDataTableRowWithBodyWithResponse request with any body
-	UpsertDataTableRowWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpsertDataTableRowResponse, error)
+	// UpsertTableRowWithBodyWithResponse request with any body
+	UpsertTableRowWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpsertTableRowResponse, error)
 
-	UpsertDataTableRowWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body UpsertDataTableRowJSONRequestBody, reqEditors ...RequestEditorFn) (*UpsertDataTableRowResponse, error)
+	UpsertTableRowWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body UpsertTableRowJSONRequestBody, reqEditors ...RequestEditorFn) (*UpsertTableRowResponse, error)
 
-	// DeleteDataTableRowWithResponse request
-	DeleteDataTableRowWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, reqEditors ...RequestEditorFn) (*DeleteDataTableRowResponse, error)
+	// DeleteTableRowWithResponse request
+	DeleteTableRowWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, reqEditors ...RequestEditorFn) (*DeleteTableRowResponse, error)
 
-	// GetDataTableRowWithResponse request
-	GetDataTableRowWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, reqEditors ...RequestEditorFn) (*GetDataTableRowResponse, error)
+	// GetTableRowWithResponse request
+	GetTableRowWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, reqEditors ...RequestEditorFn) (*GetTableRowResponse, error)
 
-	// UpdateDataTableRowWithBodyWithResponse request with any body
-	UpdateDataTableRowWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateDataTableRowResponse, error)
+	// UpdateTableRowWithBodyWithResponse request with any body
+	UpdateTableRowWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateTableRowResponse, error)
 
-	UpdateDataTableRowWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, body UpdateDataTableRowJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateDataTableRowResponse, error)
+	UpdateTableRowWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, body UpdateTableRowJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateTableRowResponse, error)
 
-	// GetDataTableStatsWithResponse request
-	GetDataTableStatsWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, reqEditors ...RequestEditorFn) (*GetDataTableStatsResponse, error)
+	// GetTableStatsWithResponse request
+	GetTableStatsWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, reqEditors ...RequestEditorFn) (*GetTableStatsResponse, error)
 
 	// ListProjectTracesWithResponse request
 	ListProjectTracesWithResponse(ctx context.Context, project ProjectHandleParam, params *ListProjectTracesParams, reqEditors ...RequestEditorFn) (*ListProjectTracesResponse, error)
@@ -30105,15 +30105,15 @@ func (r GetProjectStepSpanCountsResponse) StatusCode() int {
 	return 0
 }
 
-type ListDataTablesResponse struct {
+type ListTablesResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *DataTableListResponse
+	JSON200      *TableListResponse
 	JSON401      *Unauthorized
 }
 
 // Status returns HTTPResponse.Status
-func (r ListDataTablesResponse) Status() string {
+func (r ListTablesResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -30121,23 +30121,23 @@ func (r ListDataTablesResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r ListDataTablesResponse) StatusCode() int {
+func (r ListTablesResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
-type CreateDataTableResponse struct {
+type CreateTableResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON201      *DataTable
+	JSON201      *Table
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
 }
 
 // Status returns HTTPResponse.Status
-func (r CreateDataTableResponse) Status() string {
+func (r CreateTableResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -30145,14 +30145,14 @@ func (r CreateDataTableResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r CreateDataTableResponse) StatusCode() int {
+func (r CreateTableResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
-type DeleteDataTableResponse struct {
+type DeleteTableResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON401      *Unauthorized
@@ -30160,7 +30160,7 @@ type DeleteDataTableResponse struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r DeleteDataTableResponse) Status() string {
+func (r DeleteTableResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -30168,23 +30168,23 @@ func (r DeleteDataTableResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r DeleteDataTableResponse) StatusCode() int {
+func (r DeleteTableResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
-type GetDataTableResponse struct {
+type GetTableResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *DataTable
+	JSON200      *Table
 	JSON401      *Unauthorized
 	JSON404      *NotFound
 }
 
 // Status returns HTTPResponse.Status
-func (r GetDataTableResponse) Status() string {
+func (r GetTableResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -30192,49 +30192,24 @@ func (r GetDataTableResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r GetDataTableResponse) StatusCode() int {
+func (r GetTableResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
-type UpdateDataTableResponse struct {
+type UpdateTableResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *DataTable
-	JSON400      *BadRequest
-	JSON401      *Unauthorized
-	JSON404      *NotFound
-}
-
-// Status returns HTTPResponse.Status
-func (r UpdateDataTableResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r UpdateDataTableResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type InsertDataTableRowResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON201      *DataTableRow
+	JSON200      *Table
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
 	JSON404      *NotFound
 }
 
 // Status returns HTTPResponse.Status
-func (r InsertDataTableRowResponse) Status() string {
+func (r UpdateTableResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -30242,14 +30217,39 @@ func (r InsertDataTableRowResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r InsertDataTableRowResponse) StatusCode() int {
+func (r UpdateTableResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
-type BulkInsertDataTableRowsResponse struct {
+type InsertTableRowResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON201      *TableRow
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r InsertTableRowResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r InsertTableRowResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type BulkInsertTableRowsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON201      *BulkInsertRowsResponse
@@ -30259,7 +30259,7 @@ type BulkInsertDataTableRowsResponse struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r BulkInsertDataTableRowsResponse) Status() string {
+func (r BulkInsertTableRowsResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -30267,14 +30267,14 @@ func (r BulkInsertDataTableRowsResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r BulkInsertDataTableRowsResponse) StatusCode() int {
+func (r BulkInsertTableRowsResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
-type QueryDataTableRowsResponse struct {
+type QueryTableRowsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *QueryRowsResponse
@@ -30284,7 +30284,7 @@ type QueryDataTableRowsResponse struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r QueryDataTableRowsResponse) Status() string {
+func (r QueryTableRowsResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -30292,14 +30292,14 @@ func (r QueryDataTableRowsResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r QueryDataTableRowsResponse) StatusCode() int {
+func (r QueryTableRowsResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
-type SearchDataTableRowsResponse struct {
+type SearchTableRowsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *SearchRowsResponse
@@ -30309,7 +30309,7 @@ type SearchDataTableRowsResponse struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r SearchDataTableRowsResponse) Status() string {
+func (r SearchTableRowsResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -30317,14 +30317,14 @@ func (r SearchDataTableRowsResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r SearchDataTableRowsResponse) StatusCode() int {
+func (r SearchTableRowsResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
-type UpsertDataTableRowResponse struct {
+type UpsertTableRowResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *UpsertRowResponse
@@ -30336,7 +30336,7 @@ type UpsertDataTableRowResponse struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r UpsertDataTableRowResponse) Status() string {
+func (r UpsertTableRowResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -30344,14 +30344,14 @@ func (r UpsertDataTableRowResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r UpsertDataTableRowResponse) StatusCode() int {
+func (r UpsertTableRowResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
-type DeleteDataTableRowResponse struct {
+type DeleteTableRowResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON401      *Unauthorized
@@ -30359,7 +30359,7 @@ type DeleteDataTableRowResponse struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r DeleteDataTableRowResponse) Status() string {
+func (r DeleteTableRowResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -30367,23 +30367,23 @@ func (r DeleteDataTableRowResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r DeleteDataTableRowResponse) StatusCode() int {
+func (r DeleteTableRowResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
-type GetDataTableRowResponse struct {
+type GetTableRowResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *DataTableRow
+	JSON200      *TableRow
 	JSON401      *Unauthorized
 	JSON404      *NotFound
 }
 
 // Status returns HTTPResponse.Status
-func (r GetDataTableRowResponse) Status() string {
+func (r GetTableRowResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -30391,17 +30391,17 @@ func (r GetDataTableRowResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r GetDataTableRowResponse) StatusCode() int {
+func (r GetTableRowResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
-type UpdateDataTableRowResponse struct {
+type UpdateTableRowResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *DataTableRow
+	JSON200      *TableRow
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
 	JSON404      *NotFound
@@ -30409,7 +30409,7 @@ type UpdateDataTableRowResponse struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r UpdateDataTableRowResponse) Status() string {
+func (r UpdateTableRowResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -30417,23 +30417,23 @@ func (r UpdateDataTableRowResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r UpdateDataTableRowResponse) StatusCode() int {
+func (r UpdateTableRowResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
-type GetDataTableStatsResponse struct {
+type GetTableStatsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *DataTableStats
+	JSON200      *TableStats
 	JSON401      *Unauthorized
 	JSON404      *NotFound
 }
 
 // Status returns HTTPResponse.Status
-func (r GetDataTableStatsResponse) Status() string {
+func (r GetTableStatsResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -30441,7 +30441,7 @@ func (r GetDataTableStatsResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r GetDataTableStatsResponse) StatusCode() int {
+func (r GetTableStatsResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -32713,194 +32713,194 @@ func (c *ClientWithResponses) GetProjectStepSpanCountsWithResponse(ctx context.C
 	return ParseGetProjectStepSpanCountsResponse(rsp)
 }
 
-// ListDataTablesWithResponse request returning *ListDataTablesResponse
-func (c *ClientWithResponses) ListDataTablesWithResponse(ctx context.Context, project ProjectHandleParam, params *ListDataTablesParams, reqEditors ...RequestEditorFn) (*ListDataTablesResponse, error) {
-	rsp, err := c.ListDataTables(ctx, project, params, reqEditors...)
+// ListTablesWithResponse request returning *ListTablesResponse
+func (c *ClientWithResponses) ListTablesWithResponse(ctx context.Context, project ProjectHandleParam, params *ListTablesParams, reqEditors ...RequestEditorFn) (*ListTablesResponse, error) {
+	rsp, err := c.ListTables(ctx, project, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseListDataTablesResponse(rsp)
+	return ParseListTablesResponse(rsp)
 }
 
-// CreateDataTableWithBodyWithResponse request with arbitrary body returning *CreateDataTableResponse
-func (c *ClientWithResponses) CreateDataTableWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateDataTableResponse, error) {
-	rsp, err := c.CreateDataTableWithBody(ctx, project, contentType, body, reqEditors...)
+// CreateTableWithBodyWithResponse request with arbitrary body returning *CreateTableResponse
+func (c *ClientWithResponses) CreateTableWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateTableResponse, error) {
+	rsp, err := c.CreateTableWithBody(ctx, project, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseCreateDataTableResponse(rsp)
+	return ParseCreateTableResponse(rsp)
 }
 
-func (c *ClientWithResponses) CreateDataTableWithResponse(ctx context.Context, project ProjectHandleParam, body CreateDataTableJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateDataTableResponse, error) {
-	rsp, err := c.CreateDataTable(ctx, project, body, reqEditors...)
+func (c *ClientWithResponses) CreateTableWithResponse(ctx context.Context, project ProjectHandleParam, body CreateTableJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateTableResponse, error) {
+	rsp, err := c.CreateTable(ctx, project, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseCreateDataTableResponse(rsp)
+	return ParseCreateTableResponse(rsp)
 }
 
-// DeleteDataTableWithResponse request returning *DeleteDataTableResponse
-func (c *ClientWithResponses) DeleteDataTableWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, reqEditors ...RequestEditorFn) (*DeleteDataTableResponse, error) {
-	rsp, err := c.DeleteDataTable(ctx, project, tableName, reqEditors...)
+// DeleteTableWithResponse request returning *DeleteTableResponse
+func (c *ClientWithResponses) DeleteTableWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, reqEditors ...RequestEditorFn) (*DeleteTableResponse, error) {
+	rsp, err := c.DeleteTable(ctx, project, tableName, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseDeleteDataTableResponse(rsp)
+	return ParseDeleteTableResponse(rsp)
 }
 
-// GetDataTableWithResponse request returning *GetDataTableResponse
-func (c *ClientWithResponses) GetDataTableWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, reqEditors ...RequestEditorFn) (*GetDataTableResponse, error) {
-	rsp, err := c.GetDataTable(ctx, project, tableName, reqEditors...)
+// GetTableWithResponse request returning *GetTableResponse
+func (c *ClientWithResponses) GetTableWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, reqEditors ...RequestEditorFn) (*GetTableResponse, error) {
+	rsp, err := c.GetTable(ctx, project, tableName, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseGetDataTableResponse(rsp)
+	return ParseGetTableResponse(rsp)
 }
 
-// UpdateDataTableWithBodyWithResponse request with arbitrary body returning *UpdateDataTableResponse
-func (c *ClientWithResponses) UpdateDataTableWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateDataTableResponse, error) {
-	rsp, err := c.UpdateDataTableWithBody(ctx, project, tableName, contentType, body, reqEditors...)
+// UpdateTableWithBodyWithResponse request with arbitrary body returning *UpdateTableResponse
+func (c *ClientWithResponses) UpdateTableWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateTableResponse, error) {
+	rsp, err := c.UpdateTableWithBody(ctx, project, tableName, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseUpdateDataTableResponse(rsp)
+	return ParseUpdateTableResponse(rsp)
 }
 
-func (c *ClientWithResponses) UpdateDataTableWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body UpdateDataTableJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateDataTableResponse, error) {
-	rsp, err := c.UpdateDataTable(ctx, project, tableName, body, reqEditors...)
+func (c *ClientWithResponses) UpdateTableWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body UpdateTableJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateTableResponse, error) {
+	rsp, err := c.UpdateTable(ctx, project, tableName, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseUpdateDataTableResponse(rsp)
+	return ParseUpdateTableResponse(rsp)
 }
 
-// InsertDataTableRowWithBodyWithResponse request with arbitrary body returning *InsertDataTableRowResponse
-func (c *ClientWithResponses) InsertDataTableRowWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*InsertDataTableRowResponse, error) {
-	rsp, err := c.InsertDataTableRowWithBody(ctx, project, tableName, contentType, body, reqEditors...)
+// InsertTableRowWithBodyWithResponse request with arbitrary body returning *InsertTableRowResponse
+func (c *ClientWithResponses) InsertTableRowWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*InsertTableRowResponse, error) {
+	rsp, err := c.InsertTableRowWithBody(ctx, project, tableName, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseInsertDataTableRowResponse(rsp)
+	return ParseInsertTableRowResponse(rsp)
 }
 
-func (c *ClientWithResponses) InsertDataTableRowWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body InsertDataTableRowJSONRequestBody, reqEditors ...RequestEditorFn) (*InsertDataTableRowResponse, error) {
-	rsp, err := c.InsertDataTableRow(ctx, project, tableName, body, reqEditors...)
+func (c *ClientWithResponses) InsertTableRowWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body InsertTableRowJSONRequestBody, reqEditors ...RequestEditorFn) (*InsertTableRowResponse, error) {
+	rsp, err := c.InsertTableRow(ctx, project, tableName, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseInsertDataTableRowResponse(rsp)
+	return ParseInsertTableRowResponse(rsp)
 }
 
-// BulkInsertDataTableRowsWithBodyWithResponse request with arbitrary body returning *BulkInsertDataTableRowsResponse
-func (c *ClientWithResponses) BulkInsertDataTableRowsWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*BulkInsertDataTableRowsResponse, error) {
-	rsp, err := c.BulkInsertDataTableRowsWithBody(ctx, project, tableName, contentType, body, reqEditors...)
+// BulkInsertTableRowsWithBodyWithResponse request with arbitrary body returning *BulkInsertTableRowsResponse
+func (c *ClientWithResponses) BulkInsertTableRowsWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*BulkInsertTableRowsResponse, error) {
+	rsp, err := c.BulkInsertTableRowsWithBody(ctx, project, tableName, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseBulkInsertDataTableRowsResponse(rsp)
+	return ParseBulkInsertTableRowsResponse(rsp)
 }
 
-func (c *ClientWithResponses) BulkInsertDataTableRowsWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body BulkInsertDataTableRowsJSONRequestBody, reqEditors ...RequestEditorFn) (*BulkInsertDataTableRowsResponse, error) {
-	rsp, err := c.BulkInsertDataTableRows(ctx, project, tableName, body, reqEditors...)
+func (c *ClientWithResponses) BulkInsertTableRowsWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body BulkInsertTableRowsJSONRequestBody, reqEditors ...RequestEditorFn) (*BulkInsertTableRowsResponse, error) {
+	rsp, err := c.BulkInsertTableRows(ctx, project, tableName, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseBulkInsertDataTableRowsResponse(rsp)
+	return ParseBulkInsertTableRowsResponse(rsp)
 }
 
-// QueryDataTableRowsWithBodyWithResponse request with arbitrary body returning *QueryDataTableRowsResponse
-func (c *ClientWithResponses) QueryDataTableRowsWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*QueryDataTableRowsResponse, error) {
-	rsp, err := c.QueryDataTableRowsWithBody(ctx, project, tableName, contentType, body, reqEditors...)
+// QueryTableRowsWithBodyWithResponse request with arbitrary body returning *QueryTableRowsResponse
+func (c *ClientWithResponses) QueryTableRowsWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*QueryTableRowsResponse, error) {
+	rsp, err := c.QueryTableRowsWithBody(ctx, project, tableName, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseQueryDataTableRowsResponse(rsp)
+	return ParseQueryTableRowsResponse(rsp)
 }
 
-func (c *ClientWithResponses) QueryDataTableRowsWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body QueryDataTableRowsJSONRequestBody, reqEditors ...RequestEditorFn) (*QueryDataTableRowsResponse, error) {
-	rsp, err := c.QueryDataTableRows(ctx, project, tableName, body, reqEditors...)
+func (c *ClientWithResponses) QueryTableRowsWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body QueryTableRowsJSONRequestBody, reqEditors ...RequestEditorFn) (*QueryTableRowsResponse, error) {
+	rsp, err := c.QueryTableRows(ctx, project, tableName, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseQueryDataTableRowsResponse(rsp)
+	return ParseQueryTableRowsResponse(rsp)
 }
 
-// SearchDataTableRowsWithBodyWithResponse request with arbitrary body returning *SearchDataTableRowsResponse
-func (c *ClientWithResponses) SearchDataTableRowsWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SearchDataTableRowsResponse, error) {
-	rsp, err := c.SearchDataTableRowsWithBody(ctx, project, tableName, contentType, body, reqEditors...)
+// SearchTableRowsWithBodyWithResponse request with arbitrary body returning *SearchTableRowsResponse
+func (c *ClientWithResponses) SearchTableRowsWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SearchTableRowsResponse, error) {
+	rsp, err := c.SearchTableRowsWithBody(ctx, project, tableName, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseSearchDataTableRowsResponse(rsp)
+	return ParseSearchTableRowsResponse(rsp)
 }
 
-func (c *ClientWithResponses) SearchDataTableRowsWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body SearchDataTableRowsJSONRequestBody, reqEditors ...RequestEditorFn) (*SearchDataTableRowsResponse, error) {
-	rsp, err := c.SearchDataTableRows(ctx, project, tableName, body, reqEditors...)
+func (c *ClientWithResponses) SearchTableRowsWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body SearchTableRowsJSONRequestBody, reqEditors ...RequestEditorFn) (*SearchTableRowsResponse, error) {
+	rsp, err := c.SearchTableRows(ctx, project, tableName, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseSearchDataTableRowsResponse(rsp)
+	return ParseSearchTableRowsResponse(rsp)
 }
 
-// UpsertDataTableRowWithBodyWithResponse request with arbitrary body returning *UpsertDataTableRowResponse
-func (c *ClientWithResponses) UpsertDataTableRowWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpsertDataTableRowResponse, error) {
-	rsp, err := c.UpsertDataTableRowWithBody(ctx, project, tableName, contentType, body, reqEditors...)
+// UpsertTableRowWithBodyWithResponse request with arbitrary body returning *UpsertTableRowResponse
+func (c *ClientWithResponses) UpsertTableRowWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpsertTableRowResponse, error) {
+	rsp, err := c.UpsertTableRowWithBody(ctx, project, tableName, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseUpsertDataTableRowResponse(rsp)
+	return ParseUpsertTableRowResponse(rsp)
 }
 
-func (c *ClientWithResponses) UpsertDataTableRowWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body UpsertDataTableRowJSONRequestBody, reqEditors ...RequestEditorFn) (*UpsertDataTableRowResponse, error) {
-	rsp, err := c.UpsertDataTableRow(ctx, project, tableName, body, reqEditors...)
+func (c *ClientWithResponses) UpsertTableRowWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body UpsertTableRowJSONRequestBody, reqEditors ...RequestEditorFn) (*UpsertTableRowResponse, error) {
+	rsp, err := c.UpsertTableRow(ctx, project, tableName, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseUpsertDataTableRowResponse(rsp)
+	return ParseUpsertTableRowResponse(rsp)
 }
 
-// DeleteDataTableRowWithResponse request returning *DeleteDataTableRowResponse
-func (c *ClientWithResponses) DeleteDataTableRowWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, reqEditors ...RequestEditorFn) (*DeleteDataTableRowResponse, error) {
-	rsp, err := c.DeleteDataTableRow(ctx, project, tableName, rowId, reqEditors...)
+// DeleteTableRowWithResponse request returning *DeleteTableRowResponse
+func (c *ClientWithResponses) DeleteTableRowWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, reqEditors ...RequestEditorFn) (*DeleteTableRowResponse, error) {
+	rsp, err := c.DeleteTableRow(ctx, project, tableName, rowId, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseDeleteDataTableRowResponse(rsp)
+	return ParseDeleteTableRowResponse(rsp)
 }
 
-// GetDataTableRowWithResponse request returning *GetDataTableRowResponse
-func (c *ClientWithResponses) GetDataTableRowWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, reqEditors ...RequestEditorFn) (*GetDataTableRowResponse, error) {
-	rsp, err := c.GetDataTableRow(ctx, project, tableName, rowId, reqEditors...)
+// GetTableRowWithResponse request returning *GetTableRowResponse
+func (c *ClientWithResponses) GetTableRowWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, reqEditors ...RequestEditorFn) (*GetTableRowResponse, error) {
+	rsp, err := c.GetTableRow(ctx, project, tableName, rowId, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseGetDataTableRowResponse(rsp)
+	return ParseGetTableRowResponse(rsp)
 }
 
-// UpdateDataTableRowWithBodyWithResponse request with arbitrary body returning *UpdateDataTableRowResponse
-func (c *ClientWithResponses) UpdateDataTableRowWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateDataTableRowResponse, error) {
-	rsp, err := c.UpdateDataTableRowWithBody(ctx, project, tableName, rowId, contentType, body, reqEditors...)
+// UpdateTableRowWithBodyWithResponse request with arbitrary body returning *UpdateTableRowResponse
+func (c *ClientWithResponses) UpdateTableRowWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateTableRowResponse, error) {
+	rsp, err := c.UpdateTableRowWithBody(ctx, project, tableName, rowId, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseUpdateDataTableRowResponse(rsp)
+	return ParseUpdateTableRowResponse(rsp)
 }
 
-func (c *ClientWithResponses) UpdateDataTableRowWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, body UpdateDataTableRowJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateDataTableRowResponse, error) {
-	rsp, err := c.UpdateDataTableRow(ctx, project, tableName, rowId, body, reqEditors...)
+func (c *ClientWithResponses) UpdateTableRowWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, body UpdateTableRowJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateTableRowResponse, error) {
+	rsp, err := c.UpdateTableRow(ctx, project, tableName, rowId, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseUpdateDataTableRowResponse(rsp)
+	return ParseUpdateTableRowResponse(rsp)
 }
 
-// GetDataTableStatsWithResponse request returning *GetDataTableStatsResponse
-func (c *ClientWithResponses) GetDataTableStatsWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, reqEditors ...RequestEditorFn) (*GetDataTableStatsResponse, error) {
-	rsp, err := c.GetDataTableStats(ctx, project, tableName, reqEditors...)
+// GetTableStatsWithResponse request returning *GetTableStatsResponse
+func (c *ClientWithResponses) GetTableStatsWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, reqEditors ...RequestEditorFn) (*GetTableStatsResponse, error) {
+	rsp, err := c.GetTableStats(ctx, project, tableName, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseGetDataTableStatsResponse(rsp)
+	return ParseGetTableStatsResponse(rsp)
 }
 
 // ListProjectTracesWithResponse request returning *ListProjectTracesResponse
@@ -38767,22 +38767,22 @@ func ParseGetProjectStepSpanCountsResponse(rsp *http.Response) (*GetProjectStepS
 	return response, nil
 }
 
-// ParseListDataTablesResponse parses an HTTP response from a ListDataTablesWithResponse call
-func ParseListDataTablesResponse(rsp *http.Response) (*ListDataTablesResponse, error) {
+// ParseListTablesResponse parses an HTTP response from a ListTablesWithResponse call
+func ParseListTablesResponse(rsp *http.Response) (*ListTablesResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &ListDataTablesResponse{
+	response := &ListTablesResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest DataTableListResponse
+		var dest TableListResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -38800,22 +38800,22 @@ func ParseListDataTablesResponse(rsp *http.Response) (*ListDataTablesResponse, e
 	return response, nil
 }
 
-// ParseCreateDataTableResponse parses an HTTP response from a CreateDataTableWithResponse call
-func ParseCreateDataTableResponse(rsp *http.Response) (*CreateDataTableResponse, error) {
+// ParseCreateTableResponse parses an HTTP response from a CreateTableWithResponse call
+func ParseCreateTableResponse(rsp *http.Response) (*CreateTableResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &CreateDataTableResponse{
+	response := &CreateTableResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
-		var dest DataTable
+		var dest Table
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -38840,15 +38840,15 @@ func ParseCreateDataTableResponse(rsp *http.Response) (*CreateDataTableResponse,
 	return response, nil
 }
 
-// ParseDeleteDataTableResponse parses an HTTP response from a DeleteDataTableWithResponse call
-func ParseDeleteDataTableResponse(rsp *http.Response) (*DeleteDataTableResponse, error) {
+// ParseDeleteTableResponse parses an HTTP response from a DeleteTableWithResponse call
+func ParseDeleteTableResponse(rsp *http.Response) (*DeleteTableResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &DeleteDataTableResponse{
+	response := &DeleteTableResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -38873,22 +38873,22 @@ func ParseDeleteDataTableResponse(rsp *http.Response) (*DeleteDataTableResponse,
 	return response, nil
 }
 
-// ParseGetDataTableResponse parses an HTTP response from a GetDataTableWithResponse call
-func ParseGetDataTableResponse(rsp *http.Response) (*GetDataTableResponse, error) {
+// ParseGetTableResponse parses an HTTP response from a GetTableWithResponse call
+func ParseGetTableResponse(rsp *http.Response) (*GetTableResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &GetDataTableResponse{
+	response := &GetTableResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest DataTable
+		var dest Table
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -38913,22 +38913,22 @@ func ParseGetDataTableResponse(rsp *http.Response) (*GetDataTableResponse, error
 	return response, nil
 }
 
-// ParseUpdateDataTableResponse parses an HTTP response from a UpdateDataTableWithResponse call
-func ParseUpdateDataTableResponse(rsp *http.Response) (*UpdateDataTableResponse, error) {
+// ParseUpdateTableResponse parses an HTTP response from a UpdateTableWithResponse call
+func ParseUpdateTableResponse(rsp *http.Response) (*UpdateTableResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &UpdateDataTableResponse{
+	response := &UpdateTableResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest DataTable
+		var dest Table
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -38960,22 +38960,22 @@ func ParseUpdateDataTableResponse(rsp *http.Response) (*UpdateDataTableResponse,
 	return response, nil
 }
 
-// ParseInsertDataTableRowResponse parses an HTTP response from a InsertDataTableRowWithResponse call
-func ParseInsertDataTableRowResponse(rsp *http.Response) (*InsertDataTableRowResponse, error) {
+// ParseInsertTableRowResponse parses an HTTP response from a InsertTableRowWithResponse call
+func ParseInsertTableRowResponse(rsp *http.Response) (*InsertTableRowResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &InsertDataTableRowResponse{
+	response := &InsertTableRowResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
-		var dest DataTableRow
+		var dest TableRow
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -39007,15 +39007,15 @@ func ParseInsertDataTableRowResponse(rsp *http.Response) (*InsertDataTableRowRes
 	return response, nil
 }
 
-// ParseBulkInsertDataTableRowsResponse parses an HTTP response from a BulkInsertDataTableRowsWithResponse call
-func ParseBulkInsertDataTableRowsResponse(rsp *http.Response) (*BulkInsertDataTableRowsResponse, error) {
+// ParseBulkInsertTableRowsResponse parses an HTTP response from a BulkInsertTableRowsWithResponse call
+func ParseBulkInsertTableRowsResponse(rsp *http.Response) (*BulkInsertTableRowsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &BulkInsertDataTableRowsResponse{
+	response := &BulkInsertTableRowsResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -39054,15 +39054,15 @@ func ParseBulkInsertDataTableRowsResponse(rsp *http.Response) (*BulkInsertDataTa
 	return response, nil
 }
 
-// ParseQueryDataTableRowsResponse parses an HTTP response from a QueryDataTableRowsWithResponse call
-func ParseQueryDataTableRowsResponse(rsp *http.Response) (*QueryDataTableRowsResponse, error) {
+// ParseQueryTableRowsResponse parses an HTTP response from a QueryTableRowsWithResponse call
+func ParseQueryTableRowsResponse(rsp *http.Response) (*QueryTableRowsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &QueryDataTableRowsResponse{
+	response := &QueryTableRowsResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -39101,15 +39101,15 @@ func ParseQueryDataTableRowsResponse(rsp *http.Response) (*QueryDataTableRowsRes
 	return response, nil
 }
 
-// ParseSearchDataTableRowsResponse parses an HTTP response from a SearchDataTableRowsWithResponse call
-func ParseSearchDataTableRowsResponse(rsp *http.Response) (*SearchDataTableRowsResponse, error) {
+// ParseSearchTableRowsResponse parses an HTTP response from a SearchTableRowsWithResponse call
+func ParseSearchTableRowsResponse(rsp *http.Response) (*SearchTableRowsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &SearchDataTableRowsResponse{
+	response := &SearchTableRowsResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -39148,15 +39148,15 @@ func ParseSearchDataTableRowsResponse(rsp *http.Response) (*SearchDataTableRowsR
 	return response, nil
 }
 
-// ParseUpsertDataTableRowResponse parses an HTTP response from a UpsertDataTableRowWithResponse call
-func ParseUpsertDataTableRowResponse(rsp *http.Response) (*UpsertDataTableRowResponse, error) {
+// ParseUpsertTableRowResponse parses an HTTP response from a UpsertTableRowWithResponse call
+func ParseUpsertTableRowResponse(rsp *http.Response) (*UpsertTableRowResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &UpsertDataTableRowResponse{
+	response := &UpsertTableRowResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -39209,15 +39209,15 @@ func ParseUpsertDataTableRowResponse(rsp *http.Response) (*UpsertDataTableRowRes
 	return response, nil
 }
 
-// ParseDeleteDataTableRowResponse parses an HTTP response from a DeleteDataTableRowWithResponse call
-func ParseDeleteDataTableRowResponse(rsp *http.Response) (*DeleteDataTableRowResponse, error) {
+// ParseDeleteTableRowResponse parses an HTTP response from a DeleteTableRowWithResponse call
+func ParseDeleteTableRowResponse(rsp *http.Response) (*DeleteTableRowResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &DeleteDataTableRowResponse{
+	response := &DeleteTableRowResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -39242,22 +39242,22 @@ func ParseDeleteDataTableRowResponse(rsp *http.Response) (*DeleteDataTableRowRes
 	return response, nil
 }
 
-// ParseGetDataTableRowResponse parses an HTTP response from a GetDataTableRowWithResponse call
-func ParseGetDataTableRowResponse(rsp *http.Response) (*GetDataTableRowResponse, error) {
+// ParseGetTableRowResponse parses an HTTP response from a GetTableRowWithResponse call
+func ParseGetTableRowResponse(rsp *http.Response) (*GetTableRowResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &GetDataTableRowResponse{
+	response := &GetTableRowResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest DataTableRow
+		var dest TableRow
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -39282,22 +39282,22 @@ func ParseGetDataTableRowResponse(rsp *http.Response) (*GetDataTableRowResponse,
 	return response, nil
 }
 
-// ParseUpdateDataTableRowResponse parses an HTTP response from a UpdateDataTableRowWithResponse call
-func ParseUpdateDataTableRowResponse(rsp *http.Response) (*UpdateDataTableRowResponse, error) {
+// ParseUpdateTableRowResponse parses an HTTP response from a UpdateTableRowWithResponse call
+func ParseUpdateTableRowResponse(rsp *http.Response) (*UpdateTableRowResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &UpdateDataTableRowResponse{
+	response := &UpdateTableRowResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest DataTableRow
+		var dest TableRow
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -39336,22 +39336,22 @@ func ParseUpdateDataTableRowResponse(rsp *http.Response) (*UpdateDataTableRowRes
 	return response, nil
 }
 
-// ParseGetDataTableStatsResponse parses an HTTP response from a GetDataTableStatsWithResponse call
-func ParseGetDataTableStatsResponse(rsp *http.Response) (*GetDataTableStatsResponse, error) {
+// ParseGetTableStatsResponse parses an HTTP response from a GetTableStatsWithResponse call
+func ParseGetTableStatsResponse(rsp *http.Response) (*GetTableStatsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &GetDataTableStatsResponse{
+	response := &GetTableStatsResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest DataTableStats
+		var dest TableStats
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

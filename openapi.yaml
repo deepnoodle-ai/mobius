@@ -82,9 +82,9 @@ tags:
 - name: logs
   x-displayName: Logs
   description: Logs API operations.
-- name: data-tables
-  x-displayName: Data Tables
-  description: Data Tables API operations.
+- name: tables
+  x-displayName: Tables
+  description: Tables API operations.
 - name: artifacts
   x-displayName: Artifacts
   description: Artifacts API operations.
@@ -4701,11 +4701,11 @@ paths:
           $ref: '#/components/responses/NotFound'
   /v1/projects/{project}/tables:
     get:
-      operationId: listDataTables
+      operationId: listTables
       tags:
-      - data-tables
-      summary: List data tables
-      description: List project-scoped data tables visible to the caller.
+      - tables
+      summary: List tables
+      description: List project-scoped tables visible to the caller.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/CursorParam'
@@ -4716,15 +4716,15 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DataTableListResponse'
+                $ref: '#/components/schemas/TableListResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
     post:
-      operationId: createDataTable
+      operationId: createTable
       tags:
-      - data-tables
-      summary: Create a data table
-      description: Create a project-scoped data table with a typed column schema.
+      - tables
+      summary: Create a table
+      description: Create a project-scoped table with a typed column schema.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       requestBody:
@@ -4732,25 +4732,25 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateDataTableRequest'
+              $ref: '#/components/schemas/CreateTableRequest'
       responses:
         '201':
           description: Created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DataTable'
+                $ref: '#/components/schemas/Table'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
   /v1/projects/{project}/tables/{table_name}:
     get:
-      operationId: getDataTable
+      operationId: getTable
       tags:
-      - data-tables
-      summary: Get a data table
-      description: Get data-table metadata and schema by table name.
+      - tables
+      summary: Get a table
+      description: Get table metadata and schema by table name.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/TableNameParam'
@@ -4760,17 +4760,17 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DataTable'
+                $ref: '#/components/schemas/Table'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
     put:
-      operationId: updateDataTable
+      operationId: updateTable
       tags:
-      - data-tables
-      summary: Update a data table
-      description: Update data-table description or schema and resync declared indexes.
+      - tables
+      summary: Update a table
+      description: Update table description or schema and resync declared indexes.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/TableNameParam'
@@ -4779,14 +4779,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateDataTableRequest'
+              $ref: '#/components/schemas/UpdateTableRequest'
       responses:
         '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DataTable'
+                $ref: '#/components/schemas/Table'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -4794,11 +4794,11 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
     delete:
-      operationId: deleteDataTable
+      operationId: deleteTable
       tags:
-      - data-tables
-      summary: Delete a data table and all its rows
-      description: Delete one data table and all rows stored under it.
+      - tables
+      summary: Delete a table and all its rows
+      description: Delete one table and all rows stored under it.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/TableNameParam'
@@ -4811,11 +4811,11 @@ paths:
           $ref: '#/components/responses/NotFound'
   /v1/projects/{project}/tables/{table_name}/stats:
     get:
-      operationId: getDataTableStats
+      operationId: getTableStats
       tags:
-      - data-tables
-      summary: Get data table storage stats
-      description: 'Returns an operational snapshot for one data table: row count, approximate
+      - tables
+      summary: Get table storage stats
+      description: 'Returns an operational snapshot for one table: row count, approximate
         data/index bytes, declared index shape, and whether the backend search index is present.
         Values are point-in-time estimates intended for capacity planning and operator UI,
         not billing.'
@@ -4828,18 +4828,18 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DataTableStats'
+                $ref: '#/components/schemas/TableStats'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
   /v1/projects/{project}/tables/{table_name}/rows:
     post:
-      operationId: insertDataTableRow
+      operationId: insertTableRow
       tags:
-      - data-tables
+      - tables
       summary: Insert a row
-      description: Validate and insert one row into the named data table.
+      description: Validate and insert one row into the named table.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/TableNameParam'
@@ -4855,7 +4855,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DataTableRow'
+                $ref: '#/components/schemas/TableRow'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -4864,9 +4864,9 @@ paths:
           $ref: '#/components/responses/NotFound'
   /v1/projects/{project}/tables/{table_name}/rows/query:
     post:
-      operationId: queryDataTableRows
+      operationId: queryTableRows
       tags:
-      - data-tables
+      - tables
       summary: Query rows
       description: 'Filter, sort, and paginate rows. Filter keys are column names; values
         are either a direct equality match or an operator object: `{"$eq": v}`, `{"$ne": v}`,
@@ -4896,12 +4896,12 @@ paths:
           $ref: '#/components/responses/NotFound'
   /v1/projects/{project}/tables/{table_name}/rows/search:
     post:
-      operationId: searchDataTableRows
+      operationId: searchTableRows
       tags:
-      - data-tables
+      - tables
       summary: Search rows
-      description: Full-text keyword search over row data within one data table. Optional
-        field filters use the same syntax as row queries and are applied before text search.
+      description: Full-text keyword search over row data within one table. Optional field
+        filters use the same syntax as row queries and are applied before text search.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/TableNameParam'
@@ -4926,9 +4926,9 @@ paths:
           $ref: '#/components/responses/NotFound'
   /v1/projects/{project}/tables/{table_name}/rows/upsert:
     post:
-      operationId: upsertDataTableRow
+      operationId: upsertTableRow
       tags:
-      - data-tables
+      - tables
       summary: Upsert a row
       description: |-
         Insert or update a row identified by a set of key columns. If a row with matching key-column values exists it is updated (PATCH semantics — unspecified fields are preserved). If no matching row is found a new row is inserted.
@@ -4966,11 +4966,11 @@ paths:
           $ref: '#/components/responses/Conflict'
   /v1/projects/{project}/tables/{table_name}/rows/bulk:
     post:
-      operationId: bulkInsertDataTableRows
+      operationId: bulkInsertTableRows
       tags:
-      - data-tables
+      - tables
       summary: Bulk insert rows
-      description: Validate and insert up to 1,000 rows into the named data table.
+      description: Validate and insert up to 1,000 rows into the named table.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/TableNameParam'
@@ -4995,11 +4995,11 @@ paths:
           $ref: '#/components/responses/NotFound'
   /v1/projects/{project}/tables/{table_name}/rows/{row_id}:
     get:
-      operationId: getDataTableRow
+      operationId: getTableRow
       tags:
-      - data-tables
+      - tables
       summary: Get a row by ID
-      description: Get one data-table row by row ID.
+      description: Get one table row by row ID.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/TableNameParam'
@@ -5014,15 +5014,15 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DataTableRow'
+                $ref: '#/components/schemas/TableRow'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
     patch:
-      operationId: updateDataTableRow
+      operationId: updateTableRow
       tags:
-      - data-tables
+      - tables
       summary: Update a row (PATCH — merges into existing data)
       description: Validate and merge fields into an existing row, optionally checking the
         current row version.
@@ -5046,7 +5046,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DataTableRow'
+                $ref: '#/components/schemas/TableRow'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -5056,11 +5056,11 @@ paths:
         '409':
           $ref: '#/components/responses/Conflict'
     delete:
-      operationId: deleteDataTableRow
+      operationId: deleteTableRow
       tags:
-      - data-tables
+      - tables
       summary: Delete a row
-      description: Delete one row from the named data table.
+      description: Delete one row from the named table.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/TableNameParam'
@@ -5729,7 +5729,7 @@ components:
       name: reference_type
       in: path
       required: true
-      description: Reference type name, such as `slack.channel` or `data-table.table`.
+      description: Reference type name, such as `slack.channel` or `table.table`.
       schema:
         type: string
     TriggerTargetIDParam:
@@ -9694,10 +9694,10 @@ components:
       - webhook
       - event
       - channel_message
-      - data_table_row
+      - table_row
       - email
       description: 'Determines the event source and required `source_config` shape: schedule,
-        webhook, event, channel_message, data_table_row, or email.'
+        webhook, event, channel_message, table_row, or email.'
     ConcurrencyPolicy:
       type: string
       enum:
@@ -10078,15 +10078,15 @@ components:
             $ref: '#/components/schemas/ChannelMessageSenderType'
           description: Restricts which sender types fire the trigger. When omitted, all sender
             types are eligible.
-    DataTableRowSourceConfig:
+    TableRowSourceConfig:
       type: object
       additionalProperties: false
-      description: Source configuration for `data_table_row` triggers.
+      description: Source configuration for `table_row` triggers.
       properties:
         table_name:
           type: string
-          description: Name of the data table to watch. When omitted, the trigger fires for
-            row changes in any table within the project.
+          description: Name of the table to watch. When omitted, the trigger fires for row
+            changes in any table within the project.
         events:
           type: array
           items:
@@ -10113,15 +10113,15 @@ components:
     TriggerSourceConfig:
       description: Typed source configuration. The shape is determined by the trigger's `kind`
         (`schedule` → `ScheduleSourceConfig`, `webhook` → `WebhookSourceConfig`, `event` →
-        `EventSourceConfig`, `channel_message` → `ChannelMessageSourceConfig`, `data_table_row`
-        → `DataTableRowSourceConfig`, `email` → `EmailSourceConfig`); mismatches are rejected
+        `EventSourceConfig`, `channel_message` → `ChannelMessageSourceConfig`, `table_row`
+        → `TableRowSourceConfig`, `email` → `EmailSourceConfig`); mismatches are rejected
         with 400.
       anyOf:
       - $ref: '#/components/schemas/ScheduleSourceConfig'
       - $ref: '#/components/schemas/WebhookSourceConfig'
       - $ref: '#/components/schemas/EventSourceConfig'
       - $ref: '#/components/schemas/ChannelMessageSourceConfig'
-      - $ref: '#/components/schemas/DataTableRowSourceConfig'
+      - $ref: '#/components/schemas/TableRowSourceConfig'
       - $ref: '#/components/schemas/EmailSourceConfig'
     Trigger:
       type: object
@@ -10393,7 +10393,7 @@ components:
       - $ref: '#/components/schemas/CreateWebhookTriggerRequest'
       - $ref: '#/components/schemas/CreateEventTriggerRequest'
       - $ref: '#/components/schemas/CreateChannelMessageTriggerRequest'
-      - $ref: '#/components/schemas/CreateDataTableRowTriggerRequest'
+      - $ref: '#/components/schemas/CreateTableRowTriggerRequest'
       - $ref: '#/components/schemas/CreateEmailTriggerRequest'
       discriminator:
         propertyName: kind
@@ -10402,7 +10402,7 @@ components:
           webhook: '#/components/schemas/CreateWebhookTriggerRequest'
           event: '#/components/schemas/CreateEventTriggerRequest'
           channel_message: '#/components/schemas/CreateChannelMessageTriggerRequest'
-          data_table_row: '#/components/schemas/CreateDataTableRowTriggerRequest'
+          table_row: '#/components/schemas/CreateTableRowTriggerRequest'
           email: '#/components/schemas/CreateEmailTriggerRequest'
     CreateScheduleTriggerRequest:
       type: object
@@ -10543,11 +10543,11 @@ components:
         tags:
           $ref: '#/components/schemas/TagMap'
           description: Initial tag set.
-    CreateDataTableRowTriggerRequest:
+    CreateTableRowTriggerRequest:
       type: object
       additionalProperties: false
-      description: Creates a trigger that fires when a data table row is inserted, updated,
-        or deleted.
+      description: Creates a trigger that fires when a table row is inserted, updated, or
+        deleted.
       required:
       - name
       - kind
@@ -10559,10 +10559,10 @@ components:
         kind:
           type: string
           enum:
-          - data_table_row
-          description: Discriminator value — must be `data_table_row`.
+          - table_row
+          description: Discriminator value — must be `table_row`.
         source_config:
-          $ref: '#/components/schemas/DataTableRowSourceConfig'
+          $ref: '#/components/schemas/TableRowSourceConfig'
           description: Data-table-row-specific source configuration.
         targets:
           type: array
@@ -12524,7 +12524,7 @@ components:
       properties:
         name:
           type: string
-          description: Tool name (e.g. `mobius_query_data_table`).
+          description: Tool name (e.g. `mobius_query_table`).
         count:
           type: integer
           minimum: 0
@@ -13354,7 +13354,7 @@ components:
         unique:
           type: boolean
           default: false
-    DataTableSchema:
+    TableSchema:
       type: object
       required:
       - columns
@@ -13371,7 +13371,7 @@ components:
           items:
             $ref: '#/components/schemas/IndexDef'
           maxItems: 20
-    DataTable:
+    Table:
       type: object
       required:
       - id
@@ -13393,7 +13393,7 @@ components:
         description:
           type: string
         schema:
-          $ref: '#/components/schemas/DataTableSchema'
+          $ref: '#/components/schemas/TableSchema'
         tags:
           type: object
           additionalProperties:
@@ -13404,7 +13404,7 @@ components:
         updated_at:
           type: string
           format: date-time
-    DataTableListResponse:
+    TableListResponse:
       type: object
       required:
       - items
@@ -13413,12 +13413,12 @@ components:
         items:
           type: array
           items:
-            $ref: '#/components/schemas/DataTable'
+            $ref: '#/components/schemas/Table'
         has_more:
           type: boolean
         next_cursor:
           type: string
-    DataTableStats:
+    TableStats:
       type: object
       required:
       - table_id
@@ -13457,7 +13457,7 @@ components:
         newest_row_updated_at:
           type: string
           format: date-time
-    CreateDataTableRequest:
+    CreateTableRequest:
       type: object
       required:
       - name
@@ -13472,8 +13472,8 @@ components:
           type: string
           maxLength: 1000
         schema:
-          $ref: '#/components/schemas/DataTableSchema'
-    UpdateDataTableRequest:
+          $ref: '#/components/schemas/TableSchema'
+    UpdateTableRequest:
       type: object
       additionalProperties: false
       properties:
@@ -13481,8 +13481,8 @@ components:
           type: string
           maxLength: 1000
         schema:
-          $ref: '#/components/schemas/DataTableSchema'
-    DataTableRow:
+          $ref: '#/components/schemas/TableSchema'
+    TableRow:
       type: object
       required:
       - id
@@ -13571,7 +13571,7 @@ components:
         rows:
           type: array
           items:
-            $ref: '#/components/schemas/DataTableRow'
+            $ref: '#/components/schemas/TableRow'
         has_more:
           type: boolean
         limit:
@@ -13609,7 +13609,7 @@ components:
         rows:
           type: array
           items:
-            $ref: '#/components/schemas/DataTableRow'
+            $ref: '#/components/schemas/TableRow'
         has_more:
           type: boolean
         limit:
@@ -13640,7 +13640,7 @@ components:
         rows:
           type: array
           items:
-            $ref: '#/components/schemas/DataTableRow'
+            $ref: '#/components/schemas/TableRow'
     UpsertRowRequest:
       type: object
       required:
@@ -13666,7 +13666,7 @@ components:
       - created
       properties:
         row:
-          $ref: '#/components/schemas/DataTableRow'
+          $ref: '#/components/schemas/TableRow'
         created:
           type: boolean
           description: True when a new row was inserted; false when an existing row was updated.
@@ -14342,9 +14342,9 @@ x-tagGroups:
 - name: Logs
   tags:
   - logs
-- name: Data Tables
+- name: Tables
   tags:
-  - data-tables
+  - tables
 - name: Artifacts
   tags:
   - artifacts

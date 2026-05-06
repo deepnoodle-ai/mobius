@@ -2431,14 +2431,14 @@ class JobEventEntry(BaseModel):
 
 class TriggerKind(StrEnum):
     """
-    Determines the event source and required `source_config` shape: schedule, webhook, event, channel_message, data_table_row, or email.
+    Determines the event source and required `source_config` shape: schedule, webhook, event, channel_message, table_row, or email.
     """
 
     schedule = 'schedule'
     webhook = 'webhook'
     event = 'event'
     channel_message = 'channel_message'
-    data_table_row = 'data_table_row'
+    table_row = 'table_row'
     email = 'email'
 
 
@@ -2718,9 +2718,9 @@ class Event(StrEnum):
     deleted = 'deleted'
 
 
-class DataTableRowSourceConfig(BaseModel):
+class TableRowSourceConfig(BaseModel):
     """
-    Source configuration for `data_table_row` triggers.
+    Source configuration for `table_row` triggers.
     """
 
     model_config = ConfigDict(
@@ -2728,7 +2728,7 @@ class DataTableRowSourceConfig(BaseModel):
     )
     table_name: str | None = Field(
         None,
-        description='Name of the data table to watch. When omitted, the trigger fires for row changes in any table within the project.',
+        description='Name of the table to watch. When omitted, the trigger fires for row changes in any table within the project.',
     )
     events: list[Event] | None = Field(
         None,
@@ -3037,15 +3037,15 @@ class CreateChannelMessageTriggerRequest(BaseModel):
 
 class Kind11(StrEnum):
     """
-    Discriminator value — must be `data_table_row`.
+    Discriminator value — must be `table_row`.
     """
 
-    data_table_row = 'data_table_row'
+    table_row = 'table_row'
 
 
-class CreateDataTableRowTriggerRequest(BaseModel):
+class CreateTableRowTriggerRequest(BaseModel):
     """
-    Creates a trigger that fires when a data table row is inserted, updated, or deleted.
+    Creates a trigger that fires when a table row is inserted, updated, or deleted.
     """
 
     model_config = ConfigDict(
@@ -3054,10 +3054,10 @@ class CreateDataTableRowTriggerRequest(BaseModel):
     name: str = Field(
         ..., description='Human-readable trigger name, unique within the project.'
     )
-    kind: Literal['data_table_row'] = Field(
-        ..., description='Discriminator value — must be `data_table_row`.'
+    kind: Literal['table_row'] = Field(
+        ..., description='Discriminator value — must be `table_row`.'
     )
-    source_config: DataTableRowSourceConfig = Field(
+    source_config: TableRowSourceConfig = Field(
         ..., description='Data-table-row-specific source configuration.'
     )
     targets: list[CreateTriggerTargetRequest] | None = Field(
@@ -4357,7 +4357,7 @@ class AgentInvocationToolCall(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    name: str = Field(..., description='Tool name (e.g. `mobius_query_data_table`).')
+    name: str = Field(..., description='Tool name (e.g. `mobius_query_table`).')
     count: int = Field(
         ..., description='Number of times the tool was invoked during the loop.', ge=0
     )
@@ -4925,7 +4925,7 @@ class IndexDef(BaseModel):
     unique: bool = False
 
 
-class DataTableSchema(BaseModel):
+class TableSchema(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
@@ -4933,25 +4933,25 @@ class DataTableSchema(BaseModel):
     indexes: list[IndexDef] | None = Field(None, max_length=20)
 
 
-class DataTable(BaseModel):
+class Table(BaseModel):
     id: str
     org_id: str
     project_id: str
     name: str
     description: str | None = None
-    schema_: DataTableSchema = Field(..., alias='schema')
+    schema_: TableSchema = Field(..., alias='schema')
     tags: dict[str, str] | None = None
     created_at: AwareDatetime
     updated_at: AwareDatetime
 
 
-class DataTableListResponse(BaseModel):
-    items: list[DataTable]
+class TableListResponse(BaseModel):
+    items: list[Table]
     has_more: bool
     next_cursor: str | None = None
 
 
-class DataTableStats(BaseModel):
+class TableStats(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
@@ -4967,24 +4967,24 @@ class DataTableStats(BaseModel):
     newest_row_updated_at: AwareDatetime | None = None
 
 
-class CreateDataTableRequest(BaseModel):
+class CreateTableRequest(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
     name: str = Field(..., max_length=64, pattern='^[a-z][a-z0-9_]*$')
     description: str | None = Field(None, max_length=1000)
-    schema_: DataTableSchema = Field(..., alias='schema')
+    schema_: TableSchema = Field(..., alias='schema')
 
 
-class UpdateDataTableRequest(BaseModel):
+class UpdateTableRequest(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
     description: str | None = Field(None, max_length=1000)
-    schema_: DataTableSchema | None = Field(None, alias='schema')
+    schema_: TableSchema | None = Field(None, alias='schema')
 
 
-class DataTableRow(BaseModel):
+class TableRow(BaseModel):
     id: str
     table_id: str
     data: dict[str, Any]
@@ -5038,7 +5038,7 @@ class QueryRowsRequest(BaseModel):
 
 
 class QueryRowsResponse(BaseModel):
-    rows: list[DataTableRow]
+    rows: list[TableRow]
     has_more: bool
     limit: int | None = None
     next_cursor: str | None = None
@@ -5060,7 +5060,7 @@ class SearchRowsRequest(BaseModel):
 
 
 class SearchRowsResponse(BaseModel):
-    rows: list[DataTableRow]
+    rows: list[TableRow]
     has_more: bool
     limit: int | None = None
     next_cursor: str | None = None
@@ -5075,7 +5075,7 @@ class BulkInsertRowsRequest(BaseModel):
 
 class BulkInsertRowsResponse(BaseModel):
     inserted: int
-    rows: list[DataTableRow]
+    rows: list[TableRow]
 
 
 class UpsertRowRequest(BaseModel):
@@ -5094,7 +5094,7 @@ class UpsertRowRequest(BaseModel):
 
 
 class UpsertRowResponse(BaseModel):
-    row: DataTableRow
+    row: TableRow
     created: bool = Field(
         ...,
         description='True when a new row was inserted; false when an existing row was updated.',
@@ -6471,7 +6471,7 @@ class TriggerSourceConfig(
         | WebhookSourceConfig
         | EventSourceConfig
         | ChannelMessageSourceConfig
-        | DataTableRowSourceConfig
+        | TableRowSourceConfig
         | EmailSourceConfig
     ]
 ):
@@ -6480,11 +6480,11 @@ class TriggerSourceConfig(
         | WebhookSourceConfig
         | EventSourceConfig
         | ChannelMessageSourceConfig
-        | DataTableRowSourceConfig
+        | TableRowSourceConfig
         | EmailSourceConfig
     ) = Field(
         ...,
-        description="Typed source configuration. The shape is determined by the trigger's `kind` (`schedule` → `ScheduleSourceConfig`, `webhook` → `WebhookSourceConfig`, `event` → `EventSourceConfig`, `channel_message` → `ChannelMessageSourceConfig`, `data_table_row` → `DataTableRowSourceConfig`, `email` → `EmailSourceConfig`); mismatches are rejected with 400.",
+        description="Typed source configuration. The shape is determined by the trigger's `kind` (`schedule` → `ScheduleSourceConfig`, `webhook` → `WebhookSourceConfig`, `event` → `EventSourceConfig`, `channel_message` → `ChannelMessageSourceConfig`, `table_row` → `TableRowSourceConfig`, `email` → `EmailSourceConfig`); mismatches are rejected with 400.",
     )
 
 
@@ -6661,7 +6661,7 @@ class CreateTriggerRequest(
         | CreateWebhookTriggerRequest
         | CreateEventTriggerRequest
         | CreateChannelMessageTriggerRequest
-        | CreateDataTableRowTriggerRequest
+        | CreateTableRowTriggerRequest
         | CreateEmailTriggerRequest
     ]
 ):
@@ -6670,7 +6670,7 @@ class CreateTriggerRequest(
         | CreateWebhookTriggerRequest
         | CreateEventTriggerRequest
         | CreateChannelMessageTriggerRequest
-        | CreateDataTableRowTriggerRequest
+        | CreateTableRowTriggerRequest
         | CreateEmailTriggerRequest
     ) = Field(
         ...,
