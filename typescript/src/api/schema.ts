@@ -1994,6 +1994,67 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/projects/{project}/actor-state": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List actor state
+         * @description Returns the live Actor State rows visible in a project.
+         */
+        get: operations["listActorStates"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project}/actor-state/assignments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List actor assignments by target
+         * @description Returns assignments matching a target key, for "Working on this" surfaces on runs, steps, interactions, channels, and external refs.
+         */
+        get: operations["listActorAssignments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project}/actor-state/{actor_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get actor state */
+        get: operations["getActorState"];
+        /**
+         * Upsert reportable actor state
+         * @description Upserts manual or agent-reported status. Server-derived capacity and job-claim assignments are not writable through this endpoint.
+         */
+        put: operations["upsertActorState"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/projects/{project}/spans": {
         parameters: {
             query?: never;
@@ -2116,10 +2177,16 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List data tables */
+        /**
+         * List data tables
+         * @description List project-scoped data tables visible to the caller.
+         */
         get: operations["listDataTables"];
         put?: never;
-        /** Create a data table */
+        /**
+         * Create a data table
+         * @description Create a project-scoped data table with a typed column schema.
+         */
         post: operations["createDataTable"];
         delete?: never;
         options?: never;
@@ -2134,13 +2201,42 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get a data table */
+        /**
+         * Get a data table
+         * @description Get data-table metadata and schema by table name.
+         */
         get: operations["getDataTable"];
-        /** Update a data table */
+        /**
+         * Update a data table
+         * @description Update data-table description or schema and resync declared indexes.
+         */
         put: operations["updateDataTable"];
         post?: never;
-        /** Delete a data table and all its rows */
+        /**
+         * Delete a data table and all its rows
+         * @description Delete one data table and all rows stored under it.
+         */
         delete: operations["deleteDataTable"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project}/tables/{table_name}/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get data table storage stats
+         * @description Returns an operational snapshot for one data table: row count, approximate data/index bytes, declared index shape, and whether the backend search index is present. Values are point-in-time estimates intended for capacity planning and operator UI, not billing.
+         */
+        get: operations["getDataTableStats"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -2155,7 +2251,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Insert a row */
+        /**
+         * Insert a row
+         * @description Validate and insert one row into the named data table.
+         */
         post: operations["insertDataTableRow"];
         delete?: never;
         options?: never;
@@ -2177,6 +2276,26 @@ export interface paths {
          * @description Filter, sort, and paginate rows. Filter keys are column names; values are either a direct equality match or an operator object: `{"$eq": v}`, `{"$ne": v}`, `{"$gt": v}`, `{"$gte": v}`, `{"$lt": v}`, `{"$lte": v}`, `{"$in": [v,...]}`, `{"$exists": bool}`.
          */
         post: operations["queryDataTableRows"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project}/tables/{table_name}/rows/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Search rows
+         * @description Full-text keyword search over row data within one data table. Optional field filters use the same syntax as row queries and are applied before text search.
+         */
+        post: operations["searchDataTableRows"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2214,7 +2333,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Bulk insert rows */
+        /**
+         * Bulk insert rows
+         * @description Validate and insert up to 1,000 rows into the named data table.
+         */
         post: operations["bulkInsertDataTableRows"];
         delete?: never;
         options?: never;
@@ -2229,16 +2351,274 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get a row by ID */
+        /**
+         * Get a row by ID
+         * @description Get one data-table row by row ID.
+         */
         get: operations["getDataTableRow"];
         put?: never;
         post?: never;
-        /** Delete a row */
+        /**
+         * Delete a row
+         * @description Delete one row from the named data table.
+         */
         delete: operations["deleteDataTableRow"];
         options?: never;
         head?: never;
-        /** Update a row (PATCH — merges into existing data) */
+        /**
+         * Update a row (PATCH — merges into existing data)
+         * @description Validate and merge fields into an existing row, optionally checking the current row version.
+         */
         patch: operations["updateDataTableRow"];
+        trace?: never;
+    };
+    "/v1/projects/{project}/artifacts:slot": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reserve an artifact upload slot
+         * @description Reserve a `pending_upload` artifact row and mint a presigned PUT URL the worker uploads bytes to. Step-produced uploads MUST include the active job claim's `(job_id, worker_session_token, attempt)` triple — Mobius rejects mismatches with `409 conflict_wrong_claim`. After the worker uploads bytes, call `:commit` to verify and transition the row to `available`.
+         */
+        post: operations["createArtifactSlot"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project}/artifacts/{id}:commit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Commit an uploaded artifact
+         * @description Verify the bytes uploaded against the `:slot` URL and transition the artifact to `available`. The server consults the storage backend's HEAD metadata to confirm the object exists and matches the caller-reported `size_bytes` and `sha256`. Mismatches mark the row `failed`, attempt to delete the orphan, and return 422.
+         */
+        post: operations["commitArtifact"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project}/artifacts/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get an artifact */
+        get: operations["getArtifact"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete an artifact
+         * @description Soft-delete the row and (for Mobius-managed) delete the underlying object best-effort. Pinned artifacts are refused unless `force=true`.
+         */
+        delete: operations["deleteArtifact"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project}/artifacts/{id}/content": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Fetch artifact bytes
+         * @description By default returns a 302 redirect to a fresh presigned GET URL. When `inline=true` and the artifact's mime is on the safe-preview allowlist (image/png, image/jpeg, image/webp, image/gif, application/json, text/plain), bytes stream directly with `X-Content-Type-Options: nosniff` set. Oversize inline requests return 413.
+         */
+        get: operations["getArtifactContent"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project}/artifacts/{id}/pin": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Pin an artifact (skip TTL) */
+        post: operations["pinArtifact"];
+        /** Remove the pinned flag */
+        delete: operations["unpinArtifact"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project}/runs/{run_id}/artifacts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List artifacts produced by a run */
+        get: operations["listRunArtifacts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project}/settings/artifact-storage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get project artifact-storage settings */
+        get: operations["getArtifactStorageSettings"];
+        /** Update project artifact-storage settings */
+        put: operations["updateArtifactStorageSettings"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project}/settings/artifact-storage/quota": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get per-org Mobius-managed artifact storage quota usage */
+        get: operations["getArtifactStorageQuota"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project}/observables": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Observables in a project */
+        get: operations["listObservables"];
+        put?: never;
+        /** Create an Observable */
+        post: operations["createObservable"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project}/observables/{observable_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get an Observable by ID or name */
+        get: operations["getObservable"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete an Observable
+         * @description Deletes the Observable definition and its observation, version, and event history.
+         */
+        delete: operations["deleteObservable"];
+        options?: never;
+        head?: never;
+        /**
+         * Update an Observable definition
+         * @description Updates project-scoped Observable metadata and configuration. Current state remains server-owned and can only change through accepted observations.
+         */
+        patch: operations["updateObservable"];
+        trace?: never;
+    };
+    "/v1/projects/{project}/observables/{observable_id}/observations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List observations for an Observable */
+        get: operations["listObservableObservations"];
+        put?: never;
+        /**
+         * Submit an observation
+         * @description Idempotent by `(observable_id, invocation_id)`. Accepted observations are reduced by Mobius into authoritative state; observers cannot mutate current state directly.
+         */
+        post: operations["submitObservableObservation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project}/observables/{observable_id}/versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List state versions for an Observable */
+        get: operations["listObservableStateVersions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project}/observables/{observable_id}/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List change events for an Observable */
+        get: operations["listObservableEvents"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
 }
@@ -2595,6 +2975,18 @@ export interface components {
          * @enum {string}
          */
         InteractionType: "approval" | "review" | "input";
+        /**
+         * @description Server-derived origin of the interaction.
+         * @enum {string}
+         */
+        InteractionOrigin: "manual" | "workflow_step" | "job_scoped" | "system";
+        /** @description Server-derived actor or system context that requested the interaction. Public create requests do not supply this field. */
+        InteractionSource: {
+            /** @enum {string} */
+            type: "user" | "agent" | "workflow" | "system" | "integration";
+            id: string;
+            display_name?: string;
+        };
         /** @description Identifies who should receive an interaction request. Note: distinct from the caller/audit `Actor` vocabulary — a target is a *recipient*, not someone who has acted yet. */
         InteractionTarget: {
             /**
@@ -2714,6 +3106,8 @@ export interface components {
              * @enum {string}
              */
             status: "pending" | "completed" | "expired" | "cancelled";
+            origin: components["schemas"]["InteractionOrigin"];
+            source?: components["schemas"]["InteractionSource"];
             /** @description Human-readable message shown to the responder when supplied. */
             message?: string | null;
             /** @description Additional key-value context surfaced in the UI alongside the message when supplied. */
@@ -2842,11 +3236,9 @@ export interface components {
             start_at?: string;
             /** @description Declared input parameters accepted by this workflow. */
             inputs?: components["schemas"]["WorkflowInput"][];
-            /** @description Declared output values produced by this workflow. */
-            outputs?: components["schemas"]["WorkflowOutput"][];
-            /** @description Initial workflow state. */
-            state?: {
-                [key: string]: unknown;
+            /** @description Declared terminal contract. Compact values are expressions; long-form values may include value/schema/description. */
+            outputs?: {
+                [key: string]: components["schemas"]["WorkflowOutput"];
             };
             /** @description Ordered list of steps that make up this workflow. */
             steps: components["schemas"]["WorkflowStep"][];
@@ -2862,19 +3254,19 @@ export interface components {
             /** @description Optional default value. */
             default?: unknown;
         };
-        /** @description Declares one named output value produced by a workflow spec. */
-        WorkflowOutput: {
-            /** @description Output name exposed to callers and downstream steps. */
-            name: string;
-            /** @description State variable name whose value is mapped to this output. */
-            variable: string;
-            /** @description Defaults to `main` when omitted. */
-            branch?: string;
+        /** @description Declares one output value produced by a workflow spec. */
+        WorkflowOutput: string | {
+            /** @description Expression or literal output value. */
+            value: unknown;
+            /** @description Optional JSON Schema for this output. */
+            schema?: {
+                [key: string]: unknown;
+            };
             /** @description Human-readable description of this output value. */
             description?: string;
         };
-        /** @description A workflow step. Exactly one step shape should be used. Step variants are identified by their distinctive required property (`action`, `join`, `wait_signal`, `sleep`, `pause`, or `interaction`). The current authored shape intentionally does not add a separate discriminator field, so existing workflow YAML stays compact. */
-        WorkflowStep: components["schemas"]["WorkflowExecutableStep"] | components["schemas"]["WorkflowJoinStep"] | components["schemas"]["WorkflowWaitSignalStep"] | components["schemas"]["WorkflowSleepStep"] | components["schemas"]["WorkflowPauseStep"] | components["schemas"]["WorkflowInteractionStep"];
+        /** @description A workflow step. Exactly one step shape should be used. Step variants are identified by their distinctive required property (`action`, `type: set`, `join`, `wait_signal`, `wait_event`, `wait_until`, `sleep`, `pause`, or `interaction`). The current authored shape intentionally does not add a separate discriminator field, so existing workflow YAML stays compact. */
+        WorkflowStep: components["schemas"]["WorkflowExecutableStep"] | components["schemas"]["WorkflowSetStep"] | components["schemas"]["WorkflowJoinStep"] | components["schemas"]["WorkflowWaitSignalStep"] | components["schemas"]["WorkflowWaitEventStep"] | components["schemas"]["WorkflowWaitUntilStep"] | components["schemas"]["WorkflowSleepStep"] | components["schemas"]["WorkflowPauseStep"] | components["schemas"]["WorkflowInteractionStep"];
         /** @description Optional presentation hint for the visual editor. Ignored by the execution engine; when absent, editors auto-lay out the step. */
         WorkflowStepLayout: {
             /** @description Horizontal position of the step in the editor canvas. */
@@ -2883,7 +3275,7 @@ export interface components {
             y?: number;
         };
         /**
-         * @description Executes a worker or server action and stores its result in workflow state.
+         * @description Executes a worker or server action and exposes its result at `steps.<name>.result`.
          * @example {
          *       "name": "summarize",
          *       "action": "summarize-document",
@@ -2909,8 +3301,10 @@ export interface components {
             action: string;
             /** @description Whether `action` is handled by a worker or by a Mobius-managed server action. */
             action_kind?: components["schemas"]["WorkflowActionKind"];
-            /** @description State variable name where the action result is stored. */
-            store?: string;
+            /** @description Optional writes to top-level `vars.*` keys, evaluated after the step completes. Targets must look like `vars.foo`. */
+            bind?: {
+                [key: string]: string;
+            };
             /** @description Input parameters passed to the action, supporting expression interpolation. */
             parameters?: {
                 [key: string]: unknown;
@@ -2919,6 +3313,22 @@ export interface components {
             retry?: components["schemas"]["WorkflowRetry"][];
             /** @description Error catch clauses that redirect execution on specific failures. */
             catch?: components["schemas"]["WorkflowCatch"][];
+        };
+        /** @description Binds one or more top-level vars and produces the bound object as this step's result. */
+        WorkflowSetStep: {
+            /** @description Unique step name within the workflow, used for routing and logging. */
+            name: string;
+            /** @enum {string} */
+            type: "set";
+            description?: string;
+            next?: components["schemas"]["WorkflowEdge"][];
+            edge_matching_strategy?: components["schemas"]["WorkflowEdgeMatchingStrategy"];
+            each?: components["schemas"]["WorkflowEach"];
+            layout?: components["schemas"]["WorkflowStepLayout"];
+            /** @description Bindings keyed by top-level vars key. `repo: ${steps.fetch.result}` writes `vars.repo`. */
+            vars: {
+                [key: string]: unknown;
+            };
         };
         /** @description Waits for one or more parallel branches before continuing. */
         WorkflowJoinStep: {
@@ -2953,6 +3363,40 @@ export interface components {
             layout?: components["schemas"]["WorkflowStepLayout"];
             /** @description Signal topic, timeout, and storage behavior for this suspension. */
             wait_signal: components["schemas"]["WorkflowWaitSignalConfig"];
+        };
+        /** @description Suspends a branch until an integration event of the configured type is delivered to the project and (optionally) satisfies an `expr` predicate over its payload. Same operational model as `wait_signal` but matches against the event bus directly, without requiring a separate `signal_run` trigger. */
+        WorkflowWaitEventStep: {
+            /** @description Unique step name within the workflow, used for routing and logging. */
+            name: string;
+            /** @description Optional human-readable description of what this step does. */
+            description?: string;
+            /** @description Outbound edges controlling which step executes after this one. */
+            next?: components["schemas"]["WorkflowEdge"][];
+            /** @description How outbound edge conditions are evaluated after the event arrives. */
+            edge_matching_strategy?: components["schemas"]["WorkflowEdgeMatchingStrategy"];
+            /** @description Optional fan-out configuration for repeated event waits. */
+            each?: components["schemas"]["WorkflowEach"];
+            /** @description Optional visual-editor position hint; ignored by the execution engine. */
+            layout?: components["schemas"]["WorkflowStepLayout"];
+            /** @description Event type, condition, timeout, and storage behavior for this suspension. */
+            wait_event: components["schemas"]["WorkflowWaitEventConfig"];
+        };
+        /** @description Polls project or external state until a strict boolean condition evaluates true, parking the run durably between checks. */
+        WorkflowWaitUntilStep: {
+            /** @description Unique step name within the workflow, used for routing and logging. */
+            name: string;
+            /** @description Optional human-readable description of what this step does. */
+            description?: string;
+            /** @description Outbound edges controlling which step executes after the condition passes. */
+            next?: components["schemas"]["WorkflowEdge"][];
+            /** @description How outbound edge conditions are evaluated after the condition passes. */
+            edge_matching_strategy?: components["schemas"]["WorkflowEdgeMatchingStrategy"];
+            /** @description Optional fan-out configuration for repeated condition waits. */
+            each?: components["schemas"]["WorkflowEach"];
+            /** @description Optional visual-editor position hint; ignored by the execution engine. */
+            layout?: components["schemas"]["WorkflowStepLayout"];
+            /** @description Poll/observable source, condition, timeout, and timeout routing. */
+            wait_until: components["schemas"]["WorkflowWaitUntilConfig"];
         };
         /** @description Suspends a branch for a fixed duration before continuing. */
         WorkflowSleepStep: {
@@ -3057,8 +3501,6 @@ export interface components {
             error_equals: string[];
             /** @description Step name to transition to when this clause is matched. */
             next: string;
-            /** @description State variable name where the caught error is stored. */
-            store?: string;
         };
         /** @description Waits for one or more parallel branches to complete before proceeding. */
         WorkflowJoinConfig: {
@@ -3066,9 +3508,9 @@ export interface components {
             branches?: string[];
             /** @description Minimum number of branches that must complete. Defaults to all listed branches. */
             count?: number;
-            /** @description Maps branch names to variable names for storing per-branch results. */
-            branch_mappings?: {
-                [key: string]: string;
+            /** @description Explicit object this join produces. Expressions may read `branch.<branch>.<step>.result`. */
+            result?: {
+                [key: string]: unknown;
             };
         };
         /** @description Suspends the run until a signal with the matching topic arrives. */
@@ -3077,10 +3519,59 @@ export interface components {
             topic: string;
             /** @description Maximum wait duration as a Go duration string (e.g. "24h", "30m"). */
             timeout: string;
-            /** @description Variable name to store the signal payload in after resumption. */
-            store?: string;
             /** @description Step name to transition to if the timeout elapses without a signal. Fails the run if omitted. */
             on_timeout?: string;
+        };
+        /** @description Suspends the run until an integration event matching `event_type` (and `condition`, when provided) is delivered to the project. `event_type` is exact-matched by default. Set `match_mode: prefix` for descendant matching such as `github.pull_request` matching `.opened`, `.closed`, etc. */
+        WorkflowWaitEventConfig: {
+            /** @description Integration event type to wait for, e.g. `github.pull_request.closed` or `stripe.invoice.paid`. */
+            event_type: string;
+            /**
+             * @description Event type match mode. `exact` is the default. `prefix` requires a non-empty condition and matches descendants separated by `.`.
+             * @default exact
+             * @enum {string}
+             */
+            match_mode: "exact" | "prefix";
+            /** @description Optional bare-form `expr` predicate over `{ event, meta, inputs, steps, vars, each, run }`. The event resumes the step only when the expression evaluates truthy. Empty means "any event of the matching type resumes". Predicate fields use bare `expr`; `${...}` templating is reserved for value-producing fields. */
+            condition?: string;
+            /** @description Maximum wait duration as a Go duration string (e.g. "24h", "30m"). */
+            timeout: string;
+            /** @description Step name to transition to if the timeout elapses without a matching event. Fails the run if omitted. */
+            on_timeout?: string;
+        };
+        /** @description Durable condition wait. Exactly one of `poll` or `observable` must be set. Poll waits evaluate direct checks; Observable waits read reusable project-scoped Observable state and park on change events. */
+        WorkflowWaitUntilConfig: {
+            poll?: components["schemas"]["WorkflowWaitUntilPollConfig"];
+            /** @description Identifier-safe Observable name or ID. */
+            observable?: string;
+            /** @description Required bare-form `expr` predicate. Poll waits evaluate against `{ result, inputs, steps, vars, each, run }`; Observable waits evaluate against `{ state, observable, inputs, steps, vars, each, run }`. The expression must return bool true. */
+            condition: string;
+            /** @description Maximum wait duration as a Go duration string (e.g. "10m", "1h"). */
+            timeout: string;
+            /** @description Step name to transition to if the timeout elapses. Fails the run if omitted. */
+            on_timeout?: string;
+        };
+        WorkflowWaitUntilPollConfig: {
+            /** @description Base poll interval as a Go duration string. */
+            every: string;
+            /** @description Mobius action invoked for each poll attempt. */
+            action: string;
+            /** @description Poll action parameters, evaluated once when the wait is entered. */
+            parameters?: {
+                [key: string]: unknown;
+            };
+            backoff?: components["schemas"]["WorkflowWaitUntilBackoffConfig"];
+        };
+        WorkflowWaitUntilBackoffConfig: {
+            /**
+             * Format: double
+             * @description Multiplier greater than 1 applied after each false/error attempt.
+             */
+            multiplier: number;
+            /** @description Maximum poll interval as a Go duration string. */
+            max_every: string;
+            /** @description Whether to jitter each computed interval. */
+            jitter?: boolean;
         };
         /** @description Configuration for a sleep step. */
         WorkflowSleepConfig: {
@@ -3227,7 +3718,7 @@ export interface components {
          * @description What a waiting path is blocked on.
          * @enum {string}
          */
-        WorkflowRunWaitKind: "sleep" | "signal" | "interaction" | "pause" | "join" | "retry";
+        WorkflowRunWaitKind: "sleep" | "signal" | "interaction" | "pause" | "join" | "retry" | "wait_event" | "wait_until";
         WorkflowRunWaitDetail: {
             kind: components["schemas"]["WorkflowRunWaitKind"];
             /**
@@ -3251,6 +3742,44 @@ export interface components {
             attempt?: number;
             /** @description Maximum attempts for `retry` waits. */
             max_attempts?: number;
+            /** @description Event type pattern this path is waiting for. Set when `kind` is `wait_event`. */
+            event_type?: string;
+            /** @description Event match mode for `wait_event`; empty means `exact`. */
+            match_mode?: string;
+            /** @description Optional `expr` predicate the matching event or latest wait result must satisfy before resuming the path. */
+            condition?: string;
+            /** @description Wait source kind for `wait_until` (`poll` or `observable`). */
+            source_kind?: string;
+            /** @description Observable ID for `wait_until.observable` waits. */
+            observable_id?: string;
+            /** @description Observable name for `wait_until.observable` waits. */
+            observable?: string;
+            /**
+             * Format: int64
+             * @description Observable version observed before the path parked.
+             */
+            observed_version?: number;
+            /** @description Poll action name for `wait_until` waits. */
+            poll_action?: string;
+            /** @description Frozen poll parameters for `wait_until` waits. */
+            poll_parameters?: {
+                [key: string]: unknown;
+            };
+            /** @description Number of poll attempts recorded for a `wait_until` wait. */
+            attempt_count?: number;
+            /** @description Current poll interval for `wait_until`. */
+            current_interval?: string;
+            /**
+             * Format: date-time
+             * @description Fixed timeout deadline for `wait_until`.
+             */
+            deadline_at?: string;
+            /** @description Latest poll result preview for `wait_until`. */
+            last_result?: unknown;
+            /** @description Latest poll error type for `wait_until`. */
+            last_error_type?: string;
+            /** @description Latest poll error message for `wait_until`. */
+            last_error_message?: string;
         };
         WorkflowRunPath: {
             /** @description Stable execution path identifier, e.g. `main` or `main/each/0`. */
@@ -3299,6 +3828,7 @@ export interface components {
             running: number;
             completed: number;
             failed: number;
+            skipped: number;
             cancelled: number;
         };
         WorkflowRunError: {
@@ -3391,10 +3921,10 @@ export interface components {
              */
             wall_clock_deadline_at?: string;
             /**
-             * @description Typed run-level failure cause: `run_timeout`, `run_cancelled`, `step_failed`, or `run_failed`. Its own vocabulary, not a superset of the job-level `error_type`. Present when `status=failed`.
+             * @description Typed run-level failure cause: `run_timeout`, `run_cancelled`, `step_failed`, `run_failed`, `output_extraction_failed`, or `output_validation_failed`. Its own vocabulary, not a superset of the job-level `error_type`. Present when `status=failed`.
              * @enum {string}
              */
-            error_type?: "run_timeout" | "run_cancelled" | "step_failed" | "run_failed";
+            error_type?: "run_timeout" | "run_cancelled" | "step_failed" | "run_failed" | "output_extraction_failed" | "output_validation_failed";
             /** @description Run-level cascade config frozen when the run was started. */
             resolved_config?: components["schemas"]["ResolvedConfig"];
             /** @description Default step-level cascade config inherited by each run step unless the step's own spec overrides it. */
@@ -3426,7 +3956,7 @@ export interface components {
         /** @enum {string} */
         RunStepKind: "worker_action" | "server_action" | "control";
         /** @enum {string} */
-        RunStepStatus: "pending" | "running" | "completed" | "failed" | "cancelled";
+        RunStepStatus: "pending" | "running" | "completed" | "failed" | "skipped" | "cancelled";
         /** @description Durable execution-history row for one step attempt on one workflow path. RunStep is the canonical source for run history; linked Job rows are transient worker-claim records and may be TTL-swept after terminal retention. */
         RunStep: {
             /** @description Stable run-step identifier. Use this value as `{step_id}` in `GET /runs/{id}/steps/{step_id}` and as `from_step_id` in `POST /runs/{id}/forks`. */
@@ -3451,10 +3981,14 @@ export interface components {
             /** @description Whether this row was executed in this run or inherited from a source run during fork creation. */
             source: components["schemas"]["RunStepSource"];
             status: components["schemas"]["RunStepStatus"];
+            /** @description Optional suppression reason, most commonly set when status is `skipped`. */
+            reason?: string;
             /** @description Resolved parameters/input for this step attempt. */
             parameters: {
                 [key: string]: unknown;
             };
+            /** @description Vars written by this step, with the source expression used for each binding. */
+            bindings?: components["schemas"]["RunStepBinding"][];
             /** @description Linked live worker job when one exists. Terminal jobs may be reaped while the RunStep remains. */
             job_id?: string;
             /** @description Base64-encoded serialized step result, when present. */
@@ -3475,6 +4009,12 @@ export interface components {
             created_at: string;
             /** Format: date-time */
             updated_at: string;
+        };
+        RunStepBinding: {
+            /** @description Bound top-level vars path, e.g. `vars.repo`. */
+            var: string;
+            /** @description Source expression or literal used to produce the bound value. */
+            source: string;
         };
         /** @description Paginated durable run-step history. Use this response for historical run inspection because linked job rows are live worker state and may be TTL-swept. */
         RunStepListResponse: {
@@ -4218,7 +4758,11 @@ export interface components {
             workflow_id?: string;
             /** @description Expression evaluated against the event environment (`{ meta, event }`). The target is skipped when the expression evaluates to false or yields a non-boolean value, and is marked failed if evaluation errors. Bare expressions are accepted; the wrapped form `${expr}` is also allowed. Omit to always run. Example: `event.pull_request.merged == true`. Malformed expressions are rejected on create/update with `400 invalid_argument`. */
             condition?: string;
-            /** @description (launch_run only) Maps workflow input names to expressions evaluated against the event environment (`{ meta, event }`). Values use Mobius's `${expr}` template syntax — pure expressions (`${event.actor.id}`) preserve their native type, mixed templates (`Bearer ${meta.id}`) always render to a string, and other literals pass through as-is. Legacy JSONPath-like values (`$.…`) and unwrapped `event.` / `meta.` references are rejected with 400 on create/update. Example: `{"user_id": "${event.actor.id}"}`. */
+            /**
+             * @description (launch_run only) Maps workflow input names to expressions evaluated against the event environment (`{ meta, event }`). Values use Mobius's `${expr}` template syntax — pure expressions (`${event.actor.id}`) preserve their native type, mixed templates (`Bearer ${meta.id}`) always render to a string, and other literals pass through as-is. Legacy JSONPath-like values (`$.…`) and unwrapped `event.` / `meta.` references are rejected with 400 on create/update.
+             *
+             *     Resolution is fail-closed: an expression that references a missing field (`${event.pull_request.merged_by.login}` on an event without `merged_by`) fails the dispatch with `input_resolution_error` naming the offending key. No run is launched. Author expressions to reference only fields you expect to be present. Example: `{"user_id": "${event.actor.id}"}`.
+             */
             input_mapping?: {
                 [key: string]: string;
             };
@@ -4227,7 +4771,7 @@ export interface components {
             run_selector?: components["schemas"]["TriggerTargetRunSelector"];
             /** @description (signal_run only) The `wait_signal` topic to deliver to the located run. */
             signal_topic?: string;
-            /** @description (signal_run only) Maps the signal payload keys to expressions evaluated against the event environment. Available to the workflow as `signal.payload`. */
+            /** @description (signal_run only) Maps the signal payload keys to expressions evaluated against the event environment. Available to the workflow as `signal.payload`. Resolution is fail-closed — an expression that references a missing field fails the target with `signal_payload_resolution_error` (the signal-side analogue of `input_mapping`'s `input_resolution_error`) and the signal is not delivered. */
             signal_payload_mapping?: {
                 [key: string]: string;
             };
@@ -4308,18 +4852,28 @@ export interface components {
             /** @description Set to false to pause this target without removing it. */
             enabled?: boolean;
         };
-        /** @description Outcome of a single target within a trigger fire activation. */
+        /** @description Outcome of a single target within a trigger fire activation. `kind` discriminates the result shape so consumers can branch on it instead of inferring from optional fields like `workflow_id` or `external_id_resolved`. */
         TriggerFireTargetResult: {
             /** @description ID of the trigger target that was evaluated. */
             target_id: string;
+            /**
+             * @description Effect kind of the evaluated target. `launch_run` started (or attempted) a new workflow run; `signal_run` delivered (or attempted to deliver) a signal to an existing run. Lets clients reliably branch on `kind` instead of inspecting optional fields like `workflow_id` or `external_id_resolved`.
+             * @default launch_run
+             * @enum {string}
+             */
+            kind: "launch_run" | "signal_run";
             /** @description ID of the workflow definition that was started or attempted. Present only for `launch_run` targets — `signal_run` targets deliver a signal to an existing run and have no workflow definition association of their own. */
             workflow_id?: string;
             /** @description ID of the run that was launched or signaled. Absent when the target failed or was skipped before resolving a run. */
             run_id?: string;
             /** @description Outcome for this target: `success`, `skipped`, or `failed`. */
             status: components["schemas"]["TriggerFireTargetStatus"];
-            /** @description Error detail when status is `failed`. */
+            /** @description Error detail when status is `failed`. Empty for `success` and `skipped` results — `skipped` causes go in `reason` instead. Pre-split historical rows persisted skip causes here, so consumers should fall back to `error` when `reason` is empty on a skipped row. */
             error?: string;
+            /** @description Why the target was skipped, when status is `skipped`. Examples: `condition false`, `target disabled`, `no run matching external_id <id>`. Empty for `success` and `failed` results. */
+            reason?: string;
+            /** @description Rendered value of the target's `external_id_template` (launch_run) or `run_selector.external_id_template` (signal_run). Lets operators verify the two templates produce matching strings without re-deriving them by hand. Absent when the target has no template or when rendering failed before a value was produced. */
+            external_id_resolved?: string;
         };
         /** @description Source configuration for `schedule` triggers. Provide exactly one of `cron` or `interval`. */
         ScheduleSourceConfig: {
@@ -4341,6 +4895,17 @@ export interface components {
         EventSourceConfig: {
             /** @description Platform event type to match, e.g. `run.completed`. */
             event_type?: string;
+            /** @description Transition filter for `actor_state.changed` event triggers. */
+            actor_state?: components["schemas"]["ActorStateTriggerSourceConfig"];
+        };
+        /** @description Narrow transition filter for Actor State event triggers. */
+        ActorStateTriggerSourceConfig: {
+            /** @description Actor ID to match. Omit to match any actor in the project. */
+            actor_id?: string;
+            from_availability?: components["schemas"]["ActorAvailability"];
+            to_availability?: components["schemas"]["ActorAvailability"];
+            /** @description When true, only fire if the new state has spare capacity. */
+            require_free_capacity?: boolean;
         };
         /** @description Source configuration for `channel_message` triggers. */
         ChannelMessageSourceConfig: {
@@ -4473,22 +5038,37 @@ export interface components {
         TestFireTargetResult: {
             /** @description ID of the trigger target this result is for. */
             target_id: string;
-            /** @description Workflow definition the target points at. */
+            /**
+             * @description Effect kind of this target. Discriminates which resolved field is populated: `launch_run` populates `input_mapping_resolved`; `signal_run` populates `signal_payload_resolved`.
+             * @enum {string}
+             */
+            kind: "launch_run" | "signal_run";
+            /** @description Workflow definition the target points at. Present only for `launch_run` targets. */
             workflow_id?: string;
             /** @description Whether the target is enabled. Disabled targets are skipped without resolution. */
             enabled?: boolean;
             status: components["schemas"]["TestFireTargetStatus"];
-            /** @description Resolved input map handed to the workflow. */
+            /** @description (launch_run only) Resolved input map handed to the workflow. */
             input_mapping_resolved?: {
                 [key: string]: unknown;
             };
-            /** @description Error encountered resolving input_mapping, when one occurred. */
+            /** @description (signal_run only) Resolved signal payload that would be delivered to the matched run's `wait_signal` step. */
+            signal_payload_resolved?: {
+                [key: string]: unknown;
+            };
+            /** @description Error encountered resolving the target's `input_mapping` for a `launch_run` target. `signal_run` targets report `signal_payload_mapping` failures via `signal_payload_resolution_error` instead, so clients can distinguish which resolution step failed without parsing the error string. Errors rendering the run-selector template (`run_selector.external_id_template` for `signal_run`, or the `external_id_template` for `launch_run`) surface in `launch_error`. */
             input_resolution_error?: string;
-            /** @description True when the target would launch a run (or signal a run once `signal_run` lands). False for disabled targets and for targets whose condition evaluated to false. */
+            /** @description (signal_run only) Error encountered resolving `signal_payload_mapping` — the payload that would be delivered to the matched run's `wait_signal` step (and exposed under `signal_payload_resolved`). Reported separately from `input_resolution_error` so clients don't reuse launch-run-specific fields for signal failures. */
+            signal_payload_resolution_error?: string;
+            /** @description Rendered value of `external_id_template` (launch_run) or `run_selector.external_id_template` (signal_run). Lets authors verify the two templates produce matching strings. Absent when the target has no template or rendering failed. */
+            external_id_resolved?: string;
+            /** @description True when the target would launch a run (`launch_run`) or signal an existing run (`signal_run`). False for disabled targets and targets whose condition evaluated to false. */
             would_launch: boolean;
-            /** @description ID of the launched run (only set in execute mode). */
+            /** @description ID of the launched (`launch_run`) or signaled (`signal_run`) run. Only set in execute mode. */
             run_id?: string;
-            /** @description Error from the launcher when execute mode failed to start the run. */
+            /** @description Why the target was skipped, when status is `skipped`. Empty for `success` and `failed` results. */
+            reason?: string;
+            /** @description Error from the launcher (`launch_run`) or signal sender (`signal_run`) when execute mode failed to act on the target. */
             launch_error?: string;
         };
         /** @description Paginated history of trigger fire attempts. */
@@ -4636,6 +5216,8 @@ export interface components {
             /** @description When supplied, replaces the user tag set on the trigger. System tags (`mobius:*`) are preserved. */
             tags?: components["schemas"]["TagMap"];
         };
+        /** @enum {string} */
+        ActorAvailability: "available" | "focused" | "busy" | "waiting" | "away" | "offline";
         /** @description Recently observed worker process for a project. Use sessions to see which machines, users, service accounts, or agents are polling for work, what their configured concurrency is, and whether they appear stale. */
         WorkerSession: {
             /** @description Server-assigned session row ID (`wsess_…`). Generated by the control plane on first registration; opaque to workers and stable across refreshes for a given live row. */
@@ -5342,7 +5924,7 @@ export interface components {
         RespondToInteractionRequest: {
             /** @description JSON value supplied by the responder. */
             value: components["schemas"]["InteractionValue"];
-            /** @description Optional free-text comment accompanying the response. */
+            /** @description Optional free-text comment accompanying the response. Available on every interaction kind (approval, choice, multi-choice, input) and never gated by the spec — the responder may always attach reasoning, caveats, or follow-up notes alongside `value`. */
             comment?: string;
             /**
              * Format: double
@@ -5480,6 +6062,8 @@ export interface components {
             description?: string;
             /** @description Freeform agent classification for tooling and filtering (e.g. "llm", "rpa"). */
             kind?: string;
+            /** @description Display color for this agent in UI surfaces such as channel avatars and message rails. One of the Mantine color palette keys (e.g. `indigo`, `teal`, `grape`); empty string falls back to a hash-derived color. */
+            color?: string;
             /** @description Arbitrary capability map used by orchestrators to select suitable agents. */
             capabilities?: {
                 [key: string]: unknown;
@@ -5566,6 +6150,8 @@ export interface components {
             description?: string;
             /** @description Freeform classification (e.g. "llm", "rpa", "integration"). */
             kind?: string;
+            /** @description Display color for this agent (Mantine palette key, e.g. `indigo`). Optional; empty falls back to a hash-derived color. */
+            color?: string;
             /** @description Arbitrary capability map used by orchestrators to select suitable agents. */
             capabilities?: {
                 [key: string]: unknown;
@@ -5585,6 +6171,8 @@ export interface components {
             description?: string;
             /** @description Replacement freeform agent classification (e.g. `llm`, `rpa`). */
             kind?: string;
+            /** @description Replacement display color (Mantine palette key, e.g. `indigo`). Pass empty string to clear and fall back to a hash-derived color. */
+            color?: string;
             /** @description Replacement capability map. */
             capabilities?: {
                 [key: string]: unknown;
@@ -5723,6 +6311,99 @@ export interface components {
             error_type: components["schemas"]["AgentInvocationErrorType"];
             /** @description Human-readable description of the failure. */
             error_message: string;
+        };
+        /** @enum {string} */
+        ActorStateActorKind: "user" | "agent";
+        /** @enum {string} */
+        ActorStateSource: "manual" | "session" | "agent_report" | "derived" | "calendar" | "integration";
+        /** @enum {string} */
+        ActorStateVisibility: "org" | "project" | "self";
+        /** @enum {string} */
+        ActorAssignmentRole: "doing" | "queued" | "next";
+        /** @enum {string} */
+        ActorAssignmentSourceKind: "job_claim" | "manual" | "agent_report" | "trigger";
+        /** @description Polymorphic target reference compatible with Reference Pickers. */
+        ActorReference: {
+            [key: string]: unknown;
+        };
+        ActorFocus: {
+            headline?: string;
+            ref?: components["schemas"]["ActorReference"];
+            /** Format: uri */
+            url?: string;
+        };
+        ActorCapacity: {
+            in_use?: number;
+            max?: number;
+            accepting_new?: boolean;
+        };
+        ActorAssignmentInput: {
+            /**
+             * @description Client reports may set queued or next assignments only.
+             * @enum {string}
+             */
+            role: "queued" | "next";
+            target_ref: components["schemas"]["ActorReference"];
+            target_key: string;
+            headline?: string;
+            /** Format: date-time */
+            due_at?: string;
+        };
+        ActorAssignment: {
+            id: string;
+            actor_state_id: string;
+            role: components["schemas"]["ActorAssignmentRole"];
+            target_ref: components["schemas"]["ActorReference"];
+            target_key: string;
+            headline?: string;
+            /** Format: date-time */
+            claimed_at?: string;
+            /** Format: date-time */
+            due_at?: string;
+            source_kind: components["schemas"]["ActorAssignmentSourceKind"];
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        ActorState: {
+            id: string;
+            actor_id: string;
+            actor_kind: components["schemas"]["ActorStateActorKind"];
+            availability: components["schemas"]["ActorAvailability"];
+            focus?: components["schemas"]["ActorFocus"];
+            capacity?: components["schemas"]["ActorCapacity"];
+            /** Format: date-time */
+            last_seen_at?: string;
+            status_source: components["schemas"]["ActorStateSource"];
+            /** Format: date-time */
+            expires_at?: string;
+            visibility: components["schemas"]["ActorStateVisibility"];
+            stale: boolean;
+            assignments: components["schemas"]["ActorAssignment"][];
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        UpsertActorStateRequest: {
+            actor_kind: components["schemas"]["ActorStateActorKind"];
+            availability: components["schemas"]["ActorAvailability"];
+            focus?: components["schemas"]["ActorFocus"];
+            /** @description Accepted for humans. Ignored for agents because agent capacity is server-derived. */
+            capacity?: components["schemas"]["ActorCapacity"];
+            /** @enum {string} */
+            status_source: "manual" | "agent_report";
+            /** Format: date-time */
+            expires_at?: string;
+            visibility?: components["schemas"]["ActorStateVisibility"];
+            assignments?: components["schemas"]["ActorAssignmentInput"][];
+        };
+        ActorStateListResponse: {
+            items: components["schemas"]["ActorState"][];
+        };
+        ActorAssignmentListResponse: {
+            items: components["schemas"]["ActorAssignment"][];
         };
         /**
          * @description Mirrors the OpenTelemetry `SpanKind` enum. Stored lowercase.
@@ -5918,6 +6599,11 @@ export interface components {
             required: boolean;
             /** @default false */
             unique: boolean;
+            /**
+             * @description Marks the column as an expected filter/sort field so backends can maintain efficient indexes.
+             * @default false
+             */
+            indexed: boolean;
             /** @description Default value applied when column is absent on insert */
             default?: unknown;
             description?: string;
@@ -5953,6 +6639,24 @@ export interface components {
             items: components["schemas"]["DataTable"][];
             has_more: boolean;
             next_cursor?: string;
+        };
+        DataTableStats: {
+            table_id: string;
+            /** Format: int64 */
+            row_count: number;
+            /** Format: int64 */
+            approx_data_bytes: number;
+            /** Format: int64 */
+            approx_index_bytes: number;
+            indexed_column_count: number;
+            declared_index_count: number;
+            search_index_present: boolean;
+            /** Format: date-time */
+            generated_at: string;
+            /** Format: date-time */
+            oldest_row_created_at?: string;
+            /** Format: date-time */
+            newest_row_updated_at?: string;
         };
         CreateDataTableRequest: {
             name: string;
@@ -6002,14 +6706,32 @@ export interface components {
             }[];
             /** @default 100 */
             limit: number;
-            /** @default 0 */
-            offset: number;
+            /** @description Opaque cursor from a prior response. */
+            cursor?: string;
         };
         QueryRowsResponse: {
             rows: components["schemas"]["DataTableRow"][];
             has_more: boolean;
             limit?: number;
-            offset?: number;
+            next_cursor?: string;
+        };
+        SearchRowsRequest: {
+            /** @description Keyword search query. */
+            query: string;
+            /** @description Optional column equality or operator filter applied before text search. */
+            filter?: {
+                [key: string]: unknown;
+            };
+            /** @default 100 */
+            limit: number;
+            /** @description Opaque cursor from a prior search response. */
+            cursor?: string;
+        };
+        SearchRowsResponse: {
+            rows: components["schemas"]["DataTableRow"][];
+            has_more: boolean;
+            limit?: number;
+            next_cursor?: string;
         };
         BulkInsertRowsRequest: {
             rows: {
@@ -6032,6 +6754,268 @@ export interface components {
             row: components["schemas"]["DataTableRow"];
             /** @description True when a new row was inserted; false when an existing row was updated. */
             created: boolean;
+        };
+        /** @enum {string} */
+        ArtifactState: "pending_upload" | "available" | "expired" | "deleted" | "failed";
+        /** @enum {string} */
+        ArtifactStorageBackend: "mobius" | "s3";
+        Artifact: {
+            id: string;
+            org_id: string;
+            project_id: string;
+            run_id?: string;
+            step_id?: string;
+            job_id?: string;
+            attempt?: number;
+            name: string;
+            mime_type: string;
+            /** Format: int64 */
+            size_bytes: number;
+            sha256?: string;
+            storage: components["schemas"]["ArtifactStorageBackend"];
+            storage_uri?: string;
+            integration_id?: string;
+            metadata?: {
+                [key: string]: unknown;
+            };
+            tags?: {
+                [key: string]: string;
+            };
+            state: components["schemas"]["ArtifactState"];
+            created_by_type?: string;
+            created_by_id?: string;
+            created_by_name?: string;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            committed_at?: string;
+            /** Format: date-time */
+            expires_at?: string;
+            pinned?: boolean;
+            /** Format: date-time */
+            deleted_at?: string;
+        };
+        ArtifactListResponse: {
+            items: components["schemas"]["Artifact"][];
+            has_more: boolean;
+            next_cursor?: string;
+        };
+        CreateArtifactSlotRequest: {
+            name: string;
+            mime: string;
+            /** Format: int64 */
+            size_bytes: number;
+            run_id?: string;
+            step_id?: string;
+            job_id?: string;
+            worker_session_token?: string;
+            attempt?: number;
+            tags?: {
+                [key: string]: string;
+            };
+            /**
+             * Format: int64
+             * @description Override the project default TTL for this artifact only.
+             */
+            retain_for_seconds?: number;
+            /** Format: date-time */
+            retain_until?: string;
+            /** @default false */
+            pinned: boolean;
+            storage_override?: components["schemas"]["ArtifactStorageBackend"];
+        };
+        ArtifactSlot: {
+            artifact: components["schemas"]["Artifact"];
+            upload: {
+                url: string;
+                method: string;
+                headers?: {
+                    [key: string]: string;
+                };
+                /** Format: int64 */
+                max_size_bytes?: number;
+            };
+        };
+        CommitArtifactRequest: {
+            sha256: string;
+            /** Format: int64 */
+            size_bytes: number;
+        };
+        ArtifactStorageSettings: {
+            backend?: components["schemas"]["ArtifactStorageBackend"];
+            integration_id?: string;
+            /** Format: int64 */
+            default_ttl_seconds?: number;
+            /** Format: int64 */
+            max_artifact_size?: number;
+            /** Format: int64 */
+            inline_threshold?: number;
+            pending_upload_cap?: number;
+        };
+        ArtifactStorageSettingsUpdate: components["schemas"]["ArtifactStorageSettings"];
+        ArtifactQuotaUsage: {
+            org_id: string;
+            /** Format: int64 */
+            used_bytes: number;
+            /** Format: int64 */
+            limit_bytes: number;
+            /** Format: int64 */
+            artifact_count: number;
+            /** Format: int64 */
+            pending_count: number;
+            /** Format: date-time */
+            generated_at: string;
+        };
+        JSONDocument: {
+            [key: string]: unknown;
+        };
+        /** @enum {string} */
+        ObservableFreshnessStatus: "unknown" | "fresh" | "stale" | "error";
+        /** @enum {string} */
+        ObservableReducerKind: "replace";
+        /** @enum {string} */
+        ObservableObserverKind: "mobius" | "worker" | "cli" | "integration" | "internal";
+        /** @enum {string} */
+        ObservableObservationStatus: "accepted" | "rejected";
+        /** @enum {string} */
+        ObservableEventType: "observable.changed" | "observable.freshness_changed";
+        ObservableReducerConfig: {
+            kind: components["schemas"]["ObservableReducerKind"];
+        };
+        ObservableFreshnessConfig: {
+            /** Format: int64 */
+            stale_after_seconds?: number;
+        };
+        CreateObservableRequest: {
+            name: string;
+            subject_kind: string;
+            subject?: components["schemas"]["JSONDocument"];
+            state_schema: components["schemas"]["JSONDocument"];
+            update_config?: components["schemas"]["JSONDocument"];
+            reducer_config?: components["schemas"]["ObservableReducerConfig"];
+            freshness_config?: components["schemas"]["ObservableFreshnessConfig"];
+            tags?: {
+                [key: string]: string;
+            };
+        };
+        UpdateObservableRequest: {
+            name?: string;
+            subject_kind?: string;
+            subject?: components["schemas"]["JSONDocument"];
+            state_schema?: components["schemas"]["JSONDocument"];
+            update_config?: components["schemas"]["JSONDocument"];
+            reducer_config?: components["schemas"]["ObservableReducerConfig"];
+            freshness_config?: components["schemas"]["ObservableFreshnessConfig"];
+            tags?: {
+                [key: string]: string;
+            };
+        };
+        Observable: {
+            id: string;
+            org_id: string;
+            project_id: string;
+            name: string;
+            subject_kind: string;
+            subject: components["schemas"]["JSONDocument"];
+            state_schema: components["schemas"]["JSONDocument"];
+            update_config: components["schemas"]["JSONDocument"];
+            reducer_config: components["schemas"]["ObservableReducerConfig"];
+            freshness_config: components["schemas"]["ObservableFreshnessConfig"];
+            /** Format: int64 */
+            current_version: number;
+            current_state: components["schemas"]["JSONDocument"];
+            current_state_hash: string;
+            freshness_status: components["schemas"]["ObservableFreshnessStatus"];
+            /** Format: date-time */
+            last_observed_at?: string | null;
+            /** Format: date-time */
+            last_changed_at?: string | null;
+            last_error_type?: string;
+            last_error_message?: string;
+            tags?: {
+                [key: string]: string;
+            };
+            created_by?: string;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        ObservableObservation: {
+            id: string;
+            observable_id: string;
+            invocation_id: string;
+            observer_kind: components["schemas"]["ObservableObserverKind"];
+            observer_id?: string;
+            payload: components["schemas"]["JSONDocument"];
+            payload_hash: string;
+            /** Format: date-time */
+            observed_at: string;
+            /** Format: date-time */
+            received_at: string;
+            status: components["schemas"]["ObservableObservationStatus"];
+            error_type?: string;
+            error_message?: string;
+        };
+        ObservableStateVersion: {
+            id: string;
+            observable_id: string;
+            /** Format: int64 */
+            version: number;
+            state: components["schemas"]["JSONDocument"];
+            state_hash: string;
+            observation_id: string;
+            observer_kind: components["schemas"]["ObservableObserverKind"];
+            observer_id?: string;
+            /** Format: date-time */
+            observed_at: string;
+            /** Format: date-time */
+            created_at: string;
+        };
+        ObservableEvent: {
+            id: string;
+            observable_id: string;
+            event_type: components["schemas"]["ObservableEventType"];
+            /** Format: int64 */
+            previous_version: number;
+            /** Format: int64 */
+            new_version: number;
+            summary: components["schemas"]["JSONDocument"];
+            dispatch_status: string;
+            /** Format: date-time */
+            created_at: string;
+        };
+        SubmitObservableObservationRequest: {
+            invocation_id: string;
+            observer_kind: components["schemas"]["ObservableObserverKind"];
+            observer_id?: string;
+            /** Format: date-time */
+            observed_at?: string;
+            payload: components["schemas"]["JSONDocument"];
+        };
+        SubmitObservableObservationResult: {
+            observable: components["schemas"]["Observable"];
+            observation: components["schemas"]["ObservableObservation"];
+            state_version?: components["schemas"]["ObservableStateVersion"];
+            event?: components["schemas"]["ObservableEvent"];
+            duplicate: boolean;
+            state_changed: boolean;
+        };
+        ObservableListResponse: {
+            items: components["schemas"]["Observable"][];
+            next_cursor?: string;
+        };
+        ObservableObservationListResponse: {
+            items: components["schemas"]["ObservableObservation"][];
+            next_cursor?: string;
+        };
+        ObservableStateVersionListResponse: {
+            items: components["schemas"]["ObservableStateVersion"][];
+            next_cursor?: string;
+        };
+        ObservableEventListResponse: {
+            items: components["schemas"]["ObservableEvent"][];
+            next_cursor?: string;
         };
     };
     responses: {
@@ -6170,6 +7154,12 @@ export interface components {
         widget_id: string;
         /** @description Table name (unique within the project; lowercase alphanumeric and underscores) */
         TableNameParam: string;
+        /** @description TypeID of the artifact (`art_...`) */
+        ArtifactIdParam: string;
+        /** @description Workflow run ID */
+        RunIdParam: string;
+        /** @description Observable ID or project-scoped Observable name. */
+        ObservableIdParam: string;
     };
     requestBodies: never;
     headers: never;
@@ -6852,7 +7842,6 @@ export interface operations {
                  *             "parameters": {
                  *               "document_id": "${inputs.document_id}"
                  *             },
-                 *             "store": "summary",
                  *             "next": [
                  *               {
                  *                 "step": "approve"
@@ -7124,6 +8113,12 @@ export interface operations {
             query?: {
                 /** @description Filter by run status. */
                 status?: components["schemas"]["WorkflowRunStatus"];
+                /** @description Convenience filter that selects runs by lifecycle stage: `in_flight` returns active (not-yet-terminal) runs, `terminal` returns completed and failed runs. Ignored when `status` is set. */
+                lifecycle?: "in_flight" | "terminal";
+                /** @description Inclusive lower bound for `created_at`, RFC3339. Combine with `created_at_before` to scope to a time window. */
+                created_at_after?: string;
+                /** @description Exclusive upper bound for `created_at`, RFC3339. Combine with `created_at_after` to scope to a time window. */
+                created_at_before?: string;
                 /** @description Filter by workflow type name. */
                 workflow_type?: string;
                 /** @description Filter by workflow definition ID. */
@@ -7215,6 +8210,7 @@ export interface operations {
                      *         "running": 0,
                      *         "completed": 0,
                      *         "failed": 0,
+                     *         "skipped": 0,
                      *         "cancelled": 0
                      *       },
                      *       "wait_summary": {
@@ -10556,6 +11552,125 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
+    listActorStates: {
+        parameters: {
+            query?: {
+                actor_kind?: components["schemas"]["ActorStateActorKind"];
+                availability?: components["schemas"]["ActorAvailability"];
+                visibility?: components["schemas"]["ActorStateVisibility"];
+                /** @description Maximum number of items to return */
+                limit?: components["parameters"]["LimitParam"];
+            };
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActorStateListResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listActorAssignments: {
+        parameters: {
+            query: {
+                /** @description Canonical target key, e.g. `mobius.run:run_123`. */
+                target_key: string;
+                role?: components["schemas"]["ActorAssignmentRole"];
+            };
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActorAssignmentListResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getActorState: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+                actor_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActorState"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    upsertActorState: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+                actor_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpsertActorStateRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActorState"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
     listProjectSpans: {
         parameters: {
             query?: {
@@ -10917,6 +12032,33 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
+    getDataTableStats: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Table name (unique within the project; lowercase alphanumeric and underscores) */
+                table_name: components["parameters"]["TableNameParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DataTableStats"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
     insertDataTableRow: {
         parameters: {
             query?: never;
@@ -10974,6 +12116,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["QueryRowsResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    searchDataTableRows: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Table name (unique within the project; lowercase alphanumeric and underscores) */
+                table_name: components["parameters"]["TableNameParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SearchRowsRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SearchRowsResponse"];
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -11141,6 +12315,639 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+        };
+    };
+    createArtifactSlot: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateArtifactSlotRequest"];
+            };
+        };
+        responses: {
+            /** @description Slot reserved */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArtifactSlot"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            409: components["responses"]["Conflict"];
+            /** @description Too many pending uploads */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    commitArtifact: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+                /** @description TypeID of the artifact (`art_...`) */
+                id: components["parameters"]["ArtifactIdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CommitArtifactRequest"];
+            };
+        };
+        responses: {
+            /** @description Artifact committed */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Artifact"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            /** @description Object failed verification */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getArtifact: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+                /** @description TypeID of the artifact (`art_...`) */
+                id: components["parameters"]["ArtifactIdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Artifact"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    deleteArtifact: {
+        parameters: {
+            query?: {
+                force?: boolean;
+            };
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+                /** @description TypeID of the artifact (`art_...`) */
+                id: components["parameters"]["ArtifactIdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    getArtifactContent: {
+        parameters: {
+            query?: {
+                inline?: boolean;
+            };
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+                /** @description TypeID of the artifact (`art_...`) */
+                id: components["parameters"]["ArtifactIdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Streamed bytes (only when inline=true and safe mime) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/octet-stream": string;
+                };
+            };
+            /** @description Redirect to a presigned GET URL */
+            302: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            /** @description Inline request exceeds the size threshold */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    pinArtifact: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+                /** @description TypeID of the artifact (`art_...`) */
+                id: components["parameters"]["ArtifactIdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Artifact"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    unpinArtifact: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+                /** @description TypeID of the artifact (`art_...`) */
+                id: components["parameters"]["ArtifactIdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Artifact"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listRunArtifacts: {
+        parameters: {
+            query?: {
+                step_id?: string;
+                /** @description Mime prefix filter (e.g. `image/`) */
+                mime?: string;
+                state?: components["schemas"]["ArtifactState"];
+                /** @description Cursor for pagination (opaque string from previous response) */
+                cursor?: components["parameters"]["CursorParam"];
+                /** @description Maximum number of items to return */
+                limit?: components["parameters"]["LimitParam"];
+            };
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Workflow run ID */
+                run_id: components["parameters"]["RunIdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArtifactListResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getArtifactStorageSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArtifactStorageSettings"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    updateArtifactStorageSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ArtifactStorageSettingsUpdate"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArtifactStorageSettings"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    getArtifactStorageQuota: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArtifactQuotaUsage"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    listObservables: {
+        parameters: {
+            query?: {
+                /** @description Cursor for pagination (opaque string from previous response) */
+                cursor?: components["parameters"]["CursorParam"];
+                /** @description Maximum number of items to return */
+                limit?: components["parameters"]["LimitParam"];
+                subject_kind?: string;
+                freshness_status?: components["schemas"]["ObservableFreshnessStatus"];
+            };
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ObservableListResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    createObservable: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateObservableRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Observable"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    getObservable: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Observable ID or project-scoped Observable name. */
+                observable_id: components["parameters"]["ObservableIdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Observable"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    deleteObservable: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Observable ID or project-scoped Observable name. */
+                observable_id: components["parameters"]["ObservableIdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    updateObservable: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Observable ID or project-scoped Observable name. */
+                observable_id: components["parameters"]["ObservableIdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateObservableRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Observable"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    listObservableObservations: {
+        parameters: {
+            query?: {
+                /** @description Cursor for pagination (opaque string from previous response) */
+                cursor?: components["parameters"]["CursorParam"];
+                /** @description Maximum number of items to return */
+                limit?: components["parameters"]["LimitParam"];
+                status?: components["schemas"]["ObservableObservationStatus"];
+            };
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Observable ID or project-scoped Observable name. */
+                observable_id: components["parameters"]["ObservableIdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ObservableObservationListResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    submitObservableObservation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Observable ID or project-scoped Observable name. */
+                observable_id: components["parameters"]["ObservableIdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubmitObservableObservationRequest"];
+            };
+        };
+        responses: {
+            /** @description Observation accepted or deduplicated */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubmitObservableObservationResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description Observation recorded as rejected */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubmitObservableObservationResult"];
+                };
+            };
+        };
+    };
+    listObservableStateVersions: {
+        parameters: {
+            query?: {
+                /** @description Cursor for pagination (opaque string from previous response) */
+                cursor?: components["parameters"]["CursorParam"];
+                /** @description Maximum number of items to return */
+                limit?: components["parameters"]["LimitParam"];
+            };
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Observable ID or project-scoped Observable name. */
+                observable_id: components["parameters"]["ObservableIdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ObservableStateVersionListResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listObservableEvents: {
+        parameters: {
+            query?: {
+                /** @description Cursor for pagination (opaque string from previous response) */
+                cursor?: components["parameters"]["CursorParam"];
+                /** @description Maximum number of items to return */
+                limit?: components["parameters"]["LimitParam"];
+            };
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Observable ID or project-scoped Observable name. */
+                observable_id: components["parameters"]["ObservableIdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ObservableEventListResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
         };
     };
 }

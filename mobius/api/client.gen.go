@@ -98,6 +98,168 @@ func (e ActionInvocationResultStatus) Valid() bool {
 	}
 }
 
+// Defines values for ActorAssignmentInputRole.
+const (
+	ActorAssignmentInputRoleNext   ActorAssignmentInputRole = "next"
+	ActorAssignmentInputRoleQueued ActorAssignmentInputRole = "queued"
+)
+
+// Valid indicates whether the value is a known member of the ActorAssignmentInputRole enum.
+func (e ActorAssignmentInputRole) Valid() bool {
+	switch e {
+	case ActorAssignmentInputRoleNext:
+		return true
+	case ActorAssignmentInputRoleQueued:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ActorAssignmentRole.
+const (
+	ActorAssignmentRoleDoing  ActorAssignmentRole = "doing"
+	ActorAssignmentRoleNext   ActorAssignmentRole = "next"
+	ActorAssignmentRoleQueued ActorAssignmentRole = "queued"
+)
+
+// Valid indicates whether the value is a known member of the ActorAssignmentRole enum.
+func (e ActorAssignmentRole) Valid() bool {
+	switch e {
+	case ActorAssignmentRoleDoing:
+		return true
+	case ActorAssignmentRoleNext:
+		return true
+	case ActorAssignmentRoleQueued:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ActorAssignmentSourceKind.
+const (
+	ActorAssignmentSourceKindAgentReport ActorAssignmentSourceKind = "agent_report"
+	ActorAssignmentSourceKindJobClaim    ActorAssignmentSourceKind = "job_claim"
+	ActorAssignmentSourceKindManual      ActorAssignmentSourceKind = "manual"
+	ActorAssignmentSourceKindTrigger     ActorAssignmentSourceKind = "trigger"
+)
+
+// Valid indicates whether the value is a known member of the ActorAssignmentSourceKind enum.
+func (e ActorAssignmentSourceKind) Valid() bool {
+	switch e {
+	case ActorAssignmentSourceKindAgentReport:
+		return true
+	case ActorAssignmentSourceKindJobClaim:
+		return true
+	case ActorAssignmentSourceKindManual:
+		return true
+	case ActorAssignmentSourceKindTrigger:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ActorAvailability.
+const (
+	ActorAvailabilityAvailable ActorAvailability = "available"
+	ActorAvailabilityAway      ActorAvailability = "away"
+	ActorAvailabilityBusy      ActorAvailability = "busy"
+	ActorAvailabilityFocused   ActorAvailability = "focused"
+	ActorAvailabilityOffline   ActorAvailability = "offline"
+	ActorAvailabilityWaiting   ActorAvailability = "waiting"
+)
+
+// Valid indicates whether the value is a known member of the ActorAvailability enum.
+func (e ActorAvailability) Valid() bool {
+	switch e {
+	case ActorAvailabilityAvailable:
+		return true
+	case ActorAvailabilityAway:
+		return true
+	case ActorAvailabilityBusy:
+		return true
+	case ActorAvailabilityFocused:
+		return true
+	case ActorAvailabilityOffline:
+		return true
+	case ActorAvailabilityWaiting:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ActorStateActorKind.
+const (
+	ActorStateActorKindAgent ActorStateActorKind = "agent"
+	ActorStateActorKindUser  ActorStateActorKind = "user"
+)
+
+// Valid indicates whether the value is a known member of the ActorStateActorKind enum.
+func (e ActorStateActorKind) Valid() bool {
+	switch e {
+	case ActorStateActorKindAgent:
+		return true
+	case ActorStateActorKindUser:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ActorStateSource.
+const (
+	ActorStateSourceAgentReport ActorStateSource = "agent_report"
+	ActorStateSourceCalendar    ActorStateSource = "calendar"
+	ActorStateSourceDerived     ActorStateSource = "derived"
+	ActorStateSourceIntegration ActorStateSource = "integration"
+	ActorStateSourceManual      ActorStateSource = "manual"
+	ActorStateSourceSession     ActorStateSource = "session"
+)
+
+// Valid indicates whether the value is a known member of the ActorStateSource enum.
+func (e ActorStateSource) Valid() bool {
+	switch e {
+	case ActorStateSourceAgentReport:
+		return true
+	case ActorStateSourceCalendar:
+		return true
+	case ActorStateSourceDerived:
+		return true
+	case ActorStateSourceIntegration:
+		return true
+	case ActorStateSourceManual:
+		return true
+	case ActorStateSourceSession:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ActorStateVisibility.
+const (
+	ActorStateVisibilityOrg     ActorStateVisibility = "org"
+	ActorStateVisibilityProject ActorStateVisibility = "project"
+	ActorStateVisibilitySelf    ActorStateVisibility = "self"
+)
+
+// Valid indicates whether the value is a known member of the ActorStateVisibility enum.
+func (e ActorStateVisibility) Valid() bool {
+	switch e {
+	case ActorStateVisibilityOrg:
+		return true
+	case ActorStateVisibilityProject:
+		return true
+	case ActorStateVisibilitySelf:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for AddChannelMemberRequestRole.
 const (
 	AddChannelMemberRequestRoleAdmin  AddChannelMemberRequestRole = "admin"
@@ -233,6 +395,51 @@ func (e AgentStatus) Valid() bool {
 	case AgentStatusActive:
 		return true
 	case AgentStatusInactive:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ArtifactState.
+const (
+	ArtifactStateAvailable     ArtifactState = "available"
+	ArtifactStateDeleted       ArtifactState = "deleted"
+	ArtifactStateExpired       ArtifactState = "expired"
+	ArtifactStateFailed        ArtifactState = "failed"
+	ArtifactStatePendingUpload ArtifactState = "pending_upload"
+)
+
+// Valid indicates whether the value is a known member of the ArtifactState enum.
+func (e ArtifactState) Valid() bool {
+	switch e {
+	case ArtifactStateAvailable:
+		return true
+	case ArtifactStateDeleted:
+		return true
+	case ArtifactStateExpired:
+		return true
+	case ArtifactStateFailed:
+		return true
+	case ArtifactStatePendingUpload:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ArtifactStorageBackend.
+const (
+	ArtifactStorageBackendMobius ArtifactStorageBackend = "mobius"
+	ArtifactStorageBackendS3     ArtifactStorageBackend = "s3"
+)
+
+// Valid indicates whether the value is a known member of the ArtifactStorageBackend enum.
+func (e ArtifactStorageBackend) Valid() bool {
+	switch e {
+	case ArtifactStorageBackendMobius:
+		return true
+	case ArtifactStorageBackendS3:
 		return true
 	default:
 		return false
@@ -845,6 +1052,30 @@ func (e InteractionMode) Valid() bool {
 	}
 }
 
+// Defines values for InteractionOrigin.
+const (
+	InteractionOriginJobScoped    InteractionOrigin = "job_scoped"
+	InteractionOriginManual       InteractionOrigin = "manual"
+	InteractionOriginSystem       InteractionOrigin = "system"
+	InteractionOriginWorkflowStep InteractionOrigin = "workflow_step"
+)
+
+// Valid indicates whether the value is a known member of the InteractionOrigin enum.
+func (e InteractionOrigin) Valid() bool {
+	switch e {
+	case InteractionOriginJobScoped:
+		return true
+	case InteractionOriginManual:
+		return true
+	case InteractionOriginSystem:
+		return true
+	case InteractionOriginWorkflowStep:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for InteractionResponderType.
 const (
 	InteractionResponderTypeAgent InteractionResponderType = "agent"
@@ -875,6 +1106,33 @@ func (e InteractionResponseResponderType) Valid() bool {
 	case InteractionResponseResponderTypeAgent:
 		return true
 	case InteractionResponseResponderTypeUser:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for InteractionSourceType.
+const (
+	InteractionSourceTypeAgent       InteractionSourceType = "agent"
+	InteractionSourceTypeIntegration InteractionSourceType = "integration"
+	InteractionSourceTypeSystem      InteractionSourceType = "system"
+	InteractionSourceTypeUser        InteractionSourceType = "user"
+	InteractionSourceTypeWorkflow    InteractionSourceType = "workflow"
+)
+
+// Valid indicates whether the value is a known member of the InteractionSourceType enum.
+func (e InteractionSourceType) Valid() bool {
+	switch e {
+	case InteractionSourceTypeAgent:
+		return true
+	case InteractionSourceTypeIntegration:
+		return true
+	case InteractionSourceTypeSystem:
+		return true
+	case InteractionSourceTypeUser:
+		return true
+	case InteractionSourceTypeWorkflow:
 		return true
 	default:
 		return false
@@ -989,6 +1247,108 @@ const (
 func (e LLMGenerateResponseType) Valid() bool {
 	switch e {
 	case LLMGenerateResponseTypeMessage:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ObservableEventType.
+const (
+	ObservableEventTypeObservableChanged          ObservableEventType = "observable.changed"
+	ObservableEventTypeObservableFreshnessChanged ObservableEventType = "observable.freshness_changed"
+)
+
+// Valid indicates whether the value is a known member of the ObservableEventType enum.
+func (e ObservableEventType) Valid() bool {
+	switch e {
+	case ObservableEventTypeObservableChanged:
+		return true
+	case ObservableEventTypeObservableFreshnessChanged:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ObservableFreshnessStatus.
+const (
+	ObservableFreshnessStatusError   ObservableFreshnessStatus = "error"
+	ObservableFreshnessStatusFresh   ObservableFreshnessStatus = "fresh"
+	ObservableFreshnessStatusStale   ObservableFreshnessStatus = "stale"
+	ObservableFreshnessStatusUnknown ObservableFreshnessStatus = "unknown"
+)
+
+// Valid indicates whether the value is a known member of the ObservableFreshnessStatus enum.
+func (e ObservableFreshnessStatus) Valid() bool {
+	switch e {
+	case ObservableFreshnessStatusError:
+		return true
+	case ObservableFreshnessStatusFresh:
+		return true
+	case ObservableFreshnessStatusStale:
+		return true
+	case ObservableFreshnessStatusUnknown:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ObservableObservationStatus.
+const (
+	ObservableObservationStatusAccepted ObservableObservationStatus = "accepted"
+	ObservableObservationStatusRejected ObservableObservationStatus = "rejected"
+)
+
+// Valid indicates whether the value is a known member of the ObservableObservationStatus enum.
+func (e ObservableObservationStatus) Valid() bool {
+	switch e {
+	case ObservableObservationStatusAccepted:
+		return true
+	case ObservableObservationStatusRejected:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ObservableObserverKind.
+const (
+	ObservableObserverKindCli         ObservableObserverKind = "cli"
+	ObservableObserverKindIntegration ObservableObserverKind = "integration"
+	ObservableObserverKindInternal    ObservableObserverKind = "internal"
+	ObservableObserverKindMobius      ObservableObserverKind = "mobius"
+	ObservableObserverKindWorker      ObservableObserverKind = "worker"
+)
+
+// Valid indicates whether the value is a known member of the ObservableObserverKind enum.
+func (e ObservableObserverKind) Valid() bool {
+	switch e {
+	case ObservableObserverKindCli:
+		return true
+	case ObservableObserverKindIntegration:
+		return true
+	case ObservableObserverKindInternal:
+		return true
+	case ObservableObserverKindMobius:
+		return true
+	case ObservableObserverKindWorker:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ObservableReducerKind.
+const (
+	ObservableReducerKindReplace ObservableReducerKind = "replace"
+)
+
+// Valid indicates whether the value is a known member of the ObservableReducerKind enum.
+func (e ObservableReducerKind) Valid() bool {
+	switch e {
+	case ObservableReducerKindReplace:
 		return true
 	default:
 		return false
@@ -1188,6 +1548,7 @@ const (
 	RunStepStatusFailed    RunStepStatus = "failed"
 	RunStepStatusPending   RunStepStatus = "pending"
 	RunStepStatusRunning   RunStepStatus = "running"
+	RunStepStatusSkipped   RunStepStatus = "skipped"
 )
 
 // Valid indicates whether the value is a known member of the RunStepStatus enum.
@@ -1202,6 +1563,8 @@ func (e RunStepStatus) Valid() bool {
 	case RunStepStatusPending:
 		return true
 	case RunStepStatusRunning:
+		return true
+	case RunStepStatusSkipped:
 		return true
 	default:
 		return false
@@ -1343,6 +1706,24 @@ func (e SystemTextBlockType) Valid() bool {
 	}
 }
 
+// Defines values for TestFireTargetResultKind.
+const (
+	TestFireTargetResultKindLaunchRun TestFireTargetResultKind = "launch_run"
+	TestFireTargetResultKindSignalRun TestFireTargetResultKind = "signal_run"
+)
+
+// Valid indicates whether the value is a known member of the TestFireTargetResultKind enum.
+func (e TestFireTargetResultKind) Valid() bool {
+	switch e {
+	case TestFireTargetResultKindLaunchRun:
+		return true
+	case TestFireTargetResultKindSignalRun:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for TestFireTargetStatus.
 const (
 	TestFireTargetStatusFailed  TestFireTargetStatus = "failed"
@@ -1469,6 +1850,24 @@ func (e TriggerFireStatus) Valid() bool {
 	}
 }
 
+// Defines values for TriggerFireTargetResultKind.
+const (
+	TriggerFireTargetResultKindLaunchRun TriggerFireTargetResultKind = "launch_run"
+	TriggerFireTargetResultKindSignalRun TriggerFireTargetResultKind = "signal_run"
+)
+
+// Valid indicates whether the value is a known member of the TriggerFireTargetResultKind enum.
+func (e TriggerFireTargetResultKind) Valid() bool {
+	switch e {
+	case TriggerFireTargetResultKindLaunchRun:
+		return true
+	case TriggerFireTargetResultKindSignalRun:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for TriggerFireTargetStatus.
 const (
 	TriggerFireTargetStatusFailed  TriggerFireTargetStatus = "failed"
@@ -1568,6 +1967,24 @@ func (e UpdateTriggerTargetRequestKind) Valid() bool {
 	case UpdateTriggerTargetRequestKindLaunchRun:
 		return true
 	case UpdateTriggerTargetRequestKindSignalRun:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for UpsertActorStateRequestStatusSource.
+const (
+	UpsertActorStateRequestStatusSourceAgentReport UpsertActorStateRequestStatusSource = "agent_report"
+	UpsertActorStateRequestStatusSourceManual      UpsertActorStateRequestStatusSource = "manual"
+)
+
+// Valid indicates whether the value is a known member of the UpsertActorStateRequestStatusSource enum.
+func (e UpsertActorStateRequestStatusSource) Valid() bool {
+	switch e {
+	case UpsertActorStateRequestStatusSourceAgentReport:
+		return true
+	case UpsertActorStateRequestStatusSourceManual:
 		return true
 	default:
 		return false
@@ -1720,15 +2137,21 @@ func (e WorkflowRetryJitterStrategy) Valid() bool {
 
 // Defines values for WorkflowRunErrorType.
 const (
-	WorkflowRunErrorTypeRunCancelled WorkflowRunErrorType = "run_cancelled"
-	WorkflowRunErrorTypeRunFailed    WorkflowRunErrorType = "run_failed"
-	WorkflowRunErrorTypeRunTimeout   WorkflowRunErrorType = "run_timeout"
-	WorkflowRunErrorTypeStepFailed   WorkflowRunErrorType = "step_failed"
+	WorkflowRunErrorTypeOutputExtractionFailed WorkflowRunErrorType = "output_extraction_failed"
+	WorkflowRunErrorTypeOutputValidationFailed WorkflowRunErrorType = "output_validation_failed"
+	WorkflowRunErrorTypeRunCancelled           WorkflowRunErrorType = "run_cancelled"
+	WorkflowRunErrorTypeRunFailed              WorkflowRunErrorType = "run_failed"
+	WorkflowRunErrorTypeRunTimeout             WorkflowRunErrorType = "run_timeout"
+	WorkflowRunErrorTypeStepFailed             WorkflowRunErrorType = "step_failed"
 )
 
 // Valid indicates whether the value is a known member of the WorkflowRunErrorType enum.
 func (e WorkflowRunErrorType) Valid() bool {
 	switch e {
+	case WorkflowRunErrorTypeOutputExtractionFailed:
+		return true
+	case WorkflowRunErrorTypeOutputValidationFailed:
+		return true
 	case WorkflowRunErrorTypeRunCancelled:
 		return true
 	case WorkflowRunErrorTypeRunFailed:
@@ -1744,15 +2167,21 @@ func (e WorkflowRunErrorType) Valid() bool {
 
 // Defines values for WorkflowRunDetailErrorType.
 const (
-	WorkflowRunDetailErrorTypeRunCancelled WorkflowRunDetailErrorType = "run_cancelled"
-	WorkflowRunDetailErrorTypeRunFailed    WorkflowRunDetailErrorType = "run_failed"
-	WorkflowRunDetailErrorTypeRunTimeout   WorkflowRunDetailErrorType = "run_timeout"
-	WorkflowRunDetailErrorTypeStepFailed   WorkflowRunDetailErrorType = "step_failed"
+	WorkflowRunDetailErrorTypeOutputExtractionFailed WorkflowRunDetailErrorType = "output_extraction_failed"
+	WorkflowRunDetailErrorTypeOutputValidationFailed WorkflowRunDetailErrorType = "output_validation_failed"
+	WorkflowRunDetailErrorTypeRunCancelled           WorkflowRunDetailErrorType = "run_cancelled"
+	WorkflowRunDetailErrorTypeRunFailed              WorkflowRunDetailErrorType = "run_failed"
+	WorkflowRunDetailErrorTypeRunTimeout             WorkflowRunDetailErrorType = "run_timeout"
+	WorkflowRunDetailErrorTypeStepFailed             WorkflowRunDetailErrorType = "step_failed"
 )
 
 // Valid indicates whether the value is a known member of the WorkflowRunDetailErrorType enum.
 func (e WorkflowRunDetailErrorType) Valid() bool {
 	switch e {
+	case WorkflowRunDetailErrorTypeOutputExtractionFailed:
+		return true
+	case WorkflowRunDetailErrorTypeOutputValidationFailed:
+		return true
 	case WorkflowRunDetailErrorTypeRunCancelled:
 		return true
 	case WorkflowRunDetailErrorTypeRunFailed:
@@ -1819,6 +2248,8 @@ const (
 	WorkflowRunWaitKindRetry       WorkflowRunWaitKind = "retry"
 	WorkflowRunWaitKindSignal      WorkflowRunWaitKind = "signal"
 	WorkflowRunWaitKindSleep       WorkflowRunWaitKind = "sleep"
+	WorkflowRunWaitKindWaitEvent   WorkflowRunWaitKind = "wait_event"
+	WorkflowRunWaitKindWaitUntil   WorkflowRunWaitKind = "wait_until"
 )
 
 // Valid indicates whether the value is a known member of the WorkflowRunWaitKind enum.
@@ -1835,6 +2266,43 @@ func (e WorkflowRunWaitKind) Valid() bool {
 	case WorkflowRunWaitKindSignal:
 		return true
 	case WorkflowRunWaitKindSleep:
+		return true
+	case WorkflowRunWaitKindWaitEvent:
+		return true
+	case WorkflowRunWaitKindWaitUntil:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for WorkflowSetStepType.
+const (
+	WorkflowSetStepTypeSet WorkflowSetStepType = "set"
+)
+
+// Valid indicates whether the value is a known member of the WorkflowSetStepType enum.
+func (e WorkflowSetStepType) Valid() bool {
+	switch e {
+	case WorkflowSetStepTypeSet:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for WorkflowWaitEventConfigMatchMode.
+const (
+	WorkflowWaitEventConfigMatchModeExact  WorkflowWaitEventConfigMatchMode = "exact"
+	WorkflowWaitEventConfigMatchModePrefix WorkflowWaitEventConfigMatchMode = "prefix"
+)
+
+// Valid indicates whether the value is a known member of the WorkflowWaitEventConfigMatchMode enum.
+func (e WorkflowWaitEventConfigMatchMode) Valid() bool {
+	switch e {
+	case WorkflowWaitEventConfigMatchModeExact:
+		return true
+	case WorkflowWaitEventConfigMatchModePrefix:
 		return true
 	default:
 		return false
@@ -1919,6 +2387,24 @@ func (e ListInteractionsParamsTargetType) Valid() bool {
 	case ListInteractionsParamsTargetTypeGroup:
 		return true
 	case ListInteractionsParamsTargetTypeUser:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ListRunsParamsLifecycle.
+const (
+	ListRunsParamsLifecycleInFlight ListRunsParamsLifecycle = "in_flight"
+	ListRunsParamsLifecycleTerminal ListRunsParamsLifecycle = "terminal"
+)
+
+// Valid indicates whether the value is a known member of the ListRunsParamsLifecycle enum.
+func (e ListRunsParamsLifecycle) Valid() bool {
+	switch e {
+	case ListRunsParamsLifecycleInFlight:
+		return true
+	case ListRunsParamsLifecycleTerminal:
 		return true
 	default:
 		return false
@@ -2160,6 +2646,115 @@ type ActionListResponse struct {
 	NextCursor *string `json:"next_cursor,omitempty"`
 }
 
+// ActorAssignment defines model for ActorAssignment.
+type ActorAssignment struct {
+	ActorStateId string                    `json:"actor_state_id"`
+	ClaimedAt    *time.Time                `json:"claimed_at,omitempty"`
+	CreatedAt    time.Time                 `json:"created_at"`
+	DueAt        *time.Time                `json:"due_at,omitempty"`
+	Headline     *string                   `json:"headline,omitempty"`
+	Id           string                    `json:"id"`
+	Role         ActorAssignmentRole       `json:"role"`
+	SourceKind   ActorAssignmentSourceKind `json:"source_kind"`
+	TargetKey    string                    `json:"target_key"`
+
+	// TargetRef Polymorphic target reference compatible with Reference Pickers.
+	TargetRef ActorReference `json:"target_ref"`
+	UpdatedAt time.Time      `json:"updated_at"`
+}
+
+// ActorAssignmentInput defines model for ActorAssignmentInput.
+type ActorAssignmentInput struct {
+	DueAt    *time.Time `json:"due_at,omitempty"`
+	Headline *string    `json:"headline,omitempty"`
+
+	// Role Client reports may set queued or next assignments only.
+	Role      ActorAssignmentInputRole `json:"role"`
+	TargetKey string                   `json:"target_key"`
+
+	// TargetRef Polymorphic target reference compatible with Reference Pickers.
+	TargetRef ActorReference `json:"target_ref"`
+}
+
+// ActorAssignmentInputRole Client reports may set queued or next assignments only.
+type ActorAssignmentInputRole string
+
+// ActorAssignmentListResponse defines model for ActorAssignmentListResponse.
+type ActorAssignmentListResponse struct {
+	Items []ActorAssignment `json:"items"`
+}
+
+// ActorAssignmentRole defines model for ActorAssignmentRole.
+type ActorAssignmentRole string
+
+// ActorAssignmentSourceKind defines model for ActorAssignmentSourceKind.
+type ActorAssignmentSourceKind string
+
+// ActorAvailability defines model for ActorAvailability.
+type ActorAvailability string
+
+// ActorCapacity defines model for ActorCapacity.
+type ActorCapacity struct {
+	AcceptingNew *bool `json:"accepting_new,omitempty"`
+	InUse        *int  `json:"in_use,omitempty"`
+	Max          *int  `json:"max,omitempty"`
+}
+
+// ActorFocus defines model for ActorFocus.
+type ActorFocus struct {
+	Headline *string `json:"headline,omitempty"`
+
+	// Ref Polymorphic target reference compatible with Reference Pickers.
+	Ref *ActorReference `json:"ref,omitempty"`
+	Url *string         `json:"url,omitempty"`
+}
+
+// ActorReference Polymorphic target reference compatible with Reference Pickers.
+type ActorReference map[string]interface{}
+
+// ActorState defines model for ActorState.
+type ActorState struct {
+	ActorId      string               `json:"actor_id"`
+	ActorKind    ActorStateActorKind  `json:"actor_kind"`
+	Assignments  []ActorAssignment    `json:"assignments"`
+	Availability ActorAvailability    `json:"availability"`
+	Capacity     *ActorCapacity       `json:"capacity,omitempty"`
+	CreatedAt    time.Time            `json:"created_at"`
+	ExpiresAt    *time.Time           `json:"expires_at,omitempty"`
+	Focus        *ActorFocus          `json:"focus,omitempty"`
+	Id           string               `json:"id"`
+	LastSeenAt   *time.Time           `json:"last_seen_at,omitempty"`
+	Stale        bool                 `json:"stale"`
+	StatusSource ActorStateSource     `json:"status_source"`
+	UpdatedAt    time.Time            `json:"updated_at"`
+	Visibility   ActorStateVisibility `json:"visibility"`
+}
+
+// ActorStateActorKind defines model for ActorStateActorKind.
+type ActorStateActorKind string
+
+// ActorStateListResponse defines model for ActorStateListResponse.
+type ActorStateListResponse struct {
+	Items []ActorState `json:"items"`
+}
+
+// ActorStateSource defines model for ActorStateSource.
+type ActorStateSource string
+
+// ActorStateTriggerSourceConfig Narrow transition filter for Actor State event triggers.
+type ActorStateTriggerSourceConfig struct {
+	// ActorId Actor ID to match. Omit to match any actor in the project.
+	ActorId          *string            `json:"actor_id,omitempty"`
+	FromAvailability *ActorAvailability `json:"from_availability,omitempty"`
+
+	// RequireFreeCapacity When true, only fire if the new state has spare capacity.
+	RequireFreeCapacity *bool              `json:"require_free_capacity,omitempty"`
+	ToAvailability      *ActorAvailability `json:"to_availability,omitempty"`
+}
+
+// ActorStateVisibility defines model for ActorStateVisibility.
+type ActorStateVisibility string
+
 // AddChannelMemberRequest Member identity and role to add to a channel.
 type AddChannelMemberRequest struct {
 	// Role Role to assign the new member, either `member` or `admin`.
@@ -2188,6 +2783,9 @@ type AddProjectMemberRequest struct {
 type Agent struct {
 	// Capabilities Arbitrary capability map used by orchestrators to select suitable agents.
 	Capabilities *map[string]interface{} `json:"capabilities,omitempty"`
+
+	// Color Display color for this agent in UI surfaces such as channel avatars and message rails. One of the Mantine color palette keys (e.g. `indigo`, `teal`, `grape`); empty string falls back to a hash-derived color.
+	Color *string `json:"color,omitempty"`
 
 	// Config Agent-specific configuration blob stored and returned opaquely.
 	Config *map[string]interface{} `json:"config,omitempty"`
@@ -2421,6 +3019,82 @@ type AgentSessionStatus string
 
 // AgentStatus Administrative status. Inactive agents cannot claim new jobs.
 type AgentStatus string
+
+// Artifact defines model for Artifact.
+type Artifact struct {
+	Attempt       *int                    `json:"attempt,omitempty"`
+	CommittedAt   *time.Time              `json:"committed_at,omitempty"`
+	CreatedAt     time.Time               `json:"created_at"`
+	CreatedById   *string                 `json:"created_by_id,omitempty"`
+	CreatedByName *string                 `json:"created_by_name,omitempty"`
+	CreatedByType *string                 `json:"created_by_type,omitempty"`
+	DeletedAt     *time.Time              `json:"deleted_at,omitempty"`
+	ExpiresAt     *time.Time              `json:"expires_at,omitempty"`
+	Id            string                  `json:"id"`
+	IntegrationId *string                 `json:"integration_id,omitempty"`
+	JobId         *string                 `json:"job_id,omitempty"`
+	Metadata      *map[string]interface{} `json:"metadata,omitempty"`
+	MimeType      string                  `json:"mime_type"`
+	Name          string                  `json:"name"`
+	OrgId         string                  `json:"org_id"`
+	Pinned        *bool                   `json:"pinned,omitempty"`
+	ProjectId     string                  `json:"project_id"`
+	RunId         *string                 `json:"run_id,omitempty"`
+	Sha256        *string                 `json:"sha256,omitempty"`
+	SizeBytes     int64                   `json:"size_bytes"`
+	State         ArtifactState           `json:"state"`
+	StepId        *string                 `json:"step_id,omitempty"`
+	Storage       ArtifactStorageBackend  `json:"storage"`
+	StorageUri    *string                 `json:"storage_uri,omitempty"`
+	Tags          *map[string]string      `json:"tags,omitempty"`
+}
+
+// ArtifactListResponse defines model for ArtifactListResponse.
+type ArtifactListResponse struct {
+	HasMore    bool       `json:"has_more"`
+	Items      []Artifact `json:"items"`
+	NextCursor *string    `json:"next_cursor,omitempty"`
+}
+
+// ArtifactQuotaUsage defines model for ArtifactQuotaUsage.
+type ArtifactQuotaUsage struct {
+	ArtifactCount int64     `json:"artifact_count"`
+	GeneratedAt   time.Time `json:"generated_at"`
+	LimitBytes    int64     `json:"limit_bytes"`
+	OrgId         string    `json:"org_id"`
+	PendingCount  int64     `json:"pending_count"`
+	UsedBytes     int64     `json:"used_bytes"`
+}
+
+// ArtifactSlot defines model for ArtifactSlot.
+type ArtifactSlot struct {
+	Artifact Artifact `json:"artifact"`
+	Upload   struct {
+		Headers      *map[string]string `json:"headers,omitempty"`
+		MaxSizeBytes *int64             `json:"max_size_bytes,omitempty"`
+		Method       string             `json:"method"`
+		Url          string             `json:"url"`
+	} `json:"upload"`
+}
+
+// ArtifactState defines model for ArtifactState.
+type ArtifactState string
+
+// ArtifactStorageBackend defines model for ArtifactStorageBackend.
+type ArtifactStorageBackend string
+
+// ArtifactStorageSettings defines model for ArtifactStorageSettings.
+type ArtifactStorageSettings struct {
+	Backend           *ArtifactStorageBackend `json:"backend,omitempty"`
+	DefaultTtlSeconds *int64                  `json:"default_ttl_seconds,omitempty"`
+	InlineThreshold   *int64                  `json:"inline_threshold,omitempty"`
+	IntegrationId     *string                 `json:"integration_id,omitempty"`
+	MaxArtifactSize   *int64                  `json:"max_artifact_size,omitempty"`
+	PendingUploadCap  *int                    `json:"pending_upload_cap,omitempty"`
+}
+
+// ArtifactStorageSettingsUpdate defines model for ArtifactStorageSettingsUpdate.
+type ArtifactStorageSettingsUpdate = ArtifactStorageSettings
 
 // AsymmetricActorRule Per-actor-class rule under an asymmetric resolution policy. `propose` records responses for audit but ignores them for resolution. `decide` applies the optional `sub_policy` to that class's responses to drive resolution. `ignore` is reserved for future use.
 type AsymmetricActorRule struct {
@@ -2735,14 +3409,23 @@ type ColumnDef struct {
 	Default     interface{} `json:"default,omitempty"`
 	Deprecated  *bool       `json:"deprecated,omitempty"`
 	Description *string     `json:"description,omitempty"`
-	Name        string      `json:"name"`
-	Required    *bool       `json:"required,omitempty"`
-	Type        ColumnType  `json:"type"`
-	Unique      *bool       `json:"unique,omitempty"`
+
+	// Indexed Marks the column as an expected filter/sort field so backends can maintain efficient indexes.
+	Indexed  *bool      `json:"indexed,omitempty"`
+	Name     string     `json:"name"`
+	Required *bool      `json:"required,omitempty"`
+	Type     ColumnType `json:"type"`
+	Unique   *bool      `json:"unique,omitempty"`
 }
 
 // ColumnType defines model for ColumnType.
 type ColumnType string
+
+// CommitArtifactRequest defines model for CommitArtifactRequest.
+type CommitArtifactRequest struct {
+	Sha256    string `json:"sha256"`
+	SizeBytes int64  `json:"size_bytes"`
+}
 
 // ConcurrencyPolicy Controls overlapping runs from the same trigger:
 // - `allow` — start new runs unconditionally.
@@ -2799,6 +3482,9 @@ type CreateAgentRequest struct {
 	// Capabilities Arbitrary capability map used by orchestrators to select suitable agents.
 	Capabilities *map[string]interface{} `json:"capabilities,omitempty"`
 
+	// Color Display color for this agent (Mantine palette key, e.g. `indigo`). Optional; empty falls back to a hash-derived color.
+	Color *string `json:"color,omitempty"`
+
 	// Config Agent-specific configuration stored and returned opaquely.
 	Config *map[string]interface{} `json:"config,omitempty"`
 
@@ -2828,6 +3514,25 @@ type CreateAgentSessionRequest struct {
 
 	// Transport Connection mechanism identifier (e.g. "sse", "polling").
 	Transport string `json:"transport"`
+}
+
+// CreateArtifactSlotRequest defines model for CreateArtifactSlotRequest.
+type CreateArtifactSlotRequest struct {
+	Attempt *int    `json:"attempt,omitempty"`
+	JobId   *string `json:"job_id,omitempty"`
+	Mime    string  `json:"mime"`
+	Name    string  `json:"name"`
+	Pinned  *bool   `json:"pinned,omitempty"`
+
+	// RetainForSeconds Override the project default TTL for this artifact only.
+	RetainForSeconds   *int64                  `json:"retain_for_seconds,omitempty"`
+	RetainUntil        *time.Time              `json:"retain_until,omitempty"`
+	RunId              *string                 `json:"run_id,omitempty"`
+	SizeBytes          int64                   `json:"size_bytes"`
+	StepId             *string                 `json:"step_id,omitempty"`
+	StorageOverride    *ArtifactStorageBackend `json:"storage_override,omitempty"`
+	Tags               *map[string]string      `json:"tags,omitempty"`
+	WorkerSessionToken *string                 `json:"worker_session_token,omitempty"`
 }
 
 // CreateChannelMessageTriggerRequest Creates a trigger that fires when a matching channel message is posted.
@@ -3045,6 +3750,18 @@ type CreateJobInteractionRequest struct {
 
 	// Type Interaction kind: `approval` captures a decision, `review` captures acknowledgement or notes, and `input` collects free-form data.
 	Type InteractionType `json:"type"`
+}
+
+// CreateObservableRequest defines model for CreateObservableRequest.
+type CreateObservableRequest struct {
+	FreshnessConfig *ObservableFreshnessConfig `json:"freshness_config,omitempty"`
+	Name            string                     `json:"name"`
+	ReducerConfig   *ObservableReducerConfig   `json:"reducer_config,omitempty"`
+	StateSchema     JSONDocument               `json:"state_schema"`
+	Subject         *JSONDocument              `json:"subject,omitempty"`
+	SubjectKind     string                     `json:"subject_kind"`
+	Tags            *map[string]string         `json:"tags,omitempty"`
+	UpdateConfig    *JSONDocument              `json:"update_config,omitempty"`
 }
 
 // CreateProjectRequest defines model for CreateProjectRequest.
@@ -3321,6 +4038,20 @@ type DataTableSchema struct {
 	Indexes *[]IndexDef `json:"indexes,omitempty"`
 }
 
+// DataTableStats defines model for DataTableStats.
+type DataTableStats struct {
+	ApproxDataBytes    int64      `json:"approx_data_bytes"`
+	ApproxIndexBytes   int64      `json:"approx_index_bytes"`
+	DeclaredIndexCount int        `json:"declared_index_count"`
+	GeneratedAt        time.Time  `json:"generated_at"`
+	IndexedColumnCount int        `json:"indexed_column_count"`
+	NewestRowUpdatedAt *time.Time `json:"newest_row_updated_at,omitempty"`
+	OldestRowCreatedAt *time.Time `json:"oldest_row_created_at,omitempty"`
+	RowCount           int64      `json:"row_count"`
+	SearchIndexPresent bool       `json:"search_index_present"`
+	TableId            string     `json:"table_id"`
+}
+
 // EmailSourceConfig Source configuration for `email` triggers.
 type EmailSourceConfig struct {
 	// AgentId ID of the agent whose inbox fires this trigger. When omitted, any agent inbox in the project can fire the trigger.
@@ -3368,6 +4099,9 @@ type ErrorResponse struct {
 
 // EventSourceConfig Source configuration for `event` triggers.
 type EventSourceConfig struct {
+	// ActorState Narrow transition filter for Actor State event triggers.
+	ActorState *ActorStateTriggerSourceConfig `json:"actor_state,omitempty"`
+
 	// EventType Platform event type to match, e.g. `run.completed`.
 	EventType *string `json:"event_type,omitempty"`
 }
@@ -3680,6 +4414,9 @@ type Interaction struct {
 	// Message Human-readable message shown to the responder when supplied.
 	Message *string `json:"message,omitempty"`
 
+	// Origin Server-derived origin of the interaction.
+	Origin InteractionOrigin `json:"origin"`
+
 	// Outcome Free-form JSON payload. Used both for responder-supplied values and for policy-derived values (e.g. `Interaction.outcome`, `ResolutionPolicy.proposal`); each consumer documents which.
 	Outcome *InteractionValue `json:"outcome,omitempty"`
 
@@ -3709,6 +4446,9 @@ type Interaction struct {
 
 	// SignalName Signal name used to resume the originating run when run-backed.
 	SignalName *string `json:"signal_name,omitempty"`
+
+	// Source Server-derived actor or system context that requested the interaction. Public create requests do not supply this field.
+	Source *InteractionSource `json:"source,omitempty"`
 
 	// Spec Declarative dialog contract for rendering and validating an interaction. Used at both authoring time (inside a workflow definition) and runtime (persisted on an interaction). Compatibility rules are enforced server-side:
 	//
@@ -3784,6 +4524,9 @@ type InteractionOption struct {
 	Value string `json:"value"`
 }
 
+// InteractionOrigin Server-derived origin of the interaction.
+type InteractionOrigin string
+
 // InteractionResponder Identifies who answered an interaction. Groups cannot themselves respond — only a user within a group — so `group` is not a valid responder type.
 type InteractionResponder struct {
 	// Id User ID for user; agent ID for agent.
@@ -3825,6 +4568,16 @@ type InteractionResponse struct {
 
 // InteractionResponseResponderType Actor class behind this response. Asymmetric policies route on this; majority/threshold ignore it.
 type InteractionResponseResponderType string
+
+// InteractionSource Server-derived actor or system context that requested the interaction. Public create requests do not supply this field.
+type InteractionSource struct {
+	DisplayName *string               `json:"display_name,omitempty"`
+	Id          string                `json:"id"`
+	Type        InteractionSourceType `json:"type"`
+}
+
+// InteractionSourceType defines model for InteractionSource.Type.
+type InteractionSourceType string
 
 // InteractionSpec Declarative dialog contract for rendering and validating an interaction. Used at both authoring time (inside a workflow definition) and runtime (persisted on an interaction). Compatibility rules are enforced server-side:
 //
@@ -3891,6 +4644,9 @@ type InteractionValue3 = float32
 
 // InteractionValue4 defines model for .
 type InteractionValue4 = bool
+
+// JSONDocument defines model for JSONDocument.
+type JSONDocument map[string]interface{}
 
 // Job A claimable unit of work derived from a single workflow step execution.
 type Job struct {
@@ -4222,6 +4978,123 @@ type MarkChannelMessagesReadRequest struct {
 // Metadata Free-form JSON object for caller-defined metadata.
 type Metadata map[string]interface{}
 
+// Observable defines model for Observable.
+type Observable struct {
+	CreatedAt        time.Time                 `json:"created_at"`
+	CreatedBy        *string                   `json:"created_by,omitempty"`
+	CurrentState     JSONDocument              `json:"current_state"`
+	CurrentStateHash string                    `json:"current_state_hash"`
+	CurrentVersion   int64                     `json:"current_version"`
+	FreshnessConfig  ObservableFreshnessConfig `json:"freshness_config"`
+	FreshnessStatus  ObservableFreshnessStatus `json:"freshness_status"`
+	Id               string                    `json:"id"`
+	LastChangedAt    *time.Time                `json:"last_changed_at,omitempty"`
+	LastErrorMessage *string                   `json:"last_error_message,omitempty"`
+	LastErrorType    *string                   `json:"last_error_type,omitempty"`
+	LastObservedAt   *time.Time                `json:"last_observed_at,omitempty"`
+	Name             string                    `json:"name"`
+	OrgId            string                    `json:"org_id"`
+	ProjectId        string                    `json:"project_id"`
+	ReducerConfig    ObservableReducerConfig   `json:"reducer_config"`
+	StateSchema      JSONDocument              `json:"state_schema"`
+	Subject          JSONDocument              `json:"subject"`
+	SubjectKind      string                    `json:"subject_kind"`
+	Tags             *map[string]string        `json:"tags,omitempty"`
+	UpdateConfig     JSONDocument              `json:"update_config"`
+	UpdatedAt        time.Time                 `json:"updated_at"`
+}
+
+// ObservableEvent defines model for ObservableEvent.
+type ObservableEvent struct {
+	CreatedAt       time.Time           `json:"created_at"`
+	DispatchStatus  string              `json:"dispatch_status"`
+	EventType       ObservableEventType `json:"event_type"`
+	Id              string              `json:"id"`
+	NewVersion      int64               `json:"new_version"`
+	ObservableId    string              `json:"observable_id"`
+	PreviousVersion int64               `json:"previous_version"`
+	Summary         JSONDocument        `json:"summary"`
+}
+
+// ObservableEventListResponse defines model for ObservableEventListResponse.
+type ObservableEventListResponse struct {
+	Items      []ObservableEvent `json:"items"`
+	NextCursor *string           `json:"next_cursor,omitempty"`
+}
+
+// ObservableEventType defines model for ObservableEventType.
+type ObservableEventType string
+
+// ObservableFreshnessConfig defines model for ObservableFreshnessConfig.
+type ObservableFreshnessConfig struct {
+	StaleAfterSeconds *int64 `json:"stale_after_seconds,omitempty"`
+}
+
+// ObservableFreshnessStatus defines model for ObservableFreshnessStatus.
+type ObservableFreshnessStatus string
+
+// ObservableListResponse defines model for ObservableListResponse.
+type ObservableListResponse struct {
+	Items      []Observable `json:"items"`
+	NextCursor *string      `json:"next_cursor,omitempty"`
+}
+
+// ObservableObservation defines model for ObservableObservation.
+type ObservableObservation struct {
+	ErrorMessage *string                     `json:"error_message,omitempty"`
+	ErrorType    *string                     `json:"error_type,omitempty"`
+	Id           string                      `json:"id"`
+	InvocationId string                      `json:"invocation_id"`
+	ObservableId string                      `json:"observable_id"`
+	ObservedAt   time.Time                   `json:"observed_at"`
+	ObserverId   *string                     `json:"observer_id,omitempty"`
+	ObserverKind ObservableObserverKind      `json:"observer_kind"`
+	Payload      JSONDocument                `json:"payload"`
+	PayloadHash  string                      `json:"payload_hash"`
+	ReceivedAt   time.Time                   `json:"received_at"`
+	Status       ObservableObservationStatus `json:"status"`
+}
+
+// ObservableObservationListResponse defines model for ObservableObservationListResponse.
+type ObservableObservationListResponse struct {
+	Items      []ObservableObservation `json:"items"`
+	NextCursor *string                 `json:"next_cursor,omitempty"`
+}
+
+// ObservableObservationStatus defines model for ObservableObservationStatus.
+type ObservableObservationStatus string
+
+// ObservableObserverKind defines model for ObservableObserverKind.
+type ObservableObserverKind string
+
+// ObservableReducerConfig defines model for ObservableReducerConfig.
+type ObservableReducerConfig struct {
+	Kind ObservableReducerKind `json:"kind"`
+}
+
+// ObservableReducerKind defines model for ObservableReducerKind.
+type ObservableReducerKind string
+
+// ObservableStateVersion defines model for ObservableStateVersion.
+type ObservableStateVersion struct {
+	CreatedAt     time.Time              `json:"created_at"`
+	Id            string                 `json:"id"`
+	ObservableId  string                 `json:"observable_id"`
+	ObservationId string                 `json:"observation_id"`
+	ObservedAt    time.Time              `json:"observed_at"`
+	ObserverId    *string                `json:"observer_id,omitempty"`
+	ObserverKind  ObservableObserverKind `json:"observer_kind"`
+	State         JSONDocument           `json:"state"`
+	StateHash     string                 `json:"state_hash"`
+	Version       int64                  `json:"version"`
+}
+
+// ObservableStateVersionListResponse defines model for ObservableStateVersionListResponse.
+type ObservableStateVersionListResponse struct {
+	Items      []ObservableStateVersion `json:"items"`
+	NextCursor *string                  `json:"next_cursor,omitempty"`
+}
+
 // PingWebhookRequest defines model for PingWebhookRequest.
 type PingWebhookRequest struct {
 	// Url URL to test. When supplied, the ping is sent to this URL instead of the webhook's saved URL — use this to validate a candidate URL before saving it. When omitted, the webhook's current saved URL is used.
@@ -4380,10 +5253,12 @@ type ProjectMetrics struct {
 
 // QueryRowsRequest defines model for QueryRowsRequest.
 type QueryRowsRequest struct {
+	// Cursor Opaque cursor from a prior response.
+	Cursor *string `json:"cursor,omitempty"`
+
 	// Filter Column equality or operator filter
 	Filter *map[string]interface{} `json:"filter,omitempty"`
 	Limit  *int                    `json:"limit,omitempty"`
-	Offset *int                    `json:"offset,omitempty"`
 	Sort   *[]struct {
 		Field string                     `json:"field"`
 		Order *QueryRowsRequestSortOrder `json:"order,omitempty"`
@@ -4395,10 +5270,10 @@ type QueryRowsRequestSortOrder string
 
 // QueryRowsResponse defines model for QueryRowsResponse.
 type QueryRowsResponse struct {
-	HasMore bool           `json:"has_more"`
-	Limit   *int           `json:"limit,omitempty"`
-	Offset  *int           `json:"offset,omitempty"`
-	Rows    []DataTableRow `json:"rows"`
+	HasMore    bool           `json:"has_more"`
+	Limit      *int           `json:"limit,omitempty"`
+	NextCursor *string        `json:"next_cursor,omitempty"`
+	Rows       []DataTableRow `json:"rows"`
 }
 
 // ReferenceCandidate defines model for ReferenceCandidate.
@@ -4507,7 +5382,7 @@ type ResolvedConfigEntrySource string
 
 // RespondToInteractionRequest defines model for RespondToInteractionRequest.
 type RespondToInteractionRequest struct {
-	// Comment Optional free-text comment accompanying the response.
+	// Comment Optional free-text comment accompanying the response. Available on every interaction kind (approval, choice, multi-choice, input) and never gated by the spec — the responder may always attach reasoning, caveats, or follow-up notes alongside `value`.
 	Comment *string `json:"comment,omitempty"`
 
 	// Confidence Optional 0..1 confidence score the responder attaches to their answer. Required when the interaction's resolution policy weights by confidence; ignored otherwise.
@@ -4632,11 +5507,14 @@ type RunStep struct {
 	Action string `json:"action"`
 
 	// Attempt Zero-based retry attempt for this step/path pair.
-	Attempt      int        `json:"attempt"`
-	CompletedAt  *time.Time `json:"completed_at,omitempty"`
-	CreatedAt    time.Time  `json:"created_at"`
-	ErrorMessage *string    `json:"error_message,omitempty"`
-	ErrorType    *string    `json:"error_type,omitempty"`
+	Attempt int `json:"attempt"`
+
+	// Bindings Vars written by this step, with the source expression used for each binding.
+	Bindings     *[]RunStepBinding `json:"bindings,omitempty"`
+	CompletedAt  *time.Time        `json:"completed_at,omitempty"`
+	CreatedAt    time.Time         `json:"created_at"`
+	ErrorMessage *string           `json:"error_message,omitempty"`
+	ErrorType    *string           `json:"error_type,omitempty"`
 
 	// Id Stable run-step identifier. Use this value as `{step_id}` in `GET /runs/{id}/steps/{step_id}` and as `from_step_id` in `POST /runs/{id}/forks`.
 	Id string `json:"id"`
@@ -4652,6 +5530,9 @@ type RunStep struct {
 
 	// PathId Workflow path identifier for branch/fanout execution.
 	PathId string `json:"path_id"`
+
+	// Reason Optional suppression reason, most commonly set when status is `skipped`.
+	Reason *string `json:"reason,omitempty"`
 
 	// ResultB64 Base64-encoded serialized step result, when present.
 	ResultB64 *string `json:"result_b64,omitempty"`
@@ -4681,6 +5562,15 @@ type RunStep struct {
 	UpdatedAt     time.Time `json:"updated_at"`
 }
 
+// RunStepBinding defines model for RunStepBinding.
+type RunStepBinding struct {
+	// Source Source expression or literal used to produce the bound value.
+	Source string `json:"source"`
+
+	// Var Bound top-level vars path, e.g. `vars.repo`.
+	Var string `json:"var"`
+}
+
 // RunStepKind defines model for RunStepKind.
 type RunStepKind string
 
@@ -4704,6 +5594,27 @@ type ScheduleSourceConfig struct {
 
 	// Interval Go duration string, e.g. `5m`, `1h`, `30s`. Must be positive.
 	Interval *string `json:"interval,omitempty"`
+}
+
+// SearchRowsRequest defines model for SearchRowsRequest.
+type SearchRowsRequest struct {
+	// Cursor Opaque cursor from a prior search response.
+	Cursor *string `json:"cursor,omitempty"`
+
+	// Filter Optional column equality or operator filter applied before text search.
+	Filter *map[string]interface{} `json:"filter,omitempty"`
+	Limit  *int                    `json:"limit,omitempty"`
+
+	// Query Keyword search query.
+	Query string `json:"query"`
+}
+
+// SearchRowsResponse defines model for SearchRowsResponse.
+type SearchRowsResponse struct {
+	HasMore    bool           `json:"has_more"`
+	Limit      *int           `json:"limit,omitempty"`
+	NextCursor *string        `json:"next_cursor,omitempty"`
+	Rows       []DataTableRow `json:"rows"`
 }
 
 // SendChannelMessageRequest Fields used to post a new channel message. Sender attribution is determined entirely by the authenticated credential and cannot be overridden via this request body.
@@ -4952,6 +5863,25 @@ type StepSpanCountsResponse struct {
 	Counts map[string]SpanCounts `json:"counts"`
 }
 
+// SubmitObservableObservationRequest defines model for SubmitObservableObservationRequest.
+type SubmitObservableObservationRequest struct {
+	InvocationId string                 `json:"invocation_id"`
+	ObservedAt   *time.Time             `json:"observed_at,omitempty"`
+	ObserverId   *string                `json:"observer_id,omitempty"`
+	ObserverKind ObservableObserverKind `json:"observer_kind"`
+	Payload      JSONDocument           `json:"payload"`
+}
+
+// SubmitObservableObservationResult defines model for SubmitObservableObservationResult.
+type SubmitObservableObservationResult struct {
+	Duplicate    bool                    `json:"duplicate"`
+	Event        *ObservableEvent        `json:"event,omitempty"`
+	Observable   Observable              `json:"observable"`
+	Observation  ObservableObservation   `json:"observation"`
+	StateChanged bool                    `json:"state_changed"`
+	StateVersion *ObservableStateVersion `json:"state_version,omitempty"`
+}
+
 // SystemTextBlock defines model for SystemTextBlock.
 type SystemTextBlock struct {
 	CacheControl *map[string]interface{} `json:"cache_control,omitempty"`
@@ -4970,17 +5900,32 @@ type TestFireTargetResult struct {
 	// Enabled Whether the target is enabled. Disabled targets are skipped without resolution.
 	Enabled *bool `json:"enabled,omitempty"`
 
-	// InputMappingResolved Resolved input map handed to the workflow.
+	// ExternalIdResolved Rendered value of `external_id_template` (launch_run) or `run_selector.external_id_template` (signal_run). Lets authors verify the two templates produce matching strings. Absent when the target has no template or rendering failed.
+	ExternalIdResolved *string `json:"external_id_resolved,omitempty"`
+
+	// InputMappingResolved (launch_run only) Resolved input map handed to the workflow.
 	InputMappingResolved *map[string]interface{} `json:"input_mapping_resolved,omitempty"`
 
-	// InputResolutionError Error encountered resolving input_mapping, when one occurred.
+	// InputResolutionError Error encountered resolving the target's `input_mapping` for a `launch_run` target. `signal_run` targets report `signal_payload_mapping` failures via `signal_payload_resolution_error` instead, so clients can distinguish which resolution step failed without parsing the error string. Errors rendering the run-selector template (`run_selector.external_id_template` for `signal_run`, or the `external_id_template` for `launch_run`) surface in `launch_error`.
 	InputResolutionError *string `json:"input_resolution_error,omitempty"`
 
-	// LaunchError Error from the launcher when execute mode failed to start the run.
+	// Kind Effect kind of this target. Discriminates which resolved field is populated: `launch_run` populates `input_mapping_resolved`; `signal_run` populates `signal_payload_resolved`.
+	Kind TestFireTargetResultKind `json:"kind"`
+
+	// LaunchError Error from the launcher (`launch_run`) or signal sender (`signal_run`) when execute mode failed to act on the target.
 	LaunchError *string `json:"launch_error,omitempty"`
 
-	// RunId ID of the launched run (only set in execute mode).
+	// Reason Why the target was skipped, when status is `skipped`. Empty for `success` and `failed` results.
+	Reason *string `json:"reason,omitempty"`
+
+	// RunId ID of the launched (`launch_run`) or signaled (`signal_run`) run. Only set in execute mode.
 	RunId *string `json:"run_id,omitempty"`
+
+	// SignalPayloadResolutionError (signal_run only) Error encountered resolving `signal_payload_mapping` — the payload that would be delivered to the matched run's `wait_signal` step (and exposed under `signal_payload_resolved`). Reported separately from `input_resolution_error` so clients don't reuse launch-run-specific fields for signal failures.
+	SignalPayloadResolutionError *string `json:"signal_payload_resolution_error,omitempty"`
+
+	// SignalPayloadResolved (signal_run only) Resolved signal payload that would be delivered to the matched run's `wait_signal` step.
+	SignalPayloadResolved *map[string]interface{} `json:"signal_payload_resolved,omitempty"`
 
 	// Status Per-target outcome of a test-fire dispatch. Distinct from `TriggerFireStatus`, which carries aggregate values like `partial_failure` that are only meaningful at the trigger level.
 	Status TestFireTargetStatus `json:"status"`
@@ -4988,12 +5933,15 @@ type TestFireTargetResult struct {
 	// TargetId ID of the trigger target this result is for.
 	TargetId string `json:"target_id"`
 
-	// WorkflowId Workflow definition the target points at.
+	// WorkflowId Workflow definition the target points at. Present only for `launch_run` targets.
 	WorkflowId *string `json:"workflow_id,omitempty"`
 
-	// WouldLaunch True when the target would launch a run (or signal a run once `signal_run` lands). False for disabled targets and for targets whose condition evaluated to false.
+	// WouldLaunch True when the target would launch a run (`launch_run`) or signal an existing run (`signal_run`). False for disabled targets and targets whose condition evaluated to false.
 	WouldLaunch bool `json:"would_launch"`
 }
+
+// TestFireTargetResultKind Effect kind of this target. Discriminates which resolved field is populated: `launch_run` populates `input_mapping_resolved`; `signal_run` populates `signal_payload_resolved`.
+type TestFireTargetResultKind string
 
 // TestFireTargetStatus Per-target outcome of a test-fire dispatch. Distinct from `TriggerFireStatus`, which carries aggregate values like `partial_failure` that are only meaningful at the trigger level.
 type TestFireTargetStatus string
@@ -5212,10 +6160,19 @@ type TriggerFireListResponse struct {
 // - `skipped` — the concurrency policy suppressed the entire activation.
 type TriggerFireStatus string
 
-// TriggerFireTargetResult Outcome of a single target within a trigger fire activation.
+// TriggerFireTargetResult Outcome of a single target within a trigger fire activation. `kind` discriminates the result shape so consumers can branch on it instead of inferring from optional fields like `workflow_id` or `external_id_resolved`.
 type TriggerFireTargetResult struct {
-	// Error Error detail when status is `failed`.
+	// Error Error detail when status is `failed`. Empty for `success` and `skipped` results — `skipped` causes go in `reason` instead. Pre-split historical rows persisted skip causes here, so consumers should fall back to `error` when `reason` is empty on a skipped row.
 	Error *string `json:"error,omitempty"`
+
+	// ExternalIdResolved Rendered value of the target's `external_id_template` (launch_run) or `run_selector.external_id_template` (signal_run). Lets operators verify the two templates produce matching strings without re-deriving them by hand. Absent when the target has no template or when rendering failed before a value was produced.
+	ExternalIdResolved *string `json:"external_id_resolved,omitempty"`
+
+	// Kind Effect kind of the evaluated target. `launch_run` started (or attempted) a new workflow run; `signal_run` delivered (or attempted to deliver) a signal to an existing run. Lets clients reliably branch on `kind` instead of inspecting optional fields like `workflow_id` or `external_id_resolved`.
+	Kind TriggerFireTargetResultKind `json:"kind"`
+
+	// Reason Why the target was skipped, when status is `skipped`. Examples: `condition false`, `target disabled`, `no run matching external_id <id>`. Empty for `success` and `failed` results.
+	Reason *string `json:"reason,omitempty"`
 
 	// RunId ID of the run that was launched or signaled. Absent when the target failed or was skipped before resolving a run.
 	RunId *string `json:"run_id,omitempty"`
@@ -5229,6 +6186,9 @@ type TriggerFireTargetResult struct {
 	// WorkflowId ID of the workflow definition that was started or attempted. Present only for `launch_run` targets — `signal_run` targets deliver a signal to an existing run and have no workflow definition association of their own.
 	WorkflowId *string `json:"workflow_id,omitempty"`
 }
+
+// TriggerFireTargetResultKind Effect kind of the evaluated target. `launch_run` started (or attempted) a new workflow run; `signal_run` delivered (or attempted to deliver) a signal to an existing run. Lets clients reliably branch on `kind` instead of inspecting optional fields like `workflow_id` or `external_id_resolved`.
+type TriggerFireTargetResultKind string
 
 // TriggerFireTargetStatus Outcome for a single target within a trigger fire activation. Per-target results never aggregate, so `partial_failure` cannot appear here.
 type TriggerFireTargetStatus string
@@ -5278,7 +6238,9 @@ type TriggerTarget struct {
 	// Id Unique identifier for this target.
 	Id string `json:"id"`
 
-	// InputMapping (launch_run only) Maps workflow input names to expressions evaluated against the event environment (`{ meta, event }`). Values use Mobius's `${expr}` template syntax — pure expressions (`${event.actor.id}`) preserve their native type, mixed templates (`Bearer ${meta.id}`) always render to a string, and other literals pass through as-is. Legacy JSONPath-like values (`$.…`) and unwrapped `event.` / `meta.` references are rejected with 400 on create/update. Example: `{"user_id": "${event.actor.id}"}`.
+	// InputMapping (launch_run only) Maps workflow input names to expressions evaluated against the event environment (`{ meta, event }`). Values use Mobius's `${expr}` template syntax — pure expressions (`${event.actor.id}`) preserve their native type, mixed templates (`Bearer ${meta.id}`) always render to a string, and other literals pass through as-is. Legacy JSONPath-like values (`$.…`) and unwrapped `event.` / `meta.` references are rejected with 400 on create/update.
+	//
+	// Resolution is fail-closed: an expression that references a missing field (`${event.pull_request.merged_by.login}` on an event without `merged_by`) fails the dispatch with `input_resolution_error` naming the offending key. No run is launched. Author expressions to reference only fields you expect to be present. Example: `{"user_id": "${event.actor.id}"}`.
 	InputMapping *map[string]string `json:"input_mapping,omitempty"`
 
 	// Kind Discriminates the target's effect. `launch_run` starts a new workflow run; `signal_run` signals an existing run.
@@ -5287,7 +6249,7 @@ type TriggerTarget struct {
 	// RunSelector (signal_run only) Locates an existing run to deliver a signal to. Today only `external_id_template` is supported; the shape is reserved as an object so future filters (e.g. workflow scope, multi-run match) can be added without breaking the API.
 	RunSelector *TriggerTargetRunSelector `json:"run_selector,omitempty"`
 
-	// SignalPayloadMapping (signal_run only) Maps the signal payload keys to expressions evaluated against the event environment. Available to the workflow as `signal.payload`.
+	// SignalPayloadMapping (signal_run only) Maps the signal payload keys to expressions evaluated against the event environment. Available to the workflow as `signal.payload`. Resolution is fail-closed — an expression that references a missing field fails the target with `signal_payload_resolution_error` (the signal-side analogue of `input_mapping`'s `input_resolution_error`) and the signal is not delivered.
 	SignalPayloadMapping *map[string]string `json:"signal_payload_mapping,omitempty"`
 
 	// SignalTopic (signal_run only) The `wait_signal` topic to deliver to the located run.
@@ -5346,6 +6308,9 @@ type UpdateActionRequest struct {
 type UpdateAgentRequest struct {
 	// Capabilities Replacement capability map.
 	Capabilities *map[string]interface{} `json:"capabilities,omitempty"`
+
+	// Color Replacement display color (Mantine palette key, e.g. `indigo`). Pass empty string to clear and fall back to a hash-derived color.
+	Color *string `json:"color,omitempty"`
 
 	// Config Replacement configuration blob.
 	Config *map[string]interface{} `json:"config,omitempty"`
@@ -5416,6 +6381,18 @@ type UpdateGroupRequest struct {
 
 // UpdateGroupRequestRoutingPolicy Replacement routing policy, either `first_responder` or `all_members`. Affects future interactions only; in-flight interactions retain the snapshotted policy.
 type UpdateGroupRequestRoutingPolicy string
+
+// UpdateObservableRequest defines model for UpdateObservableRequest.
+type UpdateObservableRequest struct {
+	FreshnessConfig *ObservableFreshnessConfig `json:"freshness_config,omitempty"`
+	Name            *string                    `json:"name,omitempty"`
+	ReducerConfig   *ObservableReducerConfig   `json:"reducer_config,omitempty"`
+	StateSchema     *JSONDocument              `json:"state_schema,omitempty"`
+	Subject         *JSONDocument              `json:"subject,omitempty"`
+	SubjectKind     *string                    `json:"subject_kind,omitempty"`
+	Tags            *map[string]string         `json:"tags,omitempty"`
+	UpdateConfig    *JSONDocument              `json:"update_config,omitempty"`
+}
 
 // UpdateProjectRequest defines model for UpdateProjectRequest.
 type UpdateProjectRequest struct {
@@ -5543,6 +6520,21 @@ type UpdateWorkflowRequest struct {
 	// Tags Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints.
 	Tags *TagMap `json:"tags,omitempty"`
 }
+
+// UpsertActorStateRequest defines model for UpsertActorStateRequest.
+type UpsertActorStateRequest struct {
+	ActorKind    ActorStateActorKind                 `json:"actor_kind"`
+	Assignments  *[]ActorAssignmentInput             `json:"assignments,omitempty"`
+	Availability ActorAvailability                   `json:"availability"`
+	Capacity     *ActorCapacity                      `json:"capacity,omitempty"`
+	ExpiresAt    *time.Time                          `json:"expires_at,omitempty"`
+	Focus        *ActorFocus                         `json:"focus,omitempty"`
+	StatusSource UpsertActorStateRequestStatusSource `json:"status_source"`
+	Visibility   *ActorStateVisibility               `json:"visibility,omitempty"`
+}
+
+// UpsertActorStateRequestStatusSource defines model for UpsertActorStateRequest.StatusSource.
+type UpsertActorStateRequestStatusSource string
 
 // UpsertRowRequest defines model for UpsertRowRequest.
 type UpsertRowRequest struct {
@@ -5828,9 +6820,6 @@ type WorkflowCatch struct {
 
 	// Next Step name to transition to when this clause is matched.
 	Next string `json:"next"`
-
-	// Store State variable name where the caught error is stored.
-	Store *string `json:"store,omitempty"`
 }
 
 // WorkflowDefinition defines model for WorkflowDefinition.
@@ -5942,13 +6931,16 @@ type WorkflowEdge struct {
 // WorkflowEdgeMatchingStrategy Controls matching when multiple outbound edge conditions are true: `all` follows every matching edge in parallel, while `first` follows only the first matching edge in declaration order.
 type WorkflowEdgeMatchingStrategy string
 
-// WorkflowExecutableStep Executes a worker or server action and stores its result in workflow state.
+// WorkflowExecutableStep Executes a worker or server action and exposes its result at `steps.<name>.result`.
 type WorkflowExecutableStep struct {
 	// Action Canonical executable-step field. When `action_kind` is omitted, the engine treats this as a worker action. Use `action_kind: server` for Mobius-managed server actions.
 	Action string `json:"action"`
 
 	// ActionKind Execution mode for `action` steps: `worker` creates claimable jobs for external workers, while `server` executes Mobius-managed actions such as integrations inside the service. Omit for the current default of `worker`.
 	ActionKind *WorkflowActionKind `json:"action_kind,omitempty"`
+
+	// Bind Optional writes to top-level `vars.*` keys, evaluated after the step completes. Targets must look like `vars.foo`.
+	Bind *map[string]string `json:"bind,omitempty"`
 
 	// Catch Error catch clauses that redirect execution on specific failures.
 	Catch *[]WorkflowCatch `json:"catch,omitempty"`
@@ -5976,9 +6968,6 @@ type WorkflowExecutableStep struct {
 
 	// Retry Retry policies applied when the action fails.
 	Retry *[]WorkflowRetry `json:"retry,omitempty"`
-
-	// Store State variable name where the action result is stored.
-	Store *string `json:"store,omitempty"`
 }
 
 // WorkflowInput Declares one named input accepted by a workflow spec.
@@ -6053,14 +7042,14 @@ type WorkflowInteractionStep struct {
 
 // WorkflowJoinConfig Waits for one or more parallel branches to complete before proceeding.
 type WorkflowJoinConfig struct {
-	// BranchMappings Maps branch names to variable names for storing per-branch results.
-	BranchMappings *map[string]string `json:"branch_mappings,omitempty"`
-
 	// Branches Branch names to wait for. Defaults to all branches if omitted.
 	Branches *[]string `json:"branches,omitempty"`
 
 	// Count Minimum number of branches that must complete. Defaults to all listed branches.
 	Count *int `json:"count,omitempty"`
+
+	// Result Explicit object this join produces. Expressions may read `branch.<branch>.<step>.result`.
+	Result *map[string]interface{} `json:"result,omitempty"`
 }
 
 // WorkflowJoinStep Waits for one or more parallel branches before continuing.
@@ -6087,19 +7076,24 @@ type WorkflowJoinStep struct {
 	Next *[]WorkflowEdge `json:"next,omitempty"`
 }
 
-// WorkflowOutput Declares one named output value produced by a workflow spec.
+// WorkflowOutput Declares one output value produced by a workflow spec.
 type WorkflowOutput struct {
-	// Branch Defaults to `main` when omitted.
-	Branch *string `json:"branch,omitempty"`
+	union json.RawMessage
+}
 
+// WorkflowOutput0 Compact expression form, e.g. `${steps.summarize.result.text}`.
+type WorkflowOutput0 = string
+
+// WorkflowOutput1 defines model for .
+type WorkflowOutput1 struct {
 	// Description Human-readable description of this output value.
 	Description *string `json:"description,omitempty"`
 
-	// Name Output name exposed to callers and downstream steps.
-	Name string `json:"name"`
+	// Schema Optional JSON Schema for this output.
+	Schema *map[string]interface{} `json:"schema,omitempty"`
 
-	// Variable State variable name whose value is mapped to this output.
-	Variable string `json:"variable"`
+	// Value Expression or literal output value.
+	Value interface{} `json:"value"`
 }
 
 // WorkflowPauseConfig Configuration for a manual pause step.
@@ -6194,7 +7188,7 @@ type WorkflowRun struct {
 	// ErrorMessage Error message from the most recent failure. Present when status is failed.
 	ErrorMessage *string `json:"error_message,omitempty"`
 
-	// ErrorType Typed run-level failure cause: `run_timeout`, `run_cancelled`, `step_failed`, or `run_failed`. Its own vocabulary, not a superset of the job-level `error_type`. Present when `status=failed`.
+	// ErrorType Typed run-level failure cause: `run_timeout`, `run_cancelled`, `step_failed`, `run_failed`, `output_extraction_failed`, or `output_validation_failed`. Its own vocabulary, not a superset of the job-level `error_type`. Present when `status=failed`.
 	ErrorType *WorkflowRunErrorType `json:"error_type,omitempty"`
 
 	// Errors Run-level errors that caused a failed lifecycle.
@@ -6263,7 +7257,7 @@ type WorkflowRun struct {
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
-// WorkflowRunErrorType Typed run-level failure cause: `run_timeout`, `run_cancelled`, `step_failed`, or `run_failed`. Its own vocabulary, not a superset of the job-level `error_type`. Present when `status=failed`.
+// WorkflowRunErrorType Typed run-level failure cause: `run_timeout`, `run_cancelled`, `step_failed`, `run_failed`, `output_extraction_failed`, or `output_validation_failed`. Its own vocabulary, not a superset of the job-level `error_type`. Present when `status=failed`.
 type WorkflowRunErrorType string
 
 // WorkflowRunDetail defines model for WorkflowRunDetail.
@@ -6301,7 +7295,7 @@ type WorkflowRunDetail struct {
 	// ErrorMessage Error message from the most recent failure. Present when status is failed.
 	ErrorMessage *string `json:"error_message,omitempty"`
 
-	// ErrorType Typed run-level failure cause: `run_timeout`, `run_cancelled`, `step_failed`, or `run_failed`. Its own vocabulary, not a superset of the job-level `error_type`. Present when `status=failed`.
+	// ErrorType Typed run-level failure cause: `run_timeout`, `run_cancelled`, `step_failed`, `run_failed`, `output_extraction_failed`, or `output_validation_failed`. Its own vocabulary, not a superset of the job-level `error_type`. Present when `status=failed`.
 	ErrorType *WorkflowRunDetailErrorType `json:"error_type,omitempty"`
 
 	// Errors Run-level errors that caused a failed lifecycle.
@@ -6387,7 +7381,7 @@ type WorkflowRunDetail struct {
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
-// WorkflowRunDetailErrorType Typed run-level failure cause: `run_timeout`, `run_cancelled`, `step_failed`, or `run_failed`. Its own vocabulary, not a superset of the job-level `error_type`. Present when `status=failed`.
+// WorkflowRunDetailErrorType Typed run-level failure cause: `run_timeout`, `run_cancelled`, `step_failed`, `run_failed`, `output_extraction_failed`, or `output_validation_failed`. Its own vocabulary, not a superset of the job-level `error_type`. Present when `status=failed`.
 type WorkflowRunDetailErrorType string
 
 // WorkflowRunError defines model for WorkflowRunError.
@@ -6455,12 +7449,28 @@ type WorkflowRunStepCounts struct {
 	Failed    int `json:"failed"`
 	Pending   int `json:"pending"`
 	Running   int `json:"running"`
+	Skipped   int `json:"skipped"`
 }
 
 // WorkflowRunWaitDetail defines model for WorkflowRunWaitDetail.
 type WorkflowRunWaitDetail struct {
 	// Attempt Retry attempt number for `retry` waits.
 	Attempt *int `json:"attempt,omitempty"`
+
+	// AttemptCount Number of poll attempts recorded for a `wait_until` wait.
+	AttemptCount *int `json:"attempt_count,omitempty"`
+
+	// Condition Optional `expr` predicate the matching event or latest wait result must satisfy before resuming the path.
+	Condition *string `json:"condition,omitempty"`
+
+	// CurrentInterval Current poll interval for `wait_until`.
+	CurrentInterval *string `json:"current_interval,omitempty"`
+
+	// DeadlineAt Fixed timeout deadline for `wait_until`.
+	DeadlineAt *time.Time `json:"deadline_at,omitempty"`
+
+	// EventType Event type pattern this path is waiting for. Set when `kind` is `wait_event`.
+	EventType *string `json:"event_type,omitempty"`
 
 	// InteractionId Pending interaction linked to this wait.
 	InteractionId *string `json:"interaction_id,omitempty"`
@@ -6471,14 +7481,44 @@ type WorkflowRunWaitDetail struct {
 	// Kind What a waiting path is blocked on.
 	Kind WorkflowRunWaitKind `json:"kind"`
 
+	// LastErrorMessage Latest poll error message for `wait_until`.
+	LastErrorMessage *string `json:"last_error_message,omitempty"`
+
+	// LastErrorType Latest poll error type for `wait_until`.
+	LastErrorType *string `json:"last_error_type,omitempty"`
+
+	// LastResult Latest poll result preview for `wait_until`.
+	LastResult interface{} `json:"last_result,omitempty"`
+
+	// MatchMode Event match mode for `wait_event`; empty means `exact`.
+	MatchMode *string `json:"match_mode,omitempty"`
+
 	// MaxAttempts Maximum attempts for `retry` waits.
 	MaxAttempts *int `json:"max_attempts,omitempty"`
+
+	// Observable Observable name for `wait_until.observable` waits.
+	Observable *string `json:"observable,omitempty"`
+
+	// ObservableId Observable ID for `wait_until.observable` waits.
+	ObservableId *string `json:"observable_id,omitempty"`
+
+	// ObservedVersion Observable version observed before the path parked.
+	ObservedVersion *int64 `json:"observed_version,omitempty"`
+
+	// PollAction Poll action name for `wait_until` waits.
+	PollAction *string `json:"poll_action,omitempty"`
+
+	// PollParameters Frozen poll parameters for `wait_until` waits.
+	PollParameters *map[string]interface{} `json:"poll_parameters,omitempty"`
 
 	// Reason Human-readable pause or wait reason.
 	Reason *string `json:"reason,omitempty"`
 
 	// SignalName Signal name this path is waiting for.
 	SignalName *string `json:"signal_name,omitempty"`
+
+	// SourceKind Wait source kind for `wait_until` (`poll` or `observable`).
+	SourceKind *string `json:"source_kind,omitempty"`
 
 	// Target Identifies who should receive an interaction request. Note: distinct from the caller/audit `Actor` vocabulary — a target is a *recipient*, not someone who has acted yet.
 	Target *InteractionTarget `json:"target,omitempty"`
@@ -6505,6 +7545,31 @@ type WorkflowRunWaitSummary struct {
 	WaitingOnSignalNames []string   `json:"waiting_on_signal_names"`
 	WaitingPaths         int        `json:"waiting_paths"`
 }
+
+// WorkflowSetStep Binds one or more top-level vars and produces the bound object as this step's result.
+type WorkflowSetStep struct {
+	Description *string `json:"description,omitempty"`
+
+	// Each Fan-out configuration that repeats a step over a collection.
+	Each *WorkflowEach `json:"each,omitempty"`
+
+	// EdgeMatchingStrategy Controls matching when multiple outbound edge conditions are true: `all` follows every matching edge in parallel, while `first` follows only the first matching edge in declaration order.
+	EdgeMatchingStrategy *WorkflowEdgeMatchingStrategy `json:"edge_matching_strategy,omitempty"`
+
+	// Layout Optional presentation hint for the visual editor. Ignored by the execution engine; when absent, editors auto-lay out the step.
+	Layout *WorkflowStepLayout `json:"layout,omitempty"`
+
+	// Name Unique step name within the workflow, used for routing and logging.
+	Name string              `json:"name"`
+	Next *[]WorkflowEdge     `json:"next,omitempty"`
+	Type WorkflowSetStepType `json:"type"`
+
+	// Vars Bindings keyed by top-level vars key. `repo: ${steps.fetch.result}` writes `vars.repo`.
+	Vars map[string]interface{} `json:"vars"`
+}
+
+// WorkflowSetStepType defines model for WorkflowSetStep.Type.
+type WorkflowSetStepType string
 
 // WorkflowSleepConfig Configuration for a sleep step.
 type WorkflowSleepConfig struct {
@@ -6549,20 +7614,17 @@ type WorkflowSpec struct {
 	// Name Workflow name.
 	Name string `json:"name"`
 
-	// Outputs Declared output values produced by this workflow.
-	Outputs *[]WorkflowOutput `json:"outputs,omitempty"`
+	// Outputs Declared terminal contract. Compact values are expressions; long-form values may include value/schema/description.
+	Outputs *map[string]WorkflowOutput `json:"outputs,omitempty"`
 
 	// StartAt Step name to start execution from. Defaults to the first step.
 	StartAt *string `json:"start_at,omitempty"`
-
-	// State Initial workflow state.
-	State *map[string]interface{} `json:"state,omitempty"`
 
 	// Steps Ordered list of steps that make up this workflow.
 	Steps []WorkflowStep `json:"steps"`
 }
 
-// WorkflowStep A workflow step. Exactly one step shape should be used. Step variants are identified by their distinctive required property (`action`, `join`, `wait_signal`, `sleep`, `pause`, or `interaction`). The current authored shape intentionally does not add a separate discriminator field, so existing workflow YAML stays compact.
+// WorkflowStep A workflow step. Exactly one step shape should be used. Step variants are identified by their distinctive required property (`action`, `type: set`, `join`, `wait_signal`, `wait_event`, `wait_until`, `sleep`, `pause`, or `interaction`). The current authored shape intentionally does not add a separate discriminator field, so existing workflow YAML stays compact.
 type WorkflowStep struct {
 	union json.RawMessage
 }
@@ -6619,13 +7681,55 @@ type WorkflowVersionSummary struct {
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
+// WorkflowWaitEventConfig Suspends the run until an integration event matching `event_type` (and `condition`, when provided) is delivered to the project. `event_type` is exact-matched by default. Set `match_mode: prefix` for descendant matching such as `github.pull_request` matching `.opened`, `.closed`, etc.
+type WorkflowWaitEventConfig struct {
+	// Condition Optional bare-form `expr` predicate over `{ event, meta, inputs, steps, vars, each, run }`. The event resumes the step only when the expression evaluates truthy. Empty means "any event of the matching type resumes". Predicate fields use bare `expr`; `${...}` templating is reserved for value-producing fields.
+	Condition *string `json:"condition,omitempty"`
+
+	// EventType Integration event type to wait for, e.g. `github.pull_request.closed` or `stripe.invoice.paid`.
+	EventType string `json:"event_type"`
+
+	// MatchMode Event type match mode. `exact` is the default. `prefix` requires a non-empty condition and matches descendants separated by `.`.
+	MatchMode *WorkflowWaitEventConfigMatchMode `json:"match_mode,omitempty"`
+
+	// OnTimeout Step name to transition to if the timeout elapses without a matching event. Fails the run if omitted.
+	OnTimeout *string `json:"on_timeout,omitempty"`
+
+	// Timeout Maximum wait duration as a Go duration string (e.g. "24h", "30m").
+	Timeout string `json:"timeout"`
+}
+
+// WorkflowWaitEventConfigMatchMode Event type match mode. `exact` is the default. `prefix` requires a non-empty condition and matches descendants separated by `.`.
+type WorkflowWaitEventConfigMatchMode string
+
+// WorkflowWaitEventStep Suspends a branch until an integration event of the configured type is delivered to the project and (optionally) satisfies an `expr` predicate over its payload. Same operational model as `wait_signal` but matches against the event bus directly, without requiring a separate `signal_run` trigger.
+type WorkflowWaitEventStep struct {
+	// Description Optional human-readable description of what this step does.
+	Description *string `json:"description,omitempty"`
+
+	// Each Fan-out configuration that repeats a step over a collection.
+	Each *WorkflowEach `json:"each,omitempty"`
+
+	// EdgeMatchingStrategy Controls matching when multiple outbound edge conditions are true: `all` follows every matching edge in parallel, while `first` follows only the first matching edge in declaration order.
+	EdgeMatchingStrategy *WorkflowEdgeMatchingStrategy `json:"edge_matching_strategy,omitempty"`
+
+	// Layout Optional presentation hint for the visual editor. Ignored by the execution engine; when absent, editors auto-lay out the step.
+	Layout *WorkflowStepLayout `json:"layout,omitempty"`
+
+	// Name Unique step name within the workflow, used for routing and logging.
+	Name string `json:"name"`
+
+	// Next Outbound edges controlling which step executes after this one.
+	Next *[]WorkflowEdge `json:"next,omitempty"`
+
+	// WaitEvent Suspends the run until an integration event matching `event_type` (and `condition`, when provided) is delivered to the project. `event_type` is exact-matched by default. Set `match_mode: prefix` for descendant matching such as `github.pull_request` matching `.opened`, `.closed`, etc.
+	WaitEvent WorkflowWaitEventConfig `json:"wait_event"`
+}
+
 // WorkflowWaitSignalConfig Suspends the run until a signal with the matching topic arrives.
 type WorkflowWaitSignalConfig struct {
 	// OnTimeout Step name to transition to if the timeout elapses without a signal. Fails the run if omitted.
 	OnTimeout *string `json:"on_timeout,omitempty"`
-
-	// Store Variable name to store the signal payload in after resumption.
-	Store *string `json:"store,omitempty"`
 
 	// Timeout Maximum wait duration as a Go duration string (e.g. "24h", "30m").
 	Timeout string `json:"timeout"`
@@ -6658,8 +7762,76 @@ type WorkflowWaitSignalStep struct {
 	WaitSignal WorkflowWaitSignalConfig `json:"wait_signal"`
 }
 
+// WorkflowWaitUntilBackoffConfig defines model for WorkflowWaitUntilBackoffConfig.
+type WorkflowWaitUntilBackoffConfig struct {
+	// Jitter Whether to jitter each computed interval.
+	Jitter *bool `json:"jitter,omitempty"`
+
+	// MaxEvery Maximum poll interval as a Go duration string.
+	MaxEvery string `json:"max_every"`
+
+	// Multiplier Multiplier greater than 1 applied after each false/error attempt.
+	Multiplier float64 `json:"multiplier"`
+}
+
+// WorkflowWaitUntilConfig Durable condition wait. Exactly one of `poll` or `observable` must be set. Poll waits evaluate direct checks; Observable waits read reusable project-scoped Observable state and park on change events.
+type WorkflowWaitUntilConfig struct {
+	// Condition Required bare-form `expr` predicate. Poll waits evaluate against `{ result, inputs, steps, vars, each, run }`; Observable waits evaluate against `{ state, observable, inputs, steps, vars, each, run }`. The expression must return bool true.
+	Condition string `json:"condition"`
+
+	// Observable Identifier-safe Observable name or ID.
+	Observable *string `json:"observable,omitempty"`
+
+	// OnTimeout Step name to transition to if the timeout elapses. Fails the run if omitted.
+	OnTimeout *string                      `json:"on_timeout,omitempty"`
+	Poll      *WorkflowWaitUntilPollConfig `json:"poll,omitempty"`
+
+	// Timeout Maximum wait duration as a Go duration string (e.g. "10m", "1h").
+	Timeout string `json:"timeout"`
+}
+
+// WorkflowWaitUntilPollConfig defines model for WorkflowWaitUntilPollConfig.
+type WorkflowWaitUntilPollConfig struct {
+	// Action Mobius action invoked for each poll attempt.
+	Action  string                          `json:"action"`
+	Backoff *WorkflowWaitUntilBackoffConfig `json:"backoff,omitempty"`
+
+	// Every Base poll interval as a Go duration string.
+	Every string `json:"every"`
+
+	// Parameters Poll action parameters, evaluated once when the wait is entered.
+	Parameters *map[string]interface{} `json:"parameters,omitempty"`
+}
+
+// WorkflowWaitUntilStep Polls project or external state until a strict boolean condition evaluates true, parking the run durably between checks.
+type WorkflowWaitUntilStep struct {
+	// Description Optional human-readable description of what this step does.
+	Description *string `json:"description,omitempty"`
+
+	// Each Fan-out configuration that repeats a step over a collection.
+	Each *WorkflowEach `json:"each,omitempty"`
+
+	// EdgeMatchingStrategy Controls matching when multiple outbound edge conditions are true: `all` follows every matching edge in parallel, while `first` follows only the first matching edge in declaration order.
+	EdgeMatchingStrategy *WorkflowEdgeMatchingStrategy `json:"edge_matching_strategy,omitempty"`
+
+	// Layout Optional presentation hint for the visual editor. Ignored by the execution engine; when absent, editors auto-lay out the step.
+	Layout *WorkflowStepLayout `json:"layout,omitempty"`
+
+	// Name Unique step name within the workflow, used for routing and logging.
+	Name string `json:"name"`
+
+	// Next Outbound edges controlling which step executes after the condition passes.
+	Next *[]WorkflowEdge `json:"next,omitempty"`
+
+	// WaitUntil Durable condition wait. Exactly one of `poll` or `observable` must be set. Poll waits evaluate direct checks; Observable waits read reusable project-scoped Observable state and park on change events.
+	WaitUntil WorkflowWaitUntilConfig `json:"wait_until"`
+}
+
 // ActionNameParam defines model for ActionNameParam.
 type ActionNameParam = string
+
+// ArtifactIdParam defines model for ArtifactIdParam.
+type ArtifactIdParam = string
 
 // CursorParam defines model for CursorParam.
 type CursorParam = string
@@ -6673,11 +7845,17 @@ type IDParam = string
 // LimitParam defines model for LimitParam.
 type LimitParam = int
 
+// ObservableIdParam defines model for ObservableIdParam.
+type ObservableIdParam = string
+
 // ProjectHandleParam defines model for ProjectHandleParam.
 type ProjectHandleParam = string
 
 // ReferenceTypeParam defines model for ReferenceTypeParam.
 type ReferenceTypeParam = string
+
+// RunIdParam defines model for RunIdParam.
+type RunIdParam = string
 
 // TableNameParam defines model for TableNameParam.
 type TableNameParam = string
@@ -6825,6 +8003,23 @@ type ListActionsParams struct {
 	Tag *TagFilterParam `form:"tag,omitempty" json:"tag,omitempty"`
 }
 
+// ListActorStatesParams defines parameters for ListActorStates.
+type ListActorStatesParams struct {
+	ActorKind    *ActorStateActorKind  `form:"actor_kind,omitempty" json:"actor_kind,omitempty"`
+	Availability *ActorAvailability    `form:"availability,omitempty" json:"availability,omitempty"`
+	Visibility   *ActorStateVisibility `form:"visibility,omitempty" json:"visibility,omitempty"`
+
+	// Limit Maximum number of items to return
+	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// ListActorAssignmentsParams defines parameters for ListActorAssignments.
+type ListActorAssignmentsParams struct {
+	// TargetKey Canonical target key, e.g. `mobius.run:run_123`.
+	TargetKey string               `form:"target_key" json:"target_key"`
+	Role      *ActorAssignmentRole `form:"role,omitempty" json:"role,omitempty"`
+}
+
 // ListAgentsParams defines parameters for ListAgents.
 type ListAgentsParams struct {
 	// ServiceAccountId Filter to agents backed by this service account.
@@ -6854,6 +8049,16 @@ type ListAgentSessionsParams struct {
 
 	// Limit Maximum number of items to return
 	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// DeleteArtifactParams defines parameters for DeleteArtifact.
+type DeleteArtifactParams struct {
+	Force *bool `form:"force,omitempty" json:"force,omitempty"`
+}
+
+// GetArtifactContentParams defines parameters for GetArtifactContent.
+type GetArtifactContentParams struct {
+	Inline *bool `form:"inline,omitempty" json:"inline,omitempty"`
 }
 
 // ListChannelsParams defines parameters for ListChannels.
@@ -7015,6 +8220,45 @@ type IngestProjectLogsJSONBody = []LogRecordInput
 // IngestProjectLogsOTLPJSONBody defines parameters for IngestProjectLogsOTLP.
 type IngestProjectLogsOTLPJSONBody = map[string]interface{}
 
+// ListObservablesParams defines parameters for ListObservables.
+type ListObservablesParams struct {
+	// Cursor Cursor for pagination (opaque string from previous response)
+	Cursor *CursorParam `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Limit Maximum number of items to return
+	Limit           *LimitParam                `form:"limit,omitempty" json:"limit,omitempty"`
+	SubjectKind     *string                    `form:"subject_kind,omitempty" json:"subject_kind,omitempty"`
+	FreshnessStatus *ObservableFreshnessStatus `form:"freshness_status,omitempty" json:"freshness_status,omitempty"`
+}
+
+// ListObservableEventsParams defines parameters for ListObservableEvents.
+type ListObservableEventsParams struct {
+	// Cursor Cursor for pagination (opaque string from previous response)
+	Cursor *CursorParam `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Limit Maximum number of items to return
+	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// ListObservableObservationsParams defines parameters for ListObservableObservations.
+type ListObservableObservationsParams struct {
+	// Cursor Cursor for pagination (opaque string from previous response)
+	Cursor *CursorParam `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Limit Maximum number of items to return
+	Limit  *LimitParam                  `form:"limit,omitempty" json:"limit,omitempty"`
+	Status *ObservableObservationStatus `form:"status,omitempty" json:"status,omitempty"`
+}
+
+// ListObservableStateVersionsParams defines parameters for ListObservableStateVersions.
+type ListObservableStateVersionsParams struct {
+	// Cursor Cursor for pagination (opaque string from previous response)
+	Cursor *CursorParam `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Limit Maximum number of items to return
+	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
 // LookupReferencesParams defines parameters for LookupReferences.
 type LookupReferencesParams struct {
 	// Q Human search query.
@@ -7037,6 +8281,15 @@ type LookupReferencesParams struct {
 type ListRunsParams struct {
 	// Status Filter by run status.
 	Status *WorkflowRunStatus `form:"status,omitempty" json:"status,omitempty"`
+
+	// Lifecycle Convenience filter that selects runs by lifecycle stage: `in_flight` returns active (not-yet-terminal) runs, `terminal` returns completed and failed runs. Ignored when `status` is set.
+	Lifecycle *ListRunsParamsLifecycle `form:"lifecycle,omitempty" json:"lifecycle,omitempty"`
+
+	// CreatedAtAfter Inclusive lower bound for `created_at`, RFC3339. Combine with `created_at_before` to scope to a time window.
+	CreatedAtAfter *time.Time `form:"created_at_after,omitempty" json:"created_at_after,omitempty"`
+
+	// CreatedAtBefore Exclusive upper bound for `created_at`, RFC3339. Combine with `created_at_after` to scope to a time window.
+	CreatedAtBefore *time.Time `form:"created_at_before,omitempty" json:"created_at_before,omitempty"`
 
 	// WorkflowType Filter by workflow type name.
 	WorkflowType *string `form:"workflow_type,omitempty" json:"workflow_type,omitempty"`
@@ -7068,6 +8321,9 @@ type ListRunsParams struct {
 	// Limit Maximum number of items to return
 	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
 }
+
+// ListRunsParamsLifecycle defines parameters for ListRuns.
+type ListRunsParamsLifecycle string
 
 // StreamRunEventsParams defines parameters for StreamRunEvents.
 type StreamRunEventsParams struct {
@@ -7101,6 +8357,21 @@ type GetRunStepParams struct {
 
 // GetRunStepParamsInclude defines parameters for GetRunStep.
 type GetRunStepParamsInclude string
+
+// ListRunArtifactsParams defines parameters for ListRunArtifacts.
+type ListRunArtifactsParams struct {
+	StepId *string `form:"step_id,omitempty" json:"step_id,omitempty"`
+
+	// Mime Mime prefix filter (e.g. `image/`)
+	Mime  *string        `form:"mime,omitempty" json:"mime,omitempty"`
+	State *ArtifactState `form:"state,omitempty" json:"state,omitempty"`
+
+	// Cursor Cursor for pagination (opaque string from previous response)
+	Cursor *CursorParam `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Limit Maximum number of items to return
+	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
+}
 
 // ListProjectSpansParams defines parameters for ListProjectSpans.
 type ListProjectSpansParams struct {
@@ -7258,6 +8529,9 @@ type UpdateActionJSONRequestBody = UpdateActionRequest
 // InvokeActionJSONRequestBody defines body for InvokeAction for application/json ContentType.
 type InvokeActionJSONRequestBody = ActionInvocationRequest
 
+// UpsertActorStateJSONRequestBody defines body for UpsertActorState for application/json ContentType.
+type UpsertActorStateJSONRequestBody = UpsertActorStateRequest
+
 // CreateAgentJSONRequestBody defines body for CreateAgent for application/json ContentType.
 type CreateAgentJSONRequestBody = CreateAgentRequest
 
@@ -7266,6 +8540,12 @@ type UpdateAgentJSONRequestBody = UpdateAgentRequest
 
 // CreateAgentSessionJSONRequestBody defines body for CreateAgentSession for application/json ContentType.
 type CreateAgentSessionJSONRequestBody = CreateAgentSessionRequest
+
+// CommitArtifactJSONRequestBody defines body for CommitArtifact for application/json ContentType.
+type CommitArtifactJSONRequestBody = CommitArtifactRequest
+
+// CreateArtifactSlotJSONRequestBody defines body for CreateArtifactSlot for application/json ContentType.
+type CreateArtifactSlotJSONRequestBody = CreateArtifactSlotRequest
 
 // CreateChannelJSONRequestBody defines body for CreateChannel for application/json ContentType.
 type CreateChannelJSONRequestBody = CreateChannelRequest
@@ -7333,6 +8613,15 @@ type IngestProjectLogsJSONRequestBody = IngestProjectLogsJSONBody
 // IngestProjectLogsOTLPJSONRequestBody defines body for IngestProjectLogsOTLP for application/json ContentType.
 type IngestProjectLogsOTLPJSONRequestBody = IngestProjectLogsOTLPJSONBody
 
+// CreateObservableJSONRequestBody defines body for CreateObservable for application/json ContentType.
+type CreateObservableJSONRequestBody = CreateObservableRequest
+
+// UpdateObservableJSONRequestBody defines body for UpdateObservable for application/json ContentType.
+type UpdateObservableJSONRequestBody = UpdateObservableRequest
+
+// SubmitObservableObservationJSONRequestBody defines body for SubmitObservableObservation for application/json ContentType.
+type SubmitObservableObservationJSONRequestBody = SubmitObservableObservationRequest
+
 // ResolveReferencesJSONRequestBody defines body for ResolveReferences for application/json ContentType.
 type ResolveReferencesJSONRequestBody = ReferenceResolveRequest
 
@@ -7344,6 +8633,9 @@ type ForkRunJSONRequestBody = RunForkRequest
 
 // SendRunSignalJSONRequestBody defines body for SendRunSignal for application/json ContentType.
 type SendRunSignalJSONRequestBody = SendRunSignalRequest
+
+// UpdateArtifactStorageSettingsJSONRequestBody defines body for UpdateArtifactStorageSettings for application/json ContentType.
+type UpdateArtifactStorageSettingsJSONRequestBody = ArtifactStorageSettingsUpdate
 
 // CreateDataTableJSONRequestBody defines body for CreateDataTable for application/json ContentType.
 type CreateDataTableJSONRequestBody = CreateDataTableRequest
@@ -7359,6 +8651,9 @@ type BulkInsertDataTableRowsJSONRequestBody = BulkInsertRowsRequest
 
 // QueryDataTableRowsJSONRequestBody defines body for QueryDataTableRows for application/json ContentType.
 type QueryDataTableRowsJSONRequestBody = QueryRowsRequest
+
+// SearchDataTableRowsJSONRequestBody defines body for SearchDataTableRows for application/json ContentType.
+type SearchDataTableRowsJSONRequestBody = SearchRowsRequest
 
 // UpsertDataTableRowJSONRequestBody defines body for UpsertDataTableRow for application/json ContentType.
 type UpsertDataTableRowJSONRequestBody = UpsertRowRequest
@@ -11124,6 +12419,68 @@ func (t *TriggerSourceConfig) UnmarshalJSON(b []byte) error {
 	return err
 }
 
+// AsWorkflowOutput0 returns the union data inside the WorkflowOutput as a WorkflowOutput0
+func (t WorkflowOutput) AsWorkflowOutput0() (WorkflowOutput0, error) {
+	var body WorkflowOutput0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromWorkflowOutput0 overwrites any union data inside the WorkflowOutput as the provided WorkflowOutput0
+func (t *WorkflowOutput) FromWorkflowOutput0(v WorkflowOutput0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeWorkflowOutput0 performs a merge with any union data inside the WorkflowOutput, using the provided WorkflowOutput0
+func (t *WorkflowOutput) MergeWorkflowOutput0(v WorkflowOutput0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsWorkflowOutput1 returns the union data inside the WorkflowOutput as a WorkflowOutput1
+func (t WorkflowOutput) AsWorkflowOutput1() (WorkflowOutput1, error) {
+	var body WorkflowOutput1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromWorkflowOutput1 overwrites any union data inside the WorkflowOutput as the provided WorkflowOutput1
+func (t *WorkflowOutput) FromWorkflowOutput1(v WorkflowOutput1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeWorkflowOutput1 performs a merge with any union data inside the WorkflowOutput, using the provided WorkflowOutput1
+func (t *WorkflowOutput) MergeWorkflowOutput1(v WorkflowOutput1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t WorkflowOutput) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *WorkflowOutput) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
 // AsWorkflowExecutableStep returns the union data inside the WorkflowStep as a WorkflowExecutableStep
 func (t WorkflowStep) AsWorkflowExecutableStep() (WorkflowExecutableStep, error) {
 	var body WorkflowExecutableStep
@@ -11140,6 +12497,32 @@ func (t *WorkflowStep) FromWorkflowExecutableStep(v WorkflowExecutableStep) erro
 
 // MergeWorkflowExecutableStep performs a merge with any union data inside the WorkflowStep, using the provided WorkflowExecutableStep
 func (t *WorkflowStep) MergeWorkflowExecutableStep(v WorkflowExecutableStep) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsWorkflowSetStep returns the union data inside the WorkflowStep as a WorkflowSetStep
+func (t WorkflowStep) AsWorkflowSetStep() (WorkflowSetStep, error) {
+	var body WorkflowSetStep
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromWorkflowSetStep overwrites any union data inside the WorkflowStep as the provided WorkflowSetStep
+func (t *WorkflowStep) FromWorkflowSetStep(v WorkflowSetStep) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeWorkflowSetStep performs a merge with any union data inside the WorkflowStep, using the provided WorkflowSetStep
+func (t *WorkflowStep) MergeWorkflowSetStep(v WorkflowSetStep) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -11192,6 +12575,58 @@ func (t *WorkflowStep) FromWorkflowWaitSignalStep(v WorkflowWaitSignalStep) erro
 
 // MergeWorkflowWaitSignalStep performs a merge with any union data inside the WorkflowStep, using the provided WorkflowWaitSignalStep
 func (t *WorkflowStep) MergeWorkflowWaitSignalStep(v WorkflowWaitSignalStep) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsWorkflowWaitEventStep returns the union data inside the WorkflowStep as a WorkflowWaitEventStep
+func (t WorkflowStep) AsWorkflowWaitEventStep() (WorkflowWaitEventStep, error) {
+	var body WorkflowWaitEventStep
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromWorkflowWaitEventStep overwrites any union data inside the WorkflowStep as the provided WorkflowWaitEventStep
+func (t *WorkflowStep) FromWorkflowWaitEventStep(v WorkflowWaitEventStep) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeWorkflowWaitEventStep performs a merge with any union data inside the WorkflowStep, using the provided WorkflowWaitEventStep
+func (t *WorkflowStep) MergeWorkflowWaitEventStep(v WorkflowWaitEventStep) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsWorkflowWaitUntilStep returns the union data inside the WorkflowStep as a WorkflowWaitUntilStep
+func (t WorkflowStep) AsWorkflowWaitUntilStep() (WorkflowWaitUntilStep, error) {
+	var body WorkflowWaitUntilStep
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromWorkflowWaitUntilStep overwrites any union data inside the WorkflowStep as the provided WorkflowWaitUntilStep
+func (t *WorkflowStep) FromWorkflowWaitUntilStep(v WorkflowWaitUntilStep) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeWorkflowWaitUntilStep performs a merge with any union data inside the WorkflowStep, using the provided WorkflowWaitUntilStep
+func (t *WorkflowStep) MergeWorkflowWaitUntilStep(v WorkflowWaitUntilStep) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -11470,6 +12905,20 @@ type ClientInterface interface {
 	// RotateActionSecret request
 	RotateActionSecret(ctx context.Context, project ProjectHandleParam, actionName ActionNameParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ListActorStates request
+	ListActorStates(ctx context.Context, project ProjectHandleParam, params *ListActorStatesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListActorAssignments request
+	ListActorAssignments(ctx context.Context, project ProjectHandleParam, params *ListActorAssignmentsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetActorState request
+	GetActorState(ctx context.Context, project ProjectHandleParam, actorId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpsertActorStateWithBody request with any body
+	UpsertActorStateWithBody(ctx context.Context, project ProjectHandleParam, actorId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	UpsertActorState(ctx context.Context, project ProjectHandleParam, actorId string, body UpsertActorStateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListAgents request
 	ListAgents(ctx context.Context, project ProjectHandleParam, params *ListAgentsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -11508,6 +12957,31 @@ type ClientInterface interface {
 
 	// HeartbeatAgentSession request
 	HeartbeatAgentSession(ctx context.Context, project ProjectHandleParam, id IDParam, sessionId SessionId, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DeleteArtifact request
+	DeleteArtifact(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, params *DeleteArtifactParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetArtifact request
+	GetArtifact(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetArtifactContent request
+	GetArtifactContent(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, params *GetArtifactContentParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UnpinArtifact request
+	UnpinArtifact(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PinArtifact request
+	PinArtifact(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CommitArtifactWithBody request with any body
+	CommitArtifactWithBody(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	CommitArtifact(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, body CommitArtifactJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateArtifactSlotWithBody request with any body
+	CreateArtifactSlotWithBody(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	CreateArtifactSlot(ctx context.Context, project ProjectHandleParam, body CreateArtifactSlotJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListChannels request
 	ListChannels(ctx context.Context, project ProjectHandleParam, params *ListChannelsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -11688,6 +13162,39 @@ type ClientInterface interface {
 	// GetProjectMetrics request
 	GetProjectMetrics(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ListObservables request
+	ListObservables(ctx context.Context, project ProjectHandleParam, params *ListObservablesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateObservableWithBody request with any body
+	CreateObservableWithBody(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	CreateObservable(ctx context.Context, project ProjectHandleParam, body CreateObservableJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DeleteObservable request
+	DeleteObservable(ctx context.Context, project ProjectHandleParam, observableId ObservableIdParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetObservable request
+	GetObservable(ctx context.Context, project ProjectHandleParam, observableId ObservableIdParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateObservableWithBody request with any body
+	UpdateObservableWithBody(ctx context.Context, project ProjectHandleParam, observableId ObservableIdParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	UpdateObservable(ctx context.Context, project ProjectHandleParam, observableId ObservableIdParam, body UpdateObservableJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListObservableEvents request
+	ListObservableEvents(ctx context.Context, project ProjectHandleParam, observableId ObservableIdParam, params *ListObservableEventsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListObservableObservations request
+	ListObservableObservations(ctx context.Context, project ProjectHandleParam, observableId ObservableIdParam, params *ListObservableObservationsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// SubmitObservableObservationWithBody request with any body
+	SubmitObservableObservationWithBody(ctx context.Context, project ProjectHandleParam, observableId ObservableIdParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	SubmitObservableObservation(ctx context.Context, project ProjectHandleParam, observableId ObservableIdParam, body SubmitObservableObservationJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListObservableStateVersions request
+	ListObservableStateVersions(ctx context.Context, project ProjectHandleParam, observableId ObservableIdParam, params *ListObservableStateVersionsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// LookupReferences request
 	LookupReferences(ctx context.Context, project ProjectHandleParam, referenceType ReferenceTypeParam, params *LookupReferencesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -11735,6 +13242,20 @@ type ClientInterface interface {
 	// GetRunStep request
 	GetRunStep(ctx context.Context, project ProjectHandleParam, id IDParam, stepId string, params *GetRunStepParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ListRunArtifacts request
+	ListRunArtifacts(ctx context.Context, project ProjectHandleParam, runId RunIdParam, params *ListRunArtifactsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetArtifactStorageSettings request
+	GetArtifactStorageSettings(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateArtifactStorageSettingsWithBody request with any body
+	UpdateArtifactStorageSettingsWithBody(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	UpdateArtifactStorageSettings(ctx context.Context, project ProjectHandleParam, body UpdateArtifactStorageSettingsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetArtifactStorageQuota request
+	GetArtifactStorageQuota(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListProjectSpans request
 	ListProjectSpans(ctx context.Context, project ProjectHandleParam, params *ListProjectSpansParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -11775,6 +13296,11 @@ type ClientInterface interface {
 
 	QueryDataTableRows(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body QueryDataTableRowsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// SearchDataTableRowsWithBody request with any body
+	SearchDataTableRowsWithBody(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	SearchDataTableRows(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body SearchDataTableRowsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// UpsertDataTableRowWithBody request with any body
 	UpsertDataTableRowWithBody(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -11790,6 +13316,9 @@ type ClientInterface interface {
 	UpdateDataTableRowWithBody(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	UpdateDataTableRow(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, body UpdateDataTableRowJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetDataTableStats request
+	GetDataTableStats(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListProjectTraces request
 	ListProjectTraces(ctx context.Context, project ProjectHandleParam, params *ListProjectTracesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -12378,6 +13907,66 @@ func (c *Client) RotateActionSecret(ctx context.Context, project ProjectHandlePa
 	return c.Client.Do(req)
 }
 
+func (c *Client) ListActorStates(ctx context.Context, project ProjectHandleParam, params *ListActorStatesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListActorStatesRequest(c.Server, project, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListActorAssignments(ctx context.Context, project ProjectHandleParam, params *ListActorAssignmentsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListActorAssignmentsRequest(c.Server, project, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetActorState(ctx context.Context, project ProjectHandleParam, actorId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetActorStateRequest(c.Server, project, actorId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpsertActorStateWithBody(ctx context.Context, project ProjectHandleParam, actorId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpsertActorStateRequestWithBody(c.Server, project, actorId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpsertActorState(ctx context.Context, project ProjectHandleParam, actorId string, body UpsertActorStateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpsertActorStateRequest(c.Server, project, actorId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) ListAgents(ctx context.Context, project ProjectHandleParam, params *ListAgentsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListAgentsRequest(c.Server, project, params)
 	if err != nil {
@@ -12536,6 +14125,114 @@ func (c *Client) DisconnectAgentSession(ctx context.Context, project ProjectHand
 
 func (c *Client) HeartbeatAgentSession(ctx context.Context, project ProjectHandleParam, id IDParam, sessionId SessionId, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewHeartbeatAgentSessionRequest(c.Server, project, id, sessionId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) DeleteArtifact(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, params *DeleteArtifactParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteArtifactRequest(c.Server, project, id, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetArtifact(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetArtifactRequest(c.Server, project, id)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetArtifactContent(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, params *GetArtifactContentParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetArtifactContentRequest(c.Server, project, id, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UnpinArtifact(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUnpinArtifactRequest(c.Server, project, id)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PinArtifact(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPinArtifactRequest(c.Server, project, id)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CommitArtifactWithBody(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCommitArtifactRequestWithBody(c.Server, project, id, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CommitArtifact(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, body CommitArtifactJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCommitArtifactRequest(c.Server, project, id, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateArtifactSlotWithBody(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateArtifactSlotRequestWithBody(c.Server, project, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateArtifactSlot(ctx context.Context, project ProjectHandleParam, body CreateArtifactSlotJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateArtifactSlotRequest(c.Server, project, body)
 	if err != nil {
 		return nil, err
 	}
@@ -13350,6 +15047,150 @@ func (c *Client) GetProjectMetrics(ctx context.Context, project ProjectHandlePar
 	return c.Client.Do(req)
 }
 
+func (c *Client) ListObservables(ctx context.Context, project ProjectHandleParam, params *ListObservablesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListObservablesRequest(c.Server, project, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateObservableWithBody(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateObservableRequestWithBody(c.Server, project, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateObservable(ctx context.Context, project ProjectHandleParam, body CreateObservableJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateObservableRequest(c.Server, project, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) DeleteObservable(ctx context.Context, project ProjectHandleParam, observableId ObservableIdParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteObservableRequest(c.Server, project, observableId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetObservable(ctx context.Context, project ProjectHandleParam, observableId ObservableIdParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetObservableRequest(c.Server, project, observableId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateObservableWithBody(ctx context.Context, project ProjectHandleParam, observableId ObservableIdParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateObservableRequestWithBody(c.Server, project, observableId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateObservable(ctx context.Context, project ProjectHandleParam, observableId ObservableIdParam, body UpdateObservableJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateObservableRequest(c.Server, project, observableId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListObservableEvents(ctx context.Context, project ProjectHandleParam, observableId ObservableIdParam, params *ListObservableEventsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListObservableEventsRequest(c.Server, project, observableId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListObservableObservations(ctx context.Context, project ProjectHandleParam, observableId ObservableIdParam, params *ListObservableObservationsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListObservableObservationsRequest(c.Server, project, observableId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) SubmitObservableObservationWithBody(ctx context.Context, project ProjectHandleParam, observableId ObservableIdParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSubmitObservableObservationRequestWithBody(c.Server, project, observableId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) SubmitObservableObservation(ctx context.Context, project ProjectHandleParam, observableId ObservableIdParam, body SubmitObservableObservationJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSubmitObservableObservationRequest(c.Server, project, observableId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListObservableStateVersions(ctx context.Context, project ProjectHandleParam, observableId ObservableIdParam, params *ListObservableStateVersionsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListObservableStateVersionsRequest(c.Server, project, observableId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) LookupReferences(ctx context.Context, project ProjectHandleParam, referenceType ReferenceTypeParam, params *LookupReferencesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewLookupReferencesRequest(c.Server, project, referenceType, params)
 	if err != nil {
@@ -13554,6 +15395,66 @@ func (c *Client) GetRunStep(ctx context.Context, project ProjectHandleParam, id 
 	return c.Client.Do(req)
 }
 
+func (c *Client) ListRunArtifacts(ctx context.Context, project ProjectHandleParam, runId RunIdParam, params *ListRunArtifactsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListRunArtifactsRequest(c.Server, project, runId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetArtifactStorageSettings(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetArtifactStorageSettingsRequest(c.Server, project)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateArtifactStorageSettingsWithBody(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateArtifactStorageSettingsRequestWithBody(c.Server, project, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateArtifactStorageSettings(ctx context.Context, project ProjectHandleParam, body UpdateArtifactStorageSettingsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateArtifactStorageSettingsRequest(c.Server, project, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetArtifactStorageQuota(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetArtifactStorageQuotaRequest(c.Server, project)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) ListProjectSpans(ctx context.Context, project ProjectHandleParam, params *ListProjectSpansParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListProjectSpansRequest(c.Server, project, params)
 	if err != nil {
@@ -13734,6 +15635,30 @@ func (c *Client) QueryDataTableRows(ctx context.Context, project ProjectHandlePa
 	return c.Client.Do(req)
 }
 
+func (c *Client) SearchDataTableRowsWithBody(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSearchDataTableRowsRequestWithBody(c.Server, project, tableName, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) SearchDataTableRows(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body SearchDataTableRowsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSearchDataTableRowsRequest(c.Server, project, tableName, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) UpsertDataTableRowWithBody(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewUpsertDataTableRowRequestWithBody(c.Server, project, tableName, contentType, body)
 	if err != nil {
@@ -13796,6 +15721,18 @@ func (c *Client) UpdateDataTableRowWithBody(ctx context.Context, project Project
 
 func (c *Client) UpdateDataTableRow(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, body UpdateDataTableRowJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewUpdateDataTableRowRequest(c.Server, project, tableName, rowId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetDataTableStats(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetDataTableStatsRequest(c.Server, project, tableName)
 	if err != nil {
 		return nil, err
 	}
@@ -15882,6 +17819,273 @@ func NewRotateActionSecretRequest(server string, project ProjectHandleParam, act
 	return req, nil
 }
 
+// NewListActorStatesRequest generates requests for ListActorStates
+func NewListActorStatesRequest(server string, project ProjectHandleParam, params *ListActorStatesParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/actor-state", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.ActorKind != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "actor_kind", *params.ActorKind, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Availability != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "availability", *params.Availability, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Visibility != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "visibility", *params.Visibility, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewListActorAssignmentsRequest generates requests for ListActorAssignments
+func NewListActorAssignmentsRequest(server string, project ProjectHandleParam, params *ListActorAssignmentsParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/actor-state/assignments", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if queryFrag, err := runtime.StyleParamWithOptions("form", true, "target_key", params.TargetKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			return nil, err
+		} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+			return nil, err
+		} else {
+			for k, v := range parsed {
+				for _, v2 := range v {
+					queryValues.Add(k, v2)
+				}
+			}
+		}
+
+		if params.Role != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "role", *params.Role, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetActorStateRequest generates requests for GetActorState
+func NewGetActorStateRequest(server string, project ProjectHandleParam, actorId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "actor_id", actorId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/actor-state/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewUpsertActorStateRequest calls the generic UpsertActorState builder with application/json body
+func NewUpsertActorStateRequest(server string, project ProjectHandleParam, actorId string, body UpsertActorStateJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpsertActorStateRequestWithBody(server, project, actorId, "application/json", bodyReader)
+}
+
+// NewUpsertActorStateRequestWithBody generates requests for UpsertActorState with any type of body
+func NewUpsertActorStateRequestWithBody(server string, project ProjectHandleParam, actorId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "actor_id", actorId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/actor-state/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PUT", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewListAgentsRequest generates requests for ListAgents
 func NewListAgentsRequest(server string, project ProjectHandleParam, params *ListAgentsParams) (*http.Request, error) {
 	var err error
@@ -16499,6 +18703,356 @@ func NewHeartbeatAgentSessionRequest(server string, project ProjectHandleParam, 
 	if err != nil {
 		return nil, err
 	}
+
+	return req, nil
+}
+
+// NewDeleteArtifactRequest generates requests for DeleteArtifact
+func NewDeleteArtifactRequest(server string, project ProjectHandleParam, id ArtifactIdParam, params *DeleteArtifactParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/artifacts/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Force != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "force", *params.Force, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "boolean", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetArtifactRequest generates requests for GetArtifact
+func NewGetArtifactRequest(server string, project ProjectHandleParam, id ArtifactIdParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/artifacts/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetArtifactContentRequest generates requests for GetArtifactContent
+func NewGetArtifactContentRequest(server string, project ProjectHandleParam, id ArtifactIdParam, params *GetArtifactContentParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/artifacts/%s/content", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Inline != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "inline", *params.Inline, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "boolean", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewUnpinArtifactRequest generates requests for UnpinArtifact
+func NewUnpinArtifactRequest(server string, project ProjectHandleParam, id ArtifactIdParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/artifacts/%s/pin", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewPinArtifactRequest generates requests for PinArtifact
+func NewPinArtifactRequest(server string, project ProjectHandleParam, id ArtifactIdParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/artifacts/%s/pin", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCommitArtifactRequest calls the generic CommitArtifact builder with application/json body
+func NewCommitArtifactRequest(server string, project ProjectHandleParam, id ArtifactIdParam, body CommitArtifactJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCommitArtifactRequestWithBody(server, project, id, "application/json", bodyReader)
+}
+
+// NewCommitArtifactRequestWithBody generates requests for CommitArtifact with any type of body
+func NewCommitArtifactRequestWithBody(server string, project ProjectHandleParam, id ArtifactIdParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/artifacts/%s:commit", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewCreateArtifactSlotRequest calls the generic CreateArtifactSlot builder with application/json body
+func NewCreateArtifactSlotRequest(server string, project ProjectHandleParam, body CreateArtifactSlotJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateArtifactSlotRequestWithBody(server, project, "application/json", bodyReader)
+}
+
+// NewCreateArtifactSlotRequestWithBody generates requests for CreateArtifactSlot with any type of body
+func NewCreateArtifactSlotRequestWithBody(server string, project ProjectHandleParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/artifacts:slot", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
 }
@@ -19262,6 +21816,600 @@ func NewGetProjectMetricsRequest(server string, project ProjectHandleParam) (*ht
 	return req, nil
 }
 
+// NewListObservablesRequest generates requests for ListObservables
+func NewListObservablesRequest(server string, project ProjectHandleParam, params *ListObservablesParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/observables", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Cursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "cursor", *params.Cursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.SubjectKind != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "subject_kind", *params.SubjectKind, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.FreshnessStatus != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "freshness_status", *params.FreshnessStatus, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCreateObservableRequest calls the generic CreateObservable builder with application/json body
+func NewCreateObservableRequest(server string, project ProjectHandleParam, body CreateObservableJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateObservableRequestWithBody(server, project, "application/json", bodyReader)
+}
+
+// NewCreateObservableRequestWithBody generates requests for CreateObservable with any type of body
+func NewCreateObservableRequestWithBody(server string, project ProjectHandleParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/observables", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewDeleteObservableRequest generates requests for DeleteObservable
+func NewDeleteObservableRequest(server string, project ProjectHandleParam, observableId ObservableIdParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "observable_id", observableId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/observables/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetObservableRequest generates requests for GetObservable
+func NewGetObservableRequest(server string, project ProjectHandleParam, observableId ObservableIdParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "observable_id", observableId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/observables/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewUpdateObservableRequest calls the generic UpdateObservable builder with application/json body
+func NewUpdateObservableRequest(server string, project ProjectHandleParam, observableId ObservableIdParam, body UpdateObservableJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpdateObservableRequestWithBody(server, project, observableId, "application/json", bodyReader)
+}
+
+// NewUpdateObservableRequestWithBody generates requests for UpdateObservable with any type of body
+func NewUpdateObservableRequestWithBody(server string, project ProjectHandleParam, observableId ObservableIdParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "observable_id", observableId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/observables/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PATCH", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewListObservableEventsRequest generates requests for ListObservableEvents
+func NewListObservableEventsRequest(server string, project ProjectHandleParam, observableId ObservableIdParam, params *ListObservableEventsParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "observable_id", observableId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/observables/%s/events", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Cursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "cursor", *params.Cursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewListObservableObservationsRequest generates requests for ListObservableObservations
+func NewListObservableObservationsRequest(server string, project ProjectHandleParam, observableId ObservableIdParam, params *ListObservableObservationsParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "observable_id", observableId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/observables/%s/observations", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Cursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "cursor", *params.Cursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Status != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "status", *params.Status, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewSubmitObservableObservationRequest calls the generic SubmitObservableObservation builder with application/json body
+func NewSubmitObservableObservationRequest(server string, project ProjectHandleParam, observableId ObservableIdParam, body SubmitObservableObservationJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewSubmitObservableObservationRequestWithBody(server, project, observableId, "application/json", bodyReader)
+}
+
+// NewSubmitObservableObservationRequestWithBody generates requests for SubmitObservableObservation with any type of body
+func NewSubmitObservableObservationRequestWithBody(server string, project ProjectHandleParam, observableId ObservableIdParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "observable_id", observableId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/observables/%s/observations", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewListObservableStateVersionsRequest generates requests for ListObservableStateVersions
+func NewListObservableStateVersionsRequest(server string, project ProjectHandleParam, observableId ObservableIdParam, params *ListObservableStateVersionsParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "observable_id", observableId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/observables/%s/versions", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Cursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "cursor", *params.Cursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewLookupReferencesRequest generates requests for LookupReferences
 func NewLookupReferencesRequest(server string, project ProjectHandleParam, referenceType ReferenceTypeParam, params *LookupReferencesParams) (*http.Request, error) {
 	var err error
@@ -19475,6 +22623,54 @@ func NewListRunsRequest(server string, project ProjectHandleParam, params *ListR
 		if params.Status != nil {
 
 			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "status", *params.Status, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Lifecycle != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "lifecycle", *params.Lifecycle, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.CreatedAtAfter != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "created_at_after", *params.CreatedAtAfter, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.CreatedAtBefore != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "created_at_before", *params.CreatedAtBefore, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
 				return nil, err
 			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
 				return nil, err
@@ -20238,6 +23434,248 @@ func NewGetRunStepRequest(server string, project ProjectHandleParam, id IDParam,
 	return req, nil
 }
 
+// NewListRunArtifactsRequest generates requests for ListRunArtifacts
+func NewListRunArtifactsRequest(server string, project ProjectHandleParam, runId RunIdParam, params *ListRunArtifactsParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "run_id", runId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/runs/%s/artifacts", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.StepId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "step_id", *params.StepId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Mime != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "mime", *params.Mime, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.State != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "state", *params.State, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Cursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "cursor", *params.Cursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetArtifactStorageSettingsRequest generates requests for GetArtifactStorageSettings
+func NewGetArtifactStorageSettingsRequest(server string, project ProjectHandleParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/settings/artifact-storage", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewUpdateArtifactStorageSettingsRequest calls the generic UpdateArtifactStorageSettings builder with application/json body
+func NewUpdateArtifactStorageSettingsRequest(server string, project ProjectHandleParam, body UpdateArtifactStorageSettingsJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpdateArtifactStorageSettingsRequestWithBody(server, project, "application/json", bodyReader)
+}
+
+// NewUpdateArtifactStorageSettingsRequestWithBody generates requests for UpdateArtifactStorageSettings with any type of body
+func NewUpdateArtifactStorageSettingsRequestWithBody(server string, project ProjectHandleParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/settings/artifact-storage", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PUT", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetArtifactStorageQuotaRequest generates requests for GetArtifactStorageQuota
+func NewGetArtifactStorageQuotaRequest(server string, project ProjectHandleParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/settings/artifact-storage/quota", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewListProjectSpansRequest generates requests for ListProjectSpans
 func NewListProjectSpansRequest(server string, project ProjectHandleParam, params *ListProjectSpansParams) (*http.Request, error) {
 	var err error
@@ -20827,6 +24265,60 @@ func NewQueryDataTableRowsRequestWithBody(server string, project ProjectHandlePa
 	return req, nil
 }
 
+// NewSearchDataTableRowsRequest calls the generic SearchDataTableRows builder with application/json body
+func NewSearchDataTableRowsRequest(server string, project ProjectHandleParam, tableName TableNameParam, body SearchDataTableRowsJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewSearchDataTableRowsRequestWithBody(server, project, tableName, "application/json", bodyReader)
+}
+
+// NewSearchDataTableRowsRequestWithBody generates requests for SearchDataTableRows with any type of body
+func NewSearchDataTableRowsRequestWithBody(server string, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "table_name", tableName, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/tables/%s/rows/search", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewUpsertDataTableRowRequest calls the generic UpsertDataTableRow builder with application/json body
 func NewUpsertDataTableRowRequest(server string, project ProjectHandleParam, tableName TableNameParam, body UpsertDataTableRowJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
@@ -21034,6 +24526,47 @@ func NewUpdateDataTableRowRequestWithBody(server string, project ProjectHandlePa
 	}
 
 	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetDataTableStatsRequest generates requests for GetDataTableStats
+func NewGetDataTableStatsRequest(server string, project ProjectHandleParam, tableName TableNameParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "table_name", tableName, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/tables/%s/stats", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
 
 	return req, nil
 }
@@ -22987,6 +26520,20 @@ type ClientWithResponsesInterface interface {
 	// RotateActionSecretWithResponse request
 	RotateActionSecretWithResponse(ctx context.Context, project ProjectHandleParam, actionName ActionNameParam, reqEditors ...RequestEditorFn) (*RotateActionSecretResponse, error)
 
+	// ListActorStatesWithResponse request
+	ListActorStatesWithResponse(ctx context.Context, project ProjectHandleParam, params *ListActorStatesParams, reqEditors ...RequestEditorFn) (*ListActorStatesResponse, error)
+
+	// ListActorAssignmentsWithResponse request
+	ListActorAssignmentsWithResponse(ctx context.Context, project ProjectHandleParam, params *ListActorAssignmentsParams, reqEditors ...RequestEditorFn) (*ListActorAssignmentsResponse, error)
+
+	// GetActorStateWithResponse request
+	GetActorStateWithResponse(ctx context.Context, project ProjectHandleParam, actorId string, reqEditors ...RequestEditorFn) (*GetActorStateResponse, error)
+
+	// UpsertActorStateWithBodyWithResponse request with any body
+	UpsertActorStateWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, actorId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpsertActorStateResponse, error)
+
+	UpsertActorStateWithResponse(ctx context.Context, project ProjectHandleParam, actorId string, body UpsertActorStateJSONRequestBody, reqEditors ...RequestEditorFn) (*UpsertActorStateResponse, error)
+
 	// ListAgentsWithResponse request
 	ListAgentsWithResponse(ctx context.Context, project ProjectHandleParam, params *ListAgentsParams, reqEditors ...RequestEditorFn) (*ListAgentsResponse, error)
 
@@ -23025,6 +26572,31 @@ type ClientWithResponsesInterface interface {
 
 	// HeartbeatAgentSessionWithResponse request
 	HeartbeatAgentSessionWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, sessionId SessionId, reqEditors ...RequestEditorFn) (*HeartbeatAgentSessionResponse, error)
+
+	// DeleteArtifactWithResponse request
+	DeleteArtifactWithResponse(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, params *DeleteArtifactParams, reqEditors ...RequestEditorFn) (*DeleteArtifactResponse, error)
+
+	// GetArtifactWithResponse request
+	GetArtifactWithResponse(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, reqEditors ...RequestEditorFn) (*GetArtifactResponse, error)
+
+	// GetArtifactContentWithResponse request
+	GetArtifactContentWithResponse(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, params *GetArtifactContentParams, reqEditors ...RequestEditorFn) (*GetArtifactContentResponse, error)
+
+	// UnpinArtifactWithResponse request
+	UnpinArtifactWithResponse(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, reqEditors ...RequestEditorFn) (*UnpinArtifactResponse, error)
+
+	// PinArtifactWithResponse request
+	PinArtifactWithResponse(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, reqEditors ...RequestEditorFn) (*PinArtifactResponse, error)
+
+	// CommitArtifactWithBodyWithResponse request with any body
+	CommitArtifactWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CommitArtifactResponse, error)
+
+	CommitArtifactWithResponse(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, body CommitArtifactJSONRequestBody, reqEditors ...RequestEditorFn) (*CommitArtifactResponse, error)
+
+	// CreateArtifactSlotWithBodyWithResponse request with any body
+	CreateArtifactSlotWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateArtifactSlotResponse, error)
+
+	CreateArtifactSlotWithResponse(ctx context.Context, project ProjectHandleParam, body CreateArtifactSlotJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateArtifactSlotResponse, error)
 
 	// ListChannelsWithResponse request
 	ListChannelsWithResponse(ctx context.Context, project ProjectHandleParam, params *ListChannelsParams, reqEditors ...RequestEditorFn) (*ListChannelsResponse, error)
@@ -23205,6 +26777,39 @@ type ClientWithResponsesInterface interface {
 	// GetProjectMetricsWithResponse request
 	GetProjectMetricsWithResponse(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*GetProjectMetricsResponse, error)
 
+	// ListObservablesWithResponse request
+	ListObservablesWithResponse(ctx context.Context, project ProjectHandleParam, params *ListObservablesParams, reqEditors ...RequestEditorFn) (*ListObservablesResponse, error)
+
+	// CreateObservableWithBodyWithResponse request with any body
+	CreateObservableWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateObservableResponse, error)
+
+	CreateObservableWithResponse(ctx context.Context, project ProjectHandleParam, body CreateObservableJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateObservableResponse, error)
+
+	// DeleteObservableWithResponse request
+	DeleteObservableWithResponse(ctx context.Context, project ProjectHandleParam, observableId ObservableIdParam, reqEditors ...RequestEditorFn) (*DeleteObservableResponse, error)
+
+	// GetObservableWithResponse request
+	GetObservableWithResponse(ctx context.Context, project ProjectHandleParam, observableId ObservableIdParam, reqEditors ...RequestEditorFn) (*GetObservableResponse, error)
+
+	// UpdateObservableWithBodyWithResponse request with any body
+	UpdateObservableWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, observableId ObservableIdParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateObservableResponse, error)
+
+	UpdateObservableWithResponse(ctx context.Context, project ProjectHandleParam, observableId ObservableIdParam, body UpdateObservableJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateObservableResponse, error)
+
+	// ListObservableEventsWithResponse request
+	ListObservableEventsWithResponse(ctx context.Context, project ProjectHandleParam, observableId ObservableIdParam, params *ListObservableEventsParams, reqEditors ...RequestEditorFn) (*ListObservableEventsResponse, error)
+
+	// ListObservableObservationsWithResponse request
+	ListObservableObservationsWithResponse(ctx context.Context, project ProjectHandleParam, observableId ObservableIdParam, params *ListObservableObservationsParams, reqEditors ...RequestEditorFn) (*ListObservableObservationsResponse, error)
+
+	// SubmitObservableObservationWithBodyWithResponse request with any body
+	SubmitObservableObservationWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, observableId ObservableIdParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SubmitObservableObservationResponse, error)
+
+	SubmitObservableObservationWithResponse(ctx context.Context, project ProjectHandleParam, observableId ObservableIdParam, body SubmitObservableObservationJSONRequestBody, reqEditors ...RequestEditorFn) (*SubmitObservableObservationResponse, error)
+
+	// ListObservableStateVersionsWithResponse request
+	ListObservableStateVersionsWithResponse(ctx context.Context, project ProjectHandleParam, observableId ObservableIdParam, params *ListObservableStateVersionsParams, reqEditors ...RequestEditorFn) (*ListObservableStateVersionsResponse, error)
+
 	// LookupReferencesWithResponse request
 	LookupReferencesWithResponse(ctx context.Context, project ProjectHandleParam, referenceType ReferenceTypeParam, params *LookupReferencesParams, reqEditors ...RequestEditorFn) (*LookupReferencesResponse, error)
 
@@ -23252,6 +26857,20 @@ type ClientWithResponsesInterface interface {
 	// GetRunStepWithResponse request
 	GetRunStepWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, stepId string, params *GetRunStepParams, reqEditors ...RequestEditorFn) (*GetRunStepResponse, error)
 
+	// ListRunArtifactsWithResponse request
+	ListRunArtifactsWithResponse(ctx context.Context, project ProjectHandleParam, runId RunIdParam, params *ListRunArtifactsParams, reqEditors ...RequestEditorFn) (*ListRunArtifactsResponse, error)
+
+	// GetArtifactStorageSettingsWithResponse request
+	GetArtifactStorageSettingsWithResponse(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*GetArtifactStorageSettingsResponse, error)
+
+	// UpdateArtifactStorageSettingsWithBodyWithResponse request with any body
+	UpdateArtifactStorageSettingsWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateArtifactStorageSettingsResponse, error)
+
+	UpdateArtifactStorageSettingsWithResponse(ctx context.Context, project ProjectHandleParam, body UpdateArtifactStorageSettingsJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateArtifactStorageSettingsResponse, error)
+
+	// GetArtifactStorageQuotaWithResponse request
+	GetArtifactStorageQuotaWithResponse(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*GetArtifactStorageQuotaResponse, error)
+
 	// ListProjectSpansWithResponse request
 	ListProjectSpansWithResponse(ctx context.Context, project ProjectHandleParam, params *ListProjectSpansParams, reqEditors ...RequestEditorFn) (*ListProjectSpansResponse, error)
 
@@ -23292,6 +26911,11 @@ type ClientWithResponsesInterface interface {
 
 	QueryDataTableRowsWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body QueryDataTableRowsJSONRequestBody, reqEditors ...RequestEditorFn) (*QueryDataTableRowsResponse, error)
 
+	// SearchDataTableRowsWithBodyWithResponse request with any body
+	SearchDataTableRowsWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SearchDataTableRowsResponse, error)
+
+	SearchDataTableRowsWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body SearchDataTableRowsJSONRequestBody, reqEditors ...RequestEditorFn) (*SearchDataTableRowsResponse, error)
+
 	// UpsertDataTableRowWithBodyWithResponse request with any body
 	UpsertDataTableRowWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpsertDataTableRowResponse, error)
 
@@ -23307,6 +26931,9 @@ type ClientWithResponsesInterface interface {
 	UpdateDataTableRowWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateDataTableRowResponse, error)
 
 	UpdateDataTableRowWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, body UpdateDataTableRowJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateDataTableRowResponse, error)
+
+	// GetDataTableStatsWithResponse request
+	GetDataTableStatsWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, reqEditors ...RequestEditorFn) (*GetDataTableStatsResponse, error)
 
 	// ListProjectTracesWithResponse request
 	ListProjectTracesWithResponse(ctx context.Context, project ProjectHandleParam, params *ListProjectTracesParams, reqEditors ...RequestEditorFn) (*ListProjectTracesResponse, error)
@@ -24137,6 +27764,105 @@ func (r RotateActionSecretResponse) StatusCode() int {
 	return 0
 }
 
+type ListActorStatesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ActorStateListResponse
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r ListActorStatesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListActorStatesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ListActorAssignmentsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ActorAssignmentListResponse
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r ListActorAssignmentsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListActorAssignmentsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetActorStateResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ActorState
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r GetActorStateResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetActorStateResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type UpsertActorStateResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ActorState
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r UpsertActorStateResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpsertActorStateResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type ListAgentsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -24400,6 +28126,180 @@ func (r HeartbeatAgentSessionResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r HeartbeatAgentSessionResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type DeleteArtifactResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+	JSON409      *Conflict
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteArtifactResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteArtifactResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetArtifactResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Artifact
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r GetArtifactResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetArtifactResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetArtifactContentResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+	JSON409      *Conflict
+	JSON413      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r GetArtifactContentResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetArtifactContentResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type UnpinArtifactResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Artifact
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r UnpinArtifactResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UnpinArtifactResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type PinArtifactResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Artifact
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r PinArtifactResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PinArtifactResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type CommitArtifactResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Artifact
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+	JSON409      *Conflict
+	JSON422      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r CommitArtifactResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CommitArtifactResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type CreateArtifactSlotResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON201      *ArtifactSlot
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON409      *Conflict
+	JSON429      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateArtifactSlotResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateArtifactSlotResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -25520,6 +29420,225 @@ func (r GetProjectMetricsResponse) StatusCode() int {
 	return 0
 }
 
+type ListObservablesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ObservableListResponse
+	JSON401      *Unauthorized
+}
+
+// Status returns HTTPResponse.Status
+func (r ListObservablesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListObservablesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type CreateObservableResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON201      *Observable
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON409      *Conflict
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateObservableResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateObservableResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type DeleteObservableResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteObservableResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteObservableResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetObservableResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Observable
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r GetObservableResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetObservableResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type UpdateObservableResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Observable
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+	JSON409      *Conflict
+}
+
+// Status returns HTTPResponse.Status
+func (r UpdateObservableResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpdateObservableResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ListObservableEventsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ObservableEventListResponse
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r ListObservableEventsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListObservableEventsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ListObservableObservationsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ObservableObservationListResponse
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r ListObservableObservationsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListObservableObservationsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type SubmitObservableObservationResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON202      *SubmitObservableObservationResult
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+	JSON422      *SubmitObservableObservationResult
+}
+
+// Status returns HTTPResponse.Status
+func (r SubmitObservableObservationResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r SubmitObservableObservationResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ListObservableStateVersionsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ObservableStateVersionListResponse
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r ListObservableStateVersionsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListObservableStateVersionsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type LookupReferencesResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -25844,6 +29963,100 @@ func (r GetRunStepResponse) StatusCode() int {
 	return 0
 }
 
+type ListRunArtifactsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ArtifactListResponse
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r ListRunArtifactsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListRunArtifactsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetArtifactStorageSettingsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ArtifactStorageSettings
+	JSON401      *Unauthorized
+}
+
+// Status returns HTTPResponse.Status
+func (r GetArtifactStorageSettingsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetArtifactStorageSettingsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type UpdateArtifactStorageSettingsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ArtifactStorageSettings
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+}
+
+// Status returns HTTPResponse.Status
+func (r UpdateArtifactStorageSettingsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpdateArtifactStorageSettingsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetArtifactStorageQuotaResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ArtifactQuotaUsage
+	JSON401      *Unauthorized
+}
+
+// Status returns HTTPResponse.Status
+func (r GetArtifactStorageQuotaResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetArtifactStorageQuotaResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type ListProjectSpansResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -26086,6 +30299,31 @@ func (r QueryDataTableRowsResponse) StatusCode() int {
 	return 0
 }
 
+type SearchDataTableRowsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *SearchRowsResponse
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r SearchDataTableRowsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r SearchDataTableRowsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type UpsertDataTableRowResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -26180,6 +30418,30 @@ func (r UpdateDataTableRowResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r UpdateDataTableRowResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetDataTableStatsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *DataTableStats
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r GetDataTableStatsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetDataTableStatsResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -27308,6 +31570,50 @@ func (c *ClientWithResponses) RotateActionSecretWithResponse(ctx context.Context
 	return ParseRotateActionSecretResponse(rsp)
 }
 
+// ListActorStatesWithResponse request returning *ListActorStatesResponse
+func (c *ClientWithResponses) ListActorStatesWithResponse(ctx context.Context, project ProjectHandleParam, params *ListActorStatesParams, reqEditors ...RequestEditorFn) (*ListActorStatesResponse, error) {
+	rsp, err := c.ListActorStates(ctx, project, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListActorStatesResponse(rsp)
+}
+
+// ListActorAssignmentsWithResponse request returning *ListActorAssignmentsResponse
+func (c *ClientWithResponses) ListActorAssignmentsWithResponse(ctx context.Context, project ProjectHandleParam, params *ListActorAssignmentsParams, reqEditors ...RequestEditorFn) (*ListActorAssignmentsResponse, error) {
+	rsp, err := c.ListActorAssignments(ctx, project, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListActorAssignmentsResponse(rsp)
+}
+
+// GetActorStateWithResponse request returning *GetActorStateResponse
+func (c *ClientWithResponses) GetActorStateWithResponse(ctx context.Context, project ProjectHandleParam, actorId string, reqEditors ...RequestEditorFn) (*GetActorStateResponse, error) {
+	rsp, err := c.GetActorState(ctx, project, actorId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetActorStateResponse(rsp)
+}
+
+// UpsertActorStateWithBodyWithResponse request with arbitrary body returning *UpsertActorStateResponse
+func (c *ClientWithResponses) UpsertActorStateWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, actorId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpsertActorStateResponse, error) {
+	rsp, err := c.UpsertActorStateWithBody(ctx, project, actorId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpsertActorStateResponse(rsp)
+}
+
+func (c *ClientWithResponses) UpsertActorStateWithResponse(ctx context.Context, project ProjectHandleParam, actorId string, body UpsertActorStateJSONRequestBody, reqEditors ...RequestEditorFn) (*UpsertActorStateResponse, error) {
+	rsp, err := c.UpsertActorState(ctx, project, actorId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpsertActorStateResponse(rsp)
+}
+
 // ListAgentsWithResponse request returning *ListAgentsResponse
 func (c *ClientWithResponses) ListAgentsWithResponse(ctx context.Context, project ProjectHandleParam, params *ListAgentsParams, reqEditors ...RequestEditorFn) (*ListAgentsResponse, error) {
 	rsp, err := c.ListAgents(ctx, project, params, reqEditors...)
@@ -27429,6 +31735,85 @@ func (c *ClientWithResponses) HeartbeatAgentSessionWithResponse(ctx context.Cont
 		return nil, err
 	}
 	return ParseHeartbeatAgentSessionResponse(rsp)
+}
+
+// DeleteArtifactWithResponse request returning *DeleteArtifactResponse
+func (c *ClientWithResponses) DeleteArtifactWithResponse(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, params *DeleteArtifactParams, reqEditors ...RequestEditorFn) (*DeleteArtifactResponse, error) {
+	rsp, err := c.DeleteArtifact(ctx, project, id, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteArtifactResponse(rsp)
+}
+
+// GetArtifactWithResponse request returning *GetArtifactResponse
+func (c *ClientWithResponses) GetArtifactWithResponse(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, reqEditors ...RequestEditorFn) (*GetArtifactResponse, error) {
+	rsp, err := c.GetArtifact(ctx, project, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetArtifactResponse(rsp)
+}
+
+// GetArtifactContentWithResponse request returning *GetArtifactContentResponse
+func (c *ClientWithResponses) GetArtifactContentWithResponse(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, params *GetArtifactContentParams, reqEditors ...RequestEditorFn) (*GetArtifactContentResponse, error) {
+	rsp, err := c.GetArtifactContent(ctx, project, id, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetArtifactContentResponse(rsp)
+}
+
+// UnpinArtifactWithResponse request returning *UnpinArtifactResponse
+func (c *ClientWithResponses) UnpinArtifactWithResponse(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, reqEditors ...RequestEditorFn) (*UnpinArtifactResponse, error) {
+	rsp, err := c.UnpinArtifact(ctx, project, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUnpinArtifactResponse(rsp)
+}
+
+// PinArtifactWithResponse request returning *PinArtifactResponse
+func (c *ClientWithResponses) PinArtifactWithResponse(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, reqEditors ...RequestEditorFn) (*PinArtifactResponse, error) {
+	rsp, err := c.PinArtifact(ctx, project, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePinArtifactResponse(rsp)
+}
+
+// CommitArtifactWithBodyWithResponse request with arbitrary body returning *CommitArtifactResponse
+func (c *ClientWithResponses) CommitArtifactWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CommitArtifactResponse, error) {
+	rsp, err := c.CommitArtifactWithBody(ctx, project, id, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCommitArtifactResponse(rsp)
+}
+
+func (c *ClientWithResponses) CommitArtifactWithResponse(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, body CommitArtifactJSONRequestBody, reqEditors ...RequestEditorFn) (*CommitArtifactResponse, error) {
+	rsp, err := c.CommitArtifact(ctx, project, id, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCommitArtifactResponse(rsp)
+}
+
+// CreateArtifactSlotWithBodyWithResponse request with arbitrary body returning *CreateArtifactSlotResponse
+func (c *ClientWithResponses) CreateArtifactSlotWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateArtifactSlotResponse, error) {
+	rsp, err := c.CreateArtifactSlotWithBody(ctx, project, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateArtifactSlotResponse(rsp)
+}
+
+func (c *ClientWithResponses) CreateArtifactSlotWithResponse(ctx context.Context, project ProjectHandleParam, body CreateArtifactSlotJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateArtifactSlotResponse, error) {
+	rsp, err := c.CreateArtifactSlot(ctx, project, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateArtifactSlotResponse(rsp)
 }
 
 // ListChannelsWithResponse request returning *ListChannelsResponse
@@ -28012,6 +32397,111 @@ func (c *ClientWithResponses) GetProjectMetricsWithResponse(ctx context.Context,
 	return ParseGetProjectMetricsResponse(rsp)
 }
 
+// ListObservablesWithResponse request returning *ListObservablesResponse
+func (c *ClientWithResponses) ListObservablesWithResponse(ctx context.Context, project ProjectHandleParam, params *ListObservablesParams, reqEditors ...RequestEditorFn) (*ListObservablesResponse, error) {
+	rsp, err := c.ListObservables(ctx, project, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListObservablesResponse(rsp)
+}
+
+// CreateObservableWithBodyWithResponse request with arbitrary body returning *CreateObservableResponse
+func (c *ClientWithResponses) CreateObservableWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateObservableResponse, error) {
+	rsp, err := c.CreateObservableWithBody(ctx, project, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateObservableResponse(rsp)
+}
+
+func (c *ClientWithResponses) CreateObservableWithResponse(ctx context.Context, project ProjectHandleParam, body CreateObservableJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateObservableResponse, error) {
+	rsp, err := c.CreateObservable(ctx, project, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateObservableResponse(rsp)
+}
+
+// DeleteObservableWithResponse request returning *DeleteObservableResponse
+func (c *ClientWithResponses) DeleteObservableWithResponse(ctx context.Context, project ProjectHandleParam, observableId ObservableIdParam, reqEditors ...RequestEditorFn) (*DeleteObservableResponse, error) {
+	rsp, err := c.DeleteObservable(ctx, project, observableId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteObservableResponse(rsp)
+}
+
+// GetObservableWithResponse request returning *GetObservableResponse
+func (c *ClientWithResponses) GetObservableWithResponse(ctx context.Context, project ProjectHandleParam, observableId ObservableIdParam, reqEditors ...RequestEditorFn) (*GetObservableResponse, error) {
+	rsp, err := c.GetObservable(ctx, project, observableId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetObservableResponse(rsp)
+}
+
+// UpdateObservableWithBodyWithResponse request with arbitrary body returning *UpdateObservableResponse
+func (c *ClientWithResponses) UpdateObservableWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, observableId ObservableIdParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateObservableResponse, error) {
+	rsp, err := c.UpdateObservableWithBody(ctx, project, observableId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateObservableResponse(rsp)
+}
+
+func (c *ClientWithResponses) UpdateObservableWithResponse(ctx context.Context, project ProjectHandleParam, observableId ObservableIdParam, body UpdateObservableJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateObservableResponse, error) {
+	rsp, err := c.UpdateObservable(ctx, project, observableId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateObservableResponse(rsp)
+}
+
+// ListObservableEventsWithResponse request returning *ListObservableEventsResponse
+func (c *ClientWithResponses) ListObservableEventsWithResponse(ctx context.Context, project ProjectHandleParam, observableId ObservableIdParam, params *ListObservableEventsParams, reqEditors ...RequestEditorFn) (*ListObservableEventsResponse, error) {
+	rsp, err := c.ListObservableEvents(ctx, project, observableId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListObservableEventsResponse(rsp)
+}
+
+// ListObservableObservationsWithResponse request returning *ListObservableObservationsResponse
+func (c *ClientWithResponses) ListObservableObservationsWithResponse(ctx context.Context, project ProjectHandleParam, observableId ObservableIdParam, params *ListObservableObservationsParams, reqEditors ...RequestEditorFn) (*ListObservableObservationsResponse, error) {
+	rsp, err := c.ListObservableObservations(ctx, project, observableId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListObservableObservationsResponse(rsp)
+}
+
+// SubmitObservableObservationWithBodyWithResponse request with arbitrary body returning *SubmitObservableObservationResponse
+func (c *ClientWithResponses) SubmitObservableObservationWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, observableId ObservableIdParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SubmitObservableObservationResponse, error) {
+	rsp, err := c.SubmitObservableObservationWithBody(ctx, project, observableId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSubmitObservableObservationResponse(rsp)
+}
+
+func (c *ClientWithResponses) SubmitObservableObservationWithResponse(ctx context.Context, project ProjectHandleParam, observableId ObservableIdParam, body SubmitObservableObservationJSONRequestBody, reqEditors ...RequestEditorFn) (*SubmitObservableObservationResponse, error) {
+	rsp, err := c.SubmitObservableObservation(ctx, project, observableId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSubmitObservableObservationResponse(rsp)
+}
+
+// ListObservableStateVersionsWithResponse request returning *ListObservableStateVersionsResponse
+func (c *ClientWithResponses) ListObservableStateVersionsWithResponse(ctx context.Context, project ProjectHandleParam, observableId ObservableIdParam, params *ListObservableStateVersionsParams, reqEditors ...RequestEditorFn) (*ListObservableStateVersionsResponse, error) {
+	rsp, err := c.ListObservableStateVersions(ctx, project, observableId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListObservableStateVersionsResponse(rsp)
+}
+
 // LookupReferencesWithResponse request returning *LookupReferencesResponse
 func (c *ClientWithResponses) LookupReferencesWithResponse(ctx context.Context, project ProjectHandleParam, referenceType ReferenceTypeParam, params *LookupReferencesParams, reqEditors ...RequestEditorFn) (*LookupReferencesResponse, error) {
 	rsp, err := c.LookupReferences(ctx, project, referenceType, params, reqEditors...)
@@ -28161,6 +32651,50 @@ func (c *ClientWithResponses) GetRunStepWithResponse(ctx context.Context, projec
 	return ParseGetRunStepResponse(rsp)
 }
 
+// ListRunArtifactsWithResponse request returning *ListRunArtifactsResponse
+func (c *ClientWithResponses) ListRunArtifactsWithResponse(ctx context.Context, project ProjectHandleParam, runId RunIdParam, params *ListRunArtifactsParams, reqEditors ...RequestEditorFn) (*ListRunArtifactsResponse, error) {
+	rsp, err := c.ListRunArtifacts(ctx, project, runId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListRunArtifactsResponse(rsp)
+}
+
+// GetArtifactStorageSettingsWithResponse request returning *GetArtifactStorageSettingsResponse
+func (c *ClientWithResponses) GetArtifactStorageSettingsWithResponse(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*GetArtifactStorageSettingsResponse, error) {
+	rsp, err := c.GetArtifactStorageSettings(ctx, project, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetArtifactStorageSettingsResponse(rsp)
+}
+
+// UpdateArtifactStorageSettingsWithBodyWithResponse request with arbitrary body returning *UpdateArtifactStorageSettingsResponse
+func (c *ClientWithResponses) UpdateArtifactStorageSettingsWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateArtifactStorageSettingsResponse, error) {
+	rsp, err := c.UpdateArtifactStorageSettingsWithBody(ctx, project, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateArtifactStorageSettingsResponse(rsp)
+}
+
+func (c *ClientWithResponses) UpdateArtifactStorageSettingsWithResponse(ctx context.Context, project ProjectHandleParam, body UpdateArtifactStorageSettingsJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateArtifactStorageSettingsResponse, error) {
+	rsp, err := c.UpdateArtifactStorageSettings(ctx, project, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateArtifactStorageSettingsResponse(rsp)
+}
+
+// GetArtifactStorageQuotaWithResponse request returning *GetArtifactStorageQuotaResponse
+func (c *ClientWithResponses) GetArtifactStorageQuotaWithResponse(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*GetArtifactStorageQuotaResponse, error) {
+	rsp, err := c.GetArtifactStorageQuota(ctx, project, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetArtifactStorageQuotaResponse(rsp)
+}
+
 // ListProjectSpansWithResponse request returning *ListProjectSpansResponse
 func (c *ClientWithResponses) ListProjectSpansWithResponse(ctx context.Context, project ProjectHandleParam, params *ListProjectSpansParams, reqEditors ...RequestEditorFn) (*ListProjectSpansResponse, error) {
 	rsp, err := c.ListProjectSpans(ctx, project, params, reqEditors...)
@@ -28291,6 +32825,23 @@ func (c *ClientWithResponses) QueryDataTableRowsWithResponse(ctx context.Context
 	return ParseQueryDataTableRowsResponse(rsp)
 }
 
+// SearchDataTableRowsWithBodyWithResponse request with arbitrary body returning *SearchDataTableRowsResponse
+func (c *ClientWithResponses) SearchDataTableRowsWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SearchDataTableRowsResponse, error) {
+	rsp, err := c.SearchDataTableRowsWithBody(ctx, project, tableName, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSearchDataTableRowsResponse(rsp)
+}
+
+func (c *ClientWithResponses) SearchDataTableRowsWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body SearchDataTableRowsJSONRequestBody, reqEditors ...RequestEditorFn) (*SearchDataTableRowsResponse, error) {
+	rsp, err := c.SearchDataTableRows(ctx, project, tableName, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSearchDataTableRowsResponse(rsp)
+}
+
 // UpsertDataTableRowWithBodyWithResponse request with arbitrary body returning *UpsertDataTableRowResponse
 func (c *ClientWithResponses) UpsertDataTableRowWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpsertDataTableRowResponse, error) {
 	rsp, err := c.UpsertDataTableRowWithBody(ctx, project, tableName, contentType, body, reqEditors...)
@@ -28341,6 +32892,15 @@ func (c *ClientWithResponses) UpdateDataTableRowWithResponse(ctx context.Context
 		return nil, err
 	}
 	return ParseUpdateDataTableRowResponse(rsp)
+}
+
+// GetDataTableStatsWithResponse request returning *GetDataTableStatsResponse
+func (c *ClientWithResponses) GetDataTableStatsWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, reqEditors ...RequestEditorFn) (*GetDataTableStatsResponse, error) {
+	rsp, err := c.GetDataTableStats(ctx, project, tableName, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetDataTableStatsResponse(rsp)
 }
 
 // ListProjectTracesWithResponse request returning *ListProjectTracesResponse
@@ -29980,6 +34540,187 @@ func ParseRotateActionSecretResponse(rsp *http.Response) (*RotateActionSecretRes
 	return response, nil
 }
 
+// ParseListActorStatesResponse parses an HTTP response from a ListActorStatesWithResponse call
+func ParseListActorStatesResponse(rsp *http.Response) (*ListActorStatesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListActorStatesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ActorStateListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListActorAssignmentsResponse parses an HTTP response from a ListActorAssignmentsWithResponse call
+func ParseListActorAssignmentsResponse(rsp *http.Response) (*ListActorAssignmentsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListActorAssignmentsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ActorAssignmentListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetActorStateResponse parses an HTTP response from a GetActorStateWithResponse call
+func ParseGetActorStateResponse(rsp *http.Response) (*GetActorStateResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetActorStateResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ActorState
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUpsertActorStateResponse parses an HTTP response from a UpsertActorStateWithResponse call
+func ParseUpsertActorStateResponse(rsp *http.Response) (*UpsertActorStateResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpsertActorStateResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ActorState
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseListAgentsResponse parses an HTTP response from a ListAgentsWithResponse call
 func ParseListAgentsResponse(rsp *http.Response) (*ListAgentsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -30449,6 +35190,328 @@ func ParseHeartbeatAgentSessionResponse(rsp *http.Response) (*HeartbeatAgentSess
 			return nil, err
 		}
 		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDeleteArtifactResponse parses an HTTP response from a DeleteArtifactWithResponse call
+func ParseDeleteArtifactResponse(rsp *http.Response) (*DeleteArtifactResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteArtifactResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetArtifactResponse parses an HTTP response from a GetArtifactWithResponse call
+func ParseGetArtifactResponse(rsp *http.Response) (*GetArtifactResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetArtifactResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Artifact
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetArtifactContentResponse parses an HTTP response from a GetArtifactContentWithResponse call
+func ParseGetArtifactContentResponse(rsp *http.Response) (*GetArtifactContentResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetArtifactContentResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 413:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON413 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUnpinArtifactResponse parses an HTTP response from a UnpinArtifactWithResponse call
+func ParseUnpinArtifactResponse(rsp *http.Response) (*UnpinArtifactResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UnpinArtifactResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Artifact
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParsePinArtifactResponse parses an HTTP response from a PinArtifactWithResponse call
+func ParsePinArtifactResponse(rsp *http.Response) (*PinArtifactResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PinArtifactResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Artifact
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCommitArtifactResponse parses an HTTP response from a CommitArtifactWithResponse call
+func ParseCommitArtifactResponse(rsp *http.Response) (*CommitArtifactResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CommitArtifactResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Artifact
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON422 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateArtifactSlotResponse parses an HTTP response from a CreateArtifactSlotWithResponse call
+func ParseCreateArtifactSlotResponse(rsp *http.Response) (*CreateArtifactSlotResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateArtifactSlotResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest ArtifactSlot
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
 
 	}
 
@@ -32493,6 +37556,387 @@ func ParseGetProjectMetricsResponse(rsp *http.Response) (*GetProjectMetricsRespo
 	return response, nil
 }
 
+// ParseListObservablesResponse parses an HTTP response from a ListObservablesWithResponse call
+func ParseListObservablesResponse(rsp *http.Response) (*ListObservablesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListObservablesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ObservableListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateObservableResponse parses an HTTP response from a CreateObservableWithResponse call
+func ParseCreateObservableResponse(rsp *http.Response) (*CreateObservableResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateObservableResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest Observable
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDeleteObservableResponse parses an HTTP response from a DeleteObservableWithResponse call
+func ParseDeleteObservableResponse(rsp *http.Response) (*DeleteObservableResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteObservableResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetObservableResponse parses an HTTP response from a GetObservableWithResponse call
+func ParseGetObservableResponse(rsp *http.Response) (*GetObservableResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetObservableResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Observable
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUpdateObservableResponse parses an HTTP response from a UpdateObservableWithResponse call
+func ParseUpdateObservableResponse(rsp *http.Response) (*UpdateObservableResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpdateObservableResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Observable
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListObservableEventsResponse parses an HTTP response from a ListObservableEventsWithResponse call
+func ParseListObservableEventsResponse(rsp *http.Response) (*ListObservableEventsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListObservableEventsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ObservableEventListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListObservableObservationsResponse parses an HTTP response from a ListObservableObservationsWithResponse call
+func ParseListObservableObservationsResponse(rsp *http.Response) (*ListObservableObservationsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListObservableObservationsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ObservableObservationListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseSubmitObservableObservationResponse parses an HTTP response from a SubmitObservableObservationWithResponse call
+func ParseSubmitObservableObservationResponse(rsp *http.Response) (*SubmitObservableObservationResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &SubmitObservableObservationResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+		var dest SubmitObservableObservationResult
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
+		var dest SubmitObservableObservationResult
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON422 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListObservableStateVersionsResponse parses an HTTP response from a ListObservableStateVersionsWithResponse call
+func ParseListObservableStateVersionsResponse(rsp *http.Response) (*ListObservableStateVersionsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListObservableStateVersionsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ObservableStateVersionListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseLookupReferencesResponse parses an HTTP response from a LookupReferencesWithResponse call
 func ParseLookupReferencesResponse(rsp *http.Response) (*LookupReferencesResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -33097,6 +38541,152 @@ func ParseGetRunStepResponse(rsp *http.Response) (*GetRunStepResponse, error) {
 	return response, nil
 }
 
+// ParseListRunArtifactsResponse parses an HTTP response from a ListRunArtifactsWithResponse call
+func ParseListRunArtifactsResponse(rsp *http.Response) (*ListRunArtifactsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListRunArtifactsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ArtifactListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetArtifactStorageSettingsResponse parses an HTTP response from a GetArtifactStorageSettingsWithResponse call
+func ParseGetArtifactStorageSettingsResponse(rsp *http.Response) (*GetArtifactStorageSettingsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetArtifactStorageSettingsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ArtifactStorageSettings
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUpdateArtifactStorageSettingsResponse parses an HTTP response from a UpdateArtifactStorageSettingsWithResponse call
+func ParseUpdateArtifactStorageSettingsResponse(rsp *http.Response) (*UpdateArtifactStorageSettingsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpdateArtifactStorageSettingsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ArtifactStorageSettings
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetArtifactStorageQuotaResponse parses an HTTP response from a GetArtifactStorageQuotaWithResponse call
+func ParseGetArtifactStorageQuotaResponse(rsp *http.Response) (*GetArtifactStorageQuotaResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetArtifactStorageQuotaResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ArtifactQuotaUsage
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseListProjectSpansResponse parses an HTTP response from a ListProjectSpansWithResponse call
 func ParseListProjectSpansResponse(rsp *http.Response) (*ListProjectSpansResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -33511,6 +39101,53 @@ func ParseQueryDataTableRowsResponse(rsp *http.Response) (*QueryDataTableRowsRes
 	return response, nil
 }
 
+// ParseSearchDataTableRowsResponse parses an HTTP response from a SearchDataTableRowsWithResponse call
+func ParseSearchDataTableRowsResponse(rsp *http.Response) (*SearchDataTableRowsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &SearchDataTableRowsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest SearchRowsResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseUpsertDataTableRowResponse parses an HTTP response from a UpsertDataTableRowWithResponse call
 func ParseUpsertDataTableRowResponse(rsp *http.Response) (*UpsertDataTableRowResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -33693,6 +39330,46 @@ func ParseUpdateDataTableRowResponse(rsp *http.Response) (*UpdateDataTableRowRes
 			return nil, err
 		}
 		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetDataTableStatsResponse parses an HTTP response from a GetDataTableStatsWithResponse call
+func ParseGetDataTableStatsResponse(rsp *http.Response) (*GetDataTableStatsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetDataTableStatsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest DataTableStats
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
 
 	}
 

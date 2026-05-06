@@ -145,6 +145,7 @@ func registerRunsCommands(app *cli.App) {
 		Description("List workflow runs").
 		Flags(
 			cli.String("status", "").Help("Filter by run status."),
+			cli.String("lifecycle", "").Help("Convenience filter that selects runs by lifecycle stage: `in_flight` returns active (not-yet-termin…"),
 			cli.String("workflow-type", "").Help("Filter by workflow type name."),
 			cli.String("definition-id", "").Help("Filter by workflow definition ID."),
 			cli.String("queue", "").Help("Filter by queue name."),
@@ -168,6 +169,10 @@ func registerRunsCommands(app *cli.App) {
 			if ctx.IsSet("status") {
 				v := api.WorkflowRunStatus(ctx.String("status"))
 				params.Status = &v
+			}
+			if ctx.IsSet("lifecycle") {
+				v := api.ListRunsParamsLifecycle(ctx.String("lifecycle"))
+				params.Lifecycle = &v
 			}
 			if ctx.IsSet("workflow-type") {
 				v := ctx.String("workflow-type")

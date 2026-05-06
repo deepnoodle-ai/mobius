@@ -73,6 +73,9 @@ tags:
 - name: agent-invocations
   x-displayName: Agent Invocations
   description: Agent Invocations API operations.
+- name: actor-state
+  x-displayName: Actor State
+  description: Actor State API operations.
 - name: spans
   x-displayName: Spans
   description: Spans API operations.
@@ -82,6 +85,12 @@ tags:
 - name: data-tables
   x-displayName: Data Tables
   description: Data Tables API operations.
+- name: artifacts
+  x-displayName: Artifacts
+  description: Artifacts API operations.
+- name: observables
+  x-displayName: Observables
+  description: Observables API operations.
 paths:
   /v1/projects/{project}/channels:
     post:
@@ -764,7 +773,6 @@ paths:
                   action: summarize-document
                   parameters:
                     document_id: ${inputs.document_id}
-                  store: summary
                   next:
                   - step: approve
                 - name: approve
@@ -1071,6 +1079,7 @@ paths:
                   running: 0
                   completed: 0
                   failed: 0
+                  skipped: 0
                   cancelled: 0
                 wait_summary:
                   waiting_paths: 0
@@ -1132,6 +1141,30 @@ paths:
         description: Filter by run status.
         schema:
           $ref: '#/components/schemas/WorkflowRunStatus'
+      - name: lifecycle
+        in: query
+        description: 'Convenience filter that selects runs by lifecycle stage: `in_flight`
+          returns active (not-yet-terminal) runs, `terminal` returns completed and failed
+          runs. Ignored when `status` is set.'
+        schema:
+          type: string
+          enum:
+          - in_flight
+          - terminal
+      - name: created_at_after
+        in: query
+        description: Inclusive lower bound for `created_at`, RFC3339. Combine with `created_at_before`
+          to scope to a time window.
+        schema:
+          type: string
+          format: date-time
+      - name: created_at_before
+        in: query
+        description: Exclusive upper bound for `created_at`, RFC3339. Combine with `created_at_after`
+          to scope to a time window.
+        schema:
+          type: string
+          format: date-time
       - name: workflow_type
         in: query
         description: Filter by workflow type name.
@@ -4317,6 +4350,131 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
+  /v1/projects/{project}/actor-state:
+    get:
+      operationId: listActorStates
+      tags:
+      - actor-state
+      summary: List actor state
+      description: Returns the live Actor State rows visible in a project.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - name: actor_kind
+        in: query
+        schema:
+          $ref: '#/components/schemas/ActorStateActorKind'
+      - name: availability
+        in: query
+        schema:
+          $ref: '#/components/schemas/ActorAvailability'
+      - name: visibility
+        in: query
+        schema:
+          $ref: '#/components/schemas/ActorStateVisibility'
+      - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActorStateListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/projects/{project}/actor-state/assignments:
+    get:
+      operationId: listActorAssignments
+      tags:
+      - actor-state
+      summary: List actor assignments by target
+      description: Returns assignments matching a target key, for "Working on this" surfaces
+        on runs, steps, interactions, channels, and external refs.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - name: target_key
+        in: query
+        required: true
+        schema:
+          type: string
+        description: Canonical target key, e.g. `mobius.run:run_123`.
+      - name: role
+        in: query
+        schema:
+          $ref: '#/components/schemas/ActorAssignmentRole'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActorAssignmentListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/projects/{project}/actor-state/{actor_id}:
+    get:
+      operationId: getActorState
+      tags:
+      - actor-state
+      summary: Get actor state
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - name: actor_id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActorState'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      operationId: upsertActorState
+      tags:
+      - actor-state
+      summary: Upsert reportable actor state
+      description: Upserts manual or agent-reported status. Server-derived capacity and job-claim
+        assignments are not writable through this endpoint.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - name: actor_id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpsertActorStateRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActorState'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /v1/projects/{project}/spans:
     get:
       operationId: listProjectSpans
@@ -4547,6 +4705,7 @@ paths:
       tags:
       - data-tables
       summary: List data tables
+      description: List project-scoped data tables visible to the caller.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/CursorParam'
@@ -4565,6 +4724,7 @@ paths:
       tags:
       - data-tables
       summary: Create a data table
+      description: Create a project-scoped data table with a typed column schema.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       requestBody:
@@ -4590,6 +4750,7 @@ paths:
       tags:
       - data-tables
       summary: Get a data table
+      description: Get data-table metadata and schema by table name.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/TableNameParam'
@@ -4609,6 +4770,7 @@ paths:
       tags:
       - data-tables
       summary: Update a data table
+      description: Update data-table description or schema and resync declared indexes.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/TableNameParam'
@@ -4636,6 +4798,7 @@ paths:
       tags:
       - data-tables
       summary: Delete a data table and all its rows
+      description: Delete one data table and all rows stored under it.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/TableNameParam'
@@ -4646,12 +4809,37 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
+  /v1/projects/{project}/tables/{table_name}/stats:
+    get:
+      operationId: getDataTableStats
+      tags:
+      - data-tables
+      summary: Get data table storage stats
+      description: 'Returns an operational snapshot for one data table: row count, approximate
+        data/index bytes, declared index shape, and whether the backend search index is present.
+        Values are point-in-time estimates intended for capacity planning and operator UI,
+        not billing.'
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/TableNameParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataTableStats'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /v1/projects/{project}/tables/{table_name}/rows:
     post:
       operationId: insertDataTableRow
       tags:
       - data-tables
       summary: Insert a row
+      description: Validate and insert one row into the named data table.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/TableNameParam'
@@ -4706,6 +4894,36 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
+  /v1/projects/{project}/tables/{table_name}/rows/search:
+    post:
+      operationId: searchDataTableRows
+      tags:
+      - data-tables
+      summary: Search rows
+      description: Full-text keyword search over row data within one data table. Optional
+        field filters use the same syntax as row queries and are applied before text search.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/TableNameParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SearchRowsRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchRowsResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /v1/projects/{project}/tables/{table_name}/rows/upsert:
     post:
       operationId: upsertDataTableRow
@@ -4752,6 +4970,7 @@ paths:
       tags:
       - data-tables
       summary: Bulk insert rows
+      description: Validate and insert up to 1,000 rows into the named data table.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/TableNameParam'
@@ -4780,6 +4999,7 @@ paths:
       tags:
       - data-tables
       summary: Get a row by ID
+      description: Get one data-table row by row ID.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/TableNameParam'
@@ -4804,6 +5024,8 @@ paths:
       tags:
       - data-tables
       summary: Update a row (PATCH — merges into existing data)
+      description: Validate and merge fields into an existing row, optionally checking the
+        current row version.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/TableNameParam'
@@ -4838,6 +5060,7 @@ paths:
       tags:
       - data-tables
       summary: Delete a row
+      description: Delete one row from the named data table.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/TableNameParam'
@@ -4849,6 +5072,535 @@ paths:
       responses:
         '204':
           description: No Content
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/projects/{project}/artifacts:slot:
+    post:
+      operationId: createArtifactSlot
+      tags:
+      - artifacts
+      summary: Reserve an artifact upload slot
+      description: Reserve a `pending_upload` artifact row and mint a presigned PUT URL the
+        worker uploads bytes to. Step-produced uploads MUST include the active job claim's
+        `(job_id, worker_session_token, attempt)` triple — Mobius rejects mismatches with
+        `409 conflict_wrong_claim`. After the worker uploads bytes, call `:commit` to verify
+        and transition the row to `available`.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateArtifactSlotRequest'
+      responses:
+        '201':
+          description: Slot reserved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArtifactSlot'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '429':
+          description: Too many pending uploads
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /v1/projects/{project}/artifacts/{id}:commit:
+    post:
+      operationId: commitArtifact
+      tags:
+      - artifacts
+      summary: Commit an uploaded artifact
+      description: Verify the bytes uploaded against the `:slot` URL and transition the artifact
+        to `available`. The server consults the storage backend's HEAD metadata to confirm
+        the object exists and matches the caller-reported `size_bytes` and `sha256`. Mismatches
+        mark the row `failed`, attempt to delete the orphan, and return 422.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/ArtifactIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommitArtifactRequest'
+      responses:
+        '200':
+          description: Artifact committed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Artifact'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          description: Object failed verification
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /v1/projects/{project}/artifacts/{id}:
+    get:
+      operationId: getArtifact
+      tags:
+      - artifacts
+      summary: Get an artifact
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/ArtifactIdParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Artifact'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      operationId: deleteArtifact
+      tags:
+      - artifacts
+      summary: Delete an artifact
+      description: Soft-delete the row and (for Mobius-managed) delete the underlying object
+        best-effort. Pinned artifacts are refused unless `force=true`.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/ArtifactIdParam'
+      - name: force
+        in: query
+        required: false
+        schema:
+          type: boolean
+          default: false
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /v1/projects/{project}/artifacts/{id}/content:
+    get:
+      operationId: getArtifactContent
+      tags:
+      - artifacts
+      summary: Fetch artifact bytes
+      description: 'By default returns a 302 redirect to a fresh presigned GET URL. When `inline=true`
+        and the artifact''s mime is on the safe-preview allowlist (image/png, image/jpeg,
+        image/webp, image/gif, application/json, text/plain), bytes stream directly with `X-Content-Type-Options:
+        nosniff` set. Oversize inline requests return 413.'
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/ArtifactIdParam'
+      - name: inline
+        in: query
+        required: false
+        schema:
+          type: boolean
+          default: false
+      responses:
+        '200':
+          description: Streamed bytes (only when inline=true and safe mime)
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '302':
+          description: Redirect to a presigned GET URL
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '413':
+          description: Inline request exceeds the size threshold
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /v1/projects/{project}/artifacts/{id}/pin:
+    post:
+      operationId: pinArtifact
+      tags:
+      - artifacts
+      summary: Pin an artifact (skip TTL)
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/ArtifactIdParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Artifact'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      operationId: unpinArtifact
+      tags:
+      - artifacts
+      summary: Remove the pinned flag
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/ArtifactIdParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Artifact'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/projects/{project}/runs/{run_id}/artifacts:
+    get:
+      operationId: listRunArtifacts
+      tags:
+      - artifacts
+      summary: List artifacts produced by a run
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/RunIdParam'
+      - name: step_id
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: mime
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Mime prefix filter (e.g. `image/`)
+      - name: state
+        in: query
+        required: false
+        schema:
+          $ref: '#/components/schemas/ArtifactState'
+      - $ref: '#/components/parameters/CursorParam'
+      - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArtifactListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/projects/{project}/settings/artifact-storage:
+    get:
+      operationId: getArtifactStorageSettings
+      tags:
+      - artifacts
+      summary: Get project artifact-storage settings
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArtifactStorageSettings'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    put:
+      operationId: updateArtifactStorageSettings
+      tags:
+      - artifacts
+      summary: Update project artifact-storage settings
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ArtifactStorageSettingsUpdate'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArtifactStorageSettings'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/projects/{project}/settings/artifact-storage/quota:
+    get:
+      operationId: getArtifactStorageQuota
+      tags:
+      - artifacts
+      summary: Get per-org Mobius-managed artifact storage quota usage
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArtifactQuotaUsage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/projects/{project}/observables:
+    get:
+      operationId: listObservables
+      tags:
+      - observables
+      summary: List Observables in a project
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/CursorParam'
+      - $ref: '#/components/parameters/LimitParam'
+      - name: subject_kind
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: freshness_status
+        in: query
+        required: false
+        schema:
+          $ref: '#/components/schemas/ObservableFreshnessStatus'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObservableListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      operationId: createObservable
+      tags:
+      - observables
+      summary: Create an Observable
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateObservableRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Observable'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /v1/projects/{project}/observables/{observable_id}:
+    get:
+      operationId: getObservable
+      tags:
+      - observables
+      summary: Get an Observable by ID or name
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/ObservableIdParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Observable'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      operationId: updateObservable
+      tags:
+      - observables
+      summary: Update an Observable definition
+      description: Updates project-scoped Observable metadata and configuration. Current state
+        remains server-owned and can only change through accepted observations.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/ObservableIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateObservableRequest'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Observable'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+    delete:
+      operationId: deleteObservable
+      tags:
+      - observables
+      summary: Delete an Observable
+      description: Deletes the Observable definition and its observation, version, and event
+        history.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/ObservableIdParam'
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/projects/{project}/observables/{observable_id}/observations:
+    get:
+      operationId: listObservableObservations
+      tags:
+      - observables
+      summary: List observations for an Observable
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/ObservableIdParam'
+      - $ref: '#/components/parameters/CursorParam'
+      - $ref: '#/components/parameters/LimitParam'
+      - name: status
+        in: query
+        required: false
+        schema:
+          $ref: '#/components/schemas/ObservableObservationStatus'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObservableObservationListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      operationId: submitObservableObservation
+      tags:
+      - observables
+      summary: Submit an observation
+      description: Idempotent by `(observable_id, invocation_id)`. Accepted observations are
+        reduced by Mobius into authoritative state; observers cannot mutate current state
+        directly.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/ObservableIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitObservableObservationRequest'
+      responses:
+        '202':
+          description: Observation accepted or deduplicated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubmitObservableObservationResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          description: Observation recorded as rejected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubmitObservableObservationResult'
+  /v1/projects/{project}/observables/{observable_id}/versions:
+    get:
+      operationId: listObservableStateVersions
+      tags:
+      - observables
+      summary: List state versions for an Observable
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/ObservableIdParam'
+      - $ref: '#/components/parameters/CursorParam'
+      - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObservableStateVersionListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/projects/{project}/observables/{observable_id}/events:
+    get:
+      operationId: listObservableEvents
+      tags:
+      - observables
+      summary: List change events for an Observable
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/ObservableIdParam'
+      - $ref: '#/components/parameters/CursorParam'
+      - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObservableEventListResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
@@ -5017,6 +5769,28 @@ components:
         pattern: ^[a-z][a-z0-9_]*$
         maxLength: 64
       description: Table name (unique within the project; lowercase alphanumeric and underscores)
+    ArtifactIdParam:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: ^art_[A-Za-z0-9]+$
+      description: TypeID of the artifact (`art_...`)
+    RunIdParam:
+      name: run_id
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Workflow run ID
+    ObservableIdParam:
+      name: observable_id
+      in: path
+      required: true
+      description: Observable ID or project-scoped Observable name.
+      schema:
+        type: string
   responses:
     BadRequest:
       description: Bad Request
@@ -5702,6 +6476,35 @@ components:
       - input
       description: 'Interaction kind: `approval` captures a decision, `review` captures acknowledgement
         or notes, and `input` collects free-form data.'
+    InteractionOrigin:
+      type: string
+      enum:
+      - manual
+      - workflow_step
+      - job_scoped
+      - system
+      description: Server-derived origin of the interaction.
+    InteractionSource:
+      type: object
+      additionalProperties: false
+      required:
+      - type
+      - id
+      description: Server-derived actor or system context that requested the interaction.
+        Public create requests do not supply this field.
+      properties:
+        type:
+          type: string
+          enum:
+          - user
+          - agent
+          - workflow
+          - system
+          - integration
+        id:
+          type: string
+        display_name:
+          type: string
     InteractionTarget:
       type: object
       required:
@@ -5909,6 +6712,7 @@ components:
       - id
       - type
       - status
+      - origin
       - target
       - created_at
       - updated_at
@@ -5936,6 +6740,11 @@ components:
           - cancelled
           description: 'Current status of the interaction: pending, completed, expired, or
             cancelled.'
+        origin:
+          $ref: '#/components/schemas/InteractionOrigin'
+        source:
+          $ref: '#/components/schemas/InteractionSource'
+          nullable: true
         message:
           type: string
           nullable: true
@@ -6161,14 +6970,11 @@ components:
           items:
             $ref: '#/components/schemas/WorkflowInput'
         outputs:
-          type: array
-          description: Declared output values produced by this workflow.
-          items:
-            $ref: '#/components/schemas/WorkflowOutput'
-        state:
           type: object
-          additionalProperties: true
-          description: Initial workflow state.
+          description: Declared terminal contract. Compact values are expressions; long-form
+            values may include value/schema/description.
+          additionalProperties:
+            $ref: '#/components/schemas/WorkflowOutput'
         steps:
           type: array
           description: Ordered list of steps that make up this workflow.
@@ -6194,34 +7000,37 @@ components:
         default:
           description: Optional default value.
     WorkflowOutput:
-      type: object
-      description: Declares one named output value produced by a workflow spec.
-      required:
-      - name
-      - variable
-      additionalProperties: false
-      properties:
-        name:
-          type: string
-          description: Output name exposed to callers and downstream steps.
-        variable:
-          type: string
-          description: State variable name whose value is mapped to this output.
-        branch:
-          type: string
-          description: Defaults to `main` when omitted.
-        description:
-          type: string
-          description: Human-readable description of this output value.
+      description: Declares one output value produced by a workflow spec.
+      oneOf:
+      - type: string
+        description: Compact expression form, e.g. `${steps.summarize.result.text}`.
+      - type: object
+        required:
+        - value
+        additionalProperties: false
+        properties:
+          value:
+            description: Expression or literal output value.
+          schema:
+            type: object
+            additionalProperties: true
+            description: Optional JSON Schema for this output.
+          description:
+            type: string
+            description: Human-readable description of this output value.
     WorkflowStep:
-      description: A workflow step. Exactly one step shape should be used. Step variants are
-        identified by their distinctive required property (`action`, `join`, `wait_signal`,
-        `sleep`, `pause`, or `interaction`). The current authored shape intentionally does
-        not add a separate discriminator field, so existing workflow YAML stays compact.
+      description: 'A workflow step. Exactly one step shape should be used. Step variants
+        are identified by their distinctive required property (`action`, `type: set`, `join`,
+        `wait_signal`, `wait_event`, `wait_until`, `sleep`, `pause`, or `interaction`). The
+        current authored shape intentionally does not add a separate discriminator field,
+        so existing workflow YAML stays compact.'
       oneOf:
       - $ref: '#/components/schemas/WorkflowExecutableStep'
+      - $ref: '#/components/schemas/WorkflowSetStep'
       - $ref: '#/components/schemas/WorkflowJoinStep'
       - $ref: '#/components/schemas/WorkflowWaitSignalStep'
+      - $ref: '#/components/schemas/WorkflowWaitEventStep'
+      - $ref: '#/components/schemas/WorkflowWaitUntilStep'
       - $ref: '#/components/schemas/WorkflowSleepStep'
       - $ref: '#/components/schemas/WorkflowPauseStep'
       - $ref: '#/components/schemas/WorkflowInteractionStep'
@@ -6239,7 +7048,7 @@ components:
           description: Vertical position of the step in the editor canvas.
     WorkflowExecutableStep:
       type: object
-      description: Executes a worker or server action and stores its result in workflow state.
+      description: Executes a worker or server action and exposes its result at `steps.<name>.result`.
       additionalProperties: false
       required:
       - name
@@ -6275,9 +7084,12 @@ components:
           $ref: '#/components/schemas/WorkflowActionKind'
           description: Whether `action` is handled by a worker or by a Mobius-managed server
             action.
-        store:
-          type: string
-          description: State variable name where the action result is stored.
+        bind:
+          type: object
+          additionalProperties:
+            type: string
+          description: Optional writes to top-level `vars.*` keys, evaluated after the step
+            completes. Targets must look like `vars.foo`.
         parameters:
           type: object
           additionalProperties: true
@@ -6297,6 +7109,41 @@ components:
         action: summarize-document
         parameters:
           doc_id: ${inputs.doc_id}
+    WorkflowSetStep:
+      type: object
+      description: Binds one or more top-level vars and produces the bound object as this
+        step's result.
+      additionalProperties: false
+      required:
+      - name
+      - type
+      - vars
+      properties:
+        name:
+          type: string
+          description: Unique step name within the workflow, used for routing and logging.
+        type:
+          type: string
+          enum:
+          - set
+        description:
+          type: string
+        next:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkflowEdge'
+        edge_matching_strategy:
+          $ref: '#/components/schemas/WorkflowEdgeMatchingStrategy'
+        each:
+          $ref: '#/components/schemas/WorkflowEach'
+        layout:
+          $ref: '#/components/schemas/WorkflowStepLayout'
+        vars:
+          type: object
+          minProperties: 1
+          additionalProperties: true
+          description: 'Bindings keyed by top-level vars key. `repo: ${steps.fetch.result}`
+            writes `vars.repo`.'
     WorkflowJoinStep:
       type: object
       description: Waits for one or more parallel branches before continuing.
@@ -6359,6 +7206,73 @@ components:
         wait_signal:
           $ref: '#/components/schemas/WorkflowWaitSignalConfig'
           description: Signal topic, timeout, and storage behavior for this suspension.
+    WorkflowWaitEventStep:
+      type: object
+      description: Suspends a branch until an integration event of the configured type is
+        delivered to the project and (optionally) satisfies an `expr` predicate over its payload.
+        Same operational model as `wait_signal` but matches against the event bus directly,
+        without requiring a separate `signal_run` trigger.
+      additionalProperties: false
+      required:
+      - name
+      - wait_event
+      properties:
+        name:
+          type: string
+          description: Unique step name within the workflow, used for routing and logging.
+        description:
+          type: string
+          description: Optional human-readable description of what this step does.
+        next:
+          type: array
+          description: Outbound edges controlling which step executes after this one.
+          items:
+            $ref: '#/components/schemas/WorkflowEdge'
+        edge_matching_strategy:
+          $ref: '#/components/schemas/WorkflowEdgeMatchingStrategy'
+          description: How outbound edge conditions are evaluated after the event arrives.
+        each:
+          $ref: '#/components/schemas/WorkflowEach'
+          description: Optional fan-out configuration for repeated event waits.
+        layout:
+          $ref: '#/components/schemas/WorkflowStepLayout'
+          description: Optional visual-editor position hint; ignored by the execution engine.
+        wait_event:
+          $ref: '#/components/schemas/WorkflowWaitEventConfig'
+          description: Event type, condition, timeout, and storage behavior for this suspension.
+    WorkflowWaitUntilStep:
+      type: object
+      description: Polls project or external state until a strict boolean condition evaluates
+        true, parking the run durably between checks.
+      additionalProperties: false
+      required:
+      - name
+      - wait_until
+      properties:
+        name:
+          type: string
+          description: Unique step name within the workflow, used for routing and logging.
+        description:
+          type: string
+          description: Optional human-readable description of what this step does.
+        next:
+          type: array
+          description: Outbound edges controlling which step executes after the condition
+            passes.
+          items:
+            $ref: '#/components/schemas/WorkflowEdge'
+        edge_matching_strategy:
+          $ref: '#/components/schemas/WorkflowEdgeMatchingStrategy'
+          description: How outbound edge conditions are evaluated after the condition passes.
+        each:
+          $ref: '#/components/schemas/WorkflowEach'
+          description: Optional fan-out configuration for repeated condition waits.
+        layout:
+          $ref: '#/components/schemas/WorkflowStepLayout'
+          description: Optional visual-editor position hint; ignored by the execution engine.
+        wait_until:
+          $ref: '#/components/schemas/WorkflowWaitUntilConfig'
+          description: Poll/observable source, condition, timeout, and timeout routing.
     WorkflowSleepStep:
       type: object
       description: Suspends a branch for a fixed duration before continuing.
@@ -6546,9 +7460,6 @@ components:
         next:
           type: string
           description: Step name to transition to when this clause is matched.
-        store:
-          type: string
-          description: State variable name where the caught error is stored.
     WorkflowJoinConfig:
       type: object
       additionalProperties: false
@@ -6564,11 +7475,10 @@ components:
           minimum: 0
           description: Minimum number of branches that must complete. Defaults to all listed
             branches.
-        branch_mappings:
+        result:
           type: object
-          additionalProperties:
-            type: string
-          description: Maps branch names to variable names for storing per-branch results.
+          additionalProperties: true
+          description: Explicit object this join produces. Expressions may read `branch.<branch>.<step>.result`.
     WorkflowWaitSignalConfig:
       type: object
       required:
@@ -6583,13 +7493,110 @@ components:
         timeout:
           type: string
           description: Maximum wait duration as a Go duration string (e.g. "24h", "30m").
-        store:
-          type: string
-          description: Variable name to store the signal payload in after resumption.
         on_timeout:
           type: string
           description: Step name to transition to if the timeout elapses without a signal.
             Fails the run if omitted.
+    WorkflowWaitEventConfig:
+      type: object
+      required:
+      - event_type
+      - timeout
+      additionalProperties: false
+      description: 'Suspends the run until an integration event matching `event_type` (and
+        `condition`, when provided) is delivered to the project. `event_type` is exact-matched
+        by default. Set `match_mode: prefix` for descendant matching such as `github.pull_request`
+        matching `.opened`, `.closed`, etc.'
+      properties:
+        event_type:
+          type: string
+          description: Integration event type to wait for, e.g. `github.pull_request.closed`
+            or `stripe.invoice.paid`.
+        match_mode:
+          type: string
+          enum:
+          - exact
+          - prefix
+          default: exact
+          description: Event type match mode. `exact` is the default. `prefix` requires a
+            non-empty condition and matches descendants separated by `.`.
+        condition:
+          type: string
+          description: Optional bare-form `expr` predicate over `{ event, meta, inputs, steps,
+            vars, each, run }`. The event resumes the step only when the expression evaluates
+            truthy. Empty means "any event of the matching type resumes". Predicate fields
+            use bare `expr`; `${...}` templating is reserved for value-producing fields.
+        timeout:
+          type: string
+          description: Maximum wait duration as a Go duration string (e.g. "24h", "30m").
+        on_timeout:
+          type: string
+          description: Step name to transition to if the timeout elapses without a matching
+            event. Fails the run if omitted.
+    WorkflowWaitUntilConfig:
+      type: object
+      required:
+      - condition
+      - timeout
+      additionalProperties: false
+      description: Durable condition wait. Exactly one of `poll` or `observable` must be set.
+        Poll waits evaluate direct checks; Observable waits read reusable project-scoped Observable
+        state and park on change events.
+      properties:
+        poll:
+          $ref: '#/components/schemas/WorkflowWaitUntilPollConfig'
+        observable:
+          type: string
+          description: Identifier-safe Observable name or ID.
+        condition:
+          type: string
+          description: Required bare-form `expr` predicate. Poll waits evaluate against `{
+            result, inputs, steps, vars, each, run }`; Observable waits evaluate against `{
+            state, observable, inputs, steps, vars, each, run }`. The expression must return
+            bool true.
+        timeout:
+          type: string
+          description: Maximum wait duration as a Go duration string (e.g. "10m", "1h").
+        on_timeout:
+          type: string
+          description: Step name to transition to if the timeout elapses. Fails the run if
+            omitted.
+    WorkflowWaitUntilPollConfig:
+      type: object
+      required:
+      - every
+      - action
+      additionalProperties: false
+      properties:
+        every:
+          type: string
+          description: Base poll interval as a Go duration string.
+        action:
+          type: string
+          description: Mobius action invoked for each poll attempt.
+        parameters:
+          type: object
+          additionalProperties: true
+          description: Poll action parameters, evaluated once when the wait is entered.
+        backoff:
+          $ref: '#/components/schemas/WorkflowWaitUntilBackoffConfig'
+    WorkflowWaitUntilBackoffConfig:
+      type: object
+      required:
+      - multiplier
+      - max_every
+      additionalProperties: false
+      properties:
+        multiplier:
+          type: number
+          format: double
+          description: Multiplier greater than 1 applied after each false/error attempt.
+        max_every:
+          type: string
+          description: Maximum poll interval as a Go duration string.
+        jitter:
+          type: boolean
+          description: Whether to jitter each computed interval.
     WorkflowSleepConfig:
       type: object
       description: Configuration for a sleep step.
@@ -6850,6 +7857,8 @@ components:
       - pause
       - join
       - retry
+      - wait_event
+      - wait_until
       description: What a waiting path is blocked on.
     WorkflowRunWaitDetail:
       type: object
@@ -6889,6 +7898,55 @@ components:
         max_attempts:
           type: integer
           description: Maximum attempts for `retry` waits.
+        event_type:
+          type: string
+          description: Event type pattern this path is waiting for. Set when `kind` is `wait_event`.
+        match_mode:
+          type: string
+          description: Event match mode for `wait_event`; empty means `exact`.
+        condition:
+          type: string
+          description: Optional `expr` predicate the matching event or latest wait result
+            must satisfy before resuming the path.
+        source_kind:
+          type: string
+          description: Wait source kind for `wait_until` (`poll` or `observable`).
+        observable_id:
+          type: string
+          description: Observable ID for `wait_until.observable` waits.
+        observable:
+          type: string
+          description: Observable name for `wait_until.observable` waits.
+        observed_version:
+          type: integer
+          format: int64
+          description: Observable version observed before the path parked.
+        poll_action:
+          type: string
+          description: Poll action name for `wait_until` waits.
+        poll_parameters:
+          type: object
+          additionalProperties: true
+          description: Frozen poll parameters for `wait_until` waits.
+        attempt_count:
+          type: integer
+          description: Number of poll attempts recorded for a `wait_until` wait.
+        current_interval:
+          type: string
+          description: Current poll interval for `wait_until`.
+        deadline_at:
+          type: string
+          format: date-time
+          description: Fixed timeout deadline for `wait_until`.
+        last_result:
+          description: Latest poll result preview for `wait_until`.
+          nullable: true
+        last_error_type:
+          type: string
+          description: Latest poll error type for `wait_until`.
+        last_error_message:
+          type: string
+          description: Latest poll error message for `wait_until`.
     WorkflowRunPath:
       type: object
       additionalProperties: false
@@ -6995,6 +8053,7 @@ components:
       - running
       - completed
       - failed
+      - skipped
       - cancelled
       description: Aggregate count of run-step rows for this run grouped by status. Counts
         every attempt of every step (one row per step x attempt x path), so it reflects durable
@@ -7008,6 +8067,8 @@ components:
         completed:
           type: integer
         failed:
+          type: integer
+        skipped:
           type: integer
         cancelled:
           type: integer
@@ -7164,9 +8225,11 @@ components:
           - run_cancelled
           - step_failed
           - run_failed
+          - output_extraction_failed
+          - output_validation_failed
           description: 'Typed run-level failure cause: `run_timeout`, `run_cancelled`, `step_failed`,
-            or `run_failed`. Its own vocabulary, not a superset of the job-level `error_type`.
-            Present when `status=failed`.'
+            `run_failed`, `output_extraction_failed`, or `output_validation_failed`. Its own
+            vocabulary, not a superset of the job-level `error_type`. Present when `status=failed`.'
         resolved_config:
           $ref: '#/components/schemas/ResolvedConfig'
           description: Run-level cascade config frozen when the run was started.
@@ -7243,6 +8306,7 @@ components:
       - running
       - completed
       - failed
+      - skipped
       - cancelled
     RunStep:
       type: object
@@ -7301,10 +8365,19 @@ components:
         status:
           allOf:
           - $ref: '#/components/schemas/RunStepStatus'
+        reason:
+          type: string
+          description: Optional suppression reason, most commonly set when status is `skipped`.
         parameters:
           type: object
           description: Resolved parameters/input for this step attempt.
           additionalProperties: true
+        bindings:
+          type: array
+          description: Vars written by this step, with the source expression used for each
+            binding.
+          items:
+            $ref: '#/components/schemas/RunStepBinding'
         job_id:
           type: string
           description: Linked live worker job when one exists. Terminal jobs may be reaped
@@ -7340,6 +8413,19 @@ components:
         updated_at:
           type: string
           format: date-time
+    RunStepBinding:
+      type: object
+      additionalProperties: false
+      required:
+      - var
+      - source
+      properties:
+        var:
+          type: string
+          description: Bound top-level vars path, e.g. `vars.repo`.
+        source:
+          type: string
+          description: Source expression or literal used to produce the bound value.
     RunStepListResponse:
       type: object
       description: Paginated durable run-step history. Use this response for historical run
@@ -8704,13 +9790,10 @@ components:
           type: object
           additionalProperties:
             type: string
-          description: '(launch_run only) Maps workflow input names to expressions evaluated
-            against the event environment (`{ meta, event }`). Values use Mobius''s `${expr}`
-            template syntax — pure expressions (`${event.actor.id}`) preserve their native
-            type, mixed templates (`Bearer ${meta.id}`) always render to a string, and other
-            literals pass through as-is. Legacy JSONPath-like values (`$.…`) and unwrapped
-            `event.` / `meta.` references are rejected with 400 on create/update. Example:
-            `{"user_id": "${event.actor.id}"}`.'
+          description: |-
+            (launch_run only) Maps workflow input names to expressions evaluated against the event environment (`{ meta, event }`). Values use Mobius's `${expr}` template syntax — pure expressions (`${event.actor.id}`) preserve their native type, mixed templates (`Bearer ${meta.id}`) always render to a string, and other literals pass through as-is. Legacy JSONPath-like values (`$.…`) and unwrapped `event.` / `meta.` references are rejected with 400 on create/update.
+
+            Resolution is fail-closed: an expression that references a missing field (`${event.pull_request.merged_by.login}` on an event without `merged_by`) fails the dispatch with `input_resolution_error` naming the offending key. No run is launched. Author expressions to reference only fields you expect to be present. Example: `{"user_id": "${event.actor.id}"}`.
         external_id_template:
           type: string
           description: '(launch_run only) `${expr}` template that derives the new run''s `external_id`
@@ -8728,6 +9811,9 @@ components:
             type: string
           description: (signal_run only) Maps the signal payload keys to expressions evaluated
             against the event environment. Available to the workflow as `signal.payload`.
+            Resolution is fail-closed — an expression that references a missing field fails
+            the target with `signal_payload_resolution_error` (the signal-side analogue of
+            `input_mapping`'s `input_resolution_error`) and the signal is not delivered.
         enabled:
           type: boolean
           description: When false, this target is paused and will not fire.
@@ -8866,12 +9952,25 @@ components:
       additionalProperties: false
       required:
       - target_id
+      - kind
       - status
-      description: Outcome of a single target within a trigger fire activation.
+      description: Outcome of a single target within a trigger fire activation. `kind` discriminates
+        the result shape so consumers can branch on it instead of inferring from optional
+        fields like `workflow_id` or `external_id_resolved`.
       properties:
         target_id:
           type: string
           description: ID of the trigger target that was evaluated.
+        kind:
+          type: string
+          enum:
+          - launch_run
+          - signal_run
+          default: launch_run
+          description: Effect kind of the evaluated target. `launch_run` started (or attempted)
+            a new workflow run; `signal_run` delivered (or attempted to deliver) a signal
+            to an existing run. Lets clients reliably branch on `kind` instead of inspecting
+            optional fields like `workflow_id` or `external_id_resolved`.
         workflow_id:
           type: string
           description: ID of the workflow definition that was started or attempted. Present
@@ -8886,7 +9985,21 @@ components:
           description: 'Outcome for this target: `success`, `skipped`, or `failed`.'
         error:
           type: string
-          description: Error detail when status is `failed`.
+          description: Error detail when status is `failed`. Empty for `success` and `skipped`
+            results — `skipped` causes go in `reason` instead. Pre-split historical rows persisted
+            skip causes here, so consumers should fall back to `error` when `reason` is empty
+            on a skipped row.
+        reason:
+          type: string
+          description: 'Why the target was skipped, when status is `skipped`. Examples: `condition
+            false`, `target disabled`, `no run matching external_id <id>`. Empty for `success`
+            and `failed` results.'
+        external_id_resolved:
+          type: string
+          description: Rendered value of the target's `external_id_template` (launch_run)
+            or `run_selector.external_id_template` (signal_run). Lets operators verify the
+            two templates produce matching strings without re-deriving them by hand. Absent
+            when the target has no template or when rendering failed before a value was produced.
     ScheduleSourceConfig:
       type: object
       additionalProperties: false
@@ -8928,6 +10041,24 @@ components:
         event_type:
           type: string
           description: Platform event type to match, e.g. `run.completed`.
+        actor_state:
+          $ref: '#/components/schemas/ActorStateTriggerSourceConfig'
+          description: Transition filter for `actor_state.changed` event triggers.
+    ActorStateTriggerSourceConfig:
+      type: object
+      additionalProperties: false
+      description: Narrow transition filter for Actor State event triggers.
+      properties:
+        actor_id:
+          type: string
+          description: Actor ID to match. Omit to match any actor in the project.
+        from_availability:
+          $ref: '#/components/schemas/ActorAvailability'
+        to_availability:
+          $ref: '#/components/schemas/ActorAvailability'
+        require_free_capacity:
+          type: boolean
+          description: When true, only fire if the new state has spare capacity.
     ChannelMessageSourceConfig:
       type: object
       additionalProperties: false
@@ -9162,6 +10293,7 @@ components:
       additionalProperties: false
       required:
       - target_id
+      - kind
       - status
       - would_launch
       description: Per-target outcome of a test-fire. Mirrors TriggerFireTargetResult but
@@ -9171,9 +10303,18 @@ components:
         target_id:
           type: string
           description: ID of the trigger target this result is for.
+        kind:
+          type: string
+          enum:
+          - launch_run
+          - signal_run
+          description: 'Effect kind of this target. Discriminates which resolved field is
+            populated: `launch_run` populates `input_mapping_resolved`; `signal_run` populates
+            `signal_payload_resolved`.'
         workflow_id:
           type: string
-          description: Workflow definition the target points at.
+          description: Workflow definition the target points at. Present only for `launch_run`
+            targets.
         enabled:
           type: boolean
           description: Whether the target is enabled. Disabled targets are skipped without
@@ -9183,21 +10324,47 @@ components:
         input_mapping_resolved:
           type: object
           additionalProperties: true
-          description: Resolved input map handed to the workflow.
+          description: (launch_run only) Resolved input map handed to the workflow.
+        signal_payload_resolved:
+          type: object
+          additionalProperties: true
+          description: (signal_run only) Resolved signal payload that would be delivered to
+            the matched run's `wait_signal` step.
         input_resolution_error:
           type: string
-          description: Error encountered resolving input_mapping, when one occurred.
+          description: Error encountered resolving the target's `input_mapping` for a `launch_run`
+            target. `signal_run` targets report `signal_payload_mapping` failures via `signal_payload_resolution_error`
+            instead, so clients can distinguish which resolution step failed without parsing
+            the error string. Errors rendering the run-selector template (`run_selector.external_id_template`
+            for `signal_run`, or the `external_id_template` for `launch_run`) surface in `launch_error`.
+        signal_payload_resolution_error:
+          type: string
+          description: (signal_run only) Error encountered resolving `signal_payload_mapping`
+            — the payload that would be delivered to the matched run's `wait_signal` step
+            (and exposed under `signal_payload_resolved`). Reported separately from `input_resolution_error`
+            so clients don't reuse launch-run-specific fields for signal failures.
+        external_id_resolved:
+          type: string
+          description: Rendered value of `external_id_template` (launch_run) or `run_selector.external_id_template`
+            (signal_run). Lets authors verify the two templates produce matching strings.
+            Absent when the target has no template or rendering failed.
         would_launch:
           type: boolean
-          description: True when the target would launch a run (or signal a run once `signal_run`
-            lands). False for disabled targets and for targets whose condition evaluated to
-            false.
+          description: True when the target would launch a run (`launch_run`) or signal an
+            existing run (`signal_run`). False for disabled targets and targets whose condition
+            evaluated to false.
         run_id:
           type: string
-          description: ID of the launched run (only set in execute mode).
+          description: ID of the launched (`launch_run`) or signaled (`signal_run`) run. Only
+            set in execute mode.
+        reason:
+          type: string
+          description: Why the target was skipped, when status is `skipped`. Empty for `success`
+            and `failed` results.
         launch_error:
           type: string
-          description: Error from the launcher when execute mode failed to start the run.
+          description: Error from the launcher (`launch_run`) or signal sender (`signal_run`)
+            when execute mode failed to act on the target.
     TriggerFireListResponse:
       type: object
       additionalProperties: false
@@ -9474,6 +10641,15 @@ components:
           $ref: '#/components/schemas/TagMap'
           description: When supplied, replaces the user tag set on the trigger. System tags
             (`mobius:*`) are preserved.
+    ActorAvailability:
+      type: string
+      enum:
+      - available
+      - focused
+      - busy
+      - waiting
+      - away
+      - offline
     WorkerSession:
       type: object
       additionalProperties: false
@@ -10830,7 +12006,10 @@ components:
           description: JSON value supplied by the responder.
         comment:
           type: string
-          description: Optional free-text comment accompanying the response.
+          description: Optional free-text comment accompanying the response. Available on
+            every interaction kind (approval, choice, multi-choice, input) and never gated
+            by the spec — the responder may always attach reasoning, caveats, or follow-up
+            notes alongside `value`.
         confidence:
           type: number
           format: double
@@ -11092,6 +12271,12 @@ components:
           type: string
           description: Freeform agent classification for tooling and filtering (e.g. "llm",
             "rpa").
+        color:
+          type: string
+          description: Display color for this agent in UI surfaces such as channel avatars
+            and message rails. One of the Mantine color palette keys (e.g. `indigo`, `teal`,
+            `grape`); empty string falls back to a hash-derived color.
+          maxLength: 24
         capabilities:
           type: object
           additionalProperties: true
@@ -11233,6 +12418,11 @@ components:
         kind:
           type: string
           description: Freeform classification (e.g. "llm", "rpa", "integration").
+        color:
+          type: string
+          description: Display color for this agent (Mantine palette key, e.g. `indigo`).
+            Optional; empty falls back to a hash-derived color.
+          maxLength: 24
         capabilities:
           type: object
           additionalProperties: true
@@ -11263,6 +12453,11 @@ components:
         kind:
           type: string
           description: Replacement freeform agent classification (e.g. `llm`, `rpa`).
+        color:
+          type: string
+          description: Replacement display color (Mantine palette key, e.g. `indigo`). Pass
+            empty string to clear and fall back to a hash-derived color.
+          maxLength: 24
         capabilities:
           type: object
           additionalProperties: true
@@ -11503,6 +12698,230 @@ components:
         error_message:
           type: string
           description: Human-readable description of the failure.
+    ActorStateActorKind:
+      type: string
+      enum:
+      - user
+      - agent
+    ActorStateSource:
+      type: string
+      enum:
+      - manual
+      - session
+      - agent_report
+      - derived
+      - calendar
+      - integration
+    ActorStateVisibility:
+      type: string
+      enum:
+      - org
+      - project
+      - self
+    ActorAssignmentRole:
+      type: string
+      enum:
+      - doing
+      - queued
+      - next
+    ActorAssignmentSourceKind:
+      type: string
+      enum:
+      - job_claim
+      - manual
+      - agent_report
+      - trigger
+    ActorReference:
+      type: object
+      additionalProperties: true
+      description: Polymorphic target reference compatible with Reference Pickers.
+    ActorFocus:
+      type: object
+      additionalProperties: false
+      properties:
+        headline:
+          type: string
+          maxLength: 120
+        ref:
+          $ref: '#/components/schemas/ActorReference'
+        url:
+          type: string
+          format: uri
+    ActorCapacity:
+      type: object
+      additionalProperties: false
+      properties:
+        in_use:
+          type: integer
+          minimum: 0
+        max:
+          type: integer
+          minimum: 0
+        accepting_new:
+          type: boolean
+    ActorAssignmentInput:
+      type: object
+      additionalProperties: false
+      required:
+      - role
+      - target_ref
+      - target_key
+      properties:
+        role:
+          type: string
+          enum:
+          - queued
+          - next
+          description: Client reports may set queued or next assignments only.
+        target_ref:
+          $ref: '#/components/schemas/ActorReference'
+        target_key:
+          type: string
+        headline:
+          type: string
+          maxLength: 120
+        due_at:
+          type: string
+          format: date-time
+    ActorAssignment:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - actor_state_id
+      - role
+      - target_ref
+      - target_key
+      - source_kind
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+        actor_state_id:
+          type: string
+        role:
+          $ref: '#/components/schemas/ActorAssignmentRole'
+        target_ref:
+          $ref: '#/components/schemas/ActorReference'
+        target_key:
+          type: string
+        headline:
+          type: string
+        claimed_at:
+          type: string
+          format: date-time
+        due_at:
+          type: string
+          format: date-time
+        source_kind:
+          $ref: '#/components/schemas/ActorAssignmentSourceKind'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    ActorState:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - actor_id
+      - actor_kind
+      - availability
+      - status_source
+      - visibility
+      - stale
+      - assignments
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+        actor_id:
+          type: string
+        actor_kind:
+          $ref: '#/components/schemas/ActorStateActorKind'
+        availability:
+          $ref: '#/components/schemas/ActorAvailability'
+        focus:
+          $ref: '#/components/schemas/ActorFocus'
+        capacity:
+          $ref: '#/components/schemas/ActorCapacity'
+        last_seen_at:
+          type: string
+          format: date-time
+        status_source:
+          $ref: '#/components/schemas/ActorStateSource'
+        expires_at:
+          type: string
+          format: date-time
+        visibility:
+          $ref: '#/components/schemas/ActorStateVisibility'
+        stale:
+          type: boolean
+        assignments:
+          type: array
+          items:
+            $ref: '#/components/schemas/ActorAssignment'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    UpsertActorStateRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - actor_kind
+      - availability
+      - status_source
+      properties:
+        actor_kind:
+          $ref: '#/components/schemas/ActorStateActorKind'
+        availability:
+          $ref: '#/components/schemas/ActorAvailability'
+        focus:
+          $ref: '#/components/schemas/ActorFocus'
+        capacity:
+          $ref: '#/components/schemas/ActorCapacity'
+          description: Accepted for humans. Ignored for agents because agent capacity is server-derived.
+        status_source:
+          type: string
+          enum:
+          - manual
+          - agent_report
+        expires_at:
+          type: string
+          format: date-time
+        visibility:
+          $ref: '#/components/schemas/ActorStateVisibility'
+        assignments:
+          type: array
+          items:
+            $ref: '#/components/schemas/ActorAssignmentInput'
+    ActorStateListResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ActorState'
+    ActorAssignmentListResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ActorAssignment'
     SpanKind:
       type: string
       description: Mirrors the OpenTelemetry `SpanKind` enum. Stored lowercase.
@@ -11908,6 +13327,11 @@ components:
         unique:
           type: boolean
           default: false
+        indexed:
+          type: boolean
+          default: false
+          description: Marks the column as an expected filter/sort field so backends can maintain
+            efficient indexes.
         default:
           description: Default value applied when column is absent on insert
         description:
@@ -11994,6 +13418,45 @@ components:
           type: boolean
         next_cursor:
           type: string
+    DataTableStats:
+      type: object
+      required:
+      - table_id
+      - row_count
+      - approx_data_bytes
+      - approx_index_bytes
+      - indexed_column_count
+      - declared_index_count
+      - search_index_present
+      - generated_at
+      additionalProperties: false
+      properties:
+        table_id:
+          type: string
+        row_count:
+          type: integer
+          format: int64
+        approx_data_bytes:
+          type: integer
+          format: int64
+        approx_index_bytes:
+          type: integer
+          format: int64
+        indexed_column_count:
+          type: integer
+        declared_index_count:
+          type: integer
+        search_index_present:
+          type: boolean
+        generated_at:
+          type: string
+          format: date-time
+        oldest_row_created_at:
+          type: string
+          format: date-time
+        newest_row_updated_at:
+          type: string
+          format: date-time
     CreateDataTableRequest:
       type: object
       required:
@@ -12096,10 +13559,9 @@ components:
           minimum: 1
           maximum: 1000
           default: 100
-        offset:
-          type: integer
-          minimum: 0
-          default: 0
+        cursor:
+          type: string
+          description: Opaque cursor from a prior response.
     QueryRowsResponse:
       type: object
       required:
@@ -12114,8 +13576,46 @@ components:
           type: boolean
         limit:
           type: integer
-        offset:
+        next_cursor:
+          type: string
+    SearchRowsRequest:
+      type: object
+      required:
+      - query
+      additionalProperties: false
+      properties:
+        query:
+          type: string
+          minLength: 1
+          description: Keyword search query.
+        filter:
+          type: object
+          additionalProperties: true
+          description: Optional column equality or operator filter applied before text search.
+        limit:
           type: integer
+          minimum: 1
+          maximum: 1000
+          default: 100
+        cursor:
+          type: string
+          description: Opaque cursor from a prior search response.
+    SearchRowsResponse:
+      type: object
+      required:
+      - rows
+      - has_more
+      properties:
+        rows:
+          type: array
+          items:
+            $ref: '#/components/schemas/DataTableRow'
+        has_more:
+          type: boolean
+        limit:
+          type: integer
+        next_cursor:
+          type: string
     BulkInsertRowsRequest:
       type: object
       required:
@@ -12170,6 +13670,614 @@ components:
         created:
           type: boolean
           description: True when a new row was inserted; false when an existing row was updated.
+    ArtifactState:
+      type: string
+      enum:
+      - pending_upload
+      - available
+      - expired
+      - deleted
+      - failed
+    ArtifactStorageBackend:
+      type: string
+      enum:
+      - mobius
+      - s3
+    Artifact:
+      type: object
+      required:
+      - id
+      - org_id
+      - project_id
+      - name
+      - mime_type
+      - size_bytes
+      - storage
+      - state
+      - created_at
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+        org_id:
+          type: string
+        project_id:
+          type: string
+        run_id:
+          type: string
+        step_id:
+          type: string
+        job_id:
+          type: string
+        attempt:
+          type: integer
+        name:
+          type: string
+        mime_type:
+          type: string
+        size_bytes:
+          type: integer
+          format: int64
+        sha256:
+          type: string
+        storage:
+          $ref: '#/components/schemas/ArtifactStorageBackend'
+        storage_uri:
+          type: string
+        integration_id:
+          type: string
+        metadata:
+          type: object
+          additionalProperties: true
+        tags:
+          type: object
+          additionalProperties:
+            type: string
+        state:
+          $ref: '#/components/schemas/ArtifactState'
+        created_by_type:
+          type: string
+        created_by_id:
+          type: string
+        created_by_name:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        committed_at:
+          type: string
+          format: date-time
+        expires_at:
+          type: string
+          format: date-time
+        pinned:
+          type: boolean
+        deleted_at:
+          type: string
+          format: date-time
+    ArtifactListResponse:
+      type: object
+      required:
+      - items
+      - has_more
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Artifact'
+        has_more:
+          type: boolean
+        next_cursor:
+          type: string
+    CreateArtifactSlotRequest:
+      type: object
+      required:
+      - name
+      - mime
+      - size_bytes
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          maxLength: 256
+        mime:
+          type: string
+        size_bytes:
+          type: integer
+          format: int64
+          minimum: 1
+        run_id:
+          type: string
+        step_id:
+          type: string
+        job_id:
+          type: string
+        worker_session_token:
+          type: string
+        attempt:
+          type: integer
+          minimum: 0
+        tags:
+          type: object
+          additionalProperties:
+            type: string
+        retain_for_seconds:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Override the project default TTL for this artifact only.
+        retain_until:
+          type: string
+          format: date-time
+        pinned:
+          type: boolean
+          default: false
+        storage_override:
+          $ref: '#/components/schemas/ArtifactStorageBackend'
+    ArtifactSlot:
+      type: object
+      required:
+      - artifact
+      - upload
+      additionalProperties: false
+      properties:
+        artifact:
+          $ref: '#/components/schemas/Artifact'
+        upload:
+          type: object
+          required:
+          - url
+          - method
+          additionalProperties: false
+          properties:
+            url:
+              type: string
+            method:
+              type: string
+            headers:
+              type: object
+              additionalProperties:
+                type: string
+            max_size_bytes:
+              type: integer
+              format: int64
+    CommitArtifactRequest:
+      type: object
+      required:
+      - sha256
+      - size_bytes
+      additionalProperties: false
+      properties:
+        sha256:
+          type: string
+          minLength: 64
+          maxLength: 64
+        size_bytes:
+          type: integer
+          format: int64
+          minimum: 1
+    ArtifactStorageSettings:
+      type: object
+      additionalProperties: false
+      properties:
+        backend:
+          $ref: '#/components/schemas/ArtifactStorageBackend'
+        integration_id:
+          type: string
+        default_ttl_seconds:
+          type: integer
+          format: int64
+          minimum: 0
+        max_artifact_size:
+          type: integer
+          format: int64
+          minimum: 0
+        inline_threshold:
+          type: integer
+          format: int64
+          minimum: 0
+        pending_upload_cap:
+          type: integer
+          minimum: 0
+    ArtifactStorageSettingsUpdate:
+      $ref: '#/components/schemas/ArtifactStorageSettings'
+    ArtifactQuotaUsage:
+      type: object
+      required:
+      - org_id
+      - used_bytes
+      - limit_bytes
+      - artifact_count
+      - pending_count
+      - generated_at
+      additionalProperties: false
+      properties:
+        org_id:
+          type: string
+        used_bytes:
+          type: integer
+          format: int64
+        limit_bytes:
+          type: integer
+          format: int64
+        artifact_count:
+          type: integer
+          format: int64
+        pending_count:
+          type: integer
+          format: int64
+        generated_at:
+          type: string
+          format: date-time
+    JSONDocument:
+      type: object
+      additionalProperties: true
+    ObservableFreshnessStatus:
+      type: string
+      enum:
+      - unknown
+      - fresh
+      - stale
+      - error
+    ObservableReducerKind:
+      type: string
+      enum:
+      - replace
+    ObservableObserverKind:
+      type: string
+      enum:
+      - mobius
+      - worker
+      - cli
+      - integration
+      - internal
+    ObservableObservationStatus:
+      type: string
+      enum:
+      - accepted
+      - rejected
+    ObservableEventType:
+      type: string
+      enum:
+      - observable.changed
+      - observable.freshness_changed
+    ObservableReducerConfig:
+      type: object
+      additionalProperties: false
+      required:
+      - kind
+      properties:
+        kind:
+          $ref: '#/components/schemas/ObservableReducerKind'
+    ObservableFreshnessConfig:
+      type: object
+      additionalProperties: false
+      properties:
+        stale_after_seconds:
+          type: integer
+          format: int64
+          minimum: 0
+    CreateObservableRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - name
+      - subject_kind
+      - state_schema
+      properties:
+        name:
+          type: string
+        subject_kind:
+          type: string
+        subject:
+          $ref: '#/components/schemas/JSONDocument'
+        state_schema:
+          $ref: '#/components/schemas/JSONDocument'
+        update_config:
+          $ref: '#/components/schemas/JSONDocument'
+        reducer_config:
+          $ref: '#/components/schemas/ObservableReducerConfig'
+        freshness_config:
+          $ref: '#/components/schemas/ObservableFreshnessConfig'
+        tags:
+          type: object
+          additionalProperties:
+            type: string
+    UpdateObservableRequest:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        name:
+          type: string
+        subject_kind:
+          type: string
+        subject:
+          $ref: '#/components/schemas/JSONDocument'
+        state_schema:
+          $ref: '#/components/schemas/JSONDocument'
+        update_config:
+          $ref: '#/components/schemas/JSONDocument'
+        reducer_config:
+          $ref: '#/components/schemas/ObservableReducerConfig'
+        freshness_config:
+          $ref: '#/components/schemas/ObservableFreshnessConfig'
+        tags:
+          type: object
+          additionalProperties:
+            type: string
+    Observable:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - org_id
+      - project_id
+      - name
+      - subject_kind
+      - subject
+      - state_schema
+      - update_config
+      - reducer_config
+      - freshness_config
+      - current_version
+      - current_state
+      - current_state_hash
+      - freshness_status
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+        org_id:
+          type: string
+        project_id:
+          type: string
+        name:
+          type: string
+        subject_kind:
+          type: string
+        subject:
+          $ref: '#/components/schemas/JSONDocument'
+        state_schema:
+          $ref: '#/components/schemas/JSONDocument'
+        update_config:
+          $ref: '#/components/schemas/JSONDocument'
+        reducer_config:
+          $ref: '#/components/schemas/ObservableReducerConfig'
+        freshness_config:
+          $ref: '#/components/schemas/ObservableFreshnessConfig'
+        current_version:
+          type: integer
+          format: int64
+        current_state:
+          $ref: '#/components/schemas/JSONDocument'
+        current_state_hash:
+          type: string
+        freshness_status:
+          $ref: '#/components/schemas/ObservableFreshnessStatus'
+        last_observed_at:
+          type: string
+          format: date-time
+          nullable: true
+        last_changed_at:
+          type: string
+          format: date-time
+          nullable: true
+        last_error_type:
+          type: string
+        last_error_message:
+          type: string
+        tags:
+          type: object
+          additionalProperties:
+            type: string
+        created_by:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    ObservableObservation:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - observable_id
+      - invocation_id
+      - observer_kind
+      - payload
+      - payload_hash
+      - observed_at
+      - received_at
+      - status
+      properties:
+        id:
+          type: string
+        observable_id:
+          type: string
+        invocation_id:
+          type: string
+        observer_kind:
+          $ref: '#/components/schemas/ObservableObserverKind'
+        observer_id:
+          type: string
+        payload:
+          $ref: '#/components/schemas/JSONDocument'
+        payload_hash:
+          type: string
+        observed_at:
+          type: string
+          format: date-time
+        received_at:
+          type: string
+          format: date-time
+        status:
+          $ref: '#/components/schemas/ObservableObservationStatus'
+        error_type:
+          type: string
+        error_message:
+          type: string
+    ObservableStateVersion:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - observable_id
+      - version
+      - state
+      - state_hash
+      - observation_id
+      - observer_kind
+      - observed_at
+      - created_at
+      properties:
+        id:
+          type: string
+        observable_id:
+          type: string
+        version:
+          type: integer
+          format: int64
+        state:
+          $ref: '#/components/schemas/JSONDocument'
+        state_hash:
+          type: string
+        observation_id:
+          type: string
+        observer_kind:
+          $ref: '#/components/schemas/ObservableObserverKind'
+        observer_id:
+          type: string
+        observed_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+    ObservableEvent:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - observable_id
+      - event_type
+      - previous_version
+      - new_version
+      - summary
+      - dispatch_status
+      - created_at
+      properties:
+        id:
+          type: string
+        observable_id:
+          type: string
+        event_type:
+          $ref: '#/components/schemas/ObservableEventType'
+        previous_version:
+          type: integer
+          format: int64
+        new_version:
+          type: integer
+          format: int64
+        summary:
+          $ref: '#/components/schemas/JSONDocument'
+        dispatch_status:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+    SubmitObservableObservationRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - invocation_id
+      - observer_kind
+      - payload
+      properties:
+        invocation_id:
+          type: string
+        observer_kind:
+          $ref: '#/components/schemas/ObservableObserverKind'
+        observer_id:
+          type: string
+        observed_at:
+          type: string
+          format: date-time
+        payload:
+          $ref: '#/components/schemas/JSONDocument'
+    SubmitObservableObservationResult:
+      type: object
+      additionalProperties: false
+      required:
+      - observable
+      - observation
+      - duplicate
+      - state_changed
+      properties:
+        observable:
+          $ref: '#/components/schemas/Observable'
+        observation:
+          $ref: '#/components/schemas/ObservableObservation'
+        state_version:
+          $ref: '#/components/schemas/ObservableStateVersion'
+        event:
+          $ref: '#/components/schemas/ObservableEvent'
+        duplicate:
+          type: boolean
+        state_changed:
+          type: boolean
+    ObservableListResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Observable'
+        next_cursor:
+          type: string
+    ObservableObservationListResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ObservableObservation'
+        next_cursor:
+          type: string
+    ObservableStateVersionListResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ObservableStateVersion'
+        next_cursor:
+          type: string
+    ObservableEventListResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ObservableEvent'
+        next_cursor:
+          type: string
 x-tagGroups:
 - name: Channels
   tags:
@@ -12225,6 +14333,9 @@ x-tagGroups:
   tags:
   - agents
   - agent-invocations
+- name: Actor State
+  tags:
+  - actor-state
 - name: Spans
   tags:
   - spans
@@ -12234,3 +14345,9 @@ x-tagGroups:
 - name: Data Tables
   tags:
   - data-tables
+- name: Artifacts
+  tags:
+  - artifacts
+- name: Observables
+  tags:
+  - observables

@@ -15,7 +15,7 @@ import (
 
 // registerEventsCommands registers every generated subcommand in the "events" group.
 func registerEventsCommands(app *cli.App) {
-	eventsGrp := app.Group("events")
+	eventsGrp := app.Group("events").Description("Live event streams for runs and projects (SSE)")
 	eventsGrp.Alias("event")
 	eventsGrp.Command("stream-project-events").
 		Description("Subscribe to a project-wide live event stream (SSE)").

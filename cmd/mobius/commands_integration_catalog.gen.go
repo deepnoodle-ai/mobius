@@ -13,7 +13,7 @@ import (
 
 // registerIntegrationCatalogCommands registers every generated subcommand in the "integration-catalog" group.
 func registerIntegrationCatalogCommands(app *cli.App) {
-	integrationCatalogGrp := app.Group("integration-catalog")
+	integrationCatalogGrp := app.Group("integration-catalog").Description("Available integration providers and capabilities")
 	integrationCatalogGrp.Command("list-providers").
 		Description("List available integration providers and their capabilities").
 		Use(requireAuth()).

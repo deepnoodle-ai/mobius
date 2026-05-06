@@ -23,6 +23,7 @@ func registerAgentsCommands(app *cli.App) {
 		Description("Create an agent").
 		Flags(
 			cli.String("capabilities", "").Help("Arbitrary capability map used by orchestrators to select suitable agents. Accepts JSON, @file, or @-."),
+			cli.String("color", "").Help("Display color for this agent (Mantine palette key, e.g. `indigo`). Optional; empty falls back to a …"),
 			cli.String("config", "").Help("Agent-specific configuration stored and returned opaquely. Accepts JSON, @file, or @-."),
 			cli.String("description", "").Help("Optional human-readable description."),
 			cli.String("kind", "").Help("Freeform classification (e.g. \"llm\", \"rpa\", \"integration\")."),
@@ -49,6 +50,10 @@ func registerAgentsCommands(app *cli.App) {
 				if err := decodeFlagJSON(ctx, "capabilities", ctx.String("capabilities"), &body.Capabilities); err != nil {
 					return err
 				}
+			}
+			if ctx.IsSet("color") {
+				v := ctx.String("color")
+				body.Color = &v
 			}
 			if ctx.IsSet("config") {
 				if err := decodeFlagJSON(ctx, "config", ctx.String("config"), &body.Config); err != nil {
@@ -330,6 +335,7 @@ func registerAgentsCommands(app *cli.App) {
 		Args("id").
 		Flags(
 			cli.String("capabilities", "").Help("Replacement capability map. Accepts JSON, @file, or @-."),
+			cli.String("color", "").Help("Replacement display color (Mantine palette key, e.g. `indigo`). Pass empty string to clear and fall…"),
 			cli.String("config", "").Help("Replacement configuration blob. Accepts JSON, @file, or @-."),
 			cli.String("description", "").Help("Replacement description."),
 			cli.String("kind", "").Help("Replacement freeform agent classification (e.g. `llm`, `rpa`)."),
@@ -356,6 +362,10 @@ func registerAgentsCommands(app *cli.App) {
 				if err := decodeFlagJSON(ctx, "capabilities", ctx.String("capabilities"), &body.Capabilities); err != nil {
 					return err
 				}
+			}
+			if ctx.IsSet("color") {
+				v := ctx.String("color")
+				body.Color = &v
 			}
 			if ctx.IsSet("config") {
 				if err := decodeFlagJSON(ctx, "config", ctx.String("config"), &body.Config); err != nil {
@@ -384,7 +394,7 @@ func registerAgentsCommands(app *cli.App) {
 				v := api.TagMap(tags)
 				body.Tags = &v
 			}
-			if ctx.String("file") == "" && !ctx.IsSet("capabilities") && !ctx.IsSet("config") && !ctx.IsSet("description") && !ctx.IsSet("kind") && !ctx.IsSet("name") && !ctx.IsSet("status") && !ctx.IsSet("tag") {
+			if ctx.String("file") == "" && !ctx.IsSet("capabilities") && !ctx.IsSet("color") && !ctx.IsSet("config") && !ctx.IsSet("description") && !ctx.IsSet("kind") && !ctx.IsSet("name") && !ctx.IsSet("status") && !ctx.IsSet("tag") {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
 			if ctx.Bool("dry-run") {

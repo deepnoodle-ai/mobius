@@ -519,6 +519,7 @@ def _run_body(run_id: str, status: str) -> dict[str, object]:
             "running": 1 if status == "active" else 0,
             "completed": 1 if status == "completed" else 0,
             "failed": 1 if status == "failed" else 0,
+            "skipped": 0,
             "cancelled": 0,
         },
         "wait_summary": {

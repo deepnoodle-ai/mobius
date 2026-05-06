@@ -15,7 +15,7 @@ import (
 
 // registerSpansCommands registers every generated subcommand in the "spans" group.
 func registerSpansCommands(app *cli.App) {
-	spansGrp := app.Group("spans")
+	spansGrp := app.Group("spans").Description("Distributed tracing spans and traces")
 	spansGrp.Alias("span")
 	spansGrp.Command("get").
 		Description("Get the full span tree for one trace").

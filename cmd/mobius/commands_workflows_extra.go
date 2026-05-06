@@ -196,7 +196,7 @@ spec:
   name: `+name+`
   description: Spec-level description (shown in the editor and run details).
   inputs: []
-  outputs: []
+  outputs: {}
   steps:
     - name: hello
       action: print
@@ -217,7 +217,7 @@ func workflowSkeletonJSON(name string) string {
     "name": "`+name+`",
     "description": "Spec-level description (shown in the editor and run details).",
     "inputs": [],
-    "outputs": [],
+    "outputs": {},
     "steps": [
       {
         "name": "hello",

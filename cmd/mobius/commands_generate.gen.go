@@ -17,7 +17,7 @@ import (
 
 // registerGenerateCommands registers every generated subcommand in the "generate" group.
 func registerGenerateCommands(app *cli.App) {
-	generateGrp := app.Group("generate")
+	generateGrp := app.Group("generate").Description("LLM message generation")
 	generateGrp.Command("create").
 		Description("Create an Anthropic-compatible message").
 		Flags(

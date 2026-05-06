@@ -613,7 +613,39 @@ class InteractionType(StrEnum):
     input = 'input'
 
 
+class InteractionOrigin(StrEnum):
+    """
+    Server-derived origin of the interaction.
+    """
+
+    manual = 'manual'
+    workflow_step = 'workflow_step'
+    job_scoped = 'job_scoped'
+    system = 'system'
+
+
 class Type(StrEnum):
+    user = 'user'
+    agent = 'agent'
+    workflow = 'workflow'
+    system = 'system'
+    integration = 'integration'
+
+
+class InteractionSource(BaseModel):
+    """
+    Server-derived actor or system context that requested the interaction. Public create requests do not supply this field.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    type: Type
+    id: str
+    display_name: str | None = None
+
+
+class Type1(StrEnum):
     """
     Target kind: a specific user, an agent queue, or a group.
     """
@@ -631,7 +663,7 @@ class InteractionTarget(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    type: Type = Field(
+    type: Type1 = Field(
         ..., description='Target kind: a specific user, an agent queue, or a group.'
     )
     id: str = Field(
@@ -640,7 +672,7 @@ class InteractionTarget(BaseModel):
     )
 
 
-class Type1(StrEnum):
+class Type2(StrEnum):
     """
     Responder kind: a user or an agent.
     """
@@ -657,7 +689,7 @@ class InteractionResponder(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    type: Type1 = Field(..., description='Responder kind: a user or an agent.')
+    type: Type2 = Field(..., description='Responder kind: a user or an agent.')
     id: str = Field(..., description='User ID for user; agent ID for agent.')
 
 
@@ -711,7 +743,7 @@ class InteractionResponse(BaseModel):
     )
 
 
-class Type2(StrEnum):
+class Type3(StrEnum):
     """
     Resolution rule. `first_valid_response` resolves on the first response (Tier 1 default). `all_required` waits for every eligible participant. `simple_majority` and `threshold` are voting policies. `weighted_vote` weighs responses by `confidence`. `speculative` resolves to `proposal` when the veto window closes without a veto. `asymmetric` runs different sub-rules per actor class (e.g. agents propose, humans decide via majority).
     """
@@ -772,7 +804,7 @@ class Status(StrEnum):
     cancelled = 'cancelled'
 
 
-class Type3(StrEnum):
+class Type4(StrEnum):
     """
     Responder kind: a user or an agent.
     """
@@ -789,7 +821,7 @@ class Responder(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    type: Type3 = Field(..., description='Responder kind: a user or an agent.')
+    type: Type4 = Field(..., description='Responder kind: a user or an agent.')
     id: str = Field(..., description='User ID for user; agent ID for agent.')
 
 
@@ -902,23 +934,26 @@ class WorkflowInput(BaseModel):
     default: Any | None = Field(None, description='Optional default value.')
 
 
-class WorkflowOutput(BaseModel):
+class WorkflowOutput1(BaseModel):
     """
-    Declares one named output value produced by a workflow spec.
+    Declares one output value produced by a workflow spec.
     """
 
     model_config = ConfigDict(
         extra='forbid',
     )
-    name: str = Field(
-        ..., description='Output name exposed to callers and downstream steps.'
+    value: Any = Field(..., description='Expression or literal output value.')
+    schema_: dict[str, Any] | None = Field(
+        None, alias='schema', description='Optional JSON Schema for this output.'
     )
-    variable: str = Field(
-        ..., description='State variable name whose value is mapped to this output.'
-    )
-    branch: str | None = Field(None, description='Defaults to `main` when omitted.')
     description: str | None = Field(
         None, description='Human-readable description of this output value.'
+    )
+
+
+class WorkflowOutput(RootModel[str | WorkflowOutput1]):
+    root: str | WorkflowOutput1 = Field(
+        ..., description='Declares one output value produced by a workflow spec.'
     )
 
 
@@ -936,6 +971,10 @@ class WorkflowStepLayout(BaseModel):
     y: float | None = Field(
         None, description='Vertical position of the step in the editor canvas.'
     )
+
+
+class Type5(StrEnum):
+    set = 'set'
 
 
 class WorkflowActionKind(StrEnum):
@@ -1047,9 +1086,6 @@ class WorkflowCatch(BaseModel):
     next: str = Field(
         ..., description='Step name to transition to when this clause is matched.'
     )
-    store: str | None = Field(
-        None, description='State variable name where the caught error is stored.'
-    )
 
 
 class WorkflowJoinConfig(BaseModel):
@@ -1069,9 +1105,9 @@ class WorkflowJoinConfig(BaseModel):
         description='Minimum number of branches that must complete. Defaults to all listed branches.',
         ge=0,
     )
-    branch_mappings: dict[str, str] | None = Field(
+    result: dict[str, Any] | None = Field(
         None,
-        description='Maps branch names to variable names for storing per-branch results.',
+        description='Explicit object this join produces. Expressions may read `branch.<branch>.<step>.result`.',
     )
 
 
@@ -1091,13 +1127,64 @@ class WorkflowWaitSignalConfig(BaseModel):
         ...,
         description='Maximum wait duration as a Go duration string (e.g. "24h", "30m").',
     )
-    store: str | None = Field(
-        None,
-        description='Variable name to store the signal payload in after resumption.',
-    )
     on_timeout: str | None = Field(
         None,
         description='Step name to transition to if the timeout elapses without a signal. Fails the run if omitted.',
+    )
+
+
+class MatchMode(StrEnum):
+    """
+    Event type match mode. `exact` is the default. `prefix` requires a non-empty condition and matches descendants separated by `.`.
+    """
+
+    exact = 'exact'
+    prefix = 'prefix'
+
+
+class WorkflowWaitEventConfig(BaseModel):
+    """
+    Suspends the run until an integration event matching `event_type` (and `condition`, when provided) is delivered to the project. `event_type` is exact-matched by default. Set `match_mode: prefix` for descendant matching such as `github.pull_request` matching `.opened`, `.closed`, etc.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    event_type: str = Field(
+        ...,
+        description='Integration event type to wait for, e.g. `github.pull_request.closed` or `stripe.invoice.paid`.',
+    )
+    match_mode: MatchMode = Field(
+        'exact',
+        description='Event type match mode. `exact` is the default. `prefix` requires a non-empty condition and matches descendants separated by `.`.',
+    )
+    condition: str | None = Field(
+        None,
+        description='Optional bare-form `expr` predicate over `{ event, meta, inputs, steps, vars, each, run }`. The event resumes the step only when the expression evaluates truthy. Empty means "any event of the matching type resumes". Predicate fields use bare `expr`; `${...}` templating is reserved for value-producing fields.',
+    )
+    timeout: str = Field(
+        ...,
+        description='Maximum wait duration as a Go duration string (e.g. "24h", "30m").',
+    )
+    on_timeout: str | None = Field(
+        None,
+        description='Step name to transition to if the timeout elapses without a matching event. Fails the run if omitted.',
+    )
+
+
+class WorkflowWaitUntilBackoffConfig(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    multiplier: float = Field(
+        ...,
+        description='Multiplier greater than 1 applied after each false/error attempt.',
+    )
+    max_every: str = Field(
+        ..., description='Maximum poll interval as a Go duration string.'
+    )
+    jitter: bool | None = Field(
+        None, description='Whether to jitter each computed interval.'
     )
 
 
@@ -1126,7 +1213,7 @@ class WorkflowPauseConfig(BaseModel):
     )
 
 
-class Type4(StrEnum):
+class Type6(StrEnum):
     """
     Interaction kind: approval requires a yes/no decision, review requests acknowledgement, input collects free-form data.
     """
@@ -1144,7 +1231,7 @@ class WorkflowInteractionConfig(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    type: Type4 = Field(
+    type: Type6 = Field(
         ...,
         description='Interaction kind: approval requires a yes/no decision, review requests acknowledgement, input collects free-form data.',
     )
@@ -1293,6 +1380,8 @@ class WorkflowRunWaitKind(StrEnum):
     pause = 'pause'
     join = 'join'
     retry = 'retry'
+    wait_event = 'wait_event'
+    wait_until = 'wait_until'
 
 
 class WorkflowRunWaitDetail(BaseModel):
@@ -1325,6 +1414,53 @@ class WorkflowRunWaitDetail(BaseModel):
     )
     max_attempts: int | None = Field(
         None, description='Maximum attempts for `retry` waits.'
+    )
+    event_type: str | None = Field(
+        None,
+        description='Event type pattern this path is waiting for. Set when `kind` is `wait_event`.',
+    )
+    match_mode: str | None = Field(
+        None, description='Event match mode for `wait_event`; empty means `exact`.'
+    )
+    condition: str | None = Field(
+        None,
+        description='Optional `expr` predicate the matching event or latest wait result must satisfy before resuming the path.',
+    )
+    source_kind: str | None = Field(
+        None, description='Wait source kind for `wait_until` (`poll` or `observable`).'
+    )
+    observable_id: str | None = Field(
+        None, description='Observable ID for `wait_until.observable` waits.'
+    )
+    observable: str | None = Field(
+        None, description='Observable name for `wait_until.observable` waits.'
+    )
+    observed_version: int | None = Field(
+        None, description='Observable version observed before the path parked.'
+    )
+    poll_action: str | None = Field(
+        None, description='Poll action name for `wait_until` waits.'
+    )
+    poll_parameters: dict[str, Any] | None = Field(
+        None, description='Frozen poll parameters for `wait_until` waits.'
+    )
+    attempt_count: int | None = Field(
+        None, description='Number of poll attempts recorded for a `wait_until` wait.'
+    )
+    current_interval: str | None = Field(
+        None, description='Current poll interval for `wait_until`.'
+    )
+    deadline_at: AwareDatetime | None = Field(
+        None, description='Fixed timeout deadline for `wait_until`.'
+    )
+    last_result: Any | None = Field(
+        None, description='Latest poll result preview for `wait_until`.'
+    )
+    last_error_type: str | None = Field(
+        None, description='Latest poll error type for `wait_until`.'
+    )
+    last_error_message: str | None = Field(
+        None, description='Latest poll error message for `wait_until`.'
     )
 
 
@@ -1408,6 +1544,7 @@ class WorkflowRunStepCounts(BaseModel):
     running: int
     completed: int
     failed: int
+    skipped: int
     cancelled: int
 
 
@@ -1422,13 +1559,15 @@ class WorkflowRunError(BaseModel):
 
 class ErrorType(StrEnum):
     """
-    Typed run-level failure cause: `run_timeout`, `run_cancelled`, `step_failed`, or `run_failed`. Its own vocabulary, not a superset of the job-level `error_type`. Present when `status=failed`.
+    Typed run-level failure cause: `run_timeout`, `run_cancelled`, `step_failed`, `run_failed`, `output_extraction_failed`, or `output_validation_failed`. Its own vocabulary, not a superset of the job-level `error_type`. Present when `status=failed`.
     """
 
     run_timeout = 'run_timeout'
     run_cancelled = 'run_cancelled'
     step_failed = 'step_failed'
     run_failed = 'run_failed'
+    output_extraction_failed = 'output_extraction_failed'
+    output_validation_failed = 'output_validation_failed'
 
 
 class RunForkLineage(BaseModel):
@@ -1483,87 +1622,18 @@ class RunStepStatus(StrEnum):
     running = 'running'
     completed = 'completed'
     failed = 'failed'
+    skipped = 'skipped'
     cancelled = 'cancelled'
 
 
-class RunStep(BaseModel):
-    """
-    Durable execution-history row for one step attempt on one workflow path. RunStep is the canonical source for run history; linked Job rows are transient worker-claim records and may be TTL-swept after terminal retention.
-    """
-
+class RunStepBinding(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    id: str = Field(
-        ...,
-        description='Stable run-step identifier. Use this value as `{step_id}` in `GET /runs/{id}/steps/{step_id}` and as `from_step_id` in `POST /runs/{id}/forks`.',
+    var: str = Field(..., description='Bound top-level vars path, e.g. `vars.repo`.')
+    source: str = Field(
+        ..., description='Source expression or literal used to produce the bound value.'
     )
-    run_id: str = Field(..., description='Workflow run that owns this step row.')
-    path_id: str = Field(
-        ..., description='Workflow path identifier for branch/fanout execution.'
-    )
-    step_name: str = Field(..., description='Step name from the workflow definition.')
-    action: str = Field(
-        ...,
-        description='Action identifier for executable steps; empty for control-only steps.',
-    )
-    attempt: int = Field(
-        ..., description='Zero-based retry attempt for this step/path pair.'
-    )
-    transition_seq: int = Field(
-        ...,
-        description='Per-run monotonic transition order for projection and fork reconstruction.',
-    )
-    kind: RunStepKind = Field(
-        ...,
-        description='Why this ledger row exists: worker-claimable action, synchronous server action, or Mobius control transition.',
-    )
-    source: RunStepSource = Field(
-        ...,
-        description='Whether this row was executed in this run or inherited from a source run during fork creation.',
-    )
-    status: RunStepStatus
-    parameters: dict[str, Any] = Field(
-        ..., description='Resolved parameters/input for this step attempt.'
-    )
-    job_id: str | None = Field(
-        None,
-        description='Linked live worker job when one exists. Terminal jobs may be reaped while the RunStep remains.',
-    )
-    result_b64: str | None = Field(
-        None, description='Base64-encoded serialized step result, when present.'
-    )
-    run_state_after_b64: str | None = Field(
-        None,
-        description='Base64-encoded serialized run state immediately after this step completed. Omitted unless requested with `include=run_state_after`.',
-    )
-    error_type: str | None = None
-    error_message: str | None = None
-    started_at: AwareDatetime | None = None
-    completed_at: AwareDatetime | None = None
-    source_run_id: str | None = Field(
-        None,
-        description='Originating run ID when this row was inherited or derived from another run.',
-    )
-    source_step_id: str | None = Field(
-        None,
-        description='Originating step ID when this row was inherited or derived from another run.',
-    )
-    created_at: AwareDatetime
-    updated_at: AwareDatetime
-
-
-class RunStepListResponse(BaseModel):
-    """
-    Paginated durable run-step history. Use this response for historical run inspection because linked job rows are live worker state and may be TTL-swept.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    items: list[RunStep]
-    has_more: bool
-    next_cursor: str | None = None
 
 
 class Mode(StrEnum):
@@ -2532,9 +2602,18 @@ class UpdateTriggerTargetRequest(BaseModel):
     )
 
 
+class Kind5(StrEnum):
+    """
+    Effect kind of the evaluated target. `launch_run` started (or attempted) a new workflow run; `signal_run` delivered (or attempted to deliver) a signal to an existing run. Lets clients reliably branch on `kind` instead of inspecting optional fields like `workflow_id` or `external_id_resolved`.
+    """
+
+    launch_run = 'launch_run'
+    signal_run = 'signal_run'
+
+
 class TriggerFireTargetResult(BaseModel):
     """
-    Outcome of a single target within a trigger fire activation.
+    Outcome of a single target within a trigger fire activation. `kind` discriminates the result shape so consumers can branch on it instead of inferring from optional fields like `workflow_id` or `external_id_resolved`.
     """
 
     model_config = ConfigDict(
@@ -2542,6 +2621,10 @@ class TriggerFireTargetResult(BaseModel):
     )
     target_id: str = Field(
         ..., description='ID of the trigger target that was evaluated.'
+    )
+    kind: Kind5 = Field(
+        ...,
+        description='Effect kind of the evaluated target. `launch_run` started (or attempted) a new workflow run; `signal_run` delivered (or attempted to deliver) a signal to an existing run. Lets clients reliably branch on `kind` instead of inspecting optional fields like `workflow_id` or `external_id_resolved`.',
     )
     workflow_id: str | None = Field(
         None,
@@ -2554,7 +2637,18 @@ class TriggerFireTargetResult(BaseModel):
     status: TriggerFireTargetStatus = Field(
         ..., description='Outcome for this target: `success`, `skipped`, or `failed`.'
     )
-    error: str | None = Field(None, description='Error detail when status is `failed`.')
+    error: str | None = Field(
+        None,
+        description='Error detail when status is `failed`. Empty for `success` and `skipped` results — `skipped` causes go in `reason` instead. Pre-split historical rows persisted skip causes here, so consumers should fall back to `error` when `reason` is empty on a skipped row.',
+    )
+    reason: str | None = Field(
+        None,
+        description='Why the target was skipped, when status is `skipped`. Examples: `condition false`, `target disabled`, `no run matching external_id <id>`. Empty for `success` and `failed` results.',
+    )
+    external_id_resolved: str | None = Field(
+        None,
+        description="Rendered value of the target's `external_id_template` (launch_run) or `run_selector.external_id_template` (signal_run). Lets operators verify the two templates produce matching strings without re-deriving them by hand. Absent when the target has no template or when rendering failed before a value was produced.",
+    )
 
 
 class ScheduleSourceConfig(BaseModel):
@@ -2593,19 +2687,6 @@ class WebhookSourceConfig(BaseModel):
     )
     receive_url: str | None = Field(
         None, description='Full URL for posting inbound events. Computed from `handle`.'
-    )
-
-
-class EventSourceConfig(BaseModel):
-    """
-    Source configuration for `event` triggers.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    event_type: str | None = Field(
-        None, description='Platform event type to match, e.g. `run.completed`.'
     )
 
 
@@ -2670,29 +2751,6 @@ class EmailSourceConfig(BaseModel):
     subject_pattern: str | None = Field(
         None,
         description='Optional Go regular expression matched against the email subject. When omitted, all subjects pass the filter.',
-    )
-
-
-class TriggerSourceConfig(
-    RootModel[
-        ScheduleSourceConfig
-        | WebhookSourceConfig
-        | EventSourceConfig
-        | ChannelMessageSourceConfig
-        | DataTableRowSourceConfig
-        | EmailSourceConfig
-    ]
-):
-    root: (
-        ScheduleSourceConfig
-        | WebhookSourceConfig
-        | EventSourceConfig
-        | ChannelMessageSourceConfig
-        | DataTableRowSourceConfig
-        | EmailSourceConfig
-    ) = Field(
-        ...,
-        description="Typed source configuration. The shape is determined by the trigger's `kind` (`schedule` → `ScheduleSourceConfig`, `webhook` → `WebhookSourceConfig`, `event` → `EventSourceConfig`, `channel_message` → `ChannelMessageSourceConfig`, `data_table_row` → `DataTableRowSourceConfig`, `email` → `EmailSourceConfig`); mismatches are rejected with 400.",
     )
 
 
@@ -2763,6 +2821,15 @@ class TestFireTriggerRequest(BaseModel):
     )
 
 
+class Kind6(StrEnum):
+    """
+    Effect kind of this target. Discriminates which resolved field is populated: `launch_run` populates `input_mapping_resolved`; `signal_run` populates `signal_payload_resolved`.
+    """
+
+    launch_run = 'launch_run'
+    signal_run = 'signal_run'
+
+
 class TestFireTargetResult(BaseModel):
     """
     Per-target outcome of a test-fire. Mirrors TriggerFireTargetResult but exposes the resolved input mapping and would-launch decision so trigger authors can debug each layer in isolation.
@@ -2774,8 +2841,13 @@ class TestFireTargetResult(BaseModel):
     target_id: str = Field(
         ..., description='ID of the trigger target this result is for.'
     )
+    kind: Kind6 = Field(
+        ...,
+        description='Effect kind of this target. Discriminates which resolved field is populated: `launch_run` populates `input_mapping_resolved`; `signal_run` populates `signal_payload_resolved`.',
+    )
     workflow_id: str | None = Field(
-        None, description='Workflow definition the target points at.'
+        None,
+        description='Workflow definition the target points at. Present only for `launch_run` targets.',
     )
     enabled: bool | None = Field(
         None,
@@ -2783,22 +2855,39 @@ class TestFireTargetResult(BaseModel):
     )
     status: TestFireTargetStatus
     input_mapping_resolved: dict[str, Any] | None = Field(
-        None, description='Resolved input map handed to the workflow.'
+        None, description='(launch_run only) Resolved input map handed to the workflow.'
+    )
+    signal_payload_resolved: dict[str, Any] | None = Field(
+        None,
+        description="(signal_run only) Resolved signal payload that would be delivered to the matched run's `wait_signal` step.",
     )
     input_resolution_error: str | None = Field(
         None,
-        description='Error encountered resolving input_mapping, when one occurred.',
+        description="Error encountered resolving the target's `input_mapping` for a `launch_run` target. `signal_run` targets report `signal_payload_mapping` failures via `signal_payload_resolution_error` instead, so clients can distinguish which resolution step failed without parsing the error string. Errors rendering the run-selector template (`run_selector.external_id_template` for `signal_run`, or the `external_id_template` for `launch_run`) surface in `launch_error`.",
+    )
+    signal_payload_resolution_error: str | None = Field(
+        None,
+        description="(signal_run only) Error encountered resolving `signal_payload_mapping` — the payload that would be delivered to the matched run's `wait_signal` step (and exposed under `signal_payload_resolved`). Reported separately from `input_resolution_error` so clients don't reuse launch-run-specific fields for signal failures.",
+    )
+    external_id_resolved: str | None = Field(
+        None,
+        description='Rendered value of `external_id_template` (launch_run) or `run_selector.external_id_template` (signal_run). Lets authors verify the two templates produce matching strings. Absent when the target has no template or rendering failed.',
     )
     would_launch: bool = Field(
         ...,
-        description='True when the target would launch a run (or signal a run once `signal_run` lands). False for disabled targets and for targets whose condition evaluated to false.',
+        description='True when the target would launch a run (`launch_run`) or signal an existing run (`signal_run`). False for disabled targets and targets whose condition evaluated to false.',
     )
     run_id: str | None = Field(
-        None, description='ID of the launched run (only set in execute mode).'
+        None,
+        description='ID of the launched (`launch_run`) or signaled (`signal_run`) run. Only set in execute mode.',
+    )
+    reason: str | None = Field(
+        None,
+        description='Why the target was skipped, when status is `skipped`. Empty for `success` and `failed` results.',
     )
     launch_error: str | None = Field(
         None,
-        description='Error from the launcher when execute mode failed to start the run.',
+        description='Error from the launcher (`launch_run`) or signal sender (`signal_run`) when execute mode failed to act on the target.',
     )
 
 
@@ -2820,7 +2909,7 @@ class TriggerFireListResponse(BaseModel):
     has_more: bool = Field(..., description='Whether additional pages are available.')
 
 
-class Kind5(StrEnum):
+class Kind7(StrEnum):
     """
     Discriminator value — must be `schedule`.
     """
@@ -2859,7 +2948,7 @@ class CreateScheduleTriggerRequest(BaseModel):
     tags: TagMap | None = Field(None, description='Initial tag set.')
 
 
-class Kind6(StrEnum):
+class Kind8(StrEnum):
     """
     Discriminator value — must be `webhook`.
     """
@@ -2898,7 +2987,7 @@ class CreateWebhookTriggerRequest(BaseModel):
     tags: TagMap | None = Field(None, description='Initial tag set.')
 
 
-class Kind7(StrEnum):
+class Kind9(StrEnum):
     """
     Discriminator value — must be `event`.
     """
@@ -2906,38 +2995,7 @@ class Kind7(StrEnum):
     event = 'event'
 
 
-class CreateEventTriggerRequest(BaseModel):
-    """
-    Creates an event trigger for platform-originated events.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    name: str = Field(
-        ..., description='Human-readable trigger name, unique within the project.'
-    )
-    kind: Literal['event'] = Field(
-        ..., description='Discriminator value — must be `event`.'
-    )
-    source_config: EventSourceConfig = Field(
-        ..., description='Event-specific source configuration.'
-    )
-    targets: list[CreateTriggerTargetRequest] | None = Field(
-        None,
-        description='Workflows to start when this trigger fires (inline convenience; stored as sub-resources).',
-    )
-    concurrency_policy: ConcurrencyPolicy | None = Field(
-        None, description='Policy for overlapping runs started by this trigger.'
-    )
-    enabled: bool | None = Field(
-        None,
-        description='Whether the trigger starts enabled. Defaults to true when omitted.',
-    )
-    tags: TagMap | None = Field(None, description='Initial tag set.')
-
-
-class Kind8(StrEnum):
+class Kind10(StrEnum):
     """
     Discriminator value — must be `channel_message`.
     """
@@ -2977,7 +3035,7 @@ class CreateChannelMessageTriggerRequest(BaseModel):
     tags: TagMap | None = Field(None, description='Initial tag set.')
 
 
-class Kind9(StrEnum):
+class Kind11(StrEnum):
     """
     Discriminator value — must be `data_table_row`.
     """
@@ -3016,7 +3074,7 @@ class CreateDataTableRowTriggerRequest(BaseModel):
     tags: TagMap | None = Field(None, description='Initial tag set.')
 
 
-class Kind10(StrEnum):
+class Kind12(StrEnum):
     """
     Discriminator value — must be `email`.
     """
@@ -3056,30 +3114,13 @@ class CreateEmailTriggerRequest(BaseModel):
     tags: TagMap | None = Field(None, description='Initial tag set.')
 
 
-class UpdateTriggerRequest(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    name: str | None = Field(None, description='Replacement human-readable name.')
-    source_config: TriggerSourceConfig | None = Field(
-        None,
-        description='Replacement source configuration; its shape must match the trigger kind.',
-    )
-    targets: list[CreateTriggerTargetRequest] | None = Field(
-        None,
-        description='Replacement target set for this trigger. Omit to leave targets unchanged; send an empty array to remove all targets.',
-    )
-    concurrency_policy: ConcurrencyPolicy | None = Field(
-        None,
-        description='Replacement policy for overlapping runs started by this trigger.',
-    )
-    enabled: bool | None = Field(
-        None, description='Set to false to pause the trigger without deleting it.'
-    )
-    tags: TagMap | None = Field(
-        None,
-        description='When supplied, replaces the user tag set on the trigger. System tags (`mobius:*`) are preserved.',
-    )
+class ActorAvailability(StrEnum):
+    available = 'available'
+    focused = 'focused'
+    busy = 'busy'
+    waiting = 'waiting'
+    away = 'away'
+    offline = 'offline'
 
 
 class InstanceStatus(StrEnum):
@@ -3342,7 +3383,7 @@ class Provider(StrEnum):
     xai = 'xai'
 
 
-class Type5(StrEnum):
+class Type7(StrEnum):
     text = 'text'
 
 
@@ -3350,7 +3391,7 @@ class SystemTextBlock(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    type: Type5
+    type: Type7
     text: str
     cache_control: dict[str, Any] | None = None
 
@@ -3364,12 +3405,12 @@ class TextContentBlock(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    type: Type5
+    type: Type7
     text: str
     cache_control: dict[str, Any] | None = None
 
 
-class Type7(StrEnum):
+class Type9(StrEnum):
     image = 'image'
 
 
@@ -3377,12 +3418,12 @@ class ImageContentBlock(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    type: Type7
+    type: Type9
     source: dict[str, Any]
     cache_control: dict[str, Any] | None = None
 
 
-class Type8(StrEnum):
+class Type10(StrEnum):
     tool_use = 'tool_use'
 
 
@@ -3390,13 +3431,13 @@ class ToolUseContentBlock(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    type: Type8
+    type: Type10
     id: str
     name: str
     input: dict[str, Any]
 
 
-class Type9(StrEnum):
+class Type11(StrEnum):
     tool_result = 'tool_result'
 
 
@@ -3409,7 +3450,7 @@ class GenerateToolDefinition(BaseModel):
     input_schema: dict[str, Any]
 
 
-class Type10(StrEnum):
+class Type12(StrEnum):
     auto = 'auto'
     any = 'any'
     tool = 'tool'
@@ -3421,11 +3462,11 @@ class GenerateToolChoice1(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    type: Type10
+    type: Type12
     name: str
 
 
-class Type11(StrEnum):
+class Type13(StrEnum):
     auto = 'auto'
     any = 'any'
     tool = 'tool'
@@ -3439,7 +3480,7 @@ class GenerateToolChoice2(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    type: Type11
+    type: Type13
     name: str | None = None
 
 
@@ -3447,7 +3488,7 @@ class GenerateToolChoice(RootModel[GenerateToolChoice1 | GenerateToolChoice2]):
     root: GenerateToolChoice1 | GenerateToolChoice2
 
 
-class Type12(StrEnum):
+class Type14(StrEnum):
     message = 'message'
 
 
@@ -3850,7 +3891,8 @@ class RespondToInteractionRequest(BaseModel):
         ..., description='JSON value supplied by the responder.'
     )
     comment: str | None = Field(
-        None, description='Optional free-text comment accompanying the response.'
+        None,
+        description='Optional free-text comment accompanying the response. Available on every interaction kind (approval, choice, multi-choice, input) and never gated by the spec — the responder may always attach reasoning, caveats, or follow-up notes alongside `value`.',
     )
     confidence: float | None = Field(
         None,
@@ -4095,6 +4137,11 @@ class Agent(BaseModel):
         None,
         description='Freeform agent classification for tooling and filtering (e.g. "llm", "rpa").',
     )
+    color: str | None = Field(
+        None,
+        description='Display color for this agent in UI surfaces such as channel avatars and message rails. One of the Mantine color palette keys (e.g. `indigo`, `teal`, `grape`); empty string falls back to a hash-derived color.',
+        max_length=24,
+    )
     capabilities: dict[str, Any] | None = Field(
         None,
         description='Arbitrary capability map used by orchestrators to select suitable agents.',
@@ -4202,6 +4249,11 @@ class CreateAgentRequest(BaseModel):
     kind: str | None = Field(
         None, description='Freeform classification (e.g. "llm", "rpa", "integration").'
     )
+    color: str | None = Field(
+        None,
+        description='Display color for this agent (Mantine palette key, e.g. `indigo`). Optional; empty falls back to a hash-derived color.',
+        max_length=24,
+    )
     capabilities: dict[str, Any] | None = Field(
         None,
         description='Arbitrary capability map used by orchestrators to select suitable agents.',
@@ -4232,6 +4284,11 @@ class UpdateAgentRequest(BaseModel):
     kind: str | None = Field(
         None,
         description='Replacement freeform agent classification (e.g. `llm`, `rpa`).',
+    )
+    color: str | None = Field(
+        None,
+        description='Replacement display color (Mantine palette key, e.g. `indigo`). Pass empty string to clear and fall back to a hash-derived color.',
+        max_length=24,
     )
     capabilities: dict[str, Any] | None = Field(
         None, description='Replacement capability map.'
@@ -4427,6 +4484,162 @@ class AgentInvocationFailRequest(BaseModel):
     error_message: str = Field(
         ..., description='Human-readable description of the failure.'
     )
+
+
+class ActorStateActorKind(StrEnum):
+    user = 'user'
+    agent = 'agent'
+
+
+class ActorStateSource(StrEnum):
+    manual = 'manual'
+    session = 'session'
+    agent_report = 'agent_report'
+    derived = 'derived'
+    calendar = 'calendar'
+    integration = 'integration'
+
+
+class ActorStateVisibility(StrEnum):
+    org = 'org'
+    project = 'project'
+    self = 'self'
+
+
+class ActorAssignmentRole(StrEnum):
+    doing = 'doing'
+    queued = 'queued'
+    next = 'next'
+
+
+class ActorAssignmentSourceKind(StrEnum):
+    job_claim = 'job_claim'
+    manual = 'manual'
+    agent_report = 'agent_report'
+    trigger = 'trigger'
+
+
+class ActorReference(BaseModel):
+    """
+    Polymorphic target reference compatible with Reference Pickers.
+    """
+
+    model_config = ConfigDict(
+        extra='allow',
+    )
+
+
+class ActorFocus(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    headline: str | None = Field(None, max_length=120)
+    ref: ActorReference | None = None
+    url: AnyUrl | None = None
+
+
+class ActorCapacity(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    in_use: int | None = Field(None, ge=0)
+    max: int | None = Field(None, ge=0)
+    accepting_new: bool | None = None
+
+
+class Role4(StrEnum):
+    """
+    Client reports may set queued or next assignments only.
+    """
+
+    queued = 'queued'
+    next = 'next'
+
+
+class ActorAssignmentInput(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    role: Role4 = Field(
+        ..., description='Client reports may set queued or next assignments only.'
+    )
+    target_ref: ActorReference
+    target_key: str
+    headline: str | None = Field(None, max_length=120)
+    due_at: AwareDatetime | None = None
+
+
+class ActorAssignment(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str
+    actor_state_id: str
+    role: ActorAssignmentRole
+    target_ref: ActorReference
+    target_key: str
+    headline: str | None = None
+    claimed_at: AwareDatetime | None = None
+    due_at: AwareDatetime | None = None
+    source_kind: ActorAssignmentSourceKind
+    created_at: AwareDatetime
+    updated_at: AwareDatetime
+
+
+class ActorState(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str
+    actor_id: str
+    actor_kind: ActorStateActorKind
+    availability: ActorAvailability
+    focus: ActorFocus | None = None
+    capacity: ActorCapacity | None = None
+    last_seen_at: AwareDatetime | None = None
+    status_source: ActorStateSource
+    expires_at: AwareDatetime | None = None
+    visibility: ActorStateVisibility
+    stale: bool
+    assignments: list[ActorAssignment]
+    created_at: AwareDatetime
+    updated_at: AwareDatetime
+
+
+class StatusSource(StrEnum):
+    manual = 'manual'
+    agent_report = 'agent_report'
+
+
+class UpsertActorStateRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    actor_kind: ActorStateActorKind
+    availability: ActorAvailability
+    focus: ActorFocus | None = None
+    capacity: ActorCapacity | None = Field(
+        None,
+        description='Accepted for humans. Ignored for agents because agent capacity is server-derived.',
+    )
+    status_source: StatusSource
+    expires_at: AwareDatetime | None = None
+    visibility: ActorStateVisibility | None = None
+    assignments: list[ActorAssignmentInput] | None = None
+
+
+class ActorStateListResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    items: list[ActorState]
+
+
+class ActorAssignmentListResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    items: list[ActorAssignment]
 
 
 class SpanKind(StrEnum):
@@ -4695,6 +4908,10 @@ class ColumnDef(BaseModel):
     type: ColumnType
     required: bool = False
     unique: bool = False
+    indexed: bool = Field(
+        False,
+        description='Marks the column as an expected filter/sort field so backends can maintain efficient indexes.',
+    )
     default: Any | None = Field(
         None, description='Default value applied when column is absent on insert'
     )
@@ -4732,6 +4949,22 @@ class DataTableListResponse(BaseModel):
     items: list[DataTable]
     has_more: bool
     next_cursor: str | None = None
+
+
+class DataTableStats(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    table_id: str
+    row_count: int
+    approx_data_bytes: int
+    approx_index_bytes: int
+    indexed_column_count: int
+    declared_index_count: int
+    search_index_present: bool
+    generated_at: AwareDatetime
+    oldest_row_created_at: AwareDatetime | None = None
+    newest_row_updated_at: AwareDatetime | None = None
 
 
 class CreateDataTableRequest(BaseModel):
@@ -4801,14 +5034,36 @@ class QueryRowsRequest(BaseModel):
     )
     sort: list[SortItem] | None = Field(None, max_length=10)
     limit: int = Field(100, ge=1, le=1000)
-    offset: int = Field(0, ge=0)
+    cursor: str | None = Field(None, description='Opaque cursor from a prior response.')
 
 
 class QueryRowsResponse(BaseModel):
     rows: list[DataTableRow]
     has_more: bool
     limit: int | None = None
-    offset: int | None = None
+    next_cursor: str | None = None
+
+
+class SearchRowsRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    query: str = Field(..., description='Keyword search query.', min_length=1)
+    filter: dict[str, Any] | None = Field(
+        None,
+        description='Optional column equality or operator filter applied before text search.',
+    )
+    limit: int = Field(100, ge=1, le=1000)
+    cursor: str | None = Field(
+        None, description='Opaque cursor from a prior search response.'
+    )
+
+
+class SearchRowsResponse(BaseModel):
+    rows: list[DataTableRow]
+    has_more: bool
+    limit: int | None = None
+    next_cursor: str | None = None
 
 
 class BulkInsertRowsRequest(BaseModel):
@@ -4846,6 +5101,344 @@ class UpsertRowResponse(BaseModel):
     )
 
 
+class ArtifactState(StrEnum):
+    pending_upload = 'pending_upload'
+    available = 'available'
+    expired = 'expired'
+    deleted = 'deleted'
+    failed = 'failed'
+
+
+class ArtifactStorageBackend(StrEnum):
+    mobius = 'mobius'
+    s3 = 's3'
+
+
+class Artifact(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str
+    org_id: str
+    project_id: str
+    run_id: str | None = None
+    step_id: str | None = None
+    job_id: str | None = None
+    attempt: int | None = None
+    name: str
+    mime_type: str
+    size_bytes: int
+    sha256: str | None = None
+    storage: ArtifactStorageBackend
+    storage_uri: str | None = None
+    integration_id: str | None = None
+    metadata: dict[str, Any] | None = None
+    tags: dict[str, str] | None = None
+    state: ArtifactState
+    created_by_type: str | None = None
+    created_by_id: str | None = None
+    created_by_name: str | None = None
+    created_at: AwareDatetime
+    committed_at: AwareDatetime | None = None
+    expires_at: AwareDatetime | None = None
+    pinned: bool | None = None
+    deleted_at: AwareDatetime | None = None
+
+
+class ArtifactListResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    items: list[Artifact]
+    has_more: bool
+    next_cursor: str | None = None
+
+
+class CreateArtifactSlotRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    name: str = Field(..., max_length=256)
+    mime: str
+    size_bytes: int = Field(..., ge=1)
+    run_id: str | None = None
+    step_id: str | None = None
+    job_id: str | None = None
+    worker_session_token: str | None = None
+    attempt: int | None = Field(None, ge=0)
+    tags: dict[str, str] | None = None
+    retain_for_seconds: int | None = Field(
+        None,
+        description='Override the project default TTL for this artifact only.',
+        ge=0,
+    )
+    retain_until: AwareDatetime | None = None
+    pinned: bool = False
+    storage_override: ArtifactStorageBackend | None = None
+
+
+class Upload(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    url: str
+    method: str
+    headers: dict[str, str] | None = None
+    max_size_bytes: int | None = None
+
+
+class ArtifactSlot(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    artifact: Artifact
+    upload: Upload
+
+
+class CommitArtifactRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    sha256: str = Field(..., max_length=64, min_length=64)
+    size_bytes: int = Field(..., ge=1)
+
+
+class ArtifactStorageSettings(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    backend: ArtifactStorageBackend | None = None
+    integration_id: str | None = None
+    default_ttl_seconds: int | None = Field(None, ge=0)
+    max_artifact_size: int | None = Field(None, ge=0)
+    inline_threshold: int | None = Field(None, ge=0)
+    pending_upload_cap: int | None = Field(None, ge=0)
+
+
+class ArtifactStorageSettingsUpdate(RootModel[ArtifactStorageSettings]):
+    root: ArtifactStorageSettings
+
+
+class ArtifactQuotaUsage(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    org_id: str
+    used_bytes: int
+    limit_bytes: int
+    artifact_count: int
+    pending_count: int
+    generated_at: AwareDatetime
+
+
+class JSONDocument(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+
+
+class ObservableFreshnessStatus(StrEnum):
+    unknown = 'unknown'
+    fresh = 'fresh'
+    stale = 'stale'
+    error = 'error'
+
+
+class ObservableReducerKind(StrEnum):
+    replace = 'replace'
+
+
+class ObservableObserverKind(StrEnum):
+    mobius = 'mobius'
+    worker = 'worker'
+    cli = 'cli'
+    integration = 'integration'
+    internal = 'internal'
+
+
+class ObservableObservationStatus(StrEnum):
+    accepted = 'accepted'
+    rejected = 'rejected'
+
+
+class ObservableEventType(StrEnum):
+    observable_changed = 'observable.changed'
+    observable_freshness_changed = 'observable.freshness_changed'
+
+
+class ObservableReducerConfig(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    kind: ObservableReducerKind
+
+
+class ObservableFreshnessConfig(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    stale_after_seconds: int | None = Field(None, ge=0)
+
+
+class CreateObservableRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    name: str
+    subject_kind: str
+    subject: JSONDocument | None = None
+    state_schema: JSONDocument
+    update_config: JSONDocument | None = None
+    reducer_config: ObservableReducerConfig | None = None
+    freshness_config: ObservableFreshnessConfig | None = None
+    tags: dict[str, str] | None = None
+
+
+class UpdateObservableRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    name: str | None = None
+    subject_kind: str | None = None
+    subject: JSONDocument | None = None
+    state_schema: JSONDocument | None = None
+    update_config: JSONDocument | None = None
+    reducer_config: ObservableReducerConfig | None = None
+    freshness_config: ObservableFreshnessConfig | None = None
+    tags: dict[str, str] | None = None
+
+
+class Observable(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str
+    org_id: str
+    project_id: str
+    name: str
+    subject_kind: str
+    subject: JSONDocument
+    state_schema: JSONDocument
+    update_config: JSONDocument
+    reducer_config: ObservableReducerConfig
+    freshness_config: ObservableFreshnessConfig
+    current_version: int
+    current_state: JSONDocument
+    current_state_hash: str
+    freshness_status: ObservableFreshnessStatus
+    last_observed_at: AwareDatetime | None = None
+    last_changed_at: AwareDatetime | None = None
+    last_error_type: str | None = None
+    last_error_message: str | None = None
+    tags: dict[str, str] | None = None
+    created_by: str | None = None
+    created_at: AwareDatetime
+    updated_at: AwareDatetime
+
+
+class ObservableObservation(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str
+    observable_id: str
+    invocation_id: str
+    observer_kind: ObservableObserverKind
+    observer_id: str | None = None
+    payload: JSONDocument
+    payload_hash: str
+    observed_at: AwareDatetime
+    received_at: AwareDatetime
+    status: ObservableObservationStatus
+    error_type: str | None = None
+    error_message: str | None = None
+
+
+class ObservableStateVersion(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str
+    observable_id: str
+    version: int
+    state: JSONDocument
+    state_hash: str
+    observation_id: str
+    observer_kind: ObservableObserverKind
+    observer_id: str | None = None
+    observed_at: AwareDatetime
+    created_at: AwareDatetime
+
+
+class ObservableEvent(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str
+    observable_id: str
+    event_type: ObservableEventType
+    previous_version: int
+    new_version: int
+    summary: JSONDocument
+    dispatch_status: str
+    created_at: AwareDatetime
+
+
+class SubmitObservableObservationRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    invocation_id: str
+    observer_kind: ObservableObserverKind
+    observer_id: str | None = None
+    observed_at: AwareDatetime | None = None
+    payload: JSONDocument
+
+
+class SubmitObservableObservationResult(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    observable: Observable
+    observation: ObservableObservation
+    state_version: ObservableStateVersion | None = None
+    event: ObservableEvent | None = None
+    duplicate: bool
+    state_changed: bool
+
+
+class ObservableListResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    items: list[Observable]
+    next_cursor: str | None = None
+
+
+class ObservableObservationListResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    items: list[ObservableObservation]
+    next_cursor: str | None = None
+
+
+class ObservableStateVersionListResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    items: list[ObservableStateVersion]
+    next_cursor: str | None = None
+
+
+class ObservableEventListResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    items: list[ObservableEvent]
+    next_cursor: str | None = None
+
+
 class ChannelInteractionRespondRequest(BaseModel):
     """
     Response payload submitted to an interaction from a channel card.
@@ -4864,7 +5457,7 @@ class ChannelInteractionRespondRequest(BaseModel):
 
 class WorkflowExecutableStep(BaseModel):
     """
-    Executes a worker or server action and stores its result in workflow state.
+    Executes a worker or server action and exposes its result at `steps.<name>.result`.
     """
 
     model_config = ConfigDict(
@@ -4901,8 +5494,9 @@ class WorkflowExecutableStep(BaseModel):
         None,
         description='Whether `action` is handled by a worker or by a Mobius-managed server action.',
     )
-    store: str | None = Field(
-        None, description='State variable name where the action result is stored.'
+    bind: dict[str, str] | None = Field(
+        None,
+        description='Optional writes to top-level `vars.*` keys, evaluated after the step completes. Targets must look like `vars.foo`.',
     )
     parameters: dict[str, Any] | None = Field(
         None,
@@ -4914,6 +5508,30 @@ class WorkflowExecutableStep(BaseModel):
     catch: list[WorkflowCatch] | None = Field(
         None,
         description='Error catch clauses that redirect execution on specific failures.',
+    )
+
+
+class WorkflowSetStep(BaseModel):
+    """
+    Binds one or more top-level vars and produces the bound object as this step's result.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    name: str = Field(
+        ...,
+        description='Unique step name within the workflow, used for routing and logging.',
+    )
+    type: Type5
+    description: str | None = None
+    next: list[WorkflowEdge] | None = None
+    edge_matching_strategy: WorkflowEdgeMatchingStrategy | None = None
+    each: WorkflowEach | None = None
+    layout: WorkflowStepLayout | None = None
+    vars: dict[str, Any] = Field(
+        ...,
+        description='Bindings keyed by top-level vars key. `repo: ${steps.fetch.result}` writes `vars.repo`.',
     )
 
 
@@ -4985,6 +5603,42 @@ class WorkflowWaitSignalStep(BaseModel):
     wait_signal: WorkflowWaitSignalConfig = Field(
         ...,
         description='Signal topic, timeout, and storage behavior for this suspension.',
+    )
+
+
+class WorkflowWaitEventStep(BaseModel):
+    """
+    Suspends a branch until an integration event of the configured type is delivered to the project and (optionally) satisfies an `expr` predicate over its payload. Same operational model as `wait_signal` but matches against the event bus directly, without requiring a separate `signal_run` trigger.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    name: str = Field(
+        ...,
+        description='Unique step name within the workflow, used for routing and logging.',
+    )
+    description: str | None = Field(
+        None, description='Optional human-readable description of what this step does.'
+    )
+    next: list[WorkflowEdge] | None = Field(
+        None,
+        description='Outbound edges controlling which step executes after this one.',
+    )
+    edge_matching_strategy: WorkflowEdgeMatchingStrategy | None = Field(
+        None,
+        description='How outbound edge conditions are evaluated after the event arrives.',
+    )
+    each: WorkflowEach | None = Field(
+        None, description='Optional fan-out configuration for repeated event waits.'
+    )
+    layout: WorkflowStepLayout | None = Field(
+        None,
+        description='Optional visual-editor position hint; ignored by the execution engine.',
+    )
+    wait_event: WorkflowWaitEventConfig = Field(
+        ...,
+        description='Event type, condition, timeout, and storage behavior for this suspension.',
     )
 
 
@@ -5092,6 +5746,107 @@ class WorkflowInteractionStep(BaseModel):
         ...,
         description='Interaction prompt, recipient, response schema, and timeout behavior.',
     )
+
+
+class WorkflowWaitUntilPollConfig(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    every: str = Field(..., description='Base poll interval as a Go duration string.')
+    action: str = Field(..., description='Mobius action invoked for each poll attempt.')
+    parameters: dict[str, Any] | None = Field(
+        None,
+        description='Poll action parameters, evaluated once when the wait is entered.',
+    )
+    backoff: WorkflowWaitUntilBackoffConfig | None = None
+
+
+class RunStep(BaseModel):
+    """
+    Durable execution-history row for one step attempt on one workflow path. RunStep is the canonical source for run history; linked Job rows are transient worker-claim records and may be TTL-swept after terminal retention.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str = Field(
+        ...,
+        description='Stable run-step identifier. Use this value as `{step_id}` in `GET /runs/{id}/steps/{step_id}` and as `from_step_id` in `POST /runs/{id}/forks`.',
+    )
+    run_id: str = Field(..., description='Workflow run that owns this step row.')
+    path_id: str = Field(
+        ..., description='Workflow path identifier for branch/fanout execution.'
+    )
+    step_name: str = Field(..., description='Step name from the workflow definition.')
+    action: str = Field(
+        ...,
+        description='Action identifier for executable steps; empty for control-only steps.',
+    )
+    attempt: int = Field(
+        ..., description='Zero-based retry attempt for this step/path pair.'
+    )
+    transition_seq: int = Field(
+        ...,
+        description='Per-run monotonic transition order for projection and fork reconstruction.',
+    )
+    kind: RunStepKind = Field(
+        ...,
+        description='Why this ledger row exists: worker-claimable action, synchronous server action, or Mobius control transition.',
+    )
+    source: RunStepSource = Field(
+        ...,
+        description='Whether this row was executed in this run or inherited from a source run during fork creation.',
+    )
+    status: RunStepStatus
+    reason: str | None = Field(
+        None,
+        description='Optional suppression reason, most commonly set when status is `skipped`.',
+    )
+    parameters: dict[str, Any] = Field(
+        ..., description='Resolved parameters/input for this step attempt.'
+    )
+    bindings: list[RunStepBinding] | None = Field(
+        None,
+        description='Vars written by this step, with the source expression used for each binding.',
+    )
+    job_id: str | None = Field(
+        None,
+        description='Linked live worker job when one exists. Terminal jobs may be reaped while the RunStep remains.',
+    )
+    result_b64: str | None = Field(
+        None, description='Base64-encoded serialized step result, when present.'
+    )
+    run_state_after_b64: str | None = Field(
+        None,
+        description='Base64-encoded serialized run state immediately after this step completed. Omitted unless requested with `include=run_state_after`.',
+    )
+    error_type: str | None = None
+    error_message: str | None = None
+    started_at: AwareDatetime | None = None
+    completed_at: AwareDatetime | None = None
+    source_run_id: str | None = Field(
+        None,
+        description='Originating run ID when this row was inherited or derived from another run.',
+    )
+    source_step_id: str | None = Field(
+        None,
+        description='Originating step ID when this row was inherited or derived from another run.',
+    )
+    created_at: AwareDatetime
+    updated_at: AwareDatetime
+
+
+class RunStepListResponse(BaseModel):
+    """
+    Paginated durable run-step history. Use this response for historical run inspection because linked job rows are live worker state and may be TTL-swept.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    items: list[RunStep]
+    has_more: bool
+    next_cursor: str | None = None
 
 
 class StartSavedRunRequest(BaseModel):
@@ -5333,7 +6088,7 @@ class TriggerTarget(BaseModel):
     )
     input_mapping: dict[str, str] | None = Field(
         None,
-        description='(launch_run only) Maps workflow input names to expressions evaluated against the event environment (`{ meta, event }`). Values use Mobius\'s `${expr}` template syntax — pure expressions (`${event.actor.id}`) preserve their native type, mixed templates (`Bearer ${meta.id}`) always render to a string, and other literals pass through as-is. Legacy JSONPath-like values (`$.…`) and unwrapped `event.` / `meta.` references are rejected with 400 on create/update. Example: `{"user_id": "${event.actor.id}"}`.',
+        description='(launch_run only) Maps workflow input names to expressions evaluated against the event environment (`{ meta, event }`). Values use Mobius\'s `${expr}` template syntax — pure expressions (`${event.actor.id}`) preserve their native type, mixed templates (`Bearer ${meta.id}`) always render to a string, and other literals pass through as-is. Legacy JSONPath-like values (`$.…`) and unwrapped `event.` / `meta.` references are rejected with 400 on create/update.\n\nResolution is fail-closed: an expression that references a missing field (`${event.pull_request.merged_by.login}` on an event without `merged_by`) fails the dispatch with `input_resolution_error` naming the offending key. No run is launched. Author expressions to reference only fields you expect to be present. Example: `{"user_id": "${event.actor.id}"}`.',
     )
     external_id_template: str | None = Field(
         None,
@@ -5346,7 +6101,7 @@ class TriggerTarget(BaseModel):
     )
     signal_payload_mapping: dict[str, str] | None = Field(
         None,
-        description='(signal_run only) Maps the signal payload keys to expressions evaluated against the event environment. Available to the workflow as `signal.payload`.',
+        description="(signal_run only) Maps the signal payload keys to expressions evaluated against the event environment. Available to the workflow as `signal.payload`. Resolution is fail-closed — an expression that references a missing field fails the target with `signal_payload_resolution_error` (the signal-side analogue of `input_mapping`'s `input_resolution_error`) and the signal is not delivered.",
     )
     enabled: bool = Field(
         ..., description='When false, this target is paused and will not fire.'
@@ -5372,67 +6127,22 @@ class TriggerTargetListResponse(BaseModel):
     )
 
 
-class Trigger(BaseModel):
+class ActorStateTriggerSourceConfig(BaseModel):
     """
-    Event source that starts one or more workflow targets.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    id: str = Field(..., description='Unique identifier for this trigger.')
-    name: str = Field(
-        ..., description='Human-readable trigger name, unique within the project.'
-    )
-    kind: TriggerKind = Field(
-        ..., description='Trigger source kind that determines the source_config schema.'
-    )
-    source_config: TriggerSourceConfig | None = Field(
-        None, description='Typed configuration for the trigger source.'
-    )
-    targets: list[TriggerTarget] | None = Field(
-        None, description='Targets attached to this trigger, populated via join.'
-    )
-    concurrency_policy: ConcurrencyPolicy = Field(
-        ..., description='Policy for overlapping runs started by this trigger.'
-    )
-    enabled: bool = Field(
-        ..., description='When false, the trigger is paused and will not fire.'
-    )
-    last_fire_at: AwareDatetime | None = Field(
-        None, description='Timestamp of the most recent fire attempt.'
-    )
-    next_fire_at: AwareDatetime | None = Field(
-        None, description='Computed next scheduled fire time (schedule triggers only).'
-    )
-    created_by: str | None = Field(
-        None, description='User ID of the org member who created this trigger.'
-    )
-    tags: TagMap | None = Field(
-        None, description='Resource tags applied to this trigger.'
-    )
-    created_at: AwareDatetime = Field(
-        ..., description='Timestamp when this trigger was created.'
-    )
-    updated_at: AwareDatetime = Field(
-        ..., description='Timestamp when this trigger was last updated.'
-    )
-
-
-class TriggerListResponse(BaseModel):
-    """
-    Paginated list of triggers.
+    Narrow transition filter for Actor State event triggers.
     """
 
     model_config = ConfigDict(
         extra='forbid',
     )
-    items: list[Trigger] = Field(..., description='The list of results for this page.')
-    next_cursor: str | None = Field(
-        None,
-        description='Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.',
+    actor_id: str | None = Field(
+        None, description='Actor ID to match. Omit to match any actor in the project.'
     )
-    has_more: bool = Field(..., description='Whether additional pages are available.')
+    from_availability: ActorAvailability | None = None
+    to_availability: ActorAvailability | None = None
+    require_free_capacity: bool | None = Field(
+        None, description='When true, only fire if the new state has spare capacity.'
+    )
 
 
 class TestFireTriggerResult(BaseModel):
@@ -5441,30 +6151,6 @@ class TestFireTriggerResult(BaseModel):
     )
     mode: Mode2
     targets: list[TestFireTargetResult]
-
-
-class CreateTriggerRequest(
-    RootModel[
-        CreateScheduleTriggerRequest
-        | CreateWebhookTriggerRequest
-        | CreateEventTriggerRequest
-        | CreateChannelMessageTriggerRequest
-        | CreateDataTableRowTriggerRequest
-        | CreateEmailTriggerRequest
-    ]
-):
-    root: (
-        CreateScheduleTriggerRequest
-        | CreateWebhookTriggerRequest
-        | CreateEventTriggerRequest
-        | CreateChannelMessageTriggerRequest
-        | CreateDataTableRowTriggerRequest
-        | CreateEmailTriggerRequest
-    ) = Field(
-        ...,
-        description='Creates a trigger. The request is discriminated by `kind`, and each variant requires the matching `source_config` schema.',
-        discriminator='kind',
-    )
 
 
 class WorkerSession(BaseModel):
@@ -5566,7 +6252,7 @@ class LLMGenerateResponse(BaseModel):
         extra='forbid',
     )
     id: str
-    type: Type12
+    type: Type14
     role: Role3
     model: str
     content: list[dict[str, Any]]
@@ -5598,26 +6284,29 @@ class IntegrationCatalogProvider(BaseModel):
     actions: list[IntegrationCatalogAction]
 
 
-class WorkflowStep(
-    RootModel[
-        WorkflowExecutableStep
-        | WorkflowJoinStep
-        | WorkflowWaitSignalStep
-        | WorkflowSleepStep
-        | WorkflowPauseStep
-        | WorkflowInteractionStep
-    ]
-):
-    root: (
-        WorkflowExecutableStep
-        | WorkflowJoinStep
-        | WorkflowWaitSignalStep
-        | WorkflowSleepStep
-        | WorkflowPauseStep
-        | WorkflowInteractionStep
-    ) = Field(
+class WorkflowWaitUntilConfig(BaseModel):
+    """
+    Durable condition wait. Exactly one of `poll` or `observable` must be set. Poll waits evaluate direct checks; Observable waits read reusable project-scoped Observable state and park on change events.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    poll: WorkflowWaitUntilPollConfig | None = None
+    observable: str | None = Field(
+        None, description='Identifier-safe Observable name or ID.'
+    )
+    condition: str = Field(
         ...,
-        description='A workflow step. Exactly one step shape should be used. Step variants are identified by their distinctive required property (`action`, `join`, `wait_signal`, `sleep`, `pause`, or `interaction`). The current authored shape intentionally does not add a separate discriminator field, so existing workflow YAML stays compact.',
+        description='Required bare-form `expr` predicate. Poll waits evaluate against `{ result, inputs, steps, vars, each, run }`; Observable waits evaluate against `{ state, observable, inputs, steps, vars, each, run }`. The expression must return bool true.',
+    )
+    timeout: str = Field(
+        ...,
+        description='Maximum wait duration as a Go duration string (e.g. "10m", "1h").',
+    )
+    on_timeout: str | None = Field(
+        None,
+        description='Step name to transition to if the timeout elapses. Fails the run if omitted.',
     )
 
 
@@ -5728,7 +6417,7 @@ class WorkflowRun(BaseModel):
     )
     error_type: ErrorType | None = Field(
         None,
-        description='Typed run-level failure cause: `run_timeout`, `run_cancelled`, `step_failed`, or `run_failed`. Its own vocabulary, not a superset of the job-level `error_type`. Present when `status=failed`.',
+        description='Typed run-level failure cause: `run_timeout`, `run_cancelled`, `step_failed`, `run_failed`, `output_extraction_failed`, or `output_validation_failed`. Its own vocabulary, not a superset of the job-level `error_type`. Present when `status=failed`.',
     )
     resolved_config: ResolvedConfig | None = Field(
         None, description='Run-level cascade config frozen when the run was started.'
@@ -5760,6 +6449,165 @@ class WorkflowRunListResponse(BaseModel):
     )
 
 
+class EventSourceConfig(BaseModel):
+    """
+    Source configuration for `event` triggers.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    event_type: str | None = Field(
+        None, description='Platform event type to match, e.g. `run.completed`.'
+    )
+    actor_state: ActorStateTriggerSourceConfig | None = Field(
+        None, description='Transition filter for `actor_state.changed` event triggers.'
+    )
+
+
+class TriggerSourceConfig(
+    RootModel[
+        ScheduleSourceConfig
+        | WebhookSourceConfig
+        | EventSourceConfig
+        | ChannelMessageSourceConfig
+        | DataTableRowSourceConfig
+        | EmailSourceConfig
+    ]
+):
+    root: (
+        ScheduleSourceConfig
+        | WebhookSourceConfig
+        | EventSourceConfig
+        | ChannelMessageSourceConfig
+        | DataTableRowSourceConfig
+        | EmailSourceConfig
+    ) = Field(
+        ...,
+        description="Typed source configuration. The shape is determined by the trigger's `kind` (`schedule` → `ScheduleSourceConfig`, `webhook` → `WebhookSourceConfig`, `event` → `EventSourceConfig`, `channel_message` → `ChannelMessageSourceConfig`, `data_table_row` → `DataTableRowSourceConfig`, `email` → `EmailSourceConfig`); mismatches are rejected with 400.",
+    )
+
+
+class Trigger(BaseModel):
+    """
+    Event source that starts one or more workflow targets.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str = Field(..., description='Unique identifier for this trigger.')
+    name: str = Field(
+        ..., description='Human-readable trigger name, unique within the project.'
+    )
+    kind: TriggerKind = Field(
+        ..., description='Trigger source kind that determines the source_config schema.'
+    )
+    source_config: TriggerSourceConfig | None = Field(
+        None, description='Typed configuration for the trigger source.'
+    )
+    targets: list[TriggerTarget] | None = Field(
+        None, description='Targets attached to this trigger, populated via join.'
+    )
+    concurrency_policy: ConcurrencyPolicy = Field(
+        ..., description='Policy for overlapping runs started by this trigger.'
+    )
+    enabled: bool = Field(
+        ..., description='When false, the trigger is paused and will not fire.'
+    )
+    last_fire_at: AwareDatetime | None = Field(
+        None, description='Timestamp of the most recent fire attempt.'
+    )
+    next_fire_at: AwareDatetime | None = Field(
+        None, description='Computed next scheduled fire time (schedule triggers only).'
+    )
+    created_by: str | None = Field(
+        None, description='User ID of the org member who created this trigger.'
+    )
+    tags: TagMap | None = Field(
+        None, description='Resource tags applied to this trigger.'
+    )
+    created_at: AwareDatetime = Field(
+        ..., description='Timestamp when this trigger was created.'
+    )
+    updated_at: AwareDatetime = Field(
+        ..., description='Timestamp when this trigger was last updated.'
+    )
+
+
+class TriggerListResponse(BaseModel):
+    """
+    Paginated list of triggers.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    items: list[Trigger] = Field(..., description='The list of results for this page.')
+    next_cursor: str | None = Field(
+        None,
+        description='Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.',
+    )
+    has_more: bool = Field(..., description='Whether additional pages are available.')
+
+
+class CreateEventTriggerRequest(BaseModel):
+    """
+    Creates an event trigger for platform-originated events.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    name: str = Field(
+        ..., description='Human-readable trigger name, unique within the project.'
+    )
+    kind: Literal['event'] = Field(
+        ..., description='Discriminator value — must be `event`.'
+    )
+    source_config: EventSourceConfig = Field(
+        ..., description='Event-specific source configuration.'
+    )
+    targets: list[CreateTriggerTargetRequest] | None = Field(
+        None,
+        description='Workflows to start when this trigger fires (inline convenience; stored as sub-resources).',
+    )
+    concurrency_policy: ConcurrencyPolicy | None = Field(
+        None, description='Policy for overlapping runs started by this trigger.'
+    )
+    enabled: bool | None = Field(
+        None,
+        description='Whether the trigger starts enabled. Defaults to true when omitted.',
+    )
+    tags: TagMap | None = Field(None, description='Initial tag set.')
+
+
+class UpdateTriggerRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    name: str | None = Field(None, description='Replacement human-readable name.')
+    source_config: TriggerSourceConfig | None = Field(
+        None,
+        description='Replacement source configuration; its shape must match the trigger kind.',
+    )
+    targets: list[CreateTriggerTargetRequest] | None = Field(
+        None,
+        description='Replacement target set for this trigger. Omit to leave targets unchanged; send an empty array to remove all targets.',
+    )
+    concurrency_policy: ConcurrencyPolicy | None = Field(
+        None,
+        description='Replacement policy for overlapping runs started by this trigger.',
+    )
+    enabled: bool | None = Field(
+        None, description='Set to false to pause the trigger without deleting it.'
+    )
+    tags: TagMap | None = Field(
+        None,
+        description='When supplied, replaces the user tag set on the trigger. System tags (`mobius:*`) are preserved.',
+    )
+
+
 class IntegrationCatalog(BaseModel):
     """
     Capability catalog for the integrations registered on this server.
@@ -5769,6 +6617,95 @@ class IntegrationCatalog(BaseModel):
         extra='forbid',
     )
     providers: list[IntegrationCatalogProvider]
+
+
+class WorkflowWaitUntilStep(BaseModel):
+    """
+    Polls project or external state until a strict boolean condition evaluates true, parking the run durably between checks.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    name: str = Field(
+        ...,
+        description='Unique step name within the workflow, used for routing and logging.',
+    )
+    description: str | None = Field(
+        None, description='Optional human-readable description of what this step does.'
+    )
+    next: list[WorkflowEdge] | None = Field(
+        None,
+        description='Outbound edges controlling which step executes after the condition passes.',
+    )
+    edge_matching_strategy: WorkflowEdgeMatchingStrategy | None = Field(
+        None,
+        description='How outbound edge conditions are evaluated after the condition passes.',
+    )
+    each: WorkflowEach | None = Field(
+        None, description='Optional fan-out configuration for repeated condition waits.'
+    )
+    layout: WorkflowStepLayout | None = Field(
+        None,
+        description='Optional visual-editor position hint; ignored by the execution engine.',
+    )
+    wait_until: WorkflowWaitUntilConfig = Field(
+        ...,
+        description='Poll/observable source, condition, timeout, and timeout routing.',
+    )
+
+
+class CreateTriggerRequest(
+    RootModel[
+        CreateScheduleTriggerRequest
+        | CreateWebhookTriggerRequest
+        | CreateEventTriggerRequest
+        | CreateChannelMessageTriggerRequest
+        | CreateDataTableRowTriggerRequest
+        | CreateEmailTriggerRequest
+    ]
+):
+    root: (
+        CreateScheduleTriggerRequest
+        | CreateWebhookTriggerRequest
+        | CreateEventTriggerRequest
+        | CreateChannelMessageTriggerRequest
+        | CreateDataTableRowTriggerRequest
+        | CreateEmailTriggerRequest
+    ) = Field(
+        ...,
+        description='Creates a trigger. The request is discriminated by `kind`, and each variant requires the matching `source_config` schema.',
+        discriminator='kind',
+    )
+
+
+class WorkflowStep(
+    RootModel[
+        WorkflowExecutableStep
+        | WorkflowSetStep
+        | WorkflowJoinStep
+        | WorkflowWaitSignalStep
+        | WorkflowWaitEventStep
+        | WorkflowWaitUntilStep
+        | WorkflowSleepStep
+        | WorkflowPauseStep
+        | WorkflowInteractionStep
+    ]
+):
+    root: (
+        WorkflowExecutableStep
+        | WorkflowSetStep
+        | WorkflowJoinStep
+        | WorkflowWaitSignalStep
+        | WorkflowWaitEventStep
+        | WorkflowWaitUntilStep
+        | WorkflowSleepStep
+        | WorkflowPauseStep
+        | WorkflowInteractionStep
+    ) = Field(
+        ...,
+        description='A workflow step. Exactly one step shape should be used. Step variants are identified by their distinctive required property (`action`, `type: set`, `join`, `wait_signal`, `wait_event`, `wait_until`, `sleep`, `pause`, or `interaction`). The current authored shape intentionally does not add a separate discriminator field, so existing workflow YAML stays compact.',
+    )
 
 
 class WorkflowSpec(BaseModel):
@@ -5792,10 +6729,10 @@ class WorkflowSpec(BaseModel):
     inputs: list[WorkflowInput] | None = Field(
         None, description='Declared input parameters accepted by this workflow.'
     )
-    outputs: list[WorkflowOutput] | None = Field(
-        None, description='Declared output values produced by this workflow.'
+    outputs: dict[str, WorkflowOutput] | None = Field(
+        None,
+        description='Declared terminal contract. Compact values are expressions; long-form values may include value/schema/description.',
     )
-    state: dict[str, Any] | None = Field(None, description='Initial workflow state.')
     steps: list[WorkflowStep] = Field(
         ..., description='Ordered list of steps that make up this workflow.'
     )
@@ -5969,7 +6906,7 @@ class ResolutionPolicy(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    type: Type2 = Field(
+    type: Type3 = Field(
         ...,
         description='Resolution rule. `first_valid_response` resolves on the first response (Tier 1 default). `all_required` waits for every eligible participant. `simple_majority` and `threshold` are voting policies. `weighted_vote` weighs responses by `confidence`. `speculative` resolves to `proposal` when the veto window closes without a veto. `asymmetric` runs different sub-rules per actor class (e.g. agents propose, humans decide via majority).',
     )
@@ -6059,6 +6996,8 @@ class Interaction(BaseModel):
         ...,
         description='Current status of the interaction: pending, completed, expired, or cancelled.',
     )
+    origin: InteractionOrigin
+    source: InteractionSource | None = None
     message: str | None = Field(
         None, description='Human-readable message shown to the responder when supplied.'
     )
@@ -6226,7 +7165,7 @@ class ToolResultContentBlock(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    type: Type9
+    type: Type11
     tool_use_id: str
     content: str | list[ContentBlock]
     is_error: bool | None = None
