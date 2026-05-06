@@ -19,8 +19,84 @@ import (
 )
 
 const (
-	BearerAuthScopes = "BearerAuth.Scopes"
+	BearerAuthScopes  = "BearerAuth.Scopes"
+	XApiKeyAuthScopes = "XApiKeyAuth.Scopes"
 )
+
+// Defines values for ActionEndpointKind.
+const (
+	ActionEndpointKindHttp     ActionEndpointKind = "http"
+	ActionEndpointKindWorkflow ActionEndpointKind = "workflow"
+)
+
+// Valid indicates whether the value is a known member of the ActionEndpointKind enum.
+func (e ActionEndpointKind) Valid() bool {
+	switch e {
+	case ActionEndpointKindHttp:
+		return true
+	case ActionEndpointKindWorkflow:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ActionCatalogEntryEndpointKind.
+const (
+	ActionCatalogEntryEndpointKindHttp     ActionCatalogEntryEndpointKind = "http"
+	ActionCatalogEntryEndpointKindWorkflow ActionCatalogEntryEndpointKind = "workflow"
+)
+
+// Valid indicates whether the value is a known member of the ActionCatalogEntryEndpointKind enum.
+func (e ActionCatalogEntryEndpointKind) Valid() bool {
+	switch e {
+	case ActionCatalogEntryEndpointKindHttp:
+		return true
+	case ActionCatalogEntryEndpointKindWorkflow:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ActionCatalogEntrySource.
+const (
+	ActionCatalogEntrySourceCustom   ActionCatalogEntrySource = "custom"
+	ActionCatalogEntrySourcePlatform ActionCatalogEntrySource = "platform"
+)
+
+// Valid indicates whether the value is a known member of the ActionCatalogEntrySource enum.
+func (e ActionCatalogEntrySource) Valid() bool {
+	switch e {
+	case ActionCatalogEntrySourceCustom:
+		return true
+	case ActionCatalogEntrySourcePlatform:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ActionInvocationResultStatus.
+const (
+	ActionInvocationResultStatusActive    ActionInvocationResultStatus = "active"
+	ActionInvocationResultStatusCompleted ActionInvocationResultStatus = "completed"
+	ActionInvocationResultStatusFailed    ActionInvocationResultStatus = "failed"
+)
+
+// Valid indicates whether the value is a known member of the ActionInvocationResultStatus enum.
+func (e ActionInvocationResultStatus) Valid() bool {
+	switch e {
+	case ActionInvocationResultStatusActive:
+		return true
+	case ActionInvocationResultStatusCompleted:
+		return true
+	case ActionInvocationResultStatusFailed:
+		return true
+	default:
+		return false
+	}
+}
 
 // Defines values for AddChannelMemberRequestRole.
 const (
@@ -34,6 +110,69 @@ func (e AddChannelMemberRequestRole) Valid() bool {
 	case AddChannelMemberRequestRoleAdmin:
 		return true
 	case AddChannelMemberRequestRoleMember:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AgentInvocationErrorType.
+const (
+	AgentInvocationErrorTypeAgentError       AgentInvocationErrorType = "agent_error"
+	AgentInvocationErrorTypeAgentUnavailable AgentInvocationErrorType = "agent_unavailable"
+	AgentInvocationErrorTypeCancelled        AgentInvocationErrorType = "cancelled"
+	AgentInvocationErrorTypeForbidden        AgentInvocationErrorType = "forbidden"
+	AgentInvocationErrorTypeNoToolsAvailable AgentInvocationErrorType = "no_tools_available"
+	AgentInvocationErrorTypeSchemaViolation  AgentInvocationErrorType = "schema_violation"
+	AgentInvocationErrorTypeTimeout          AgentInvocationErrorType = "timeout"
+	AgentInvocationErrorTypeToolViolation    AgentInvocationErrorType = "tool_violation"
+)
+
+// Valid indicates whether the value is a known member of the AgentInvocationErrorType enum.
+func (e AgentInvocationErrorType) Valid() bool {
+	switch e {
+	case AgentInvocationErrorTypeAgentError:
+		return true
+	case AgentInvocationErrorTypeAgentUnavailable:
+		return true
+	case AgentInvocationErrorTypeCancelled:
+		return true
+	case AgentInvocationErrorTypeForbidden:
+		return true
+	case AgentInvocationErrorTypeNoToolsAvailable:
+		return true
+	case AgentInvocationErrorTypeSchemaViolation:
+		return true
+	case AgentInvocationErrorTypeTimeout:
+		return true
+	case AgentInvocationErrorTypeToolViolation:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AgentInvocationStatus.
+const (
+	AgentInvocationStatusCancelled AgentInvocationStatus = "cancelled"
+	AgentInvocationStatusCompleted AgentInvocationStatus = "completed"
+	AgentInvocationStatusFailed    AgentInvocationStatus = "failed"
+	AgentInvocationStatusPending   AgentInvocationStatus = "pending"
+	AgentInvocationStatusRunning   AgentInvocationStatus = "running"
+)
+
+// Valid indicates whether the value is a known member of the AgentInvocationStatus enum.
+func (e AgentInvocationStatus) Valid() bool {
+	switch e {
+	case AgentInvocationStatusCancelled:
+		return true
+	case AgentInvocationStatusCompleted:
+		return true
+	case AgentInvocationStatusFailed:
+		return true
+	case AgentInvocationStatusPending:
+		return true
+	case AgentInvocationStatusRunning:
 		return true
 	default:
 		return false
@@ -94,6 +233,27 @@ func (e AgentStatus) Valid() bool {
 	case AgentStatusActive:
 		return true
 	case AgentStatusInactive:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AsymmetricActorRuleRule.
+const (
+	AsymmetricActorRuleRuleDecide  AsymmetricActorRuleRule = "decide"
+	AsymmetricActorRuleRuleIgnore  AsymmetricActorRuleRule = "ignore"
+	AsymmetricActorRuleRulePropose AsymmetricActorRuleRule = "propose"
+)
+
+// Valid indicates whether the value is a known member of the AsymmetricActorRuleRule enum.
+func (e AsymmetricActorRuleRule) Valid() bool {
+	switch e {
+	case AsymmetricActorRuleRuleDecide:
+		return true
+	case AsymmetricActorRuleRuleIgnore:
+		return true
+	case AsymmetricActorRuleRulePropose:
 		return true
 	default:
 		return false
@@ -186,8 +346,9 @@ func (e ChannelMessageDisplay) Valid() bool {
 
 // Defines values for ChannelMessageSenderType.
 const (
-	ChannelMessageSenderTypeAgent  ChannelMessageSenderType = "agent"
-	ChannelMessageSenderTypeMember ChannelMessageSenderType = "member"
+	ChannelMessageSenderTypeAgent          ChannelMessageSenderType = "agent"
+	ChannelMessageSenderTypeMember         ChannelMessageSenderType = "member"
+	ChannelMessageSenderTypeServiceAccount ChannelMessageSenderType = "service_account"
 )
 
 // Valid indicates whether the value is a known member of the ChannelMessageSenderType enum.
@@ -196,6 +357,41 @@ func (e ChannelMessageSenderType) Valid() bool {
 	case ChannelMessageSenderTypeAgent:
 		return true
 	case ChannelMessageSenderTypeMember:
+		return true
+	case ChannelMessageSenderTypeServiceAccount:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ColumnType.
+const (
+	ColumnTypeAny     ColumnType = "any"
+	ColumnTypeArray   ColumnType = "array"
+	ColumnTypeBoolean ColumnType = "boolean"
+	ColumnTypeDate    ColumnType = "date"
+	ColumnTypeNumber  ColumnType = "number"
+	ColumnTypeObject  ColumnType = "object"
+	ColumnTypeString  ColumnType = "string"
+)
+
+// Valid indicates whether the value is a known member of the ColumnType enum.
+func (e ColumnType) Valid() bool {
+	switch e {
+	case ColumnTypeAny:
+		return true
+	case ColumnTypeArray:
+		return true
+	case ColumnTypeBoolean:
+		return true
+	case ColumnTypeDate:
+		return true
+	case ColumnTypeNumber:
+		return true
+	case ColumnTypeObject:
+		return true
+	case ColumnTypeString:
 		return true
 	default:
 		return false
@@ -223,6 +419,21 @@ func (e ConcurrencyPolicy) Valid() bool {
 	}
 }
 
+// Defines values for CreateChannelMessageTriggerRequestKind.
+const (
+	CreateChannelMessageTriggerRequestKindChannelMessage CreateChannelMessageTriggerRequestKind = "channel_message"
+)
+
+// Valid indicates whether the value is a known member of the CreateChannelMessageTriggerRequestKind enum.
+func (e CreateChannelMessageTriggerRequestKind) Valid() bool {
+	switch e {
+	case CreateChannelMessageTriggerRequestKindChannelMessage:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for CreateChannelRequestKind.
 const (
 	CreateChannelRequestKindChannel CreateChannelRequestKind = "channel"
@@ -235,6 +446,36 @@ func (e CreateChannelRequestKind) Valid() bool {
 	case CreateChannelRequestKindChannel:
 		return true
 	case CreateChannelRequestKindDm:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CreateDataTableRowTriggerRequestKind.
+const (
+	CreateDataTableRowTriggerRequestKindDataTableRow CreateDataTableRowTriggerRequestKind = "data_table_row"
+)
+
+// Valid indicates whether the value is a known member of the CreateDataTableRowTriggerRequestKind enum.
+func (e CreateDataTableRowTriggerRequestKind) Valid() bool {
+	switch e {
+	case CreateDataTableRowTriggerRequestKindDataTableRow:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CreateEmailTriggerRequestKind.
+const (
+	CreateEmailTriggerRequestKindEmail CreateEmailTriggerRequestKind = "email"
+)
+
+// Valid indicates whether the value is a known member of the CreateEmailTriggerRequestKind enum.
+func (e CreateEmailTriggerRequestKind) Valid() bool {
+	switch e {
+	case CreateEmailTriggerRequestKindEmail:
 		return true
 	default:
 		return false
@@ -289,6 +530,24 @@ func (e CreateScheduleTriggerRequestKind) Valid() bool {
 	}
 }
 
+// Defines values for CreateTriggerTargetRequestKind.
+const (
+	CreateTriggerTargetRequestKindLaunchRun CreateTriggerTargetRequestKind = "launch_run"
+	CreateTriggerTargetRequestKindSignalRun CreateTriggerTargetRequestKind = "signal_run"
+)
+
+// Valid indicates whether the value is a known member of the CreateTriggerTargetRequestKind enum.
+func (e CreateTriggerTargetRequestKind) Valid() bool {
+	switch e {
+	case CreateTriggerTargetRequestKindLaunchRun:
+		return true
+	case CreateTriggerTargetRequestKindSignalRun:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for CreateWebhookTriggerRequestKind.
 const (
 	CreateWebhookTriggerRequestKindWebhook CreateWebhookTriggerRequestKind = "webhook"
@@ -298,6 +557,171 @@ const (
 func (e CreateWebhookTriggerRequestKind) Valid() bool {
 	switch e {
 	case CreateWebhookTriggerRequestKindWebhook:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DataTableRowSourceConfigEvents.
+const (
+	DataTableRowSourceConfigEventsDeleted  DataTableRowSourceConfigEvents = "deleted"
+	DataTableRowSourceConfigEventsInserted DataTableRowSourceConfigEvents = "inserted"
+	DataTableRowSourceConfigEventsUpdated  DataTableRowSourceConfigEvents = "updated"
+)
+
+// Valid indicates whether the value is a known member of the DataTableRowSourceConfigEvents enum.
+func (e DataTableRowSourceConfigEvents) Valid() bool {
+	switch e {
+	case DataTableRowSourceConfigEventsDeleted:
+		return true
+	case DataTableRowSourceConfigEventsInserted:
+		return true
+	case DataTableRowSourceConfigEventsUpdated:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for EntityReferenceType.
+const (
+	EntityReferenceTypeAgent              EntityReferenceType = "agent"
+	EntityReferenceTypeChannelMessage     EntityReferenceType = "channel_message"
+	EntityReferenceTypeGroup              EntityReferenceType = "group"
+	EntityReferenceTypeInteraction        EntityReferenceType = "interaction"
+	EntityReferenceTypeJob                EntityReferenceType = "job"
+	EntityReferenceTypeRunStep            EntityReferenceType = "run_step"
+	EntityReferenceTypeUser               EntityReferenceType = "user"
+	EntityReferenceTypeWorkflowDefinition EntityReferenceType = "workflow_definition"
+	EntityReferenceTypeWorkflowRun        EntityReferenceType = "workflow_run"
+)
+
+// Valid indicates whether the value is a known member of the EntityReferenceType enum.
+func (e EntityReferenceType) Valid() bool {
+	switch e {
+	case EntityReferenceTypeAgent:
+		return true
+	case EntityReferenceTypeChannelMessage:
+		return true
+	case EntityReferenceTypeGroup:
+		return true
+	case EntityReferenceTypeInteraction:
+		return true
+	case EntityReferenceTypeJob:
+		return true
+	case EntityReferenceTypeRunStep:
+		return true
+	case EntityReferenceTypeUser:
+		return true
+	case EntityReferenceTypeWorkflowDefinition:
+		return true
+	case EntityReferenceTypeWorkflowRun:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GenerateMessageRole.
+const (
+	GenerateMessageRoleAssistant GenerateMessageRole = "assistant"
+	GenerateMessageRoleUser      GenerateMessageRole = "user"
+)
+
+// Valid indicates whether the value is a known member of the GenerateMessageRole enum.
+func (e GenerateMessageRole) Valid() bool {
+	switch e {
+	case GenerateMessageRoleAssistant:
+		return true
+	case GenerateMessageRoleUser:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GenerateRequestProvider.
+const (
+	GenerateRequestProviderAnthropic GenerateRequestProvider = "anthropic"
+	GenerateRequestProviderGoogle    GenerateRequestProvider = "google"
+	GenerateRequestProviderGrok      GenerateRequestProvider = "grok"
+	GenerateRequestProviderOpenai    GenerateRequestProvider = "openai"
+	GenerateRequestProviderXai       GenerateRequestProvider = "xai"
+)
+
+// Valid indicates whether the value is a known member of the GenerateRequestProvider enum.
+func (e GenerateRequestProvider) Valid() bool {
+	switch e {
+	case GenerateRequestProviderAnthropic:
+		return true
+	case GenerateRequestProviderGoogle:
+		return true
+	case GenerateRequestProviderGrok:
+		return true
+	case GenerateRequestProviderOpenai:
+		return true
+	case GenerateRequestProviderXai:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GenerateToolChoiceType.
+const (
+	GenerateToolChoiceTypeAny  GenerateToolChoiceType = "any"
+	GenerateToolChoiceTypeAuto GenerateToolChoiceType = "auto"
+	GenerateToolChoiceTypeNone GenerateToolChoiceType = "none"
+	GenerateToolChoiceTypeTool GenerateToolChoiceType = "tool"
+)
+
+// Valid indicates whether the value is a known member of the GenerateToolChoiceType enum.
+func (e GenerateToolChoiceType) Valid() bool {
+	switch e {
+	case GenerateToolChoiceTypeAny:
+		return true
+	case GenerateToolChoiceTypeAuto:
+		return true
+	case GenerateToolChoiceTypeNone:
+		return true
+	case GenerateToolChoiceTypeTool:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GenerateToolChoice0Type.
+const (
+	GenerateToolChoice0TypeTool GenerateToolChoice0Type = "tool"
+)
+
+// Valid indicates whether the value is a known member of the GenerateToolChoice0Type enum.
+func (e GenerateToolChoice0Type) Valid() bool {
+	switch e {
+	case GenerateToolChoice0TypeTool:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GenerateToolChoice1Type.
+const (
+	GenerateToolChoice1TypeAny  GenerateToolChoice1Type = "any"
+	GenerateToolChoice1TypeAuto GenerateToolChoice1Type = "auto"
+	GenerateToolChoice1TypeNone GenerateToolChoice1Type = "none"
+)
+
+// Valid indicates whether the value is a known member of the GenerateToolChoice1Type enum.
+func (e GenerateToolChoice1Type) Valid() bool {
+	switch e {
+	case GenerateToolChoice1TypeAny:
+		return true
+	case GenerateToolChoice1TypeAuto:
+		return true
+	case GenerateToolChoice1TypeNone:
 		return true
 	default:
 		return false
@@ -340,6 +764,21 @@ func (e GroupWithCountRoutingPolicy) Valid() bool {
 	}
 }
 
+// Defines values for ImageContentBlockType.
+const (
+	ImageContentBlockTypeImage ImageContentBlockType = "image"
+)
+
+// Valid indicates whether the value is a known member of the ImageContentBlockType enum.
+func (e ImageContentBlockType) Valid() bool {
+	switch e {
+	case ImageContentBlockTypeImage:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for InteractionRoutingPolicySnapshot.
 const (
 	InteractionRoutingPolicySnapshotAllMembers     InteractionRoutingPolicySnapshot = "all_members"
@@ -360,6 +799,7 @@ func (e InteractionRoutingPolicySnapshot) Valid() bool {
 
 // Defines values for InteractionStatus.
 const (
+	InteractionStatusCancelled InteractionStatus = "cancelled"
 	InteractionStatusCompleted InteractionStatus = "completed"
 	InteractionStatusExpired   InteractionStatus = "expired"
 	InteractionStatusPending   InteractionStatus = "pending"
@@ -368,6 +808,8 @@ const (
 // Valid indicates whether the value is a known member of the InteractionStatus enum.
 func (e InteractionStatus) Valid() bool {
 	switch e {
+	case InteractionStatusCancelled:
+		return true
 	case InteractionStatusCompleted:
 		return true
 	case InteractionStatusExpired:
@@ -415,6 +857,24 @@ func (e InteractionResponderType) Valid() bool {
 	case InteractionResponderTypeAgent:
 		return true
 	case InteractionResponderTypeUser:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for InteractionResponseResponderType.
+const (
+	InteractionResponseResponderTypeAgent InteractionResponseResponderType = "agent"
+	InteractionResponseResponderTypeUser  InteractionResponseResponderType = "user"
+)
+
+// Valid indicates whether the value is a known member of the InteractionResponseResponderType enum.
+func (e InteractionResponseResponderType) Valid() bool {
+	switch e {
+	case InteractionResponseResponderTypeAgent:
+		return true
+	case InteractionResponseResponderTypeUser:
 		return true
 	default:
 		return false
@@ -505,6 +965,36 @@ func (e JobStatus) Valid() bool {
 	}
 }
 
+// Defines values for LLMGenerateResponseRole.
+const (
+	LLMGenerateResponseRoleAssistant LLMGenerateResponseRole = "assistant"
+)
+
+// Valid indicates whether the value is a known member of the LLMGenerateResponseRole enum.
+func (e LLMGenerateResponseRole) Valid() bool {
+	switch e {
+	case LLMGenerateResponseRoleAssistant:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LLMGenerateResponseType.
+const (
+	LLMGenerateResponseTypeMessage LLMGenerateResponseType = "message"
+)
+
+// Valid indicates whether the value is a known member of the LLMGenerateResponseType enum.
+func (e LLMGenerateResponseType) Valid() bool {
+	switch e {
+	case LLMGenerateResponseTypeMessage:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ProjectAccessMode.
 const (
 	ProjectAccessModeOrgOpen    ProjectAccessMode = "org_open"
@@ -517,6 +1007,108 @@ func (e ProjectAccessMode) Valid() bool {
 	case ProjectAccessModeOrgOpen:
 		return true
 	case ProjectAccessModeRestricted:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for QueryRowsRequestSortOrder.
+const (
+	QueryRowsRequestSortOrderAsc  QueryRowsRequestSortOrder = "asc"
+	QueryRowsRequestSortOrderDesc QueryRowsRequestSortOrder = "desc"
+)
+
+// Valid indicates whether the value is a known member of the QueryRowsRequestSortOrder enum.
+func (e QueryRowsRequestSortOrder) Valid() bool {
+	switch e {
+	case QueryRowsRequestSortOrderAsc:
+		return true
+	case QueryRowsRequestSortOrderDesc:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ResolutionPolicyOnNoVeto.
+const (
+	ResolutionPolicyOnNoVetoAcceptProposal ResolutionPolicyOnNoVeto = "accept_proposal"
+)
+
+// Valid indicates whether the value is a known member of the ResolutionPolicyOnNoVeto enum.
+func (e ResolutionPolicyOnNoVeto) Valid() bool {
+	switch e {
+	case ResolutionPolicyOnNoVetoAcceptProposal:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ResolutionPolicyTieBreak.
+const (
+	ResolutionPolicyTieBreakFirst        ResolutionPolicyTieBreak = "first"
+	ResolutionPolicyTieBreakOwnerDecides ResolutionPolicyTieBreak = "owner_decides"
+)
+
+// Valid indicates whether the value is a known member of the ResolutionPolicyTieBreak enum.
+func (e ResolutionPolicyTieBreak) Valid() bool {
+	switch e {
+	case ResolutionPolicyTieBreakFirst:
+		return true
+	case ResolutionPolicyTieBreakOwnerDecides:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ResolutionPolicyType.
+const (
+	ResolutionPolicyTypeAllRequired        ResolutionPolicyType = "all_required"
+	ResolutionPolicyTypeAsymmetric         ResolutionPolicyType = "asymmetric"
+	ResolutionPolicyTypeFirstValidResponse ResolutionPolicyType = "first_valid_response"
+	ResolutionPolicyTypeSimpleMajority     ResolutionPolicyType = "simple_majority"
+	ResolutionPolicyTypeSpeculative        ResolutionPolicyType = "speculative"
+	ResolutionPolicyTypeThreshold          ResolutionPolicyType = "threshold"
+	ResolutionPolicyTypeWeightedVote       ResolutionPolicyType = "weighted_vote"
+)
+
+// Valid indicates whether the value is a known member of the ResolutionPolicyType enum.
+func (e ResolutionPolicyType) Valid() bool {
+	switch e {
+	case ResolutionPolicyTypeAllRequired:
+		return true
+	case ResolutionPolicyTypeAsymmetric:
+		return true
+	case ResolutionPolicyTypeFirstValidResponse:
+		return true
+	case ResolutionPolicyTypeSimpleMajority:
+		return true
+	case ResolutionPolicyTypeSpeculative:
+		return true
+	case ResolutionPolicyTypeThreshold:
+		return true
+	case ResolutionPolicyTypeWeightedVote:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ResolutionPolicyWeightBy.
+const (
+	ResolutionPolicyWeightByConfidence ResolutionPolicyWeightBy = "confidence"
+	ResolutionPolicyWeightByEqual      ResolutionPolicyWeightBy = "equal"
+)
+
+// Valid indicates whether the value is a known member of the ResolutionPolicyWeightBy enum.
+func (e ResolutionPolicyWeightBy) Valid() bool {
+	switch e {
+	case ResolutionPolicyWeightByConfidence:
+		return true
+	case ResolutionPolicyWeightByEqual:
 		return true
 	default:
 		return false
@@ -637,6 +1229,75 @@ func (e SendChannelMessageRequestDisplay) Valid() bool {
 	}
 }
 
+// Defines values for ShareChannelEntityRequestDisplay.
+const (
+	ShareChannelEntityRequestDisplayCard    ShareChannelEntityRequestDisplay = "card"
+	ShareChannelEntityRequestDisplayMessage ShareChannelEntityRequestDisplay = "message"
+	ShareChannelEntityRequestDisplayNotice  ShareChannelEntityRequestDisplay = "notice"
+)
+
+// Valid indicates whether the value is a known member of the ShareChannelEntityRequestDisplay enum.
+func (e ShareChannelEntityRequestDisplay) Valid() bool {
+	switch e {
+	case ShareChannelEntityRequestDisplayCard:
+		return true
+	case ShareChannelEntityRequestDisplayMessage:
+		return true
+	case ShareChannelEntityRequestDisplayNotice:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SpanKind.
+const (
+	SpanKindClient   SpanKind = "client"
+	SpanKindConsumer SpanKind = "consumer"
+	SpanKindInternal SpanKind = "internal"
+	SpanKindProducer SpanKind = "producer"
+	SpanKindServer   SpanKind = "server"
+)
+
+// Valid indicates whether the value is a known member of the SpanKind enum.
+func (e SpanKind) Valid() bool {
+	switch e {
+	case SpanKindClient:
+		return true
+	case SpanKindConsumer:
+		return true
+	case SpanKindInternal:
+		return true
+	case SpanKindProducer:
+		return true
+	case SpanKindServer:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SpanStatusCode.
+const (
+	SpanStatusCodeError SpanStatusCode = "error"
+	SpanStatusCodeOk    SpanStatusCode = "ok"
+	SpanStatusCodeUnset SpanStatusCode = "unset"
+)
+
+// Valid indicates whether the value is a known member of the SpanStatusCode enum.
+func (e SpanStatusCode) Valid() bool {
+	switch e {
+	case SpanStatusCodeError:
+		return true
+	case SpanStatusCodeOk:
+		return true
+	case SpanStatusCodeUnset:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for StartInlineRunRequestMode.
 const (
 	StartInlineRunRequestModeInline StartInlineRunRequestMode = "inline"
@@ -667,21 +1328,117 @@ func (e StartSavedRunRequestMode) Valid() bool {
 	}
 }
 
-// Defines values for ToolRunStatus.
+// Defines values for SystemTextBlockType.
 const (
-	ToolRunStatusActive    ToolRunStatus = "active"
-	ToolRunStatusCompleted ToolRunStatus = "completed"
-	ToolRunStatusFailed    ToolRunStatus = "failed"
+	SystemTextBlockTypeText SystemTextBlockType = "text"
 )
 
-// Valid indicates whether the value is a known member of the ToolRunStatus enum.
-func (e ToolRunStatus) Valid() bool {
+// Valid indicates whether the value is a known member of the SystemTextBlockType enum.
+func (e SystemTextBlockType) Valid() bool {
 	switch e {
-	case ToolRunStatusActive:
+	case SystemTextBlockTypeText:
 		return true
-	case ToolRunStatusCompleted:
+	default:
+		return false
+	}
+}
+
+// Defines values for TestFireTargetStatus.
+const (
+	TestFireTargetStatusFailed  TestFireTargetStatus = "failed"
+	TestFireTargetStatusSkipped TestFireTargetStatus = "skipped"
+	TestFireTargetStatusSuccess TestFireTargetStatus = "success"
+)
+
+// Valid indicates whether the value is a known member of the TestFireTargetStatus enum.
+func (e TestFireTargetStatus) Valid() bool {
+	switch e {
+	case TestFireTargetStatusFailed:
 		return true
-	case ToolRunStatusFailed:
+	case TestFireTargetStatusSkipped:
+		return true
+	case TestFireTargetStatusSuccess:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for TestFireTriggerRequestMode.
+const (
+	TestFireTriggerRequestModeExecute TestFireTriggerRequestMode = "execute"
+	TestFireTriggerRequestModePreview TestFireTriggerRequestMode = "preview"
+)
+
+// Valid indicates whether the value is a known member of the TestFireTriggerRequestMode enum.
+func (e TestFireTriggerRequestMode) Valid() bool {
+	switch e {
+	case TestFireTriggerRequestModeExecute:
+		return true
+	case TestFireTriggerRequestModePreview:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for TestFireTriggerResultMode.
+const (
+	TestFireTriggerResultModeExecute TestFireTriggerResultMode = "execute"
+	TestFireTriggerResultModePreview TestFireTriggerResultMode = "preview"
+)
+
+// Valid indicates whether the value is a known member of the TestFireTriggerResultMode enum.
+func (e TestFireTriggerResultMode) Valid() bool {
+	switch e {
+	case TestFireTriggerResultModeExecute:
+		return true
+	case TestFireTriggerResultModePreview:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for TextContentBlockType.
+const (
+	TextContentBlockTypeText TextContentBlockType = "text"
+)
+
+// Valid indicates whether the value is a known member of the TextContentBlockType enum.
+func (e TextContentBlockType) Valid() bool {
+	switch e {
+	case TextContentBlockTypeText:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ToolResultContentBlockType.
+const (
+	ToolResultContentBlockTypeToolResult ToolResultContentBlockType = "tool_result"
+)
+
+// Valid indicates whether the value is a known member of the ToolResultContentBlockType enum.
+func (e ToolResultContentBlockType) Valid() bool {
+	switch e {
+	case ToolResultContentBlockTypeToolResult:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ToolUseContentBlockType.
+const (
+	ToolUseContentBlockTypeToolUse ToolUseContentBlockType = "tool_use"
+)
+
+// Valid indicates whether the value is a known member of the ToolUseContentBlockType enum.
+func (e ToolUseContentBlockType) Valid() bool {
+	switch e {
+	case ToolUseContentBlockTypeToolUse:
 		return true
 	default:
 		return false
@@ -712,21 +1469,69 @@ func (e TriggerFireStatus) Valid() bool {
 	}
 }
 
+// Defines values for TriggerFireTargetStatus.
+const (
+	TriggerFireTargetStatusFailed  TriggerFireTargetStatus = "failed"
+	TriggerFireTargetStatusSkipped TriggerFireTargetStatus = "skipped"
+	TriggerFireTargetStatusSuccess TriggerFireTargetStatus = "success"
+)
+
+// Valid indicates whether the value is a known member of the TriggerFireTargetStatus enum.
+func (e TriggerFireTargetStatus) Valid() bool {
+	switch e {
+	case TriggerFireTargetStatusFailed:
+		return true
+	case TriggerFireTargetStatusSkipped:
+		return true
+	case TriggerFireTargetStatusSuccess:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for TriggerKind.
 const (
-	TriggerKindEvent    TriggerKind = "event"
-	TriggerKindSchedule TriggerKind = "schedule"
-	TriggerKindWebhook  TriggerKind = "webhook"
+	TriggerKindChannelMessage TriggerKind = "channel_message"
+	TriggerKindDataTableRow   TriggerKind = "data_table_row"
+	TriggerKindEmail          TriggerKind = "email"
+	TriggerKindEvent          TriggerKind = "event"
+	TriggerKindSchedule       TriggerKind = "schedule"
+	TriggerKindWebhook        TriggerKind = "webhook"
 )
 
 // Valid indicates whether the value is a known member of the TriggerKind enum.
 func (e TriggerKind) Valid() bool {
 	switch e {
+	case TriggerKindChannelMessage:
+		return true
+	case TriggerKindDataTableRow:
+		return true
+	case TriggerKindEmail:
+		return true
 	case TriggerKindEvent:
 		return true
 	case TriggerKindSchedule:
 		return true
 	case TriggerKindWebhook:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for TriggerTargetKind.
+const (
+	TriggerTargetKindLaunchRun TriggerTargetKind = "launch_run"
+	TriggerTargetKindSignalRun TriggerTargetKind = "signal_run"
+)
+
+// Valid indicates whether the value is a known member of the TriggerTargetKind enum.
+func (e TriggerTargetKind) Valid() bool {
+	switch e {
+	case TriggerTargetKindLaunchRun:
+		return true
+	case TriggerTargetKindSignalRun:
 		return true
 	default:
 		return false
@@ -745,6 +1550,24 @@ func (e UpdateGroupRequestRoutingPolicy) Valid() bool {
 	case UpdateGroupRequestRoutingPolicyAllMembers:
 		return true
 	case UpdateGroupRequestRoutingPolicyFirstResponder:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for UpdateTriggerTargetRequestKind.
+const (
+	UpdateTriggerTargetRequestKindLaunchRun UpdateTriggerTargetRequestKind = "launch_run"
+	UpdateTriggerTargetRequestKindSignalRun UpdateTriggerTargetRequestKind = "signal_run"
+)
+
+// Valid indicates whether the value is a known member of the UpdateTriggerTargetRequestKind enum.
+func (e UpdateTriggerTargetRequestKind) Valid() bool {
+	switch e {
+	case UpdateTriggerTargetRequestKindLaunchRun:
+		return true
+	case UpdateTriggerTargetRequestKindSignalRun:
 		return true
 	default:
 		return false
@@ -1059,6 +1882,7 @@ func (e ListChannelsParamsKind) Valid() bool {
 
 // Defines values for ListInteractionsParamsStatus.
 const (
+	ListInteractionsParamsStatusCancelled ListInteractionsParamsStatus = "cancelled"
 	ListInteractionsParamsStatusCompleted ListInteractionsParamsStatus = "completed"
 	ListInteractionsParamsStatusExpired   ListInteractionsParamsStatus = "expired"
 	ListInteractionsParamsStatusPending   ListInteractionsParamsStatus = "pending"
@@ -1067,6 +1891,8 @@ const (
 // Valid indicates whether the value is a known member of the ListInteractionsParamsStatus enum.
 func (e ListInteractionsParamsStatus) Valid() bool {
 	switch e {
+	case ListInteractionsParamsStatusCancelled:
+		return true
 	case ListInteractionsParamsStatusCompleted:
 		return true
 	case ListInteractionsParamsStatusExpired:
@@ -1125,7 +1951,10 @@ type Action struct {
 	// Description Markdown description of what the action does.
 	Description *string `json:"description,omitempty"`
 
-	// EndpointUrl HTTP/HTTPS URL Mobius POSTs to when invoking this action.
+	// EndpointKind Backing kind of this action. "http" for project-owned HTTP endpoints (the only kind creatable via POST /actions). "workflow" entries are read-only and mutated through the workflow surface.
+	EndpointKind ActionEndpointKind `json:"endpoint_kind"`
+
+	// EndpointUrl HTTP/HTTPS URL Mobius POSTs to when invoking this action. Populated for endpoint_kind: http only.
 	EndpointUrl string `json:"endpoint_url"`
 
 	// Id Unique identifier for this action.
@@ -1143,12 +1972,18 @@ type Action struct {
 	// SigningSecret Raw HMAC-SHA256 signing secret. Only populated on create and rotate responses; null on all other reads. Store this value securely on first receipt — it cannot be retrieved again.
 	SigningSecret *string `json:"signing_secret,omitempty"`
 
+	// Tags Arbitrary key-value string tags.
+	Tags *map[string]string `json:"tags,omitempty"`
+
 	// Title Human-readable display title for the action.
 	Title *string `json:"title,omitempty"`
 
 	// UpdatedAt Timestamp when this action was last updated.
 	UpdatedAt time.Time `json:"updated_at"`
 }
+
+// ActionEndpointKind Backing kind of this action. "http" for project-owned HTTP endpoints (the only kind creatable via POST /actions). "workflow" entries are read-only and mutated through the workflow surface.
+type ActionEndpointKind string
 
 // ActionAnnotationsRequest Request hints that describe the safe-use properties of the action. Used by the engine and tooling to decide retry behavior, dry-run eligibility, etc. Unknown request properties are rejected.
 type ActionAnnotationsRequest struct {
@@ -1175,8 +2010,59 @@ type ActionAnnotationsResponse struct {
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
-// ActionAuditLogEntry Audit record for one action invocation.
-type ActionAuditLogEntry struct {
+// ActionCatalogEntry One project, platform, or workflow-backed action available to workflow authors.
+type ActionCatalogEntry struct {
+	// Annotations Response hints that describe the safe-use properties of the action. Response annotations are forward-compatible so the server can add response-only hints without breaking strict clients.
+	Annotations *ActionAnnotationsResponse `json:"annotations,omitempty"`
+
+	// Available Whether this action can currently be invoked. False if the required integration is not connected or the caller lacks permission.
+	Available bool `json:"available"`
+
+	// Description Markdown description of what the action does.
+	Description *string `json:"description,omitempty"`
+
+	// EndpointKind Backing kind. "http" for HTTP endpoints (project-owned or platform-integration). "workflow" for actions backed by a workflow definition published as a tool.
+	EndpointKind ActionCatalogEntryEndpointKind `json:"endpoint_kind"`
+
+	// EndpointUrl Endpoint URL (populated for endpoint_kind: http actions only).
+	EndpointUrl *string `json:"endpoint_url,omitempty"`
+
+	// InputSchema JSON Schema describing expected input parameters.
+	InputSchema *map[string]interface{} `json:"input_schema,omitempty"`
+
+	// Integration Integration slug this action belongs to (e.g. "slack"), if platform-provided.
+	Integration *string `json:"integration,omitempty"`
+
+	// Name Action name as used in workflow step definitions.
+	Name string `json:"name"`
+
+	// OutputSchema JSON Schema describing the expected output shape.
+	OutputSchema *map[string]interface{} `json:"output_schema,omitempty"`
+
+	// Source Origin of this action: "platform" for built-in or integration-backed actions provided by Mobius, "custom" for project-owned HTTP endpoints registered as actions. The `integration` field carries the provider slug for integration-backed platform actions.
+	Source ActionCatalogEntrySource `json:"source"`
+
+	// Title Human-readable display title for the action.
+	Title *string `json:"title,omitempty"`
+
+	// WorkflowHandle Workflow handle for endpoint_kind=workflow entries. Absent for http-backed actions.
+	WorkflowHandle *string `json:"workflow_handle,omitempty"`
+}
+
+// ActionCatalogEntryEndpointKind Backing kind. "http" for HTTP endpoints (project-owned or platform-integration). "workflow" for actions backed by a workflow definition published as a tool.
+type ActionCatalogEntryEndpointKind string
+
+// ActionCatalogEntrySource Origin of this action: "platform" for built-in or integration-backed actions provided by Mobius, "custom" for project-owned HTTP endpoints registered as actions. The `integration` field carries the provider slug for integration-backed platform actions.
+type ActionCatalogEntrySource string
+
+// ActionCatalogListResponse Unpaginated project action catalog. This endpoint returns the complete set of available project, platform, and workflow-backed actions so clients can build pickers without paging across a small catalog.
+type ActionCatalogListResponse struct {
+	// Items The full list of catalog entries.
+	Items []ActionCatalogEntry `json:"items"`
+}
+
+// ActionInvocationEntry Per-invocation telemetry record for one action execution.
+type ActionInvocationEntry struct {
 	// ActionName Name of the action that was invoked.
 	ActionName string `json:"action_name"`
 
@@ -1189,8 +2075,11 @@ type ActionAuditLogEntry struct {
 	// FinishedAt Timestamp when this invocation completed.
 	FinishedAt time.Time `json:"finished_at"`
 
-	// Id Unique identifier for this audit log entry.
+	// Id Unique identifier for this invocation record.
 	Id string `json:"id"`
+
+	// JobId Job that triggered this invocation, if job-backed.
+	JobId *string `json:"job_id,omitempty"`
 
 	// OutputSummary Truncated or summarized action output for audit purposes.
 	OutputSummary *map[string]interface{} `json:"output_summary,omitempty"`
@@ -1217,56 +2106,47 @@ type ActionAuditLogEntry struct {
 	StepName *string `json:"step_name,omitempty"`
 }
 
-// ActionAuditLogListResponse Paginated list of action invocation audit records.
-type ActionAuditLogListResponse struct {
+// ActionInvocationListResponse Paginated list of action invocation telemetry records.
+type ActionInvocationListResponse struct {
 	// HasMore Whether additional pages are available.
 	HasMore bool `json:"has_more"`
 
 	// Items The list of results for this page.
-	Items []ActionAuditLogEntry `json:"items"`
+	Items []ActionInvocationEntry `json:"items"`
 
 	// NextCursor Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.
 	NextCursor *string `json:"next_cursor,omitempty"`
 }
 
-// ActionCatalogEntry One project or platform action available to workflow authors.
-type ActionCatalogEntry struct {
-	// Annotations Response hints that describe the safe-use properties of the action. Response annotations are forward-compatible so the server can add response-only hints without breaking strict clients.
-	Annotations *ActionAnnotationsResponse `json:"annotations,omitempty"`
+// ActionInvocationRequest Request body for user-driven action invocation.
+type ActionInvocationRequest struct {
+	// DryRun When true, validates the input but does not execute. Applies to read-only actions only.
+	DryRun *bool `json:"dry_run,omitempty"`
 
-	// Available Whether this action can currently be invoked. False if the required integration is not connected or the caller lacks permission.
-	Available bool `json:"available"`
+	// Input Input values matching the action's input_schema.
+	Input *map[string]interface{} `json:"input,omitempty"`
 
-	// Description Markdown description of what the action does.
-	Description *string `json:"description,omitempty"`
-
-	// EndpointUrl Endpoint URL (populated for project-owned actions only).
-	EndpointUrl *string `json:"endpoint_url,omitempty"`
-
-	// InputSchema JSON Schema describing expected input parameters.
-	InputSchema *map[string]interface{} `json:"input_schema,omitempty"`
-
-	// Integration Integration slug this action belongs to (e.g. "slack"), if platform-provided.
-	Integration *string `json:"integration,omitempty"`
-
-	// Name Action name as used in workflow step definitions.
-	Name string `json:"name"`
-
-	// OutputSchema JSON Schema describing the expected output shape.
-	OutputSchema *map[string]interface{} `json:"output_schema,omitempty"`
-
-	// Source Origin of this action: "project" for project-owned actions, or the integration slug for platform-provided actions.
-	Source string `json:"source"`
-
-	// Title Human-readable display title for the action.
-	Title *string `json:"title,omitempty"`
+	// TimeoutSeconds How long (in seconds) to wait for synchronous completion. Default 30, max 120. If the run does not complete within this window the response is 202 with status active (workflow-backed only; HTTP-backed actions always complete inline).
+	TimeoutSeconds *int `json:"timeout_seconds,omitempty"`
 }
 
-// ActionCatalogListResponse Unpaginated project action catalog. This endpoint returns the complete set of available project and platform actions so clients can build pickers without paging across a small catalog.
-type ActionCatalogListResponse struct {
-	// Items The full list of catalog entries.
-	Items []ActionCatalogEntry `json:"items"`
+// ActionInvocationResult Unified invocation result for any action kind. HTTP-backed actions always produce status "completed". Workflow-backed actions may produce status "active" when the run did not complete within `timeout_seconds`.
+type ActionInvocationResult struct {
+	// Error Error message. Present when status is "failed".
+	Error *string `json:"error,omitempty"`
+
+	// Output Action output. Present when status is "completed".
+	Output *map[string]interface{} `json:"output,omitempty"`
+
+	// RunId Workflow run ID. Present when a run was created (always for workflow-backed, never for HTTP-backed).
+	RunId *string `json:"run_id,omitempty"`
+
+	// Status Terminal or in-progress status of the invocation.
+	Status ActionInvocationResultStatus `json:"status"`
 }
+
+// ActionInvocationResultStatus Terminal or in-progress status of the invocation.
+type ActionInvocationResultStatus string
 
 // ActionListResponse Paginated list of project-owned actions.
 type ActionListResponse struct {
@@ -1318,6 +2198,9 @@ type Agent struct {
 	// Description Optional human-readable description.
 	Description *string `json:"description,omitempty"`
 
+	// EmailAddress Inbox address provisioned via POST /v1/projects/{project}/agents/{id}/inbox (opt-in; not created automatically at agent creation). The field is populated only after a successful provisioning call. Use this address to add the agent as a member on external platforms (Linear, GitHub, Slack, etc.) so the platform can deliver notifications to the agent.
+	EmailAddress *string `json:"email_address,omitempty"`
+
 	// Id Unique identifier for this agent.
 	Id string `json:"id"`
 
@@ -1330,7 +2213,7 @@ type Agent struct {
 	// Presence Computed from the most recent 20 sessions. `online` means a connected session with a fresh heartbeat; `stale` means heartbeats are overdue; `offline` means no connected sessions.
 	Presence AgentPresence `json:"presence"`
 
-	// ServiceAccountId The service account whose credentials this agent uses to authenticate. Can be changed via PATCH.
+	// ServiceAccountId The service account whose credentials this agent uses to authenticate. Each service account backs at most one agent; this binding is immutable after creation.
 	ServiceAccountId string `json:"service_account_id"`
 
 	// Status Administrative status. Inactive agents cannot claim new jobs.
@@ -1341,6 +2224,148 @@ type Agent struct {
 
 	// UpdatedAt Timestamp when this agent was last updated.
 	UpdatedAt time.Time `json:"updated_at"`
+}
+
+// AgentInvocation Durable record of one `agent.invoke` workflow action call. Carries the dispatch payload, the agent runtime's response or error, and the signal topic the suspended workflow branch waits on.
+type AgentInvocation struct {
+	// AgentId Agent that was (or will be) invoked.
+	AgentId string `json:"agent_id"`
+
+	// AgentKind Snapshot of the agent's `kind` at dispatch time.
+	AgentKind *string `json:"agent_kind,omitempty"`
+
+	// AllowedTools Optional restriction on which tools the agent may call. Empty array means no restriction.
+	AllowedTools *[]string `json:"allowed_tools,omitempty"`
+
+	// CompletedAt When the invocation reached a terminal status.
+	CompletedAt *time.Time `json:"completed_at,omitempty"`
+
+	// Context Caller-supplied structured context surfaced to the agent.
+	Context *map[string]interface{} `json:"context,omitempty"`
+
+	// CreatedAt When the invocation row was created.
+	CreatedAt time.Time `json:"created_at"`
+
+	// DispatchedAt When the invocation was handed off to the agent runtime.
+	DispatchedAt *time.Time `json:"dispatched_at,omitempty"`
+
+	// ErrorMessage Human-readable error description for failed invocations.
+	ErrorMessage *string `json:"error_message,omitempty"`
+
+	// ErrorType Typed failure classification for completed-with-error invocations.
+	ErrorType *AgentInvocationErrorType `json:"error_type,omitempty"`
+
+	// Id Invocation ID (TypeID `ainv_…`).
+	Id string `json:"id"`
+
+	// Instructions Optional system-prompt addendum applied for this call only.
+	Instructions *string `json:"instructions,omitempty"`
+
+	// OrgId Owning organization ID.
+	OrgId string `json:"org_id"`
+
+	// OutputSchema Optional JSON Schema the agent's structured response must satisfy.
+	OutputSchema *map[string]interface{} `json:"output_schema,omitempty"`
+
+	// PathId Branch identifier within the workflow run.
+	PathId string `json:"path_id"`
+
+	// ProjectId Owning project ID.
+	ProjectId string `json:"project_id"`
+
+	// Prompt User-turn prompt the agent receives.
+	Prompt string `json:"prompt"`
+
+	// ResponseStruct Structured output (if `output_schema` was supplied and the agent emitted JSON). Empty otherwise.
+	ResponseStruct *map[string]interface{} `json:"response_struct,omitempty"`
+
+	// ResponseText Final assistant-turn text returned by the agent. Empty until completion.
+	ResponseText *string `json:"response_text,omitempty"`
+
+	// Status Lifecycle status of one `agent.invoke` call:
+	// - `pending`: dispatched but the agent runtime hasn't claimed it yet.
+	// - `running`: the agent runtime acknowledged and is executing.
+	// - `completed`: the runtime returned a final response.
+	// - `failed`: the runtime reported an error or the engine timed out.
+	// - `cancelled`: the workflow run was cancelled before completion.
+	Status AgentInvocationStatus `json:"status"`
+
+	// StepName Workflow step that issued the invocation.
+	StepName string `json:"step_name"`
+
+	// TimeoutSeconds Hard timeout applied to this invocation.
+	TimeoutSeconds int `json:"timeout_seconds"`
+
+	// Tokens Token-usage attribution for one invocation.
+	Tokens *AgentInvocationTokens `json:"tokens,omitempty"`
+
+	// ToolCalls Per-tool counts surfaced from the loop.
+	ToolCalls *[]AgentInvocationToolCall `json:"tool_calls,omitempty"`
+
+	// ToolCallsCount Total tool calls across the loop.
+	ToolCallsCount *int `json:"tool_calls_count,omitempty"`
+
+	// Topic SignalStore topic the suspended branch waits on.
+	Topic string `json:"topic"`
+
+	// WorkflowRunId Workflow run that issued the invocation.
+	WorkflowRunId string `json:"workflow_run_id"`
+}
+
+// AgentInvocationCompleteRequest Worker-supplied result of an in-flight invocation. The server validates `tool_calls` against the original `allowed_tools` and `structured` against `output_schema` before resuming the workflow branch.
+type AgentInvocationCompleteRequest struct {
+	// Structured Optional structured output. Required when the invocation specified `output_schema`.
+	Structured *map[string]interface{} `json:"structured,omitempty"`
+
+	// Text Final assistant-turn text from the agent.
+	Text string `json:"text"`
+
+	// Tokens Token-usage attribution for one invocation.
+	Tokens *AgentInvocationTokens `json:"tokens,omitempty"`
+
+	// ToolCalls Per-tool counts observed during the loop. Used for tool-restriction audit.
+	ToolCalls *[]AgentInvocationToolCall `json:"tool_calls,omitempty"`
+}
+
+// AgentInvocationErrorType Typed failure classification for completed-with-error invocations.
+type AgentInvocationErrorType string
+
+// AgentInvocationFailRequest Worker-reported failure for an in-flight invocation.
+type AgentInvocationFailRequest struct {
+	// ErrorMessage Human-readable description of the failure.
+	ErrorMessage string `json:"error_message"`
+
+	// ErrorType Typed failure classification for completed-with-error invocations.
+	ErrorType AgentInvocationErrorType `json:"error_type"`
+}
+
+// AgentInvocationStatus Lifecycle status of one `agent.invoke` call:
+// - `pending`: dispatched but the agent runtime hasn't claimed it yet.
+// - `running`: the agent runtime acknowledged and is executing.
+// - `completed`: the runtime returned a final response.
+// - `failed`: the runtime reported an error or the engine timed out.
+// - `cancelled`: the workflow run was cancelled before completion.
+type AgentInvocationStatus string
+
+// AgentInvocationTokens Token-usage attribution for one invocation.
+type AgentInvocationTokens struct {
+	// Input Input/prompt tokens consumed.
+	Input int `json:"input"`
+
+	// Output Output/completion tokens emitted.
+	Output int `json:"output"`
+
+	// Total Sum of input and output tokens.
+	Total *int `json:"total,omitempty"`
+}
+
+// AgentInvocationToolCall Counts of tool calls made by the agent during one invocation. Names are surfaced in the durable record; full call traces ship via OTel when configured.
+type AgentInvocationToolCall struct {
+	// Count Number of times the tool was invoked during the loop.
+	Count int `json:"count"`
+
+	// Name Tool name (e.g. `mobius_query_data_table`).
+	Name string `json:"name"`
 }
 
 // AgentListResponse defines model for AgentListResponse.
@@ -1397,6 +2422,18 @@ type AgentSessionStatus string
 // AgentStatus Administrative status. Inactive agents cannot claim new jobs.
 type AgentStatus string
 
+// AsymmetricActorRule Per-actor-class rule under an asymmetric resolution policy. `propose` records responses for audit but ignores them for resolution. `decide` applies the optional `sub_policy` to that class's responses to drive resolution. `ignore` is reserved for future use.
+type AsymmetricActorRule struct {
+	// Rule Role this actor class plays.
+	Rule AsymmetricActorRuleRule `json:"rule"`
+
+	// SubPolicy Declarative resolution rule attached to an Interaction. Determines how participant responses become a final outcome.
+	SubPolicy *ResolutionPolicy `json:"sub_policy,omitempty"`
+}
+
+// AsymmetricActorRuleRule Role this actor class plays.
+type AsymmetricActorRuleRule string
+
 // AuditLogEntry Immutable record of a security- or configuration-relevant change. Use audit log entries to answer who changed a resource, when it happened, and which project or credential was involved.
 type AuditLogEntry struct {
 	// Action Type of action performed: `create`, `update`, `delete`, `archive`, or `restore`.
@@ -1419,6 +2456,9 @@ type AuditLogEntry struct {
 
 	// CredentialId Credential ID used for the request, when applicable
 	CredentialId *string `json:"credential_id,omitempty"`
+
+	// CredentialName Human-readable credential name or session label captured when the audit entry was written
+	CredentialName *string `json:"credential_name,omitempty"`
 
 	// Id Unique audit log entry ID
 	Id string `json:"id"`
@@ -1460,6 +2500,23 @@ type AuditLogListResponse struct {
 	NextCursor *string `json:"next_cursor,omitempty"`
 }
 
+// BulkInsertRowsRequest defines model for BulkInsertRowsRequest.
+type BulkInsertRowsRequest struct {
+	Rows []map[string]interface{} `json:"rows"`
+}
+
+// BulkInsertRowsResponse defines model for BulkInsertRowsResponse.
+type BulkInsertRowsResponse struct {
+	Inserted int            `json:"inserted"`
+	Rows     []DataTableRow `json:"rows"`
+}
+
+// CancelInteractionRequest Optional payload accompanying a cancel request. The reason is recorded on the interaction and forwarded in the cancellation signal so workflows can route to a fallback.
+type CancelInteractionRequest struct {
+	// Reason Free-text reason recorded on the interaction.
+	Reason *string `json:"reason,omitempty"`
+}
+
 // Channel Project-scoped messaging room or direct-message thread.
 type Channel struct {
 	// ArchivedAt Set when the channel is archived. Archived channels are hidden in the UI but their message history remains accessible.
@@ -1498,6 +2555,24 @@ type Channel struct {
 
 // ChannelKind `channel` — persistent named room. `dm` — direct-message thread, typically between a small fixed set of participants.
 type ChannelKind string
+
+// ChannelInteractionActionResponse Result of a channel-scoped interaction operation.
+type ChannelInteractionActionResponse struct {
+	// Interaction Human or agent interaction request and its current response state.
+	Interaction Interaction `json:"interaction"`
+
+	// Message Message posted in a channel, including sender attribution and rendering metadata.
+	Message ChannelMessage `json:"message"`
+}
+
+// ChannelInteractionRespondRequest Response payload submitted to an interaction from a channel card.
+type ChannelInteractionRespondRequest struct {
+	// Comment Optional human-readable comment to show in channel activity.
+	Comment *string `json:"comment,omitempty"`
+
+	// Value Free-form JSON payload. Used both for responder-supplied values and for policy-derived values (e.g. `Interaction.outcome`, `ResolutionPolicy.proposal`); each consumer documents which.
+	Value InteractionValue `json:"value"`
+}
 
 // ChannelListResponse Paginated list of project channels.
 type ChannelListResponse struct {
@@ -1582,16 +2657,26 @@ type ChannelMessage struct {
 	// PinnedBy User ID of the member who pinned this message, or null when the message is not pinned.
 	PinnedBy *string `json:"pinned_by,omitempty"`
 
+	// References Experimental typed entity links rendered by richer channel clients.
+	References *[]EntityReference `json:"references,omitempty"`
+
 	// ReplyTo ID of the parent message this reply belongs to, or null when this is not a threaded reply.
 	ReplyTo *string `json:"reply_to,omitempty"`
 
-	// SenderId User ID (for `member`) or agent ID (for `agent`) of the message sender.
+	// SenderId Sender principal identifier — the user ID for `sender_type=member`, the agent's ID for `sender_type=agent`, or the service account's ID for `sender_type=service_account`.
 	SenderId string `json:"sender_id"`
 
 	// SenderSessionId Live agent session that posted the message, when applicable.
 	SenderSessionId *string `json:"sender_session_id,omitempty"`
 
-	// SenderType Whether the message was sent by a human org member or an agent worker.
+	// SenderType Authenticated principal that posted the message, derived from the
+	// credential at send time and never overrideable in the request body
+	// (PRD 048 §5):
+	// - `member` — a human org member's user credential.
+	// - `agent` — an API key whose service account backs an agent (1:1
+	// invariant from PRD 048 §1). `sender_id` is the agent's ID.
+	// - `service_account` — an API key whose service account backs no
+	// agent. `sender_id` is the service account's ID.
 	SenderType ChannelMessageSenderType `json:"sender_type"`
 
 	// Type Dot-namespaced message type identifier, e.g. `user.message`, `ai.response`. Used for filtering and display logic.
@@ -1613,8 +2698,51 @@ type ChannelMessageListResponse struct {
 	NextCursor *string `json:"next_cursor,omitempty"`
 }
 
-// ChannelMessageSenderType Whether the message was sent by a human org member or an agent worker.
+// ChannelMessageSenderType Authenticated principal that posted the message, derived from the
+// credential at send time and never overrideable in the request body
+// (PRD 048 §5):
+// - `member` — a human org member's user credential.
+// - `agent` — an API key whose service account backs an agent (1:1
+// invariant from PRD 048 §1). `sender_id` is the agent's ID.
+// - `service_account` — an API key whose service account backs no
+// agent. `sender_id` is the service account's ID.
 type ChannelMessageSenderType string
+
+// ChannelMessageSourceConfig Source configuration for `channel_message` triggers.
+type ChannelMessageSourceConfig struct {
+	// ChannelId ID of the channel to watch. When omitted, the trigger fires for messages in any channel within the project.
+	ChannelId *string `json:"channel_id,omitempty"`
+
+	// Pattern Optional Go regular expression matched against message content. When omitted, all messages pass the content filter.
+	Pattern *string `json:"pattern,omitempty"`
+
+	// SenderTypes Restricts which sender types fire the trigger. When omitted, all sender types are eligible.
+	SenderTypes *[]ChannelMessageSenderType `json:"sender_types,omitempty"`
+}
+
+// ChannelMetrics Channel activity statistics.
+type ChannelMetrics struct {
+	// ActiveCount Non-archived channels in the project.
+	ActiveCount int `json:"active_count"`
+
+	// MessageRate Average messages posted per minute within the window.
+	MessageRate float64 `json:"message_rate"`
+}
+
+// ColumnDef defines model for ColumnDef.
+type ColumnDef struct {
+	// Default Default value applied when column is absent on insert
+	Default     interface{} `json:"default,omitempty"`
+	Deprecated  *bool       `json:"deprecated,omitempty"`
+	Description *string     `json:"description,omitempty"`
+	Name        string      `json:"name"`
+	Required    *bool       `json:"required,omitempty"`
+	Type        ColumnType  `json:"type"`
+	Unique      *bool       `json:"unique,omitempty"`
+}
+
+// ColumnType defines model for ColumnType.
+type ColumnType string
 
 // ConcurrencyPolicy Controls overlapping runs from the same trigger:
 // - `allow` — start new runs unconditionally.
@@ -1622,22 +2750,24 @@ type ChannelMessageSenderType string
 // - `replace` — cancel the active run before starting a new one.
 type ConcurrencyPolicy string
 
-// ConfigEntries Flat cascade config input used outside authored workflow YAML. Each entry addresses one `(category, key)` pair. Unknown categories or unknown keys under a known category are rejected at write time. The only category shipped in Phase 1 is `timeouts`, whose keys are `claim`, `liveness`, `execution`, `wall_clock`.
+// ConfigEntries Flat config input used outside authored workflow YAML. Each entry addresses one registered key. Unknown keys are rejected at write time. Phase 1 ships: `jobs.timeouts.claim`, `jobs.timeouts.execution`, `jobs.timeouts.heartbeat`, and `runs.timeouts.execution`.
 type ConfigEntries = []ConfigEntry
 
-// ConfigEntry One cascade config override entry.
+// ConfigEntry One config override entry.
 type ConfigEntry struct {
-	// Category Config category token, for example `timeouts`.
-	Category string `json:"category"`
-
-	// Key Config key within the category, for example `execution`.
+	// Key Registered config key, for example `jobs.timeouts.execution` or `runs.timeouts.execution`.
 	Key string `json:"key"`
 
-	// Value Raw string value interpreted by the category-specific parser.
+	// Value Raw string value interpreted by the key parser.
 	Value string `json:"value"`
 }
 
-// CreateActionRequest Registers a project-owned action endpoint callable from workflow steps.
+// ContentBlock defines model for ContentBlock.
+type ContentBlock struct {
+	union json.RawMessage
+}
+
+// CreateActionRequest Registers a project-owned HTTP action endpoint callable from workflow steps.
 type CreateActionRequest struct {
 	// Annotations Request hints that describe the safe-use properties of the action. Used by the engine and tooling to decide retry behavior, dry-run eligibility, etc. Unknown request properties are rejected.
 	Annotations *ActionAnnotationsRequest `json:"annotations,omitempty"`
@@ -1656,6 +2786,9 @@ type CreateActionRequest struct {
 
 	// OutputSchema JSON Schema describing the expected output shape.
 	OutputSchema *map[string]interface{} `json:"output_schema,omitempty"`
+
+	// Tags Arbitrary key-value string tags for filtering and organization.
+	Tags *map[string]string `json:"tags,omitempty"`
 
 	// Title Human-readable display name shown in the UI and catalog.
 	Title *string `json:"title,omitempty"`
@@ -1678,7 +2811,10 @@ type CreateAgentRequest struct {
 	// Name Project-scoped unique name for this agent. Free-form human-readable label, 1-63 characters.
 	Name string `json:"name"`
 
-	// ServiceAccountId Service account that backs this agent. Must be active and belong to the same project. If omitted, a new service account is auto-created with the same name as the agent.
+	// RoleIds Roles to assign to the auto-created service account. Mutually exclusive with `service_account_id` (the existing SA already carries its own role assignments — change them via the service-accounts endpoints). When omitted, the SA inherits the project's `default_agent_role_id`, falling through to the system `Agent` role floor when unset.
+	RoleIds *[]string `json:"role_ids,omitempty"`
+
+	// ServiceAccountId Service account that backs this agent. Must be active, belong to the same project, and currently back zero other agents. If omitted, a new service account is auto-created with the same name as the agent.
 	ServiceAccountId *string `json:"service_account_id,omitempty"`
 
 	// Tags Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints.
@@ -1693,6 +2829,36 @@ type CreateAgentSessionRequest struct {
 	// Transport Connection mechanism identifier (e.g. "sse", "polling").
 	Transport string `json:"transport"`
 }
+
+// CreateChannelMessageTriggerRequest Creates a trigger that fires when a matching channel message is posted.
+type CreateChannelMessageTriggerRequest struct {
+	// ConcurrencyPolicy Controls overlapping runs from the same trigger:
+	// - `allow` — start new runs unconditionally.
+	// - `forbid` — skip the new fire if a run from this trigger is still active.
+	// - `replace` — cancel the active run before starting a new one.
+	ConcurrencyPolicy *ConcurrencyPolicy `json:"concurrency_policy,omitempty"`
+
+	// Enabled Whether the trigger starts enabled. Defaults to true when omitted.
+	Enabled *bool `json:"enabled,omitempty"`
+
+	// Kind Discriminator value — must be `channel_message`.
+	Kind CreateChannelMessageTriggerRequestKind `json:"kind"`
+
+	// Name Human-readable trigger name, unique within the project.
+	Name string `json:"name"`
+
+	// SourceConfig Source configuration for `channel_message` triggers.
+	SourceConfig *ChannelMessageSourceConfig `json:"source_config,omitempty"`
+
+	// Tags Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints.
+	Tags *TagMap `json:"tags,omitempty"`
+
+	// Targets Workflows to start when this trigger fires (inline convenience; stored as sub-resources).
+	Targets *[]CreateTriggerTargetRequest `json:"targets,omitempty"`
+}
+
+// CreateChannelMessageTriggerRequestKind Discriminator value — must be `channel_message`.
+type CreateChannelMessageTriggerRequestKind string
 
 // CreateChannelRequest Fields used to create a project channel or direct-message thread.
 type CreateChannelRequest struct {
@@ -1720,6 +2886,73 @@ type CreateChannelRequest struct {
 
 // CreateChannelRequestKind Channel kind, either `dm` or `channel`. Cannot be changed after creation.
 type CreateChannelRequestKind string
+
+// CreateDataTableRequest defines model for CreateDataTableRequest.
+type CreateDataTableRequest struct {
+	Description *string         `json:"description,omitempty"`
+	Name        string          `json:"name"`
+	Schema      DataTableSchema `json:"schema"`
+}
+
+// CreateDataTableRowTriggerRequest Creates a trigger that fires when a data table row is inserted, updated, or deleted.
+type CreateDataTableRowTriggerRequest struct {
+	// ConcurrencyPolicy Controls overlapping runs from the same trigger:
+	// - `allow` — start new runs unconditionally.
+	// - `forbid` — skip the new fire if a run from this trigger is still active.
+	// - `replace` — cancel the active run before starting a new one.
+	ConcurrencyPolicy *ConcurrencyPolicy `json:"concurrency_policy,omitempty"`
+
+	// Enabled Whether the trigger starts enabled. Defaults to true when omitted.
+	Enabled *bool `json:"enabled,omitempty"`
+
+	// Kind Discriminator value — must be `data_table_row`.
+	Kind CreateDataTableRowTriggerRequestKind `json:"kind"`
+
+	// Name Human-readable trigger name, unique within the project.
+	Name string `json:"name"`
+
+	// SourceConfig Source configuration for `data_table_row` triggers.
+	SourceConfig DataTableRowSourceConfig `json:"source_config"`
+
+	// Tags Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints.
+	Tags *TagMap `json:"tags,omitempty"`
+
+	// Targets Workflows to start when this trigger fires (inline convenience; stored as sub-resources).
+	Targets *[]CreateTriggerTargetRequest `json:"targets,omitempty"`
+}
+
+// CreateDataTableRowTriggerRequestKind Discriminator value — must be `data_table_row`.
+type CreateDataTableRowTriggerRequestKind string
+
+// CreateEmailTriggerRequest Creates a trigger that fires when an inbound email arrives at the agent's inbox.
+type CreateEmailTriggerRequest struct {
+	// ConcurrencyPolicy Controls overlapping runs from the same trigger:
+	// - `allow` — start new runs unconditionally.
+	// - `forbid` — skip the new fire if a run from this trigger is still active.
+	// - `replace` — cancel the active run before starting a new one.
+	ConcurrencyPolicy *ConcurrencyPolicy `json:"concurrency_policy,omitempty"`
+
+	// Enabled Whether the trigger starts enabled. Defaults to true when omitted.
+	Enabled *bool `json:"enabled,omitempty"`
+
+	// Kind Discriminator value — must be `email`.
+	Kind CreateEmailTriggerRequestKind `json:"kind"`
+
+	// Name Human-readable trigger name, unique within the project.
+	Name string `json:"name"`
+
+	// SourceConfig Source configuration for `email` triggers.
+	SourceConfig *EmailSourceConfig `json:"source_config,omitempty"`
+
+	// Tags Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints.
+	Tags *TagMap `json:"tags,omitempty"`
+
+	// Targets Workflows to start when this trigger fires (inline convenience; stored as sub-resources).
+	Targets *[]CreateTriggerTargetRequest `json:"targets,omitempty"`
+}
+
+// CreateEmailTriggerRequestKind Discriminator value — must be `email`.
+type CreateEmailTriggerRequestKind string
 
 // CreateEventTriggerRequest Creates an event trigger for platform-originated events.
 type CreateEventTriggerRequest struct {
@@ -1785,8 +3018,11 @@ type CreateJobInteractionRequest struct {
 	// Message Message shown to the responder.
 	Message string `json:"message"`
 
-	// RequireAll When target.type is "group", setting require_all=true means all snapshotted group members must respond before the interaction is considered complete. Ignored for non-group targets. Defaults to false when omitted.
+	// RequireAll When target.type is "group", setting require_all=true means all snapshotted group members must respond before the interaction is considered complete. Ignored for non-group targets. Defaults to false when omitted. Mutually exclusive with `resolution_policy`; prefer the policy form for new code.
 	RequireAll *bool `json:"require_all,omitempty"`
+
+	// ResolutionPolicy Declarative resolution rule attached to an Interaction. Determines how participant responses become a final outcome.
+	ResolutionPolicy *ResolutionPolicy `json:"resolution_policy,omitempty"`
 
 	// SignalName Optional signal name override. When omitted, the server derives the signal name from step_name or falls back to a default interaction signal name.
 	SignalName *string `json:"signal_name,omitempty"`
@@ -1840,8 +3076,11 @@ type CreateRunBackedInteractionRequest struct {
 	// Message Message shown to the responder describing what response is needed.
 	Message string `json:"message"`
 
-	// RequireAll When target.type is "group", setting require_all=true means all snapshotted group members must respond before the interaction is considered complete. Ignored for non-group targets. Defaults to false when omitted.
+	// RequireAll When target.type is "group", setting require_all=true means all snapshotted group members must respond before the interaction is considered complete. Ignored for non-group targets. Defaults to false when omitted. Mutually exclusive with `resolution_policy`; prefer the policy form for new code.
 	RequireAll *bool `json:"require_all,omitempty"`
+
+	// ResolutionPolicy Declarative resolution rule attached to an Interaction. Determines how participant responses become a final outcome.
+	ResolutionPolicy *ResolutionPolicy `json:"resolution_policy,omitempty"`
 
 	// RunId ID of the workflow run to resume when this interaction is completed.
 	RunId string `json:"run_id"`
@@ -1904,8 +3143,11 @@ type CreateStandaloneInteractionRequest struct {
 	// Message Message shown to the responder describing what response is needed.
 	Message string `json:"message"`
 
-	// RequireAll When target.type is "group", setting require_all=true means all snapshotted group members must respond before the interaction is considered complete. Ignored for non-group targets. Defaults to false when omitted.
+	// RequireAll When target.type is "group", setting require_all=true means all snapshotted group members must respond before the interaction is considered complete. Ignored for non-group targets. Defaults to false when omitted. Mutually exclusive with `resolution_policy`; prefer the policy form for new code.
 	RequireAll *bool `json:"require_all,omitempty"`
+
+	// ResolutionPolicy Declarative resolution rule attached to an Interaction. Determines how participant responses become a final outcome.
+	ResolutionPolicy *ResolutionPolicy `json:"resolution_policy,omitempty"`
 
 	// Spec Declarative dialog contract for rendering and validating an interaction. Used at both authoring time (inside a workflow definition) and runtime (persisted on an interaction). Compatibility rules are enforced server-side:
 	//
@@ -1926,20 +3168,36 @@ type CreateTriggerRequest struct {
 	union json.RawMessage
 }
 
-// CreateTriggerTargetRequest Parameters for attaching a workflow target to a trigger.
+// CreateTriggerTargetRequest Parameters for attaching a target to a trigger. Use `kind` to select between launching a new run (default) and signaling an existing run. Validation enforces the right field combination.
 type CreateTriggerTargetRequest struct {
-	// Condition Expression evaluated against the event payload. Omit to always run.
+	// Condition Expression evaluated against the event environment (`{ meta, event }`). The target is skipped when it evaluates to false or yields a non-boolean value, and is marked failed if evaluation errors. Bare expressions are accepted; the wrapped `${expr}` form is also allowed. Omit to always run. Example: `event.pull_request.merged == true`. Malformed expressions are rejected on create/update with `400 invalid_argument`.
 	Condition *string `json:"condition,omitempty"`
 
 	// Enabled Whether this target starts enabled. Defaults to true when omitted.
 	Enabled *bool `json:"enabled,omitempty"`
 
-	// InputMapping Maps workflow input names to JSONPath expressions.
-	InputMapping *map[string]string `json:"input_mapping,omitempty"`
+	// ExternalIdTemplate (launch_run only) Template for the new run's `external_id`.
+	ExternalIdTemplate *string `json:"external_id_template,omitempty"`
 
-	// WorkflowId ID of the workflow definition to run.
-	WorkflowId string `json:"workflow_id"`
+	// InputMapping (launch_run only) Maps workflow input names to expressions evaluated against the event environment (`{ meta, event }`). Values use Mobius's `${expr}` template syntax — pure expressions (`${event.actor.id}`) preserve their native type, mixed templates (`user-${event.actor.id}`) always render to a string, and other literals pass through as-is. Legacy JSONPath-like values (`$.…`) and unwrapped `event.` / `meta.` references are rejected with 400. Example: `{"user_id": "${event.actor.id}", "label": "static"}`.
+	InputMapping *map[string]string              `json:"input_mapping,omitempty"`
+	Kind         *CreateTriggerTargetRequestKind `json:"kind,omitempty"`
+
+	// RunSelector (signal_run only) Locates an existing run to deliver a signal to. Today only `external_id_template` is supported; the shape is reserved as an object so future filters (e.g. workflow scope, multi-run match) can be added without breaking the API.
+	RunSelector *TriggerTargetRunSelector `json:"run_selector,omitempty"`
+
+	// SignalPayloadMapping (signal_run only) Maps signal payload keys to expressions.
+	SignalPayloadMapping *map[string]string `json:"signal_payload_mapping,omitempty"`
+
+	// SignalTopic (signal_run only) `wait_signal` topic to deliver to.
+	SignalTopic *string `json:"signal_topic,omitempty"`
+
+	// WorkflowId (launch_run only) ID of the workflow definition to run. Required when `kind=launch_run`.
+	WorkflowId *string `json:"workflow_id,omitempty"`
 }
+
+// CreateTriggerTargetRequestKind defines model for CreateTriggerTargetRequest.Kind.
+type CreateTriggerTargetRequestKind string
 
 // CreateWebhookRequest defines model for CreateWebhookRequest.
 type CreateWebhookRequest struct {
@@ -2015,6 +3273,84 @@ type CreateWorkflowRequest struct {
 	Tags *TagMap `json:"tags,omitempty"`
 }
 
+// DataTable defines model for DataTable.
+type DataTable struct {
+	CreatedAt   time.Time          `json:"created_at"`
+	Description *string            `json:"description,omitempty"`
+	Id          string             `json:"id"`
+	Name        string             `json:"name"`
+	OrgId       string             `json:"org_id"`
+	ProjectId   string             `json:"project_id"`
+	Schema      DataTableSchema    `json:"schema"`
+	Tags        *map[string]string `json:"tags,omitempty"`
+	UpdatedAt   time.Time          `json:"updated_at"`
+}
+
+// DataTableListResponse defines model for DataTableListResponse.
+type DataTableListResponse struct {
+	HasMore    bool        `json:"has_more"`
+	Items      []DataTable `json:"items"`
+	NextCursor *string     `json:"next_cursor,omitempty"`
+}
+
+// DataTableRow defines model for DataTableRow.
+type DataTableRow struct {
+	CreatedAt time.Time              `json:"created_at"`
+	Data      map[string]interface{} `json:"data"`
+	Id        string                 `json:"id"`
+	TableId   string                 `json:"table_id"`
+	UpdatedAt time.Time              `json:"updated_at"`
+	Version   int                    `json:"version"`
+}
+
+// DataTableRowSourceConfig Source configuration for `data_table_row` triggers.
+type DataTableRowSourceConfig struct {
+	// Events Row change events that fire the trigger. When omitted, all three events (inserted, updated, deleted) fire the trigger.
+	Events *[]DataTableRowSourceConfigEvents `json:"events,omitempty"`
+
+	// TableName Name of the data table to watch. When omitted, the trigger fires for row changes in any table within the project.
+	TableName *string `json:"table_name,omitempty"`
+}
+
+// DataTableRowSourceConfigEvents defines model for DataTableRowSourceConfig.Events.
+type DataTableRowSourceConfigEvents string
+
+// DataTableSchema defines model for DataTableSchema.
+type DataTableSchema struct {
+	Columns []ColumnDef `json:"columns"`
+	Indexes *[]IndexDef `json:"indexes,omitempty"`
+}
+
+// EmailSourceConfig Source configuration for `email` triggers.
+type EmailSourceConfig struct {
+	// AgentId ID of the agent whose inbox fires this trigger. When omitted, any agent inbox in the project can fire the trigger.
+	AgentId *string `json:"agent_id,omitempty"`
+
+	// SubjectPattern Optional Go regular expression matched against the email subject. When omitted, all subjects pass the filter.
+	SubjectPattern *string `json:"subject_pattern,omitempty"`
+}
+
+// EntityReference Experimental typed link from a channel message to another Mobius entity. Clients use references to render cards and chips without parsing Markdown.
+type EntityReference struct {
+	// EntityId Stable ID of the referenced entity.
+	EntityId string `json:"entity_id"`
+
+	// EntityType Mobius entity kind that can be attached to a channel message.
+	EntityType EntityReferenceType `json:"entity_type"`
+
+	// Label Snapshot label to display when the entity cannot be hydrated.
+	Label *string `json:"label,omitempty"`
+
+	// ProjectId Project that owns the entity when known.
+	ProjectId *string `json:"project_id,omitempty"`
+
+	// Relation Relationship to the message, such as primary, source, context, or mention.
+	Relation *string `json:"relation,omitempty"`
+}
+
+// EntityReferenceType Mobius entity kind that can be attached to a channel message.
+type EntityReferenceType string
+
 // ErrorResponse Standard error envelope returned by API endpoints.
 type ErrorResponse struct {
 	// Error Error detail.
@@ -2034,6 +3370,103 @@ type ErrorResponse struct {
 type EventSourceConfig struct {
 	// EventType Platform event type to match, e.g. `run.completed`.
 	EventType *string `json:"event_type,omitempty"`
+}
+
+// GenerateMessage defines model for GenerateMessage.
+type GenerateMessage struct {
+	Content GenerateMessage_Content `json:"content"`
+	Role    GenerateMessageRole     `json:"role"`
+}
+
+// GenerateMessageContent0 defines model for .
+type GenerateMessageContent0 = string
+
+// GenerateMessageContent1 defines model for .
+type GenerateMessageContent1 = []ContentBlock
+
+// GenerateMessage_Content defines model for GenerateMessage.Content.
+type GenerateMessage_Content struct {
+	union json.RawMessage
+}
+
+// GenerateMessageRole defines model for GenerateMessage.Role.
+type GenerateMessageRole string
+
+// GenerateRequest defines model for GenerateRequest.
+type GenerateRequest struct {
+	MaxTokens *int `json:"max_tokens,omitempty"`
+
+	// Messages Conversation history in Anthropic Messages format. `content` may be a string or content-block array.
+	Messages []GenerateMessage `json:"messages"`
+
+	// Metadata Optional Anthropic metadata such as `user_id`.
+	Metadata *map[string]interface{} `json:"metadata,omitempty"`
+
+	// Model Model identifier, for example `claude-sonnet-4-20250514`.
+	Model string `json:"model"`
+
+	// Provider Provider used to resolve project integration credentials. Omit for Anthropic. `xai` is accepted as an alias for `grok`.
+	Provider      *GenerateRequestProvider `json:"provider,omitempty"`
+	StopSequences *[]string                `json:"stop_sequences,omitempty"`
+	Stream        *bool                    `json:"stream,omitempty"`
+
+	// System System prompt, either a string or Anthropic text blocks.
+	System      *GenerateRequest_System `json:"system,omitempty"`
+	Temperature *float32                `json:"temperature,omitempty"`
+	ToolChoice  *GenerateToolChoice     `json:"tool_choice,omitempty"`
+
+	// Tools Anthropic tool definitions.
+	Tools                *[]GenerateToolDefinition `json:"tools,omitempty"`
+	AdditionalProperties map[string]interface{}    `json:"-"`
+}
+
+// GenerateRequestProvider Provider used to resolve project integration credentials. Omit for Anthropic. `xai` is accepted as an alias for `grok`.
+type GenerateRequestProvider string
+
+// GenerateRequestSystem0 defines model for .
+type GenerateRequestSystem0 = string
+
+// GenerateRequestSystem1 defines model for .
+type GenerateRequestSystem1 = []SystemTextBlock
+
+// GenerateRequest_System System prompt, either a string or Anthropic text blocks.
+type GenerateRequest_System struct {
+	union json.RawMessage
+}
+
+// GenerateToolChoice defines model for GenerateToolChoice.
+type GenerateToolChoice struct {
+	Name  *string                `json:"name,omitempty"`
+	Type  GenerateToolChoiceType `json:"type"`
+	union json.RawMessage
+}
+
+// GenerateToolChoiceType defines model for GenerateToolChoice.Type.
+type GenerateToolChoiceType string
+
+// GenerateToolChoice0 defines model for .
+type GenerateToolChoice0 struct {
+	Name string                  `json:"name"`
+	Type GenerateToolChoice0Type `json:"type"`
+}
+
+// GenerateToolChoice0Type defines model for GenerateToolChoice.0.Type.
+type GenerateToolChoice0Type string
+
+// GenerateToolChoice1 defines model for .
+type GenerateToolChoice1 struct {
+	Type GenerateToolChoice1Type `json:"type"`
+}
+
+// GenerateToolChoice1Type defines model for GenerateToolChoice.1.Type.
+type GenerateToolChoice1Type string
+
+// GenerateToolDefinition defines model for GenerateToolDefinition.
+type GenerateToolDefinition struct {
+	Description          *string                `json:"description,omitempty"`
+	InputSchema          map[string]interface{} `json:"input_schema"`
+	Name                 string                 `json:"name"`
+	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
 // Group Project-scoped collection of users used as an interaction target. Groups let workflows route approvals, reviews, and input requests to a team by handle rather than hard-coding individual users.
@@ -2143,8 +3576,86 @@ type GroupWithCountListResponse struct {
 	NextCursor *string `json:"next_cursor,omitempty"`
 }
 
+// ImageContentBlock defines model for ImageContentBlock.
+type ImageContentBlock struct {
+	CacheControl *map[string]interface{} `json:"cache_control,omitempty"`
+	Source       map[string]interface{}  `json:"source"`
+	Type         ImageContentBlockType   `json:"type"`
+}
+
+// ImageContentBlockType defines model for ImageContentBlock.Type.
+type ImageContentBlockType string
+
+// IndexDef defines model for IndexDef.
+type IndexDef struct {
+	Columns []string `json:"columns"`
+	Name    string   `json:"name"`
+	Unique  *bool    `json:"unique,omitempty"`
+}
+
+// InsertRowRequest defines model for InsertRowRequest.
+type InsertRowRequest struct {
+	Data map[string]interface{} `json:"data"`
+}
+
+// IntegrationCatalog Capability catalog for the integrations registered on this server.
+type IntegrationCatalog struct {
+	Providers []IntegrationCatalogProvider `json:"providers"`
+}
+
+// IntegrationCatalogAction defines model for IntegrationCatalogAction.
+type IntegrationCatalogAction struct {
+	Description *string `json:"description,omitempty"`
+
+	// InputSchema JSON Schema for the action's parameters object.
+	InputSchema *map[string]interface{} `json:"input_schema,omitempty"`
+
+	// Name Workflow-callable action name (`github.create-comment`).
+	Name string `json:"name"`
+
+	// OutputSchema JSON Schema for the action's result object.
+	OutputSchema *map[string]interface{} `json:"output_schema,omitempty"`
+	Title        *string                 `json:"title,omitempty"`
+}
+
+// IntegrationCatalogEventType defines model for IntegrationCatalogEventType.
+type IntegrationCatalogEventType struct {
+	Description *string `json:"description,omitempty"`
+
+	// Name Dotted event-type identifier (`github.pull_request.opened`).
+	Name string `json:"name"`
+
+	// PayloadSchema JSON Schema for the event payload. Absent when the registered Go type cannot be reflected meaningfully (for example, `map[string]any` aliases of raw upstream payloads).
+	PayloadSchema *map[string]interface{} `json:"payload_schema,omitempty"`
+
+	// SchemaVersion Integer schema version. Bumps are additive-only by convention.
+	SchemaVersion int `json:"schema_version"`
+}
+
+// IntegrationCatalogProvider defines model for IntegrationCatalogProvider.
+type IntegrationCatalogProvider struct {
+	Actions []IntegrationCatalogAction `json:"actions"`
+
+	// AuthKind Authentication mechanism the provider uses (e.g. `github_app_install`, `oauth2`, `api_key`).
+	AuthKind string `json:"auth_kind"`
+
+	// Capabilities Boolean capability flags reflecting which framework interfaces the provider implements (`connect`, `sync`, `live_status`, etc.).
+	Capabilities map[string]bool `json:"capabilities"`
+	DisplayName  string          `json:"display_name"`
+
+	// DocsUrl Link to upstream provider docs, when known.
+	DocsUrl *string                       `json:"docs_url,omitempty"`
+	Events  []IntegrationCatalogEventType `json:"events"`
+
+	// Name Stable provider identifier (`github`, `slack`, …).
+	Name string `json:"name"`
+}
+
 // Interaction Human or agent interaction request and its current response state.
 type Interaction struct {
+	// CancelReason Reason recorded when the interaction was cancelled.
+	CancelReason *string `json:"cancel_reason,omitempty"`
+
 	// ClaimedAt Timestamp when a first-responder member claimed this interaction.
 	ClaimedAt *time.Time `json:"claimed_at,omitempty"`
 
@@ -2169,17 +3680,26 @@ type Interaction struct {
 	// Message Human-readable message shown to the responder when supplied.
 	Message *string `json:"message,omitempty"`
 
-	// PartialResponses Per-member responses for all_members routing; null for non-group interactions or before any partial responses.
-	PartialResponses *[]InteractionPartialResponse `json:"partial_responses,omitempty"`
+	// Outcome Free-form JSON payload. Used both for responder-supplied values and for policy-derived values (e.g. `Interaction.outcome`, `ResolutionPolicy.proposal`); each consumer documents which.
+	Outcome *InteractionValue `json:"outcome,omitempty"`
 
 	// RequireAll When true, all snapshotted members must respond before completion
 	RequireAll *bool `json:"require_all,omitempty"`
 
+	// ResolutionPolicy Declarative resolution rule attached to an Interaction. Determines how participant responses become a final outcome.
+	ResolutionPolicy *ResolutionPolicy `json:"resolution_policy,omitempty"`
+
+	// ResolvedBy Short audit string identifying which policy rule fired (e.g. `simple_majority`, `speculative_no_veto`, `simple_majority_owner_decides`). Null until the interaction reaches a resolved state.
+	ResolvedBy *string `json:"resolved_by,omitempty"`
+
+	// ResolvingResponseId ID of the response that triggered resolution. Null while the interaction is pending, when the speculative `proposal` is auto-accepted with no response, on cancel, and on expiry. Look up the response in `responses` for the full payload.
+	ResolvingResponseId *string `json:"resolving_response_id,omitempty"`
+
 	// Responder Identifies who answered an interaction. Groups cannot themselves respond — only a user within a group — so `group` is not a valid responder type.
 	Responder *InteractionResponder `json:"responder,omitempty"`
 
-	// Response Final response that completed an interaction.
-	Response *InteractionResponse `json:"response,omitempty"`
+	// Responses All participant responses recorded against this interaction in arrival order. Empty until the first response is submitted. The full set is what the resolution-policy evaluator runs against.
+	Responses *[]InteractionResponse `json:"responses,omitempty"`
 
 	// RoutingPolicySnapshot Group routing policy captured at creation time: first_responder or all_members. Null for non-group targets.
 	RoutingPolicySnapshot *InteractionRoutingPolicySnapshot `json:"routing_policy_snapshot,omitempty"`
@@ -2197,7 +3717,7 @@ type Interaction struct {
 	// - `input` supports `input`, `select`, or `multi_select`
 	Spec *InteractionSpec `json:"spec,omitempty"`
 
-	// Status Current status of the interaction: pending, completed, or expired.
+	// Status Current status of the interaction: pending, completed, expired, or cancelled.
 	Status InteractionStatus `json:"status"`
 
 	// Target Identifies who should receive an interaction request. Note: distinct from the caller/audit `Actor` vocabulary — a target is a *recipient*, not someone who has acted yet.
@@ -2219,7 +3739,7 @@ type Interaction struct {
 // InteractionRoutingPolicySnapshot Group routing policy captured at creation time: first_responder or all_members. Null for non-group targets.
 type InteractionRoutingPolicySnapshot string
 
-// InteractionStatus Current status of the interaction: pending, completed, or expired.
+// InteractionStatus Current status of the interaction: pending, completed, expired, or cancelled.
 type InteractionStatus string
 
 // InteractionListResponse defines model for InteractionListResponse.
@@ -2232,6 +3752,21 @@ type InteractionListResponse struct {
 
 	// NextCursor Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.
 	NextCursor *string `json:"next_cursor,omitempty"`
+}
+
+// InteractionMetrics Interaction queue statistics.
+type InteractionMetrics struct {
+	// ClaimedCount Interactions currently claimed by a responder.
+	ClaimedCount int `json:"claimed_count"`
+
+	// OpenCount Interactions in `pending` or `claimed` state awaiting response.
+	OpenCount int `json:"open_count"`
+
+	// P95ResponseSeconds 95th-percentile time from creation to resolution for completed interactions within the window.
+	P95ResponseSeconds float64 `json:"p95_response_seconds"`
+
+	// StatusBreakdown Map of interaction status → count across all interactions in the project.
+	StatusBreakdown map[string]int `json:"status_breakdown"`
 }
 
 // InteractionMode Declarative UI/input primitive for collecting the response. This is a portable rendering contract, not executable code. Values are `confirm`, `select`, `multi_select`, and `input`.
@@ -2249,21 +3784,6 @@ type InteractionOption struct {
 	Value string `json:"value"`
 }
 
-// InteractionPartialResponse One member response captured while a group interaction waits for all members.
-type InteractionPartialResponse struct {
-	// Comment Optional free-text comment from this responder.
-	Comment *string `json:"comment,omitempty"`
-
-	// RespondedAt Timestamp when this response was submitted.
-	RespondedAt time.Time `json:"responded_at"`
-
-	// UserId ID of the user who submitted this partial response.
-	UserId string `json:"user_id"`
-
-	// Value Free-form JSON payload supplied by the responder.
-	Value InteractionValue `json:"value"`
-}
-
 // InteractionResponder Identifies who answered an interaction. Groups cannot themselves respond — only a user within a group — so `group` is not a valid responder type.
 type InteractionResponder struct {
 	// Id User ID for user; agent ID for agent.
@@ -2276,17 +3796,35 @@ type InteractionResponder struct {
 // InteractionResponderType Responder kind: a user or an agent.
 type InteractionResponderType string
 
-// InteractionResponse Final response that completed an interaction.
+// InteractionResponse One participant's response to an interaction. Each respond call writes a new row with a unique `(interaction_id, responder_type, responder_id)` constraint — `responder_type` is part of the key so a user and an agent that share an ID string can both respond. The resolution-policy evaluator sees the full set when deciding whether to resolve; the response that triggered resolution is referenced from `Interaction.resolving_response_id`.
 type InteractionResponse struct {
-	// At When the response was submitted
-	At time.Time `json:"at"`
-
-	// Comment Optional free-text comment from the responder.
+	// Comment Optional free-text comment from this responder.
 	Comment *string `json:"comment,omitempty"`
 
-	// Value Free-form JSON payload supplied by the responder.
+	// Confidence Optional 0..1 confidence score attached to this response.
+	Confidence *float64 `json:"confidence,omitempty"`
+
+	// Id Unique identifier for this response.
+	Id string `json:"id"`
+
+	// InteractionId ID of the interaction this response belongs to.
+	InteractionId string `json:"interaction_id"`
+
+	// RespondedAt Timestamp when this response was submitted.
+	RespondedAt time.Time `json:"responded_at"`
+
+	// ResponderId User ID for user; agent ID for agent.
+	ResponderId string `json:"responder_id"`
+
+	// ResponderType Actor class behind this response. Asymmetric policies route on this; majority/threshold ignore it.
+	ResponderType InteractionResponseResponderType `json:"responder_type"`
+
+	// Value Free-form JSON payload. Used both for responder-supplied values and for policy-derived values (e.g. `Interaction.outcome`, `ResolutionPolicy.proposal`); each consumer documents which.
 	Value InteractionValue `json:"value"`
 }
+
+// InteractionResponseResponderType Actor class behind this response. Asymmetric policies route on this; majority/threshold ignore it.
+type InteractionResponseResponderType string
 
 // InteractionSpec Declarative dialog contract for rendering and validating an interaction. Used at both authoring time (inside a workflow definition) and runtime (persisted on an interaction). Compatibility rules are enforced server-side:
 //
@@ -2334,7 +3872,7 @@ type InteractionTargetType string
 // InteractionType Interaction kind: `approval` captures a decision, `review` captures acknowledgement or notes, and `input` collects free-form data.
 type InteractionType string
 
-// InteractionValue Free-form JSON payload supplied by the responder.
+// InteractionValue Free-form JSON payload. Used both for responder-supplied values and for policy-derived values (e.g. `Interaction.outcome`, `ResolutionPolicy.proposal`); each consumer documents which.
 type InteractionValue struct {
 	union json.RawMessage
 }
@@ -2352,10 +3890,7 @@ type InteractionValue2 = string
 type InteractionValue3 = float32
 
 // InteractionValue4 defines model for .
-type InteractionValue4 = int
-
-// InteractionValue5 defines model for .
-type InteractionValue5 = bool
+type InteractionValue4 = bool
 
 // Job A claimable unit of work derived from a single workflow step execution.
 type Job struct {
@@ -2371,7 +3906,7 @@ type Job struct {
 	// Attempt Current attempt number (1-based). Increments on each retry.
 	Attempt int `json:"attempt"`
 
-	// ClaimDeadlineAt Deadline at which the reaper will fail this job with `error_type=claim_timeout` if no worker has claimed it. Present only when `resolved_config` contains an entry with `category="timeouts"` and `key="claim"` whose value resolves to a finite duration. Re-stamped whenever the job returns to `pending`.
+	// ClaimDeadlineAt Deadline at which the reaper will fail this job with `error_type=claim_timeout` if no worker has claimed it. Present only when `resolved_config` contains `key="jobs.timeouts.claim"` whose value resolves to a finite duration. Re-stamped whenever the job returns to `pending`.
 	ClaimDeadlineAt *time.Time `json:"claim_deadline_at,omitempty"`
 
 	// ClaimedAt Timestamp when this job was claimed by a worker.
@@ -2389,7 +3924,7 @@ type Job struct {
 	// ErrorType Failure cause. Server-produced timeout and cancellation failures use stable tokens such as `claim_timeout`, `liveness_timeout`, `execution_timeout`, `run_cancelled`, `run_timeout`, and `run_failed`; worker-reported failures may use caller-defined class names. Present when `status=failed`.
 	ErrorType *string `json:"error_type,omitempty"`
 
-	// ExecutionDeadlineAt Deadline at which the reaper will fail this job with `error_type=execution_timeout` if it has not completed. Present only when `resolved_config` contains an entry with `category="timeouts"` and `key="execution"` whose value resolves to a finite duration.
+	// ExecutionDeadlineAt Deadline at which the reaper will fail this job with `error_type=execution_timeout` if it has not completed. Present only when `resolved_config` contains `key="jobs.timeouts.execution"` whose value resolves to a finite duration.
 	ExecutionDeadlineAt *time.Time `json:"execution_deadline_at,omitempty"`
 
 	// HeartbeatAt Timestamp of the most recent heartbeat. Used to detect stale claims.
@@ -2398,7 +3933,7 @@ type Job struct {
 	// Id Unique identifier for this job.
 	Id string `json:"id"`
 
-	// LivenessDeadlineAt Deadline at which the reaper will either reset (retries remain) or fail this job with `error_type=liveness_timeout` if the worker has not heartbeated in time. Present only when `resolved_config` contains an entry with `category="timeouts"` and `key="liveness"` whose value resolves to a finite duration and the job is claimed.
+	// LivenessDeadlineAt Deadline at which the reaper will either reset (retries remain) or fail this job with `error_type=liveness_timeout` if the worker has not heartbeated in time. Present only when `resolved_config` contains `key="jobs.timeouts.heartbeat"` whose value resolves to a finite duration and the job is claimed.
 	LivenessDeadlineAt *time.Time `json:"liveness_deadline_at,omitempty"`
 
 	// MaxAttempts Maximum number of attempts before the job is permanently failed.
@@ -2416,7 +3951,7 @@ type Job struct {
 	// Queue Queue the job was placed in. Workers subscribe to queues to receive jobs.
 	Queue string `json:"queue"`
 
-	// ResolvedConfig Frozen cascade resolution in flat entry form. Keys unset at every layer are omitted. See PRD 035.
+	// ResolvedConfig Frozen config resolution in flat entry form. Keys unset at every layer are omitted. See PRD 035.
 	ResolvedConfig *ResolvedConfig `json:"resolved_config,omitempty"`
 
 	// RunId The workflow run this job belongs to.
@@ -2479,12 +4014,6 @@ type JobClaim struct {
 type JobClaimRequest struct {
 	// Actions Action names this worker can execute. When provided, only jobs whose `action` is in this list are returned. When empty, action filtering is skipped.
 	Actions *[]string `json:"actions,omitempty"`
-
-	// AgentId Durable agent identity the worker is acting on behalf of.
-	AgentId *string `json:"agent_id,omitempty"`
-
-	// AgentSessionId Live agent session the worker is acting on behalf of.
-	AgentSessionId *string `json:"agent_session_id,omitempty"`
 
 	// ConcurrencyLimit Maximum number of concurrent in-flight jobs this worker process intends to hold. Recorded on the worker_session row; used for the saturation bar in the admin UI. The server does not enforce the limit — the worker is trusted to gate its own claim loop.
 	ConcurrencyLimit int `json:"concurrency_limit"`
@@ -2592,12 +4121,103 @@ type JobListResponse struct {
 	Items []Job `json:"items"`
 }
 
+// JobMetrics Job queue statistics.
+type JobMetrics struct {
+	// Claimed Jobs currently in `claimed` state.
+	Claimed int `json:"claimed"`
+
+	// FailedWindow Jobs that reached a terminal failed state within the window.
+	FailedWindow int `json:"failed_window"`
+
+	// Pending Jobs currently in `pending` state.
+	Pending int `json:"pending"`
+
+	// RetryRate Fraction of terminal jobs that required at least one retry within the window.
+	RetryRate float64 `json:"retry_rate"`
+}
+
 // JobStatus Job lifecycle state:
 // - `pending`   — created, not yet claimed by a worker.
 // - `claimed`   — held under an active worker lease.
 // - `completed` — terminal success.
 // - `failed`    — terminal failure; may follow retries.
 type JobStatus string
+
+// LLMGenerateResponse defines model for LLMGenerateResponse.
+type LLMGenerateResponse struct {
+	Content []map[string]interface{} `json:"content"`
+	Id      string                   `json:"id"`
+	Model   string                   `json:"model"`
+	Role    LLMGenerateResponseRole  `json:"role"`
+
+	// StopReason Why generation stopped.
+	StopReason   *string                 `json:"stop_reason"`
+	StopSequence *string                 `json:"stop_sequence,omitempty"`
+	Type         LLMGenerateResponseType `json:"type"`
+	Usage        LLMGenerateUsage        `json:"usage"`
+}
+
+// LLMGenerateResponseRole defines model for LLMGenerateResponse.Role.
+type LLMGenerateResponseRole string
+
+// LLMGenerateResponseType defines model for LLMGenerateResponse.Type.
+type LLMGenerateResponseType string
+
+// LLMGenerateUsage defines model for LLMGenerateUsage.
+type LLMGenerateUsage struct {
+	CacheCreationInputTokens *int `json:"cache_creation_input_tokens,omitempty"`
+	CacheReadInputTokens     *int `json:"cache_read_input_tokens,omitempty"`
+	InputTokens              int  `json:"input_tokens"`
+	OutputTokens             int  `json:"output_tokens"`
+}
+
+// LogIngestResponse defines model for LogIngestResponse.
+type LogIngestResponse struct {
+	Accepted int `json:"accepted"`
+	Rejected int `json:"rejected"`
+}
+
+// LogRecord defines model for LogRecord.
+type LogRecord struct {
+	Attributes     *map[string]interface{} `json:"attributes,omitempty"`
+	Body           string                  `json:"body"`
+	CreatedAt      time.Time               `json:"created_at"`
+	Id             string                  `json:"id"`
+	ObservedAt     time.Time               `json:"observed_at"`
+	OrgId          string                  `json:"org_id"`
+	ProjectId      string                  `json:"project_id"`
+	RunId          *string                 `json:"run_id,omitempty"`
+	ServiceName    string                  `json:"service_name"`
+	SeverityNumber int                     `json:"severity_number"`
+	SeverityText   string                  `json:"severity_text"`
+	SpanId         *string                 `json:"span_id,omitempty"`
+	StepId         *string                 `json:"step_id,omitempty"`
+	Timestamp      time.Time               `json:"timestamp"`
+	TraceId        *string                 `json:"trace_id,omitempty"`
+}
+
+// LogRecordInput defines model for LogRecordInput.
+type LogRecordInput struct {
+	Attributes *map[string]interface{} `json:"attributes,omitempty"`
+	Message    string                  `json:"message"`
+	RunId      *string                 `json:"run_id,omitempty"`
+	Severity   *string                 `json:"severity,omitempty"`
+	SpanId     *string                 `json:"span_id,omitempty"`
+	Timestamp  *time.Time              `json:"timestamp,omitempty"`
+	TraceId    *string                 `json:"trace_id,omitempty"`
+}
+
+// LogRecordListResponse defines model for LogRecordListResponse.
+type LogRecordListResponse struct {
+	Items      []LogRecord `json:"items"`
+	NextCursor *string     `json:"next_cursor,omitempty"`
+}
+
+// MarkChannelMessagesReadRequest Body for `POST /v1/projects/{project}/channels/{id}/read`. When omitted, the read cursor advances to the channel's latest message.
+type MarkChannelMessagesReadRequest struct {
+	// UpToMessageId Message ID to advance the read cursor to. Must belong to this channel. Omit to advance to the channel's latest message.
+	UpToMessageId *string `json:"up_to_message_id,omitempty"`
+}
 
 // Metadata Free-form JSON object for caller-defined metadata.
 type Metadata map[string]interface{}
@@ -2636,6 +4256,9 @@ type Project struct {
 
 	// CreatedBy User ID of the org member who created this project.
 	CreatedBy *string `json:"created_by,omitempty"`
+
+	// DefaultAgentRoleId Role assigned to the auto-created service account of any new agent in this project, when no per-call `role_ids` are supplied on `createAgent`. `null` falls through to the system `Agent` role floor.
+	DefaultAgentRoleId *string `json:"default_agent_role_id,omitempty"`
 
 	// Description Optional human-readable description.
 	Description *string `json:"description,omitempty"`
@@ -2703,52 +4326,173 @@ type ProjectMemberListResponse struct {
 
 // ProjectMetrics Operational health snapshot for a project. Use it to power dashboards, detect stuck queues or stale workers, and summarize run throughput and failure rates over a recent window.
 type ProjectMetrics struct {
-	// ActiveWorkers Number of workers whose `last_seen_at` is within the 2-minute staleness threshold.
+	// ActiveWorkers Deprecated: use workers.active.
 	ActiveWorkers int `json:"active_workers"`
 
-	// AvgRunSeconds Mean wall-clock duration of completed runs within the window, in seconds.
+	// AvgRunSeconds Deprecated: use runs.avg_seconds.
 	AvgRunSeconds float64 `json:"avg_run_seconds"`
 
-	// FailureRate Fraction of completed runs that ended in `failed` status within the window. Range 0.0–1.0.
+	// Channels Channel activity statistics.
+	Channels ChannelMetrics `json:"channels"`
+
+	// FailureRate Deprecated: use runs.failure_rate.
 	FailureRate float64 `json:"failure_rate"`
 
 	// GeneratedAt Timestamp when this metrics snapshot was computed.
 	GeneratedAt time.Time `json:"generated_at"`
 
-	// P95StepSeconds 95th-percentile job duration (claim time to terminal state) computed across the 40 most recent completed jobs, in seconds. Use this to detect slow or stuck steps.
+	// Interactions Interaction queue statistics.
+	Interactions InteractionMetrics `json:"interactions"`
+
+	// Jobs Job queue statistics.
+	Jobs JobMetrics `json:"jobs"`
+
+	// P95StepSeconds Deprecated: use runs.p95_step_seconds.
 	P95StepSeconds float64 `json:"p95_step_seconds"`
 
-	// QueueDepth Number of jobs currently in `pending` state waiting to be claimed.
+	// QueueDepth Deprecated: use runs.queue_depth.
 	QueueDepth int `json:"queue_depth"`
 
-	// RunningCount Number of workflow runs currently in the `active` lifecycle.
+	// RunningCount Deprecated: use runs.running_count.
 	RunningCount int `json:"running_count"`
 
-	// RunsPerMinute Average number of new workflow runs started per minute within the window.
+	// Runs Workflow run statistics for the rolling window.
+	Runs RunMetrics `json:"runs"`
+
+	// RunsPerMinute Deprecated: use runs.per_minute.
 	RunsPerMinute float64 `json:"runs_per_minute"`
 
-	// StaleWorkers Number of workers whose `last_seen_at` has exceeded the 2-minute staleness threshold.
+	// StaleWorkers Deprecated: use workers.stale.
 	StaleWorkers int `json:"stale_workers"`
 
-	// StatusBreakdown Map of workflow run status → count across all runs in the project (not windowed). Includes all terminal and in-progress statuses.
+	// StatusBreakdown Deprecated: use runs.status_breakdown.
 	StatusBreakdown map[string]int `json:"status_breakdown"`
 
-	// TotalRunsWindow Total number of workflow runs started within the window.
+	// TotalRunsWindow Deprecated: use runs.total_window.
 	TotalRunsWindow int `json:"total_runs_window"`
 
 	// WindowMinutes Rolling window width used for rate and failure metrics. Default is 60 minutes.
 	WindowMinutes int `json:"window_minutes"`
+
+	// Workers Worker session health.
+	Workers WorkerMetrics `json:"workers"`
 }
 
-// ResolvedConfig Frozen cascade resolution in flat entry form. Keys unset at every layer are omitted. See PRD 035.
+// QueryRowsRequest defines model for QueryRowsRequest.
+type QueryRowsRequest struct {
+	// Filter Column equality or operator filter
+	Filter *map[string]interface{} `json:"filter,omitempty"`
+	Limit  *int                    `json:"limit,omitempty"`
+	Offset *int                    `json:"offset,omitempty"`
+	Sort   *[]struct {
+		Field string                     `json:"field"`
+		Order *QueryRowsRequestSortOrder `json:"order,omitempty"`
+	} `json:"sort,omitempty"`
+}
+
+// QueryRowsRequestSortOrder defines model for QueryRowsRequest.Sort.Order.
+type QueryRowsRequestSortOrder string
+
+// QueryRowsResponse defines model for QueryRowsResponse.
+type QueryRowsResponse struct {
+	HasMore bool           `json:"has_more"`
+	Limit   *int           `json:"limit,omitempty"`
+	Offset  *int           `json:"offset,omitempty"`
+	Rows    []DataTableRow `json:"rows"`
+}
+
+// ReferenceCandidate defines model for ReferenceCandidate.
+type ReferenceCandidate struct {
+	// Description Optional secondary display text.
+	Description *string `json:"description,omitempty"`
+
+	// Label Human-readable display label.
+	Label string `json:"label"`
+
+	// Metadata Optional display/filtering metadata. Not stored unless the action schema models it.
+	Metadata *map[string]interface{} `json:"metadata,omitempty"`
+
+	// Value Value stored in workflow parameters.
+	Value string `json:"value"`
+}
+
+// ReferenceLookupResponse defines model for ReferenceLookupResponse.
+type ReferenceLookupResponse struct {
+	HasMore    bool                 `json:"has_more"`
+	Items      []ReferenceCandidate `json:"items"`
+	NextCursor *string              `json:"next_cursor,omitempty"`
+}
+
+// ReferenceResolveRequest defines model for ReferenceResolveRequest.
+type ReferenceResolveRequest struct {
+	DependsOn     *map[string]interface{} `json:"depends_on,omitempty"`
+	IntegrationId *string                 `json:"integration_id,omitempty"`
+	Values        []string                `json:"values"`
+}
+
+// ReferenceResolveResponse defines model for ReferenceResolveResponse.
+type ReferenceResolveResponse struct {
+	Items      []ReferenceCandidate `json:"items"`
+	Unresolved []string             `json:"unresolved"`
+}
+
+// ResolutionPolicy Declarative resolution rule attached to an Interaction. Determines how participant responses become a final outcome.
+type ResolutionPolicy struct {
+	// Agents Per-actor-class rule under an asymmetric resolution policy. `propose` records responses for audit but ignores them for resolution. `decide` applies the optional `sub_policy` to that class's responses to drive resolution. `ignore` is reserved for future use.
+	Agents *AsymmetricActorRule `json:"agents,omitempty"`
+
+	// Humans Per-actor-class rule under an asymmetric resolution policy. `propose` records responses for audit but ignores them for resolution. `decide` applies the optional `sub_policy` to that class's responses to drive resolution. `ignore` is reserved for future use.
+	Humans *AsymmetricActorRule `json:"humans,omitempty"`
+
+	// MinConfidence Drop responses with confidence below this bar before weighting.
+	MinConfidence *float64 `json:"min_confidence,omitempty"`
+
+	// OnNoVeto Currently only `accept_proposal` is supported.
+	OnNoVeto *ResolutionPolicyOnNoVeto `json:"on_no_veto,omitempty"`
+
+	// OwnerId User/agent ID treated as authoritative when `tie_break` is `owner_decides`.
+	OwnerId *string `json:"owner_id,omitempty"`
+
+	// Proposal Free-form JSON payload. Used both for responder-supplied values and for policy-derived values (e.g. `Interaction.outcome`, `ResolutionPolicy.proposal`); each consumer documents which.
+	Proposal *InteractionValue `json:"proposal,omitempty"`
+
+	// Quorum Minimum responses required before a majority/threshold can resolve.
+	Quorum *int `json:"quorum,omitempty"`
+
+	// Threshold Vote count any option must reach to win under `threshold`.
+	Threshold *int `json:"threshold,omitempty"`
+
+	// TieBreak Behavior on a tied top vote count for `simple_majority`. Null or absent keeps the interaction open; `first` picks the earliest-arriving value; `owner_decides` waits for `owner_id` to break the tie.
+	TieBreak *ResolutionPolicyTieBreak `json:"tie_break,omitempty"`
+
+	// Type Resolution rule. `first_valid_response` resolves on the first response (Tier 1 default). `all_required` waits for every eligible participant. `simple_majority` and `threshold` are voting policies. `weighted_vote` weighs responses by `confidence`. `speculative` resolves to `proposal` when the veto window closes without a veto. `asymmetric` runs different sub-rules per actor class (e.g. agents propose, humans decide via majority).
+	Type ResolutionPolicyType `json:"type"`
+
+	// VetoWindowSeconds Window (in seconds, relative to creation time) during which a veto can be submitted. When the window passes the speculative interaction resolves to `proposal`. When zero `expires_at` is used.
+	VetoWindowSeconds *int `json:"veto_window_seconds,omitempty"`
+
+	// WeightBy Where `weighted_vote` reads weights from.
+	WeightBy *ResolutionPolicyWeightBy `json:"weight_by,omitempty"`
+}
+
+// ResolutionPolicyOnNoVeto Currently only `accept_proposal` is supported.
+type ResolutionPolicyOnNoVeto string
+
+// ResolutionPolicyTieBreak Behavior on a tied top vote count for `simple_majority`. Null or absent keeps the interaction open; `first` picks the earliest-arriving value; `owner_decides` waits for `owner_id` to break the tie.
+type ResolutionPolicyTieBreak string
+
+// ResolutionPolicyType Resolution rule. `first_valid_response` resolves on the first response (Tier 1 default). `all_required` waits for every eligible participant. `simple_majority` and `threshold` are voting policies. `weighted_vote` weighs responses by `confidence`. `speculative` resolves to `proposal` when the veto window closes without a veto. `asymmetric` runs different sub-rules per actor class (e.g. agents propose, humans decide via majority).
+type ResolutionPolicyType string
+
+// ResolutionPolicyWeightBy Where `weighted_vote` reads weights from.
+type ResolutionPolicyWeightBy string
+
+// ResolvedConfig Frozen config resolution in flat entry form. Keys unset at every layer are omitted. See PRD 035.
 type ResolvedConfig = []ResolvedConfigEntry
 
-// ResolvedConfigEntry One cascade config value after layer resolution.
+// ResolvedConfigEntry One config value after layer resolution.
 type ResolvedConfigEntry struct {
-	// Category Config category token, for example `timeouts`.
-	Category string `json:"category"`
-
-	// Key Resolved key within the category.
+	// Key Registered config key that was resolved.
 	Key string `json:"key"`
 
 	// Source Cascade layer that supplied the winning value: service, project, workflow, run, or step.
@@ -2766,8 +4510,11 @@ type RespondToInteractionRequest struct {
 	// Comment Optional free-text comment accompanying the response.
 	Comment *string `json:"comment,omitempty"`
 
-	// Value Free-form JSON payload supplied by the responder.
-	Value *InteractionValue `json:"value,omitempty"`
+	// Confidence Optional 0..1 confidence score the responder attaches to their answer. Required when the interaction's resolution policy weights by confidence; ignored otherwise.
+	Confidence *float64 `json:"confidence,omitempty"`
+
+	// Value Free-form JSON payload. Used both for responder-supplied values and for policy-derived values (e.g. `Interaction.outcome`, `ResolutionPolicy.proposal`); each consumer documents which.
+	Value InteractionValue `json:"value"`
 }
 
 // RotateSecretResult New signing secret returned after rotating an action secret.
@@ -2838,6 +4585,33 @@ type RunForkRequest struct {
 
 	// Tags Tags to overlay on the inherited source-run tags. Empty string values remove inherited keys.
 	Tags *TagMap `json:"tags,omitempty"`
+}
+
+// RunMetrics Workflow run statistics for the rolling window.
+type RunMetrics struct {
+	// AvgSeconds Mean wall-clock duration of completed runs within the window, in seconds.
+	AvgSeconds float64 `json:"avg_seconds"`
+
+	// FailureRate Fraction of completed runs that ended in `failed` status. Range 0.0–1.0.
+	FailureRate float64 `json:"failure_rate"`
+
+	// P95StepSeconds 95th-percentile job duration (claim→terminal) from the 40 most recent completed jobs, in seconds.
+	P95StepSeconds float64 `json:"p95_step_seconds"`
+
+	// PerMinute Average number of new runs started per minute within the window.
+	PerMinute float64 `json:"per_minute"`
+
+	// QueueDepth Number of jobs currently in `pending` state.
+	QueueDepth int `json:"queue_depth"`
+
+	// RunningCount Number of runs currently in the `active` lifecycle.
+	RunningCount int `json:"running_count"`
+
+	// StatusBreakdown Map of run status → count across all runs in the project (not windowed).
+	StatusBreakdown map[string]int `json:"status_breakdown"`
+
+	// TotalWindow Total runs started within the window.
+	TotalWindow int `json:"total_window"`
 }
 
 // RunSignal Persisted external signal delivered to a workflow run.
@@ -2932,7 +4706,7 @@ type ScheduleSourceConfig struct {
 	Interval *string `json:"interval,omitempty"`
 }
 
-// SendChannelMessageRequest Fields used to post a new channel message.
+// SendChannelMessageRequest Fields used to post a new channel message. Sender attribution is determined entirely by the authenticated credential and cannot be overridden via this request body.
 type SendChannelMessageRequest struct {
 	// Content Message body in Markdown.
 	Content string `json:"content"`
@@ -2943,14 +4717,11 @@ type SendChannelMessageRequest struct {
 	// Metadata Free-form JSON object for caller-defined metadata.
 	Metadata *Metadata `json:"metadata,omitempty"`
 
+	// References Experimental typed entity links for card/chip rendering.
+	References *[]EntityReference `json:"references,omitempty"`
+
 	// ReplyTo Parent message ID for threading (creates a reply).
 	ReplyTo *string `json:"reply_to,omitempty"`
-
-	// SenderAgentId Durable agent identity to attribute the message to. When set, `sender_type` on the resulting message is `agent`.
-	SenderAgentId *string `json:"sender_agent_id,omitempty"`
-
-	// SenderSessionId Live agent session to associate with the message.
-	SenderSessionId *string `json:"sender_session_id,omitempty"`
 
 	// Type Dot-namespaced message type identifier.
 	Type *string `json:"type,omitempty"`
@@ -2968,9 +4739,125 @@ type SendRunSignalRequest struct {
 	Payload *map[string]interface{} `json:"payload,omitempty"`
 }
 
+// ShareChannelEntityRequest Entity reference and optional message fields for posting a channel card.
+type ShareChannelEntityRequest struct {
+	// Content Optional Markdown fallback body. If omitted, the server derives a short label from the reference.
+	Content *string `json:"content,omitempty"`
+
+	// Display Rendering hint for the created channel message.
+	Display *ShareChannelEntityRequestDisplay `json:"display,omitempty"`
+
+	// Metadata Free-form JSON object for caller-defined metadata.
+	Metadata *Metadata `json:"metadata,omitempty"`
+
+	// Reference Experimental typed link from a channel message to another Mobius entity. Clients use references to render cards and chips without parsing Markdown.
+	Reference EntityReference `json:"reference"`
+
+	// Type Optional dot-namespaced message type. If omitted, the server derives one from the entity type.
+	Type *string `json:"type,omitempty"`
+}
+
+// ShareChannelEntityRequestDisplay Rendering hint for the created channel message.
+type ShareChannelEntityRequestDisplay string
+
+// Span Domain projection of one persisted OTLP span. Linkage fields (`run_id`, `step_id`, `job_id`, `agent_id`, `service_account_id`) are resolved at ingest time from semantic-convention attributes and may be absent when no Mobius entity could be matched.
+type Span struct {
+	AgentId    *string                 `json:"agent_id,omitempty"`
+	Attributes *map[string]interface{} `json:"attributes,omitempty"`
+	CreatedAt  time.Time               `json:"created_at"`
+
+	// DurationMs Convenience derived value (`ended_at - started_at` in milliseconds). Emitted as `-1` when `ended_at` is absent.
+	DurationMs *int64 `json:"duration_ms,omitempty"`
+
+	// EndedAt Omitted while the span is still in flight.
+	EndedAt *time.Time   `json:"ended_at,omitempty"`
+	Events  *[]SpanEvent `json:"events,omitempty"`
+
+	// Id Mobius span row identifier (TypeID, prefix `span_`).
+	Id    string  `json:"id"`
+	JobId *string `json:"job_id,omitempty"`
+
+	// Kind Mirrors the OpenTelemetry `SpanKind` enum. Stored lowercase.
+	Kind  SpanKind    `json:"kind"`
+	Links *[]SpanLink `json:"links,omitempty"`
+	Name  string      `json:"name"`
+
+	// OperationName Normalized OTel semconv operation name.
+	OperationName string `json:"operation_name"`
+	OrgId         string `json:"org_id"`
+
+	// ParentSpanId Parent span ID, omitted for trace roots.
+	ParentSpanId *string `json:"parent_span_id,omitempty"`
+	ProjectId    string  `json:"project_id"`
+	RunId        *string `json:"run_id,omitempty"`
+
+	// ScopeName OTel instrumentation scope name.
+	ScopeName        string  `json:"scope_name"`
+	ServiceAccountId *string `json:"service_account_id,omitempty"`
+
+	// ServiceName OTel `service.name` resource attribute.
+	ServiceName string `json:"service_name"`
+
+	// SpanId Hex-encoded 8-byte OTel span ID.
+	SpanId    string    `json:"span_id"`
+	StartedAt time.Time `json:"started_at"`
+
+	// Status Mirrors the OpenTelemetry `Status.code` enum.
+	Status        SpanStatusCode `json:"status"`
+	StatusMessage *string        `json:"status_message,omitempty"`
+	StepId        *string        `json:"step_id,omitempty"`
+
+	// TraceId Hex-encoded 16-byte OTel trace ID.
+	TraceId string `json:"trace_id"`
+}
+
+// SpanCounts Aggregate breakdown of spans within some scope. Used both by per-step badges on the run timeline and by trace summary cards on Trace tabs.
+type SpanCounts struct {
+	// Errors Spans whose status code is `error`.
+	Errors int `json:"errors"`
+
+	// LlmCalls Spans whose `operation_name` indicates an LLM call (`chat`, `text_completion`, `generate_content`, `embeddings`).
+	LlmCalls int `json:"llm_calls"`
+
+	// ToolCalls Spans whose `operation_name` is `execute_tool`.
+	ToolCalls int `json:"tool_calls"`
+
+	// Total Total span count (all kinds).
+	Total int `json:"total"`
+}
+
+// SpanEvent One entry in the span's `events` array.
+type SpanEvent struct {
+	Attributes *map[string]interface{} `json:"attributes,omitempty"`
+	Name       string                  `json:"name"`
+	Time       time.Time               `json:"time"`
+}
+
+// SpanKind Mirrors the OpenTelemetry `SpanKind` enum. Stored lowercase.
+type SpanKind string
+
+// SpanLink One entry in the span's `links` array.
+type SpanLink struct {
+	Attributes *map[string]interface{} `json:"attributes,omitempty"`
+	SpanId     string                  `json:"span_id"`
+	TraceId    string                  `json:"trace_id"`
+}
+
+// SpanListResponse Paginated span list.
+type SpanListResponse struct {
+	HasMore bool   `json:"has_more"`
+	Items   []Span `json:"items"`
+
+	// NextCursor Opaque cursor for fetching the next page. Present only when `has_more` is true.
+	NextCursor *string `json:"next_cursor,omitempty"`
+}
+
+// SpanStatusCode Mirrors the OpenTelemetry `Status.code` enum.
+type SpanStatusCode string
+
 // StartBoundRunRequest Request body for `POST /v1/projects/{project}/workflows/{id}/runs`. The definition to run is identified by the path parameter, so neither `mode` nor `definition_id` appear here. Inline specs are not allowed on this route — use `POST /v1/projects/{project}/runs` with `mode: inline` instead.
 type StartBoundRunRequest struct {
-	// Config Flat cascade config input used outside authored workflow YAML. Each entry addresses one `(category, key)` pair. Unknown categories or unknown keys under a known category are rejected at write time. The only category shipped in Phase 1 is `timeouts`, whose keys are `claim`, `liveness`, `execution`, `wall_clock`.
+	// Config Flat config input used outside authored workflow YAML. Each entry addresses one registered key. Unknown keys are rejected at write time. Phase 1 ships: `jobs.timeouts.claim`, `jobs.timeouts.execution`, `jobs.timeouts.heartbeat`, and `runs.timeouts.execution`.
 	Config *ConfigEntries `json:"config,omitempty"`
 
 	// ExternalId Caller-supplied logical correlation key for this run. Unique within the project. If the same external_id is reused while the prior run is still active, the existing run is returned idempotently. Once the prior run is terminal (completed or failed), a duplicate POST returns 409 with code `external_id_conflict` and the `existing_run_id` and `status` carried in `details`. To launch a fresh attempt for the same logical job after a terminal run, use a new external_id (e.g. suffix with an attempt counter).
@@ -2991,7 +4878,7 @@ type StartBoundRunRequest struct {
 
 // StartInlineRunRequest Run an ephemeral workflow from an inline spec. Selected by `mode: inline` on `POST /v1/projects/{project}/runs`. No `WorkflowDefinition` is persisted; the spec is snapshotted onto the returned run.
 type StartInlineRunRequest struct {
-	// Config Flat cascade config input used outside authored workflow YAML. Each entry addresses one `(category, key)` pair. Unknown categories or unknown keys under a known category are rejected at write time. The only category shipped in Phase 1 is `timeouts`, whose keys are `claim`, `liveness`, `execution`, `wall_clock`.
+	// Config Flat config input used outside authored workflow YAML. Each entry addresses one registered key. Unknown keys are rejected at write time. Phase 1 ships: `jobs.timeouts.claim`, `jobs.timeouts.execution`, `jobs.timeouts.heartbeat`, and `runs.timeouts.execution`.
 	Config *ConfigEntries `json:"config,omitempty"`
 
 	// ExternalId Caller-supplied logical correlation key for this run. Unique within the project. If the same external_id is reused while the prior run is still active, the existing run is returned idempotently. Once the prior run is terminal (completed or failed), a duplicate POST returns 409 with code `external_id_conflict` and the `existing_run_id` and `status` carried in `details`. To launch a fresh attempt for the same logical job after a terminal run, use a new external_id (e.g. suffix with an attempt counter).
@@ -3031,7 +4918,7 @@ type StartRunRequest struct {
 
 // StartSavedRunRequest Run a previously-created workflow definition. Selected by `mode: saved` on `POST /v1/projects/{project}/runs`. The run inherits the workflow definition's tags at start time; see the `tags` field below for the override rules.
 type StartSavedRunRequest struct {
-	// Config Flat cascade config input used outside authored workflow YAML. Each entry addresses one `(category, key)` pair. Unknown categories or unknown keys under a known category are rejected at write time. The only category shipped in Phase 1 is `timeouts`, whose keys are `claim`, `liveness`, `execution`, `wall_clock`.
+	// Config Flat config input used outside authored workflow YAML. Each entry addresses one registered key. Unknown keys are rejected at write time. Phase 1 ships: `jobs.timeouts.claim`, `jobs.timeouts.execution`, `jobs.timeouts.heartbeat`, and `runs.timeouts.execution`.
 	Config *ConfigEntries `json:"config,omitempty"`
 
 	// DefinitionId ID of an existing workflow definition to run.
@@ -3059,52 +4946,172 @@ type StartSavedRunRequest struct {
 // StartSavedRunRequestMode Discriminator value — must be `saved`.
 type StartSavedRunRequestMode string
 
+// StepSpanCountsResponse Map of step_id → SpanCounts.
+type StepSpanCountsResponse struct {
+	// Counts Keys are run step IDs.
+	Counts map[string]SpanCounts `json:"counts"`
+}
+
+// SystemTextBlock defines model for SystemTextBlock.
+type SystemTextBlock struct {
+	CacheControl *map[string]interface{} `json:"cache_control,omitempty"`
+	Text         string                  `json:"text"`
+	Type         SystemTextBlockType     `json:"type"`
+}
+
+// SystemTextBlockType defines model for SystemTextBlock.Type.
+type SystemTextBlockType string
+
 // TagMap Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints.
 type TagMap map[string]string
 
-// ToolDefinition Published workflow exposed as an invokable tool. Clients can use this definition to list available tools and render input forms from the JSON Schema before starting a run.
-type ToolDefinition struct {
-	// Description Human-readable description of what the tool does.
-	Description string `json:"description"`
+// TestFireTargetResult Per-target outcome of a test-fire. Mirrors TriggerFireTargetResult but exposes the resolved input mapping and would-launch decision so trigger authors can debug each layer in isolation.
+type TestFireTargetResult struct {
+	// Enabled Whether the target is enabled. Disabled targets are skipped without resolution.
+	Enabled *bool `json:"enabled,omitempty"`
 
-	// InputSchema JSON Schema Draft 7 object describing the tool inputs.
-	InputSchema map[string]interface{} `json:"input_schema"`
+	// InputMappingResolved Resolved input map handed to the workflow.
+	InputMappingResolved *map[string]interface{} `json:"input_mapping_resolved,omitempty"`
 
-	// Name Tool name (workflow handle). Stable across publish/unpublish cycles.
-	Name string `json:"name"`
+	// InputResolutionError Error encountered resolving input_mapping, when one occurred.
+	InputResolutionError *string `json:"input_resolution_error,omitempty"`
+
+	// LaunchError Error from the launcher when execute mode failed to start the run.
+	LaunchError *string `json:"launch_error,omitempty"`
+
+	// RunId ID of the launched run (only set in execute mode).
+	RunId *string `json:"run_id,omitempty"`
+
+	// Status Per-target outcome of a test-fire dispatch. Distinct from `TriggerFireStatus`, which carries aggregate values like `partial_failure` that are only meaningful at the trigger level.
+	Status TestFireTargetStatus `json:"status"`
+
+	// TargetId ID of the trigger target this result is for.
+	TargetId string `json:"target_id"`
+
+	// WorkflowId Workflow definition the target points at.
+	WorkflowId *string `json:"workflow_id,omitempty"`
+
+	// WouldLaunch True when the target would launch a run (or signal a run once `signal_run` lands). False for disabled targets and for targets whose condition evaluated to false.
+	WouldLaunch bool `json:"would_launch"`
 }
 
-// ToolDefinitionListResponse defines model for ToolDefinitionListResponse.
-type ToolDefinitionListResponse struct {
-	// Items The list of published workflow tools.
-	Items []ToolDefinition `json:"items"`
+// TestFireTargetStatus Per-target outcome of a test-fire dispatch. Distinct from `TriggerFireStatus`, which carries aggregate values like `partial_failure` that are only meaningful at the trigger level.
+type TestFireTargetStatus string
+
+// TestFireTriggerRequest Synthetic event payload used to drive a test-fire dispatch.
+type TestFireTriggerRequest struct {
+	// Event Synthetic event payload — the same shape an integration would deliver. Available to expressions as `event.x`.
+	Event map[string]interface{} `json:"event"`
+
+	// Meta Optional meta envelope. Available to expressions as `meta.x`. When omitted, defaults to `{ id: "test-fire", event_type: "<test>", provider: "<test>" }`.
+	Meta *map[string]interface{} `json:"meta,omitempty"`
+
+	// Mode `preview` resolves input mappings and condition outcomes without launching runs. `execute` runs the real dispatcher path — runs are tagged with source_label `test-fire` so they are filterable in the run list.
+	Mode *TestFireTriggerRequestMode `json:"mode,omitempty"`
 }
 
-// ToolRun Status envelope for a tool invocation backed by a workflow run. Use it to poll asynchronous work, read completed output, or surface failure details to the caller.
-type ToolRun struct {
-	// Error Error message. Present when status is "failed".
-	Error *string `json:"error,omitempty"`
+// TestFireTriggerRequestMode `preview` resolves input mappings and condition outcomes without launching runs. `execute` runs the real dispatcher path — runs are tagged with source_label `test-fire` so they are filterable in the run list.
+type TestFireTriggerRequestMode string
 
-	// Output Run output. Present when status is "completed".
-	Output *map[string]interface{} `json:"output,omitempty"`
-
-	// RunId Unique run identifier for polling.
-	RunId string `json:"run_id"`
-
-	// Status Workflow run lifecycle: `active`, `completed`, or `failed`.
-	Status ToolRunStatus `json:"status"`
+// TestFireTriggerResult defines model for TestFireTriggerResult.
+type TestFireTriggerResult struct {
+	Mode    TestFireTriggerResultMode `json:"mode"`
+	Targets []TestFireTargetResult    `json:"targets"`
 }
 
-// ToolRunStatus Workflow run lifecycle: `active`, `completed`, or `failed`.
-type ToolRunStatus string
+// TestFireTriggerResultMode defines model for TestFireTriggerResult.Mode.
+type TestFireTriggerResultMode string
 
-// ToolRunRequest defines model for ToolRunRequest.
-type ToolRunRequest struct {
-	// Input Input values matching the tool's input_schema.
-	Input *map[string]interface{} `json:"input,omitempty"`
+// TextContentBlock defines model for TextContentBlock.
+type TextContentBlock struct {
+	CacheControl *map[string]interface{} `json:"cache_control,omitempty"`
+	Text         string                  `json:"text"`
+	Type         TextContentBlockType    `json:"type"`
+}
 
-	// TimeoutSeconds How long (in seconds) to wait for synchronous completion. Default 30, max 120. If the run does not complete within this window the response is 202 with status active.
-	TimeoutSeconds *int `json:"timeout_seconds,omitempty"`
+// TextContentBlockType defines model for TextContentBlock.Type.
+type TextContentBlockType string
+
+// ToolResultContentBlock defines model for ToolResultContentBlock.
+type ToolResultContentBlock struct {
+	CacheControl *map[string]interface{}        `json:"cache_control,omitempty"`
+	Content      ToolResultContentBlock_Content `json:"content"`
+	IsError      *bool                          `json:"is_error,omitempty"`
+	ToolUseId    string                         `json:"tool_use_id"`
+	Type         ToolResultContentBlockType     `json:"type"`
+}
+
+// ToolResultContentBlockContent0 defines model for .
+type ToolResultContentBlockContent0 = string
+
+// ToolResultContentBlockContent1 defines model for .
+type ToolResultContentBlockContent1 = []ContentBlock
+
+// ToolResultContentBlock_Content defines model for ToolResultContentBlock.Content.
+type ToolResultContentBlock_Content struct {
+	union json.RawMessage
+}
+
+// ToolResultContentBlockType defines model for ToolResultContentBlock.Type.
+type ToolResultContentBlockType string
+
+// ToolUseContentBlock defines model for ToolUseContentBlock.
+type ToolUseContentBlock struct {
+	Id    string                  `json:"id"`
+	Input map[string]interface{}  `json:"input"`
+	Name  string                  `json:"name"`
+	Type  ToolUseContentBlockType `json:"type"`
+}
+
+// ToolUseContentBlockType defines model for ToolUseContentBlock.Type.
+type ToolUseContentBlockType string
+
+// TraceDetail Full span tree for one trace. The client reconstructs parent / child links from `parent_span_id` on each span.
+type TraceDetail struct {
+	Spans   []Span `json:"spans"`
+	TraceId string `json:"trace_id"`
+}
+
+// TraceLinkages Anchor Mobius entities for the trace summary card — at most one of each dimension. Resolved as the first non-empty value across the trace's spans (sorted by `started_at`), so traces that span multiple steps, jobs, or agents will surface the earliest one here. The full multi-entity set is recoverable from the underlying `Span.{run,step,job,agent}_id` fields when needed. Free-floating traces have no fields set.
+type TraceLinkages struct {
+	AgentId *string `json:"agent_id,omitempty"`
+	JobId   *string `json:"job_id,omitempty"`
+	RunId   *string `json:"run_id,omitempty"`
+	StepId  *string `json:"step_id,omitempty"`
+}
+
+// TraceListResponse Paginated list of trace summary cards.
+type TraceListResponse struct {
+	HasMore    bool           `json:"has_more"`
+	Items      []TraceSummary `json:"items"`
+	NextCursor *string        `json:"next_cursor,omitempty"`
+}
+
+// TraceSummary One trace's summary card on a TraceList. The summary is computed in the API layer by aggregating spans for the trace.
+type TraceSummary struct {
+	// DurationMs `ended_at - started_at` in milliseconds, or `-1` when at least one span in the trace is still in flight.
+	DurationMs int64 `json:"duration_ms"`
+
+	// EndedAt Latest `ended_at` across the trace's spans, when present.
+	EndedAt    *time.Time `json:"ended_at,omitempty"`
+	ErrorCount *int       `json:"error_count,omitempty"`
+
+	// Linked Anchor Mobius entities for the trace summary card — at most one of each dimension. Resolved as the first non-empty value across the trace's spans (sorted by `started_at`), so traces that span multiple steps, jobs, or agents will surface the earliest one here. The full multi-entity set is recoverable from the underlying `Span.{run,step,job,agent}_id` fields when needed. Free-floating traces have no fields set.
+	Linked       *TraceLinkages `json:"linked,omitempty"`
+	LlmCallCount *int           `json:"llm_call_count,omitempty"`
+
+	// RootName Display name for the card. Resolved from the trace's root span when one is present, otherwise from the earliest span by `started_at`.
+	RootName string `json:"root_name"`
+
+	// ServiceNames Distinct `service.name` values represented in the trace.
+	ServiceNames *[]string `json:"service_names,omitempty"`
+	SpanCount    int       `json:"span_count"`
+	StartedAt    time.Time `json:"started_at"`
+
+	// Status Mirrors the OpenTelemetry `Status.code` enum.
+	Status        SpanStatusCode `json:"status"`
+	ToolCallCount *int           `json:"tool_call_count,omitempty"`
+	TraceId       string         `json:"trace_id"`
 }
 
 // Trigger Event source that starts one or more workflow targets.
@@ -3127,7 +5134,7 @@ type Trigger struct {
 	// Id Unique identifier for this trigger.
 	Id string `json:"id"`
 
-	// Kind Determines the event source and required `source_config` shape: schedule, webhook, or event.
+	// Kind Determines the event source and required `source_config` shape: schedule, webhook, event, channel_message, data_table_row, or email.
 	Kind TriggerKind `json:"kind"`
 
 	// LastFireAt Timestamp of the most recent fire attempt.
@@ -3139,7 +5146,7 @@ type Trigger struct {
 	// NextFireAt Computed next scheduled fire time (schedule triggers only).
 	NextFireAt *time.Time `json:"next_fire_at,omitempty"`
 
-	// SourceConfig Typed source configuration. The shape is determined by the trigger's `kind` (`schedule` → `ScheduleSourceConfig`, `webhook` → `WebhookSourceConfig`, `event` → `EventSourceConfig`); mismatches are rejected with 400.
+	// SourceConfig Typed source configuration. The shape is determined by the trigger's `kind` (`schedule` → `ScheduleSourceConfig`, `webhook` → `WebhookSourceConfig`, `event` → `EventSourceConfig`, `channel_message` → `ChannelMessageSourceConfig`, `data_table_row` → `DataTableRowSourceConfig`, `email` → `EmailSourceConfig`); mismatches are rejected with 400.
 	SourceConfig *TriggerSourceConfig `json:"source_config,omitempty"`
 
 	// Tags Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints.
@@ -3210,24 +5217,23 @@ type TriggerFireTargetResult struct {
 	// Error Error detail when status is `failed`.
 	Error *string `json:"error,omitempty"`
 
-	// RunId ID of the workflow run that was created. Absent when the target failed or was skipped.
+	// RunId ID of the run that was launched or signaled. Absent when the target failed or was skipped before resolving a run.
 	RunId *string `json:"run_id,omitempty"`
 
-	// Status Outcome of a trigger activation:
-	// - `success` — all enabled targets started their runs (or no targets configured).
-	// - `partial_failure` — at least one target failed while others succeeded.
-	// - `failed` — all targets failed, or a trigger-level error prevented any target.
-	// - `skipped` — the concurrency policy suppressed the entire activation.
-	Status TriggerFireStatus `json:"status"`
+	// Status Outcome for a single target within a trigger fire activation. Per-target results never aggregate, so `partial_failure` cannot appear here.
+	Status TriggerFireTargetStatus `json:"status"`
 
 	// TargetId ID of the trigger target that was evaluated.
 	TargetId string `json:"target_id"`
 
-	// WorkflowId ID of the workflow definition that was started (or attempted).
-	WorkflowId string `json:"workflow_id"`
+	// WorkflowId ID of the workflow definition that was started or attempted. Present only for `launch_run` targets — `signal_run` targets deliver a signal to an existing run and have no workflow definition association of their own.
+	WorkflowId *string `json:"workflow_id,omitempty"`
 }
 
-// TriggerKind Determines the event source and required `source_config` shape: schedule, webhook, or event.
+// TriggerFireTargetStatus Outcome for a single target within a trigger fire activation. Per-target results never aggregate, so `partial_failure` cannot appear here.
+type TriggerFireTargetStatus string
+
+// TriggerKind Determines the event source and required `source_config` shape: schedule, webhook, event, channel_message, data_table_row, or email.
 type TriggerKind string
 
 // TriggerListResponse Paginated list of triggers.
@@ -3242,27 +5248,50 @@ type TriggerListResponse struct {
 	NextCursor *string `json:"next_cursor,omitempty"`
 }
 
-// TriggerSourceConfig Typed source configuration. The shape is determined by the trigger's `kind` (`schedule` → `ScheduleSourceConfig`, `webhook` → `WebhookSourceConfig`, `event` → `EventSourceConfig`); mismatches are rejected with 400.
+// TriggerSourceConfig Typed source configuration. The shape is determined by the trigger's `kind` (`schedule` → `ScheduleSourceConfig`, `webhook` → `WebhookSourceConfig`, `event` → `EventSourceConfig`, `channel_message` → `ChannelMessageSourceConfig`, `data_table_row` → `DataTableRowSourceConfig`, `email` → `EmailSourceConfig`); mismatches are rejected with 400.
 type TriggerSourceConfig struct {
 	union json.RawMessage
 }
 
-// TriggerTarget A workflow to start when this trigger fires.
+// TriggerTarget An effect a trigger executes when it fires. Two kinds:
+//
+// - `launch_run` (default): starts a new workflow run. `workflow_id`
+// required. `external_id_template` optional — when set, the new
+// run's `external_id` is derived from the event so a later
+// `signal_run` target can find it.
+// - `signal_run`: locates an existing run by
+// `run_selector.external_id_template` and delivers a signal to
+// its `wait_signal` step. `workflow_id` is absent.
 type TriggerTarget struct {
-	// Condition Expression evaluated against the event payload. The target is skipped if this evaluates to false. Omit to always run.
+	// Condition Expression evaluated against the event environment (`{ meta, event }`). The target is skipped when the expression evaluates to false or yields a non-boolean value, and is marked failed if evaluation errors. Bare expressions are accepted; the wrapped form `${expr}` is also allowed. Omit to always run. Example: `event.pull_request.merged == true`. Malformed expressions are rejected on create/update with `400 invalid_argument`.
 	Condition *string `json:"condition,omitempty"`
 
 	// CreatedAt Timestamp when this target was created.
 	CreatedAt time.Time `json:"created_at"`
 
-	// Enabled When false, this target is paused and will not start a run when the trigger fires.
+	// Enabled When false, this target is paused and will not fire.
 	Enabled bool `json:"enabled"`
+
+	// ExternalIdTemplate (launch_run only) `${expr}` template that derives the new run's `external_id` from the event environment. Lets a subsequent `signal_run` target locate this run. Example: `github:${event.repository.full_name}#${event.pull_request.number}`.
+	ExternalIdTemplate *string `json:"external_id_template,omitempty"`
 
 	// Id Unique identifier for this target.
 	Id string `json:"id"`
 
-	// InputMapping Maps workflow input names to JSONPath expressions evaluated against the event payload. Example: `{"user_id": "$.event.actor.id"}`.
+	// InputMapping (launch_run only) Maps workflow input names to expressions evaluated against the event environment (`{ meta, event }`). Values use Mobius's `${expr}` template syntax — pure expressions (`${event.actor.id}`) preserve their native type, mixed templates (`Bearer ${meta.id}`) always render to a string, and other literals pass through as-is. Legacy JSONPath-like values (`$.…`) and unwrapped `event.` / `meta.` references are rejected with 400 on create/update. Example: `{"user_id": "${event.actor.id}"}`.
 	InputMapping *map[string]string `json:"input_mapping,omitempty"`
+
+	// Kind Discriminates the target's effect. `launch_run` starts a new workflow run; `signal_run` signals an existing run.
+	Kind TriggerTargetKind `json:"kind"`
+
+	// RunSelector (signal_run only) Locates an existing run to deliver a signal to. Today only `external_id_template` is supported; the shape is reserved as an object so future filters (e.g. workflow scope, multi-run match) can be added without breaking the API.
+	RunSelector *TriggerTargetRunSelector `json:"run_selector,omitempty"`
+
+	// SignalPayloadMapping (signal_run only) Maps the signal payload keys to expressions evaluated against the event environment. Available to the workflow as `signal.payload`.
+	SignalPayloadMapping *map[string]string `json:"signal_payload_mapping,omitempty"`
+
+	// SignalTopic (signal_run only) The `wait_signal` topic to deliver to the located run.
+	SignalTopic *string `json:"signal_topic,omitempty"`
 
 	// TriggerId ID of the trigger this target belongs to.
 	TriggerId string `json:"trigger_id"`
@@ -3270,14 +5299,23 @@ type TriggerTarget struct {
 	// UpdatedAt Timestamp when this target was last updated.
 	UpdatedAt time.Time `json:"updated_at"`
 
-	// WorkflowId ID of the workflow definition to run.
-	WorkflowId string `json:"workflow_id"`
+	// WorkflowId ID of the workflow definition to run. Required for `launch_run` targets; absent for `signal_run`.
+	WorkflowId *string `json:"workflow_id,omitempty"`
 }
+
+// TriggerTargetKind Discriminates the target's effect. `launch_run` starts a new workflow run; `signal_run` signals an existing run.
+type TriggerTargetKind string
 
 // TriggerTargetListResponse Unpaginated list of targets attached to one trigger. Trigger fan-out is configured as a small bounded set rather than a high-volume collection.
 type TriggerTargetListResponse struct {
 	// Items The list of targets for this trigger.
 	Items []TriggerTarget `json:"items"`
+}
+
+// TriggerTargetRunSelector (signal_run only) Locates an existing run to deliver a signal to. Today only `external_id_template` is supported; the shape is reserved as an object so future filters (e.g. workflow scope, multi-run match) can be added without breaking the API.
+type TriggerTargetRunSelector struct {
+	// ExternalIdTemplate `${expr}` template rendered against the event environment. The result must equal the run's `external_id`. Required — the server rejects `signal_run` targets whose selector omits or renders this to an empty string.
+	ExternalIdTemplate string `json:"external_id_template"`
 }
 
 // UpdateActionRequest Updates action metadata, endpoint, schemas, or safe-use hints.
@@ -3297,11 +5335,14 @@ type UpdateActionRequest struct {
 	// OutputSchema Replacement JSON Schema for outputs. Replaces the existing schema.
 	OutputSchema *map[string]interface{} `json:"output_schema,omitempty"`
 
+	// Tags Replacement tag map. Replaces the existing tags entirely.
+	Tags *map[string]string `json:"tags,omitempty"`
+
 	// Title Replacement display title.
 	Title *string `json:"title,omitempty"`
 }
 
-// UpdateAgentRequest defines model for UpdateAgentRequest.
+// UpdateAgentRequest Mutable agent fields. `service_account_id` is intentionally absent: the SA↔Agent binding is immutable per the 1:1 invariant. Reassigning identity is delete-and-recreate.
 type UpdateAgentRequest struct {
 	// Capabilities Replacement capability map.
 	Capabilities *map[string]interface{} `json:"capabilities,omitempty"`
@@ -3317,9 +5358,6 @@ type UpdateAgentRequest struct {
 
 	// Name Free-form human-readable label, 1-63 characters; must be unique within the project.
 	Name *string `json:"name,omitempty"`
-
-	// ServiceAccountId Replacement service account. Must be active and belong to the same project.
-	ServiceAccountId *string `json:"service_account_id,omitempty"`
 
 	// Status Administrative status. Inactive agents cannot claim new jobs.
 	Status *AgentStatus `json:"status,omitempty"`
@@ -3338,6 +5376,9 @@ type UpdateChannelMessageRequest struct {
 
 	// Pinned Pin or unpin the message. Sets/clears `pinned_by`.
 	Pinned *bool `json:"pinned,omitempty"`
+
+	// References Replacement typed entity links for card/chip rendering.
+	References *[]EntityReference `json:"references,omitempty"`
 }
 
 // UpdateChannelRequest Mutable channel fields.
@@ -3353,6 +5394,12 @@ type UpdateChannelRequest struct {
 
 	// Topic Updated topic or description.
 	Topic *string `json:"topic,omitempty"`
+}
+
+// UpdateDataTableRequest defines model for UpdateDataTableRequest.
+type UpdateDataTableRequest struct {
+	Description *string          `json:"description,omitempty"`
+	Schema      *DataTableSchema `json:"schema,omitempty"`
 }
 
 // UpdateGroupRequest defines model for UpdateGroupRequest.
@@ -3375,6 +5422,9 @@ type UpdateProjectRequest struct {
 	// AccessMode `org_open`: every org member can see and use the project, subject to role assignments. `restricted`: only listed project members (and org owners/admins) can see or use the project.
 	AccessMode *ProjectAccessMode `json:"access_mode,omitempty"`
 
+	// DefaultAgentRoleId Replacement role assigned to the auto-created service account of any new agent in this project. `null` clears the override and falls through to the system `Agent` role floor. Must resolve to a system-defined role or a role scoped to this project.
+	DefaultAgentRoleId *string `json:"default_agent_role_id,omitempty"`
+
 	// Description Replacement description.
 	Description *string `json:"description,omitempty"`
 
@@ -3386,6 +5436,14 @@ type UpdateProjectRequest struct {
 
 	// Tags Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints.
 	Tags *TagMap `json:"tags,omitempty"`
+}
+
+// UpdateRowRequest defines model for UpdateRowRequest.
+type UpdateRowRequest struct {
+	Data map[string]interface{} `json:"data"`
+
+	// Version Expected version for optimistic locking. Omit or 0 to skip the check.
+	Version *int `json:"version,omitempty"`
 }
 
 // UpdateTriggerRequest defines model for UpdateTriggerRequest.
@@ -3402,7 +5460,7 @@ type UpdateTriggerRequest struct {
 	// Name Replacement human-readable name.
 	Name *string `json:"name,omitempty"`
 
-	// SourceConfig Typed source configuration. The shape is determined by the trigger's `kind` (`schedule` → `ScheduleSourceConfig`, `webhook` → `WebhookSourceConfig`, `event` → `EventSourceConfig`); mismatches are rejected with 400.
+	// SourceConfig Typed source configuration. The shape is determined by the trigger's `kind` (`schedule` → `ScheduleSourceConfig`, `webhook` → `WebhookSourceConfig`, `event` → `EventSourceConfig`, `channel_message` → `ChannelMessageSourceConfig`, `data_table_row` → `DataTableRowSourceConfig`, `email` → `EmailSourceConfig`); mismatches are rejected with 400.
 	SourceConfig *TriggerSourceConfig `json:"source_config,omitempty"`
 
 	// Tags Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints.
@@ -3420,12 +5478,30 @@ type UpdateTriggerTargetRequest struct {
 	// Enabled Set to false to pause this target without removing it.
 	Enabled *bool `json:"enabled,omitempty"`
 
-	// InputMapping Replacement input mapping. Set to null to clear all mappings.
+	// ExternalIdTemplate Replacement external_id template. Set to empty string to clear.
+	ExternalIdTemplate *string `json:"external_id_template,omitempty"`
+
+	// InputMapping Replacement input mapping. Same `${expr}` template contract as on create — legacy JSONPath-like values (`$.…`) and unwrapped `event.` / `meta.` references are rejected with 400. Set to null to clear all mappings.
 	InputMapping *map[string]string `json:"input_mapping,omitempty"`
+
+	// Kind Replacement kind. Changing kind requires the corresponding kind-specific fields to be updated in the same request.
+	Kind *UpdateTriggerTargetRequestKind `json:"kind,omitempty"`
+
+	// RunSelector (signal_run only) Locates an existing run to deliver a signal to. Today only `external_id_template` is supported; the shape is reserved as an object so future filters (e.g. workflow scope, multi-run match) can be added without breaking the API.
+	RunSelector *TriggerTargetRunSelector `json:"run_selector,omitempty"`
+
+	// SignalPayloadMapping Replacement signal payload mapping. Set to null to clear.
+	SignalPayloadMapping *map[string]string `json:"signal_payload_mapping,omitempty"`
+
+	// SignalTopic Replacement signal topic.
+	SignalTopic *string `json:"signal_topic,omitempty"`
 
 	// WorkflowId Replacement workflow definition ID.
 	WorkflowId *string `json:"workflow_id,omitempty"`
 }
+
+// UpdateTriggerTargetRequestKind Replacement kind. Changing kind requires the corresponding kind-specific fields to be updated in the same request.
+type UpdateTriggerTargetRequestKind string
 
 // UpdateWebhookRequest defines model for UpdateWebhookRequest.
 type UpdateWebhookRequest struct {
@@ -3466,6 +5542,22 @@ type UpdateWorkflowRequest struct {
 
 	// Tags Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints.
 	Tags *TagMap `json:"tags,omitempty"`
+}
+
+// UpsertRowRequest defines model for UpsertRowRequest.
+type UpsertRowRequest struct {
+	// Data Full row data. Must include values for all key_columns.
+	Data map[string]interface{} `json:"data"`
+
+	// KeyColumns Column names used to match an existing row.
+	KeyColumns []string `json:"key_columns"`
+}
+
+// UpsertRowResponse defines model for UpsertRowResponse.
+type UpsertRowResponse struct {
+	// Created True when a new row was inserted; false when an existing row was updated.
+	Created bool         `json:"created"`
+	Row     DataTableRow `json:"row"`
 }
 
 // User Human identity known to the organization. User records are useful for membership lists, role assignment UIs, attribution, and displaying profile information next to actions.
@@ -3589,6 +5681,15 @@ type WebhookSourceConfig struct {
 
 	// SigningSecret Optional HMAC-SHA256 secret for verifying inbound webhook payloads. When set, Mobius validates the `X-Mobius-Signature` header on incoming requests. Accepted on create/update; omitted from GET/list responses.
 	SigningSecret *string `json:"signing_secret,omitempty"`
+}
+
+// WorkerMetrics Worker session health.
+type WorkerMetrics struct {
+	// Active Workers whose `last_seen_at` is within the staleness threshold.
+	Active int `json:"active"`
+
+	// Stale Workers whose `last_seen_at` has exceeded the staleness threshold.
+	Stale int `json:"stale"`
 }
 
 // WorkerSession Recently observed worker process for a project. Use sessions to see which machines, users, service accounts, or agents are polling for work, what their configured concurrency is, and whether they appear stale.
@@ -3722,7 +5823,7 @@ type WorkflowActionKind string
 
 // WorkflowCatch Error routing rule that transfers execution to another step.
 type WorkflowCatch struct {
-	// ErrorEquals Error class names this catch clause handles.
+	// ErrorEquals Error class names this catch clause handles. Use `all` or `*` for a wildcard.
 	ErrorEquals []string `json:"error_equals"`
 
 	// Next Step name to transition to when this clause is matched.
@@ -4039,7 +6140,7 @@ type WorkflowRetry struct {
 	// BaseDelay Go duration string.
 	BaseDelay *string `json:"base_delay,omitempty"`
 
-	// ErrorEquals Error class names this policy applies to. Retries all errors when omitted.
+	// ErrorEquals Error class names this policy applies to. Use `all` or `*` for a wildcard. Retries all errors when omitted.
 	ErrorEquals *[]string `json:"error_equals,omitempty"`
 
 	// JitterStrategy Jitter strategy to apply to the computed delay: NONE or FULL.
@@ -4078,7 +6179,7 @@ type WorkflowRun struct {
 	// CreatedAt Timestamp when this run was created.
 	CreatedAt time.Time `json:"created_at"`
 
-	// DefaultStepConfig Frozen cascade resolution in flat entry form. Keys unset at every layer are omitted. See PRD 035.
+	// DefaultStepConfig Frozen config resolution in flat entry form. Keys unset at every layer are omitted. See PRD 035.
 	DefaultStepConfig *ResolvedConfig `json:"default_step_config,omitempty"`
 
 	// DefinitionId ID of the workflow definition this run was started from. Present only when `ephemeral` is false; omitted for ephemeral runs started from an inline spec.
@@ -4124,7 +6225,7 @@ type WorkflowRun struct {
 	// Queue Queue this run was enqueued on.
 	Queue *string `json:"queue,omitempty"`
 
-	// ResolvedConfig Frozen cascade resolution in flat entry form. Keys unset at every layer are omitted. See PRD 035.
+	// ResolvedConfig Frozen config resolution in flat entry form. Keys unset at every layer are omitted. See PRD 035.
 	ResolvedConfig *ResolvedConfig `json:"resolved_config,omitempty"`
 
 	// SourceId Identifier for the run source within its source type.
@@ -4154,7 +6255,7 @@ type WorkflowRun struct {
 	// WaitSummary Always-present aggregate of waiting paths.
 	WaitSummary WorkflowRunWaitSummary `json:"wait_summary"`
 
-	// WallClockDeadlineAt Deadline at which the reaper will fail this run with `error_type=run_timeout` if it has not reached a terminal state. Present only when `resolved_config` contains an entry with `category="timeouts"` and `key="wall_clock"` whose value resolves to a finite duration. Anchored to `created_at`.
+	// WallClockDeadlineAt Deadline at which the reaper will fail this run with `error_type=run_timeout` if it has not reached a terminal state. Present only when `resolved_config` contains a `key="runs.timeouts.execution"` entry whose value resolves to a finite duration. Anchored to `created_at`.
 	WallClockDeadlineAt *time.Time `json:"wall_clock_deadline_at,omitempty"`
 
 	// WorkflowName Name of the workflow as recorded at run creation time.
@@ -4185,7 +6286,7 @@ type WorkflowRunDetail struct {
 	// CreatedAt Timestamp when this run was created.
 	CreatedAt time.Time `json:"created_at"`
 
-	// DefaultStepConfig Frozen cascade resolution in flat entry form. Keys unset at every layer are omitted. See PRD 035.
+	// DefaultStepConfig Frozen config resolution in flat entry form. Keys unset at every layer are omitted. See PRD 035.
 	DefaultStepConfig *ResolvedConfig `json:"default_step_config,omitempty"`
 
 	// DefinitionId ID of the workflow definition this run was started from. Present only when `ephemeral` is false; omitted for ephemeral runs started from an inline spec.
@@ -4234,7 +6335,7 @@ type WorkflowRunDetail struct {
 	// Queue Queue this run was enqueued on.
 	Queue *string `json:"queue,omitempty"`
 
-	// ResolvedConfig Frozen cascade resolution in flat entry form. Keys unset at every layer are omitted. See PRD 035.
+	// ResolvedConfig Frozen config resolution in flat entry form. Keys unset at every layer are omitted. See PRD 035.
 	ResolvedConfig *ResolvedConfig `json:"resolved_config,omitempty"`
 
 	// ResultB64 Base64-encoded terminal result blob
@@ -4278,7 +6379,7 @@ type WorkflowRunDetail struct {
 	// WaitSummary Always-present aggregate of waiting paths.
 	WaitSummary WorkflowRunWaitSummary `json:"wait_summary"`
 
-	// WallClockDeadlineAt Deadline at which the reaper will fail this run with `error_type=run_timeout` if it has not reached a terminal state. Present only when `resolved_config` contains an entry with `category="timeouts"` and `key="wall_clock"` whose value resolves to a finite duration. Anchored to `created_at`.
+	// WallClockDeadlineAt Deadline at which the reaper will fail this run with `error_type=run_timeout` if it has not reached a terminal state. Present only when `resolved_config` contains a `key="runs.timeouts.execution"` entry whose value resolves to a finite duration. Anchored to `created_at`.
 	WallClockDeadlineAt *time.Time `json:"wall_clock_deadline_at,omitempty"`
 
 	// WorkflowName Name of the workflow as recorded at run creation time.
@@ -4575,6 +6676,12 @@ type LimitParam = int
 // ProjectHandleParam defines model for ProjectHandleParam.
 type ProjectHandleParam = string
 
+// ReferenceTypeParam defines model for ReferenceTypeParam.
+type ReferenceTypeParam = string
+
+// TableNameParam defines model for TableNameParam.
+type TableNameParam = string
+
 // TagFilterParam defines model for TagFilterParam.
 type TagFilterParam = []string
 
@@ -4586,9 +6693,6 @@ type MemberId = string
 
 // MessageId defines model for message_id.
 type MessageId = string
-
-// RunId defines model for run_id.
-type RunId = string
 
 // SessionId defines model for session_id.
 type SessionId = string
@@ -4607,6 +6711,12 @@ type Forbidden = ErrorResponse
 
 // NotFound Standard error envelope returned by API endpoints.
 type NotFound = ErrorResponse
+
+// ProviderError Standard error envelope returned by API endpoints.
+type ProviderError = ErrorResponse
+
+// ServiceUnavailable Standard error envelope returned by API endpoints.
+type ServiceUnavailable = ErrorResponse
 
 // TooManyRequests Standard error envelope returned by API endpoints.
 type TooManyRequests = ErrorResponse
@@ -4678,8 +6788,8 @@ type ListProjectMembersParams struct {
 	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
-// ListActionAuditLogParams defines parameters for ListActionAuditLog.
-type ListActionAuditLogParams struct {
+// ListActionInvocationsParams defines parameters for ListActionInvocations.
+type ListActionInvocationsParams struct {
 	// Cursor Cursor for pagination (opaque string from previous response)
 	Cursor *CursorParam `form:"cursor,omitempty" json:"cursor,omitempty"`
 
@@ -4688,6 +6798,9 @@ type ListActionAuditLogParams struct {
 
 	// RunId Filter to invocations from a specific workflow run.
 	RunId *string `form:"run_id,omitempty" json:"run_id,omitempty"`
+
+	// JobId Filter to invocations from a specific job.
+	JobId *string `form:"job_id,omitempty" json:"job_id,omitempty"`
 
 	// ActionName Filter to invocations of a specific action.
 	ActionName *string `form:"action_name,omitempty" json:"action_name,omitempty"`
@@ -4703,6 +6816,13 @@ type ListActionsParams struct {
 
 	// Limit Maximum number of items to return
 	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Tag Filter results by tag. Repeatable; multiple values combine with AND. Format: `Key:Value`, `Key:*` for any value, `Key:a,b,c` for IN.
+	//
+	// Tag values containing `:` or `,` cannot be filtered with this grammar — the parser splits on those literally. Constrain values to plain identifiers when you intend to filter on them.
+	//
+	// Not supported on the runs list — runs are too high-cardinality for ad-hoc tag filtering. To narrow runs by parent workflow, use the workflow-scoped endpoint `GET /v1/projects/{project}/workflows/{id}/runs` and inspect `tags` on each run client-side.
+	Tag *TagFilterParam `form:"tag,omitempty" json:"tag,omitempty"`
 }
 
 // ListAgentsParams defines parameters for ListAgents.
@@ -4770,9 +6890,9 @@ type ListChannelMembersParams struct {
 	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
-// ListChannelMessagesParams defines parameters for ListChannelMessages.
-type ListChannelMessagesParams struct {
-	// SenderId Filter by sender user or agent ID.
+// ListMessagesParams defines parameters for ListMessages.
+type ListMessagesParams struct {
+	// SenderId Filter by sender principal ID — a user ID (for `sender_type=member`), agent ID (for `sender_type=agent`), or service account ID (for `sender_type=service_account`).
 	SenderId *string `form:"sender_id,omitempty" json:"sender_id,omitempty"`
 
 	// ReplyTo Return only replies to this message ID (thread view).
@@ -4781,11 +6901,44 @@ type ListChannelMessagesParams struct {
 	// Pinned Filter by pinned status.
 	Pinned *bool `form:"pinned,omitempty" json:"pinned,omitempty"`
 
+	// Since Return messages strictly newer than this cursor, in chronological
+	// order. Accepts either:
+	// - a message ID — strictly newer than that message in
+	// `(created_at, id)` order, or
+	// - an RFC3339 timestamp — strictly newer than that instant.
+	// Useful for agent loops that have already processed everything up
+	// to and including the cursor.
+	Since *string `form:"since,omitempty" json:"since,omitempty"`
+
+	// Unread When `true`, equivalent to passing `since=<my last_read_message_id>`. Mutually exclusive with `since`. Requires a member-bound credential: callers without a user identity get 400, and authenticated non-members get 403.
+	Unread *bool `form:"unread,omitempty" json:"unread,omitempty"`
+
+	// EntityType Return only messages that reference this entity type.
+	EntityType *EntityReferenceType `form:"entity_type,omitempty" json:"entity_type,omitempty"`
+
+	// EntityId Return only messages that reference this entity ID.
+	EntityId *string `form:"entity_id,omitempty" json:"entity_id,omitempty"`
+
 	// Cursor Cursor for pagination (opaque string from previous response)
 	Cursor *CursorParam `form:"cursor,omitempty" json:"cursor,omitempty"`
 
 	// Limit Maximum number of items to return
 	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// StreamProjectEventsParams defines parameters for StreamProjectEvents.
+type StreamProjectEventsParams struct {
+	// Since Durable event cursor to replay from, expressed as a unix-nano timestamp matching the largest `seq` the client has received on this project-wide stream. Do not pass a run-local `seq` from `streamRunEvents` here.
+	Since *int64 `form:"since,omitempty" json:"since,omitempty"`
+
+	// Run Comma-separated run IDs to filter by.
+	Run *string `form:"run,omitempty" json:"run,omitempty"`
+
+	// Channel Comma-separated channel IDs to filter by.
+	Channel *string `form:"channel,omitempty" json:"channel,omitempty"`
+
+	// Interaction Comma-separated interaction IDs to filter by.
+	Interaction *string `form:"interaction,omitempty" json:"interaction,omitempty"`
 }
 
 // ListGroupsParams defines parameters for ListGroups.
@@ -4828,6 +6981,13 @@ type ListInteractionsParams struct {
 
 	// Limit Maximum number of items to return
 	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Tag Filter results by tag. Repeatable; multiple values combine with AND. Format: `Key:Value`, `Key:*` for any value, `Key:a,b,c` for IN.
+	//
+	// Tag values containing `:` or `,` cannot be filtered with this grammar — the parser splits on those literally. Constrain values to plain identifiers when you intend to filter on them.
+	//
+	// Not supported on the runs list — runs are too high-cardinality for ad-hoc tag filtering. To narrow runs by parent workflow, use the workflow-scoped endpoint `GET /v1/projects/{project}/workflows/{id}/runs` and inspect `tags` on each run client-side.
+	Tag *TagFilterParam `form:"tag,omitempty" json:"tag,omitempty"`
 }
 
 // ListInteractionsParamsStatus defines parameters for ListInteractions.
@@ -4836,6 +6996,43 @@ type ListInteractionsParamsStatus string
 // ListInteractionsParamsTargetType defines parameters for ListInteractions.
 type ListInteractionsParamsTargetType string
 
+// ListProjectLogsParams defines parameters for ListProjectLogs.
+type ListProjectLogsParams struct {
+	// Cursor Cursor for pagination (opaque string from previous response)
+	Cursor *CursorParam `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Limit Maximum number of items to return
+	Limit       *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
+	RunId       *string     `form:"run_id,omitempty" json:"run_id,omitempty"`
+	SeverityMin *int        `form:"severity_min,omitempty" json:"severity_min,omitempty"`
+	Since       *time.Time  `form:"since,omitempty" json:"since,omitempty"`
+	Until       *time.Time  `form:"until,omitempty" json:"until,omitempty"`
+}
+
+// IngestProjectLogsJSONBody defines parameters for IngestProjectLogs.
+type IngestProjectLogsJSONBody = []LogRecordInput
+
+// IngestProjectLogsOTLPJSONBody defines parameters for IngestProjectLogsOTLP.
+type IngestProjectLogsOTLPJSONBody = map[string]interface{}
+
+// LookupReferencesParams defines parameters for LookupReferences.
+type LookupReferencesParams struct {
+	// Q Human search query.
+	Q *string `form:"q,omitempty" json:"q,omitempty"`
+
+	// Limit Maximum number of candidates to return. Defaults to 20 and is capped at 100.
+	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Cursor Opaque pagination cursor from a previous response.
+	Cursor *string `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// IntegrationId Optional provider integration instance selector for projects with multiple connections.
+	IntegrationId *string `form:"integration_id,omitempty" json:"integration_id,omitempty"`
+
+	// DependsOn Optional JSON object containing values from fields this lookup depends on.
+	DependsOn *string `form:"depends_on,omitempty" json:"depends_on,omitempty"`
+}
+
 // ListRunsParams defines parameters for ListRuns.
 type ListRunsParams struct {
 	// Status Filter by run status.
@@ -4843,6 +7040,9 @@ type ListRunsParams struct {
 
 	// WorkflowType Filter by workflow type name.
 	WorkflowType *string `form:"workflow_type,omitempty" json:"workflow_type,omitempty"`
+
+	// DefinitionId Filter by workflow definition ID.
+	DefinitionId *string `form:"definition_id,omitempty" json:"definition_id,omitempty"`
 
 	// Queue Filter by queue name.
 	Queue *string `form:"queue,omitempty" json:"queue,omitempty"`
@@ -4869,15 +7069,9 @@ type ListRunsParams struct {
 	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
-// StreamProjectRunEventsParams defines parameters for StreamProjectRunEvents.
-type StreamProjectRunEventsParams struct {
-	// Since Durable event seq cursor to replay from.
-	Since *int64 `form:"since,omitempty" json:"since,omitempty"`
-}
-
 // StreamRunEventsParams defines parameters for StreamRunEvents.
 type StreamRunEventsParams struct {
-	// Since Durable event seq cursor to replay from.
+	// Since Run-local `run_events.seq` cursor to replay from. Do not pass a unix-nano cursor from `streamProjectEvents` here.
 	Since *int64 `form:"since,omitempty" json:"since,omitempty"`
 }
 
@@ -4907,6 +7101,54 @@ type GetRunStepParams struct {
 
 // GetRunStepParamsInclude defines parameters for GetRunStep.
 type GetRunStepParamsInclude string
+
+// ListProjectSpansParams defines parameters for ListProjectSpans.
+type ListProjectSpansParams struct {
+	// Cursor Cursor for pagination (opaque string from previous response)
+	Cursor *CursorParam `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Limit Maximum number of items to return
+	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// RunId Filter spans by workflow run ID.
+	RunId *string `form:"run_id,omitempty" json:"run_id,omitempty"`
+
+	// JobId Filter spans by job ID.
+	JobId *string `form:"job_id,omitempty" json:"job_id,omitempty"`
+
+	// StepId Filter spans by run step ID. Must be combined with run_id.
+	StepId *string `form:"step_id,omitempty" json:"step_id,omitempty"`
+}
+
+// GetProjectStepSpanCountsParams defines parameters for GetProjectStepSpanCounts.
+type GetProjectStepSpanCountsParams struct {
+	// RunId Workflow run ID to compute step span counts for.
+	RunId string `form:"run_id" json:"run_id"`
+}
+
+// ListDataTablesParams defines parameters for ListDataTables.
+type ListDataTablesParams struct {
+	// Cursor Cursor for pagination (opaque string from previous response)
+	Cursor *CursorParam `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Limit Maximum number of items to return
+	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// ListProjectTracesParams defines parameters for ListProjectTraces.
+type ListProjectTracesParams struct {
+	// Cursor Cursor for pagination (opaque string from previous response)
+	Cursor *CursorParam `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Limit Maximum number of items to return
+	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// RunId Filter traces to those linked to this workflow run.
+	RunId *string `form:"run_id,omitempty" json:"run_id,omitempty"`
+
+	// AgentId Filter traces to those containing spans linked to this agent.
+	AgentId *string `form:"agent_id,omitempty" json:"agent_id,omitempty"`
+}
 
 // ListTriggersParams defines parameters for ListTriggers.
 type ListTriggersParams struct {
@@ -4986,6 +7228,15 @@ type ListWorkflowsParams struct {
 	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
+// CompleteAgentInvocationJSONRequestBody defines body for CompleteAgentInvocation for application/json ContentType.
+type CompleteAgentInvocationJSONRequestBody = AgentInvocationCompleteRequest
+
+// FailAgentInvocationJSONRequestBody defines body for FailAgentInvocation for application/json ContentType.
+type FailAgentInvocationJSONRequestBody = AgentInvocationFailRequest
+
+// CreateMessageJSONRequestBody defines body for CreateMessage for application/json ContentType.
+type CreateMessageJSONRequestBody = GenerateRequest
+
 // CreateProjectJSONRequestBody defines body for CreateProject for application/json ContentType.
 type CreateProjectJSONRequestBody = CreateProjectRequest
 
@@ -5004,6 +7255,9 @@ type CreateActionJSONRequestBody = CreateActionRequest
 // UpdateActionJSONRequestBody defines body for UpdateAction for application/json ContentType.
 type UpdateActionJSONRequestBody = UpdateActionRequest
 
+// InvokeActionJSONRequestBody defines body for InvokeAction for application/json ContentType.
+type InvokeActionJSONRequestBody = ActionInvocationRequest
+
 // CreateAgentJSONRequestBody defines body for CreateAgent for application/json ContentType.
 type CreateAgentJSONRequestBody = CreateAgentRequest
 
@@ -5019,14 +7273,23 @@ type CreateChannelJSONRequestBody = CreateChannelRequest
 // UpdateChannelJSONRequestBody defines body for UpdateChannel for application/json ContentType.
 type UpdateChannelJSONRequestBody = UpdateChannelRequest
 
+// RespondToChannelInteractionJSONRequestBody defines body for RespondToChannelInteraction for application/json ContentType.
+type RespondToChannelInteractionJSONRequestBody = ChannelInteractionRespondRequest
+
 // AddChannelMemberJSONRequestBody defines body for AddChannelMember for application/json ContentType.
 type AddChannelMemberJSONRequestBody = AddChannelMemberRequest
 
-// SendChannelMessageJSONRequestBody defines body for SendChannelMessage for application/json ContentType.
-type SendChannelMessageJSONRequestBody = SendChannelMessageRequest
+// SendMessageJSONRequestBody defines body for SendMessage for application/json ContentType.
+type SendMessageJSONRequestBody = SendChannelMessageRequest
 
-// UpdateChannelMessageJSONRequestBody defines body for UpdateChannelMessage for application/json ContentType.
-type UpdateChannelMessageJSONRequestBody = UpdateChannelMessageRequest
+// UpdateMessageJSONRequestBody defines body for UpdateMessage for application/json ContentType.
+type UpdateMessageJSONRequestBody = UpdateChannelMessageRequest
+
+// MarkMessagesReadJSONRequestBody defines body for MarkMessagesRead for application/json ContentType.
+type MarkMessagesReadJSONRequestBody = MarkChannelMessagesReadRequest
+
+// ShareChannelEntityJSONRequestBody defines body for ShareChannelEntity for application/json ContentType.
+type ShareChannelEntityJSONRequestBody = ShareChannelEntityRequest
 
 // CreateGroupJSONRequestBody defines body for CreateGroup for application/json ContentType.
 type CreateGroupJSONRequestBody = CreateGroupRequest
@@ -5039,6 +7302,9 @@ type AddGroupMemberJSONRequestBody = AddGroupMemberRequest
 
 // CreateInteractionJSONRequestBody defines body for CreateInteraction for application/json ContentType.
 type CreateInteractionJSONRequestBody = CreateInteractionRequest
+
+// CancelInteractionJSONRequestBody defines body for CancelInteraction for application/json ContentType.
+type CancelInteractionJSONRequestBody = CancelInteractionRequest
 
 // RespondToInteractionJSONRequestBody defines body for RespondToInteraction for application/json ContentType.
 type RespondToInteractionJSONRequestBody = RespondToInteractionRequest
@@ -5061,6 +7327,15 @@ type HeartbeatJobJSONRequestBody = JobFenceRequest
 // CreateJobInteractionJSONRequestBody defines body for CreateJobInteraction for application/json ContentType.
 type CreateJobInteractionJSONRequestBody = CreateJobInteractionRequest
 
+// IngestProjectLogsJSONRequestBody defines body for IngestProjectLogs for application/json ContentType.
+type IngestProjectLogsJSONRequestBody = IngestProjectLogsJSONBody
+
+// IngestProjectLogsOTLPJSONRequestBody defines body for IngestProjectLogsOTLP for application/json ContentType.
+type IngestProjectLogsOTLPJSONRequestBody = IngestProjectLogsOTLPJSONBody
+
+// ResolveReferencesJSONRequestBody defines body for ResolveReferences for application/json ContentType.
+type ResolveReferencesJSONRequestBody = ReferenceResolveRequest
+
 // StartRunJSONRequestBody defines body for StartRun for application/json ContentType.
 type StartRunJSONRequestBody = StartRunRequest
 
@@ -5070,8 +7345,26 @@ type ForkRunJSONRequestBody = RunForkRequest
 // SendRunSignalJSONRequestBody defines body for SendRunSignal for application/json ContentType.
 type SendRunSignalJSONRequestBody = SendRunSignalRequest
 
-// RunToolJSONRequestBody defines body for RunTool for application/json ContentType.
-type RunToolJSONRequestBody = ToolRunRequest
+// CreateDataTableJSONRequestBody defines body for CreateDataTable for application/json ContentType.
+type CreateDataTableJSONRequestBody = CreateDataTableRequest
+
+// UpdateDataTableJSONRequestBody defines body for UpdateDataTable for application/json ContentType.
+type UpdateDataTableJSONRequestBody = UpdateDataTableRequest
+
+// InsertDataTableRowJSONRequestBody defines body for InsertDataTableRow for application/json ContentType.
+type InsertDataTableRowJSONRequestBody = InsertRowRequest
+
+// BulkInsertDataTableRowsJSONRequestBody defines body for BulkInsertDataTableRows for application/json ContentType.
+type BulkInsertDataTableRowsJSONRequestBody = BulkInsertRowsRequest
+
+// QueryDataTableRowsJSONRequestBody defines body for QueryDataTableRows for application/json ContentType.
+type QueryDataTableRowsJSONRequestBody = QueryRowsRequest
+
+// UpsertDataTableRowJSONRequestBody defines body for UpsertDataTableRow for application/json ContentType.
+type UpsertDataTableRowJSONRequestBody = UpsertRowRequest
+
+// UpdateDataTableRowJSONRequestBody defines body for UpdateDataTableRow for application/json ContentType.
+type UpdateDataTableRowJSONRequestBody = UpdateRowRequest
 
 // CreateTriggerJSONRequestBody defines body for CreateTrigger for application/json ContentType.
 type CreateTriggerJSONRequestBody = CreateTriggerRequest
@@ -5084,6 +7377,9 @@ type CreateTriggerTargetJSONRequestBody = CreateTriggerTargetRequest
 
 // UpdateTriggerTargetJSONRequestBody defines body for UpdateTriggerTarget for application/json ContentType.
 type UpdateTriggerTargetJSONRequestBody = UpdateTriggerTargetRequest
+
+// TestFireTriggerJSONRequestBody defines body for TestFireTrigger for application/json ContentType.
+type TestFireTriggerJSONRequestBody = TestFireTriggerRequest
 
 // CreateWebhookJSONRequestBody defines body for CreateWebhook for application/json ContentType.
 type CreateWebhookJSONRequestBody = CreateWebhookRequest
@@ -5190,6 +7486,316 @@ func (a ActionAnnotationsResponse) MarshalJSON() ([]byte, error) {
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'read_only': %w", err)
 		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for GenerateRequest. Returns the specified
+// element and whether it was found
+func (a GenerateRequest) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for GenerateRequest
+func (a *GenerateRequest) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for GenerateRequest to handle AdditionalProperties
+func (a *GenerateRequest) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["max_tokens"]; found {
+		err = json.Unmarshal(raw, &a.MaxTokens)
+		if err != nil {
+			return fmt.Errorf("error reading 'max_tokens': %w", err)
+		}
+		delete(object, "max_tokens")
+	}
+
+	if raw, found := object["messages"]; found {
+		err = json.Unmarshal(raw, &a.Messages)
+		if err != nil {
+			return fmt.Errorf("error reading 'messages': %w", err)
+		}
+		delete(object, "messages")
+	}
+
+	if raw, found := object["metadata"]; found {
+		err = json.Unmarshal(raw, &a.Metadata)
+		if err != nil {
+			return fmt.Errorf("error reading 'metadata': %w", err)
+		}
+		delete(object, "metadata")
+	}
+
+	if raw, found := object["model"]; found {
+		err = json.Unmarshal(raw, &a.Model)
+		if err != nil {
+			return fmt.Errorf("error reading 'model': %w", err)
+		}
+		delete(object, "model")
+	}
+
+	if raw, found := object["provider"]; found {
+		err = json.Unmarshal(raw, &a.Provider)
+		if err != nil {
+			return fmt.Errorf("error reading 'provider': %w", err)
+		}
+		delete(object, "provider")
+	}
+
+	if raw, found := object["stop_sequences"]; found {
+		err = json.Unmarshal(raw, &a.StopSequences)
+		if err != nil {
+			return fmt.Errorf("error reading 'stop_sequences': %w", err)
+		}
+		delete(object, "stop_sequences")
+	}
+
+	if raw, found := object["stream"]; found {
+		err = json.Unmarshal(raw, &a.Stream)
+		if err != nil {
+			return fmt.Errorf("error reading 'stream': %w", err)
+		}
+		delete(object, "stream")
+	}
+
+	if raw, found := object["system"]; found {
+		err = json.Unmarshal(raw, &a.System)
+		if err != nil {
+			return fmt.Errorf("error reading 'system': %w", err)
+		}
+		delete(object, "system")
+	}
+
+	if raw, found := object["temperature"]; found {
+		err = json.Unmarshal(raw, &a.Temperature)
+		if err != nil {
+			return fmt.Errorf("error reading 'temperature': %w", err)
+		}
+		delete(object, "temperature")
+	}
+
+	if raw, found := object["tool_choice"]; found {
+		err = json.Unmarshal(raw, &a.ToolChoice)
+		if err != nil {
+			return fmt.Errorf("error reading 'tool_choice': %w", err)
+		}
+		delete(object, "tool_choice")
+	}
+
+	if raw, found := object["tools"]; found {
+		err = json.Unmarshal(raw, &a.Tools)
+		if err != nil {
+			return fmt.Errorf("error reading 'tools': %w", err)
+		}
+		delete(object, "tools")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for GenerateRequest to handle AdditionalProperties
+func (a GenerateRequest) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.MaxTokens != nil {
+		object["max_tokens"], err = json.Marshal(a.MaxTokens)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'max_tokens': %w", err)
+		}
+	}
+
+	if a.Messages != nil {
+		object["messages"], err = json.Marshal(a.Messages)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'messages': %w", err)
+		}
+	}
+
+	if a.Metadata != nil {
+		object["metadata"], err = json.Marshal(a.Metadata)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'metadata': %w", err)
+		}
+	}
+
+	object["model"], err = json.Marshal(a.Model)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'model': %w", err)
+	}
+
+	if a.Provider != nil {
+		object["provider"], err = json.Marshal(a.Provider)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'provider': %w", err)
+		}
+	}
+
+	if a.StopSequences != nil {
+		object["stop_sequences"], err = json.Marshal(a.StopSequences)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'stop_sequences': %w", err)
+		}
+	}
+
+	if a.Stream != nil {
+		object["stream"], err = json.Marshal(a.Stream)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'stream': %w", err)
+		}
+	}
+
+	if a.System != nil {
+		object["system"], err = json.Marshal(a.System)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'system': %w", err)
+		}
+	}
+
+	if a.Temperature != nil {
+		object["temperature"], err = json.Marshal(a.Temperature)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'temperature': %w", err)
+		}
+	}
+
+	if a.ToolChoice != nil {
+		object["tool_choice"], err = json.Marshal(a.ToolChoice)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'tool_choice': %w", err)
+		}
+	}
+
+	if a.Tools != nil {
+		object["tools"], err = json.Marshal(a.Tools)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'tools': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for GenerateToolDefinition. Returns the specified
+// element and whether it was found
+func (a GenerateToolDefinition) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for GenerateToolDefinition
+func (a *GenerateToolDefinition) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for GenerateToolDefinition to handle AdditionalProperties
+func (a *GenerateToolDefinition) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["description"]; found {
+		err = json.Unmarshal(raw, &a.Description)
+		if err != nil {
+			return fmt.Errorf("error reading 'description': %w", err)
+		}
+		delete(object, "description")
+	}
+
+	if raw, found := object["input_schema"]; found {
+		err = json.Unmarshal(raw, &a.InputSchema)
+		if err != nil {
+			return fmt.Errorf("error reading 'input_schema': %w", err)
+		}
+		delete(object, "input_schema")
+	}
+
+	if raw, found := object["name"]; found {
+		err = json.Unmarshal(raw, &a.Name)
+		if err != nil {
+			return fmt.Errorf("error reading 'name': %w", err)
+		}
+		delete(object, "name")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for GenerateToolDefinition to handle AdditionalProperties
+func (a GenerateToolDefinition) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Description != nil {
+		object["description"], err = json.Marshal(a.Description)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'description': %w", err)
+		}
+	}
+
+	object["input_schema"], err = json.Marshal(a.InputSchema)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'input_schema': %w", err)
+	}
+
+	object["name"], err = json.Marshal(a.Name)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'name': %w", err)
 	}
 
 	for fieldName, field := range a.AdditionalProperties {
@@ -7277,6 +9883,120 @@ func (a WorkflowVersionSummary) MarshalJSON() ([]byte, error) {
 	return json.Marshal(object)
 }
 
+// AsTextContentBlock returns the union data inside the ContentBlock as a TextContentBlock
+func (t ContentBlock) AsTextContentBlock() (TextContentBlock, error) {
+	var body TextContentBlock
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromTextContentBlock overwrites any union data inside the ContentBlock as the provided TextContentBlock
+func (t *ContentBlock) FromTextContentBlock(v TextContentBlock) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeTextContentBlock performs a merge with any union data inside the ContentBlock, using the provided TextContentBlock
+func (t *ContentBlock) MergeTextContentBlock(v TextContentBlock) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsImageContentBlock returns the union data inside the ContentBlock as a ImageContentBlock
+func (t ContentBlock) AsImageContentBlock() (ImageContentBlock, error) {
+	var body ImageContentBlock
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromImageContentBlock overwrites any union data inside the ContentBlock as the provided ImageContentBlock
+func (t *ContentBlock) FromImageContentBlock(v ImageContentBlock) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeImageContentBlock performs a merge with any union data inside the ContentBlock, using the provided ImageContentBlock
+func (t *ContentBlock) MergeImageContentBlock(v ImageContentBlock) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsToolUseContentBlock returns the union data inside the ContentBlock as a ToolUseContentBlock
+func (t ContentBlock) AsToolUseContentBlock() (ToolUseContentBlock, error) {
+	var body ToolUseContentBlock
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromToolUseContentBlock overwrites any union data inside the ContentBlock as the provided ToolUseContentBlock
+func (t *ContentBlock) FromToolUseContentBlock(v ToolUseContentBlock) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeToolUseContentBlock performs a merge with any union data inside the ContentBlock, using the provided ToolUseContentBlock
+func (t *ContentBlock) MergeToolUseContentBlock(v ToolUseContentBlock) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsToolResultContentBlock returns the union data inside the ContentBlock as a ToolResultContentBlock
+func (t ContentBlock) AsToolResultContentBlock() (ToolResultContentBlock, error) {
+	var body ToolResultContentBlock
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromToolResultContentBlock overwrites any union data inside the ContentBlock as the provided ToolResultContentBlock
+func (t *ContentBlock) FromToolResultContentBlock(v ToolResultContentBlock) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeToolResultContentBlock performs a merge with any union data inside the ContentBlock, using the provided ToolResultContentBlock
+func (t *ContentBlock) MergeToolResultContentBlock(v ToolResultContentBlock) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t ContentBlock) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *ContentBlock) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
 // AsCreateStandaloneInteractionRequest returns the union data inside the CreateInteractionRequest as a CreateStandaloneInteractionRequest
 func (t CreateInteractionRequest) AsCreateStandaloneInteractionRequest() (CreateStandaloneInteractionRequest, error) {
 	var body CreateStandaloneInteractionRequest
@@ -7423,6 +10143,90 @@ func (t *CreateTriggerRequest) MergeCreateEventTriggerRequest(v CreateEventTrigg
 	return err
 }
 
+// AsCreateChannelMessageTriggerRequest returns the union data inside the CreateTriggerRequest as a CreateChannelMessageTriggerRequest
+func (t CreateTriggerRequest) AsCreateChannelMessageTriggerRequest() (CreateChannelMessageTriggerRequest, error) {
+	var body CreateChannelMessageTriggerRequest
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromCreateChannelMessageTriggerRequest overwrites any union data inside the CreateTriggerRequest as the provided CreateChannelMessageTriggerRequest
+func (t *CreateTriggerRequest) FromCreateChannelMessageTriggerRequest(v CreateChannelMessageTriggerRequest) error {
+	v.Kind = "channel_message"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeCreateChannelMessageTriggerRequest performs a merge with any union data inside the CreateTriggerRequest, using the provided CreateChannelMessageTriggerRequest
+func (t *CreateTriggerRequest) MergeCreateChannelMessageTriggerRequest(v CreateChannelMessageTriggerRequest) error {
+	v.Kind = "channel_message"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsCreateDataTableRowTriggerRequest returns the union data inside the CreateTriggerRequest as a CreateDataTableRowTriggerRequest
+func (t CreateTriggerRequest) AsCreateDataTableRowTriggerRequest() (CreateDataTableRowTriggerRequest, error) {
+	var body CreateDataTableRowTriggerRequest
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromCreateDataTableRowTriggerRequest overwrites any union data inside the CreateTriggerRequest as the provided CreateDataTableRowTriggerRequest
+func (t *CreateTriggerRequest) FromCreateDataTableRowTriggerRequest(v CreateDataTableRowTriggerRequest) error {
+	v.Kind = "data_table_row"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeCreateDataTableRowTriggerRequest performs a merge with any union data inside the CreateTriggerRequest, using the provided CreateDataTableRowTriggerRequest
+func (t *CreateTriggerRequest) MergeCreateDataTableRowTriggerRequest(v CreateDataTableRowTriggerRequest) error {
+	v.Kind = "data_table_row"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsCreateEmailTriggerRequest returns the union data inside the CreateTriggerRequest as a CreateEmailTriggerRequest
+func (t CreateTriggerRequest) AsCreateEmailTriggerRequest() (CreateEmailTriggerRequest, error) {
+	var body CreateEmailTriggerRequest
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromCreateEmailTriggerRequest overwrites any union data inside the CreateTriggerRequest as the provided CreateEmailTriggerRequest
+func (t *CreateTriggerRequest) FromCreateEmailTriggerRequest(v CreateEmailTriggerRequest) error {
+	v.Kind = "email"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeCreateEmailTriggerRequest performs a merge with any union data inside the CreateTriggerRequest, using the provided CreateEmailTriggerRequest
+func (t *CreateTriggerRequest) MergeCreateEmailTriggerRequest(v CreateEmailTriggerRequest) error {
+	v.Kind = "email"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
 func (t CreateTriggerRequest) Discriminator() (string, error) {
 	var discriminator struct {
 		Discriminator string `json:"kind"`
@@ -7437,6 +10241,12 @@ func (t CreateTriggerRequest) ValueByDiscriminator() (interface{}, error) {
 		return nil, err
 	}
 	switch discriminator {
+	case "channel_message":
+		return t.AsCreateChannelMessageTriggerRequest()
+	case "data_table_row":
+		return t.AsCreateDataTableRowTriggerRequest()
+	case "email":
+		return t.AsCreateEmailTriggerRequest()
 	case "event":
 		return t.AsCreateEventTriggerRequest()
 	case "schedule":
@@ -7455,6 +10265,239 @@ func (t CreateTriggerRequest) MarshalJSON() ([]byte, error) {
 
 func (t *CreateTriggerRequest) UnmarshalJSON(b []byte) error {
 	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsGenerateMessageContent0 returns the union data inside the GenerateMessage_Content as a GenerateMessageContent0
+func (t GenerateMessage_Content) AsGenerateMessageContent0() (GenerateMessageContent0, error) {
+	var body GenerateMessageContent0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromGenerateMessageContent0 overwrites any union data inside the GenerateMessage_Content as the provided GenerateMessageContent0
+func (t *GenerateMessage_Content) FromGenerateMessageContent0(v GenerateMessageContent0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeGenerateMessageContent0 performs a merge with any union data inside the GenerateMessage_Content, using the provided GenerateMessageContent0
+func (t *GenerateMessage_Content) MergeGenerateMessageContent0(v GenerateMessageContent0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsGenerateMessageContent1 returns the union data inside the GenerateMessage_Content as a GenerateMessageContent1
+func (t GenerateMessage_Content) AsGenerateMessageContent1() (GenerateMessageContent1, error) {
+	var body GenerateMessageContent1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromGenerateMessageContent1 overwrites any union data inside the GenerateMessage_Content as the provided GenerateMessageContent1
+func (t *GenerateMessage_Content) FromGenerateMessageContent1(v GenerateMessageContent1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeGenerateMessageContent1 performs a merge with any union data inside the GenerateMessage_Content, using the provided GenerateMessageContent1
+func (t *GenerateMessage_Content) MergeGenerateMessageContent1(v GenerateMessageContent1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t GenerateMessage_Content) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *GenerateMessage_Content) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsGenerateRequestSystem0 returns the union data inside the GenerateRequest_System as a GenerateRequestSystem0
+func (t GenerateRequest_System) AsGenerateRequestSystem0() (GenerateRequestSystem0, error) {
+	var body GenerateRequestSystem0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromGenerateRequestSystem0 overwrites any union data inside the GenerateRequest_System as the provided GenerateRequestSystem0
+func (t *GenerateRequest_System) FromGenerateRequestSystem0(v GenerateRequestSystem0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeGenerateRequestSystem0 performs a merge with any union data inside the GenerateRequest_System, using the provided GenerateRequestSystem0
+func (t *GenerateRequest_System) MergeGenerateRequestSystem0(v GenerateRequestSystem0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsGenerateRequestSystem1 returns the union data inside the GenerateRequest_System as a GenerateRequestSystem1
+func (t GenerateRequest_System) AsGenerateRequestSystem1() (GenerateRequestSystem1, error) {
+	var body GenerateRequestSystem1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromGenerateRequestSystem1 overwrites any union data inside the GenerateRequest_System as the provided GenerateRequestSystem1
+func (t *GenerateRequest_System) FromGenerateRequestSystem1(v GenerateRequestSystem1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeGenerateRequestSystem1 performs a merge with any union data inside the GenerateRequest_System, using the provided GenerateRequestSystem1
+func (t *GenerateRequest_System) MergeGenerateRequestSystem1(v GenerateRequestSystem1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t GenerateRequest_System) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *GenerateRequest_System) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsGenerateToolChoice0 returns the union data inside the GenerateToolChoice as a GenerateToolChoice0
+func (t GenerateToolChoice) AsGenerateToolChoice0() (GenerateToolChoice0, error) {
+	var body GenerateToolChoice0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromGenerateToolChoice0 overwrites any union data inside the GenerateToolChoice as the provided GenerateToolChoice0
+func (t *GenerateToolChoice) FromGenerateToolChoice0(v GenerateToolChoice0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeGenerateToolChoice0 performs a merge with any union data inside the GenerateToolChoice, using the provided GenerateToolChoice0
+func (t *GenerateToolChoice) MergeGenerateToolChoice0(v GenerateToolChoice0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsGenerateToolChoice1 returns the union data inside the GenerateToolChoice as a GenerateToolChoice1
+func (t GenerateToolChoice) AsGenerateToolChoice1() (GenerateToolChoice1, error) {
+	var body GenerateToolChoice1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromGenerateToolChoice1 overwrites any union data inside the GenerateToolChoice as the provided GenerateToolChoice1
+func (t *GenerateToolChoice) FromGenerateToolChoice1(v GenerateToolChoice1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeGenerateToolChoice1 performs a merge with any union data inside the GenerateToolChoice, using the provided GenerateToolChoice1
+func (t *GenerateToolChoice) MergeGenerateToolChoice1(v GenerateToolChoice1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t GenerateToolChoice) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	object := make(map[string]json.RawMessage)
+	if t.union != nil {
+		err = json.Unmarshal(b, &object)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if t.Name != nil {
+		object["name"], err = json.Marshal(t.Name)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'name': %w", err)
+		}
+	}
+
+	object["type"], err = json.Marshal(t.Type)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'type': %w", err)
+	}
+
+	b, err = json.Marshal(object)
+	return b, err
+}
+
+func (t *GenerateToolChoice) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	if err != nil {
+		return err
+	}
+	object := make(map[string]json.RawMessage)
+	err = json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["name"]; found {
+		err = json.Unmarshal(raw, &t.Name)
+		if err != nil {
+			return fmt.Errorf("error reading 'name': %w", err)
+		}
+	}
+
+	if raw, found := object["type"]; found {
+		err = json.Unmarshal(raw, &t.Type)
+		if err != nil {
+			return fmt.Errorf("error reading 'type': %w", err)
+		}
+	}
+
 	return err
 }
 
@@ -7578,32 +10621,6 @@ func (t *InteractionValue) FromInteractionValue4(v InteractionValue4) error {
 
 // MergeInteractionValue4 performs a merge with any union data inside the InteractionValue, using the provided InteractionValue4
 func (t *InteractionValue) MergeInteractionValue4(v InteractionValue4) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsInteractionValue5 returns the union data inside the InteractionValue as a InteractionValue5
-func (t InteractionValue) AsInteractionValue5() (InteractionValue5, error) {
-	var body InteractionValue5
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromInteractionValue5 overwrites any union data inside the InteractionValue as the provided InteractionValue5
-func (t *InteractionValue) FromInteractionValue5(v InteractionValue5) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeInteractionValue5 performs a merge with any union data inside the InteractionValue, using the provided InteractionValue5
-func (t *InteractionValue) MergeInteractionValue5(v InteractionValue5) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -7879,6 +10896,68 @@ func (t *StartRunRequest) UnmarshalJSON(b []byte) error {
 	return err
 }
 
+// AsToolResultContentBlockContent0 returns the union data inside the ToolResultContentBlock_Content as a ToolResultContentBlockContent0
+func (t ToolResultContentBlock_Content) AsToolResultContentBlockContent0() (ToolResultContentBlockContent0, error) {
+	var body ToolResultContentBlockContent0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromToolResultContentBlockContent0 overwrites any union data inside the ToolResultContentBlock_Content as the provided ToolResultContentBlockContent0
+func (t *ToolResultContentBlock_Content) FromToolResultContentBlockContent0(v ToolResultContentBlockContent0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeToolResultContentBlockContent0 performs a merge with any union data inside the ToolResultContentBlock_Content, using the provided ToolResultContentBlockContent0
+func (t *ToolResultContentBlock_Content) MergeToolResultContentBlockContent0(v ToolResultContentBlockContent0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsToolResultContentBlockContent1 returns the union data inside the ToolResultContentBlock_Content as a ToolResultContentBlockContent1
+func (t ToolResultContentBlock_Content) AsToolResultContentBlockContent1() (ToolResultContentBlockContent1, error) {
+	var body ToolResultContentBlockContent1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromToolResultContentBlockContent1 overwrites any union data inside the ToolResultContentBlock_Content as the provided ToolResultContentBlockContent1
+func (t *ToolResultContentBlock_Content) FromToolResultContentBlockContent1(v ToolResultContentBlockContent1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeToolResultContentBlockContent1 performs a merge with any union data inside the ToolResultContentBlock_Content, using the provided ToolResultContentBlockContent1
+func (t *ToolResultContentBlock_Content) MergeToolResultContentBlockContent1(v ToolResultContentBlockContent1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t ToolResultContentBlock_Content) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *ToolResultContentBlock_Content) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
 // AsScheduleSourceConfig returns the union data inside the TriggerSourceConfig as a ScheduleSourceConfig
 func (t TriggerSourceConfig) AsScheduleSourceConfig() (ScheduleSourceConfig, error) {
 	var body ScheduleSourceConfig
@@ -7947,6 +11026,84 @@ func (t *TriggerSourceConfig) FromEventSourceConfig(v EventSourceConfig) error {
 
 // MergeEventSourceConfig performs a merge with any union data inside the TriggerSourceConfig, using the provided EventSourceConfig
 func (t *TriggerSourceConfig) MergeEventSourceConfig(v EventSourceConfig) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsChannelMessageSourceConfig returns the union data inside the TriggerSourceConfig as a ChannelMessageSourceConfig
+func (t TriggerSourceConfig) AsChannelMessageSourceConfig() (ChannelMessageSourceConfig, error) {
+	var body ChannelMessageSourceConfig
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromChannelMessageSourceConfig overwrites any union data inside the TriggerSourceConfig as the provided ChannelMessageSourceConfig
+func (t *TriggerSourceConfig) FromChannelMessageSourceConfig(v ChannelMessageSourceConfig) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeChannelMessageSourceConfig performs a merge with any union data inside the TriggerSourceConfig, using the provided ChannelMessageSourceConfig
+func (t *TriggerSourceConfig) MergeChannelMessageSourceConfig(v ChannelMessageSourceConfig) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsDataTableRowSourceConfig returns the union data inside the TriggerSourceConfig as a DataTableRowSourceConfig
+func (t TriggerSourceConfig) AsDataTableRowSourceConfig() (DataTableRowSourceConfig, error) {
+	var body DataTableRowSourceConfig
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromDataTableRowSourceConfig overwrites any union data inside the TriggerSourceConfig as the provided DataTableRowSourceConfig
+func (t *TriggerSourceConfig) FromDataTableRowSourceConfig(v DataTableRowSourceConfig) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeDataTableRowSourceConfig performs a merge with any union data inside the TriggerSourceConfig, using the provided DataTableRowSourceConfig
+func (t *TriggerSourceConfig) MergeDataTableRowSourceConfig(v DataTableRowSourceConfig) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsEmailSourceConfig returns the union data inside the TriggerSourceConfig as a EmailSourceConfig
+func (t TriggerSourceConfig) AsEmailSourceConfig() (EmailSourceConfig, error) {
+	var body EmailSourceConfig
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromEmailSourceConfig overwrites any union data inside the TriggerSourceConfig as the provided EmailSourceConfig
+func (t *TriggerSourceConfig) FromEmailSourceConfig(v EmailSourceConfig) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeEmailSourceConfig performs a merge with any union data inside the TriggerSourceConfig, using the provided EmailSourceConfig
+func (t *TriggerSourceConfig) MergeEmailSourceConfig(v EmailSourceConfig) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -8206,8 +11363,29 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 
 // The interface specification for the client above.
 type ClientInterface interface {
+	// GetAgentInvocation request
+	GetAgentInvocation(ctx context.Context, invocationId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CompleteAgentInvocationWithBody request with any body
+	CompleteAgentInvocationWithBody(ctx context.Context, invocationId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	CompleteAgentInvocation(ctx context.Context, invocationId string, body CompleteAgentInvocationJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// FailAgentInvocationWithBody request with any body
+	FailAgentInvocationWithBody(ctx context.Context, invocationId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	FailAgentInvocation(ctx context.Context, invocationId string, body FailAgentInvocationJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListAuditLogs request
 	ListAuditLogs(ctx context.Context, params *ListAuditLogsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListIntegrationProviders request
+	ListIntegrationProviders(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateMessageWithBody request with any body
+	CreateMessageWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	CreateMessage(ctx context.Context, body CreateMessageJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListProjects request
 	ListProjects(ctx context.Context, params *ListProjectsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -8256,8 +11434,8 @@ type ClientInterface interface {
 	// RestoreProject request
 	RestoreProject(ctx context.Context, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListActionAuditLog request
-	ListActionAuditLog(ctx context.Context, project ProjectHandleParam, params *ListActionAuditLogParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// ListActionInvocations request
+	ListActionInvocations(ctx context.Context, project ProjectHandleParam, params *ListActionInvocationsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListActions request
 	ListActions(ctx context.Context, project ProjectHandleParam, params *ListActionsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -8284,6 +11462,11 @@ type ClientInterface interface {
 
 	UpdateAction(ctx context.Context, project ProjectHandleParam, actionName ActionNameParam, body UpdateActionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// InvokeActionWithBody request with any body
+	InvokeActionWithBody(ctx context.Context, project ProjectHandleParam, actionName ActionNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	InvokeAction(ctx context.Context, project ProjectHandleParam, actionName ActionNameParam, body InvokeActionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// RotateActionSecret request
 	RotateActionSecret(ctx context.Context, project ProjectHandleParam, actionName ActionNameParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -8305,6 +11488,9 @@ type ClientInterface interface {
 	UpdateAgentWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	UpdateAgent(ctx context.Context, project ProjectHandleParam, id IDParam, body UpdateAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ProvisionAgentInbox request
+	ProvisionAgentInbox(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListAgentSessions request
 	ListAgentSessions(ctx context.Context, project ProjectHandleParam, id IDParam, params *ListAgentSessionsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -8342,6 +11528,17 @@ type ClientInterface interface {
 
 	UpdateChannel(ctx context.Context, project ProjectHandleParam, id IDParam, body UpdateChannelJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ClaimChannelInteraction request
+	ClaimChannelInteraction(ctx context.Context, project ProjectHandleParam, id IDParam, interactionId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ReleaseChannelInteraction request
+	ReleaseChannelInteraction(ctx context.Context, project ProjectHandleParam, id IDParam, interactionId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RespondToChannelInteractionWithBody request with any body
+	RespondToChannelInteractionWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, interactionId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	RespondToChannelInteraction(ctx context.Context, project ProjectHandleParam, id IDParam, interactionId string, body RespondToChannelInteractionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListChannelMembers request
 	ListChannelMembers(ctx context.Context, project ProjectHandleParam, id IDParam, params *ListChannelMembersParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -8353,21 +11550,34 @@ type ClientInterface interface {
 	// RemoveChannelMember request
 	RemoveChannelMember(ctx context.Context, project ProjectHandleParam, id IDParam, memberId MemberId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListChannelMessages request
-	ListChannelMessages(ctx context.Context, project ProjectHandleParam, id IDParam, params *ListChannelMessagesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// ListMessages request
+	ListMessages(ctx context.Context, project ProjectHandleParam, id IDParam, params *ListMessagesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// SendChannelMessageWithBody request with any body
-	SendChannelMessageWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// SendMessageWithBody request with any body
+	SendMessageWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	SendChannelMessage(ctx context.Context, project ProjectHandleParam, id IDParam, body SendChannelMessageJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	SendMessage(ctx context.Context, project ProjectHandleParam, id IDParam, body SendMessageJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetChannelMessage request
-	GetChannelMessage(ctx context.Context, project ProjectHandleParam, id IDParam, messageId MessageId, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// GetMessage request
+	GetMessage(ctx context.Context, project ProjectHandleParam, id IDParam, messageId MessageId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// UpdateChannelMessageWithBody request with any body
-	UpdateChannelMessageWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, messageId MessageId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// UpdateMessageWithBody request with any body
+	UpdateMessageWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, messageId MessageId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	UpdateChannelMessage(ctx context.Context, project ProjectHandleParam, id IDParam, messageId MessageId, body UpdateChannelMessageJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateMessage(ctx context.Context, project ProjectHandleParam, id IDParam, messageId MessageId, body UpdateMessageJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// MarkMessagesReadWithBody request with any body
+	MarkMessagesReadWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	MarkMessagesRead(ctx context.Context, project ProjectHandleParam, id IDParam, body MarkMessagesReadJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ShareChannelEntityWithBody request with any body
+	ShareChannelEntityWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	ShareChannelEntity(ctx context.Context, project ProjectHandleParam, id IDParam, body ShareChannelEntityJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// StreamProjectEvents request
+	StreamProjectEvents(ctx context.Context, project ProjectHandleParam, params *StreamProjectEventsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListGroups request
 	ListGroups(ctx context.Context, project ProjectHandleParam, params *ListGroupsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -8409,6 +11619,11 @@ type ClientInterface interface {
 
 	// GetInteraction request
 	GetInteraction(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CancelInteractionWithBody request with any body
+	CancelInteractionWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	CancelInteraction(ctx context.Context, project ProjectHandleParam, id IDParam, body CancelInteractionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ClaimInteraction request
 	ClaimInteraction(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -8454,11 +11669,32 @@ type ClientInterface interface {
 
 	CreateJobInteraction(ctx context.Context, project ProjectHandleParam, id IDParam, body CreateJobInteractionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ListProjectLogs request
+	ListProjectLogs(ctx context.Context, project ProjectHandleParam, params *ListProjectLogsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// IngestProjectLogsWithBody request with any body
+	IngestProjectLogsWithBody(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	IngestProjectLogs(ctx context.Context, project ProjectHandleParam, body IngestProjectLogsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// IngestProjectLogsOTLPWithBody request with any body
+	IngestProjectLogsOTLPWithBody(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	IngestProjectLogsOTLP(ctx context.Context, project ProjectHandleParam, body IngestProjectLogsOTLPJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListMemberGroups request
 	ListMemberGroups(ctx context.Context, project ProjectHandleParam, userId UserId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetProjectMetrics request
 	GetProjectMetrics(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// LookupReferences request
+	LookupReferences(ctx context.Context, project ProjectHandleParam, referenceType ReferenceTypeParam, params *LookupReferencesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ResolveReferencesWithBody request with any body
+	ResolveReferencesWithBody(ctx context.Context, project ProjectHandleParam, referenceType ReferenceTypeParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	ResolveReferences(ctx context.Context, project ProjectHandleParam, referenceType ReferenceTypeParam, body ResolveReferencesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListRuns request
 	ListRuns(ctx context.Context, project ProjectHandleParam, params *ListRunsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -8467,9 +11703,6 @@ type ClientInterface interface {
 	StartRunWithBody(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	StartRun(ctx context.Context, project ProjectHandleParam, body StartRunJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// StreamProjectRunEvents request
-	StreamProjectRunEvents(ctx context.Context, project ProjectHandleParam, params *StreamProjectRunEventsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetRun request
 	GetRun(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -8502,16 +11735,67 @@ type ClientInterface interface {
 	// GetRunStep request
 	GetRunStep(ctx context.Context, project ProjectHandleParam, id IDParam, stepId string, params *GetRunStepParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListTools request
-	ListTools(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// ListProjectSpans request
+	ListProjectSpans(ctx context.Context, project ProjectHandleParam, params *ListProjectSpansParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// RunToolWithBody request with any body
-	RunToolWithBody(ctx context.Context, project ProjectHandleParam, handle string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// GetProjectStepSpanCounts request
+	GetProjectStepSpanCounts(ctx context.Context, project ProjectHandleParam, params *GetProjectStepSpanCountsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	RunTool(ctx context.Context, project ProjectHandleParam, handle string, body RunToolJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// ListDataTables request
+	ListDataTables(ctx context.Context, project ProjectHandleParam, params *ListDataTablesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetToolRun request
-	GetToolRun(ctx context.Context, project ProjectHandleParam, handle string, runId RunId, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// CreateDataTableWithBody request with any body
+	CreateDataTableWithBody(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	CreateDataTable(ctx context.Context, project ProjectHandleParam, body CreateDataTableJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DeleteDataTable request
+	DeleteDataTable(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetDataTable request
+	GetDataTable(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateDataTableWithBody request with any body
+	UpdateDataTableWithBody(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	UpdateDataTable(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body UpdateDataTableJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// InsertDataTableRowWithBody request with any body
+	InsertDataTableRowWithBody(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	InsertDataTableRow(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body InsertDataTableRowJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// BulkInsertDataTableRowsWithBody request with any body
+	BulkInsertDataTableRowsWithBody(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	BulkInsertDataTableRows(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body BulkInsertDataTableRowsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// QueryDataTableRowsWithBody request with any body
+	QueryDataTableRowsWithBody(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	QueryDataTableRows(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body QueryDataTableRowsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpsertDataTableRowWithBody request with any body
+	UpsertDataTableRowWithBody(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	UpsertDataTableRow(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body UpsertDataTableRowJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DeleteDataTableRow request
+	DeleteDataTableRow(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetDataTableRow request
+	GetDataTableRow(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateDataTableRowWithBody request with any body
+	UpdateDataTableRowWithBody(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	UpdateDataTableRow(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, body UpdateDataTableRowJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListProjectTraces request
+	ListProjectTraces(ctx context.Context, project ProjectHandleParam, params *ListProjectTracesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetTrace request
+	GetTrace(ctx context.Context, project ProjectHandleParam, traceId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListTriggers request
 	ListTriggers(ctx context.Context, project ProjectHandleParam, params *ListTriggersParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -8556,6 +11840,11 @@ type ClientInterface interface {
 	UpdateTriggerTargetWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, targetId TriggerTargetIDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	UpdateTriggerTarget(ctx context.Context, project ProjectHandleParam, id IDParam, targetId TriggerTargetIDParam, body UpdateTriggerTargetJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// TestFireTriggerWithBody request with any body
+	TestFireTriggerWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	TestFireTrigger(ctx context.Context, project ProjectHandleParam, id IDParam, body TestFireTriggerJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListWebhooks request
 	ListWebhooks(ctx context.Context, project ProjectHandleParam, params *ListWebhooksParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -8621,8 +11910,104 @@ type ClientInterface interface {
 	GetWorkflowVersion(ctx context.Context, project ProjectHandleParam, id IDParam, version int, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
+func (c *Client) GetAgentInvocation(ctx context.Context, invocationId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetAgentInvocationRequest(c.Server, invocationId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CompleteAgentInvocationWithBody(ctx context.Context, invocationId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCompleteAgentInvocationRequestWithBody(c.Server, invocationId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CompleteAgentInvocation(ctx context.Context, invocationId string, body CompleteAgentInvocationJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCompleteAgentInvocationRequest(c.Server, invocationId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) FailAgentInvocationWithBody(ctx context.Context, invocationId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewFailAgentInvocationRequestWithBody(c.Server, invocationId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) FailAgentInvocation(ctx context.Context, invocationId string, body FailAgentInvocationJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewFailAgentInvocationRequest(c.Server, invocationId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) ListAuditLogs(ctx context.Context, params *ListAuditLogsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListAuditLogsRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListIntegrationProviders(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListIntegrationProvidersRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateMessageWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateMessageRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateMessage(ctx context.Context, body CreateMessageJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateMessageRequest(c.Server, body)
 	if err != nil {
 		return nil, err
 	}
@@ -8837,8 +12222,8 @@ func (c *Client) RestoreProject(ctx context.Context, id IDParam, reqEditors ...R
 	return c.Client.Do(req)
 }
 
-func (c *Client) ListActionAuditLog(ctx context.Context, project ProjectHandleParam, params *ListActionAuditLogParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListActionAuditLogRequest(c.Server, project, params)
+func (c *Client) ListActionInvocations(ctx context.Context, project ProjectHandleParam, params *ListActionInvocationsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListActionInvocationsRequest(c.Server, project, params)
 	if err != nil {
 		return nil, err
 	}
@@ -8957,6 +12342,30 @@ func (c *Client) UpdateAction(ctx context.Context, project ProjectHandleParam, a
 	return c.Client.Do(req)
 }
 
+func (c *Client) InvokeActionWithBody(ctx context.Context, project ProjectHandleParam, actionName ActionNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewInvokeActionRequestWithBody(c.Server, project, actionName, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) InvokeAction(ctx context.Context, project ProjectHandleParam, actionName ActionNameParam, body InvokeActionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewInvokeActionRequest(c.Server, project, actionName, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) RotateActionSecret(ctx context.Context, project ProjectHandleParam, actionName ActionNameParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewRotateActionSecretRequest(c.Server, project, actionName)
 	if err != nil {
@@ -9043,6 +12452,18 @@ func (c *Client) UpdateAgentWithBody(ctx context.Context, project ProjectHandleP
 
 func (c *Client) UpdateAgent(ctx context.Context, project ProjectHandleParam, id IDParam, body UpdateAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewUpdateAgentRequest(c.Server, project, id, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ProvisionAgentInbox(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewProvisionAgentInboxRequest(c.Server, project, id)
 	if err != nil {
 		return nil, err
 	}
@@ -9209,6 +12630,54 @@ func (c *Client) UpdateChannel(ctx context.Context, project ProjectHandleParam, 
 	return c.Client.Do(req)
 }
 
+func (c *Client) ClaimChannelInteraction(ctx context.Context, project ProjectHandleParam, id IDParam, interactionId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewClaimChannelInteractionRequest(c.Server, project, id, interactionId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ReleaseChannelInteraction(ctx context.Context, project ProjectHandleParam, id IDParam, interactionId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewReleaseChannelInteractionRequest(c.Server, project, id, interactionId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) RespondToChannelInteractionWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, interactionId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRespondToChannelInteractionRequestWithBody(c.Server, project, id, interactionId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) RespondToChannelInteraction(ctx context.Context, project ProjectHandleParam, id IDParam, interactionId string, body RespondToChannelInteractionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRespondToChannelInteractionRequest(c.Server, project, id, interactionId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) ListChannelMembers(ctx context.Context, project ProjectHandleParam, id IDParam, params *ListChannelMembersParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListChannelMembersRequest(c.Server, project, id, params)
 	if err != nil {
@@ -9257,8 +12726,8 @@ func (c *Client) RemoveChannelMember(ctx context.Context, project ProjectHandleP
 	return c.Client.Do(req)
 }
 
-func (c *Client) ListChannelMessages(ctx context.Context, project ProjectHandleParam, id IDParam, params *ListChannelMessagesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListChannelMessagesRequest(c.Server, project, id, params)
+func (c *Client) ListMessages(ctx context.Context, project ProjectHandleParam, id IDParam, params *ListMessagesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListMessagesRequest(c.Server, project, id, params)
 	if err != nil {
 		return nil, err
 	}
@@ -9269,8 +12738,8 @@ func (c *Client) ListChannelMessages(ctx context.Context, project ProjectHandleP
 	return c.Client.Do(req)
 }
 
-func (c *Client) SendChannelMessageWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewSendChannelMessageRequestWithBody(c.Server, project, id, contentType, body)
+func (c *Client) SendMessageWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSendMessageRequestWithBody(c.Server, project, id, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -9281,8 +12750,8 @@ func (c *Client) SendChannelMessageWithBody(ctx context.Context, project Project
 	return c.Client.Do(req)
 }
 
-func (c *Client) SendChannelMessage(ctx context.Context, project ProjectHandleParam, id IDParam, body SendChannelMessageJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewSendChannelMessageRequest(c.Server, project, id, body)
+func (c *Client) SendMessage(ctx context.Context, project ProjectHandleParam, id IDParam, body SendMessageJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSendMessageRequest(c.Server, project, id, body)
 	if err != nil {
 		return nil, err
 	}
@@ -9293,8 +12762,8 @@ func (c *Client) SendChannelMessage(ctx context.Context, project ProjectHandlePa
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetChannelMessage(ctx context.Context, project ProjectHandleParam, id IDParam, messageId MessageId, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetChannelMessageRequest(c.Server, project, id, messageId)
+func (c *Client) GetMessage(ctx context.Context, project ProjectHandleParam, id IDParam, messageId MessageId, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetMessageRequest(c.Server, project, id, messageId)
 	if err != nil {
 		return nil, err
 	}
@@ -9305,8 +12774,8 @@ func (c *Client) GetChannelMessage(ctx context.Context, project ProjectHandlePar
 	return c.Client.Do(req)
 }
 
-func (c *Client) UpdateChannelMessageWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, messageId MessageId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateChannelMessageRequestWithBody(c.Server, project, id, messageId, contentType, body)
+func (c *Client) UpdateMessageWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, messageId MessageId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateMessageRequestWithBody(c.Server, project, id, messageId, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -9317,8 +12786,68 @@ func (c *Client) UpdateChannelMessageWithBody(ctx context.Context, project Proje
 	return c.Client.Do(req)
 }
 
-func (c *Client) UpdateChannelMessage(ctx context.Context, project ProjectHandleParam, id IDParam, messageId MessageId, body UpdateChannelMessageJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateChannelMessageRequest(c.Server, project, id, messageId, body)
+func (c *Client) UpdateMessage(ctx context.Context, project ProjectHandleParam, id IDParam, messageId MessageId, body UpdateMessageJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateMessageRequest(c.Server, project, id, messageId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) MarkMessagesReadWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewMarkMessagesReadRequestWithBody(c.Server, project, id, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) MarkMessagesRead(ctx context.Context, project ProjectHandleParam, id IDParam, body MarkMessagesReadJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewMarkMessagesReadRequest(c.Server, project, id, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ShareChannelEntityWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewShareChannelEntityRequestWithBody(c.Server, project, id, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ShareChannelEntity(ctx context.Context, project ProjectHandleParam, id IDParam, body ShareChannelEntityJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewShareChannelEntityRequest(c.Server, project, id, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) StreamProjectEvents(ctx context.Context, project ProjectHandleParam, params *StreamProjectEventsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewStreamProjectEventsRequest(c.Server, project, params)
 	if err != nil {
 		return nil, err
 	}
@@ -9499,6 +13028,30 @@ func (c *Client) CreateInteraction(ctx context.Context, project ProjectHandlePar
 
 func (c *Client) GetInteraction(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetInteractionRequest(c.Server, project, id)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CancelInteractionWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCancelInteractionRequestWithBody(c.Server, project, id, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CancelInteraction(ctx context.Context, project ProjectHandleParam, id IDParam, body CancelInteractionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCancelInteractionRequest(c.Server, project, id, body)
 	if err != nil {
 		return nil, err
 	}
@@ -9713,6 +13266,66 @@ func (c *Client) CreateJobInteraction(ctx context.Context, project ProjectHandle
 	return c.Client.Do(req)
 }
 
+func (c *Client) ListProjectLogs(ctx context.Context, project ProjectHandleParam, params *ListProjectLogsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListProjectLogsRequest(c.Server, project, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) IngestProjectLogsWithBody(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewIngestProjectLogsRequestWithBody(c.Server, project, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) IngestProjectLogs(ctx context.Context, project ProjectHandleParam, body IngestProjectLogsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewIngestProjectLogsRequest(c.Server, project, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) IngestProjectLogsOTLPWithBody(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewIngestProjectLogsOTLPRequestWithBody(c.Server, project, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) IngestProjectLogsOTLP(ctx context.Context, project ProjectHandleParam, body IngestProjectLogsOTLPJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewIngestProjectLogsOTLPRequest(c.Server, project, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) ListMemberGroups(ctx context.Context, project ProjectHandleParam, userId UserId, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListMemberGroupsRequest(c.Server, project, userId)
 	if err != nil {
@@ -9727,6 +13340,42 @@ func (c *Client) ListMemberGroups(ctx context.Context, project ProjectHandlePara
 
 func (c *Client) GetProjectMetrics(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetProjectMetricsRequest(c.Server, project)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) LookupReferences(ctx context.Context, project ProjectHandleParam, referenceType ReferenceTypeParam, params *LookupReferencesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewLookupReferencesRequest(c.Server, project, referenceType, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ResolveReferencesWithBody(ctx context.Context, project ProjectHandleParam, referenceType ReferenceTypeParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewResolveReferencesRequestWithBody(c.Server, project, referenceType, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ResolveReferences(ctx context.Context, project ProjectHandleParam, referenceType ReferenceTypeParam, body ResolveReferencesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewResolveReferencesRequest(c.Server, project, referenceType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -9763,18 +13412,6 @@ func (c *Client) StartRunWithBody(ctx context.Context, project ProjectHandlePara
 
 func (c *Client) StartRun(ctx context.Context, project ProjectHandleParam, body StartRunJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewStartRunRequest(c.Server, project, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) StreamProjectRunEvents(ctx context.Context, project ProjectHandleParam, params *StreamProjectRunEventsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewStreamProjectRunEventsRequest(c.Server, project, params)
 	if err != nil {
 		return nil, err
 	}
@@ -9917,8 +13554,8 @@ func (c *Client) GetRunStep(ctx context.Context, project ProjectHandleParam, id 
 	return c.Client.Do(req)
 }
 
-func (c *Client) ListTools(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListToolsRequest(c.Server, project)
+func (c *Client) ListProjectSpans(ctx context.Context, project ProjectHandleParam, params *ListProjectSpansParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListProjectSpansRequest(c.Server, project, params)
 	if err != nil {
 		return nil, err
 	}
@@ -9929,8 +13566,8 @@ func (c *Client) ListTools(ctx context.Context, project ProjectHandleParam, reqE
 	return c.Client.Do(req)
 }
 
-func (c *Client) RunToolWithBody(ctx context.Context, project ProjectHandleParam, handle string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewRunToolRequestWithBody(c.Server, project, handle, contentType, body)
+func (c *Client) GetProjectStepSpanCounts(ctx context.Context, project ProjectHandleParam, params *GetProjectStepSpanCountsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetProjectStepSpanCountsRequest(c.Server, project, params)
 	if err != nil {
 		return nil, err
 	}
@@ -9941,8 +13578,8 @@ func (c *Client) RunToolWithBody(ctx context.Context, project ProjectHandleParam
 	return c.Client.Do(req)
 }
 
-func (c *Client) RunTool(ctx context.Context, project ProjectHandleParam, handle string, body RunToolJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewRunToolRequest(c.Server, project, handle, body)
+func (c *Client) ListDataTables(ctx context.Context, project ProjectHandleParam, params *ListDataTablesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListDataTablesRequest(c.Server, project, params)
 	if err != nil {
 		return nil, err
 	}
@@ -9953,8 +13590,236 @@ func (c *Client) RunTool(ctx context.Context, project ProjectHandleParam, handle
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetToolRun(ctx context.Context, project ProjectHandleParam, handle string, runId RunId, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetToolRunRequest(c.Server, project, handle, runId)
+func (c *Client) CreateDataTableWithBody(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateDataTableRequestWithBody(c.Server, project, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateDataTable(ctx context.Context, project ProjectHandleParam, body CreateDataTableJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateDataTableRequest(c.Server, project, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) DeleteDataTable(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteDataTableRequest(c.Server, project, tableName)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetDataTable(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetDataTableRequest(c.Server, project, tableName)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateDataTableWithBody(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateDataTableRequestWithBody(c.Server, project, tableName, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateDataTable(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body UpdateDataTableJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateDataTableRequest(c.Server, project, tableName, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) InsertDataTableRowWithBody(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewInsertDataTableRowRequestWithBody(c.Server, project, tableName, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) InsertDataTableRow(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body InsertDataTableRowJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewInsertDataTableRowRequest(c.Server, project, tableName, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) BulkInsertDataTableRowsWithBody(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewBulkInsertDataTableRowsRequestWithBody(c.Server, project, tableName, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) BulkInsertDataTableRows(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body BulkInsertDataTableRowsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewBulkInsertDataTableRowsRequest(c.Server, project, tableName, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) QueryDataTableRowsWithBody(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewQueryDataTableRowsRequestWithBody(c.Server, project, tableName, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) QueryDataTableRows(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body QueryDataTableRowsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewQueryDataTableRowsRequest(c.Server, project, tableName, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpsertDataTableRowWithBody(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpsertDataTableRowRequestWithBody(c.Server, project, tableName, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpsertDataTableRow(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body UpsertDataTableRowJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpsertDataTableRowRequest(c.Server, project, tableName, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) DeleteDataTableRow(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteDataTableRowRequest(c.Server, project, tableName, rowId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetDataTableRow(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetDataTableRowRequest(c.Server, project, tableName, rowId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateDataTableRowWithBody(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateDataTableRowRequestWithBody(c.Server, project, tableName, rowId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateDataTableRow(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, body UpdateDataTableRowJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateDataTableRowRequest(c.Server, project, tableName, rowId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListProjectTraces(ctx context.Context, project ProjectHandleParam, params *ListProjectTracesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListProjectTracesRequest(c.Server, project, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetTrace(ctx context.Context, project ProjectHandleParam, traceId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetTraceRequest(c.Server, project, traceId)
 	if err != nil {
 		return nil, err
 	}
@@ -10147,6 +14012,30 @@ func (c *Client) UpdateTriggerTargetWithBody(ctx context.Context, project Projec
 
 func (c *Client) UpdateTriggerTarget(ctx context.Context, project ProjectHandleParam, id IDParam, targetId TriggerTargetIDParam, body UpdateTriggerTargetJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewUpdateTriggerTargetRequest(c.Server, project, id, targetId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) TestFireTriggerWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewTestFireTriggerRequestWithBody(c.Server, project, id, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) TestFireTrigger(ctx context.Context, project ProjectHandleParam, id IDParam, body TestFireTriggerJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewTestFireTriggerRequest(c.Server, project, id, body)
 	if err != nil {
 		return nil, err
 	}
@@ -10433,6 +14322,134 @@ func (c *Client) GetWorkflowVersion(ctx context.Context, project ProjectHandlePa
 	return c.Client.Do(req)
 }
 
+// NewGetAgentInvocationRequest generates requests for GetAgentInvocation
+func NewGetAgentInvocationRequest(server string, invocationId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "invocation_id", invocationId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/agent-invocations/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCompleteAgentInvocationRequest calls the generic CompleteAgentInvocation builder with application/json body
+func NewCompleteAgentInvocationRequest(server string, invocationId string, body CompleteAgentInvocationJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCompleteAgentInvocationRequestWithBody(server, invocationId, "application/json", bodyReader)
+}
+
+// NewCompleteAgentInvocationRequestWithBody generates requests for CompleteAgentInvocation with any type of body
+func NewCompleteAgentInvocationRequestWithBody(server string, invocationId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "invocation_id", invocationId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/agent-invocations/%s/complete", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewFailAgentInvocationRequest calls the generic FailAgentInvocation builder with application/json body
+func NewFailAgentInvocationRequest(server string, invocationId string, body FailAgentInvocationJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewFailAgentInvocationRequestWithBody(server, invocationId, "application/json", bodyReader)
+}
+
+// NewFailAgentInvocationRequestWithBody generates requests for FailAgentInvocation with any type of body
+func NewFailAgentInvocationRequestWithBody(server string, invocationId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "invocation_id", invocationId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/agent-invocations/%s/fail", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewListAuditLogsRequest generates requests for ListAuditLogs
 func NewListAuditLogsRequest(server string, params *ListAuditLogsParams) (*http.Request, error) {
 	var err error
@@ -10638,6 +14655,73 @@ func NewListAuditLogsRequest(server string, params *ListAuditLogsParams) (*http.
 	if err != nil {
 		return nil, err
 	}
+
+	return req, nil
+}
+
+// NewListIntegrationProvidersRequest generates requests for ListIntegrationProviders
+func NewListIntegrationProvidersRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/integrations/providers")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCreateMessageRequest calls the generic CreateMessage builder with application/json body
+func NewCreateMessageRequest(server string, body CreateMessageJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateMessageRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewCreateMessageRequestWithBody generates requests for CreateMessage with any type of body
+func NewCreateMessageRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/messages")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
 }
@@ -11221,8 +15305,8 @@ func NewRestoreProjectRequest(server string, id IDParam) (*http.Request, error) 
 	return req, nil
 }
 
-// NewListActionAuditLogRequest generates requests for ListActionAuditLog
-func NewListActionAuditLogRequest(server string, project ProjectHandleParam, params *ListActionAuditLogParams) (*http.Request, error) {
+// NewListActionInvocationsRequest generates requests for ListActionInvocations
+func NewListActionInvocationsRequest(server string, project ProjectHandleParam, params *ListActionInvocationsParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -11237,7 +15321,7 @@ func NewListActionAuditLogRequest(server string, project ProjectHandleParam, par
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/projects/%s/action-audit-log", pathParam0)
+	operationPath := fmt.Sprintf("/v1/projects/%s/action-invocations", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -11285,6 +15369,22 @@ func NewListActionAuditLogRequest(server string, project ProjectHandleParam, par
 		if params.RunId != nil {
 
 			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "run_id", *params.RunId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.JobId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "job_id", *params.JobId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
 				return nil, err
 			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
 				return nil, err
@@ -11389,6 +15489,22 @@ func NewListActionsRequest(server string, project ProjectHandleParam, params *Li
 		if params.Limit != nil {
 
 			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Tag != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "tag", *params.Tag, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "array", Format: ""}); err != nil {
 				return nil, err
 			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
 				return nil, err
@@ -11662,6 +15778,60 @@ func NewUpdateActionRequestWithBody(server string, project ProjectHandleParam, a
 	}
 
 	req, err := http.NewRequest("PATCH", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewInvokeActionRequest calls the generic InvokeAction builder with application/json body
+func NewInvokeActionRequest(server string, project ProjectHandleParam, actionName ActionNameParam, body InvokeActionJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewInvokeActionRequestWithBody(server, project, actionName, "application/json", bodyReader)
+}
+
+// NewInvokeActionRequestWithBody generates requests for InvokeAction with any type of body
+func NewInvokeActionRequestWithBody(server string, project ProjectHandleParam, actionName ActionNameParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "action_name", actionName, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/actions/%s/invocations", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
 	if err != nil {
 		return nil, err
 	}
@@ -11995,6 +16165,47 @@ func NewUpdateAgentRequestWithBody(server string, project ProjectHandleParam, id
 	}
 
 	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewProvisionAgentInboxRequest generates requests for ProvisionAgentInbox
+func NewProvisionAgentInboxRequest(server string, project ProjectHandleParam, id IDParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/agents/%s/inbox", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
 
 	return req, nil
 }
@@ -12595,6 +16806,163 @@ func NewUpdateChannelRequestWithBody(server string, project ProjectHandleParam, 
 	return req, nil
 }
 
+// NewClaimChannelInteractionRequest generates requests for ClaimChannelInteraction
+func NewClaimChannelInteractionRequest(server string, project ProjectHandleParam, id IDParam, interactionId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam2 string
+
+	pathParam2, err = runtime.StyleParamWithOptions("simple", false, "interaction_id", interactionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/channels/%s/interactions/%s/claim", pathParam0, pathParam1, pathParam2)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewReleaseChannelInteractionRequest generates requests for ReleaseChannelInteraction
+func NewReleaseChannelInteractionRequest(server string, project ProjectHandleParam, id IDParam, interactionId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam2 string
+
+	pathParam2, err = runtime.StyleParamWithOptions("simple", false, "interaction_id", interactionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/channels/%s/interactions/%s/release", pathParam0, pathParam1, pathParam2)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewRespondToChannelInteractionRequest calls the generic RespondToChannelInteraction builder with application/json body
+func NewRespondToChannelInteractionRequest(server string, project ProjectHandleParam, id IDParam, interactionId string, body RespondToChannelInteractionJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewRespondToChannelInteractionRequestWithBody(server, project, id, interactionId, "application/json", bodyReader)
+}
+
+// NewRespondToChannelInteractionRequestWithBody generates requests for RespondToChannelInteraction with any type of body
+func NewRespondToChannelInteractionRequestWithBody(server string, project ProjectHandleParam, id IDParam, interactionId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam2 string
+
+	pathParam2, err = runtime.StyleParamWithOptions("simple", false, "interaction_id", interactionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/channels/%s/interactions/%s/respond", pathParam0, pathParam1, pathParam2)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewListChannelMembersRequest generates requests for ListChannelMembers
 func NewListChannelMembersRequest(server string, project ProjectHandleParam, id IDParam, params *ListChannelMembersParams) (*http.Request, error) {
 	var err error
@@ -12776,8 +17144,8 @@ func NewRemoveChannelMemberRequest(server string, project ProjectHandleParam, id
 	return req, nil
 }
 
-// NewListChannelMessagesRequest generates requests for ListChannelMessages
-func NewListChannelMessagesRequest(server string, project ProjectHandleParam, id IDParam, params *ListChannelMessagesParams) (*http.Request, error) {
+// NewListMessagesRequest generates requests for ListMessages
+func NewListMessagesRequest(server string, project ProjectHandleParam, id IDParam, params *ListMessagesParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -12860,6 +17228,70 @@ func NewListChannelMessagesRequest(server string, project ProjectHandleParam, id
 
 		}
 
+		if params.Since != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "since", *params.Since, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Unread != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "unread", *params.Unread, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "boolean", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.EntityType != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "entity_type", *params.EntityType, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.EntityId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "entity_id", *params.EntityId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
 		if params.Cursor != nil {
 
 			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "cursor", *params.Cursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
@@ -12903,19 +17335,19 @@ func NewListChannelMessagesRequest(server string, project ProjectHandleParam, id
 	return req, nil
 }
 
-// NewSendChannelMessageRequest calls the generic SendChannelMessage builder with application/json body
-func NewSendChannelMessageRequest(server string, project ProjectHandleParam, id IDParam, body SendChannelMessageJSONRequestBody) (*http.Request, error) {
+// NewSendMessageRequest calls the generic SendMessage builder with application/json body
+func NewSendMessageRequest(server string, project ProjectHandleParam, id IDParam, body SendMessageJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewSendChannelMessageRequestWithBody(server, project, id, "application/json", bodyReader)
+	return NewSendMessageRequestWithBody(server, project, id, "application/json", bodyReader)
 }
 
-// NewSendChannelMessageRequestWithBody generates requests for SendChannelMessage with any type of body
-func NewSendChannelMessageRequestWithBody(server string, project ProjectHandleParam, id IDParam, contentType string, body io.Reader) (*http.Request, error) {
+// NewSendMessageRequestWithBody generates requests for SendMessage with any type of body
+func NewSendMessageRequestWithBody(server string, project ProjectHandleParam, id IDParam, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -12957,8 +17389,8 @@ func NewSendChannelMessageRequestWithBody(server string, project ProjectHandlePa
 	return req, nil
 }
 
-// NewGetChannelMessageRequest generates requests for GetChannelMessage
-func NewGetChannelMessageRequest(server string, project ProjectHandleParam, id IDParam, messageId MessageId) (*http.Request, error) {
+// NewGetMessageRequest generates requests for GetMessage
+func NewGetMessageRequest(server string, project ProjectHandleParam, id IDParam, messageId MessageId) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -13005,19 +17437,19 @@ func NewGetChannelMessageRequest(server string, project ProjectHandleParam, id I
 	return req, nil
 }
 
-// NewUpdateChannelMessageRequest calls the generic UpdateChannelMessage builder with application/json body
-func NewUpdateChannelMessageRequest(server string, project ProjectHandleParam, id IDParam, messageId MessageId, body UpdateChannelMessageJSONRequestBody) (*http.Request, error) {
+// NewUpdateMessageRequest calls the generic UpdateMessage builder with application/json body
+func NewUpdateMessageRequest(server string, project ProjectHandleParam, id IDParam, messageId MessageId, body UpdateMessageJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewUpdateChannelMessageRequestWithBody(server, project, id, messageId, "application/json", bodyReader)
+	return NewUpdateMessageRequestWithBody(server, project, id, messageId, "application/json", bodyReader)
 }
 
-// NewUpdateChannelMessageRequestWithBody generates requests for UpdateChannelMessage with any type of body
-func NewUpdateChannelMessageRequestWithBody(server string, project ProjectHandleParam, id IDParam, messageId MessageId, contentType string, body io.Reader) (*http.Request, error) {
+// NewUpdateMessageRequestWithBody generates requests for UpdateMessage with any type of body
+func NewUpdateMessageRequestWithBody(server string, project ProjectHandleParam, id IDParam, messageId MessageId, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -13062,6 +17494,218 @@ func NewUpdateChannelMessageRequestWithBody(server string, project ProjectHandle
 	}
 
 	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewMarkMessagesReadRequest calls the generic MarkMessagesRead builder with application/json body
+func NewMarkMessagesReadRequest(server string, project ProjectHandleParam, id IDParam, body MarkMessagesReadJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewMarkMessagesReadRequestWithBody(server, project, id, "application/json", bodyReader)
+}
+
+// NewMarkMessagesReadRequestWithBody generates requests for MarkMessagesRead with any type of body
+func NewMarkMessagesReadRequestWithBody(server string, project ProjectHandleParam, id IDParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/channels/%s/read", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewShareChannelEntityRequest calls the generic ShareChannelEntity builder with application/json body
+func NewShareChannelEntityRequest(server string, project ProjectHandleParam, id IDParam, body ShareChannelEntityJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewShareChannelEntityRequestWithBody(server, project, id, "application/json", bodyReader)
+}
+
+// NewShareChannelEntityRequestWithBody generates requests for ShareChannelEntity with any type of body
+func NewShareChannelEntityRequestWithBody(server string, project ProjectHandleParam, id IDParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/channels/%s/references", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewStreamProjectEventsRequest generates requests for StreamProjectEvents
+func NewStreamProjectEventsRequest(server string, project ProjectHandleParam, params *StreamProjectEventsParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/events", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Since != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "since", *params.Since, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Run != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "run", *params.Run, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Channel != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "channel", *params.Channel, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Interaction != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "interaction", *params.Interaction, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
 
 	return req, nil
 }
@@ -13643,6 +18287,22 @@ func NewListInteractionsRequest(server string, project ProjectHandleParam, param
 
 		}
 
+		if params.Tag != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "tag", *params.Tag, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "array", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
 		queryURL.RawQuery = queryValues.Encode()
 	}
 
@@ -13738,6 +18398,60 @@ func NewGetInteractionRequest(server string, project ProjectHandleParam, id IDPa
 	if err != nil {
 		return nil, err
 	}
+
+	return req, nil
+}
+
+// NewCancelInteractionRequest calls the generic CancelInteraction builder with application/json body
+func NewCancelInteractionRequest(server string, project ProjectHandleParam, id IDParam, body CancelInteractionJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCancelInteractionRequestWithBody(server, project, id, "application/json", bodyReader)
+}
+
+// NewCancelInteractionRequestWithBody generates requests for CancelInteraction with any type of body
+func NewCancelInteractionRequestWithBody(server string, project ProjectHandleParam, id IDParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/interactions/%s/cancel", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
 }
@@ -14243,6 +18957,236 @@ func NewCreateJobInteractionRequestWithBody(server string, project ProjectHandle
 	return req, nil
 }
 
+// NewListProjectLogsRequest generates requests for ListProjectLogs
+func NewListProjectLogsRequest(server string, project ProjectHandleParam, params *ListProjectLogsParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/logs", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Cursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "cursor", *params.Cursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.RunId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "run_id", *params.RunId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.SeverityMin != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "severity_min", *params.SeverityMin, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Since != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "since", *params.Since, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Until != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "until", *params.Until, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewIngestProjectLogsRequest calls the generic IngestProjectLogs builder with application/json body
+func NewIngestProjectLogsRequest(server string, project ProjectHandleParam, body IngestProjectLogsJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewIngestProjectLogsRequestWithBody(server, project, "application/json", bodyReader)
+}
+
+// NewIngestProjectLogsRequestWithBody generates requests for IngestProjectLogs with any type of body
+func NewIngestProjectLogsRequestWithBody(server string, project ProjectHandleParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/logs", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewIngestProjectLogsOTLPRequest calls the generic IngestProjectLogsOTLP builder with application/json body
+func NewIngestProjectLogsOTLPRequest(server string, project ProjectHandleParam, body IngestProjectLogsOTLPJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewIngestProjectLogsOTLPRequestWithBody(server, project, "application/json", bodyReader)
+}
+
+// NewIngestProjectLogsOTLPRequestWithBody generates requests for IngestProjectLogsOTLP with any type of body
+func NewIngestProjectLogsOTLPRequestWithBody(server string, project ProjectHandleParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/logs/otlp", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewListMemberGroupsRequest generates requests for ListMemberGroups
 func NewListMemberGroupsRequest(server string, project ProjectHandleParam, userId UserId) (*http.Request, error) {
 	var err error
@@ -14318,6 +19262,187 @@ func NewGetProjectMetricsRequest(server string, project ProjectHandleParam) (*ht
 	return req, nil
 }
 
+// NewLookupReferencesRequest generates requests for LookupReferences
+func NewLookupReferencesRequest(server string, project ProjectHandleParam, referenceType ReferenceTypeParam, params *LookupReferencesParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "reference_type", referenceType, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/references/%s/lookup", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Q != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "q", *params.Q, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Cursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "cursor", *params.Cursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.IntegrationId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "integration_id", *params.IntegrationId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.DependsOn != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "depends_on", *params.DependsOn, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewResolveReferencesRequest calls the generic ResolveReferences builder with application/json body
+func NewResolveReferencesRequest(server string, project ProjectHandleParam, referenceType ReferenceTypeParam, body ResolveReferencesJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewResolveReferencesRequestWithBody(server, project, referenceType, "application/json", bodyReader)
+}
+
+// NewResolveReferencesRequestWithBody generates requests for ResolveReferences with any type of body
+func NewResolveReferencesRequestWithBody(server string, project ProjectHandleParam, referenceType ReferenceTypeParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "reference_type", referenceType, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/references/%s/resolve", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewListRunsRequest generates requests for ListRuns
 func NewListRunsRequest(server string, project ProjectHandleParam, params *ListRunsParams) (*http.Request, error) {
 	var err error
@@ -14366,6 +19491,22 @@ func NewListRunsRequest(server string, project ProjectHandleParam, params *ListR
 		if params.WorkflowType != nil {
 
 			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "workflow_type", *params.WorkflowType, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.DefinitionId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "definition_id", *params.DefinitionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
 				return nil, err
 			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
 				return nil, err
@@ -14561,62 +19702,6 @@ func NewStartRunRequestWithBody(server string, project ProjectHandleParam, conte
 	}
 
 	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewStreamProjectRunEventsRequest generates requests for StreamProjectRunEvents
-func NewStreamProjectRunEventsRequest(server string, project ProjectHandleParam, params *StreamProjectRunEventsParams) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/projects/%s/runs/events", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		queryValues := queryURL.Query()
-
-		if params.Since != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "since", *params.Since, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
-				return nil, err
-			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-				return nil, err
-			} else {
-				for k, v := range parsed {
-					for _, v2 := range v {
-						queryValues.Add(k, v2)
-					}
-				}
-			}
-
-		}
-
-		queryURL.RawQuery = queryValues.Encode()
-	}
-
-	req, err := http.NewRequest("GET", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
 
 	return req, nil
 }
@@ -15153,8 +20238,8 @@ func NewGetRunStepRequest(server string, project ProjectHandleParam, id IDParam,
 	return req, nil
 }
 
-// NewListToolsRequest generates requests for ListTools
-func NewListToolsRequest(server string, project ProjectHandleParam) (*http.Request, error) {
+// NewListProjectSpansRequest generates requests for ListProjectSpans
+func NewListProjectSpansRequest(server string, project ProjectHandleParam, params *ListProjectSpansParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -15169,7 +20254,7 @@ func NewListToolsRequest(server string, project ProjectHandleParam) (*http.Reque
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/projects/%s/tools", pathParam0)
+	operationPath := fmt.Sprintf("/v1/projects/%s/spans", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -15177,6 +20262,92 @@ func NewListToolsRequest(server string, project ProjectHandleParam) (*http.Reque
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Cursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "cursor", *params.Cursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.RunId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "run_id", *params.RunId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.JobId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "job_id", *params.JobId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.StepId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "step_id", *params.StepId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
 	}
 
 	req, err := http.NewRequest("GET", queryURL.String(), nil)
@@ -15187,19 +20358,8 @@ func NewListToolsRequest(server string, project ProjectHandleParam) (*http.Reque
 	return req, nil
 }
 
-// NewRunToolRequest calls the generic RunTool builder with application/json body
-func NewRunToolRequest(server string, project ProjectHandleParam, handle string, body RunToolJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewRunToolRequestWithBody(server, project, handle, "application/json", bodyReader)
-}
-
-// NewRunToolRequestWithBody generates requests for RunTool with any type of body
-func NewRunToolRequestWithBody(server string, project ProjectHandleParam, handle string, contentType string, body io.Reader) (*http.Request, error) {
+// NewGetProjectStepSpanCountsRequest generates requests for GetProjectStepSpanCounts
+func NewGetProjectStepSpanCountsRequest(server string, project ProjectHandleParam, params *GetProjectStepSpanCountsParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -15209,9 +20369,54 @@ func NewRunToolRequestWithBody(server string, project ProjectHandleParam, handle
 		return nil, err
 	}
 
-	var pathParam1 string
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
 
-	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "handle", handle, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	operationPath := fmt.Sprintf("/v1/projects/%s/spans/step_counts", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if queryFrag, err := runtime.StyleParamWithOptions("form", true, "run_id", params.RunId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			return nil, err
+		} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+			return nil, err
+		} else {
+			for k, v := range parsed {
+				for _, v2 := range v {
+					queryValues.Add(k, v2)
+				}
+			}
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewListDataTablesRequest generates requests for ListDataTables
+func NewListDataTablesRequest(server string, project ProjectHandleParam, params *ListDataTablesParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
 	if err != nil {
 		return nil, err
 	}
@@ -15221,7 +20426,90 @@ func NewRunToolRequestWithBody(server string, project ProjectHandleParam, handle
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/projects/%s/tools/%s/runs", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v1/projects/%s/tables", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Cursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "cursor", *params.Cursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCreateDataTableRequest calls the generic CreateDataTable builder with application/json body
+func NewCreateDataTableRequest(server string, project ProjectHandleParam, body CreateDataTableJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateDataTableRequestWithBody(server, project, "application/json", bodyReader)
+}
+
+// NewCreateDataTableRequestWithBody generates requests for CreateDataTable with any type of body
+func NewCreateDataTableRequestWithBody(server string, project ProjectHandleParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/tables", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -15241,8 +20529,8 @@ func NewRunToolRequestWithBody(server string, project ProjectHandleParam, handle
 	return req, nil
 }
 
-// NewGetToolRunRequest generates requests for GetToolRun
-func NewGetToolRunRequest(server string, project ProjectHandleParam, handle string, runId RunId) (*http.Request, error) {
+// NewDeleteDataTableRequest generates requests for DeleteDataTable
+func NewDeleteDataTableRequest(server string, project ProjectHandleParam, tableName TableNameParam) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -15254,14 +20542,7 @@ func NewGetToolRunRequest(server string, project ProjectHandleParam, handle stri
 
 	var pathParam1 string
 
-	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "handle", handle, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam2 string
-
-	pathParam2, err = runtime.StyleParamWithOptions("simple", false, "run_id", runId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "table_name", tableName, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
 	if err != nil {
 		return nil, err
 	}
@@ -15271,7 +20552,620 @@ func NewGetToolRunRequest(server string, project ProjectHandleParam, handle stri
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/projects/%s/tools/%s/runs/%s", pathParam0, pathParam1, pathParam2)
+	operationPath := fmt.Sprintf("/v1/projects/%s/tables/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetDataTableRequest generates requests for GetDataTable
+func NewGetDataTableRequest(server string, project ProjectHandleParam, tableName TableNameParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "table_name", tableName, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/tables/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewUpdateDataTableRequest calls the generic UpdateDataTable builder with application/json body
+func NewUpdateDataTableRequest(server string, project ProjectHandleParam, tableName TableNameParam, body UpdateDataTableJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpdateDataTableRequestWithBody(server, project, tableName, "application/json", bodyReader)
+}
+
+// NewUpdateDataTableRequestWithBody generates requests for UpdateDataTable with any type of body
+func NewUpdateDataTableRequestWithBody(server string, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "table_name", tableName, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/tables/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PUT", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewInsertDataTableRowRequest calls the generic InsertDataTableRow builder with application/json body
+func NewInsertDataTableRowRequest(server string, project ProjectHandleParam, tableName TableNameParam, body InsertDataTableRowJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewInsertDataTableRowRequestWithBody(server, project, tableName, "application/json", bodyReader)
+}
+
+// NewInsertDataTableRowRequestWithBody generates requests for InsertDataTableRow with any type of body
+func NewInsertDataTableRowRequestWithBody(server string, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "table_name", tableName, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/tables/%s/rows", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewBulkInsertDataTableRowsRequest calls the generic BulkInsertDataTableRows builder with application/json body
+func NewBulkInsertDataTableRowsRequest(server string, project ProjectHandleParam, tableName TableNameParam, body BulkInsertDataTableRowsJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewBulkInsertDataTableRowsRequestWithBody(server, project, tableName, "application/json", bodyReader)
+}
+
+// NewBulkInsertDataTableRowsRequestWithBody generates requests for BulkInsertDataTableRows with any type of body
+func NewBulkInsertDataTableRowsRequestWithBody(server string, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "table_name", tableName, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/tables/%s/rows/bulk", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewQueryDataTableRowsRequest calls the generic QueryDataTableRows builder with application/json body
+func NewQueryDataTableRowsRequest(server string, project ProjectHandleParam, tableName TableNameParam, body QueryDataTableRowsJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewQueryDataTableRowsRequestWithBody(server, project, tableName, "application/json", bodyReader)
+}
+
+// NewQueryDataTableRowsRequestWithBody generates requests for QueryDataTableRows with any type of body
+func NewQueryDataTableRowsRequestWithBody(server string, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "table_name", tableName, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/tables/%s/rows/query", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewUpsertDataTableRowRequest calls the generic UpsertDataTableRow builder with application/json body
+func NewUpsertDataTableRowRequest(server string, project ProjectHandleParam, tableName TableNameParam, body UpsertDataTableRowJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpsertDataTableRowRequestWithBody(server, project, tableName, "application/json", bodyReader)
+}
+
+// NewUpsertDataTableRowRequestWithBody generates requests for UpsertDataTableRow with any type of body
+func NewUpsertDataTableRowRequestWithBody(server string, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "table_name", tableName, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/tables/%s/rows/upsert", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewDeleteDataTableRowRequest generates requests for DeleteDataTableRow
+func NewDeleteDataTableRowRequest(server string, project ProjectHandleParam, tableName TableNameParam, rowId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "table_name", tableName, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam2 string
+
+	pathParam2, err = runtime.StyleParamWithOptions("simple", false, "row_id", rowId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/tables/%s/rows/%s", pathParam0, pathParam1, pathParam2)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetDataTableRowRequest generates requests for GetDataTableRow
+func NewGetDataTableRowRequest(server string, project ProjectHandleParam, tableName TableNameParam, rowId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "table_name", tableName, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam2 string
+
+	pathParam2, err = runtime.StyleParamWithOptions("simple", false, "row_id", rowId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/tables/%s/rows/%s", pathParam0, pathParam1, pathParam2)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewUpdateDataTableRowRequest calls the generic UpdateDataTableRow builder with application/json body
+func NewUpdateDataTableRowRequest(server string, project ProjectHandleParam, tableName TableNameParam, rowId string, body UpdateDataTableRowJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpdateDataTableRowRequestWithBody(server, project, tableName, rowId, "application/json", bodyReader)
+}
+
+// NewUpdateDataTableRowRequestWithBody generates requests for UpdateDataTableRow with any type of body
+func NewUpdateDataTableRowRequestWithBody(server string, project ProjectHandleParam, tableName TableNameParam, rowId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "table_name", tableName, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam2 string
+
+	pathParam2, err = runtime.StyleParamWithOptions("simple", false, "row_id", rowId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/tables/%s/rows/%s", pathParam0, pathParam1, pathParam2)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PATCH", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewListProjectTracesRequest generates requests for ListProjectTraces
+func NewListProjectTracesRequest(server string, project ProjectHandleParam, params *ListProjectTracesParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/traces", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Cursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "cursor", *params.Cursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.RunId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "run_id", *params.RunId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.AgentId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "agent_id", *params.AgentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetTraceRequest generates requests for GetTrace
+func NewGetTraceRequest(server string, project ProjectHandleParam, traceId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "trace_id", traceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/traces/%s", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -15971,6 +21865,60 @@ func NewUpdateTriggerTargetRequestWithBody(server string, project ProjectHandleP
 	}
 
 	req, err := http.NewRequest("PATCH", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewTestFireTriggerRequest calls the generic TestFireTrigger builder with application/json body
+func NewTestFireTriggerRequest(server string, project ProjectHandleParam, id IDParam, body TestFireTriggerJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewTestFireTriggerRequestWithBody(server, project, id, "application/json", bodyReader)
+}
+
+// NewTestFireTriggerRequestWithBody generates requests for TestFireTrigger with any type of body
+func NewTestFireTriggerRequestWithBody(server string, project ProjectHandleParam, id IDParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/triggers/%s/test", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
 	if err != nil {
 		return nil, err
 	}
@@ -16932,8 +22880,29 @@ func WithBaseURL(baseURL string) ClientOption {
 
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
+	// GetAgentInvocationWithResponse request
+	GetAgentInvocationWithResponse(ctx context.Context, invocationId string, reqEditors ...RequestEditorFn) (*GetAgentInvocationResponse, error)
+
+	// CompleteAgentInvocationWithBodyWithResponse request with any body
+	CompleteAgentInvocationWithBodyWithResponse(ctx context.Context, invocationId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CompleteAgentInvocationResponse, error)
+
+	CompleteAgentInvocationWithResponse(ctx context.Context, invocationId string, body CompleteAgentInvocationJSONRequestBody, reqEditors ...RequestEditorFn) (*CompleteAgentInvocationResponse, error)
+
+	// FailAgentInvocationWithBodyWithResponse request with any body
+	FailAgentInvocationWithBodyWithResponse(ctx context.Context, invocationId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*FailAgentInvocationResponse, error)
+
+	FailAgentInvocationWithResponse(ctx context.Context, invocationId string, body FailAgentInvocationJSONRequestBody, reqEditors ...RequestEditorFn) (*FailAgentInvocationResponse, error)
+
 	// ListAuditLogsWithResponse request
 	ListAuditLogsWithResponse(ctx context.Context, params *ListAuditLogsParams, reqEditors ...RequestEditorFn) (*ListAuditLogsResponse, error)
+
+	// ListIntegrationProvidersWithResponse request
+	ListIntegrationProvidersWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListIntegrationProvidersResponse, error)
+
+	// CreateMessageWithBodyWithResponse request with any body
+	CreateMessageWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateMessageResponse, error)
+
+	CreateMessageWithResponse(ctx context.Context, body CreateMessageJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateMessageResponse, error)
 
 	// ListProjectsWithResponse request
 	ListProjectsWithResponse(ctx context.Context, params *ListProjectsParams, reqEditors ...RequestEditorFn) (*ListProjectsResponse, error)
@@ -16982,8 +22951,8 @@ type ClientWithResponsesInterface interface {
 	// RestoreProjectWithResponse request
 	RestoreProjectWithResponse(ctx context.Context, id IDParam, reqEditors ...RequestEditorFn) (*RestoreProjectResponse, error)
 
-	// ListActionAuditLogWithResponse request
-	ListActionAuditLogWithResponse(ctx context.Context, project ProjectHandleParam, params *ListActionAuditLogParams, reqEditors ...RequestEditorFn) (*ListActionAuditLogResponse, error)
+	// ListActionInvocationsWithResponse request
+	ListActionInvocationsWithResponse(ctx context.Context, project ProjectHandleParam, params *ListActionInvocationsParams, reqEditors ...RequestEditorFn) (*ListActionInvocationsResponse, error)
 
 	// ListActionsWithResponse request
 	ListActionsWithResponse(ctx context.Context, project ProjectHandleParam, params *ListActionsParams, reqEditors ...RequestEditorFn) (*ListActionsResponse, error)
@@ -17010,6 +22979,11 @@ type ClientWithResponsesInterface interface {
 
 	UpdateActionWithResponse(ctx context.Context, project ProjectHandleParam, actionName ActionNameParam, body UpdateActionJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateActionResponse, error)
 
+	// InvokeActionWithBodyWithResponse request with any body
+	InvokeActionWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, actionName ActionNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*InvokeActionResponse, error)
+
+	InvokeActionWithResponse(ctx context.Context, project ProjectHandleParam, actionName ActionNameParam, body InvokeActionJSONRequestBody, reqEditors ...RequestEditorFn) (*InvokeActionResponse, error)
+
 	// RotateActionSecretWithResponse request
 	RotateActionSecretWithResponse(ctx context.Context, project ProjectHandleParam, actionName ActionNameParam, reqEditors ...RequestEditorFn) (*RotateActionSecretResponse, error)
 
@@ -17031,6 +23005,9 @@ type ClientWithResponsesInterface interface {
 	UpdateAgentWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateAgentResponse, error)
 
 	UpdateAgentWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body UpdateAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateAgentResponse, error)
+
+	// ProvisionAgentInboxWithResponse request
+	ProvisionAgentInboxWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*ProvisionAgentInboxResponse, error)
 
 	// ListAgentSessionsWithResponse request
 	ListAgentSessionsWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, params *ListAgentSessionsParams, reqEditors ...RequestEditorFn) (*ListAgentSessionsResponse, error)
@@ -17068,6 +23045,17 @@ type ClientWithResponsesInterface interface {
 
 	UpdateChannelWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body UpdateChannelJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateChannelResponse, error)
 
+	// ClaimChannelInteractionWithResponse request
+	ClaimChannelInteractionWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, interactionId string, reqEditors ...RequestEditorFn) (*ClaimChannelInteractionResponse, error)
+
+	// ReleaseChannelInteractionWithResponse request
+	ReleaseChannelInteractionWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, interactionId string, reqEditors ...RequestEditorFn) (*ReleaseChannelInteractionResponse, error)
+
+	// RespondToChannelInteractionWithBodyWithResponse request with any body
+	RespondToChannelInteractionWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, interactionId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RespondToChannelInteractionResponse, error)
+
+	RespondToChannelInteractionWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, interactionId string, body RespondToChannelInteractionJSONRequestBody, reqEditors ...RequestEditorFn) (*RespondToChannelInteractionResponse, error)
+
 	// ListChannelMembersWithResponse request
 	ListChannelMembersWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, params *ListChannelMembersParams, reqEditors ...RequestEditorFn) (*ListChannelMembersResponse, error)
 
@@ -17079,21 +23067,34 @@ type ClientWithResponsesInterface interface {
 	// RemoveChannelMemberWithResponse request
 	RemoveChannelMemberWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, memberId MemberId, reqEditors ...RequestEditorFn) (*RemoveChannelMemberResponse, error)
 
-	// ListChannelMessagesWithResponse request
-	ListChannelMessagesWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, params *ListChannelMessagesParams, reqEditors ...RequestEditorFn) (*ListChannelMessagesResponse, error)
+	// ListMessagesWithResponse request
+	ListMessagesWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, params *ListMessagesParams, reqEditors ...RequestEditorFn) (*ListMessagesResponse, error)
 
-	// SendChannelMessageWithBodyWithResponse request with any body
-	SendChannelMessageWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SendChannelMessageResponse, error)
+	// SendMessageWithBodyWithResponse request with any body
+	SendMessageWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SendMessageResponse, error)
 
-	SendChannelMessageWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body SendChannelMessageJSONRequestBody, reqEditors ...RequestEditorFn) (*SendChannelMessageResponse, error)
+	SendMessageWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body SendMessageJSONRequestBody, reqEditors ...RequestEditorFn) (*SendMessageResponse, error)
 
-	// GetChannelMessageWithResponse request
-	GetChannelMessageWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, messageId MessageId, reqEditors ...RequestEditorFn) (*GetChannelMessageResponse, error)
+	// GetMessageWithResponse request
+	GetMessageWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, messageId MessageId, reqEditors ...RequestEditorFn) (*GetMessageResponse, error)
 
-	// UpdateChannelMessageWithBodyWithResponse request with any body
-	UpdateChannelMessageWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, messageId MessageId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateChannelMessageResponse, error)
+	// UpdateMessageWithBodyWithResponse request with any body
+	UpdateMessageWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, messageId MessageId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateMessageResponse, error)
 
-	UpdateChannelMessageWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, messageId MessageId, body UpdateChannelMessageJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateChannelMessageResponse, error)
+	UpdateMessageWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, messageId MessageId, body UpdateMessageJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateMessageResponse, error)
+
+	// MarkMessagesReadWithBodyWithResponse request with any body
+	MarkMessagesReadWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*MarkMessagesReadResponse, error)
+
+	MarkMessagesReadWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body MarkMessagesReadJSONRequestBody, reqEditors ...RequestEditorFn) (*MarkMessagesReadResponse, error)
+
+	// ShareChannelEntityWithBodyWithResponse request with any body
+	ShareChannelEntityWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ShareChannelEntityResponse, error)
+
+	ShareChannelEntityWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body ShareChannelEntityJSONRequestBody, reqEditors ...RequestEditorFn) (*ShareChannelEntityResponse, error)
+
+	// StreamProjectEventsWithResponse request
+	StreamProjectEventsWithResponse(ctx context.Context, project ProjectHandleParam, params *StreamProjectEventsParams, reqEditors ...RequestEditorFn) (*StreamProjectEventsResponse, error)
 
 	// ListGroupsWithResponse request
 	ListGroupsWithResponse(ctx context.Context, project ProjectHandleParam, params *ListGroupsParams, reqEditors ...RequestEditorFn) (*ListGroupsResponse, error)
@@ -17135,6 +23136,11 @@ type ClientWithResponsesInterface interface {
 
 	// GetInteractionWithResponse request
 	GetInteractionWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*GetInteractionResponse, error)
+
+	// CancelInteractionWithBodyWithResponse request with any body
+	CancelInteractionWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CancelInteractionResponse, error)
+
+	CancelInteractionWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body CancelInteractionJSONRequestBody, reqEditors ...RequestEditorFn) (*CancelInteractionResponse, error)
 
 	// ClaimInteractionWithResponse request
 	ClaimInteractionWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*ClaimInteractionResponse, error)
@@ -17180,11 +23186,32 @@ type ClientWithResponsesInterface interface {
 
 	CreateJobInteractionWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body CreateJobInteractionJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateJobInteractionResponse, error)
 
+	// ListProjectLogsWithResponse request
+	ListProjectLogsWithResponse(ctx context.Context, project ProjectHandleParam, params *ListProjectLogsParams, reqEditors ...RequestEditorFn) (*ListProjectLogsResponse, error)
+
+	// IngestProjectLogsWithBodyWithResponse request with any body
+	IngestProjectLogsWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*IngestProjectLogsResponse, error)
+
+	IngestProjectLogsWithResponse(ctx context.Context, project ProjectHandleParam, body IngestProjectLogsJSONRequestBody, reqEditors ...RequestEditorFn) (*IngestProjectLogsResponse, error)
+
+	// IngestProjectLogsOTLPWithBodyWithResponse request with any body
+	IngestProjectLogsOTLPWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*IngestProjectLogsOTLPResponse, error)
+
+	IngestProjectLogsOTLPWithResponse(ctx context.Context, project ProjectHandleParam, body IngestProjectLogsOTLPJSONRequestBody, reqEditors ...RequestEditorFn) (*IngestProjectLogsOTLPResponse, error)
+
 	// ListMemberGroupsWithResponse request
 	ListMemberGroupsWithResponse(ctx context.Context, project ProjectHandleParam, userId UserId, reqEditors ...RequestEditorFn) (*ListMemberGroupsResponse, error)
 
 	// GetProjectMetricsWithResponse request
 	GetProjectMetricsWithResponse(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*GetProjectMetricsResponse, error)
+
+	// LookupReferencesWithResponse request
+	LookupReferencesWithResponse(ctx context.Context, project ProjectHandleParam, referenceType ReferenceTypeParam, params *LookupReferencesParams, reqEditors ...RequestEditorFn) (*LookupReferencesResponse, error)
+
+	// ResolveReferencesWithBodyWithResponse request with any body
+	ResolveReferencesWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, referenceType ReferenceTypeParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ResolveReferencesResponse, error)
+
+	ResolveReferencesWithResponse(ctx context.Context, project ProjectHandleParam, referenceType ReferenceTypeParam, body ResolveReferencesJSONRequestBody, reqEditors ...RequestEditorFn) (*ResolveReferencesResponse, error)
 
 	// ListRunsWithResponse request
 	ListRunsWithResponse(ctx context.Context, project ProjectHandleParam, params *ListRunsParams, reqEditors ...RequestEditorFn) (*ListRunsResponse, error)
@@ -17193,9 +23220,6 @@ type ClientWithResponsesInterface interface {
 	StartRunWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*StartRunResponse, error)
 
 	StartRunWithResponse(ctx context.Context, project ProjectHandleParam, body StartRunJSONRequestBody, reqEditors ...RequestEditorFn) (*StartRunResponse, error)
-
-	// StreamProjectRunEventsWithResponse request
-	StreamProjectRunEventsWithResponse(ctx context.Context, project ProjectHandleParam, params *StreamProjectRunEventsParams, reqEditors ...RequestEditorFn) (*StreamProjectRunEventsResponse, error)
 
 	// GetRunWithResponse request
 	GetRunWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*GetRunResponse, error)
@@ -17228,16 +23252,67 @@ type ClientWithResponsesInterface interface {
 	// GetRunStepWithResponse request
 	GetRunStepWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, stepId string, params *GetRunStepParams, reqEditors ...RequestEditorFn) (*GetRunStepResponse, error)
 
-	// ListToolsWithResponse request
-	ListToolsWithResponse(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*ListToolsResponse, error)
+	// ListProjectSpansWithResponse request
+	ListProjectSpansWithResponse(ctx context.Context, project ProjectHandleParam, params *ListProjectSpansParams, reqEditors ...RequestEditorFn) (*ListProjectSpansResponse, error)
 
-	// RunToolWithBodyWithResponse request with any body
-	RunToolWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, handle string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RunToolResponse, error)
+	// GetProjectStepSpanCountsWithResponse request
+	GetProjectStepSpanCountsWithResponse(ctx context.Context, project ProjectHandleParam, params *GetProjectStepSpanCountsParams, reqEditors ...RequestEditorFn) (*GetProjectStepSpanCountsResponse, error)
 
-	RunToolWithResponse(ctx context.Context, project ProjectHandleParam, handle string, body RunToolJSONRequestBody, reqEditors ...RequestEditorFn) (*RunToolResponse, error)
+	// ListDataTablesWithResponse request
+	ListDataTablesWithResponse(ctx context.Context, project ProjectHandleParam, params *ListDataTablesParams, reqEditors ...RequestEditorFn) (*ListDataTablesResponse, error)
 
-	// GetToolRunWithResponse request
-	GetToolRunWithResponse(ctx context.Context, project ProjectHandleParam, handle string, runId RunId, reqEditors ...RequestEditorFn) (*GetToolRunResponse, error)
+	// CreateDataTableWithBodyWithResponse request with any body
+	CreateDataTableWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateDataTableResponse, error)
+
+	CreateDataTableWithResponse(ctx context.Context, project ProjectHandleParam, body CreateDataTableJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateDataTableResponse, error)
+
+	// DeleteDataTableWithResponse request
+	DeleteDataTableWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, reqEditors ...RequestEditorFn) (*DeleteDataTableResponse, error)
+
+	// GetDataTableWithResponse request
+	GetDataTableWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, reqEditors ...RequestEditorFn) (*GetDataTableResponse, error)
+
+	// UpdateDataTableWithBodyWithResponse request with any body
+	UpdateDataTableWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateDataTableResponse, error)
+
+	UpdateDataTableWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body UpdateDataTableJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateDataTableResponse, error)
+
+	// InsertDataTableRowWithBodyWithResponse request with any body
+	InsertDataTableRowWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*InsertDataTableRowResponse, error)
+
+	InsertDataTableRowWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body InsertDataTableRowJSONRequestBody, reqEditors ...RequestEditorFn) (*InsertDataTableRowResponse, error)
+
+	// BulkInsertDataTableRowsWithBodyWithResponse request with any body
+	BulkInsertDataTableRowsWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*BulkInsertDataTableRowsResponse, error)
+
+	BulkInsertDataTableRowsWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body BulkInsertDataTableRowsJSONRequestBody, reqEditors ...RequestEditorFn) (*BulkInsertDataTableRowsResponse, error)
+
+	// QueryDataTableRowsWithBodyWithResponse request with any body
+	QueryDataTableRowsWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*QueryDataTableRowsResponse, error)
+
+	QueryDataTableRowsWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body QueryDataTableRowsJSONRequestBody, reqEditors ...RequestEditorFn) (*QueryDataTableRowsResponse, error)
+
+	// UpsertDataTableRowWithBodyWithResponse request with any body
+	UpsertDataTableRowWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpsertDataTableRowResponse, error)
+
+	UpsertDataTableRowWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body UpsertDataTableRowJSONRequestBody, reqEditors ...RequestEditorFn) (*UpsertDataTableRowResponse, error)
+
+	// DeleteDataTableRowWithResponse request
+	DeleteDataTableRowWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, reqEditors ...RequestEditorFn) (*DeleteDataTableRowResponse, error)
+
+	// GetDataTableRowWithResponse request
+	GetDataTableRowWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, reqEditors ...RequestEditorFn) (*GetDataTableRowResponse, error)
+
+	// UpdateDataTableRowWithBodyWithResponse request with any body
+	UpdateDataTableRowWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateDataTableRowResponse, error)
+
+	UpdateDataTableRowWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, body UpdateDataTableRowJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateDataTableRowResponse, error)
+
+	// ListProjectTracesWithResponse request
+	ListProjectTracesWithResponse(ctx context.Context, project ProjectHandleParam, params *ListProjectTracesParams, reqEditors ...RequestEditorFn) (*ListProjectTracesResponse, error)
+
+	// GetTraceWithResponse request
+	GetTraceWithResponse(ctx context.Context, project ProjectHandleParam, traceId string, reqEditors ...RequestEditorFn) (*GetTraceResponse, error)
 
 	// ListTriggersWithResponse request
 	ListTriggersWithResponse(ctx context.Context, project ProjectHandleParam, params *ListTriggersParams, reqEditors ...RequestEditorFn) (*ListTriggersResponse, error)
@@ -17282,6 +23357,11 @@ type ClientWithResponsesInterface interface {
 	UpdateTriggerTargetWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, targetId TriggerTargetIDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateTriggerTargetResponse, error)
 
 	UpdateTriggerTargetWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, targetId TriggerTargetIDParam, body UpdateTriggerTargetJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateTriggerTargetResponse, error)
+
+	// TestFireTriggerWithBodyWithResponse request with any body
+	TestFireTriggerWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*TestFireTriggerResponse, error)
+
+	TestFireTriggerWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body TestFireTriggerJSONRequestBody, reqEditors ...RequestEditorFn) (*TestFireTriggerResponse, error)
 
 	// ListWebhooksWithResponse request
 	ListWebhooksWithResponse(ctx context.Context, project ProjectHandleParam, params *ListWebhooksParams, reqEditors ...RequestEditorFn) (*ListWebhooksResponse, error)
@@ -17347,6 +23427,81 @@ type ClientWithResponsesInterface interface {
 	GetWorkflowVersionWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, version int, reqEditors ...RequestEditorFn) (*GetWorkflowVersionResponse, error)
 }
 
+type GetAgentInvocationResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *AgentInvocation
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r GetAgentInvocationResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetAgentInvocationResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type CompleteAgentInvocationResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *AgentInvocation
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+	JSON410      *AgentInvocation
+}
+
+// Status returns HTTPResponse.Status
+func (r CompleteAgentInvocationResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CompleteAgentInvocationResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type FailAgentInvocationResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *AgentInvocation
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r FailAgentInvocationResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r FailAgentInvocationResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type ListAuditLogsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -17364,6 +23519,55 @@ func (r ListAuditLogsResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r ListAuditLogsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ListIntegrationProvidersResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *IntegrationCatalog
+	JSON401      *Unauthorized
+}
+
+// Status returns HTTPResponse.Status
+func (r ListIntegrationProvidersResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListIntegrationProvidersResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type CreateMessageResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *LLMGenerateResponse
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON502      *ProviderError
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateMessageResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateMessageResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -17692,16 +23896,15 @@ func (r RestoreProjectResponse) StatusCode() int {
 	return 0
 }
 
-type ListActionAuditLogResponse struct {
+type ListActionInvocationsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *ActionAuditLogListResponse
+	JSON200      *ActionInvocationListResponse
 	JSON401      *Unauthorized
-	JSON404      *NotFound
 }
 
 // Status returns HTTPResponse.Status
-func (r ListActionAuditLogResponse) Status() string {
+func (r ListActionInvocationsResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -17709,7 +23912,7 @@ func (r ListActionAuditLogResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r ListActionAuditLogResponse) StatusCode() int {
+func (r ListActionInvocationsResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -17884,6 +24087,32 @@ func (r UpdateActionResponse) StatusCode() int {
 	return 0
 }
 
+type InvokeActionResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ActionInvocationResult
+	JSON202      *ActionInvocationResult
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r InvokeActionResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r InvokeActionResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type RotateActionSecretResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -18025,6 +24254,31 @@ func (r UpdateAgentResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r UpdateAgentResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ProvisionAgentInboxResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Agent
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r ProvisionAgentInboxResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ProvisionAgentInboxResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -18272,6 +24526,85 @@ func (r UpdateChannelResponse) StatusCode() int {
 	return 0
 }
 
+type ClaimChannelInteractionResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ChannelInteractionActionResponse
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r ClaimChannelInteractionResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ClaimChannelInteractionResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ReleaseChannelInteractionResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ChannelInteractionActionResponse
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r ReleaseChannelInteractionResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ReleaseChannelInteractionResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type RespondToChannelInteractionResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ChannelInteractionActionResponse
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+	JSON409      *Conflict
+}
+
+// Status returns HTTPResponse.Status
+func (r RespondToChannelInteractionResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r RespondToChannelInteractionResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type ListChannelMembersResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -18345,16 +24678,18 @@ func (r RemoveChannelMemberResponse) StatusCode() int {
 	return 0
 }
 
-type ListChannelMessagesResponse struct {
+type ListMessagesResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *ChannelMessageListResponse
+	JSON400      *BadRequest
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
 // Status returns HTTPResponse.Status
-func (r ListChannelMessagesResponse) Status() string {
+func (r ListMessagesResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -18362,14 +24697,14 @@ func (r ListChannelMessagesResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r ListChannelMessagesResponse) StatusCode() int {
+func (r ListMessagesResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
-type SendChannelMessageResponse struct {
+type SendMessageResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON201      *ChannelMessage
@@ -18379,7 +24714,7 @@ type SendChannelMessageResponse struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r SendChannelMessageResponse) Status() string {
+func (r SendMessageResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -18387,14 +24722,14 @@ func (r SendChannelMessageResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r SendChannelMessageResponse) StatusCode() int {
+func (r SendMessageResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
-type GetChannelMessageResponse struct {
+type GetMessageResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *ChannelMessage
@@ -18403,7 +24738,7 @@ type GetChannelMessageResponse struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r GetChannelMessageResponse) Status() string {
+func (r GetMessageResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -18411,14 +24746,14 @@ func (r GetChannelMessageResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r GetChannelMessageResponse) StatusCode() int {
+func (r GetMessageResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
-type UpdateChannelMessageResponse struct {
+type UpdateMessageResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *ChannelMessage
@@ -18428,7 +24763,7 @@ type UpdateChannelMessageResponse struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r UpdateChannelMessageResponse) Status() string {
+func (r UpdateMessageResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -18436,7 +24771,80 @@ func (r UpdateChannelMessageResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r UpdateChannelMessageResponse) StatusCode() int {
+func (r UpdateMessageResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type MarkMessagesReadResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r MarkMessagesReadResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r MarkMessagesReadResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ShareChannelEntityResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON201      *ChannelMessage
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r ShareChannelEntityResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ShareChannelEntityResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type StreamProjectEventsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+}
+
+// Status returns HTTPResponse.Status
+func (r StreamProjectEventsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r StreamProjectEventsResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -18709,6 +25117,32 @@ func (r GetInteractionResponse) StatusCode() int {
 	return 0
 }
 
+type CancelInteractionResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Interaction
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r CancelInteractionResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CancelInteractionResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type ClaimInteractionResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -18964,6 +25398,80 @@ func (r CreateJobInteractionResponse) StatusCode() int {
 	return 0
 }
 
+type ListProjectLogsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *LogRecordListResponse
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r ListProjectLogsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListProjectLogsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type IngestProjectLogsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON202      *LogIngestResponse
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r IngestProjectLogsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r IngestProjectLogsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type IngestProjectLogsOTLPResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON202      *LogIngestResponse
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r IngestProjectLogsOTLPResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r IngestProjectLogsOTLPResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type ListMemberGroupsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -19006,6 +25514,62 @@ func (r GetProjectMetricsResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r GetProjectMetricsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type LookupReferencesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ReferenceLookupResponse
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+	JSON409      *ErrorResponse
+	JSON429      *TooManyRequests
+	JSON503      *ServiceUnavailable
+}
+
+// Status returns HTTPResponse.Status
+func (r LookupReferencesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r LookupReferencesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ResolveReferencesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ReferenceResolveResponse
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+	JSON409      *ErrorResponse
+	JSON429      *TooManyRequests
+	JSON503      *ServiceUnavailable
+}
+
+// Status returns HTTPResponse.Status
+func (r ResolveReferencesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ResolveReferencesResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -19062,28 +25626,6 @@ func (r StartRunResponse) StatusCode() int {
 	return 0
 }
 
-type StreamProjectRunEventsResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON401      *Unauthorized
-}
-
-// Status returns HTTPResponse.Status
-func (r StreamProjectRunEventsResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r StreamProjectRunEventsResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
 type GetRunResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -19111,6 +25653,7 @@ func (r GetRunResponse) StatusCode() int {
 type CancelRunResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *WorkflowRun
 	JSON401      *Unauthorized
 	JSON404      *NotFound
 }
@@ -19207,6 +25750,7 @@ func (r ListRunJobsResponse) StatusCode() int {
 type ResumeRunResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *WorkflowRun
 	JSON401      *Unauthorized
 	JSON404      *NotFound
 }
@@ -19300,16 +25844,16 @@ func (r GetRunStepResponse) StatusCode() int {
 	return 0
 }
 
-type ListToolsResponse struct {
+type ListProjectSpansResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *ToolDefinitionListResponse
+	JSON200      *SpanListResponse
 	JSON401      *Unauthorized
 	JSON404      *NotFound
 }
 
 // Status returns HTTPResponse.Status
-func (r ListToolsResponse) Status() string {
+func (r ListProjectSpansResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -19317,25 +25861,142 @@ func (r ListToolsResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r ListToolsResponse) StatusCode() int {
+func (r ListProjectSpansResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
-type RunToolResponse struct {
+type GetProjectStepSpanCountsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *ToolRun
-	JSON202      *ToolRun
+	JSON200      *StepSpanCountsResponse
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r GetProjectStepSpanCountsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetProjectStepSpanCountsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ListDataTablesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *DataTableListResponse
+	JSON401      *Unauthorized
+}
+
+// Status returns HTTPResponse.Status
+func (r ListDataTablesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListDataTablesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type CreateDataTableResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON201      *DataTable
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateDataTableResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateDataTableResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type DeleteDataTableResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteDataTableResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteDataTableResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetDataTableResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *DataTable
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r GetDataTableResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetDataTableResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type UpdateDataTableResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *DataTable
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
 	JSON404      *NotFound
 }
 
 // Status returns HTTPResponse.Status
-func (r RunToolResponse) Status() string {
+func (r UpdateDataTableResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -19343,23 +26004,24 @@ func (r RunToolResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r RunToolResponse) StatusCode() int {
+func (r UpdateDataTableResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
-type GetToolRunResponse struct {
+type InsertDataTableRowResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *ToolRun
+	JSON201      *DataTableRow
+	JSON400      *BadRequest
 	JSON401      *Unauthorized
 	JSON404      *NotFound
 }
 
 // Status returns HTTPResponse.Status
-func (r GetToolRunResponse) Status() string {
+func (r InsertDataTableRowResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -19367,7 +26029,205 @@ func (r GetToolRunResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r GetToolRunResponse) StatusCode() int {
+func (r InsertDataTableRowResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type BulkInsertDataTableRowsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON201      *BulkInsertRowsResponse
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r BulkInsertDataTableRowsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r BulkInsertDataTableRowsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type QueryDataTableRowsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *QueryRowsResponse
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r QueryDataTableRowsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r QueryDataTableRowsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type UpsertDataTableRowResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *UpsertRowResponse
+	JSON201      *UpsertRowResponse
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+	JSON409      *Conflict
+}
+
+// Status returns HTTPResponse.Status
+func (r UpsertDataTableRowResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpsertDataTableRowResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type DeleteDataTableRowResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteDataTableRowResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteDataTableRowResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetDataTableRowResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *DataTableRow
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r GetDataTableRowResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetDataTableRowResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type UpdateDataTableRowResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *DataTableRow
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+	JSON409      *Conflict
+}
+
+// Status returns HTTPResponse.Status
+func (r UpdateDataTableRowResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpdateDataTableRowResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ListProjectTracesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *TraceListResponse
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r ListProjectTracesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListProjectTracesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetTraceResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *TraceDetail
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r GetTraceResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetTraceResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -19658,6 +26518,31 @@ func (r UpdateTriggerTargetResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r UpdateTriggerTargetResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type TestFireTriggerResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *TestFireTriggerResult
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r TestFireTriggerResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r TestFireTriggerResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -20082,6 +26967,49 @@ func (r GetWorkflowVersionResponse) StatusCode() int {
 	return 0
 }
 
+// GetAgentInvocationWithResponse request returning *GetAgentInvocationResponse
+func (c *ClientWithResponses) GetAgentInvocationWithResponse(ctx context.Context, invocationId string, reqEditors ...RequestEditorFn) (*GetAgentInvocationResponse, error) {
+	rsp, err := c.GetAgentInvocation(ctx, invocationId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetAgentInvocationResponse(rsp)
+}
+
+// CompleteAgentInvocationWithBodyWithResponse request with arbitrary body returning *CompleteAgentInvocationResponse
+func (c *ClientWithResponses) CompleteAgentInvocationWithBodyWithResponse(ctx context.Context, invocationId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CompleteAgentInvocationResponse, error) {
+	rsp, err := c.CompleteAgentInvocationWithBody(ctx, invocationId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCompleteAgentInvocationResponse(rsp)
+}
+
+func (c *ClientWithResponses) CompleteAgentInvocationWithResponse(ctx context.Context, invocationId string, body CompleteAgentInvocationJSONRequestBody, reqEditors ...RequestEditorFn) (*CompleteAgentInvocationResponse, error) {
+	rsp, err := c.CompleteAgentInvocation(ctx, invocationId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCompleteAgentInvocationResponse(rsp)
+}
+
+// FailAgentInvocationWithBodyWithResponse request with arbitrary body returning *FailAgentInvocationResponse
+func (c *ClientWithResponses) FailAgentInvocationWithBodyWithResponse(ctx context.Context, invocationId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*FailAgentInvocationResponse, error) {
+	rsp, err := c.FailAgentInvocationWithBody(ctx, invocationId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseFailAgentInvocationResponse(rsp)
+}
+
+func (c *ClientWithResponses) FailAgentInvocationWithResponse(ctx context.Context, invocationId string, body FailAgentInvocationJSONRequestBody, reqEditors ...RequestEditorFn) (*FailAgentInvocationResponse, error) {
+	rsp, err := c.FailAgentInvocation(ctx, invocationId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseFailAgentInvocationResponse(rsp)
+}
+
 // ListAuditLogsWithResponse request returning *ListAuditLogsResponse
 func (c *ClientWithResponses) ListAuditLogsWithResponse(ctx context.Context, params *ListAuditLogsParams, reqEditors ...RequestEditorFn) (*ListAuditLogsResponse, error) {
 	rsp, err := c.ListAuditLogs(ctx, params, reqEditors...)
@@ -20089,6 +27017,32 @@ func (c *ClientWithResponses) ListAuditLogsWithResponse(ctx context.Context, par
 		return nil, err
 	}
 	return ParseListAuditLogsResponse(rsp)
+}
+
+// ListIntegrationProvidersWithResponse request returning *ListIntegrationProvidersResponse
+func (c *ClientWithResponses) ListIntegrationProvidersWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListIntegrationProvidersResponse, error) {
+	rsp, err := c.ListIntegrationProviders(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListIntegrationProvidersResponse(rsp)
+}
+
+// CreateMessageWithBodyWithResponse request with arbitrary body returning *CreateMessageResponse
+func (c *ClientWithResponses) CreateMessageWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateMessageResponse, error) {
+	rsp, err := c.CreateMessageWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateMessageResponse(rsp)
+}
+
+func (c *ClientWithResponses) CreateMessageWithResponse(ctx context.Context, body CreateMessageJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateMessageResponse, error) {
+	rsp, err := c.CreateMessage(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateMessageResponse(rsp)
 }
 
 // ListProjectsWithResponse request returning *ListProjectsResponse
@@ -20240,13 +27194,13 @@ func (c *ClientWithResponses) RestoreProjectWithResponse(ctx context.Context, id
 	return ParseRestoreProjectResponse(rsp)
 }
 
-// ListActionAuditLogWithResponse request returning *ListActionAuditLogResponse
-func (c *ClientWithResponses) ListActionAuditLogWithResponse(ctx context.Context, project ProjectHandleParam, params *ListActionAuditLogParams, reqEditors ...RequestEditorFn) (*ListActionAuditLogResponse, error) {
-	rsp, err := c.ListActionAuditLog(ctx, project, params, reqEditors...)
+// ListActionInvocationsWithResponse request returning *ListActionInvocationsResponse
+func (c *ClientWithResponses) ListActionInvocationsWithResponse(ctx context.Context, project ProjectHandleParam, params *ListActionInvocationsParams, reqEditors ...RequestEditorFn) (*ListActionInvocationsResponse, error) {
+	rsp, err := c.ListActionInvocations(ctx, project, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseListActionAuditLogResponse(rsp)
+	return ParseListActionInvocationsResponse(rsp)
 }
 
 // ListActionsWithResponse request returning *ListActionsResponse
@@ -20328,6 +27282,23 @@ func (c *ClientWithResponses) UpdateActionWithResponse(ctx context.Context, proj
 	return ParseUpdateActionResponse(rsp)
 }
 
+// InvokeActionWithBodyWithResponse request with arbitrary body returning *InvokeActionResponse
+func (c *ClientWithResponses) InvokeActionWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, actionName ActionNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*InvokeActionResponse, error) {
+	rsp, err := c.InvokeActionWithBody(ctx, project, actionName, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseInvokeActionResponse(rsp)
+}
+
+func (c *ClientWithResponses) InvokeActionWithResponse(ctx context.Context, project ProjectHandleParam, actionName ActionNameParam, body InvokeActionJSONRequestBody, reqEditors ...RequestEditorFn) (*InvokeActionResponse, error) {
+	rsp, err := c.InvokeAction(ctx, project, actionName, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseInvokeActionResponse(rsp)
+}
+
 // RotateActionSecretWithResponse request returning *RotateActionSecretResponse
 func (c *ClientWithResponses) RotateActionSecretWithResponse(ctx context.Context, project ProjectHandleParam, actionName ActionNameParam, reqEditors ...RequestEditorFn) (*RotateActionSecretResponse, error) {
 	rsp, err := c.RotateActionSecret(ctx, project, actionName, reqEditors...)
@@ -20396,6 +27367,15 @@ func (c *ClientWithResponses) UpdateAgentWithResponse(ctx context.Context, proje
 		return nil, err
 	}
 	return ParseUpdateAgentResponse(rsp)
+}
+
+// ProvisionAgentInboxWithResponse request returning *ProvisionAgentInboxResponse
+func (c *ClientWithResponses) ProvisionAgentInboxWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*ProvisionAgentInboxResponse, error) {
+	rsp, err := c.ProvisionAgentInbox(ctx, project, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseProvisionAgentInboxResponse(rsp)
 }
 
 // ListAgentSessionsWithResponse request returning *ListAgentSessionsResponse
@@ -20512,6 +27492,41 @@ func (c *ClientWithResponses) UpdateChannelWithResponse(ctx context.Context, pro
 	return ParseUpdateChannelResponse(rsp)
 }
 
+// ClaimChannelInteractionWithResponse request returning *ClaimChannelInteractionResponse
+func (c *ClientWithResponses) ClaimChannelInteractionWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, interactionId string, reqEditors ...RequestEditorFn) (*ClaimChannelInteractionResponse, error) {
+	rsp, err := c.ClaimChannelInteraction(ctx, project, id, interactionId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseClaimChannelInteractionResponse(rsp)
+}
+
+// ReleaseChannelInteractionWithResponse request returning *ReleaseChannelInteractionResponse
+func (c *ClientWithResponses) ReleaseChannelInteractionWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, interactionId string, reqEditors ...RequestEditorFn) (*ReleaseChannelInteractionResponse, error) {
+	rsp, err := c.ReleaseChannelInteraction(ctx, project, id, interactionId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseReleaseChannelInteractionResponse(rsp)
+}
+
+// RespondToChannelInteractionWithBodyWithResponse request with arbitrary body returning *RespondToChannelInteractionResponse
+func (c *ClientWithResponses) RespondToChannelInteractionWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, interactionId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RespondToChannelInteractionResponse, error) {
+	rsp, err := c.RespondToChannelInteractionWithBody(ctx, project, id, interactionId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRespondToChannelInteractionResponse(rsp)
+}
+
+func (c *ClientWithResponses) RespondToChannelInteractionWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, interactionId string, body RespondToChannelInteractionJSONRequestBody, reqEditors ...RequestEditorFn) (*RespondToChannelInteractionResponse, error) {
+	rsp, err := c.RespondToChannelInteraction(ctx, project, id, interactionId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRespondToChannelInteractionResponse(rsp)
+}
+
 // ListChannelMembersWithResponse request returning *ListChannelMembersResponse
 func (c *ClientWithResponses) ListChannelMembersWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, params *ListChannelMembersParams, reqEditors ...RequestEditorFn) (*ListChannelMembersResponse, error) {
 	rsp, err := c.ListChannelMembers(ctx, project, id, params, reqEditors...)
@@ -20547,56 +27562,99 @@ func (c *ClientWithResponses) RemoveChannelMemberWithResponse(ctx context.Contex
 	return ParseRemoveChannelMemberResponse(rsp)
 }
 
-// ListChannelMessagesWithResponse request returning *ListChannelMessagesResponse
-func (c *ClientWithResponses) ListChannelMessagesWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, params *ListChannelMessagesParams, reqEditors ...RequestEditorFn) (*ListChannelMessagesResponse, error) {
-	rsp, err := c.ListChannelMessages(ctx, project, id, params, reqEditors...)
+// ListMessagesWithResponse request returning *ListMessagesResponse
+func (c *ClientWithResponses) ListMessagesWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, params *ListMessagesParams, reqEditors ...RequestEditorFn) (*ListMessagesResponse, error) {
+	rsp, err := c.ListMessages(ctx, project, id, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseListChannelMessagesResponse(rsp)
+	return ParseListMessagesResponse(rsp)
 }
 
-// SendChannelMessageWithBodyWithResponse request with arbitrary body returning *SendChannelMessageResponse
-func (c *ClientWithResponses) SendChannelMessageWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SendChannelMessageResponse, error) {
-	rsp, err := c.SendChannelMessageWithBody(ctx, project, id, contentType, body, reqEditors...)
+// SendMessageWithBodyWithResponse request with arbitrary body returning *SendMessageResponse
+func (c *ClientWithResponses) SendMessageWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SendMessageResponse, error) {
+	rsp, err := c.SendMessageWithBody(ctx, project, id, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseSendChannelMessageResponse(rsp)
+	return ParseSendMessageResponse(rsp)
 }
 
-func (c *ClientWithResponses) SendChannelMessageWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body SendChannelMessageJSONRequestBody, reqEditors ...RequestEditorFn) (*SendChannelMessageResponse, error) {
-	rsp, err := c.SendChannelMessage(ctx, project, id, body, reqEditors...)
+func (c *ClientWithResponses) SendMessageWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body SendMessageJSONRequestBody, reqEditors ...RequestEditorFn) (*SendMessageResponse, error) {
+	rsp, err := c.SendMessage(ctx, project, id, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseSendChannelMessageResponse(rsp)
+	return ParseSendMessageResponse(rsp)
 }
 
-// GetChannelMessageWithResponse request returning *GetChannelMessageResponse
-func (c *ClientWithResponses) GetChannelMessageWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, messageId MessageId, reqEditors ...RequestEditorFn) (*GetChannelMessageResponse, error) {
-	rsp, err := c.GetChannelMessage(ctx, project, id, messageId, reqEditors...)
+// GetMessageWithResponse request returning *GetMessageResponse
+func (c *ClientWithResponses) GetMessageWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, messageId MessageId, reqEditors ...RequestEditorFn) (*GetMessageResponse, error) {
+	rsp, err := c.GetMessage(ctx, project, id, messageId, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseGetChannelMessageResponse(rsp)
+	return ParseGetMessageResponse(rsp)
 }
 
-// UpdateChannelMessageWithBodyWithResponse request with arbitrary body returning *UpdateChannelMessageResponse
-func (c *ClientWithResponses) UpdateChannelMessageWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, messageId MessageId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateChannelMessageResponse, error) {
-	rsp, err := c.UpdateChannelMessageWithBody(ctx, project, id, messageId, contentType, body, reqEditors...)
+// UpdateMessageWithBodyWithResponse request with arbitrary body returning *UpdateMessageResponse
+func (c *ClientWithResponses) UpdateMessageWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, messageId MessageId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateMessageResponse, error) {
+	rsp, err := c.UpdateMessageWithBody(ctx, project, id, messageId, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseUpdateChannelMessageResponse(rsp)
+	return ParseUpdateMessageResponse(rsp)
 }
 
-func (c *ClientWithResponses) UpdateChannelMessageWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, messageId MessageId, body UpdateChannelMessageJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateChannelMessageResponse, error) {
-	rsp, err := c.UpdateChannelMessage(ctx, project, id, messageId, body, reqEditors...)
+func (c *ClientWithResponses) UpdateMessageWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, messageId MessageId, body UpdateMessageJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateMessageResponse, error) {
+	rsp, err := c.UpdateMessage(ctx, project, id, messageId, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseUpdateChannelMessageResponse(rsp)
+	return ParseUpdateMessageResponse(rsp)
+}
+
+// MarkMessagesReadWithBodyWithResponse request with arbitrary body returning *MarkMessagesReadResponse
+func (c *ClientWithResponses) MarkMessagesReadWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*MarkMessagesReadResponse, error) {
+	rsp, err := c.MarkMessagesReadWithBody(ctx, project, id, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseMarkMessagesReadResponse(rsp)
+}
+
+func (c *ClientWithResponses) MarkMessagesReadWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body MarkMessagesReadJSONRequestBody, reqEditors ...RequestEditorFn) (*MarkMessagesReadResponse, error) {
+	rsp, err := c.MarkMessagesRead(ctx, project, id, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseMarkMessagesReadResponse(rsp)
+}
+
+// ShareChannelEntityWithBodyWithResponse request with arbitrary body returning *ShareChannelEntityResponse
+func (c *ClientWithResponses) ShareChannelEntityWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ShareChannelEntityResponse, error) {
+	rsp, err := c.ShareChannelEntityWithBody(ctx, project, id, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseShareChannelEntityResponse(rsp)
+}
+
+func (c *ClientWithResponses) ShareChannelEntityWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body ShareChannelEntityJSONRequestBody, reqEditors ...RequestEditorFn) (*ShareChannelEntityResponse, error) {
+	rsp, err := c.ShareChannelEntity(ctx, project, id, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseShareChannelEntityResponse(rsp)
+}
+
+// StreamProjectEventsWithResponse request returning *StreamProjectEventsResponse
+func (c *ClientWithResponses) StreamProjectEventsWithResponse(ctx context.Context, project ProjectHandleParam, params *StreamProjectEventsParams, reqEditors ...RequestEditorFn) (*StreamProjectEventsResponse, error) {
+	rsp, err := c.StreamProjectEvents(ctx, project, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseStreamProjectEventsResponse(rsp)
 }
 
 // ListGroupsWithResponse request returning *ListGroupsResponse
@@ -20728,6 +27786,23 @@ func (c *ClientWithResponses) GetInteractionWithResponse(ctx context.Context, pr
 		return nil, err
 	}
 	return ParseGetInteractionResponse(rsp)
+}
+
+// CancelInteractionWithBodyWithResponse request with arbitrary body returning *CancelInteractionResponse
+func (c *ClientWithResponses) CancelInteractionWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CancelInteractionResponse, error) {
+	rsp, err := c.CancelInteractionWithBody(ctx, project, id, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCancelInteractionResponse(rsp)
+}
+
+func (c *ClientWithResponses) CancelInteractionWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body CancelInteractionJSONRequestBody, reqEditors ...RequestEditorFn) (*CancelInteractionResponse, error) {
+	rsp, err := c.CancelInteraction(ctx, project, id, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCancelInteractionResponse(rsp)
 }
 
 // ClaimInteractionWithResponse request returning *ClaimInteractionResponse
@@ -20876,6 +27951,49 @@ func (c *ClientWithResponses) CreateJobInteractionWithResponse(ctx context.Conte
 	return ParseCreateJobInteractionResponse(rsp)
 }
 
+// ListProjectLogsWithResponse request returning *ListProjectLogsResponse
+func (c *ClientWithResponses) ListProjectLogsWithResponse(ctx context.Context, project ProjectHandleParam, params *ListProjectLogsParams, reqEditors ...RequestEditorFn) (*ListProjectLogsResponse, error) {
+	rsp, err := c.ListProjectLogs(ctx, project, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListProjectLogsResponse(rsp)
+}
+
+// IngestProjectLogsWithBodyWithResponse request with arbitrary body returning *IngestProjectLogsResponse
+func (c *ClientWithResponses) IngestProjectLogsWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*IngestProjectLogsResponse, error) {
+	rsp, err := c.IngestProjectLogsWithBody(ctx, project, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseIngestProjectLogsResponse(rsp)
+}
+
+func (c *ClientWithResponses) IngestProjectLogsWithResponse(ctx context.Context, project ProjectHandleParam, body IngestProjectLogsJSONRequestBody, reqEditors ...RequestEditorFn) (*IngestProjectLogsResponse, error) {
+	rsp, err := c.IngestProjectLogs(ctx, project, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseIngestProjectLogsResponse(rsp)
+}
+
+// IngestProjectLogsOTLPWithBodyWithResponse request with arbitrary body returning *IngestProjectLogsOTLPResponse
+func (c *ClientWithResponses) IngestProjectLogsOTLPWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*IngestProjectLogsOTLPResponse, error) {
+	rsp, err := c.IngestProjectLogsOTLPWithBody(ctx, project, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseIngestProjectLogsOTLPResponse(rsp)
+}
+
+func (c *ClientWithResponses) IngestProjectLogsOTLPWithResponse(ctx context.Context, project ProjectHandleParam, body IngestProjectLogsOTLPJSONRequestBody, reqEditors ...RequestEditorFn) (*IngestProjectLogsOTLPResponse, error) {
+	rsp, err := c.IngestProjectLogsOTLP(ctx, project, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseIngestProjectLogsOTLPResponse(rsp)
+}
+
 // ListMemberGroupsWithResponse request returning *ListMemberGroupsResponse
 func (c *ClientWithResponses) ListMemberGroupsWithResponse(ctx context.Context, project ProjectHandleParam, userId UserId, reqEditors ...RequestEditorFn) (*ListMemberGroupsResponse, error) {
 	rsp, err := c.ListMemberGroups(ctx, project, userId, reqEditors...)
@@ -20892,6 +28010,32 @@ func (c *ClientWithResponses) GetProjectMetricsWithResponse(ctx context.Context,
 		return nil, err
 	}
 	return ParseGetProjectMetricsResponse(rsp)
+}
+
+// LookupReferencesWithResponse request returning *LookupReferencesResponse
+func (c *ClientWithResponses) LookupReferencesWithResponse(ctx context.Context, project ProjectHandleParam, referenceType ReferenceTypeParam, params *LookupReferencesParams, reqEditors ...RequestEditorFn) (*LookupReferencesResponse, error) {
+	rsp, err := c.LookupReferences(ctx, project, referenceType, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseLookupReferencesResponse(rsp)
+}
+
+// ResolveReferencesWithBodyWithResponse request with arbitrary body returning *ResolveReferencesResponse
+func (c *ClientWithResponses) ResolveReferencesWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, referenceType ReferenceTypeParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ResolveReferencesResponse, error) {
+	rsp, err := c.ResolveReferencesWithBody(ctx, project, referenceType, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseResolveReferencesResponse(rsp)
+}
+
+func (c *ClientWithResponses) ResolveReferencesWithResponse(ctx context.Context, project ProjectHandleParam, referenceType ReferenceTypeParam, body ResolveReferencesJSONRequestBody, reqEditors ...RequestEditorFn) (*ResolveReferencesResponse, error) {
+	rsp, err := c.ResolveReferences(ctx, project, referenceType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseResolveReferencesResponse(rsp)
 }
 
 // ListRunsWithResponse request returning *ListRunsResponse
@@ -20918,15 +28062,6 @@ func (c *ClientWithResponses) StartRunWithResponse(ctx context.Context, project 
 		return nil, err
 	}
 	return ParseStartRunResponse(rsp)
-}
-
-// StreamProjectRunEventsWithResponse request returning *StreamProjectRunEventsResponse
-func (c *ClientWithResponses) StreamProjectRunEventsWithResponse(ctx context.Context, project ProjectHandleParam, params *StreamProjectRunEventsParams, reqEditors ...RequestEditorFn) (*StreamProjectRunEventsResponse, error) {
-	rsp, err := c.StreamProjectRunEvents(ctx, project, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseStreamProjectRunEventsResponse(rsp)
 }
 
 // GetRunWithResponse request returning *GetRunResponse
@@ -21026,39 +28161,204 @@ func (c *ClientWithResponses) GetRunStepWithResponse(ctx context.Context, projec
 	return ParseGetRunStepResponse(rsp)
 }
 
-// ListToolsWithResponse request returning *ListToolsResponse
-func (c *ClientWithResponses) ListToolsWithResponse(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*ListToolsResponse, error) {
-	rsp, err := c.ListTools(ctx, project, reqEditors...)
+// ListProjectSpansWithResponse request returning *ListProjectSpansResponse
+func (c *ClientWithResponses) ListProjectSpansWithResponse(ctx context.Context, project ProjectHandleParam, params *ListProjectSpansParams, reqEditors ...RequestEditorFn) (*ListProjectSpansResponse, error) {
+	rsp, err := c.ListProjectSpans(ctx, project, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseListToolsResponse(rsp)
+	return ParseListProjectSpansResponse(rsp)
 }
 
-// RunToolWithBodyWithResponse request with arbitrary body returning *RunToolResponse
-func (c *ClientWithResponses) RunToolWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, handle string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RunToolResponse, error) {
-	rsp, err := c.RunToolWithBody(ctx, project, handle, contentType, body, reqEditors...)
+// GetProjectStepSpanCountsWithResponse request returning *GetProjectStepSpanCountsResponse
+func (c *ClientWithResponses) GetProjectStepSpanCountsWithResponse(ctx context.Context, project ProjectHandleParam, params *GetProjectStepSpanCountsParams, reqEditors ...RequestEditorFn) (*GetProjectStepSpanCountsResponse, error) {
+	rsp, err := c.GetProjectStepSpanCounts(ctx, project, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseRunToolResponse(rsp)
+	return ParseGetProjectStepSpanCountsResponse(rsp)
 }
 
-func (c *ClientWithResponses) RunToolWithResponse(ctx context.Context, project ProjectHandleParam, handle string, body RunToolJSONRequestBody, reqEditors ...RequestEditorFn) (*RunToolResponse, error) {
-	rsp, err := c.RunTool(ctx, project, handle, body, reqEditors...)
+// ListDataTablesWithResponse request returning *ListDataTablesResponse
+func (c *ClientWithResponses) ListDataTablesWithResponse(ctx context.Context, project ProjectHandleParam, params *ListDataTablesParams, reqEditors ...RequestEditorFn) (*ListDataTablesResponse, error) {
+	rsp, err := c.ListDataTables(ctx, project, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseRunToolResponse(rsp)
+	return ParseListDataTablesResponse(rsp)
 }
 
-// GetToolRunWithResponse request returning *GetToolRunResponse
-func (c *ClientWithResponses) GetToolRunWithResponse(ctx context.Context, project ProjectHandleParam, handle string, runId RunId, reqEditors ...RequestEditorFn) (*GetToolRunResponse, error) {
-	rsp, err := c.GetToolRun(ctx, project, handle, runId, reqEditors...)
+// CreateDataTableWithBodyWithResponse request with arbitrary body returning *CreateDataTableResponse
+func (c *ClientWithResponses) CreateDataTableWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateDataTableResponse, error) {
+	rsp, err := c.CreateDataTableWithBody(ctx, project, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseGetToolRunResponse(rsp)
+	return ParseCreateDataTableResponse(rsp)
+}
+
+func (c *ClientWithResponses) CreateDataTableWithResponse(ctx context.Context, project ProjectHandleParam, body CreateDataTableJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateDataTableResponse, error) {
+	rsp, err := c.CreateDataTable(ctx, project, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateDataTableResponse(rsp)
+}
+
+// DeleteDataTableWithResponse request returning *DeleteDataTableResponse
+func (c *ClientWithResponses) DeleteDataTableWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, reqEditors ...RequestEditorFn) (*DeleteDataTableResponse, error) {
+	rsp, err := c.DeleteDataTable(ctx, project, tableName, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteDataTableResponse(rsp)
+}
+
+// GetDataTableWithResponse request returning *GetDataTableResponse
+func (c *ClientWithResponses) GetDataTableWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, reqEditors ...RequestEditorFn) (*GetDataTableResponse, error) {
+	rsp, err := c.GetDataTable(ctx, project, tableName, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetDataTableResponse(rsp)
+}
+
+// UpdateDataTableWithBodyWithResponse request with arbitrary body returning *UpdateDataTableResponse
+func (c *ClientWithResponses) UpdateDataTableWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateDataTableResponse, error) {
+	rsp, err := c.UpdateDataTableWithBody(ctx, project, tableName, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateDataTableResponse(rsp)
+}
+
+func (c *ClientWithResponses) UpdateDataTableWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body UpdateDataTableJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateDataTableResponse, error) {
+	rsp, err := c.UpdateDataTable(ctx, project, tableName, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateDataTableResponse(rsp)
+}
+
+// InsertDataTableRowWithBodyWithResponse request with arbitrary body returning *InsertDataTableRowResponse
+func (c *ClientWithResponses) InsertDataTableRowWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*InsertDataTableRowResponse, error) {
+	rsp, err := c.InsertDataTableRowWithBody(ctx, project, tableName, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseInsertDataTableRowResponse(rsp)
+}
+
+func (c *ClientWithResponses) InsertDataTableRowWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body InsertDataTableRowJSONRequestBody, reqEditors ...RequestEditorFn) (*InsertDataTableRowResponse, error) {
+	rsp, err := c.InsertDataTableRow(ctx, project, tableName, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseInsertDataTableRowResponse(rsp)
+}
+
+// BulkInsertDataTableRowsWithBodyWithResponse request with arbitrary body returning *BulkInsertDataTableRowsResponse
+func (c *ClientWithResponses) BulkInsertDataTableRowsWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*BulkInsertDataTableRowsResponse, error) {
+	rsp, err := c.BulkInsertDataTableRowsWithBody(ctx, project, tableName, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseBulkInsertDataTableRowsResponse(rsp)
+}
+
+func (c *ClientWithResponses) BulkInsertDataTableRowsWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body BulkInsertDataTableRowsJSONRequestBody, reqEditors ...RequestEditorFn) (*BulkInsertDataTableRowsResponse, error) {
+	rsp, err := c.BulkInsertDataTableRows(ctx, project, tableName, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseBulkInsertDataTableRowsResponse(rsp)
+}
+
+// QueryDataTableRowsWithBodyWithResponse request with arbitrary body returning *QueryDataTableRowsResponse
+func (c *ClientWithResponses) QueryDataTableRowsWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*QueryDataTableRowsResponse, error) {
+	rsp, err := c.QueryDataTableRowsWithBody(ctx, project, tableName, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseQueryDataTableRowsResponse(rsp)
+}
+
+func (c *ClientWithResponses) QueryDataTableRowsWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body QueryDataTableRowsJSONRequestBody, reqEditors ...RequestEditorFn) (*QueryDataTableRowsResponse, error) {
+	rsp, err := c.QueryDataTableRows(ctx, project, tableName, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseQueryDataTableRowsResponse(rsp)
+}
+
+// UpsertDataTableRowWithBodyWithResponse request with arbitrary body returning *UpsertDataTableRowResponse
+func (c *ClientWithResponses) UpsertDataTableRowWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpsertDataTableRowResponse, error) {
+	rsp, err := c.UpsertDataTableRowWithBody(ctx, project, tableName, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpsertDataTableRowResponse(rsp)
+}
+
+func (c *ClientWithResponses) UpsertDataTableRowWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body UpsertDataTableRowJSONRequestBody, reqEditors ...RequestEditorFn) (*UpsertDataTableRowResponse, error) {
+	rsp, err := c.UpsertDataTableRow(ctx, project, tableName, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpsertDataTableRowResponse(rsp)
+}
+
+// DeleteDataTableRowWithResponse request returning *DeleteDataTableRowResponse
+func (c *ClientWithResponses) DeleteDataTableRowWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, reqEditors ...RequestEditorFn) (*DeleteDataTableRowResponse, error) {
+	rsp, err := c.DeleteDataTableRow(ctx, project, tableName, rowId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteDataTableRowResponse(rsp)
+}
+
+// GetDataTableRowWithResponse request returning *GetDataTableRowResponse
+func (c *ClientWithResponses) GetDataTableRowWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, reqEditors ...RequestEditorFn) (*GetDataTableRowResponse, error) {
+	rsp, err := c.GetDataTableRow(ctx, project, tableName, rowId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetDataTableRowResponse(rsp)
+}
+
+// UpdateDataTableRowWithBodyWithResponse request with arbitrary body returning *UpdateDataTableRowResponse
+func (c *ClientWithResponses) UpdateDataTableRowWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateDataTableRowResponse, error) {
+	rsp, err := c.UpdateDataTableRowWithBody(ctx, project, tableName, rowId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateDataTableRowResponse(rsp)
+}
+
+func (c *ClientWithResponses) UpdateDataTableRowWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, body UpdateDataTableRowJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateDataTableRowResponse, error) {
+	rsp, err := c.UpdateDataTableRow(ctx, project, tableName, rowId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateDataTableRowResponse(rsp)
+}
+
+// ListProjectTracesWithResponse request returning *ListProjectTracesResponse
+func (c *ClientWithResponses) ListProjectTracesWithResponse(ctx context.Context, project ProjectHandleParam, params *ListProjectTracesParams, reqEditors ...RequestEditorFn) (*ListProjectTracesResponse, error) {
+	rsp, err := c.ListProjectTraces(ctx, project, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListProjectTracesResponse(rsp)
+}
+
+// GetTraceWithResponse request returning *GetTraceResponse
+func (c *ClientWithResponses) GetTraceWithResponse(ctx context.Context, project ProjectHandleParam, traceId string, reqEditors ...RequestEditorFn) (*GetTraceResponse, error) {
+	rsp, err := c.GetTrace(ctx, project, traceId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetTraceResponse(rsp)
 }
 
 // ListTriggersWithResponse request returning *ListTriggersResponse
@@ -21199,6 +28499,23 @@ func (c *ClientWithResponses) UpdateTriggerTargetWithResponse(ctx context.Contex
 		return nil, err
 	}
 	return ParseUpdateTriggerTargetResponse(rsp)
+}
+
+// TestFireTriggerWithBodyWithResponse request with arbitrary body returning *TestFireTriggerResponse
+func (c *ClientWithResponses) TestFireTriggerWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*TestFireTriggerResponse, error) {
+	rsp, err := c.TestFireTriggerWithBody(ctx, project, id, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseTestFireTriggerResponse(rsp)
+}
+
+func (c *ClientWithResponses) TestFireTriggerWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body TestFireTriggerJSONRequestBody, reqEditors ...RequestEditorFn) (*TestFireTriggerResponse, error) {
+	rsp, err := c.TestFireTrigger(ctx, project, id, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseTestFireTriggerResponse(rsp)
 }
 
 // ListWebhooksWithResponse request returning *ListWebhooksResponse
@@ -21402,6 +28719,147 @@ func (c *ClientWithResponses) GetWorkflowVersionWithResponse(ctx context.Context
 	return ParseGetWorkflowVersionResponse(rsp)
 }
 
+// ParseGetAgentInvocationResponse parses an HTTP response from a GetAgentInvocationWithResponse call
+func ParseGetAgentInvocationResponse(rsp *http.Response) (*GetAgentInvocationResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetAgentInvocationResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest AgentInvocation
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCompleteAgentInvocationResponse parses an HTTP response from a CompleteAgentInvocationWithResponse call
+func ParseCompleteAgentInvocationResponse(rsp *http.Response) (*CompleteAgentInvocationResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CompleteAgentInvocationResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest AgentInvocation
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 410:
+		var dest AgentInvocation
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON410 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseFailAgentInvocationResponse parses an HTTP response from a FailAgentInvocationWithResponse call
+func ParseFailAgentInvocationResponse(rsp *http.Response) (*FailAgentInvocationResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &FailAgentInvocationResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest AgentInvocation
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseListAuditLogsResponse parses an HTTP response from a ListAuditLogsWithResponse call
 func ParseListAuditLogsResponse(rsp *http.Response) (*ListAuditLogsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -21429,6 +28887,96 @@ func ParseListAuditLogsResponse(rsp *http.Response) (*ListAuditLogsResponse, err
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListIntegrationProvidersResponse parses an HTTP response from a ListIntegrationProvidersWithResponse call
+func ParseListIntegrationProvidersResponse(rsp *http.Response) (*ListIntegrationProvidersResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListIntegrationProvidersResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest IntegrationCatalog
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateMessageResponse parses an HTTP response from a CreateMessageWithResponse call
+func ParseCreateMessageResponse(rsp *http.Response) (*CreateMessageResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateMessageResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LLMGenerateResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 502:
+		var dest ProviderError
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON502 = &dest
+
+	case rsp.StatusCode == 200:
+		// Content-type (text/event-stream) unsupported
 
 	}
 
@@ -22025,22 +29573,22 @@ func ParseRestoreProjectResponse(rsp *http.Response) (*RestoreProjectResponse, e
 	return response, nil
 }
 
-// ParseListActionAuditLogResponse parses an HTTP response from a ListActionAuditLogWithResponse call
-func ParseListActionAuditLogResponse(rsp *http.Response) (*ListActionAuditLogResponse, error) {
+// ParseListActionInvocationsResponse parses an HTTP response from a ListActionInvocationsWithResponse call
+func ParseListActionInvocationsResponse(rsp *http.Response) (*ListActionInvocationsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &ListActionAuditLogResponse{
+	response := &ListActionInvocationsResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest ActionAuditLogListResponse
+		var dest ActionInvocationListResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -22052,13 +29600,6 @@ func ParseListActionAuditLogResponse(rsp *http.Response) (*ListActionAuditLogRes
 			return nil, err
 		}
 		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
 
 	}
 
@@ -22345,6 +29886,60 @@ func ParseUpdateActionResponse(rsp *http.Response) (*UpdateActionResponse, error
 	return response, nil
 }
 
+// ParseInvokeActionResponse parses an HTTP response from a InvokeActionWithResponse call
+func ParseInvokeActionResponse(rsp *http.Response) (*InvokeActionResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &InvokeActionResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ActionInvocationResult
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+		var dest ActionInvocationResult
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseRotateActionSecretResponse parses an HTTP response from a RotateActionSecretWithResponse call
 func ParseRotateActionSecretResponse(rsp *http.Response) (*RotateActionSecretResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -22600,6 +30195,53 @@ func ParseUpdateAgentResponse(rsp *http.Response) (*UpdateAgentResponse, error) 
 			return nil, err
 		}
 		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseProvisionAgentInboxResponse parses an HTTP response from a ProvisionAgentInboxWithResponse call
+func ParseProvisionAgentInboxResponse(rsp *http.Response) (*ProvisionAgentInboxResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ProvisionAgentInboxResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Agent
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
 
 	}
 
@@ -23013,6 +30655,175 @@ func ParseUpdateChannelResponse(rsp *http.Response) (*UpdateChannelResponse, err
 	return response, nil
 }
 
+// ParseClaimChannelInteractionResponse parses an HTTP response from a ClaimChannelInteractionWithResponse call
+func ParseClaimChannelInteractionResponse(rsp *http.Response) (*ClaimChannelInteractionResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ClaimChannelInteractionResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ChannelInteractionActionResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseReleaseChannelInteractionResponse parses an HTTP response from a ReleaseChannelInteractionWithResponse call
+func ParseReleaseChannelInteractionResponse(rsp *http.Response) (*ReleaseChannelInteractionResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ReleaseChannelInteractionResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ChannelInteractionActionResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseRespondToChannelInteractionResponse parses an HTTP response from a RespondToChannelInteractionWithResponse call
+func ParseRespondToChannelInteractionResponse(rsp *http.Response) (*RespondToChannelInteractionResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &RespondToChannelInteractionResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ChannelInteractionActionResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseListChannelMembersResponse parses an HTTP response from a ListChannelMembersWithResponse call
 func ParseListChannelMembersResponse(rsp *http.Response) (*ListChannelMembersResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -23140,15 +30951,15 @@ func ParseRemoveChannelMemberResponse(rsp *http.Response) (*RemoveChannelMemberR
 	return response, nil
 }
 
-// ParseListChannelMessagesResponse parses an HTTP response from a ListChannelMessagesWithResponse call
-func ParseListChannelMessagesResponse(rsp *http.Response) (*ListChannelMessagesResponse, error) {
+// ParseListMessagesResponse parses an HTTP response from a ListMessagesWithResponse call
+func ParseListMessagesResponse(rsp *http.Response) (*ListMessagesResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &ListChannelMessagesResponse{
+	response := &ListMessagesResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -23161,12 +30972,26 @@ func ParseListChannelMessagesResponse(rsp *http.Response) (*ListChannelMessagesR
 		}
 		response.JSON200 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
 		var dest Unauthorized
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
@@ -23180,15 +31005,15 @@ func ParseListChannelMessagesResponse(rsp *http.Response) (*ListChannelMessagesR
 	return response, nil
 }
 
-// ParseSendChannelMessageResponse parses an HTTP response from a SendChannelMessageWithResponse call
-func ParseSendChannelMessageResponse(rsp *http.Response) (*SendChannelMessageResponse, error) {
+// ParseSendMessageResponse parses an HTTP response from a SendMessageWithResponse call
+func ParseSendMessageResponse(rsp *http.Response) (*SendMessageResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &SendChannelMessageResponse{
+	response := &SendMessageResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -23227,15 +31052,15 @@ func ParseSendChannelMessageResponse(rsp *http.Response) (*SendChannelMessageRes
 	return response, nil
 }
 
-// ParseGetChannelMessageResponse parses an HTTP response from a GetChannelMessageWithResponse call
-func ParseGetChannelMessageResponse(rsp *http.Response) (*GetChannelMessageResponse, error) {
+// ParseGetMessageResponse parses an HTTP response from a GetMessageWithResponse call
+func ParseGetMessageResponse(rsp *http.Response) (*GetMessageResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &GetChannelMessageResponse{
+	response := &GetMessageResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -23267,15 +31092,15 @@ func ParseGetChannelMessageResponse(rsp *http.Response) (*GetChannelMessageRespo
 	return response, nil
 }
 
-// ParseUpdateChannelMessageResponse parses an HTTP response from a UpdateChannelMessageWithResponse call
-func ParseUpdateChannelMessageResponse(rsp *http.Response) (*UpdateChannelMessageResponse, error) {
+// ParseUpdateMessageResponse parses an HTTP response from a UpdateMessageWithResponse call
+func ParseUpdateMessageResponse(rsp *http.Response) (*UpdateMessageResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &UpdateChannelMessageResponse{
+	response := &UpdateMessageResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -23308,6 +31133,133 @@ func ParseUpdateChannelMessageResponse(rsp *http.Response) (*UpdateChannelMessag
 			return nil, err
 		}
 		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseMarkMessagesReadResponse parses an HTTP response from a MarkMessagesReadWithResponse call
+func ParseMarkMessagesReadResponse(rsp *http.Response) (*MarkMessagesReadResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &MarkMessagesReadResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseShareChannelEntityResponse parses an HTTP response from a ShareChannelEntityWithResponse call
+func ParseShareChannelEntityResponse(rsp *http.Response) (*ShareChannelEntityResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ShareChannelEntityResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest ChannelMessage
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseStreamProjectEventsResponse parses an HTTP response from a StreamProjectEventsWithResponse call
+func ParseStreamProjectEventsResponse(rsp *http.Response) (*StreamProjectEventsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &StreamProjectEventsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
 
 	}
 
@@ -23755,6 +31707,60 @@ func ParseGetInteractionResponse(rsp *http.Response) (*GetInteractionResponse, e
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCancelInteractionResponse parses an HTTP response from a CancelInteractionWithResponse call
+func ParseCancelInteractionResponse(rsp *http.Response) (*CancelInteractionResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CancelInteractionResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Interaction
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
@@ -24273,6 +32279,140 @@ func ParseCreateJobInteractionResponse(rsp *http.Response) (*CreateJobInteractio
 	return response, nil
 }
 
+// ParseListProjectLogsResponse parses an HTTP response from a ListProjectLogsWithResponse call
+func ParseListProjectLogsResponse(rsp *http.Response) (*ListProjectLogsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListProjectLogsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LogRecordListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseIngestProjectLogsResponse parses an HTTP response from a IngestProjectLogsWithResponse call
+func ParseIngestProjectLogsResponse(rsp *http.Response) (*IngestProjectLogsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &IngestProjectLogsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+		var dest LogIngestResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseIngestProjectLogsOTLPResponse parses an HTTP response from a IngestProjectLogsOTLPWithResponse call
+func ParseIngestProjectLogsOTLPResponse(rsp *http.Response) (*IngestProjectLogsOTLPResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &IngestProjectLogsOTLPResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+		var dest LogIngestResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseListMemberGroupsResponse parses an HTTP response from a ListMemberGroupsWithResponse call
 func ParseListMemberGroupsResponse(rsp *http.Response) (*ListMemberGroupsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -24347,6 +32487,142 @@ func ParseGetProjectMetricsResponse(rsp *http.Response) (*GetProjectMetricsRespo
 			return nil, err
 		}
 		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseLookupReferencesResponse parses an HTTP response from a LookupReferencesWithResponse call
+func ParseLookupReferencesResponse(rsp *http.Response) (*LookupReferencesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &LookupReferencesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ReferenceLookupResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest TooManyRequests
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest ServiceUnavailable
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseResolveReferencesResponse parses an HTTP response from a ResolveReferencesWithResponse call
+func ParseResolveReferencesResponse(rsp *http.Response) (*ResolveReferencesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ResolveReferencesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ReferenceResolveResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest TooManyRequests
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest ServiceUnavailable
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
 
 	}
 
@@ -24447,32 +32723,6 @@ func ParseStartRunResponse(rsp *http.Response) (*StartRunResponse, error) {
 	return response, nil
 }
 
-// ParseStreamProjectRunEventsResponse parses an HTTP response from a StreamProjectRunEventsWithResponse call
-func ParseStreamProjectRunEventsResponse(rsp *http.Response) (*StreamProjectRunEventsResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &StreamProjectRunEventsResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	}
-
-	return response, nil
-}
-
 // ParseGetRunResponse parses an HTTP response from a GetRunWithResponse call
 func ParseGetRunResponse(rsp *http.Response) (*GetRunResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -24527,6 +32777,13 @@ func ParseCancelRunResponse(rsp *http.Response) (*CancelRunResponse, error) {
 	}
 
 	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest WorkflowRun
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
 		var dest Unauthorized
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -24687,6 +32944,13 @@ func ParseResumeRunResponse(rsp *http.Response) (*ResumeRunResponse, error) {
 	}
 
 	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest WorkflowRun
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
 		var dest Unauthorized
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -24833,22 +33097,22 @@ func ParseGetRunStepResponse(rsp *http.Response) (*GetRunStepResponse, error) {
 	return response, nil
 }
 
-// ParseListToolsResponse parses an HTTP response from a ListToolsWithResponse call
-func ParseListToolsResponse(rsp *http.Response) (*ListToolsResponse, error) {
+// ParseListProjectSpansResponse parses an HTTP response from a ListProjectSpansWithResponse call
+func ParseListProjectSpansResponse(rsp *http.Response) (*ListProjectSpansResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &ListToolsResponse{
+	response := &ListProjectSpansResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest ToolDefinitionListResponse
+		var dest SpanListResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -24873,33 +33137,212 @@ func ParseListToolsResponse(rsp *http.Response) (*ListToolsResponse, error) {
 	return response, nil
 }
 
-// ParseRunToolResponse parses an HTTP response from a RunToolWithResponse call
-func ParseRunToolResponse(rsp *http.Response) (*RunToolResponse, error) {
+// ParseGetProjectStepSpanCountsResponse parses an HTTP response from a GetProjectStepSpanCountsWithResponse call
+func ParseGetProjectStepSpanCountsResponse(rsp *http.Response) (*GetProjectStepSpanCountsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &RunToolResponse{
+	response := &GetProjectStepSpanCountsResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest ToolRun
+		var dest StepSpanCountsResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON200 = &dest
 
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
-		var dest ToolRun
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
-		response.JSON202 = &dest
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListDataTablesResponse parses an HTTP response from a ListDataTablesWithResponse call
+func ParseListDataTablesResponse(rsp *http.Response) (*ListDataTablesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListDataTablesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest DataTableListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateDataTableResponse parses an HTTP response from a CreateDataTableWithResponse call
+func ParseCreateDataTableResponse(rsp *http.Response) (*CreateDataTableResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateDataTableResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest DataTable
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDeleteDataTableResponse parses an HTTP response from a DeleteDataTableWithResponse call
+func ParseDeleteDataTableResponse(rsp *http.Response) (*DeleteDataTableResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteDataTableResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetDataTableResponse parses an HTTP response from a GetDataTableWithResponse call
+func ParseGetDataTableResponse(rsp *http.Response) (*GetDataTableResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetDataTableResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest DataTable
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUpdateDataTableResponse parses an HTTP response from a UpdateDataTableWithResponse call
+func ParseUpdateDataTableResponse(rsp *http.Response) (*UpdateDataTableResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpdateDataTableResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest DataTable
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
 		var dest BadRequest
@@ -24927,22 +33370,391 @@ func ParseRunToolResponse(rsp *http.Response) (*RunToolResponse, error) {
 	return response, nil
 }
 
-// ParseGetToolRunResponse parses an HTTP response from a GetToolRunWithResponse call
-func ParseGetToolRunResponse(rsp *http.Response) (*GetToolRunResponse, error) {
+// ParseInsertDataTableRowResponse parses an HTTP response from a InsertDataTableRowWithResponse call
+func ParseInsertDataTableRowResponse(rsp *http.Response) (*InsertDataTableRowResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &GetToolRunResponse{
+	response := &InsertDataTableRowResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest DataTableRow
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseBulkInsertDataTableRowsResponse parses an HTTP response from a BulkInsertDataTableRowsWithResponse call
+func ParseBulkInsertDataTableRowsResponse(rsp *http.Response) (*BulkInsertDataTableRowsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &BulkInsertDataTableRowsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest BulkInsertRowsResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseQueryDataTableRowsResponse parses an HTTP response from a QueryDataTableRowsWithResponse call
+func ParseQueryDataTableRowsResponse(rsp *http.Response) (*QueryDataTableRowsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &QueryDataTableRowsResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest ToolRun
+		var dest QueryRowsResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUpsertDataTableRowResponse parses an HTTP response from a UpsertDataTableRowWithResponse call
+func ParseUpsertDataTableRowResponse(rsp *http.Response) (*UpsertDataTableRowResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpsertDataTableRowResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest UpsertRowResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest UpsertRowResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDeleteDataTableRowResponse parses an HTTP response from a DeleteDataTableRowWithResponse call
+func ParseDeleteDataTableRowResponse(rsp *http.Response) (*DeleteDataTableRowResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteDataTableRowResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetDataTableRowResponse parses an HTTP response from a GetDataTableRowWithResponse call
+func ParseGetDataTableRowResponse(rsp *http.Response) (*GetDataTableRowResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetDataTableRowResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest DataTableRow
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUpdateDataTableRowResponse parses an HTTP response from a UpdateDataTableRowWithResponse call
+func ParseUpdateDataTableRowResponse(rsp *http.Response) (*UpdateDataTableRowResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpdateDataTableRowResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest DataTableRow
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListProjectTracesResponse parses an HTTP response from a ListProjectTracesWithResponse call
+func ParseListProjectTracesResponse(rsp *http.Response) (*ListProjectTracesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListProjectTracesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest TraceListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetTraceResponse parses an HTTP response from a GetTraceWithResponse call
+func ParseGetTraceResponse(rsp *http.Response) (*GetTraceResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetTraceResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest TraceDetail
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -25430,6 +34242,53 @@ func ParseUpdateTriggerTargetResponse(rsp *http.Response) (*UpdateTriggerTargetR
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest TriggerTarget
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseTestFireTriggerResponse parses an HTTP response from a TestFireTriggerWithResponse call
+func ParseTestFireTriggerResponse(rsp *http.Response) (*TestFireTriggerResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &TestFireTriggerResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest TestFireTriggerResult
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

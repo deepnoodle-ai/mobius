@@ -61,6 +61,26 @@ func registerChannelsCommands(app *cli.App) {
 			return printResponse(ctx, "addChannelMember", resp.StatusCode(), resp.Body)
 		})
 
+	channelsGrp.Command("claim-interaction").
+		Description("Claim an interaction from a channel").
+		Args("id", "interaction-id").
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			p1 := ctx.Arg(0)
+			p2 := ctx.Arg(1)
+			resp, err := client.ClaimChannelInteractionWithResponse(ctx.Context(), p0, p1, p2)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "claimChannelInteraction", resp.StatusCode(), resp.Body)
+		})
+
 	channelsGrp.Command("create").
 		Description("Create a channel").
 		Flags(
@@ -170,26 +190,6 @@ func registerChannelsCommands(app *cli.App) {
 			return printResponse(ctx, "getChannel", resp.StatusCode(), resp.Body)
 		})
 
-	channelsGrp.Command("get-message").
-		Description("Get a channel message").
-		Args("id", "message-id").
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			p2 := ctx.Arg(1)
-			resp, err := client.GetChannelMessageWithResponse(ctx.Context(), p0, p1, p2)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "getChannelMessage", resp.StatusCode(), resp.Body)
-		})
-
 	channelsGrp.Command("list").
 		Description("List channels").
 		Flags(
@@ -262,16 +262,9 @@ func registerChannelsCommands(app *cli.App) {
 			return printResponse(ctx, "listChannelMembers", resp.StatusCode(), resp.Body)
 		})
 
-	channelsGrp.Command("list-messages").
-		Description("List messages in a channel").
-		Args("id").
-		Flags(
-			cli.String("sender-id", "").Help("Filter by sender user or agent ID."),
-			cli.String("reply-to", "").Help("Return only replies to this message ID (thread view)."),
-			cli.Bool("pinned", "").Help("Filter by pinned status."),
-			cli.String("cursor", "").Help("cursor"),
-			cli.Int("limit", "").Help("limit"),
-		).
+	channelsGrp.Command("release-channel-interaction").
+		Description("Release an interaction claim from a channel").
+		Args("id", "interaction-id").
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -281,32 +274,12 @@ func registerChannelsCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			params := &api.ListChannelMessagesParams{}
-			if ctx.IsSet("sender-id") {
-				v := ctx.String("sender-id")
-				params.SenderId = &v
-			}
-			if ctx.IsSet("reply-to") {
-				v := ctx.String("reply-to")
-				params.ReplyTo = &v
-			}
-			if ctx.IsSet("pinned") {
-				v := ctx.Bool("pinned")
-				params.Pinned = &v
-			}
-			if ctx.IsSet("cursor") {
-				v := api.CursorParam(ctx.String("cursor"))
-				params.Cursor = &v
-			}
-			if ctx.IsSet("limit") {
-				v := api.LimitParam(ctx.Int("limit"))
-				params.Limit = &v
-			}
-			resp, err := client.ListChannelMessagesWithResponse(ctx.Context(), p0, p1, params)
+			p2 := ctx.Arg(1)
+			resp, err := client.ReleaseChannelInteractionWithResponse(ctx.Context(), p0, p1, p2)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, "listChannelMessages", resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "releaseChannelInteraction", resp.StatusCode(), resp.Body)
 		})
 
 	channelsGrp.Command("remove-member").
@@ -329,17 +302,12 @@ func registerChannelsCommands(app *cli.App) {
 			return printResponse(ctx, "removeChannelMember", resp.StatusCode(), resp.Body)
 		})
 
-	channelsGrp.Command("send-message").
-		Description("Send a message to a channel").
-		Args("id").
+	channelsGrp.Command("respond-to-channel-interaction").
+		Description("Respond to an interaction from a channel").
+		Args("id", "interaction-id").
 		Flags(
-			cli.String("content", "").Help("[required] Message body in Markdown."),
-			cli.String("display", "").Help("Rendering hint for the UI: `message`, `notice`, or `card`."),
-			cli.String("metadata", "").Help("Free-form JSON object for caller-defined metadata. Accepts JSON, @file, or @-."),
-			cli.String("reply-to", "").Help("Parent message ID for threading (creates a reply)."),
-			cli.String("sender-agent-id", "").Help("Durable agent identity to attribute the message to. When set, `sender_type` on the resulting messag…"),
-			cli.String("sender-session-id", "").Help("Live agent session to associate with the message."),
-			cli.String("type", "").Help("Dot-namespaced message type identifier."),
+			cli.String("comment", "").Help("Optional human-readable comment to show in channel activity."),
+			cli.String("value", "").Help("[required] Free-form JSON payload. Used both for responder-supplied values and for policy-derived values (e.g.… Accepts JSON, @file, or @-."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -352,15 +320,64 @@ func registerChannelsCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			var body api.SendChannelMessageJSONRequestBody
+			p2 := ctx.Arg(1)
+			var body api.RespondToChannelInteractionJSONRequestBody
+			if err := readJSONBody(ctx, &body); err != nil {
+				return err
+			}
+			if ctx.IsSet("comment") {
+				v := ctx.String("comment")
+				body.Comment = &v
+			}
+			if ctx.IsSet("value") {
+				if err := decodeFlagJSON(ctx, "value", ctx.String("value"), &body.Value); err != nil {
+					return err
+				}
+			}
+			if ctx.String("file") == "" && !ctx.IsSet("value") {
+				return fmt.Errorf("--value is required (or supply it via --file)")
+			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
+			}
+			resp, err := client.RespondToChannelInteractionWithResponse(ctx.Context(), p0, p1, p2, body)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "respondToChannelInteraction", resp.StatusCode(), resp.Body)
+		})
+
+	channelsGrp.Command("share-channel-entity").
+		Description("Share an entity in a channel").
+		Args("id").
+		Flags(
+			cli.String("content", "").Help("Optional Markdown fallback body. If omitted, the server derives a short label from the reference."),
+			cli.String("display", "").Help("Rendering hint for the created channel message."),
+			cli.String("metadata", "").Help("Free-form JSON object for caller-defined metadata. Accepts JSON, @file, or @-."),
+			cli.String("reference", "").Help("[required] Experimental typed link from a channel message to another Mobius entity. Clients use references to … Accepts JSON, @file, or @-."),
+			cli.String("type", "").Help("Optional dot-namespaced message type. If omitted, the server derives one from the entity type."),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			p1 := ctx.Arg(0)
+			var body api.ShareChannelEntityJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
 			}
 			if ctx.IsSet("content") {
-				body.Content = ctx.String("content")
+				v := ctx.String("content")
+				body.Content = &v
 			}
 			if ctx.IsSet("display") {
-				v := api.SendChannelMessageRequestDisplay(ctx.String("display"))
+				v := api.ShareChannelEntityRequestDisplay(ctx.String("display"))
 				body.Display = &v
 			}
 			if ctx.IsSet("metadata") {
@@ -368,33 +385,26 @@ func registerChannelsCommands(app *cli.App) {
 					return err
 				}
 			}
-			if ctx.IsSet("reply-to") {
-				v := ctx.String("reply-to")
-				body.ReplyTo = &v
-			}
-			if ctx.IsSet("sender-agent-id") {
-				v := ctx.String("sender-agent-id")
-				body.SenderAgentId = &v
-			}
-			if ctx.IsSet("sender-session-id") {
-				v := ctx.String("sender-session-id")
-				body.SenderSessionId = &v
+			if ctx.IsSet("reference") {
+				if err := decodeFlagJSON(ctx, "reference", ctx.String("reference"), &body.Reference); err != nil {
+					return err
+				}
 			}
 			if ctx.IsSet("type") {
 				v := ctx.String("type")
 				body.Type = &v
 			}
-			if body.Content == "" {
-				return fmt.Errorf("--content is required (or supply it via --file)")
+			if ctx.String("file") == "" && !ctx.IsSet("reference") {
+				return fmt.Errorf("--reference is required (or supply it via --file)")
 			}
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.SendChannelMessageWithResponse(ctx.Context(), p0, p1, body)
+			resp, err := client.ShareChannelEntityWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, "sendChannelMessage", resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "shareChannelEntity", resp.StatusCode(), resp.Body)
 		})
 
 	channelsGrp.Command("update").
@@ -450,56 +460,6 @@ func registerChannelsCommands(app *cli.App) {
 				return err
 			}
 			return printResponse(ctx, "updateChannel", resp.StatusCode(), resp.Body)
-		})
-
-	channelsGrp.Command("update-message").
-		Description("Update a channel message").
-		Args("id", "message-id").
-		Flags(
-			cli.String("content", "").Help("Updated Markdown content. Sets `edited_at` on the message."),
-			cli.String("metadata", "").Help("Free-form JSON object for caller-defined metadata. Accepts JSON, @file, or @-."),
-			cli.Bool("pinned", "").Help("Pin or unpin the message. Sets/clears `pinned_by`."),
-			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
-			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
-		).
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			p2 := ctx.Arg(1)
-			var body api.UpdateChannelMessageJSONRequestBody
-			if err := readJSONBody(ctx, &body); err != nil {
-				return err
-			}
-			if ctx.IsSet("content") {
-				v := ctx.String("content")
-				body.Content = &v
-			}
-			if ctx.IsSet("metadata") {
-				if err := decodeFlagJSON(ctx, "metadata", ctx.String("metadata"), &body.Metadata); err != nil {
-					return err
-				}
-			}
-			if ctx.IsSet("pinned") {
-				v := ctx.Bool("pinned")
-				body.Pinned = &v
-			}
-			if ctx.String("file") == "" && !ctx.IsSet("content") && !ctx.IsSet("metadata") && !ctx.IsSet("pinned") {
-				return fmt.Errorf("at least one flag or --file is required")
-			}
-			if ctx.Bool("dry-run") {
-				return printDryRun(ctx, body)
-			}
-			resp, err := client.UpdateChannelMessageWithResponse(ctx.Context(), p0, p1, p2, body)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "updateChannelMessage", resp.StatusCode(), resp.Body)
 		})
 
 }
