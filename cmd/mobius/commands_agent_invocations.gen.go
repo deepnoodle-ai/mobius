@@ -17,7 +17,7 @@ import (
 
 // registerAgentInvocationsCommands registers every generated subcommand in the "agent-invocations" group.
 func registerAgentInvocationsCommands(app *cli.App) {
-	agentInvocationsGrp := app.Group("agent-invocations")
+	agentInvocationsGrp := app.Group("agent-invocations").Description("Agent invocation lifecycle and results")
 	agentInvocationsGrp.Alias("agent-invocation")
 	agentInvocationsGrp.Command("complete-agent-invocation").
 		Description("Report a successful agent invocation").

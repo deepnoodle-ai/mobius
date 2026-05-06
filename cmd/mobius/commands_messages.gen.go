@@ -17,7 +17,7 @@ import (
 
 // registerMessagesCommands registers every generated subcommand in the "messages" group.
 func registerMessagesCommands(app *cli.App) {
-	messagesGrp := app.Group("messages")
+	messagesGrp := app.Group("messages").Description("Send, list, and update channel messages")
 	messagesGrp.Alias("message")
 	messagesGrp.Command("get").
 		Description("Get a channel message").

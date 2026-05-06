@@ -17,7 +17,7 @@ import (
 
 // registerDataTablesCommands registers every generated subcommand in the "data-tables" group.
 func registerDataTablesCommands(app *cli.App) {
-	dataTablesGrp := app.Group("data-tables")
+	dataTablesGrp := app.Group("data-tables").Description("Project-scoped data tables and rows")
 	dataTablesGrp.Alias("data-table")
 	dataTablesGrp.Command("bulk-data-table-rows").
 		Description("Bulk insert rows").

@@ -17,7 +17,7 @@ import (
 
 // registerObservablesCommands registers every generated subcommand in the "observables" group.
 func registerObservablesCommands(app *cli.App) {
-	observablesGrp := app.Group("observables")
+	observablesGrp := app.Group("observables").Description("Tracked observables, observations, and state")
 	observablesGrp.Alias("observable")
 	observablesGrp.Command("create").
 		Description("Create an Observable").

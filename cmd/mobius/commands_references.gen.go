@@ -17,7 +17,7 @@ import (
 
 // registerReferencesCommands registers every generated subcommand in the "references" group.
 func registerReferencesCommands(app *cli.App) {
-	referencesGrp := app.Group("references")
+	referencesGrp := app.Group("references").Description("Reference lookup and resolution")
 	referencesGrp.Alias("reference")
 	referencesGrp.Command("lookup-references").
 		Description("Look up reference candidates").

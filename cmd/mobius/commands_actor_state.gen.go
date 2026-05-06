@@ -17,7 +17,7 @@ import (
 
 // registerActorStateCommands registers every generated subcommand in the "actor-state" group.
 func registerActorStateCommands(app *cli.App) {
-	actorStateGrp := app.Group("actor-state")
+	actorStateGrp := app.Group("actor-state").Description("Reportable actor state and per-target assignments")
 	actorStateGrp.Command("get-state").
 		Description("Get actor state").
 		Args("actor-id").

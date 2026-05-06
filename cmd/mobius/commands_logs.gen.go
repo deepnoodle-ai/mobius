@@ -17,7 +17,7 @@ import (
 
 // registerLogsCommands registers every generated subcommand in the "logs" group.
 func registerLogsCommands(app *cli.App) {
-	logsGrp := app.Group("logs")
+	logsGrp := app.Group("logs").Description("Structured log ingestion and retrieval")
 	logsGrp.Alias("log")
 	logsGrp.Command("ingest-project-logs").
 		Description("Ingest a batch of structured log records (JSON)").

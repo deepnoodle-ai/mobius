@@ -17,7 +17,7 @@ import (
 
 // registerArtifactsCommands registers every generated subcommand in the "artifacts" group.
 func registerArtifactsCommands(app *cli.App) {
-	artifactsGrp := app.Group("artifacts")
+	artifactsGrp := app.Group("artifacts").Description("Run output artifacts and storage settings")
 	artifactsGrp.Alias("artifact")
 	artifactsGrp.Command("commit-artifact").
 		Description("Commit an uploaded artifact").
