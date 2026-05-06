@@ -146,6 +146,7 @@ func registerRunsCommands(app *cli.App) {
 		Flags(
 			cli.String("status", "").Help("Filter by run status."),
 			cli.String("workflow-type", "").Help("Filter by workflow type name."),
+			cli.String("definition-id", "").Help("Filter by workflow definition ID."),
 			cli.String("queue", "").Help("Filter by queue name."),
 			cli.String("parent-run-id", "").Help("Filter to child runs of the specified parent run."),
 			cli.String("source-type", "").Help("Filter by run source type (e.g. api, trigger, slack, fork)."),
@@ -171,6 +172,10 @@ func registerRunsCommands(app *cli.App) {
 			if ctx.IsSet("workflow-type") {
 				v := ctx.String("workflow-type")
 				params.WorkflowType = &v
+			}
+			if ctx.IsSet("definition-id") {
+				v := ctx.String("definition-id")
+				params.DefinitionId = &v
 			}
 			if ctx.IsSet("queue") {
 				v := ctx.String("queue")
@@ -393,7 +398,7 @@ func registerRunsCommands(app *cli.App) {
 		Description("Start a new workflow run against a saved definition").
 		Args("id").
 		Flags(
-			cli.String("config", "").Help("Flat cascade config input used outside authored workflow YAML. Each entry addresses one `(category,… Accepts JSON, @file, or @-."),
+			cli.String("config", "").Help("Flat config input used outside authored workflow YAML. Each entry addresses one registered key. Unk… Accepts JSON, @file, or @-."),
 			cli.String("external-id", "").Help("Caller-supplied logical correlation key for this run. Unique within the project. If the same extern…"),
 			cli.String("inputs", "").Help("Input values to pass to the workflow. Must conform to the workflow's declared input schema. Accepts JSON, @file, or @-."),
 			cli.String("metadata", "").Help("Caller-supplied string metadata attached to the run for filtering and display. Accepts JSON, @file, or @-."),
@@ -455,58 +460,6 @@ func registerRunsCommands(app *cli.App) {
 				return err
 			}
 			return printResponse(ctx, "startWorkflowRun", resp.StatusCode(), resp.Body)
-		})
-
-	runsGrp.Command("stream-project-run-events").
-		Description("Subscribe to a project-wide stream of run events (SSE)").
-		Flags(
-			cli.Int("since", "").Help("Durable event seq cursor to replay from."),
-		).
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			params := &api.StreamProjectRunEventsParams{}
-			if ctx.IsSet("since") {
-				v := int64(ctx.Int("since"))
-				params.Since = &v
-			}
-			resp, err := client.StreamProjectRunEventsWithResponse(ctx.Context(), p0, params)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "streamProjectRunEvents", resp.StatusCode(), resp.Body)
-		})
-
-	runsGrp.Command("stream-run-events").
-		Description("Subscribe to a stream of events for a single run (SSE)").
-		Args("id").
-		Flags(
-			cli.Int("since", "").Help("Durable event seq cursor to replay from."),
-		).
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			params := &api.StreamRunEventsParams{}
-			if ctx.IsSet("since") {
-				v := int64(ctx.Int("since"))
-				params.Since = &v
-			}
-			resp, err := client.StreamRunEventsWithResponse(ctx.Context(), p0, p1, params)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "streamRunEvents", resp.StatusCode(), resp.Body)
 		})
 
 }

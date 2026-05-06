@@ -28,6 +28,7 @@ func registerActionsCommands(app *cli.App) {
 			cli.String("input-schema", "").Help("JSON Schema describing the expected input parameters. Accepts JSON, @file, or @-."),
 			cli.String("name", "").Help("[required] Project-scoped identifier used in workflow step definitions. Lowercase alphanumeric + hyphens, e.g.…"),
 			cli.String("output-schema", "").Help("JSON Schema describing the expected output shape. Accepts JSON, @file, or @-."),
+			cli.String("tags", "").Help("Arbitrary key-value string tags for filtering and organization. Accepts JSON, @file, or @-."),
 			cli.String("title", "").Help("Human-readable display name shown in the UI and catalog."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
@@ -66,6 +67,11 @@ func registerActionsCommands(app *cli.App) {
 			}
 			if ctx.IsSet("output-schema") {
 				if err := decodeFlagJSON(ctx, "output-schema", ctx.String("output-schema"), &body.OutputSchema); err != nil {
+					return err
+				}
+			}
+			if ctx.IsSet("tags") {
+				if err := decodeFlagJSON(ctx, "tags", ctx.String("tags"), &body.Tags); err != nil {
 					return err
 				}
 			}
@@ -146,6 +152,50 @@ func registerActionsCommands(app *cli.App) {
 			return printResponse(ctx, "getCatalogAction", resp.StatusCode(), resp.Body)
 		})
 
+	actionsGrp.Command("invoke-action").
+		Description("Invoke an action").
+		Args("action-name").
+		Flags(
+			cli.String("input", "").Help("Input values matching the action's input_schema. Accepts JSON, @file, or @-."),
+			cli.Int("timeout-seconds", "").Help("How long (in seconds) to wait for synchronous completion. Default 30, max 120. If the run does not …"),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			p1 := ctx.Arg(0)
+			var body api.InvokeActionJSONRequestBody
+			if err := readJSONBody(ctx, &body); err != nil {
+				return err
+			}
+			if ctx.IsSet("input") {
+				if err := decodeFlagJSON(ctx, "input", ctx.String("input"), &body.Input); err != nil {
+					return err
+				}
+			}
+			if ctx.IsSet("timeout-seconds") {
+				v := ctx.Int("timeout-seconds")
+				body.TimeoutSeconds = &v
+			}
+			if ctx.String("file") == "" && !ctx.IsSet("input") && !ctx.IsSet("timeout-seconds") {
+				return fmt.Errorf("at least one flag or --file is required")
+			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
+			}
+			resp, err := client.InvokeActionWithResponse(ctx.Context(), p0, p1, body)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "invokeAction", resp.StatusCode(), resp.Body)
+		})
+
 	actionsGrp.Command("list").
 		Description("List actions").
 		Flags(
@@ -193,12 +243,13 @@ func registerActionsCommands(app *cli.App) {
 			return printResponse(ctx, "listCatalogActions", resp.StatusCode(), resp.Body)
 		})
 
-	actionsGrp.Command("list-audit-log").
-		Description("List action invocation audit records").
+	actionsGrp.Command("list-invocations").
+		Description("List action invocation records").
 		Flags(
 			cli.String("cursor", "").Help("cursor"),
 			cli.Int("limit", "").Help("limit"),
 			cli.String("run-id", "").Help("Filter to invocations from a specific workflow run."),
+			cli.String("job-id", "").Help("Filter to invocations from a specific job."),
 			cli.String("action-name", "").Help("Filter to invocations of a specific action."),
 			cli.String("status", "").Help("Filter by terminal status (e.g. \"success\", \"failed\")."),
 		).
@@ -210,7 +261,7 @@ func registerActionsCommands(app *cli.App) {
 			}
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
-			params := &api.ListActionAuditLogParams{}
+			params := &api.ListActionInvocationsParams{}
 			if ctx.IsSet("cursor") {
 				v := api.CursorParam(ctx.String("cursor"))
 				params.Cursor = &v
@@ -223,6 +274,10 @@ func registerActionsCommands(app *cli.App) {
 				v := ctx.String("run-id")
 				params.RunId = &v
 			}
+			if ctx.IsSet("job-id") {
+				v := ctx.String("job-id")
+				params.JobId = &v
+			}
 			if ctx.IsSet("action-name") {
 				v := ctx.String("action-name")
 				params.ActionName = &v
@@ -231,11 +286,11 @@ func registerActionsCommands(app *cli.App) {
 				v := ctx.String("status")
 				params.Status = &v
 			}
-			resp, err := client.ListActionAuditLogWithResponse(ctx.Context(), p0, params)
+			resp, err := client.ListActionInvocationsWithResponse(ctx.Context(), p0, params)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, "listActionAuditLog", resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "listActionInvocations", resp.StatusCode(), resp.Body)
 		})
 
 	actionsGrp.Command("rotate-secret").
@@ -266,6 +321,7 @@ func registerActionsCommands(app *cli.App) {
 			cli.String("endpoint-url", "").Help("Replacement endpoint URL."),
 			cli.String("input-schema", "").Help("Replacement JSON Schema for inputs. Replaces the existing schema. Accepts JSON, @file, or @-."),
 			cli.String("output-schema", "").Help("Replacement JSON Schema for outputs. Replaces the existing schema. Accepts JSON, @file, or @-."),
+			cli.String("tags", "").Help("Replacement tag map. Replaces the existing tags entirely. Accepts JSON, @file, or @-."),
 			cli.String("title", "").Help("Replacement display title."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
@@ -306,11 +362,16 @@ func registerActionsCommands(app *cli.App) {
 					return err
 				}
 			}
+			if ctx.IsSet("tags") {
+				if err := decodeFlagJSON(ctx, "tags", ctx.String("tags"), &body.Tags); err != nil {
+					return err
+				}
+			}
 			if ctx.IsSet("title") {
 				v := ctx.String("title")
 				body.Title = &v
 			}
-			if ctx.String("file") == "" && !ctx.IsSet("annotations") && !ctx.IsSet("description") && !ctx.IsSet("endpoint-url") && !ctx.IsSet("input-schema") && !ctx.IsSet("output-schema") && !ctx.IsSet("title") {
+			if ctx.String("file") == "" && !ctx.IsSet("annotations") && !ctx.IsSet("description") && !ctx.IsSet("endpoint-url") && !ctx.IsSet("input-schema") && !ctx.IsSet("output-schema") && !ctx.IsSet("tags") && !ctx.IsSet("title") {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
 			if ctx.Bool("dry-run") {

@@ -54,10 +54,15 @@ func registerTriggersCommands(app *cli.App) {
 		Description("Add a target to a trigger").
 		Args("id").
 		Flags(
-			cli.String("condition", "").Help("Expression evaluated against the event payload. Omit to always run."),
+			cli.String("condition", "").Help("Expression evaluated against the event environment (`{ meta, event }`). The target is skipped when …"),
 			cli.Bool("enabled", "").Help("Whether this target starts enabled. Defaults to true when omitted."),
-			cli.String("input-mapping", "").Help("Maps workflow input names to JSONPath expressions. Accepts JSON, @file, or @-."),
-			cli.String("workflow-id", "").Help("[required] ID of the workflow definition to run."),
+			cli.String("external-id-template", "").Help("(launch_run only) Template for the new run's `external_id`."),
+			cli.String("input-mapping", "").Help("(launch_run only) Maps workflow input names to expressions evaluated against the event environment … Accepts JSON, @file, or @-."),
+			cli.String("kind", "").Help("kind"),
+			cli.String("run-selector", "").Help("(signal_run only) Locates an existing run to deliver a signal to. Today only `external_id_template`… Accepts JSON, @file, or @-."),
+			cli.String("signal-payload-mapping", "").Help("(signal_run only) Maps signal payload keys to expressions. Accepts JSON, @file, or @-."),
+			cli.String("signal-topic", "").Help("(signal_run only) `wait_signal` topic to deliver to."),
+			cli.String("workflow-id", "").Help("(launch_run only) ID of the workflow definition to run. Required when `kind=launch_run`."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -82,16 +87,39 @@ func registerTriggersCommands(app *cli.App) {
 				v := ctx.Bool("enabled")
 				body.Enabled = &v
 			}
+			if ctx.IsSet("external-id-template") {
+				v := ctx.String("external-id-template")
+				body.ExternalIdTemplate = &v
+			}
 			if ctx.IsSet("input-mapping") {
 				if err := decodeFlagJSON(ctx, "input-mapping", ctx.String("input-mapping"), &body.InputMapping); err != nil {
 					return err
 				}
 			}
-			if ctx.IsSet("workflow-id") {
-				body.WorkflowId = ctx.String("workflow-id")
+			if ctx.IsSet("kind") {
+				v := api.CreateTriggerTargetRequestKind(ctx.String("kind"))
+				body.Kind = &v
 			}
-			if body.WorkflowId == "" {
-				return fmt.Errorf("--workflow-id is required (or supply it via --file)")
+			if ctx.IsSet("run-selector") {
+				if err := decodeFlagJSON(ctx, "run-selector", ctx.String("run-selector"), &body.RunSelector); err != nil {
+					return err
+				}
+			}
+			if ctx.IsSet("signal-payload-mapping") {
+				if err := decodeFlagJSON(ctx, "signal-payload-mapping", ctx.String("signal-payload-mapping"), &body.SignalPayloadMapping); err != nil {
+					return err
+				}
+			}
+			if ctx.IsSet("signal-topic") {
+				v := ctx.String("signal-topic")
+				body.SignalTopic = &v
+			}
+			if ctx.IsSet("workflow-id") {
+				v := ctx.String("workflow-id")
+				body.WorkflowId = &v
+			}
+			if ctx.String("file") == "" && !ctx.IsSet("condition") && !ctx.IsSet("enabled") && !ctx.IsSet("external-id-template") && !ctx.IsSet("input-mapping") && !ctx.IsSet("kind") && !ctx.IsSet("run-selector") && !ctx.IsSet("signal-payload-mapping") && !ctx.IsSet("signal-topic") && !ctx.IsSet("workflow-id") {
+				return fmt.Errorf("at least one flag or --file is required")
 			}
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
@@ -296,6 +324,56 @@ func registerTriggersCommands(app *cli.App) {
 			return printResponse(ctx, "listTriggerTargets", resp.StatusCode(), resp.Body)
 		})
 
+	triggersGrp.Command("test-fire-trigger").
+		Description("Fire a trigger with a synthetic payload").
+		Args("id").
+		Flags(
+			cli.String("event", "").Help("[required] Synthetic event payload — the same shape an integration would deliver. Available to expressions a… Accepts JSON, @file, or @-."),
+			cli.String("meta", "").Help("Optional meta envelope. Available to expressions as `meta.x`. When omitted, defaults to `{ id: \"tes… Accepts JSON, @file, or @-."),
+			cli.String("mode", "").Help("`preview` resolves input mappings and condition outcomes without launching runs. `execute` runs the…"),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			p1 := ctx.Arg(0)
+			var body api.TestFireTriggerJSONRequestBody
+			if err := readJSONBody(ctx, &body); err != nil {
+				return err
+			}
+			if ctx.IsSet("event") {
+				if err := decodeFlagJSON(ctx, "event", ctx.String("event"), &body.Event); err != nil {
+					return err
+				}
+			}
+			if ctx.IsSet("meta") {
+				if err := decodeFlagJSON(ctx, "meta", ctx.String("meta"), &body.Meta); err != nil {
+					return err
+				}
+			}
+			if ctx.IsSet("mode") {
+				v := api.TestFireTriggerRequestMode(ctx.String("mode"))
+				body.Mode = &v
+			}
+			if ctx.String("file") == "" && !ctx.IsSet("event") {
+				return fmt.Errorf("--event is required (or supply it via --file)")
+			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
+			}
+			resp, err := client.TestFireTriggerWithResponse(ctx.Context(), p0, p1, body)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "testFireTrigger", resp.StatusCode(), resp.Body)
+		})
+
 	triggersGrp.Command("update").
 		Description("Update a trigger").
 		Args("id").
@@ -369,7 +447,12 @@ func registerTriggersCommands(app *cli.App) {
 		Flags(
 			cli.String("condition", "").Help("Replacement condition expression. Set to empty string to remove."),
 			cli.Bool("enabled", "").Help("Set to false to pause this target without removing it."),
-			cli.String("input-mapping", "").Help("Replacement input mapping. Set to null to clear all mappings. Accepts JSON, @file, or @-."),
+			cli.String("external-id-template", "").Help("Replacement external_id template. Set to empty string to clear."),
+			cli.String("input-mapping", "").Help("Replacement input mapping. Same `${expr}` template contract as on create — legacy JSONPath-like v… Accepts JSON, @file, or @-."),
+			cli.String("kind", "").Help("Replacement kind. Changing kind requires the corresponding kind-specific fields to be updated in th…"),
+			cli.String("run-selector", "").Help("(signal_run only) Locates an existing run to deliver a signal to. Today only `external_id_template`… Accepts JSON, @file, or @-."),
+			cli.String("signal-payload-mapping", "").Help("Replacement signal payload mapping. Set to null to clear. Accepts JSON, @file, or @-."),
+			cli.String("signal-topic", "").Help("Replacement signal topic."),
 			cli.String("workflow-id", "").Help("Replacement workflow definition ID."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
@@ -396,16 +479,38 @@ func registerTriggersCommands(app *cli.App) {
 				v := ctx.Bool("enabled")
 				body.Enabled = &v
 			}
+			if ctx.IsSet("external-id-template") {
+				v := ctx.String("external-id-template")
+				body.ExternalIdTemplate = &v
+			}
 			if ctx.IsSet("input-mapping") {
 				if err := decodeFlagJSON(ctx, "input-mapping", ctx.String("input-mapping"), &body.InputMapping); err != nil {
 					return err
 				}
 			}
+			if ctx.IsSet("kind") {
+				v := api.UpdateTriggerTargetRequestKind(ctx.String("kind"))
+				body.Kind = &v
+			}
+			if ctx.IsSet("run-selector") {
+				if err := decodeFlagJSON(ctx, "run-selector", ctx.String("run-selector"), &body.RunSelector); err != nil {
+					return err
+				}
+			}
+			if ctx.IsSet("signal-payload-mapping") {
+				if err := decodeFlagJSON(ctx, "signal-payload-mapping", ctx.String("signal-payload-mapping"), &body.SignalPayloadMapping); err != nil {
+					return err
+				}
+			}
+			if ctx.IsSet("signal-topic") {
+				v := ctx.String("signal-topic")
+				body.SignalTopic = &v
+			}
 			if ctx.IsSet("workflow-id") {
 				v := ctx.String("workflow-id")
 				body.WorkflowId = &v
 			}
-			if ctx.String("file") == "" && !ctx.IsSet("condition") && !ctx.IsSet("enabled") && !ctx.IsSet("input-mapping") && !ctx.IsSet("workflow-id") {
+			if ctx.String("file") == "" && !ctx.IsSet("condition") && !ctx.IsSet("enabled") && !ctx.IsSet("external-id-template") && !ctx.IsSet("input-mapping") && !ctx.IsSet("kind") && !ctx.IsSet("run-selector") && !ctx.IsSet("signal-payload-mapping") && !ctx.IsSet("signal-topic") && !ctx.IsSet("workflow-id") {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
 			if ctx.Bool("dry-run") {

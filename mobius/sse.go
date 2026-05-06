@@ -150,7 +150,7 @@ func (c *Client) WatchRun(ctx context.Context, runID string, since int64) (<-cha
 //		fmt.Printf("Run %s event: %v (seq %d)\n", ev.RunID, ev.Type, ev.Seq)
 //	}
 func (c *Client) WatchProjectRuns(ctx context.Context, since int64) (<-chan RunEvent, error) {
-	resp, err := c.ac.StreamProjectRunEvents(ctx, api.ProjectHandleParam(c.projectHandle), &api.StreamProjectRunEventsParams{
+	resp, err := c.ac.StreamProjectEvents(ctx, api.ProjectHandleParam(c.projectHandle), &api.StreamProjectEventsParams{
 		Since: sinceParam(since),
 	})
 	if err != nil {

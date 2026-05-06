@@ -110,14 +110,110 @@ export interface paths {
         /**
          * List messages in a channel
          * @description Returns messages in reverse chronological order (newest first). Use `reply_to` to fetch a thread. Use `cursor` for pagination.
+         *
+         *     Agent loop helpers (PRD 048 §6):
+         *     - `since=<msg-id>` returns messages strictly newer than the given id
+         *     in chronological order (oldest first), so an agent can stream them
+         *     forward through its turn handler.
+         *     - `unread=true` is shorthand for `since=<my last_read_message_id>`.
+         *     Mutually exclusive with `since`.
          */
-        get: operations["listChannelMessages"];
+        get: operations["listMessages"];
         put?: never;
         /**
          * Send a message to a channel
-         * @description Posts a message to the channel. For agent-sent messages, supply `sender_agent_id` (and optionally `sender_session_id`) to attribute the message to the agent rather than the authenticated user. Content is Markdown. Use `reply_to` for threading.
+         * @description Posts a message to the channel. Sender identity is determined entirely by the authenticated credential — there is no field to override it.
+         *
+         *     - When the credential is an API key whose service account backs an
+         *     agent (1:1 invariant), the message is attributed to that agent.
+         *     - When the credential is an API key whose service account backs no
+         *     agent, the message is attributed to that service account.
+         *     - When the credential is a user credential, the message is attributed
+         *     to that user.
+         *
+         *     Content is Markdown. Use `reply_to` for threading.
          */
-        post: operations["sendChannelMessage"];
+        post: operations["sendMessage"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project}/channels/{id}/references": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Share an entity in a channel
+         * @description Posts a channel card for a canonical Mobius entity. The message stores a typed reference edge so humans and agents can discover the channel activity around a run, interaction, job, group, or other entity without scraping Markdown.
+         */
+        post: operations["shareChannelEntity"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project}/channels/{id}/interactions/{interaction_id}/claim": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Claim an interaction from a channel
+         * @description Claims a pending first-responder group interaction from the chat surface and appends a channel activity message that references the interaction.
+         */
+        post: operations["claimChannelInteraction"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project}/channels/{id}/interactions/{interaction_id}/release": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Release an interaction claim from a channel
+         * @description Releases the authenticated member's first-responder interaction claim from the chat surface and appends channel-visible activity.
+         */
+        post: operations["releaseChannelInteraction"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project}/channels/{id}/interactions/{interaction_id}/respond": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Respond to an interaction from a channel
+         * @description Submits a canonical interaction response from the chat surface and appends a channel-visible activity message so human and agent channel participants can see that the interaction advanced.
+         */
+        post: operations["respondToChannelInteraction"];
         delete?: never;
         options?: never;
         head?: never;
@@ -135,7 +231,7 @@ export interface paths {
          * Get a channel message
          * @description Returns a single message by ID, including threading, pin, edit, and sender attribution metadata. Use the list endpoint to page through a channel or thread.
          */
-        get: operations["getChannelMessage"];
+        get: operations["getMessage"];
         put?: never;
         post?: never;
         delete?: never;
@@ -145,7 +241,34 @@ export interface paths {
          * Update a channel message
          * @description Updates content, metadata, or pinned state of a message. Sets `edited_at`.
          */
-        patch: operations["updateChannelMessage"];
+        patch: operations["updateMessage"];
+        trace?: never;
+    };
+    "/v1/projects/{project}/channels/{id}/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mark messages in a channel as read
+         * @description Advances the caller's `last_read_message_id` for this channel. Used by agent loops to record progress: stream a batch with `?unread=true`, process each message, then call this endpoint with the latest id to acknowledge (PRD 048 §6).
+         *
+         *     - When `up_to_message_id` is set, the read cursor advances to that
+         *     id (the message must belong to this channel).
+         *     - When the body is empty or `up_to_message_id` is omitted, the read
+         *     cursor advances to the channel's latest message at call time.
+         *
+         *     The caller must be a member of the channel. Non-members get 403.
+         */
+        post: operations["markMessagesRead"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/v1/audit-logs": {
@@ -295,7 +418,7 @@ export interface paths {
         };
         /**
          * List workflow runs
-         * @description Supports cursor-based pagination and keyset filtering by status, workflow type, queue, parent run, and source. When `has_more` is true, pass the returned `next_cursor` back on the next call to walk the result set.
+         * @description Supports cursor-based pagination and keyset filtering by status, workflow definition, workflow type, queue, parent run, and source. When `has_more` is true, pass the returned `next_cursor` back on the next call to walk the result set.
          */
         get: operations["listRuns"];
         put?: never;
@@ -416,50 +539,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project}/runs/events": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Subscribe to a project-wide stream of run events (SSE)
-         * @description Opens a Server-Sent Events connection. Each frame carries a JSON envelope `{type, run_id, seq, timestamp, data}` where `seq` is a monotonic durable cursor and `type` is one of:
-         *
-         *     - `run_updated` — the run row's status, heartbeat, or
-         *     timestamps changed; `data` is a full WorkflowRun.
-         *     - `job_updated` — a single job's status or attempt
-         *     advanced; `data` is a full Job.
-         *     - `run_step_updated` — a durable run-step row was created
-         *     or advanced; `data` is a full RunStep.
-         *     - `interaction_created` / `interaction_completed` /
-         *     `interaction_group_claimed` /
-         *     `interaction_group_released` — interaction lifecycle;
-         *     `data` is a full Interaction.
-         *     - `custom` — a worker emitted a domain-specific event via
-         *     `POST /v1/projects/{project}/jobs/{id}/events`. `data`
-         *     carries `{kind: "custom", type, job_id, data, step_id?,
-         *     path_id?}` where `type` is the worker-supplied name and
-         *     inner `data` is the worker payload. `step_id` is set when
-         *     the originating job is owned by a workflow step and lets
-         *     consumers correlate the event to the durable run step
-         *     after the job is reaped on TTL; `path_id` mirrors the
-         *     run's execution path for path-scoped consumers.
-         *
-         *     Pass `?since=<seq>` on reconnect to replay any durable events the server has recorded past that cursor before switching back to live updates; clients should record the largest `seq` they have observed. Comment frames (`:keepalive`) are emitted every ~15s to keep intermediaries from closing the connection.
-         *
-         *     Unknown future event types may appear; clients should ignore types they don't recognize rather than treat the stream as malformed.
-         */
-        get: operations["streamProjectRunEvents"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/projects/{project}/runs/{id}/cancellations": {
         parameters: {
             query?: never;
@@ -520,6 +599,60 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/projects/{project}/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Subscribe to a project-wide live event stream (SSE)
+         * @description Opens a Server-Sent Events connection delivering every live event in the project. Each frame carries a JSON envelope `{type, run_id?, channel_id?, interaction_id?, seq?, timestamp, data}` where `type` is one of:
+         *
+         *     - `run_updated` — the run row's status, heartbeat, or
+         *     timestamps changed; `data` is a full WorkflowRun.
+         *     - `job_updated` — a single job's status or attempt
+         *     advanced; `data` is a full Job. The job's id is on
+         *     `data.id`.
+         *     - `run_step_updated` — a durable run-step row was created
+         *     or advanced; `data` is a full RunStep.
+         *     - `interaction_created` / `interaction_completed` /
+         *     `interaction_group_claimed` /
+         *     `interaction_group_released` / `interaction_cancelled`
+         *     — interaction lifecycle; `data` is a full Interaction
+         *     and the envelope sets `interaction_id`.
+         *     - `message_created` — a channel message was persisted; the
+         *     envelope sets `channel_id` and `data` is a full
+         *     ChannelMessage. Live-only — no `?since=<seq>` replay.
+         *     - `span_appended` — an OTLP span was persisted against a
+         *     run; `data` carries `{span_id, trace_id, name, ...}`.
+         *     - `custom` — a worker emitted a domain-specific event via
+         *     `POST /v1/projects/{project}/jobs/{id}/events`. `data`
+         *     carries `{kind: "custom", type, job_id, data, step_id?,
+         *     path_id?}` where `type` is the worker-supplied name and
+         *     inner `data` is the worker payload. `step_id` is set
+         *     when the originating job is owned by a workflow step
+         *     and lets consumers correlate the event to the durable
+         *     run step after the job is reaped on TTL; `path_id`
+         *     mirrors the run's execution path for path-scoped
+         *     consumers.
+         *
+         *     On this project-wide endpoint the envelope's `seq` is the event's `Timestamp.UnixNano()` — a cross-run comparable cursor — not the run-local `run_events.seq` value (which is only meaningful within a single run and is what `streamRunEvents` returns). Clients should record the largest `seq` they have observed on this stream and pass it back as `?since=<unix-nano>` on reconnect to replay any durable events recorded since; do not persist a `seq` from one stream type as the cursor for the other. Live-only events (e.g. `message_created`) are not replayed on reconnect. Comment frames (`:keepalive`) are emitted every ~15s to keep intermediaries from closing the connection.
+         *
+         *     Optional entity-axis filters narrow the stream. Each accepts a comma-separated list of IDs; an event is delivered when it matches at least one non-empty axis (OR across axes). When all filters are empty the subscription receives every event in the project.
+         *
+         *     Unknown future event types may appear; clients should ignore types they don't recognize rather than treat the stream as malformed.
+         */
+        get: operations["streamProjectEvents"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/projects/{project}/runs/{id}/events": {
         parameters: {
             query?: never;
@@ -529,7 +662,7 @@ export interface paths {
         };
         /**
          * Subscribe to a stream of events for a single run (SSE)
-         * @description Same envelope and event-type set as `/v1/projects/{project}/runs/events` (see that endpoint for the full vocabulary of `type` values), filtered to a single run. The server writes one seed `run_updated` frame on connection so reconnects do not miss the latest state, and supports `?since=<seq>` replay for durable events recorded since the given seq cursor.
+         * @description Same envelope as `streamProjectEvents`, filtered to events whose envelope carries this run's `run_id` — i.e. run, job, run-step, span, interaction, and worker `custom` events. Channel-scoped events that don't carry `run_id` (notably `message_created`) are not delivered here; consume those via `streamProjectEvents` with a `?channel=` filter. The server writes one seed `run_updated` frame on connection so reconnects do not miss the latest state. On this run-scoped endpoint the envelope's `seq` is the run-local `run_events.seq` (a per-run monotonic integer); clients pass the largest observed `seq` back as `?since=<seq>` to replay durable events recorded after that point. This cursor is run-local — do not persist or reuse it across runs or with `streamProjectEvents`, which emits a unix-nano cursor instead.
          */
         get: operations["streamRunEvents"];
         put?: never;
@@ -549,13 +682,13 @@ export interface paths {
         };
         /**
          * List actions
-         * @description Returns project-owned actions only; use `/catalog` for all available actions including platform integrations.
+         * @description Returns project-owned HTTP actions only; use `/catalog` for all available actions including platform integrations and workflow-backed actions.
          */
         get: operations["listActions"];
         put?: never;
         /**
          * Create an action
-         * @description Creates a project-scoped action. `name` is the stable identifier used in workflow step definitions and must be unique within the project. A signing secret is generated automatically and returned in the response; this is the only time the raw secret is exposed — store it securely.
+         * @description Creates a project-scoped HTTP action. `name` is the stable identifier used in workflow step definitions and must be unique within the project. A signing secret is generated automatically and returned in the response; this is the only time the raw secret is exposed — store it securely. Actions created via this endpoint always have `endpoint_kind: http`.
          */
         post: operations["createAction"];
         delete?: never;
@@ -573,7 +706,7 @@ export interface paths {
         };
         /**
          * Get an action by name
-         * @description Returns one project-owned action by its stable `action_name`. Use this endpoint when authoring workflow steps or validating the schemas and signing configuration for a specific action.
+         * @description Returns one project-owned HTTP action by its stable `action_name`. Use this endpoint when authoring workflow steps or validating the schemas and signing configuration for a specific action.
          */
         get: operations["getAction"];
         put?: never;
@@ -587,7 +720,7 @@ export interface paths {
         head?: never;
         /**
          * Update an action
-         * @description Patches action metadata and schemas. All fields are optional; omitted fields are unchanged. Updating `annotations` replaces the entire annotations object — pass `null` to clear all annotation flags.
+         * @description Patches action metadata and schemas. All fields are optional; omitted fields are unchanged. Updating `annotations` replaces the entire annotations object — pass `null` to clear all annotation flags. Only applicable to `endpoint_kind: http` actions; workflow-backed actions are mutated through the workflow surface.
          */
         patch: operations["updateAction"];
         trace?: never;
@@ -603,7 +736,7 @@ export interface paths {
         put?: never;
         /**
          * Rotate an action signing secret
-         * @description Generates a new HMAC-SHA256 signing secret for the action. The previous secret is retained server-side for a brief grace period (typically minutes) so in-flight requests signed with the old key are not immediately rejected. Store the returned secret — it cannot be retrieved again.
+         * @description Generates a new HMAC-SHA256 signing secret for the action. The previous secret is retained server-side for a brief grace period (typically minutes) so in-flight requests signed with the old key are not immediately rejected. Store the returned secret — it cannot be retrieved again. Only applicable to `endpoint_kind: http` actions.
          */
         post: operations["rotateActionSecret"];
         delete?: never;
@@ -612,7 +745,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project}/action-audit-log": {
+    "/v1/projects/{project}/action-invocations": {
         parameters: {
             query?: never;
             header?: never;
@@ -620,12 +753,39 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List action invocation audit records
-         * @description Returns per-invocation records for all action executions in the project. Each record captures the action name, input parameters, output summary, final status, error details, and retry count. Filter by `run_id` to inspect all action calls within a single workflow run, or by `action_name` for cross-run analysis.
+         * List action invocation records
+         * @description Returns per-invocation telemetry records for action executions in the project. Each record captures the action name, input parameters, output summary, final status, error details, and retry count. Filter by `run_id` to inspect all action calls within a single workflow run, by `job_id` to scope to a specific job, or by `action_name` for cross-run analysis.
          */
-        get: operations["listActionAuditLog"];
+        get: operations["listActionInvocations"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project}/actions/{action_name}/invocations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Invoke an action
+         * @description User-driven invocation of any catalog action — HTTP-backed or workflow-backed. The request waits up to `timeout_seconds` for synchronous completion. Returns the output directly on 200 (terminal within the timeout). Returns 202 with `run_id` when the backing workflow is still active. Polling for an active run goes through the existing run endpoints.
+         *
+         *     - **HTTP-backed** actions (`endpoint_kind: http`) always complete
+         *     inline; 200 is the only terminal response.
+         *     - **Workflow-backed** actions (`endpoint_kind: workflow`) may return
+         *     202 when the run does not complete within `timeout_seconds`.
+         *
+         *     Worker-fenced invocations from within a job stay at `POST /v1/projects/{p}/jobs/{id}/actions/{name}`.
+         */
+        post: operations["invokeAction"];
         delete?: never;
         options?: never;
         head?: never;
@@ -641,7 +801,7 @@ export interface paths {
         };
         /**
          * List the action catalog
-         * @description Returns the full catalog of actions available to this project: project-owned actions plus platform-provided integration actions (Slack, GitHub, etc.). The `available` flag indicates whether the action can currently be invoked — false if a required integration is not connected or the caller lacks permissions.
+         * @description Returns the full catalog of actions available to this project: project-owned HTTP actions, platform-provided integration actions (Slack, GitHub, etc.), and workflow-backed actions (workflows with `published_as_tool = true`). The `available` flag indicates whether the action can currently be invoked. The `endpoint_kind` field distinguishes HTTP-backed from workflow-backed actions.
          */
         get: operations["listCatalogActions"];
         put?: never;
@@ -666,6 +826,46 @@ export interface paths {
         get: operations["getCatalogAction"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project}/references/{reference_type}/lookup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Look up reference candidates
+         * @description Returns lightweight selectable candidates for a reference-backed action input field.
+         */
+        get: operations["lookupReferences"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project}/references/{reference_type}/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Resolve saved reference values
+         * @description Resolves stored reference values to display candidates when possible.
+         */
+        post: operations["resolveReferences"];
         delete?: never;
         options?: never;
         head?: never;
@@ -882,6 +1082,30 @@ export interface paths {
         patch: operations["updateTrigger"];
         trace?: never;
     };
+    "/v1/projects/{project}/triggers/{id}/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Fire a trigger with a synthetic payload
+         * @description Runs the dispatcher against a user-supplied event payload. In `preview` mode (default) returns the per-target resolved input mapping and would-launch decision without starting any runs; in `execute` mode actually launches runs (or signals existing runs once `signal_run` lands).
+         *
+         *     Test-fires bypass the matcher entirely — the trigger does not need to match the synthetic event's `event_type` for the dispatcher to evaluate it.
+         *
+         *     Used by the trigger detail page's Test Fire panel as the highest-leverage debugging affordance for trigger authoring.
+         */
+        post: operations["testFireTrigger"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/projects/{project}/triggers/{id}/fires": {
         parameters: {
             query?: never;
@@ -1081,7 +1305,7 @@ export interface paths {
         };
         /**
          * Get project config
-         * @description Returns the project's stored flat cascade config entries. When the project has no stored config, this returns `[]`.
+         * @description Returns the project's stored flat config entries. When the project has no stored config, this returns `[]`.
          */
         get: operations["getProjectConfig"];
         /**
@@ -1092,7 +1316,7 @@ export interface paths {
         post?: never;
         /**
          * Clear project config
-         * @description Deletes all stored project-layer cascade config so the project inherits service defaults for every category.
+         * @description Deletes all stored project-layer config so the project inherits service defaults for every registered key.
          */
         delete: operations["deleteProjectConfig"];
         options?: never;
@@ -1139,6 +1363,26 @@ export interface paths {
          * @description Removes a user from the project members list. On `restricted` projects, removing the last remaining member is rejected — flip the project to `org_open` or add another member first.
          */
         delete: operations["removeProjectMember"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create an Anthropic-compatible message
+         * @description Anthropic Messages API-compatible route. This exists so the official Anthropic client can be pointed at Mobius by setting its base URL to the Mobius API origin and using a project-pinned Mobius API key as `x-api-key`. The response is the raw Anthropic-compatible message object, not wrapped in a Mobius `data` envelope.
+         */
+        post: operations["createMessage"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -1238,6 +1482,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/integrations/providers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List available integration providers and their capabilities
+         * @description Returns the catalog of integration providers the server has registered, including the dotted event types each provider can emit (with payload JSON Schema where reflectable) and the workflow actions that call back into the integration (with input/output JSON Schema).
+         *
+         *     The catalog is the single source of truth that the integration page, the new-trigger wizard's event-type picker, the workflow editor's action picker, and the public docs all read from. A new provider added in the framework appears here at startup with zero frontend changes.
+         */
+        get: operations["listIntegrationProviders"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/projects/{project}/metrics": {
         parameters: {
             query?: never;
@@ -1248,6 +1514,8 @@ export interface paths {
         /**
          * Get operational metrics for a project
          * @description Returns a snapshot of current execution health for the project. All rate and duration metrics are computed over a rolling window (default: 60 minutes). P95 step duration is computed from the 40 most recent completed jobs.
+         *
+         *     The response is structured per resource type. The top-level flat fields (`runs_per_minute`, `failure_rate`, etc.) are deprecated mirrors of `runs.*` that will be removed before GA.
          */
         get: operations["getProjectMetrics"];
         put?: never;
@@ -1356,6 +1624,26 @@ export interface paths {
          * @description Releases the authenticated member's claim on a first-responder group interaction, making it available for another eligible group member to claim and answer.
          */
         post: operations["releaseInteraction"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project}/interactions/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cancel an open interaction
+         * @description Cancels an open interaction, recording who cancelled and an optional reason. Run-backed interactions resume the waiting workflow path with a `{status: cancelled, reason}` signal payload so workflows can route to a fallback. Only humans may cancel by default — agents must request cancellation through an interaction.
+         */
+        post: operations["cancelInteraction"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1493,9 +1781,13 @@ export interface paths {
         put?: never;
         /**
          * Create an agent
-         * @description Creates an agent bound to a service account. A service account can back multiple agents. The service account can be changed after creation via the PATCH endpoint.
+         * @description Creates an agent bound to a service account. Each service account backs at most one agent — the relationship is 1:1 from the agent's side, and `service_account_id` is immutable after creation (reassigning identity is delete-and-recreate).
          *
          *     If `service_account_id` is omitted, a new service account is auto-created with the same name as the agent and assigned to back it. Auto-creation requires the caller to hold `mobius.access.manage`. Auto-creation fails if a service account with that name already exists in the project; to bind an existing service account to a new agent, pass `service_account_id` explicitly.
+         *
+         *     If `service_account_id` references a service account that already backs another agent, the request is rejected with `409 service_account_already_bound`.
+         *
+         *     Optional `role_ids` overrides the role assignments on the auto-created service account. Mutually exclusive with `service_account_id` (an existing SA already carries its own roles). When omitted, the auto-created SA inherits the project's `default_agent_role_id`, falling through to the system `Agent` role floor when unset.
          */
         post: operations["createAgent"];
         delete?: never;
@@ -1530,6 +1822,26 @@ export interface paths {
          * @description Updates mutable agent fields. Setting `status` to `inactive` prevents the agent from claiming new jobs but does not terminate active sessions.
          */
         patch: operations["updateAgent"];
+        trace?: never;
+    };
+    "/v1/projects/{project}/agents/{id}/inbox": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Provision email inbox
+         * @description Provisions a dedicated email inbox for the agent. The address is auto-generated (`agent-{8chars}@mobiusinbox.com`) and stored on the agent record. Idempotent: if an inbox is already provisioned, the existing agent is returned unchanged.
+         */
+        post: operations["provisionAgentInbox"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/v1/projects/{project}/agents/{id}/sessions": {
@@ -1616,7 +1928,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project}/tools": {
+    "/v1/agent-invocations/{invocation_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -1624,10 +1936,10 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List workflow tools
-         * @description Returns all workflow definitions that have been published as tools for the project. Each entry includes the tool name, description, and JSON Schema for the input — compatible with the Anthropic and OpenAI tool use APIs.
+         * Get an agent invocation
+         * @description Returns the durable record of a single `agent.invoke` call. Lifecycle statuses are `pending` → `running` → `completed`/`failed`/`cancelled`. Workers driving a remote agent use this endpoint to inspect the dispatch payload before reporting a result.
          */
-        get: operations["listTools"];
+        get: operations["getAgentInvocation"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1636,7 +1948,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project}/tools/{handle}/runs": {
+    "/v1/agent-invocations/{invocation_id}/complete": {
         parameters: {
             query?: never;
             header?: never;
@@ -1646,17 +1958,43 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Invoke a workflow tool
-         * @description Starts a workflow run for the named tool (workflow handle) and waits for it to complete up to `timeout_seconds` (default 30s, max 120s). Returns the run output directly when the workflow completes within the timeout. On timeout the response includes the run ID and `status: active` so the caller can switch to polling via `GET /v1/projects/{project}/tools/{handle}/runs/{run_id}`.
+         * Report a successful agent invocation
+         * @description Records the worker-supplied response on the invocation row and signals the suspended workflow branch so it resumes with the response as the step output.
+         *
+         *     Validation: `tool_calls` is checked against the original `allowed_tools` (calling a forbidden tool fails the invocation with `tool_violation`); `structured` is validated against `output_schema` if one was supplied (a mismatch fails with `schema_violation`).
+         *
+         *     Idempotent on `invocation_id`: a repeat call after a terminal state returns the recorded final state without re-signalling. Late completes after timeout are recorded but do not resume the branch.
          */
-        post: operations["runTool"];
+        post: operations["completeAgentInvocation"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project}/tools/{handle}/runs/{run_id}": {
+    "/v1/agent-invocations/{invocation_id}/fail": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Report a failed agent invocation
+         * @description Records a worker-reported error on the invocation row and signals the suspended workflow branch so it resumes by surfacing the error as a typed workflow failure.
+         *
+         *     Idempotent on `invocation_id`. The error_type field is one of: `agent_unavailable`, `agent_error`, `timeout`, `tool_violation`, `schema_violation`, `cancelled`.
+         */
+        post: operations["failAgentInvocation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project}/spans": {
         parameters: {
             query?: never;
             header?: never;
@@ -1664,16 +2002,243 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get an async tool run result
-         * @description Polls the workflow run backing an asynchronous tool invocation. A completed response includes `output`; a failed response includes `error`. The `handle` must match the tool that started the run.
+         * List spans with optional filters
+         * @description Returns a flat, paginated list of OTel spans within the project. Optionally filter by `run_id`, `job_id`, or `step_id`. Spans are ordered by `started_at` ascending, breaking ties by span row id. Provide at most one of `run_id`, `job_id`, or `step_id` per request.
          */
-        get: operations["getToolRun"];
+        get: operations["listProjectSpans"];
         put?: never;
         post?: never;
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project}/spans/step_counts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Per-step span tallies for the run timeline badges
+         * @description Returns one `SpanCounts` per step that has any spans linked to it. Used by the run detail timeline to render compact badges like `5 LLM • 12 tools` without a per-step round trip. `run_id` is required.
+         */
+        get: operations["getProjectStepSpanCounts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project}/traces": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List trace summaries with optional filters
+         * @description Returns one summary card per `trace_id` within the project. Optionally filter by `run_id` or `agent_id`. Ordered by trace start time ascending.
+         */
+        get: operations["listProjectTraces"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project}/traces/{trace_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the full span tree for one trace
+         * @description Returns every span recorded under `trace_id` for the caller's project. Spans are ordered by `started_at` ascending. The client reconstructs the tree from `parent_span_id` references.
+         */
+        get: operations["getTrace"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project}/logs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List log records for a project */
+        get: operations["listProjectLogs"];
+        put?: never;
+        /** Ingest a batch of structured log records (JSON) */
+        post: operations["ingestProjectLogs"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project}/logs/otlp": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Ingest OTLP log records (JSON-encoded ExportLogsServiceRequest) */
+        post: operations["ingestProjectLogsOTLP"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project}/tables": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List data tables */
+        get: operations["listDataTables"];
+        put?: never;
+        /** Create a data table */
+        post: operations["createDataTable"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project}/tables/{table_name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a data table */
+        get: operations["getDataTable"];
+        /** Update a data table */
+        put: operations["updateDataTable"];
+        post?: never;
+        /** Delete a data table and all its rows */
+        delete: operations["deleteDataTable"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project}/tables/{table_name}/rows": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Insert a row */
+        post: operations["insertDataTableRow"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project}/tables/{table_name}/rows/query": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Query rows
+         * @description Filter, sort, and paginate rows. Filter keys are column names; values are either a direct equality match or an operator object: `{"$eq": v}`, `{"$ne": v}`, `{"$gt": v}`, `{"$gte": v}`, `{"$lt": v}`, `{"$lte": v}`, `{"$in": [v,...]}`, `{"$exists": bool}`.
+         */
+        post: operations["queryDataTableRows"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project}/tables/{table_name}/rows/upsert": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upsert a row
+         * @description Insert or update a row identified by a set of key columns. If a row with matching key-column values exists it is updated (PATCH semantics — unspecified fields are preserved). If no matching row is found a new row is inserted.
+         *
+         *     Returns 201 Created when a new row was inserted, 200 OK when an existing row was updated.
+         */
+        post: operations["upsertDataTableRow"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project}/tables/{table_name}/rows/bulk": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Bulk insert rows */
+        post: operations["bulkInsertDataTableRows"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project}/tables/{table_name}/rows/{row_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a row by ID */
+        get: operations["getDataTableRow"];
+        put?: never;
+        post?: never;
+        /** Delete a row */
+        delete: operations["deleteDataTableRow"];
+        options?: never;
+        head?: never;
+        /** Update a row (PATCH — merges into existing data) */
+        patch: operations["updateDataTableRow"];
         trace?: never;
     };
 }
@@ -1751,10 +2316,35 @@ export interface components {
             multiline?: boolean;
         };
         /**
-         * @description Whether the message was sent by a human org member or an agent worker.
+         * @description Authenticated principal that posted the message, derived from the
+         *     credential at send time and never overrideable in the request body
+         *     (PRD 048 §5):
+         *     - `member` — a human org member's user credential.
+         *     - `agent` — an API key whose service account backs an agent (1:1
+         *     invariant from PRD 048 §1). `sender_id` is the agent's ID.
+         *     - `service_account` — an API key whose service account backs no
+         *     agent. `sender_id` is the service account's ID.
          * @enum {string}
          */
-        ChannelMessageSenderType: "member" | "agent";
+        ChannelMessageSenderType: "member" | "agent" | "service_account";
+        /**
+         * @description Mobius entity kind that can be attached to a channel message.
+         * @enum {string}
+         */
+        EntityReferenceType: "workflow_run" | "run_step" | "job" | "interaction" | "workflow_definition" | "channel_message" | "agent" | "user" | "group";
+        /** @description Experimental typed link from a channel message to another Mobius entity. Clients use references to render cards and chips without parsing Markdown. */
+        EntityReference: {
+            /** @description Referenced Mobius entity kind. */
+            entity_type: components["schemas"]["EntityReferenceType"];
+            /** @description Stable ID of the referenced entity. */
+            entity_id: string;
+            /** @description Relationship to the message, such as primary, source, context, or mention. */
+            relation?: string;
+            /** @description Snapshot label to display when the entity cannot be hydrated. */
+            label?: string;
+            /** @description Project that owns the entity when known. */
+            project_id?: string;
+        };
         /** @description Project-scoped messaging room or direct-message thread. */
         Channel: {
             /** @description Unique identifier for this channel. */
@@ -1841,9 +2431,9 @@ export interface components {
             id: string;
             /** @description ID of the channel this message was posted in. */
             channel_id: string;
-            /** @description Whether the sender is a human member or an agent worker. */
+            /** @description Whether the sender is a human member, an agent worker, or a bare service account credential. */
             sender_type: components["schemas"]["ChannelMessageSenderType"];
-            /** @description User ID (for `member`) or agent ID (for `agent`) of the message sender. */
+            /** @description Sender principal identifier — the user ID for `sender_type=member`, the agent's ID for `sender_type=agent`, or the service account's ID for `sender_type=service_account`. */
             sender_id: string;
             /** @description Live agent session that posted the message, when applicable. */
             sender_session_id?: string | null;
@@ -1860,6 +2450,8 @@ export interface components {
             reply_to?: string | null;
             /** @description Free-form metadata attached to the message. */
             metadata?: components["schemas"]["Metadata"];
+            /** @description Experimental typed entity links rendered by richer channel clients. */
+            references?: components["schemas"]["EntityReference"][];
             /** @description Whether this message is pinned in the channel. */
             pinned?: boolean;
             /** @description User ID of the member who pinned this message, or null when the message is not pinned. */
@@ -1883,6 +2475,37 @@ export interface components {
             has_more?: boolean;
             /** @description Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false. */
             next_cursor?: string;
+        };
+        /** @description Entity reference and optional message fields for posting a channel card. */
+        ShareChannelEntityRequest: {
+            /** @description Canonical entity to attach to the channel message. */
+            reference: components["schemas"]["EntityReference"];
+            /** @description Optional Markdown fallback body. If omitted, the server derives a short label from the reference. */
+            content?: string;
+            /**
+             * @description Rendering hint for the created channel message.
+             * @default card
+             * @enum {string}
+             */
+            display: "message" | "notice" | "card";
+            /** @description Optional dot-namespaced message type. If omitted, the server derives one from the entity type. */
+            type?: string;
+            /** @description Optional free-form message metadata. */
+            metadata?: components["schemas"]["Metadata"];
+        };
+        /** @description Response payload submitted to an interaction from a channel card. */
+        ChannelInteractionRespondRequest: {
+            /** @description Response value supplied by the responder. */
+            value: components["schemas"]["InteractionValue"];
+            /** @description Optional human-readable comment to show in channel activity. */
+            comment?: string;
+        };
+        /** @description Result of a channel-scoped interaction operation. */
+        ChannelInteractionActionResponse: {
+            /** @description Updated canonical interaction. */
+            interaction: components["schemas"]["Interaction"];
+            /** @description Channel activity message created for this operation. */
+            message: components["schemas"]["ChannelMessage"];
         };
         /** @description Fields used to create a project channel or direct-message thread. */
         CreateChannelRequest: {
@@ -1929,12 +2552,8 @@ export interface components {
              */
             role: "member" | "admin";
         };
-        /** @description Fields used to post a new channel message. */
+        /** @description Fields used to post a new channel message. Sender attribution is determined entirely by the authenticated credential and cannot be overridden via this request body. */
         SendChannelMessageRequest: {
-            /** @description Durable agent identity to attribute the message to. When set, `sender_type` on the resulting message is `agent`. */
-            sender_agent_id?: string;
-            /** @description Live agent session to associate with the message. */
-            sender_session_id?: string;
             /** @description Message body in Markdown. */
             content: string;
             /**
@@ -1952,6 +2571,8 @@ export interface components {
             reply_to?: string;
             /** @description Free-form metadata to attach to the message. */
             metadata?: components["schemas"]["Metadata"];
+            /** @description Experimental typed entity links for card/chip rendering. */
+            references?: components["schemas"]["EntityReference"][];
         };
         /** @description Mutable fields for an existing channel message. */
         UpdateChannelMessageRequest: {
@@ -1959,8 +2580,202 @@ export interface components {
             content?: string;
             /** @description Replacement free-form metadata for the message. */
             metadata?: components["schemas"]["Metadata"];
+            /** @description Replacement typed entity links for card/chip rendering. */
+            references?: components["schemas"]["EntityReference"][];
             /** @description Pin or unpin the message. Sets/clears `pinned_by`. */
             pinned?: boolean;
+        };
+        /** @description Body for `POST /v1/projects/{project}/channels/{id}/read`. When omitted, the read cursor advances to the channel's latest message. */
+        MarkChannelMessagesReadRequest: {
+            /** @description Message ID to advance the read cursor to. Must belong to this channel. Omit to advance to the channel's latest message. */
+            up_to_message_id?: string;
+        };
+        /**
+         * @description Interaction kind: `approval` captures a decision, `review` captures acknowledgement or notes, and `input` collects free-form data.
+         * @enum {string}
+         */
+        InteractionType: "approval" | "review" | "input";
+        /** @description Identifies who should receive an interaction request. Note: distinct from the caller/audit `Actor` vocabulary — a target is a *recipient*, not someone who has acted yet. */
+        InteractionTarget: {
+            /**
+             * @description Target kind: a specific user, an agent queue, or a group.
+             * @enum {string}
+             */
+            type: "user" | "agent" | "group";
+            /** @description User ID for user; queue name for agent; group ID or handle for group. */
+            id: string;
+        };
+        /** @description Identifies who answered an interaction. Groups cannot themselves respond — only a user within a group — so `group` is not a valid responder type. */
+        InteractionResponder: {
+            /**
+             * @description Responder kind: a user or an agent.
+             * @enum {string}
+             */
+            type: "user" | "agent";
+            /** @description User ID for user; agent ID for agent. */
+            id: string;
+        };
+        /** @description Free-form JSON payload. Used both for responder-supplied values and for policy-derived values (e.g. `Interaction.outcome`, `ResolutionPolicy.proposal`); each consumer documents which. */
+        InteractionValue: {
+            [key: string]: unknown;
+        } | unknown[] | string | number | boolean;
+        /** @description One participant's response to an interaction. Each respond call writes a new row with a unique `(interaction_id, responder_type, responder_id)` constraint — `responder_type` is part of the key so a user and an agent that share an ID string can both respond. The resolution-policy evaluator sees the full set when deciding whether to resolve; the response that triggered resolution is referenced from `Interaction.resolving_response_id`. */
+        InteractionResponse: {
+            /** @description Unique identifier for this response. */
+            id: string;
+            /** @description ID of the interaction this response belongs to. */
+            interaction_id: string;
+            /**
+             * @description Actor class behind this response. Asymmetric policies route on this; majority/threshold ignore it.
+             * @enum {string}
+             */
+            responder_type: "user" | "agent";
+            /** @description User ID for user; agent ID for agent. */
+            responder_id: string;
+            /** @description JSON value supplied by this participant. */
+            value: components["schemas"]["InteractionValue"];
+            /** @description Optional free-text comment from this responder. */
+            comment?: string | null;
+            /**
+             * Format: date-time
+             * @description Timestamp when this response was submitted.
+             */
+            responded_at: string;
+            /**
+             * Format: double
+             * @description Optional 0..1 confidence score attached to this response.
+             */
+            confidence?: number | null;
+        };
+        /** @description Declarative resolution rule attached to an Interaction. Determines how participant responses become a final outcome. */
+        ResolutionPolicy: {
+            /**
+             * @description Resolution rule. `first_valid_response` resolves on the first response (Tier 1 default). `all_required` waits for every eligible participant. `simple_majority` and `threshold` are voting policies. `weighted_vote` weighs responses by `confidence`. `speculative` resolves to `proposal` when the veto window closes without a veto. `asymmetric` runs different sub-rules per actor class (e.g. agents propose, humans decide via majority).
+             * @enum {string}
+             */
+            type: "first_valid_response" | "all_required" | "simple_majority" | "threshold" | "weighted_vote" | "speculative" | "asymmetric";
+            /** @description Minimum responses required before a majority/threshold can resolve. */
+            quorum?: number;
+            /** @description Vote count any option must reach to win under `threshold`. */
+            threshold?: number;
+            /**
+             * @description Behavior on a tied top vote count for `simple_majority`. Null or absent keeps the interaction open; `first` picks the earliest-arriving value; `owner_decides` waits for `owner_id` to break the tie.
+             * @enum {string|null}
+             */
+            tie_break?: "first" | "owner_decides" | null;
+            /** @description User/agent ID treated as authoritative when `tie_break` is `owner_decides`. */
+            owner_id?: string;
+            /**
+             * @description Where `weighted_vote` reads weights from.
+             * @enum {string}
+             */
+            weight_by?: "confidence" | "equal";
+            /**
+             * Format: double
+             * @description Drop responses with confidence below this bar before weighting.
+             */
+            min_confidence?: number;
+            /** @description Speculative policy: default outcome accepted automatically when the veto window closes without a veto. Configured on the policy, not supplied by responders. */
+            proposal?: components["schemas"]["InteractionValue"];
+            /** @description Window (in seconds, relative to creation time) during which a veto can be submitted. When the window passes the speculative interaction resolves to `proposal`. When zero `expires_at` is used. */
+            veto_window_seconds?: number;
+            /**
+             * @description Currently only `accept_proposal` is supported.
+             * @enum {string}
+             */
+            on_no_veto?: "accept_proposal";
+            /** @description Asymmetric policy: rule applied to user responders. */
+            humans?: components["schemas"]["AsymmetricActorRule"];
+            /** @description Asymmetric policy: rule applied to agent responders. */
+            agents?: components["schemas"]["AsymmetricActorRule"];
+        };
+        /** @description Per-actor-class rule under an asymmetric resolution policy. `propose` records responses for audit but ignores them for resolution. `decide` applies the optional `sub_policy` to that class's responses to drive resolution. `ignore` is reserved for future use. */
+        AsymmetricActorRule: {
+            /**
+             * @description Role this actor class plays.
+             * @enum {string}
+             */
+            rule: "propose" | "decide" | "ignore";
+            /** @description Sub-rule applied to this class's responses when `rule` is `decide`. When omitted, decide-class defaults to `first_valid_response` over the class's responses. */
+            sub_policy?: components["schemas"]["ResolutionPolicy"];
+        };
+        /** @description Human or agent interaction request and its current response state. */
+        Interaction: {
+            /** @description Unique identifier for this interaction. */
+            id: string;
+            /** @description Originating workflow run when the interaction is run-backed. */
+            run_id?: string | null;
+            /** @description Signal name used to resume the originating run when run-backed. */
+            signal_name?: string | null;
+            /** @description Interaction kind that determines the expected response experience. */
+            type: components["schemas"]["InteractionType"];
+            /**
+             * @description Current status of the interaction: pending, completed, expired, or cancelled.
+             * @enum {string}
+             */
+            status: "pending" | "completed" | "expired" | "cancelled";
+            /** @description Human-readable message shown to the responder when supplied. */
+            message?: string | null;
+            /** @description Additional key-value context surfaced in the UI alongside the message when supplied. */
+            context?: {
+                [key: string]: unknown;
+            } | null;
+            /** @description Response controls and validation rules rendered to the recipient. */
+            spec?: components["schemas"]["InteractionSpec"];
+            /** @description Recipient of the interaction. */
+            target: components["schemas"]["InteractionTarget"];
+            /** @description User or agent that completed the interaction; null until completion. */
+            responder?: components["schemas"]["InteractionResponder"];
+            /** @description ID of the response that triggered resolution. Null while the interaction is pending, when the speculative `proposal` is auto-accepted with no response, on cancel, and on expiry. Look up the response in `responses` for the full payload. */
+            resolving_response_id?: string | null;
+            /** @description All participant responses recorded against this interaction in arrival order. Empty until the first response is submitted. The full set is what the resolution-policy evaluator runs against. */
+            responses?: components["schemas"]["InteractionResponse"][];
+            /**
+             * Format: date-time
+             * @description Timestamp when this interaction expires if not responded to.
+             */
+            expires_at?: string | null;
+            /**
+             * Format: date-time
+             * @description Timestamp when the interaction received a terminal response.
+             */
+            completed_at?: string | null;
+            /**
+             * Format: date-time
+             * @description Timestamp when this interaction was created.
+             */
+            created_at: string;
+            /**
+             * Format: date-time
+             * @description Timestamp when this interaction was last updated.
+             */
+            updated_at: string;
+            /** @description Resolved group ID (set when target.type = group) */
+            target_group_id?: string | null;
+            /** @description User IDs of group members at the time of creation; null for non-group targets. */
+            target_member_snapshot?: string[] | null;
+            /**
+             * @description Group routing policy captured at creation time: first_responder or all_members. Null for non-group targets.
+             * @enum {string|null}
+             */
+            routing_policy_snapshot?: "first_responder" | "all_members" | null;
+            /** @description When true, all snapshotted members must respond before completion */
+            require_all?: boolean;
+            /** @description User ID of the member who claimed this interaction; null until claimed and only used for first_responder routing. */
+            claimed_by?: string | null;
+            /**
+             * Format: date-time
+             * @description Timestamp when a first-responder member claimed this interaction.
+             */
+            claimed_at?: string | null;
+            /** @description Declarative resolution rule attached at creation time. Legacy inputs (`require_all` / `first_responder`) are synthesized into an equivalent policy at create time, so on a freshly-created Interaction this should always be present; nullability covers historical rows that pre-date the synthesis. */
+            resolution_policy?: components["schemas"]["ResolutionPolicy"];
+            /** @description Final outcome selected by the resolution policy (not responder-supplied). Shape depends on the policy: `simple_majority` returns the winning option; `all_required` returns the array of every response; `speculative` returns either the proposal or the vetoer's value. Null while the interaction is still pending. */
+            outcome?: components["schemas"]["InteractionValue"];
+            /** @description Short audit string identifying which policy rule fired (e.g. `simple_majority`, `speculative_no_veto`, `simple_majority_owner_decides`). Null until the interaction reaches a resolved state. */
+            resolved_by?: string | null;
+            /** @description Reason recorded when the interaction was cancelled. */
+            cancel_reason?: string | null;
         };
         /** @description Immutable record of a security- or configuration-relevant change. Use audit log entries to answer who changed a resource, when it happened, and which project or credential was involved. */
         AuditLogEntry: {
@@ -1978,6 +2793,8 @@ export interface components {
             actor_name?: string;
             /** @description Credential ID used for the request, when applicable */
             credential_id?: string;
+            /** @description Human-readable credential name or session label captured when the audit entry was written */
+            credential_name?: string;
             /**
              * @description Type of action performed: `create`, `update`, `delete`, `archive`, or `restore`.
              * @enum {string}
@@ -2216,7 +3033,7 @@ export interface components {
         };
         /** @description Retry policy for a workflow step after a recoverable failure. */
         WorkflowRetry: {
-            /** @description Error class names this policy applies to. Retries all errors when omitted. */
+            /** @description Error class names this policy applies to. Use `all` or `*` for a wildcard. Retries all errors when omitted. */
             error_equals?: string[];
             /** @description Maximum number of retry attempts. Zero disables retries. */
             max_retries?: number;
@@ -2236,7 +3053,7 @@ export interface components {
         };
         /** @description Error routing rule that transfers execution to another step. */
         WorkflowCatch: {
-            /** @description Error class names this catch clause handles. */
+            /** @description Error class names this catch clause handles. Use `all` or `*` for a wildcard. */
             error_equals: string[];
             /** @description Step name to transition to when this clause is matched. */
             next: string;
@@ -2570,7 +3387,7 @@ export interface components {
             updated_at: string;
             /**
              * Format: date-time
-             * @description Deadline at which the reaper will fail this run with `error_type=run_timeout` if it has not reached a terminal state. Present only when `resolved_config` contains an entry with `category="timeouts"` and `key="wall_clock"` whose value resolves to a finite duration. Anchored to `created_at`.
+             * @description Deadline at which the reaper will fail this run with `error_type=run_timeout` if it has not reached a terminal state. Present only when `resolved_config` contains a `key="runs.timeouts.execution"` entry whose value resolves to a finite duration. Anchored to `created_at`.
              */
             wall_clock_deadline_at?: string;
             /**
@@ -2765,24 +3582,20 @@ export interface components {
             /** @description Run-level cascade config overrides applied when starting the bound workflow. */
             config?: components["schemas"]["ConfigEntries"];
         };
-        /** @description One cascade config override entry. */
+        /** @description One config override entry. */
         ConfigEntry: {
-            /** @description Config category token, for example `timeouts`. */
-            category: string;
-            /** @description Config key within the category, for example `execution`. */
+            /** @description Registered config key, for example `jobs.timeouts.execution` or `runs.timeouts.execution`. */
             key: string;
-            /** @description Raw string value interpreted by the category-specific parser. */
+            /** @description Raw string value interpreted by the key parser. */
             value: string;
         };
-        /** @description Flat cascade config input used outside authored workflow YAML. Each entry addresses one `(category, key)` pair. Unknown categories or unknown keys under a known category are rejected at write time. The only category shipped in Phase 1 is `timeouts`, whose keys are `claim`, `liveness`, `execution`, `wall_clock`. */
+        /** @description Flat config input used outside authored workflow YAML. Each entry addresses one registered key. Unknown keys are rejected at write time. Phase 1 ships: `jobs.timeouts.claim`, `jobs.timeouts.execution`, `jobs.timeouts.heartbeat`, and `runs.timeouts.execution`. */
         ConfigEntries: components["schemas"]["ConfigEntry"][];
-        /** @description Frozen cascade resolution in flat entry form. Keys unset at every layer are omitted. See PRD 035. */
+        /** @description Frozen config resolution in flat entry form. Keys unset at every layer are omitted. See PRD 035. */
         ResolvedConfig: components["schemas"]["ResolvedConfigEntry"][];
-        /** @description One cascade config value after layer resolution. */
+        /** @description One config value after layer resolution. */
         ResolvedConfigEntry: {
-            /** @description Config category token, for example `timeouts`. */
-            category: string;
-            /** @description Resolved key within the category. */
+            /** @description Registered config key that was resolved. */
             key: string;
             /** @description Resolved raw string value. */
             value: string;
@@ -2852,17 +3665,17 @@ export interface components {
             error_message?: string;
             /**
              * Format: date-time
-             * @description Deadline at which the reaper will fail this job with `error_type=claim_timeout` if no worker has claimed it. Present only when `resolved_config` contains an entry with `category="timeouts"` and `key="claim"` whose value resolves to a finite duration. Re-stamped whenever the job returns to `pending`.
+             * @description Deadline at which the reaper will fail this job with `error_type=claim_timeout` if no worker has claimed it. Present only when `resolved_config` contains `key="jobs.timeouts.claim"` whose value resolves to a finite duration. Re-stamped whenever the job returns to `pending`.
              */
             claim_deadline_at?: string;
             /**
              * Format: date-time
-             * @description Deadline at which the reaper will either reset (retries remain) or fail this job with `error_type=liveness_timeout` if the worker has not heartbeated in time. Present only when `resolved_config` contains an entry with `category="timeouts"` and `key="liveness"` whose value resolves to a finite duration and the job is claimed.
+             * @description Deadline at which the reaper will either reset (retries remain) or fail this job with `error_type=liveness_timeout` if the worker has not heartbeated in time. Present only when `resolved_config` contains `key="jobs.timeouts.heartbeat"` whose value resolves to a finite duration and the job is claimed.
              */
             liveness_deadline_at?: string;
             /**
              * Format: date-time
-             * @description Deadline at which the reaper will fail this job with `error_type=execution_timeout` if it has not completed. Present only when `resolved_config` contains an entry with `category="timeouts"` and `key="execution"` whose value resolves to a finite duration.
+             * @description Deadline at which the reaper will fail this job with `error_type=execution_timeout` if it has not completed. Present only when `resolved_config` contains `key="jobs.timeouts.execution"` whose value resolves to a finite duration.
              */
             execution_deadline_at?: string;
             /** @description Failure cause. Server-produced timeout and cancellation failures use stable tokens such as `claim_timeout`, `liveness_timeout`, `execution_timeout`, `run_cancelled`, `run_timeout`, and `run_failed`; worker-reported failures may use caller-defined class names. Present when `status=failed`. */
@@ -2903,16 +3716,6 @@ export interface components {
             /** @description Signal topic name matching the wait_signal step's topic. */
             name: string;
         };
-        /** @description Identifies who should receive an interaction request. Note: distinct from the caller/audit `Actor` vocabulary — a target is a *recipient*, not someone who has acted yet. */
-        InteractionTarget: {
-            /**
-             * @description Target kind: a specific user, an agent queue, or a group.
-             * @enum {string}
-             */
-            type: "user" | "agent" | "group";
-            /** @description User ID for user; queue name for agent; group ID or handle for group. */
-            id: string;
-        };
         /** @description Request hints that describe the safe-use properties of the action. Used by the engine and tooling to decide retry behavior, dry-run eligibility, etc. Unknown request properties are rejected. */
         ActionAnnotationsRequest: {
             /** @description The action produces the same result when called with the same inputs; safe to retry automatically. */
@@ -2933,7 +3736,7 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
-        /** @description Registers a project-owned action endpoint callable from workflow steps. */
+        /** @description Registers a project-owned HTTP action endpoint callable from workflow steps. */
         CreateActionRequest: {
             /** @description Project-scoped identifier used in workflow step definitions. Lowercase alphanumeric + hyphens, e.g. "send-email". Must be unique within the project. Cannot start with "mobius." (reserved prefix). */
             name: string;
@@ -2956,6 +3759,10 @@ export interface components {
             };
             /** @description Safe-use hints used by execution and authoring tools. */
             annotations?: components["schemas"]["ActionAnnotationsRequest"];
+            /** @description Arbitrary key-value string tags for filtering and organization. */
+            tags?: {
+                [key: string]: string;
+            };
         };
         /** @description Updates action metadata, endpoint, schemas, or safe-use hints. */
         UpdateActionRequest: {
@@ -2978,6 +3785,10 @@ export interface components {
             };
             /** @description Pass null to clear all annotation flags. */
             annotations?: components["schemas"]["ActionAnnotationsRequest"];
+            /** @description Replacement tag map. Replaces the existing tags entirely. */
+            tags?: {
+                [key: string]: string;
+            };
         };
         /** @description Project-owned HTTP action endpoint callable by workflow steps. */
         Action: {
@@ -2990,8 +3801,13 @@ export interface components {
             /** @description Markdown description of what the action does. */
             description?: string;
             /**
+             * @description Backing kind of this action. "http" for project-owned HTTP endpoints (the only kind creatable via POST /actions). "workflow" entries are read-only and mutated through the workflow surface.
+             * @enum {string}
+             */
+            endpoint_kind: "http" | "workflow";
+            /**
              * Format: uri
-             * @description HTTP/HTTPS URL Mobius POSTs to when invoking this action.
+             * @description HTTP/HTTPS URL Mobius POSTs to when invoking this action. Populated for endpoint_kind: http only.
              */
             endpoint_url: string;
             /** @description JSON Schema describing expected input parameters. */
@@ -3004,6 +3820,10 @@ export interface components {
             };
             /** @description Safe-use hints returned for this action. */
             annotations?: components["schemas"]["ActionAnnotationsResponse"];
+            /** @description Arbitrary key-value string tags. */
+            tags?: {
+                [key: string]: string;
+            };
             /** @description Raw HMAC-SHA256 signing secret. Only populated on create and rotate responses; null on all other reads. Store this value securely on first receipt — it cannot be retrieved again. */
             signing_secret?: string;
             /**
@@ -3031,7 +3851,7 @@ export interface components {
             /** @description The new raw signing secret. Store it immediately — this is the only time it is returned. */
             signing_secret: string;
         };
-        /** @description One project or platform action available to workflow authors. */
+        /** @description One project, platform, or workflow-backed action available to workflow authors. */
         ActionCatalogEntry: {
             /** @description Action name as used in workflow step definitions. */
             name: string;
@@ -3039,10 +3859,20 @@ export interface components {
             title?: string;
             /** @description Markdown description of what the action does. */
             description?: string;
+            /**
+             * @description Backing kind. "http" for HTTP endpoints (project-owned or platform-integration). "workflow" for actions backed by a workflow definition published as a tool.
+             * @enum {string}
+             */
+            endpoint_kind: "http" | "workflow";
+            /** @description Workflow handle for endpoint_kind=workflow entries. Absent for http-backed actions. */
+            workflow_handle?: string;
             /** @description Integration slug this action belongs to (e.g. "slack"), if platform-provided. */
             integration?: string;
-            /** @description Origin of this action: "project" for project-owned actions, or the integration slug for platform-provided actions. */
-            source: string;
+            /**
+             * @description Origin of this action: "platform" for built-in or integration-backed actions provided by Mobius, "custom" for project-owned HTTP endpoints registered as actions. The `integration` field carries the provider slug for integration-backed platform actions.
+             * @enum {string}
+             */
+            source: "platform" | "custom";
             /** @description Whether this action can currently be invoked. False if the required integration is not connected or the caller lacks permission. */
             available: boolean;
             /** @description Safe-use hints returned for this catalog action. */
@@ -3057,21 +3887,50 @@ export interface components {
             };
             /**
              * Format: uri
-             * @description Endpoint URL (populated for project-owned actions only).
+             * @description Endpoint URL (populated for endpoint_kind: http actions only).
              */
             endpoint_url?: string;
         };
-        /** @description Unpaginated project action catalog. This endpoint returns the complete set of available project and platform actions so clients can build pickers without paging across a small catalog. */
+        /** @description Unpaginated project action catalog. This endpoint returns the complete set of available project, platform, and workflow-backed actions so clients can build pickers without paging across a small catalog. */
         ActionCatalogListResponse: {
             /** @description The full list of catalog entries. */
             items: components["schemas"]["ActionCatalogEntry"][];
         };
-        /** @description Audit record for one action invocation. */
-        ActionAuditLogEntry: {
-            /** @description Unique identifier for this audit log entry. */
+        /** @description Request body for user-driven action invocation. */
+        ActionInvocationRequest: {
+            /** @description Input values matching the action's input_schema. */
+            input?: {
+                [key: string]: unknown;
+            };
+            /** @description How long (in seconds) to wait for synchronous completion. Default 30, max 120. If the run does not complete within this window the response is 202 with status active (workflow-backed only; HTTP-backed actions always complete inline). */
+            timeout_seconds?: number;
+            /** @description When true, validates the input but does not execute. Applies to read-only actions only. */
+            dry_run?: boolean;
+        };
+        /** @description Unified invocation result for any action kind. HTTP-backed actions always produce status "completed". Workflow-backed actions may produce status "active" when the run did not complete within `timeout_seconds`. */
+        ActionInvocationResult: {
+            /**
+             * @description Terminal or in-progress status of the invocation.
+             * @enum {string}
+             */
+            status: "active" | "completed" | "failed";
+            /** @description Workflow run ID. Present when a run was created (always for workflow-backed, never for HTTP-backed). */
+            run_id?: string;
+            /** @description Action output. Present when status is "completed". */
+            output?: {
+                [key: string]: unknown;
+            };
+            /** @description Error message. Present when status is "failed". */
+            error?: string;
+        };
+        /** @description Per-invocation telemetry record for one action execution. */
+        ActionInvocationEntry: {
+            /** @description Unique identifier for this invocation record. */
             id: string;
             /** @description Workflow run that triggered this invocation, if run-backed. */
             run_id?: string;
+            /** @description Job that triggered this invocation, if job-backed. */
+            job_id?: string;
             /** @description Workflow step name that triggered this invocation. */
             step_name?: string;
             /** @description Name of the action that was invoked. */
@@ -3105,14 +3964,42 @@ export interface components {
             /** @description Human-readable error detail when status is "failed". */
             error_message?: string;
         };
-        /** @description Paginated list of action invocation audit records. */
-        ActionAuditLogListResponse: {
+        /** @description Paginated list of action invocation telemetry records. */
+        ActionInvocationListResponse: {
             /** @description The list of results for this page. */
-            items: components["schemas"]["ActionAuditLogEntry"][];
+            items: components["schemas"]["ActionInvocationEntry"][];
             /** @description Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false. */
             next_cursor?: string;
             /** @description Whether additional pages are available. */
             has_more: boolean;
+        };
+        ReferenceCandidate: {
+            /** @description Value stored in workflow parameters. */
+            value: string;
+            /** @description Human-readable display label. */
+            label: string;
+            /** @description Optional secondary display text. */
+            description?: string;
+            /** @description Optional display/filtering metadata. Not stored unless the action schema models it. */
+            metadata?: {
+                [key: string]: unknown;
+            };
+        };
+        ReferenceLookupResponse: {
+            items: components["schemas"]["ReferenceCandidate"][];
+            has_more: boolean;
+            next_cursor?: string | null;
+        };
+        ReferenceResolveRequest: {
+            values: string[];
+            integration_id?: string;
+            depends_on?: {
+                [key: string]: unknown;
+            };
+        };
+        ReferenceResolveResponse: {
+            items: components["schemas"]["ReferenceCandidate"][];
+            unresolved: string[];
         };
         /** @description Body for `POST /jobs/claim`. Workers identify themselves with `worker_instance_id` (the row key on the workers page) plus a per-boot `worker_session_token` (the fence value stamped onto each claimed job). `concurrency_limit` is the configured capacity used by the saturation bar. */
         JobClaimRequest: {
@@ -3125,10 +4012,6 @@ export interface components {
              * @default 1
              */
             concurrency_limit: number;
-            /** @description Durable agent identity the worker is acting on behalf of. */
-            agent_id?: string;
-            /** @description Live agent session the worker is acting on behalf of. */
-            agent_session_id?: string;
             /** @description Optional human-readable name shown in the worker list. */
             worker_name?: string;
             /** @description Optional version string shown in the worker list. */
@@ -3247,11 +4130,6 @@ export interface components {
                 [key: string]: unknown;
             };
         };
-        /**
-         * @description Interaction kind: `approval` captures a decision, `review` captures acknowledgement or notes, and `input` collects free-form data.
-         * @enum {string}
-         */
-        InteractionType: "approval" | "review" | "input";
         /** @description Creates an interaction from a claimed job context. The server derives the owning run from the job and may derive the signal name when omitted. */
         CreateJobInteractionRequest: {
             /** @description User, group, or agent that should receive the interaction. */
@@ -3270,8 +4148,10 @@ export interface components {
             };
             /** @description Response controls and validation rules rendered to the recipient. */
             spec?: components["schemas"]["InteractionSpec"];
-            /** @description When target.type is "group", setting require_all=true means all snapshotted group members must respond before the interaction is considered complete. Ignored for non-group targets. Defaults to false when omitted. */
+            /** @description When target.type is "group", setting require_all=true means all snapshotted group members must respond before the interaction is considered complete. Ignored for non-group targets. Defaults to false when omitted. Mutually exclusive with `resolution_policy`; prefer the policy form for new code. */
             require_all?: boolean;
+            /** @description Declarative resolution rule. When supplied the policy evaluator drives completion; legacy `require_all`/`first_responder` behaviour is bypassed for that interaction. */
+            resolution_policy?: components["schemas"]["ResolutionPolicy"];
             /** @description Optional duration string (e.g. "24h", "30m") specifying how long the interaction should remain open before expiring. When absent the caller is responsible for setting expires_at directly. */
             timeout?: string;
             /**
@@ -3280,121 +4160,11 @@ export interface components {
              */
             expires_at?: string;
         };
-        /** @description Identifies who answered an interaction. Groups cannot themselves respond — only a user within a group — so `group` is not a valid responder type. */
-        InteractionResponder: {
-            /**
-             * @description Responder kind: a user or an agent.
-             * @enum {string}
-             */
-            type: "user" | "agent";
-            /** @description User ID for user; agent ID for agent. */
-            id: string;
-        };
-        /** @description Free-form JSON payload supplied by the responder. */
-        InteractionValue: {
-            [key: string]: unknown;
-        } | unknown[] | string | number | boolean;
-        /** @description Final response that completed an interaction. */
-        InteractionResponse: {
-            /** @description JSON value supplied by the responder. */
-            value: components["schemas"]["InteractionValue"];
-            /** @description Optional free-text comment from the responder. */
-            comment?: string | null;
-            /**
-             * Format: date-time
-             * @description When the response was submitted
-             */
-            at: string;
-        };
-        /** @description One member response captured while a group interaction waits for all members. */
-        InteractionPartialResponse: {
-            /** @description ID of the user who submitted this partial response. */
-            user_id: string;
-            /** @description JSON value supplied by this group member. */
-            value: components["schemas"]["InteractionValue"];
-            /** @description Optional free-text comment from this responder. */
-            comment?: string | null;
-            /**
-             * Format: date-time
-             * @description Timestamp when this response was submitted.
-             */
-            responded_at: string;
-        };
-        /** @description Human or agent interaction request and its current response state. */
-        Interaction: {
-            /** @description Unique identifier for this interaction. */
-            id: string;
-            /** @description Originating workflow run when the interaction is run-backed. */
-            run_id?: string | null;
-            /** @description Signal name used to resume the originating run when run-backed. */
-            signal_name?: string | null;
-            /** @description Interaction kind that determines the expected response experience. */
-            type: components["schemas"]["InteractionType"];
-            /**
-             * @description Current status of the interaction: pending, completed, or expired.
-             * @enum {string}
-             */
-            status: "pending" | "completed" | "expired";
-            /** @description Human-readable message shown to the responder when supplied. */
-            message?: string | null;
-            /** @description Additional key-value context surfaced in the UI alongside the message when supplied. */
-            context?: {
-                [key: string]: unknown;
-            } | null;
-            /** @description Response controls and validation rules rendered to the recipient. */
-            spec?: components["schemas"]["InteractionSpec"];
-            /** @description Recipient of the interaction. */
-            target: components["schemas"]["InteractionTarget"];
-            /** @description User or agent that completed the interaction; null until completion. */
-            responder?: components["schemas"]["InteractionResponder"];
-            /** @description Final response payload; null while the interaction is pending or expired without a response. */
-            response?: components["schemas"]["InteractionResponse"];
-            /**
-             * Format: date-time
-             * @description Timestamp when this interaction expires if not responded to.
-             */
-            expires_at?: string | null;
-            /**
-             * Format: date-time
-             * @description Timestamp when the interaction received a terminal response.
-             */
-            completed_at?: string | null;
-            /**
-             * Format: date-time
-             * @description Timestamp when this interaction was created.
-             */
-            created_at: string;
-            /**
-             * Format: date-time
-             * @description Timestamp when this interaction was last updated.
-             */
-            updated_at: string;
-            /** @description Resolved group ID (set when target.type = group) */
-            target_group_id?: string | null;
-            /** @description User IDs of group members at the time of creation; null for non-group targets. */
-            target_member_snapshot?: string[] | null;
-            /**
-             * @description Group routing policy captured at creation time: first_responder or all_members. Null for non-group targets.
-             * @enum {string|null}
-             */
-            routing_policy_snapshot?: "first_responder" | "all_members" | null;
-            /** @description When true, all snapshotted members must respond before completion */
-            require_all?: boolean;
-            /** @description User ID of the member who claimed this interaction; null until claimed and only used for first_responder routing. */
-            claimed_by?: string | null;
-            /**
-             * Format: date-time
-             * @description Timestamp when a first-responder member claimed this interaction.
-             */
-            claimed_at?: string | null;
-            /** @description Per-member responses for all_members routing; null for non-group interactions or before any partial responses. */
-            partial_responses?: components["schemas"]["InteractionPartialResponse"][] | null;
-        };
         /**
-         * @description Determines the event source and required `source_config` shape: schedule, webhook, or event.
+         * @description Determines the event source and required `source_config` shape: schedule, webhook, event, channel_message, data_table_row, or email.
          * @enum {string}
          */
-        TriggerKind: "schedule" | "webhook" | "event";
+        TriggerKind: "schedule" | "webhook" | "event" | "channel_message" | "data_table_row" | "email";
         /**
          * @description Controls overlapping runs from the same trigger:
          *     - `allow` — start new runs unconditionally.
@@ -3412,21 +4182,56 @@ export interface components {
          * @enum {string}
          */
         TriggerFireStatus: "success" | "partial_failure" | "failed" | "skipped";
-        /** @description A workflow to start when this trigger fires. */
+        /**
+         * @description Per-target outcome of a test-fire dispatch. Distinct from `TriggerFireStatus`, which carries aggregate values like `partial_failure` that are only meaningful at the trigger level.
+         * @enum {string}
+         */
+        TestFireTargetStatus: "success" | "failed" | "skipped";
+        /**
+         * @description Outcome for a single target within a trigger fire activation. Per-target results never aggregate, so `partial_failure` cannot appear here.
+         * @enum {string}
+         */
+        TriggerFireTargetStatus: "success" | "failed" | "skipped";
+        /**
+         * @description An effect a trigger executes when it fires. Two kinds:
+         *
+         *     - `launch_run` (default): starts a new workflow run. `workflow_id`
+         *     required. `external_id_template` optional — when set, the new
+         *     run's `external_id` is derived from the event so a later
+         *     `signal_run` target can find it.
+         *     - `signal_run`: locates an existing run by
+         *     `run_selector.external_id_template` and delivers a signal to
+         *     its `wait_signal` step. `workflow_id` is absent.
+         */
         TriggerTarget: {
             /** @description Unique identifier for this target. */
             id: string;
             /** @description ID of the trigger this target belongs to. */
             trigger_id: string;
-            /** @description ID of the workflow definition to run. */
-            workflow_id: string;
-            /** @description Expression evaluated against the event payload. The target is skipped if this evaluates to false. Omit to always run. */
+            /**
+             * @description Discriminates the target's effect. `launch_run` starts a new workflow run; `signal_run` signals an existing run.
+             * @default launch_run
+             * @enum {string}
+             */
+            kind: "launch_run" | "signal_run";
+            /** @description ID of the workflow definition to run. Required for `launch_run` targets; absent for `signal_run`. */
+            workflow_id?: string;
+            /** @description Expression evaluated against the event environment (`{ meta, event }`). The target is skipped when the expression evaluates to false or yields a non-boolean value, and is marked failed if evaluation errors. Bare expressions are accepted; the wrapped form `${expr}` is also allowed. Omit to always run. Example: `event.pull_request.merged == true`. Malformed expressions are rejected on create/update with `400 invalid_argument`. */
             condition?: string;
-            /** @description Maps workflow input names to JSONPath expressions evaluated against the event payload. Example: `{"user_id": "$.event.actor.id"}`. */
+            /** @description (launch_run only) Maps workflow input names to expressions evaluated against the event environment (`{ meta, event }`). Values use Mobius's `${expr}` template syntax — pure expressions (`${event.actor.id}`) preserve their native type, mixed templates (`Bearer ${meta.id}`) always render to a string, and other literals pass through as-is. Legacy JSONPath-like values (`$.…`) and unwrapped `event.` / `meta.` references are rejected with 400 on create/update. Example: `{"user_id": "${event.actor.id}"}`. */
             input_mapping?: {
                 [key: string]: string;
             };
-            /** @description When false, this target is paused and will not start a run when the trigger fires. */
+            /** @description (launch_run only) `${expr}` template that derives the new run's `external_id` from the event environment. Lets a subsequent `signal_run` target locate this run. Example: `github:${event.repository.full_name}#${event.pull_request.number}`. */
+            external_id_template?: string;
+            run_selector?: components["schemas"]["TriggerTargetRunSelector"];
+            /** @description (signal_run only) The `wait_signal` topic to deliver to the located run. */
+            signal_topic?: string;
+            /** @description (signal_run only) Maps the signal payload keys to expressions evaluated against the event environment. Available to the workflow as `signal.payload`. */
+            signal_payload_mapping?: {
+                [key: string]: string;
+            };
+            /** @description When false, this target is paused and will not fire. */
             enabled: boolean;
             /**
              * Format: date-time
@@ -3439,19 +4244,38 @@ export interface components {
              */
             updated_at: string;
         };
+        /** @description (signal_run only) Locates an existing run to deliver a signal to. Today only `external_id_template` is supported; the shape is reserved as an object so future filters (e.g. workflow scope, multi-run match) can be added without breaking the API. */
+        TriggerTargetRunSelector: {
+            /** @description `${expr}` template rendered against the event environment. The result must equal the run's `external_id`. Required — the server rejects `signal_run` targets whose selector omits or renders this to an empty string. */
+            external_id_template: string;
+        };
         /** @description Unpaginated list of targets attached to one trigger. Trigger fan-out is configured as a small bounded set rather than a high-volume collection. */
         TriggerTargetListResponse: {
             /** @description The list of targets for this trigger. */
             items: components["schemas"]["TriggerTarget"][];
         };
-        /** @description Parameters for attaching a workflow target to a trigger. */
+        /** @description Parameters for attaching a target to a trigger. Use `kind` to select between launching a new run (default) and signaling an existing run. Validation enforces the right field combination. */
         CreateTriggerTargetRequest: {
-            /** @description ID of the workflow definition to run. */
-            workflow_id: string;
-            /** @description Expression evaluated against the event payload. Omit to always run. */
+            /**
+             * @default launch_run
+             * @enum {string}
+             */
+            kind: "launch_run" | "signal_run";
+            /** @description (launch_run only) ID of the workflow definition to run. Required when `kind=launch_run`. */
+            workflow_id?: string;
+            /** @description Expression evaluated against the event environment (`{ meta, event }`). The target is skipped when it evaluates to false or yields a non-boolean value, and is marked failed if evaluation errors. Bare expressions are accepted; the wrapped `${expr}` form is also allowed. Omit to always run. Example: `event.pull_request.merged == true`. Malformed expressions are rejected on create/update with `400 invalid_argument`. */
             condition?: string;
-            /** @description Maps workflow input names to JSONPath expressions. */
+            /** @description (launch_run only) Maps workflow input names to expressions evaluated against the event environment (`{ meta, event }`). Values use Mobius's `${expr}` template syntax — pure expressions (`${event.actor.id}`) preserve their native type, mixed templates (`user-${event.actor.id}`) always render to a string, and other literals pass through as-is. Legacy JSONPath-like values (`$.…`) and unwrapped `event.` / `meta.` references are rejected with 400. Example: `{"user_id": "${event.actor.id}", "label": "static"}`. */
             input_mapping?: {
+                [key: string]: string;
+            };
+            /** @description (launch_run only) Template for the new run's `external_id`. */
+            external_id_template?: string;
+            run_selector?: components["schemas"]["TriggerTargetRunSelector"];
+            /** @description (signal_run only) `wait_signal` topic to deliver to. */
+            signal_topic?: string;
+            /** @description (signal_run only) Maps signal payload keys to expressions. */
+            signal_payload_mapping?: {
                 [key: string]: string;
             };
             /** @description Whether this target starts enabled. Defaults to true when omitted. */
@@ -3459,12 +4283,26 @@ export interface components {
         };
         /** @description Partial update for a trigger target; omitted fields are unchanged. */
         UpdateTriggerTargetRequest: {
+            /**
+             * @description Replacement kind. Changing kind requires the corresponding kind-specific fields to be updated in the same request.
+             * @enum {string}
+             */
+            kind?: "launch_run" | "signal_run";
             /** @description Replacement workflow definition ID. */
             workflow_id?: string;
             /** @description Replacement condition expression. Set to empty string to remove. */
             condition?: string;
-            /** @description Replacement input mapping. Set to null to clear all mappings. */
+            /** @description Replacement input mapping. Same `${expr}` template contract as on create — legacy JSONPath-like values (`$.…`) and unwrapped `event.` / `meta.` references are rejected with 400. Set to null to clear all mappings. */
             input_mapping?: {
+                [key: string]: string;
+            } | null;
+            /** @description Replacement external_id template. Set to empty string to clear. */
+            external_id_template?: string;
+            run_selector?: components["schemas"]["TriggerTargetRunSelector"];
+            /** @description Replacement signal topic. */
+            signal_topic?: string;
+            /** @description Replacement signal payload mapping. Set to null to clear. */
+            signal_payload_mapping?: {
                 [key: string]: string;
             } | null;
             /** @description Set to false to pause this target without removing it. */
@@ -3474,12 +4312,12 @@ export interface components {
         TriggerFireTargetResult: {
             /** @description ID of the trigger target that was evaluated. */
             target_id: string;
-            /** @description ID of the workflow definition that was started (or attempted). */
-            workflow_id: string;
-            /** @description ID of the workflow run that was created. Absent when the target failed or was skipped. */
+            /** @description ID of the workflow definition that was started or attempted. Present only for `launch_run` targets — `signal_run` targets deliver a signal to an existing run and have no workflow definition association of their own. */
+            workflow_id?: string;
+            /** @description ID of the run that was launched or signaled. Absent when the target failed or was skipped before resolving a run. */
             run_id?: string;
-            /** @description Outcome for this target: `started`, `skipped`, or `failed`. */
-            status: components["schemas"]["TriggerFireStatus"];
+            /** @description Outcome for this target: `success`, `skipped`, or `failed`. */
+            status: components["schemas"]["TriggerFireTargetStatus"];
             /** @description Error detail when status is `failed`. */
             error?: string;
         };
@@ -3504,8 +4342,31 @@ export interface components {
             /** @description Platform event type to match, e.g. `run.completed`. */
             event_type?: string;
         };
-        /** @description Typed source configuration. The shape is determined by the trigger's `kind` (`schedule` → `ScheduleSourceConfig`, `webhook` → `WebhookSourceConfig`, `event` → `EventSourceConfig`); mismatches are rejected with 400. */
-        TriggerSourceConfig: components["schemas"]["ScheduleSourceConfig"] | components["schemas"]["WebhookSourceConfig"] | components["schemas"]["EventSourceConfig"];
+        /** @description Source configuration for `channel_message` triggers. */
+        ChannelMessageSourceConfig: {
+            /** @description ID of the channel to watch. When omitted, the trigger fires for messages in any channel within the project. */
+            channel_id?: string;
+            /** @description Optional Go regular expression matched against message content. When omitted, all messages pass the content filter. */
+            pattern?: string;
+            /** @description Restricts which sender types fire the trigger. When omitted, all sender types are eligible. */
+            sender_types?: components["schemas"]["ChannelMessageSenderType"][];
+        };
+        /** @description Source configuration for `data_table_row` triggers. */
+        DataTableRowSourceConfig: {
+            /** @description Name of the data table to watch. When omitted, the trigger fires for row changes in any table within the project. */
+            table_name?: string;
+            /** @description Row change events that fire the trigger. When omitted, all three events (inserted, updated, deleted) fire the trigger. */
+            events?: ("inserted" | "updated" | "deleted")[];
+        };
+        /** @description Source configuration for `email` triggers. */
+        EmailSourceConfig: {
+            /** @description ID of the agent whose inbox fires this trigger. When omitted, any agent inbox in the project can fire the trigger. */
+            agent_id?: string;
+            /** @description Optional Go regular expression matched against the email subject. When omitted, all subjects pass the filter. */
+            subject_pattern?: string;
+        };
+        /** @description Typed source configuration. The shape is determined by the trigger's `kind` (`schedule` → `ScheduleSourceConfig`, `webhook` → `WebhookSourceConfig`, `event` → `EventSourceConfig`, `channel_message` → `ChannelMessageSourceConfig`, `data_table_row` → `DataTableRowSourceConfig`, `email` → `EmailSourceConfig`); mismatches are rejected with 400. */
+        TriggerSourceConfig: components["schemas"]["ScheduleSourceConfig"] | components["schemas"]["WebhookSourceConfig"] | components["schemas"]["EventSourceConfig"] | components["schemas"]["ChannelMessageSourceConfig"] | components["schemas"]["DataTableRowSourceConfig"] | components["schemas"]["EmailSourceConfig"];
         /** @description Event source that starts one or more workflow targets. */
         Trigger: {
             /** @description Unique identifier for this trigger. */
@@ -3574,7 +4435,7 @@ export interface components {
             fired_at: string;
             /** @description Per-target outcomes for this activation. */
             target_results?: components["schemas"]["TriggerFireTargetResult"][];
-            /** @description Overall trigger fire outcome: `started`, `skipped`, or `failed`. */
+            /** @description Overall trigger fire outcome. */
             status: components["schemas"]["TriggerFireStatus"];
             /** @description Error detail when status is `failed`. */
             error?: string;
@@ -3586,6 +4447,50 @@ export interface components {
              */
             created_at: string;
         };
+        TestFireTriggerResult: {
+            /** @enum {string} */
+            mode: "preview" | "execute";
+            targets: components["schemas"]["TestFireTargetResult"][];
+        };
+        /** @description Synthetic event payload used to drive a test-fire dispatch. */
+        TestFireTriggerRequest: {
+            /** @description Synthetic event payload — the same shape an integration would deliver. Available to expressions as `event.x`. */
+            event: {
+                [key: string]: unknown;
+            };
+            /** @description Optional meta envelope. Available to expressions as `meta.x`. When omitted, defaults to `{ id: "test-fire", event_type: "<test>", provider: "<test>" }`. */
+            meta?: {
+                [key: string]: unknown;
+            };
+            /**
+             * @description `preview` resolves input mappings and condition outcomes without launching runs. `execute` runs the real dispatcher path — runs are tagged with source_label `test-fire` so they are filterable in the run list.
+             * @default preview
+             * @enum {string}
+             */
+            mode: "preview" | "execute";
+        };
+        /** @description Per-target outcome of a test-fire. Mirrors TriggerFireTargetResult but exposes the resolved input mapping and would-launch decision so trigger authors can debug each layer in isolation. */
+        TestFireTargetResult: {
+            /** @description ID of the trigger target this result is for. */
+            target_id: string;
+            /** @description Workflow definition the target points at. */
+            workflow_id?: string;
+            /** @description Whether the target is enabled. Disabled targets are skipped without resolution. */
+            enabled?: boolean;
+            status: components["schemas"]["TestFireTargetStatus"];
+            /** @description Resolved input map handed to the workflow. */
+            input_mapping_resolved?: {
+                [key: string]: unknown;
+            };
+            /** @description Error encountered resolving input_mapping, when one occurred. */
+            input_resolution_error?: string;
+            /** @description True when the target would launch a run (or signal a run once `signal_run` lands). False for disabled targets and for targets whose condition evaluated to false. */
+            would_launch: boolean;
+            /** @description ID of the launched run (only set in execute mode). */
+            run_id?: string;
+            /** @description Error from the launcher when execute mode failed to start the run. */
+            launch_error?: string;
+        };
         /** @description Paginated history of trigger fire attempts. */
         TriggerFireListResponse: {
             /** @description The list of results for this page. */
@@ -3596,7 +4501,7 @@ export interface components {
             has_more: boolean;
         };
         /** @description Creates a trigger. The request is discriminated by `kind`, and each variant requires the matching `source_config` schema. */
-        CreateTriggerRequest: components["schemas"]["CreateScheduleTriggerRequest"] | components["schemas"]["CreateWebhookTriggerRequest"] | components["schemas"]["CreateEventTriggerRequest"];
+        CreateTriggerRequest: components["schemas"]["CreateScheduleTriggerRequest"] | components["schemas"]["CreateWebhookTriggerRequest"] | components["schemas"]["CreateEventTriggerRequest"] | components["schemas"]["CreateChannelMessageTriggerRequest"] | components["schemas"]["CreateDataTableRowTriggerRequest"] | components["schemas"]["CreateEmailTriggerRequest"];
         /** @description Creates a schedule trigger from a cron expression or fixed interval. */
         CreateScheduleTriggerRequest: {
             /** @description Human-readable trigger name, unique within the project. */
@@ -3648,6 +4553,66 @@ export interface components {
             kind: "event";
             /** @description Event-specific source configuration. */
             source_config: components["schemas"]["EventSourceConfig"];
+            /** @description Workflows to start when this trigger fires (inline convenience; stored as sub-resources). */
+            targets?: components["schemas"]["CreateTriggerTargetRequest"][];
+            /** @description Policy for overlapping runs started by this trigger. */
+            concurrency_policy?: components["schemas"]["ConcurrencyPolicy"];
+            /** @description Whether the trigger starts enabled. Defaults to true when omitted. */
+            enabled?: boolean;
+            /** @description Initial tag set. */
+            tags?: components["schemas"]["TagMap"];
+        };
+        /** @description Creates a trigger that fires when a matching channel message is posted. */
+        CreateChannelMessageTriggerRequest: {
+            /** @description Human-readable trigger name, unique within the project. */
+            name: string;
+            /**
+             * @description Discriminator value — must be `channel_message`. (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            kind: "channel_message";
+            /** @description Channel-message-specific source configuration. When omitted, equivalent to `{}`. */
+            source_config?: components["schemas"]["ChannelMessageSourceConfig"];
+            /** @description Workflows to start when this trigger fires (inline convenience; stored as sub-resources). */
+            targets?: components["schemas"]["CreateTriggerTargetRequest"][];
+            /** @description Policy for overlapping runs started by this trigger. */
+            concurrency_policy?: components["schemas"]["ConcurrencyPolicy"];
+            /** @description Whether the trigger starts enabled. Defaults to true when omitted. */
+            enabled?: boolean;
+            /** @description Initial tag set. */
+            tags?: components["schemas"]["TagMap"];
+        };
+        /** @description Creates a trigger that fires when a data table row is inserted, updated, or deleted. */
+        CreateDataTableRowTriggerRequest: {
+            /** @description Human-readable trigger name, unique within the project. */
+            name: string;
+            /**
+             * @description Discriminator value — must be `data_table_row`. (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            kind: "data_table_row";
+            /** @description Data-table-row-specific source configuration. */
+            source_config: components["schemas"]["DataTableRowSourceConfig"];
+            /** @description Workflows to start when this trigger fires (inline convenience; stored as sub-resources). */
+            targets?: components["schemas"]["CreateTriggerTargetRequest"][];
+            /** @description Policy for overlapping runs started by this trigger. */
+            concurrency_policy?: components["schemas"]["ConcurrencyPolicy"];
+            /** @description Whether the trigger starts enabled. Defaults to true when omitted. */
+            enabled?: boolean;
+            /** @description Initial tag set. */
+            tags?: components["schemas"]["TagMap"];
+        };
+        /** @description Creates a trigger that fires when an inbound email arrives at the agent's inbox. */
+        CreateEmailTriggerRequest: {
+            /** @description Human-readable trigger name, unique within the project. */
+            name: string;
+            /**
+             * @description Discriminator value — must be `email`. (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            kind: "email";
+            /** @description Email-specific source configuration. When omitted, equivalent to `{}`. */
+            source_config?: components["schemas"]["EmailSourceConfig"];
             /** @description Workflows to start when this trigger fires (inline convenience; stored as sub-resources). */
             targets?: components["schemas"]["CreateTriggerTargetRequest"][];
             /** @description Policy for overlapping runs started by this trigger. */
@@ -3820,6 +4785,8 @@ export interface components {
              * @description Timestamp when this project was archived. `null` for active projects. Archived projects are read-only and excluded from the default project listing.
              */
             archived_at?: string | null;
+            /** @description Role assigned to the auto-created service account of any new agent in this project, when no per-call `role_ids` are supplied on `createAgent`. `null` falls through to the system `Agent` role floor. */
+            default_agent_role_id?: string | null;
             /** @description Resource tags applied to this project. */
             tags?: components["schemas"]["TagMap"];
             /**
@@ -3858,6 +4825,8 @@ export interface components {
             access_mode?: components["schemas"]["ProjectAccessMode"];
             /** @description When transitioning from `org_open` to `restricted`, set true to insert all current org members as project members so nobody loses visibility on the flip. Ignored on other transitions. */
             seed_existing_members?: boolean;
+            /** @description Replacement role assigned to the auto-created service account of any new agent in this project. `null` clears the override and falls through to the system `Agent` role floor. Must resolve to a system-defined role or a role scoped to this project. */
+            default_agent_role_id?: string | null;
             /** @description When supplied, replaces the user tag set on the project. */
             tags?: components["schemas"]["TagMap"];
         };
@@ -3892,6 +4861,131 @@ export interface components {
         AddProjectMemberRequest: {
             /** @description User ID of the org member to add to this project. */
             user_id: string;
+        };
+        GenerateRequest: {
+            /** @description Model identifier, for example `claude-sonnet-4-20250514`. */
+            model: string;
+            /**
+             * @description Provider used to resolve project integration credentials. Omit for Anthropic. `xai` is accepted as an alias for `grok`.
+             * @default anthropic
+             * @enum {string}
+             */
+            provider: "anthropic" | "openai" | "google" | "grok" | "xai";
+            /** @description System prompt, either a string or Anthropic text blocks. */
+            system?: string | components["schemas"]["SystemTextBlock"][];
+            /** @description Conversation history in Anthropic Messages format. `content` may be a string or content-block array. */
+            messages: components["schemas"]["GenerateMessage"][];
+            /** @description Anthropic tool definitions. */
+            tools?: components["schemas"]["GenerateToolDefinition"][];
+            tool_choice?: components["schemas"]["GenerateToolChoice"];
+            /** @default 4096 */
+            max_tokens: number;
+            temperature?: number;
+            stop_sequences?: string[];
+            /** @default false */
+            stream: boolean;
+            /** @description Optional Anthropic metadata such as `user_id`. */
+            metadata?: {
+                [key: string]: unknown;
+            };
+        } & {
+            [key: string]: unknown;
+        };
+        SystemTextBlock: {
+            /** @enum {string} */
+            type: "text";
+            text: string;
+            cache_control?: {
+                [key: string]: unknown;
+            };
+        };
+        GenerateMessage: {
+            /** @enum {string} */
+            role: "user" | "assistant";
+            content: string | components["schemas"]["ContentBlock"][];
+        };
+        ContentBlock: components["schemas"]["TextContentBlock"] | components["schemas"]["ImageContentBlock"] | components["schemas"]["ToolUseContentBlock"] | components["schemas"]["ToolResultContentBlock"];
+        TextContentBlock: {
+            /** @enum {string} */
+            type: "text";
+            text: string;
+            cache_control?: {
+                [key: string]: unknown;
+            };
+        };
+        ImageContentBlock: {
+            /** @enum {string} */
+            type: "image";
+            source: {
+                [key: string]: unknown;
+            };
+            cache_control?: {
+                [key: string]: unknown;
+            };
+        };
+        ToolUseContentBlock: {
+            /** @enum {string} */
+            type: "tool_use";
+            id: string;
+            name: string;
+            input: {
+                [key: string]: unknown;
+            };
+        };
+        ToolResultContentBlock: {
+            /** @enum {string} */
+            type: "tool_result";
+            tool_use_id: string;
+            content: string | components["schemas"]["ContentBlock"][];
+            is_error?: boolean;
+            cache_control?: {
+                [key: string]: unknown;
+            };
+        };
+        GenerateToolDefinition: {
+            name: string;
+            description?: string;
+            input_schema: {
+                [key: string]: unknown;
+            };
+        } & {
+            [key: string]: unknown;
+        };
+        GenerateToolChoice: {
+            /** @enum {string} */
+            type: "auto" | "any" | "tool" | "none";
+            name?: string;
+        } & ({
+            /** @enum {string} */
+            type: "tool";
+            name: string;
+        } | {
+            /** @enum {string} */
+            type: "auto" | "any" | "none";
+        });
+        LLMGenerateResponse: {
+            id: string;
+            /**
+             * @default message
+             * @enum {string}
+             */
+            type: "message";
+            /** @enum {string} */
+            role: "assistant";
+            model: string;
+            content: {
+                [key: string]: unknown;
+            }[];
+            /** @description Why generation stopped. */
+            stop_reason: string | null;
+            stop_sequence?: string | null;
+            usage: components["schemas"]["LLMGenerateUsage"];
+        };
+        LLMGenerateUsage: {
+            input_tokens: number;
+            output_tokens: number;
+            cache_creation_input_tokens?: number;
+            cache_read_input_tokens?: number;
         };
         /**
          * @description `pending` — queued, not yet attempted. `processing` — currently being delivered. `delivered` — recipient returned 2xx. `failed` — all retry attempts exhausted.
@@ -4010,6 +5104,130 @@ export interface components {
             /** @description Round-trip latency in milliseconds. */
             latency_ms?: number;
         };
+        /** @description Capability catalog for the integrations registered on this server. */
+        IntegrationCatalog: {
+            providers: components["schemas"]["IntegrationCatalogProvider"][];
+        };
+        IntegrationCatalogProvider: {
+            /** @description Stable provider identifier (`github`, `slack`, …). */
+            name: string;
+            display_name: string;
+            /** @description Authentication mechanism the provider uses (e.g. `github_app_install`, `oauth2`, `api_key`). */
+            auth_kind: string;
+            /** @description Link to upstream provider docs, when known. */
+            docs_url?: string;
+            /** @description Boolean capability flags reflecting which framework interfaces the provider implements (`connect`, `sync`, `live_status`, etc.). */
+            capabilities: {
+                [key: string]: boolean;
+            };
+            events: components["schemas"]["IntegrationCatalogEventType"][];
+            actions: components["schemas"]["IntegrationCatalogAction"][];
+        };
+        IntegrationCatalogEventType: {
+            /** @description Dotted event-type identifier (`github.pull_request.opened`). */
+            name: string;
+            /** @description Integer schema version. Bumps are additive-only by convention. */
+            schema_version: number;
+            description?: string;
+            /** @description JSON Schema for the event payload. Absent when the registered Go type cannot be reflected meaningfully (for example, `map[string]any` aliases of raw upstream payloads). */
+            payload_schema?: {
+                [key: string]: unknown;
+            };
+        };
+        IntegrationCatalogAction: {
+            /** @description Workflow-callable action name (`github.create-comment`). */
+            name: string;
+            title?: string;
+            description?: string;
+            /** @description JSON Schema for the action's parameters object. */
+            input_schema?: {
+                [key: string]: unknown;
+            };
+            /** @description JSON Schema for the action's result object. */
+            output_schema?: {
+                [key: string]: unknown;
+            };
+        };
+        /** @description Workflow run statistics for the rolling window. */
+        RunMetrics: {
+            /**
+             * Format: double
+             * @description Average number of new runs started per minute within the window.
+             */
+            per_minute: number;
+            /** @description Total runs started within the window. */
+            total_window: number;
+            /**
+             * Format: double
+             * @description Fraction of completed runs that ended in `failed` status. Range 0.0–1.0.
+             */
+            failure_rate: number;
+            /**
+             * Format: double
+             * @description Mean wall-clock duration of completed runs within the window, in seconds.
+             */
+            avg_seconds: number;
+            /**
+             * Format: double
+             * @description 95th-percentile job duration (claim→terminal) from the 40 most recent completed jobs, in seconds.
+             */
+            p95_step_seconds: number;
+            /** @description Number of jobs currently in `pending` state. */
+            queue_depth: number;
+            /** @description Number of runs currently in the `active` lifecycle. */
+            running_count: number;
+            /** @description Map of run status → count across all runs in the project (not windowed). */
+            status_breakdown: {
+                [key: string]: number;
+            };
+        };
+        /** @description Job queue statistics. */
+        JobMetrics: {
+            /** @description Jobs currently in `pending` state. */
+            pending: number;
+            /** @description Jobs currently in `claimed` state. */
+            claimed: number;
+            /** @description Jobs that reached a terminal failed state within the window. */
+            failed_window: number;
+            /**
+             * Format: double
+             * @description Fraction of terminal jobs that required at least one retry within the window.
+             */
+            retry_rate: number;
+        };
+        /** @description Worker session health. */
+        WorkerMetrics: {
+            /** @description Workers whose `last_seen_at` is within the staleness threshold. */
+            active: number;
+            /** @description Workers whose `last_seen_at` has exceeded the staleness threshold. */
+            stale: number;
+        };
+        /** @description Interaction queue statistics. */
+        InteractionMetrics: {
+            /** @description Interactions in `pending` or `claimed` state awaiting response. */
+            open_count: number;
+            /** @description Interactions currently claimed by a responder. */
+            claimed_count: number;
+            /**
+             * Format: double
+             * @description 95th-percentile time from creation to resolution for completed interactions within the window.
+             */
+            p95_response_seconds: number;
+            /** @description Map of interaction status → count across all interactions in the project. */
+            status_breakdown: {
+                [key: string]: number;
+            };
+        };
+        /** @description Channel activity statistics. */
+        ChannelMetrics: {
+            /** @description Non-archived channels in the project. */
+            active_count: number;
+            /**
+             * Format: double
+             * @description Average messages posted per minute within the window.
+             */
+            message_rate: number;
+        };
         /** @description Operational health snapshot for a project. Use it to power dashboards, detect stuck queues or stale workers, and summarize run throughput and failure rates over a recent window. */
         ProjectMetrics: {
             /**
@@ -4019,37 +5237,42 @@ export interface components {
             generated_at: string;
             /** @description Rolling window width used for rate and failure metrics. Default is 60 minutes. */
             window_minutes: number;
+            runs: components["schemas"]["RunMetrics"];
+            jobs: components["schemas"]["JobMetrics"];
+            workers: components["schemas"]["WorkerMetrics"];
+            interactions: components["schemas"]["InteractionMetrics"];
+            channels: components["schemas"]["ChannelMetrics"];
             /**
              * Format: double
-             * @description Average number of new workflow runs started per minute within the window.
+             * @description Deprecated: use runs.per_minute.
              */
             runs_per_minute: number;
-            /** @description Total number of workflow runs started within the window. */
+            /** @description Deprecated: use runs.total_window. */
             total_runs_window: number;
             /**
              * Format: double
-             * @description Fraction of completed runs that ended in `failed` status within the window. Range 0.0–1.0.
+             * @description Deprecated: use runs.failure_rate.
              */
             failure_rate: number;
             /**
              * Format: double
-             * @description Mean wall-clock duration of completed runs within the window, in seconds.
+             * @description Deprecated: use runs.avg_seconds.
              */
             avg_run_seconds: number;
             /**
              * Format: double
-             * @description 95th-percentile job duration (claim time to terminal state) computed across the 40 most recent completed jobs, in seconds. Use this to detect slow or stuck steps.
+             * @description Deprecated: use runs.p95_step_seconds.
              */
             p95_step_seconds: number;
-            /** @description Number of jobs currently in `pending` state waiting to be claimed. */
+            /** @description Deprecated: use runs.queue_depth. */
             queue_depth: number;
-            /** @description Number of workflow runs currently in the `active` lifecycle. */
+            /** @description Deprecated: use runs.running_count. */
             running_count: number;
-            /** @description Number of workers whose `last_seen_at` is within the 2-minute staleness threshold. */
+            /** @description Deprecated: use workers.active. */
             active_workers: number;
-            /** @description Number of workers whose `last_seen_at` has exceeded the 2-minute staleness threshold. */
+            /** @description Deprecated: use workers.stale. */
             stale_workers: number;
-            /** @description Map of workflow run status → count across all runs in the project (not windowed). Includes all terminal and in-progress statuses. */
+            /** @description Deprecated: use runs.status_breakdown. */
             status_breakdown: {
                 [key: string]: number;
             };
@@ -4078,8 +5301,10 @@ export interface components {
             };
             /** @description Response controls and validation rules rendered to the recipient. */
             spec?: components["schemas"]["InteractionSpec"];
-            /** @description When target.type is "group", setting require_all=true means all snapshotted group members must respond before the interaction is considered complete. Ignored for non-group targets. Defaults to false when omitted. */
+            /** @description When target.type is "group", setting require_all=true means all snapshotted group members must respond before the interaction is considered complete. Ignored for non-group targets. Defaults to false when omitted. Mutually exclusive with `resolution_policy`; prefer the policy form for new code. */
             require_all?: boolean;
+            /** @description Declarative resolution rule. When supplied the policy evaluator drives completion; legacy `require_all`/`first_responder` behaviour is bypassed for that interaction. */
+            resolution_policy?: components["schemas"]["ResolutionPolicy"];
             /**
              * Format: date-time
              * @description Timestamp after which this interaction expires if not responded to.
@@ -4104,8 +5329,10 @@ export interface components {
             };
             /** @description Response controls and validation rules rendered to the recipient. */
             spec?: components["schemas"]["InteractionSpec"];
-            /** @description When target.type is "group", setting require_all=true means all snapshotted group members must respond before the interaction is considered complete. Ignored for non-group targets. Defaults to false when omitted. */
+            /** @description When target.type is "group", setting require_all=true means all snapshotted group members must respond before the interaction is considered complete. Ignored for non-group targets. Defaults to false when omitted. Mutually exclusive with `resolution_policy`; prefer the policy form for new code. */
             require_all?: boolean;
+            /** @description Declarative resolution rule. When supplied the policy evaluator drives completion; legacy `require_all`/`first_responder` behaviour is bypassed for that interaction. */
+            resolution_policy?: components["schemas"]["ResolutionPolicy"];
             /**
              * Format: date-time
              * @description Timestamp after which this interaction expires if not responded to.
@@ -4114,9 +5341,19 @@ export interface components {
         };
         RespondToInteractionRequest: {
             /** @description JSON value supplied by the responder. */
-            value?: components["schemas"]["InteractionValue"];
+            value: components["schemas"]["InteractionValue"];
             /** @description Optional free-text comment accompanying the response. */
             comment?: string;
+            /**
+             * Format: double
+             * @description Optional 0..1 confidence score the responder attaches to their answer. Required when the interaction's resolution policy weights by confidence; ignored otherwise.
+             */
+            confidence?: number;
+        };
+        /** @description Optional payload accompanying a cancel request. The reason is recorded on the interaction and forwarded in the cancellation signal so workflows can route to a fallback. */
+        CancelInteractionRequest: {
+            /** @description Free-text reason recorded on the interaction. */
+            reason?: string;
         };
         /** @description Project-scoped collection of users used as an interaction target. Groups let workflows route approvals, reviews, and input requests to a team by handle rather than hard-coding individual users. */
         Group: {
@@ -4235,7 +5472,7 @@ export interface components {
         Agent: {
             /** @description Unique identifier for this agent. */
             id: string;
-            /** @description The service account whose credentials this agent uses to authenticate. Can be changed via PATCH. */
+            /** @description The service account whose credentials this agent uses to authenticate. Each service account backs at most one agent; this binding is immutable after creation. */
             service_account_id: string;
             /** @description Mutable unique name within the project. Free-form human-readable label; use `id` for stable references and job targeting. */
             name: string;
@@ -4255,6 +5492,8 @@ export interface components {
             status: components["schemas"]["AgentStatus"];
             /** @description Current agent presence: `online`, `offline`, or `unknown`. */
             presence: components["schemas"]["AgentPresence"];
+            /** @description Inbox address provisioned via POST /v1/projects/{project}/agents/{id}/inbox (opt-in; not created automatically at agent creation). The field is populated only after a successful provisioning call. Use this address to add the agent as a member on external platforms (Linear, GitHub, Slack, etc.) so the platform can deliver notifications to the agent. */
+            email_address?: string;
             /** @description Resource tags applied to this agent. */
             tags?: components["schemas"]["TagMap"];
             /**
@@ -4317,8 +5556,10 @@ export interface components {
             items: components["schemas"]["AgentSession"][];
         };
         CreateAgentRequest: {
-            /** @description Service account that backs this agent. Must be active and belong to the same project. If omitted, a new service account is auto-created with the same name as the agent. */
+            /** @description Service account that backs this agent. Must be active, belong to the same project, and currently back zero other agents. If omitted, a new service account is auto-created with the same name as the agent. */
             service_account_id?: string;
+            /** @description Roles to assign to the auto-created service account. Mutually exclusive with `service_account_id` (the existing SA already carries its own role assignments — change them via the service-accounts endpoints). When omitted, the SA inherits the project's `default_agent_role_id`, falling through to the system `Agent` role floor when unset. */
+            role_ids?: string[];
             /** @description Project-scoped unique name for this agent. Free-form human-readable label, 1-63 characters. */
             name: string;
             /** @description Optional human-readable description. */
@@ -4336,9 +5577,8 @@ export interface components {
             /** @description Initial tag set. */
             tags?: components["schemas"]["TagMap"];
         };
+        /** @description Mutable agent fields. `service_account_id` is intentionally absent: the SA↔Agent binding is immutable per the 1:1 invariant. Reassigning identity is delete-and-recreate. */
         UpdateAgentRequest: {
-            /** @description Replacement service account. Must be active and belong to the same project. */
-            service_account_id?: string;
             /** @description Free-form human-readable label, 1-63 characters; must be unique within the project. */
             name?: string;
             /** @description Replacement description. */
@@ -4366,44 +5606,432 @@ export interface components {
                 [key: string]: unknown;
             };
         };
-        /** @description Published workflow exposed as an invokable tool. Clients can use this definition to list available tools and render input forms from the JSON Schema before starting a run. */
-        ToolDefinition: {
-            /** @description Tool name (workflow handle). Stable across publish/unpublish cycles. */
+        /**
+         * @description Lifecycle status of one `agent.invoke` call:
+         *     - `pending`: dispatched but the agent runtime hasn't claimed it yet.
+         *     - `running`: the agent runtime acknowledged and is executing.
+         *     - `completed`: the runtime returned a final response.
+         *     - `failed`: the runtime reported an error or the engine timed out.
+         *     - `cancelled`: the workflow run was cancelled before completion.
+         * @enum {string}
+         */
+        AgentInvocationStatus: "pending" | "running" | "completed" | "failed" | "cancelled";
+        /**
+         * @description Typed failure classification for completed-with-error invocations.
+         * @enum {string}
+         */
+        AgentInvocationErrorType: "agent_unavailable" | "agent_error" | "timeout" | "tool_violation" | "schema_violation" | "no_tools_available" | "forbidden" | "cancelled";
+        /** @description Counts of tool calls made by the agent during one invocation. Names are surfaced in the durable record; full call traces ship via OTel when configured. */
+        AgentInvocationToolCall: {
+            /** @description Tool name (e.g. `mobius_query_data_table`). */
             name: string;
-            /** @description Human-readable description of what the tool does. */
-            description: string;
-            /** @description JSON Schema Draft 7 object describing the tool inputs. */
-            input_schema: {
+            /** @description Number of times the tool was invoked during the loop. */
+            count: number;
+        };
+        /** @description Token-usage attribution for one invocation. */
+        AgentInvocationTokens: {
+            /** @description Input/prompt tokens consumed. */
+            input: number;
+            /** @description Output/completion tokens emitted. */
+            output: number;
+            /** @description Sum of input and output tokens. */
+            total?: number;
+        };
+        /** @description Durable record of one `agent.invoke` workflow action call. Carries the dispatch payload, the agent runtime's response or error, and the signal topic the suspended workflow branch waits on. */
+        AgentInvocation: {
+            /** @description Invocation ID (TypeID `ainv_…`). */
+            id: string;
+            /** @description Owning organization ID. */
+            org_id: string;
+            /** @description Owning project ID. */
+            project_id: string;
+            /** @description Agent that was (or will be) invoked. */
+            agent_id: string;
+            /** @description Snapshot of the agent's `kind` at dispatch time. */
+            agent_kind?: string;
+            status: components["schemas"]["AgentInvocationStatus"];
+            /** @description Workflow run that issued the invocation. */
+            workflow_run_id: string;
+            /** @description Workflow step that issued the invocation. */
+            step_name: string;
+            /** @description Branch identifier within the workflow run. */
+            path_id: string;
+            /** @description SignalStore topic the suspended branch waits on. */
+            topic: string;
+            /** @description User-turn prompt the agent receives. */
+            prompt: string;
+            /** @description Optional system-prompt addendum applied for this call only. */
+            instructions?: string;
+            /** @description Caller-supplied structured context surfaced to the agent. */
+            context?: {
                 [key: string]: unknown;
             };
-        };
-        ToolDefinitionListResponse: {
-            /** @description The list of published workflow tools. */
-            items: components["schemas"]["ToolDefinition"][];
-        };
-        ToolRunRequest: {
-            /** @description Input values matching the tool's input_schema. */
-            input?: {
+            /** @description Optional restriction on which tools the agent may call. Empty array means no restriction. */
+            allowed_tools?: string[];
+            /** @description Optional JSON Schema the agent's structured response must satisfy. */
+            output_schema?: {
                 [key: string]: unknown;
             };
-            /** @description How long (in seconds) to wait for synchronous completion. Default 30, max 120. If the run does not complete within this window the response is 202 with status active. */
-            timeout_seconds?: number;
-        };
-        /** @description Status envelope for a tool invocation backed by a workflow run. Use it to poll asynchronous work, read completed output, or surface failure details to the caller. */
-        ToolRun: {
-            /** @description Unique run identifier for polling. */
-            run_id: string;
+            /** @description Hard timeout applied to this invocation. */
+            timeout_seconds: number;
+            /** @description Final assistant-turn text returned by the agent. Empty until completion. */
+            response_text?: string;
+            /** @description Structured output (if `output_schema` was supplied and the agent emitted JSON). Empty otherwise. */
+            response_struct?: {
+                [key: string]: unknown;
+            };
+            /** @description Per-tool counts surfaced from the loop. */
+            tool_calls?: components["schemas"]["AgentInvocationToolCall"][];
+            /** @description Total tool calls across the loop. */
+            tool_calls_count?: number;
+            tokens?: components["schemas"]["AgentInvocationTokens"];
+            /** @description Set on failed invocations. */
+            error_type?: components["schemas"]["AgentInvocationErrorType"];
+            /** @description Human-readable error description for failed invocations. */
+            error_message?: string;
             /**
-             * @description Workflow run lifecycle: `active`, `completed`, or `failed`.
-             * @enum {string}
+             * Format: date-time
+             * @description When the invocation row was created.
              */
-            status: "active" | "completed" | "failed";
-            /** @description Run output. Present when status is "completed". */
-            output?: {
+            created_at: string;
+            /**
+             * Format: date-time
+             * @description When the invocation was handed off to the agent runtime.
+             */
+            dispatched_at?: string | null;
+            /**
+             * Format: date-time
+             * @description When the invocation reached a terminal status.
+             */
+            completed_at?: string | null;
+        };
+        /** @description Worker-supplied result of an in-flight invocation. The server validates `tool_calls` against the original `allowed_tools` and `structured` against `output_schema` before resuming the workflow branch. */
+        AgentInvocationCompleteRequest: {
+            /** @description Final assistant-turn text from the agent. */
+            text: string;
+            /** @description Optional structured output. Required when the invocation specified `output_schema`. */
+            structured?: {
                 [key: string]: unknown;
             };
-            /** @description Error message. Present when status is "failed". */
-            error?: string;
+            /** @description Per-tool counts observed during the loop. Used for tool-restriction audit. */
+            tool_calls?: components["schemas"]["AgentInvocationToolCall"][];
+            /** @description Token-usage attribution for this invocation. */
+            tokens?: components["schemas"]["AgentInvocationTokens"];
+        };
+        /** @description Worker-reported failure for an in-flight invocation. */
+        AgentInvocationFailRequest: {
+            error_type: components["schemas"]["AgentInvocationErrorType"];
+            /** @description Human-readable description of the failure. */
+            error_message: string;
+        };
+        /**
+         * @description Mirrors the OpenTelemetry `SpanKind` enum. Stored lowercase.
+         * @enum {string}
+         */
+        SpanKind: "internal" | "client" | "server" | "producer" | "consumer";
+        /**
+         * @description Mirrors the OpenTelemetry `Status.code` enum.
+         * @enum {string}
+         */
+        SpanStatusCode: "unset" | "ok" | "error";
+        /** @description One entry in the span's `events` array. */
+        SpanEvent: {
+            name: string;
+            /** Format: date-time */
+            time: string;
+            attributes?: {
+                [key: string]: unknown;
+            };
+        };
+        /** @description One entry in the span's `links` array. */
+        SpanLink: {
+            trace_id: string;
+            span_id: string;
+            attributes?: {
+                [key: string]: unknown;
+            };
+        };
+        /** @description Domain projection of one persisted OTLP span. Linkage fields (`run_id`, `step_id`, `job_id`, `agent_id`, `service_account_id`) are resolved at ingest time from semantic-convention attributes and may be absent when no Mobius entity could be matched. */
+        Span: {
+            /** @description Mobius span row identifier (TypeID, prefix `span_`). */
+            id: string;
+            org_id: string;
+            project_id: string;
+            run_id?: string;
+            step_id?: string;
+            job_id?: string;
+            agent_id?: string;
+            service_account_id?: string;
+            /** @description Hex-encoded 16-byte OTel trace ID. */
+            trace_id: string;
+            /** @description Hex-encoded 8-byte OTel span ID. */
+            span_id: string;
+            /** @description Parent span ID, omitted for trace roots. */
+            parent_span_id?: string;
+            name: string;
+            kind: components["schemas"]["SpanKind"];
+            /** @description Normalized OTel semconv operation name. */
+            operation_name: string;
+            /** @description OTel instrumentation scope name. */
+            scope_name: string;
+            /** @description OTel `service.name` resource attribute. */
+            service_name: string;
+            /** Format: date-time */
+            started_at: string;
+            /**
+             * Format: date-time
+             * @description Omitted while the span is still in flight.
+             */
+            ended_at?: string;
+            /**
+             * Format: int64
+             * @description Convenience derived value (`ended_at - started_at` in milliseconds). Emitted as `-1` when `ended_at` is absent.
+             */
+            duration_ms?: number;
+            status: components["schemas"]["SpanStatusCode"];
+            status_message?: string;
+            attributes?: {
+                [key: string]: unknown;
+            };
+            events?: components["schemas"]["SpanEvent"][];
+            links?: components["schemas"]["SpanLink"][];
+            /** Format: date-time */
+            created_at: string;
+        };
+        /** @description Paginated span list. */
+        SpanListResponse: {
+            items: components["schemas"]["Span"][];
+            has_more: boolean;
+            /** @description Opaque cursor for fetching the next page. Present only when `has_more` is true. */
+            next_cursor?: string;
+        };
+        /** @description Aggregate breakdown of spans within some scope. Used both by per-step badges on the run timeline and by trace summary cards on Trace tabs. */
+        SpanCounts: {
+            /** @description Total span count (all kinds). */
+            total: number;
+            /** @description Spans whose `operation_name` indicates an LLM call (`chat`, `text_completion`, `generate_content`, `embeddings`). */
+            llm_calls: number;
+            /** @description Spans whose `operation_name` is `execute_tool`. */
+            tool_calls: number;
+            /** @description Spans whose status code is `error`. */
+            errors: number;
+        };
+        /** @description Map of step_id → SpanCounts. */
+        StepSpanCountsResponse: {
+            /** @description Keys are run step IDs. */
+            counts: {
+                [key: string]: components["schemas"]["SpanCounts"];
+            };
+        };
+        /** @description Anchor Mobius entities for the trace summary card — at most one of each dimension. Resolved as the first non-empty value across the trace's spans (sorted by `started_at`), so traces that span multiple steps, jobs, or agents will surface the earliest one here. The full multi-entity set is recoverable from the underlying `Span.{run,step,job,agent}_id` fields when needed. Free-floating traces have no fields set. */
+        TraceLinkages: {
+            run_id?: string;
+            step_id?: string;
+            job_id?: string;
+            agent_id?: string;
+        };
+        /** @description One trace's summary card on a TraceList. The summary is computed in the API layer by aggregating spans for the trace. */
+        TraceSummary: {
+            trace_id: string;
+            /** @description Display name for the card. Resolved from the trace's root span when one is present, otherwise from the earliest span by `started_at`. */
+            root_name: string;
+            /** Format: date-time */
+            started_at: string;
+            /**
+             * Format: date-time
+             * @description Latest `ended_at` across the trace's spans, when present.
+             */
+            ended_at?: string;
+            /**
+             * Format: int64
+             * @description `ended_at - started_at` in milliseconds, or `-1` when at least one span in the trace is still in flight.
+             */
+            duration_ms: number;
+            span_count: number;
+            llm_call_count?: number;
+            tool_call_count?: number;
+            error_count?: number;
+            status: components["schemas"]["SpanStatusCode"];
+            /** @description Distinct `service.name` values represented in the trace. */
+            service_names?: string[];
+            linked?: components["schemas"]["TraceLinkages"];
+        };
+        /** @description Paginated list of trace summary cards. */
+        TraceListResponse: {
+            items: components["schemas"]["TraceSummary"][];
+            has_more: boolean;
+            next_cursor?: string;
+        };
+        /** @description Full span tree for one trace. The client reconstructs parent / child links from `parent_span_id` on each span. */
+        TraceDetail: {
+            trace_id: string;
+            spans: components["schemas"]["Span"][];
+        };
+        LogRecordInput: {
+            /** Format: date-time */
+            timestamp?: string;
+            severity?: string;
+            message: string;
+            run_id?: string;
+            trace_id?: string;
+            span_id?: string;
+            attributes?: {
+                [key: string]: unknown;
+            };
+        };
+        LogIngestResponse: {
+            accepted: number;
+            rejected: number;
+        };
+        LogRecord: {
+            id: string;
+            org_id: string;
+            project_id: string;
+            run_id?: string;
+            step_id?: string;
+            trace_id?: string;
+            span_id?: string;
+            /** Format: date-time */
+            timestamp: string;
+            /** Format: date-time */
+            observed_at: string;
+            severity_text: string;
+            severity_number: number;
+            body: string;
+            attributes?: {
+                [key: string]: unknown;
+            };
+            service_name: string;
+            /** Format: date-time */
+            created_at: string;
+        };
+        LogRecordListResponse: {
+            items: components["schemas"]["LogRecord"][];
+            next_cursor?: string;
+        };
+        /** @enum {string} */
+        ColumnType: "string" | "number" | "boolean" | "date" | "object" | "array" | "any";
+        ColumnDef: {
+            name: string;
+            type: components["schemas"]["ColumnType"];
+            /** @default false */
+            required: boolean;
+            /** @default false */
+            unique: boolean;
+            /** @description Default value applied when column is absent on insert */
+            default?: unknown;
+            description?: string;
+            /** @default false */
+            deprecated: boolean;
+        };
+        IndexDef: {
+            name: string;
+            columns: string[];
+            /** @default false */
+            unique: boolean;
+        };
+        DataTableSchema: {
+            columns: components["schemas"]["ColumnDef"][];
+            indexes?: components["schemas"]["IndexDef"][];
+        };
+        DataTable: {
+            id: string;
+            org_id: string;
+            project_id: string;
+            name: string;
+            description?: string;
+            schema: components["schemas"]["DataTableSchema"];
+            tags?: {
+                [key: string]: string;
+            };
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        DataTableListResponse: {
+            items: components["schemas"]["DataTable"][];
+            has_more: boolean;
+            next_cursor?: string;
+        };
+        CreateDataTableRequest: {
+            name: string;
+            description?: string;
+            schema: components["schemas"]["DataTableSchema"];
+        };
+        UpdateDataTableRequest: {
+            description?: string;
+            schema?: components["schemas"]["DataTableSchema"];
+        };
+        DataTableRow: {
+            id: string;
+            table_id: string;
+            data: {
+                [key: string]: unknown;
+            };
+            version: number;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        InsertRowRequest: {
+            data: {
+                [key: string]: unknown;
+            };
+        };
+        UpdateRowRequest: {
+            data: {
+                [key: string]: unknown;
+            };
+            /** @description Expected version for optimistic locking. Omit or 0 to skip the check. */
+            version?: number;
+        };
+        QueryRowsRequest: {
+            /** @description Column equality or operator filter */
+            filter?: {
+                [key: string]: unknown;
+            };
+            sort?: {
+                field: string;
+                /**
+                 * @default asc
+                 * @enum {string}
+                 */
+                order: "asc" | "desc";
+            }[];
+            /** @default 100 */
+            limit: number;
+            /** @default 0 */
+            offset: number;
+        };
+        QueryRowsResponse: {
+            rows: components["schemas"]["DataTableRow"][];
+            has_more: boolean;
+            limit?: number;
+            offset?: number;
+        };
+        BulkInsertRowsRequest: {
+            rows: {
+                [key: string]: unknown;
+            }[];
+        };
+        BulkInsertRowsResponse: {
+            inserted: number;
+            rows: components["schemas"]["DataTableRow"][];
+        };
+        UpsertRowRequest: {
+            /** @description Column names used to match an existing row. */
+            key_columns: string[];
+            /** @description Full row data. Must include values for all key_columns. */
+            data: {
+                [key: string]: unknown;
+            };
+        };
+        UpsertRowResponse: {
+            row: components["schemas"]["DataTableRow"];
+            /** @description True when a new row was inserted; false when an existing row was updated. */
+            created: boolean;
         };
     };
     responses: {
@@ -4489,6 +6117,15 @@ export interface components {
             };
             content?: never;
         };
+        /** @description LLM provider error */
+        ProviderError: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorResponse"];
+            };
+        };
     };
     parameters: {
         /** @description Project handle (unique per organization) */
@@ -4521,12 +6158,18 @@ export interface components {
         TagFilterParam: string[];
         /** @description Optional project scope for this request. When `project_id` is provided, the API key operation is resolved in that project's permission context. When `project_id` is omitted, the request is treated as org-level and project-pinned keys are excluded. */
         APIKeyProjectIDParam: components["schemas"]["ProjectID"];
+        /** @description Reference type name, such as `slack.channel` or `data-table.table`. */
+        ReferenceTypeParam: string;
         /** @description Trigger target ID. */
         TriggerTargetIDParam: string;
+        /** @description Jira issue key, e.g. `ENG-123`. */
+        IssueKeyParam: string;
         /** @description Group ID or handle. */
         GroupParam: string;
         /** @description Widget ID within the dashboard. */
         widget_id: string;
+        /** @description Table name (unique within the project; lowercase alphanumeric and underscores) */
+        TableNameParam: string;
     };
     requestBodies: never;
     headers: never;
@@ -4781,15 +6424,31 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
-    listChannelMessages: {
+    listMessages: {
         parameters: {
             query?: {
-                /** @description Filter by sender user or agent ID. */
+                /** @description Filter by sender principal ID — a user ID (for `sender_type=member`), agent ID (for `sender_type=agent`), or service account ID (for `sender_type=service_account`). */
                 sender_id?: string;
                 /** @description Return only replies to this message ID (thread view). */
                 reply_to?: string;
                 /** @description Filter by pinned status. */
                 pinned?: boolean;
+                /**
+                 * @description Return messages strictly newer than this cursor, in chronological
+                 *     order. Accepts either:
+                 *     - a message ID — strictly newer than that message in
+                 *     `(created_at, id)` order, or
+                 *     - an RFC3339 timestamp — strictly newer than that instant.
+                 *     Useful for agent loops that have already processed everything up
+                 *     to and including the cursor.
+                 */
+                since?: string;
+                /** @description When `true`, equivalent to passing `since=<my last_read_message_id>`. Mutually exclusive with `since`. Requires a member-bound credential: callers without a user identity get 400, and authenticated non-members get 403. */
+                unread?: boolean;
+                /** @description Return only messages that reference this entity type. */
+                entity_type?: components["schemas"]["EntityReferenceType"];
+                /** @description Return only messages that reference this entity ID. */
+                entity_id?: string;
                 /** @description Cursor for pagination (opaque string from previous response) */
                 cursor?: components["parameters"]["CursorParam"];
                 /** @description Maximum number of items to return */
@@ -4815,11 +6474,13 @@ export interface operations {
                     "application/json": components["schemas"]["ChannelMessageListResponse"];
                 };
             };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
         };
     };
-    sendChannelMessage: {
+    sendMessage: {
         parameters: {
             query?: never;
             header?: never;
@@ -4851,7 +6512,137 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
-    getChannelMessage: {
+    shareChannelEntity: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
+                id: components["parameters"]["IDParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ShareChannelEntityRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChannelMessage"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    claimChannelInteraction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
+                id: components["parameters"]["IDParam"];
+                /** @description Interaction to claim. */
+                interaction_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChannelInteractionActionResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    releaseChannelInteraction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
+                id: components["parameters"]["IDParam"];
+                /** @description Interaction whose claim should be released. */
+                interaction_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChannelInteractionActionResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    respondToChannelInteraction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
+                id: components["parameters"]["IDParam"];
+                /** @description Interaction to answer. */
+                interaction_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChannelInteractionRespondRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChannelInteractionActionResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    getMessage: {
         parameters: {
             query?: never;
             header?: never;
@@ -4880,7 +6671,7 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
-    updateChannelMessage: {
+    updateMessage: {
         parameters: {
             query?: never;
             header?: never;
@@ -4911,6 +6702,37 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    markMessagesRead: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
+                id: components["parameters"]["IDParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["MarkChannelMessagesReadRequest"];
+            };
+        };
+        responses: {
+            /** @description Read cursor updated. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
         };
     };
@@ -5304,6 +7126,8 @@ export interface operations {
                 status?: components["schemas"]["WorkflowRunStatus"];
                 /** @description Filter by workflow type name. */
                 workflow_type?: string;
+                /** @description Filter by workflow definition ID. */
+                definition_id?: string;
                 /** @description Filter by queue name. */
                 queue?: string;
                 /** @description Filter to child runs of the specified parent run. */
@@ -5612,40 +7436,6 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
-    streamProjectRunEvents: {
-        parameters: {
-            query?: {
-                /** @description Durable event seq cursor to replay from. */
-                since?: number;
-            };
-            header?: never;
-            path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK (text/event-stream) */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example event: run_updated
-                     *     id: 42
-                     *     data: {"type":"run_updated","run_id":"run_01hw1n1a2b3c4d5e6f7g8h9j0k","seq":42,"timestamp":"2026-04-24T14:45:00Z","data":{"status":"active"}}
-                     *
-                     *     :keepalive
-                     */
-                    "text/event-stream": string;
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-        };
-    };
     cancelRun: {
         parameters: {
             query?: never;
@@ -5660,12 +7450,14 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description No Content */
-            204: {
+            /** @description Updated run summary after cancellation was requested. */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["WorkflowRun"];
+                };
             };
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
@@ -5685,12 +7477,14 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description No Content */
-            204: {
+            /** @description Updated run summary after resumable paths were re-entered. */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["WorkflowRun"];
+                };
             };
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
@@ -5744,10 +7538,51 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
+    streamProjectEvents: {
+        parameters: {
+            query?: {
+                /** @description Durable event cursor to replay from, expressed as a unix-nano timestamp matching the largest `seq` the client has received on this project-wide stream. Do not pass a run-local `seq` from `streamRunEvents` here. */
+                since?: number;
+                /** @description Comma-separated run IDs to filter by. */
+                run?: string;
+                /** @description Comma-separated channel IDs to filter by. */
+                channel?: string;
+                /** @description Comma-separated interaction IDs to filter by. */
+                interaction?: string;
+            };
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK (text/event-stream) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example event: run_updated
+                     *     id: 42
+                     *     data: {"type":"run_updated","run_id":"run_01hw1n1a2b3c4d5e6f7g8h9j0k","seq":42,"timestamp":"2026-04-24T14:45:00Z","data":{"...full WorkflowRun, truncated...":"...","status":"active"}}
+                     *
+                     *     :keepalive
+                     */
+                    "text/event-stream": string;
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+        };
+    };
     streamRunEvents: {
         parameters: {
             query?: {
-                /** @description Durable event seq cursor to replay from. */
+                /** @description Run-local `run_events.seq` cursor to replay from. Do not pass a unix-nano cursor from `streamProjectEvents` here. */
                 since?: number;
             };
             header?: never;
@@ -5786,6 +7621,14 @@ export interface operations {
                 cursor?: components["parameters"]["CursorParam"];
                 /** @description Maximum number of items to return */
                 limit?: components["parameters"]["LimitParam"];
+                /**
+                 * @description Filter results by tag. Repeatable; multiple values combine with AND. Format: `Key:Value`, `Key:*` for any value, `Key:a,b,c` for IN.
+                 *
+                 *     Tag values containing `:` or `,` cannot be filtered with this grammar — the parser splits on those literally. Constrain values to plain identifiers when you intend to filter on them.
+                 *
+                 *     Not supported on the runs list — runs are too high-cardinality for ad-hoc tag filtering. To narrow runs by parent workflow, use the workflow-scoped endpoint `GET /v1/projects/{project}/workflows/{id}/runs` and inspect `tags` on each run client-side.
+                 */
+                tag?: components["parameters"]["TagFilterParam"];
             };
             header?: never;
             path: {
@@ -5944,7 +7787,7 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
-    listActionAuditLog: {
+    listActionInvocations: {
         parameters: {
             query?: {
                 /** @description Cursor for pagination (opaque string from previous response) */
@@ -5953,6 +7796,8 @@ export interface operations {
                 limit?: components["parameters"]["LimitParam"];
                 /** @description Filter to invocations from a specific workflow run. */
                 run_id?: string;
+                /** @description Filter to invocations from a specific job. */
+                job_id?: string;
                 /** @description Filter to invocations of a specific action. */
                 action_name?: string;
                 /** @description Filter by terminal status (e.g. "success", "failed"). */
@@ -5973,9 +7818,49 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ActionAuditLogListResponse"];
+                    "application/json": components["schemas"]["ActionInvocationListResponse"];
                 };
             };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    invokeAction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project-scoped action name used in workflow step definitions. */
+                action_name: components["parameters"]["ActionNameParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ActionInvocationRequest"];
+            };
+        };
+        responses: {
+            /** @description OK — invocation completed synchronously */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActionInvocationResult"];
+                };
+            };
+            /** @description Accepted — workflow-backed run is still active; poll via run endpoints */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActionInvocationResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
         };
@@ -6031,6 +7916,99 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
+    lookupReferences: {
+        parameters: {
+            query?: {
+                /** @description Human search query. */
+                q?: string;
+                /** @description Maximum number of candidates to return. Defaults to 20 and is capped at 100. */
+                limit?: number;
+                /** @description Opaque pagination cursor from a previous response. */
+                cursor?: string;
+                /** @description Optional provider integration instance selector for projects with multiple connections. */
+                integration_id?: string;
+                /** @description Optional JSON object containing values from fields this lookup depends on. */
+                depends_on?: string;
+            };
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Reference type name, such as `slack.channel` or `data-table.table`. */
+                reference_type: components["parameters"]["ReferenceTypeParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReferenceLookupResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description Required integration is missing, expired, or unauthorized. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            429: components["responses"]["TooManyRequests"];
+            503: components["responses"]["ServiceUnavailable"];
+        };
+    };
+    resolveReferences: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Reference type name, such as `slack.channel` or `data-table.table`. */
+                reference_type: components["parameters"]["ReferenceTypeParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReferenceResolveRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReferenceResolveResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description Required integration is missing, expired, or unauthorized. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            429: components["responses"]["TooManyRequests"];
+            503: components["responses"]["ServiceUnavailable"];
+        };
+    };
     getJob: {
         parameters: {
             query?: never;
@@ -6075,8 +8053,6 @@ export interface operations {
                  *       "worker_instance_id": "inv-abc123",
                  *       "worker_session_token": "<worker-session-token>",
                  *       "concurrency_limit": 8,
-                 *       "agent_id": "agt_01hw1m5q9x7r2p4n6s8t0v3y5z",
-                 *       "agent_session_id": "ags_01hw1m7c8d9e0f1g2h3j4k5m6n",
                  *       "worker_name": "invoice-processor",
                  *       "worker_version": "2026.04.27",
                  *       "queues": [
@@ -6419,11 +8395,12 @@ export interface operations {
                      *         {
                      *           "id": "trgt_01hw1s4d5e6f7g8h9j0k1m2n3p",
                      *           "trigger_id": "trg_01hw1s2t3u4v5w6x7y8z9a0b1c",
+                     *           "kind": "launch_run",
                      *           "workflow_id": "wf_01hw1p4a5b6c7d8e9f0g1h2j3k",
-                     *           "condition": "$.event.type == 'billing.report.ready'",
+                     *           "condition": "event.type == 'billing.report.ready'",
                      *           "input_mapping": {
-                     *             "report_id": "$.event.report_id",
-                     *             "account_id": "$.event.account_id"
+                     *             "report_id": "${event.report_id}",
+                     *             "account_id": "${event.account_id}"
                      *           },
                      *           "enabled": true,
                      *           "created_at": "2026-04-24T14:35:00Z",
@@ -6530,6 +8507,38 @@ export interface operations {
             409: components["responses"]["Conflict"];
         };
     };
+    testFireTrigger: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
+                id: components["parameters"]["IDParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TestFireTriggerRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TestFireTriggerResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
     listTriggerFires: {
         parameters: {
             query?: {
@@ -6608,10 +8617,10 @@ export interface operations {
                 /**
                  * @example {
                  *       "workflow_id": "wf_01hw1p4a5b6c7d8e9f0g1h2j3k",
-                 *       "condition": "$.event.type == 'billing.report.ready'",
+                 *       "condition": "event.type == 'billing.report.ready'",
                  *       "input_mapping": {
-                 *         "report_id": "$.event.report_id",
-                 *         "account_id": "$.event.account_id"
+                 *         "report_id": "${event.report_id}",
+                 *         "account_id": "${event.account_id}"
                  *       },
                  *       "enabled": true
                  *     }
@@ -6630,11 +8639,12 @@ export interface operations {
                      * @example {
                      *       "id": "trgt_01hw1s4d5e6f7g8h9j0k1m2n3p",
                      *       "trigger_id": "trg_01hw1s2t3u4v5w6x7y8z9a0b1c",
+                     *       "kind": "launch_run",
                      *       "workflow_id": "wf_01hw1p4a5b6c7d8e9f0g1h2j3k",
-                     *       "condition": "$.event.type == 'billing.report.ready'",
+                     *       "condition": "event.type == 'billing.report.ready'",
                      *       "input_mapping": {
-                     *         "report_id": "$.event.report_id",
-                     *         "account_id": "$.event.account_id"
+                     *         "report_id": "${event.report_id}",
+                     *         "account_id": "${event.account_id}"
                      *       },
                      *       "enabled": true,
                      *       "created_at": "2026-04-24T14:36:00Z",
@@ -7159,6 +9169,35 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
+    createMessage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GenerateRequest"];
+            };
+        };
+        responses: {
+            /** @description Anthropic-compatible message, or an SSE stream when `stream` is true. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LLMGenerateResponse"];
+                    "text/event-stream": string;
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            502: components["responses"]["ProviderError"];
+        };
+    };
     listWebhooks: {
         parameters: {
             query?: {
@@ -7435,6 +9474,27 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
+    listIntegrationProviders: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IntegrationCatalog"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
     getProjectMetrics: {
         parameters: {
             query?: never;
@@ -7464,7 +9524,7 @@ export interface operations {
         parameters: {
             query?: {
                 /** @description Filter by status */
-                status?: "pending" | "completed" | "expired";
+                status?: "pending" | "completed" | "expired" | "cancelled";
                 /** @description Filter by originating run ID */
                 run_id?: string;
                 /** @description Filter by target type */
@@ -7477,6 +9537,14 @@ export interface operations {
                 cursor?: components["parameters"]["CursorParam"];
                 /** @description Maximum number of items to return */
                 limit?: components["parameters"]["LimitParam"];
+                /**
+                 * @description Filter results by tag. Repeatable; multiple values combine with AND. Format: `Key:Value`, `Key:*` for any value, `Key:a,b,c` for IN.
+                 *
+                 *     Tag values containing `:` or `,` cannot be filtered with this grammar — the parser splits on those literally. Constrain values to plain identifiers when you intend to filter on them.
+                 *
+                 *     Not supported on the runs list — runs are too high-cardinality for ad-hoc tag filtering. To narrow runs by parent workflow, use the workflow-scoped endpoint `GET /v1/projects/{project}/workflows/{id}/runs` and inspect `tags` on each run client-side.
+                 */
+                tag?: components["parameters"]["TagFilterParam"];
             };
             header?: never;
             path: {
@@ -7663,11 +9731,20 @@ export interface operations {
                      *         "type": "user",
                      *         "id": "user_2f9s3k4m5n6p7q8r9s0t1u2v3w"
                      *       },
-                     *       "response": {
-                     *         "value": true,
-                     *         "comment": "Approved for publication.",
-                     *         "at": "2026-04-24T14:42:00Z"
-                     *       },
+                     *       "resolving_response_id": "iresp_01hw1r3s3t4u5v6w7x8y9z0c1d",
+                     *       "responses": [
+                     *         {
+                     *           "id": "iresp_01hw1r3s3t4u5v6w7x8y9z0c1d",
+                     *           "interaction_id": "int_01hw1r2s3t4u5v6w7x8y9z0a1b",
+                     *           "responder_type": "user",
+                     *           "responder_id": "user_2f9s3k4m5n6p7q8r9s0t1u2v3w",
+                     *           "value": true,
+                     *           "comment": "Approved for publication.",
+                     *           "responded_at": "2026-04-24T14:42:00Z"
+                     *         }
+                     *       ],
+                     *       "outcome": true,
+                     *       "resolved_by": "first_valid_response",
                      *       "expires_at": "2026-04-25T14:30:00Z",
                      *       "completed_at": "2026-04-24T14:42:00Z",
                      *       "created_at": "2026-04-24T14:30:00Z",
@@ -7679,8 +9756,7 @@ export interface operations {
                      *       "routing_policy_snapshot": "first_responder",
                      *       "require_all": false,
                      *       "claimed_by": "user_2f9s3k4m5n6p7q8r9s0t1u2v3w",
-                     *       "claimed_at": "2026-04-24T14:40:00Z",
-                     *       "partial_responses": null
+                     *       "claimed_at": "2026-04-24T14:40:00Z"
                      *     }
                      */
                     "application/json": components["schemas"]["Interaction"];
@@ -7745,6 +9821,44 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    cancelInteraction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
+                id: components["parameters"]["IDParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                /**
+                 * @example {
+                 *       "reason": "Superseded by a revised approval request."
+                 *     }
+                 */
+                "application/json": components["schemas"]["CancelInteractionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Interaction"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
         };
     };
@@ -8167,6 +10281,34 @@ export interface operations {
             409: components["responses"]["Conflict"];
         };
     };
+    provisionAgentInbox: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
+                id: components["parameters"]["IDParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Agent"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
     listAgentSessions: {
         parameters: {
             query?: {
@@ -8320,13 +10462,13 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
-    listTools: {
+    getAgentInvocation: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Invocation ID (TypeID with `ainv_` prefix). */
+                invocation_id: string;
             };
             cookie?: never;
         };
@@ -8338,92 +10480,75 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "items": [
-                     *         {
-                     *           "name": "document-review",
-                     *           "description": "Summarize a document and request approval before publishing.",
-                     *           "input_schema": {
-                     *             "type": "object",
-                     *             "required": [
-                     *               "document_id"
-                     *             ],
-                     *             "properties": {
-                     *               "document_id": {
-                     *                 "type": "string"
-                     *               }
-                     *             }
-                     *           }
-                     *         }
-                     *       ]
-                     *     }
-                     */
-                    "application/json": components["schemas"]["ToolDefinitionListResponse"];
+                    "application/json": components["schemas"]["AgentInvocation"];
                 };
             };
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
         };
     };
-    runTool: {
+    completeAgentInvocation: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
-                /** @description Workflow handle identifying the tool to invoke. */
-                handle: string;
+                /** @description Invocation ID. */
+                invocation_id: string;
             };
             cookie?: never;
         };
         requestBody: {
             content: {
-                /**
-                 * @example {
-                 *       "input": {
-                 *         "document_id": "doc_01hw1m9z8y7x6w5v4u3t2s1r0q"
-                 *       },
-                 *       "timeout_seconds": 45
-                 *     }
-                 */
-                "application/json": components["schemas"]["ToolRunRequest"];
+                "application/json": components["schemas"]["AgentInvocationCompleteRequest"];
             };
         };
         responses: {
-            /** @description OK — run completed synchronously */
+            /** @description OK */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "run_id": "run_01hw1n1a2b3c4d5e6f7g8h9j0k",
-                     *       "status": "completed",
-                     *       "output": {
-                     *         "summary": "Ready for review.",
-                     *         "approved": true
-                     *       }
-                     *     }
-                     */
-                    "application/json": components["schemas"]["ToolRun"];
+                    "application/json": components["schemas"]["AgentInvocation"];
                 };
             };
-            /** @description Accepted — run is active; poll for result */
-            202: {
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description The invocation has already reached a terminal state (timed out, cancelled, or previously completed). The body returns the recorded final record so callers can reconcile. */
+            410: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "run_id": "run_01hw1n1a2b3c4d5e6f7g8h9j0k",
-                     *       "status": "active"
-                     *     }
-                     */
-                    "application/json": components["schemas"]["ToolRun"];
+                    "application/json": components["schemas"]["AgentInvocation"];
+                };
+            };
+        };
+    };
+    failAgentInvocation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Invocation ID. */
+                invocation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgentInvocationFailRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentInvocation"];
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -8431,17 +10556,24 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
-    getToolRun: {
+    listProjectSpans: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Cursor for pagination (opaque string from previous response) */
+                cursor?: components["parameters"]["CursorParam"];
+                /** @description Maximum number of items to return */
+                limit?: components["parameters"]["LimitParam"];
+                /** @description Filter spans by workflow run ID. */
+                run_id?: string;
+                /** @description Filter spans by job ID. */
+                job_id?: string;
+                /** @description Filter spans by run step ID. Must be combined with run_id. */
+                step_id?: string;
+            };
             header?: never;
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
-                /** @description Workflow handle identifying the tool. */
-                handle: string;
-                /** @description ID of the tool run to poll. */
-                run_id: components["parameters"]["run_id"];
             };
             cookie?: never;
         };
@@ -8453,21 +10585,562 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "run_id": "run_01hw1n1a2b3c4d5e6f7g8h9j0k",
-                     *       "status": "completed",
-                     *       "output": {
-                     *         "summary": "Ready for review.",
-                     *         "approved": true
-                     *       }
-                     *     }
-                     */
-                    "application/json": components["schemas"]["ToolRun"];
+                    "application/json": components["schemas"]["SpanListResponse"];
                 };
             };
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
+        };
+    };
+    getProjectStepSpanCounts: {
+        parameters: {
+            query: {
+                /** @description Workflow run ID to compute step span counts for. */
+                run_id: string;
+            };
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StepSpanCountsResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listProjectTraces: {
+        parameters: {
+            query?: {
+                /** @description Cursor for pagination (opaque string from previous response) */
+                cursor?: components["parameters"]["CursorParam"];
+                /** @description Maximum number of items to return */
+                limit?: components["parameters"]["LimitParam"];
+                /** @description Filter traces to those linked to this workflow run. */
+                run_id?: string;
+                /** @description Filter traces to those containing spans linked to this agent. */
+                agent_id?: string;
+            };
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TraceListResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getTrace: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Hex-encoded 16-byte OTel trace identifier. */
+                trace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TraceDetail"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listProjectLogs: {
+        parameters: {
+            query?: {
+                /** @description Cursor for pagination (opaque string from previous response) */
+                cursor?: components["parameters"]["CursorParam"];
+                /** @description Maximum number of items to return */
+                limit?: components["parameters"]["LimitParam"];
+                run_id?: string;
+                severity_min?: number;
+                since?: string;
+                until?: string;
+            };
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LogRecordListResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    ingestProjectLogs: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LogRecordInput"][];
+            };
+        };
+        responses: {
+            /** @description Accepted */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LogIngestResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    ingestProjectLogsOTLP: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": Record<string, never>;
+            };
+        };
+        responses: {
+            /** @description Accepted */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LogIngestResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listDataTables: {
+        parameters: {
+            query?: {
+                /** @description Cursor for pagination (opaque string from previous response) */
+                cursor?: components["parameters"]["CursorParam"];
+                /** @description Maximum number of items to return */
+                limit?: components["parameters"]["LimitParam"];
+            };
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DataTableListResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    createDataTable: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateDataTableRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DataTable"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    getDataTable: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Table name (unique within the project; lowercase alphanumeric and underscores) */
+                table_name: components["parameters"]["TableNameParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DataTable"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    updateDataTable: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Table name (unique within the project; lowercase alphanumeric and underscores) */
+                table_name: components["parameters"]["TableNameParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateDataTableRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DataTable"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    deleteDataTable: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Table name (unique within the project; lowercase alphanumeric and underscores) */
+                table_name: components["parameters"]["TableNameParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    insertDataTableRow: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Table name (unique within the project; lowercase alphanumeric and underscores) */
+                table_name: components["parameters"]["TableNameParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InsertRowRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DataTableRow"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    queryDataTableRows: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Table name (unique within the project; lowercase alphanumeric and underscores) */
+                table_name: components["parameters"]["TableNameParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["QueryRowsRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QueryRowsResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    upsertDataTableRow: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Table name (unique within the project; lowercase alphanumeric and underscores) */
+                table_name: components["parameters"]["TableNameParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpsertRowRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UpsertRowResponse"];
+                };
+            };
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UpsertRowResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    bulkInsertDataTableRows: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Table name (unique within the project; lowercase alphanumeric and underscores) */
+                table_name: components["parameters"]["TableNameParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BulkInsertRowsRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkInsertRowsResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getDataTableRow: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Table name (unique within the project; lowercase alphanumeric and underscores) */
+                table_name: components["parameters"]["TableNameParam"];
+                row_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DataTableRow"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    deleteDataTableRow: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Table name (unique within the project; lowercase alphanumeric and underscores) */
+                table_name: components["parameters"]["TableNameParam"];
+                row_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    updateDataTableRow: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Table name (unique within the project; lowercase alphanumeric and underscores) */
+                table_name: components["parameters"]["TableNameParam"];
+                row_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateRowRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DataTableRow"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
         };
     };
 }
