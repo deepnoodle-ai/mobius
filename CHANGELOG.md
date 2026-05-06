@@ -6,6 +6,39 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 
 ## [Unreleased]
 
+## [0.0.19] - 2026-05-06
+
+### Added
+
+- CLI: `mobius auth status` now reports the credential scope
+  (`Scope: org`, `Scope: project:<handle>`, or `Scope: user`) so
+  403s on a project-pinned key can be diagnosed without guessing
+  whether the key targets the wrong project.
+- CLI / SDKs: new command groups and operations regenerated from
+  the upstream OpenAPI contract — `agent_invocations`, `data_tables`,
+  `events`, `generate`, `integration_catalog`, `logs`, `messages`,
+  `references`, and `spans`. The `tools` group is removed (operations
+  consolidated/renamed upstream).
+- SDKs: workflow data-flow surface — `bind` and `set` step types,
+  declared `outputs` on workflow steps, run-step `skipped` status with
+  `reason`, and binding provenance fields on run steps.
+
+### Changed
+
+- CLI: `ConfigEntry` is now a flat `{key, value}` pair with dotted
+  keys (e.g. `runs.timeouts.execution`) instead of
+  `{category, key, value}`. `projects clear-config` takes an optional
+  `--key-prefix` instead of the previous required `--category`.
+- Go SDK: `streamProjectRunEvents` is renamed to `streamProjectEvents`.
+  The server stream now also carries `message_created`,
+  `interaction_*`, and `span_appended` events plus
+  `run`/`channel`/`interaction` filter params; `WatchProjectRuns`
+  continues to subscribe with no filters and ignores non-run events
+  (filter knobs are not yet plumbed through the SDK).
+- Build: `datamodel-code-generator` bumped from 0.28.5 to 0.56.1 to
+  handle the new `ContentBlock` ↔ `ToolResultContentBlock` circular
+  reference introduced by the LLM `generate` API.
+
 ## [0.0.18] - 2026-04-29
 
 ### Added
