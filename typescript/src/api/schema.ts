@@ -2178,16 +2178,16 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List data tables
-         * @description List project-scoped data tables visible to the caller.
+         * List tables
+         * @description List project-scoped tables visible to the caller.
          */
-        get: operations["listDataTables"];
+        get: operations["listTables"];
         put?: never;
         /**
-         * Create a data table
-         * @description Create a project-scoped data table with a typed column schema.
+         * Create a table
+         * @description Create a project-scoped table with a typed column schema.
          */
-        post: operations["createDataTable"];
+        post: operations["createTable"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2202,21 +2202,21 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get a data table
-         * @description Get data-table metadata and schema by table name.
+         * Get a table
+         * @description Get table metadata and schema by table name.
          */
-        get: operations["getDataTable"];
+        get: operations["getTable"];
         /**
-         * Update a data table
-         * @description Update data-table description or schema and resync declared indexes.
+         * Update a table
+         * @description Update table description or schema and resync declared indexes.
          */
-        put: operations["updateDataTable"];
+        put: operations["updateTable"];
         post?: never;
         /**
-         * Delete a data table and all its rows
-         * @description Delete one data table and all rows stored under it.
+         * Delete a table and all its rows
+         * @description Delete one table and all rows stored under it.
          */
-        delete: operations["deleteDataTable"];
+        delete: operations["deleteTable"];
         options?: never;
         head?: never;
         patch?: never;
@@ -2230,10 +2230,10 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get data table storage stats
-         * @description Returns an operational snapshot for one data table: row count, approximate data/index bytes, declared index shape, and whether the backend search index is present. Values are point-in-time estimates intended for capacity planning and operator UI, not billing.
+         * Get table storage stats
+         * @description Returns an operational snapshot for one table: row count, approximate data/index bytes, declared index shape, and whether the backend search index is present. Values are point-in-time estimates intended for capacity planning and operator UI, not billing.
          */
-        get: operations["getDataTableStats"];
+        get: operations["getTableStats"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2253,9 +2253,9 @@ export interface paths {
         put?: never;
         /**
          * Insert a row
-         * @description Validate and insert one row into the named data table.
+         * @description Validate and insert one row into the named table.
          */
-        post: operations["insertDataTableRow"];
+        post: operations["insertTableRow"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2275,7 +2275,7 @@ export interface paths {
          * Query rows
          * @description Filter, sort, and paginate rows. Filter keys are column names; values are either a direct equality match or an operator object: `{"$eq": v}`, `{"$ne": v}`, `{"$gt": v}`, `{"$gte": v}`, `{"$lt": v}`, `{"$lte": v}`, `{"$in": [v,...]}`, `{"$exists": bool}`.
          */
-        post: operations["queryDataTableRows"];
+        post: operations["queryTableRows"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2293,9 +2293,9 @@ export interface paths {
         put?: never;
         /**
          * Search rows
-         * @description Full-text keyword search over row data within one data table. Optional field filters use the same syntax as row queries and are applied before text search.
+         * @description Full-text keyword search over row data within one table. Optional field filters use the same syntax as row queries and are applied before text search.
          */
-        post: operations["searchDataTableRows"];
+        post: operations["searchTableRows"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2317,7 +2317,7 @@ export interface paths {
          *
          *     Returns 201 Created when a new row was inserted, 200 OK when an existing row was updated.
          */
-        post: operations["upsertDataTableRow"];
+        post: operations["upsertTableRow"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2335,9 +2335,9 @@ export interface paths {
         put?: never;
         /**
          * Bulk insert rows
-         * @description Validate and insert up to 1,000 rows into the named data table.
+         * @description Validate and insert up to 1,000 rows into the named table.
          */
-        post: operations["bulkInsertDataTableRows"];
+        post: operations["bulkInsertTableRows"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2353,23 +2353,23 @@ export interface paths {
         };
         /**
          * Get a row by ID
-         * @description Get one data-table row by row ID.
+         * @description Get one table row by row ID.
          */
-        get: operations["getDataTableRow"];
+        get: operations["getTableRow"];
         put?: never;
         post?: never;
         /**
          * Delete a row
-         * @description Delete one row from the named data table.
+         * @description Delete one row from the named table.
          */
-        delete: operations["deleteDataTableRow"];
+        delete: operations["deleteTableRow"];
         options?: never;
         head?: never;
         /**
          * Update a row (PATCH — merges into existing data)
          * @description Validate and merge fields into an existing row, optionally checking the current row version.
          */
-        patch: operations["updateDataTableRow"];
+        patch: operations["updateTableRow"];
         trace?: never;
     };
     "/v1/projects/{project}/artifacts:slot": {
@@ -4701,10 +4701,10 @@ export interface components {
             expires_at?: string;
         };
         /**
-         * @description Determines the event source and required `source_config` shape: schedule, webhook, event, channel_message, data_table_row, or email.
+         * @description Determines the event source and required `source_config` shape: schedule, webhook, event, channel_message, table_row, or email.
          * @enum {string}
          */
-        TriggerKind: "schedule" | "webhook" | "event" | "channel_message" | "data_table_row" | "email";
+        TriggerKind: "schedule" | "webhook" | "event" | "channel_message" | "table_row" | "email";
         /**
          * @description Controls overlapping runs from the same trigger:
          *     - `allow` — start new runs unconditionally.
@@ -4916,9 +4916,9 @@ export interface components {
             /** @description Restricts which sender types fire the trigger. When omitted, all sender types are eligible. */
             sender_types?: components["schemas"]["ChannelMessageSenderType"][];
         };
-        /** @description Source configuration for `data_table_row` triggers. */
-        DataTableRowSourceConfig: {
-            /** @description Name of the data table to watch. When omitted, the trigger fires for row changes in any table within the project. */
+        /** @description Source configuration for `table_row` triggers. */
+        TableRowSourceConfig: {
+            /** @description Name of the table to watch. When omitted, the trigger fires for row changes in any table within the project. */
             table_name?: string;
             /** @description Row change events that fire the trigger. When omitted, all three events (inserted, updated, deleted) fire the trigger. */
             events?: ("inserted" | "updated" | "deleted")[];
@@ -4930,8 +4930,8 @@ export interface components {
             /** @description Optional Go regular expression matched against the email subject. When omitted, all subjects pass the filter. */
             subject_pattern?: string;
         };
-        /** @description Typed source configuration. The shape is determined by the trigger's `kind` (`schedule` → `ScheduleSourceConfig`, `webhook` → `WebhookSourceConfig`, `event` → `EventSourceConfig`, `channel_message` → `ChannelMessageSourceConfig`, `data_table_row` → `DataTableRowSourceConfig`, `email` → `EmailSourceConfig`); mismatches are rejected with 400. */
-        TriggerSourceConfig: components["schemas"]["ScheduleSourceConfig"] | components["schemas"]["WebhookSourceConfig"] | components["schemas"]["EventSourceConfig"] | components["schemas"]["ChannelMessageSourceConfig"] | components["schemas"]["DataTableRowSourceConfig"] | components["schemas"]["EmailSourceConfig"];
+        /** @description Typed source configuration. The shape is determined by the trigger's `kind` (`schedule` → `ScheduleSourceConfig`, `webhook` → `WebhookSourceConfig`, `event` → `EventSourceConfig`, `channel_message` → `ChannelMessageSourceConfig`, `table_row` → `TableRowSourceConfig`, `email` → `EmailSourceConfig`); mismatches are rejected with 400. */
+        TriggerSourceConfig: components["schemas"]["ScheduleSourceConfig"] | components["schemas"]["WebhookSourceConfig"] | components["schemas"]["EventSourceConfig"] | components["schemas"]["ChannelMessageSourceConfig"] | components["schemas"]["TableRowSourceConfig"] | components["schemas"]["EmailSourceConfig"];
         /** @description Event source that starts one or more workflow targets. */
         Trigger: {
             /** @description Unique identifier for this trigger. */
@@ -5081,7 +5081,7 @@ export interface components {
             has_more: boolean;
         };
         /** @description Creates a trigger. The request is discriminated by `kind`, and each variant requires the matching `source_config` schema. */
-        CreateTriggerRequest: components["schemas"]["CreateScheduleTriggerRequest"] | components["schemas"]["CreateWebhookTriggerRequest"] | components["schemas"]["CreateEventTriggerRequest"] | components["schemas"]["CreateChannelMessageTriggerRequest"] | components["schemas"]["CreateDataTableRowTriggerRequest"] | components["schemas"]["CreateEmailTriggerRequest"];
+        CreateTriggerRequest: components["schemas"]["CreateScheduleTriggerRequest"] | components["schemas"]["CreateWebhookTriggerRequest"] | components["schemas"]["CreateEventTriggerRequest"] | components["schemas"]["CreateChannelMessageTriggerRequest"] | components["schemas"]["CreateTableRowTriggerRequest"] | components["schemas"]["CreateEmailTriggerRequest"];
         /** @description Creates a schedule trigger from a cron expression or fixed interval. */
         CreateScheduleTriggerRequest: {
             /** @description Human-readable trigger name, unique within the project. */
@@ -5162,17 +5162,17 @@ export interface components {
             /** @description Initial tag set. */
             tags?: components["schemas"]["TagMap"];
         };
-        /** @description Creates a trigger that fires when a data table row is inserted, updated, or deleted. */
-        CreateDataTableRowTriggerRequest: {
+        /** @description Creates a trigger that fires when a table row is inserted, updated, or deleted. */
+        CreateTableRowTriggerRequest: {
             /** @description Human-readable trigger name, unique within the project. */
             name: string;
             /**
-             * @description Discriminator value — must be `data_table_row`. (enum property replaced by openapi-typescript)
+             * @description Discriminator value — must be `table_row`. (enum property replaced by openapi-typescript)
              * @enum {string}
              */
-            kind: "data_table_row";
+            kind: "table_row";
             /** @description Data-table-row-specific source configuration. */
-            source_config: components["schemas"]["DataTableRowSourceConfig"];
+            source_config: components["schemas"]["TableRowSourceConfig"];
             /** @description Workflows to start when this trigger fires (inline convenience; stored as sub-resources). */
             targets?: components["schemas"]["CreateTriggerTargetRequest"][];
             /** @description Policy for overlapping runs started by this trigger. */
@@ -6211,7 +6211,7 @@ export interface components {
         AgentInvocationErrorType: "agent_unavailable" | "agent_error" | "timeout" | "tool_violation" | "schema_violation" | "no_tools_available" | "forbidden" | "cancelled";
         /** @description Counts of tool calls made by the agent during one invocation. Names are surfaced in the durable record; full call traces ship via OTel when configured. */
         AgentInvocationToolCall: {
-            /** @description Tool name (e.g. `mobius_query_data_table`). */
+            /** @description Tool name (e.g. `mobius_query_table`). */
             name: string;
             /** @description Number of times the tool was invoked during the loop. */
             count: number;
@@ -6616,17 +6616,17 @@ export interface components {
             /** @default false */
             unique: boolean;
         };
-        DataTableSchema: {
+        TableSchema: {
             columns: components["schemas"]["ColumnDef"][];
             indexes?: components["schemas"]["IndexDef"][];
         };
-        DataTable: {
+        Table: {
             id: string;
             org_id: string;
             project_id: string;
             name: string;
             description?: string;
-            schema: components["schemas"]["DataTableSchema"];
+            schema: components["schemas"]["TableSchema"];
             tags?: {
                 [key: string]: string;
             };
@@ -6635,12 +6635,12 @@ export interface components {
             /** Format: date-time */
             updated_at: string;
         };
-        DataTableListResponse: {
-            items: components["schemas"]["DataTable"][];
+        TableListResponse: {
+            items: components["schemas"]["Table"][];
             has_more: boolean;
             next_cursor?: string;
         };
-        DataTableStats: {
+        TableStats: {
             table_id: string;
             /** Format: int64 */
             row_count: number;
@@ -6658,16 +6658,16 @@ export interface components {
             /** Format: date-time */
             newest_row_updated_at?: string;
         };
-        CreateDataTableRequest: {
+        CreateTableRequest: {
             name: string;
             description?: string;
-            schema: components["schemas"]["DataTableSchema"];
+            schema: components["schemas"]["TableSchema"];
         };
-        UpdateDataTableRequest: {
+        UpdateTableRequest: {
             description?: string;
-            schema?: components["schemas"]["DataTableSchema"];
+            schema?: components["schemas"]["TableSchema"];
         };
-        DataTableRow: {
+        TableRow: {
             id: string;
             table_id: string;
             data: {
@@ -6710,7 +6710,7 @@ export interface components {
             cursor?: string;
         };
         QueryRowsResponse: {
-            rows: components["schemas"]["DataTableRow"][];
+            rows: components["schemas"]["TableRow"][];
             has_more: boolean;
             limit?: number;
             next_cursor?: string;
@@ -6728,7 +6728,7 @@ export interface components {
             cursor?: string;
         };
         SearchRowsResponse: {
-            rows: components["schemas"]["DataTableRow"][];
+            rows: components["schemas"]["TableRow"][];
             has_more: boolean;
             limit?: number;
             next_cursor?: string;
@@ -6740,7 +6740,7 @@ export interface components {
         };
         BulkInsertRowsResponse: {
             inserted: number;
-            rows: components["schemas"]["DataTableRow"][];
+            rows: components["schemas"]["TableRow"][];
         };
         UpsertRowRequest: {
             /** @description Column names used to match an existing row. */
@@ -6751,7 +6751,7 @@ export interface components {
             };
         };
         UpsertRowResponse: {
-            row: components["schemas"]["DataTableRow"];
+            row: components["schemas"]["TableRow"];
             /** @description True when a new row was inserted; false when an existing row was updated. */
             created: boolean;
         };
@@ -7142,7 +7142,7 @@ export interface components {
         TagFilterParam: string[];
         /** @description Optional project scope for this request. When `project_id` is provided, the API key operation is resolved in that project's permission context. When `project_id` is omitted, the request is treated as org-level and project-pinned keys are excluded. */
         APIKeyProjectIDParam: components["schemas"]["ProjectID"];
-        /** @description Reference type name, such as `slack.channel` or `data-table.table`. */
+        /** @description Reference type name, such as `slack.channel` or `table.table`. */
         ReferenceTypeParam: string;
         /** @description Trigger target ID. */
         TriggerTargetIDParam: string;
@@ -8930,7 +8930,7 @@ export interface operations {
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
-                /** @description Reference type name, such as `slack.channel` or `data-table.table`. */
+                /** @description Reference type name, such as `slack.channel` or `table.table`. */
                 reference_type: components["parameters"]["ReferenceTypeParam"];
             };
             cookie?: never;
@@ -8969,7 +8969,7 @@ export interface operations {
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
-                /** @description Reference type name, such as `slack.channel` or `data-table.table`. */
+                /** @description Reference type name, such as `slack.channel` or `table.table`. */
                 reference_type: components["parameters"]["ReferenceTypeParam"];
             };
             cookie?: never;
@@ -11890,7 +11890,7 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
-    listDataTables: {
+    listTables: {
         parameters: {
             query?: {
                 /** @description Cursor for pagination (opaque string from previous response) */
@@ -11913,13 +11913,13 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DataTableListResponse"];
+                    "application/json": components["schemas"]["TableListResponse"];
                 };
             };
             401: components["responses"]["Unauthorized"];
         };
     };
-    createDataTable: {
+    createTable: {
         parameters: {
             query?: never;
             header?: never;
@@ -11931,7 +11931,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["CreateDataTableRequest"];
+                "application/json": components["schemas"]["CreateTableRequest"];
             };
         };
         responses: {
@@ -11941,14 +11941,14 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DataTable"];
+                    "application/json": components["schemas"]["Table"];
                 };
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
         };
     };
-    getDataTable: {
+    getTable: {
         parameters: {
             query?: never;
             header?: never;
@@ -11968,14 +11968,14 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DataTable"];
+                    "application/json": components["schemas"]["Table"];
                 };
             };
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
         };
     };
-    updateDataTable: {
+    updateTable: {
         parameters: {
             query?: never;
             header?: never;
@@ -11989,7 +11989,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["UpdateDataTableRequest"];
+                "application/json": components["schemas"]["UpdateTableRequest"];
             };
         };
         responses: {
@@ -11999,7 +11999,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DataTable"];
+                    "application/json": components["schemas"]["Table"];
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -12007,7 +12007,7 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
-    deleteDataTable: {
+    deleteTable: {
         parameters: {
             query?: never;
             header?: never;
@@ -12032,7 +12032,7 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
-    getDataTableStats: {
+    getTableStats: {
         parameters: {
             query?: never;
             header?: never;
@@ -12052,14 +12052,14 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DataTableStats"];
+                    "application/json": components["schemas"]["TableStats"];
                 };
             };
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
         };
     };
-    insertDataTableRow: {
+    insertTableRow: {
         parameters: {
             query?: never;
             header?: never;
@@ -12083,7 +12083,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DataTableRow"];
+                    "application/json": components["schemas"]["TableRow"];
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -12091,7 +12091,7 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
-    queryDataTableRows: {
+    queryTableRows: {
         parameters: {
             query?: never;
             header?: never;
@@ -12123,7 +12123,7 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
-    searchDataTableRows: {
+    searchTableRows: {
         parameters: {
             query?: never;
             header?: never;
@@ -12155,7 +12155,7 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
-    upsertDataTableRow: {
+    upsertTableRow: {
         parameters: {
             query?: never;
             header?: never;
@@ -12197,7 +12197,7 @@ export interface operations {
             409: components["responses"]["Conflict"];
         };
     };
-    bulkInsertDataTableRows: {
+    bulkInsertTableRows: {
         parameters: {
             query?: never;
             header?: never;
@@ -12229,7 +12229,7 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
-    getDataTableRow: {
+    getTableRow: {
         parameters: {
             query?: never;
             header?: never;
@@ -12250,14 +12250,14 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DataTableRow"];
+                    "application/json": components["schemas"]["TableRow"];
                 };
             };
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
         };
     };
-    deleteDataTableRow: {
+    deleteTableRow: {
         parameters: {
             query?: never;
             header?: never;
@@ -12283,7 +12283,7 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
-    updateDataTableRow: {
+    updateTableRow: {
         parameters: {
             query?: never;
             header?: never;
@@ -12308,7 +12308,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DataTableRow"];
+                    "application/json": components["schemas"]["TableRow"];
                 };
             };
             400: components["responses"]["BadRequest"];

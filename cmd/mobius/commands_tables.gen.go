@@ -15,11 +15,11 @@ import (
 	"github.com/deepnoodle-ai/mobius/mobius/api"
 )
 
-// registerDataTablesCommands registers every generated subcommand in the "data-tables" group.
-func registerDataTablesCommands(app *cli.App) {
-	dataTablesGrp := app.Group("data-tables").Description("Project-scoped data tables and rows")
-	dataTablesGrp.Alias("data-table")
-	dataTablesGrp.Command("bulk-data-table-rows").
+// registerTablesCommands registers every generated subcommand in the "tables" group.
+func registerTablesCommands(app *cli.App) {
+	tablesGrp := app.Group("tables").Description("Project-scoped tables and rows")
+	tablesGrp.Alias("table")
+	tablesGrp.Command("bulk-insert-rows").
 		Description("Bulk insert rows").
 		Args("table-name").
 		Flags(
@@ -36,7 +36,7 @@ func registerDataTablesCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			var body api.BulkInsertDataTableRowsJSONRequestBody
+			var body api.BulkInsertTableRowsJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
 			}
@@ -51,15 +51,15 @@ func registerDataTablesCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.BulkInsertDataTableRowsWithResponse(ctx.Context(), p0, p1, body)
+			resp, err := client.BulkInsertTableRowsWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, "bulkInsertDataTableRows", resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "bulkInsertTableRows", resp.StatusCode(), resp.Body)
 		})
 
-	dataTablesGrp.Command("create-table").
-		Description("Create a data table").
+	tablesGrp.Command("create").
+		Description("Create a table").
 		Flags(
 			cli.String("description", "").Help("description"),
 			cli.String("name", "").Help("[required] name"),
@@ -75,7 +75,7 @@ func registerDataTablesCommands(app *cli.App) {
 			}
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
-			var body api.CreateDataTableJSONRequestBody
+			var body api.CreateTableJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
 			}
@@ -100,15 +100,15 @@ func registerDataTablesCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.CreateDataTableWithResponse(ctx.Context(), p0, body)
+			resp, err := client.CreateTableWithResponse(ctx.Context(), p0, body)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, "createDataTable", resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "createTable", resp.StatusCode(), resp.Body)
 		})
 
-	dataTablesGrp.Command("delete-table").
-		Description("Delete a data table and all its rows").
+	tablesGrp.Command("delete").
+		Description("Delete a table and all its rows").
 		Args("table-name").
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -119,14 +119,14 @@ func registerDataTablesCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			resp, err := client.DeleteDataTableWithResponse(ctx.Context(), p0, p1)
+			resp, err := client.DeleteTableWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, "deleteDataTable", resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "deleteTable", resp.StatusCode(), resp.Body)
 		})
 
-	dataTablesGrp.Command("delete-table-row").
+	tablesGrp.Command("delete-row").
 		Description("Delete a row").
 		Args("table-name", "row-id").
 		Use(requireAuth()).
@@ -139,15 +139,15 @@ func registerDataTablesCommands(app *cli.App) {
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			p2 := ctx.Arg(1)
-			resp, err := client.DeleteDataTableRowWithResponse(ctx.Context(), p0, p1, p2)
+			resp, err := client.DeleteTableRowWithResponse(ctx.Context(), p0, p1, p2)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, "deleteDataTableRow", resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "deleteTableRow", resp.StatusCode(), resp.Body)
 		})
 
-	dataTablesGrp.Command("get-table").
-		Description("Get a data table").
+	tablesGrp.Command("get").
+		Description("Get a table").
 		Args("table-name").
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -158,14 +158,14 @@ func registerDataTablesCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			resp, err := client.GetDataTableWithResponse(ctx.Context(), p0, p1)
+			resp, err := client.GetTableWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, "getDataTable", resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "getTable", resp.StatusCode(), resp.Body)
 		})
 
-	dataTablesGrp.Command("get-table-row").
+	tablesGrp.Command("get-row").
 		Description("Get a row by ID").
 		Args("table-name", "row-id").
 		Use(requireAuth()).
@@ -178,15 +178,15 @@ func registerDataTablesCommands(app *cli.App) {
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			p2 := ctx.Arg(1)
-			resp, err := client.GetDataTableRowWithResponse(ctx.Context(), p0, p1, p2)
+			resp, err := client.GetTableRowWithResponse(ctx.Context(), p0, p1, p2)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, "getDataTableRow", resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "getTableRow", resp.StatusCode(), resp.Body)
 		})
 
-	dataTablesGrp.Command("get-table-stats").
-		Description("Get data table storage stats").
+	tablesGrp.Command("get-stats").
+		Description("Get table storage stats").
 		Args("table-name").
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -197,14 +197,14 @@ func registerDataTablesCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			resp, err := client.GetDataTableStatsWithResponse(ctx.Context(), p0, p1)
+			resp, err := client.GetTableStatsWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, "getDataTableStats", resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "getTableStats", resp.StatusCode(), resp.Body)
 		})
 
-	dataTablesGrp.Command("insert-data-table-row").
+	tablesGrp.Command("insert-row").
 		Description("Insert a row").
 		Args("table-name").
 		Flags(
@@ -221,7 +221,7 @@ func registerDataTablesCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			var body api.InsertDataTableRowJSONRequestBody
+			var body api.InsertTableRowJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
 			}
@@ -236,15 +236,15 @@ func registerDataTablesCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.InsertDataTableRowWithResponse(ctx.Context(), p0, p1, body)
+			resp, err := client.InsertTableRowWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, "insertDataTableRow", resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "insertTableRow", resp.StatusCode(), resp.Body)
 		})
 
-	dataTablesGrp.Command("list-tables").
-		Description("List data tables").
+	tablesGrp.Command("list").
+		Description("List tables").
 		Flags(
 			cli.String("cursor", "").Help("cursor"),
 			cli.Int("limit", "").Help("limit"),
@@ -257,7 +257,7 @@ func registerDataTablesCommands(app *cli.App) {
 			}
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
-			params := &api.ListDataTablesParams{}
+			params := &api.ListTablesParams{}
 			if ctx.IsSet("cursor") {
 				v := api.CursorParam(ctx.String("cursor"))
 				params.Cursor = &v
@@ -266,14 +266,14 @@ func registerDataTablesCommands(app *cli.App) {
 				v := api.LimitParam(ctx.Int("limit"))
 				params.Limit = &v
 			}
-			resp, err := client.ListDataTablesWithResponse(ctx.Context(), p0, params)
+			resp, err := client.ListTablesWithResponse(ctx.Context(), p0, params)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, "listDataTables", resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "listTables", resp.StatusCode(), resp.Body)
 		})
 
-	dataTablesGrp.Command("query-data-table-rows").
+	tablesGrp.Command("query-rows").
 		Description("Query rows").
 		Args("table-name").
 		Flags(
@@ -293,7 +293,7 @@ func registerDataTablesCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			var body api.QueryDataTableRowsJSONRequestBody
+			var body api.QueryTableRowsJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
 			}
@@ -321,14 +321,14 @@ func registerDataTablesCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.QueryDataTableRowsWithResponse(ctx.Context(), p0, p1, body)
+			resp, err := client.QueryTableRowsWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, "queryDataTableRows", resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "queryTableRows", resp.StatusCode(), resp.Body)
 		})
 
-	dataTablesGrp.Command("search-data-table-rows").
+	tablesGrp.Command("search-rows").
 		Description("Search rows").
 		Args("table-name").
 		Flags(
@@ -348,7 +348,7 @@ func registerDataTablesCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			var body api.SearchDataTableRowsJSONRequestBody
+			var body api.SearchTableRowsJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
 			}
@@ -374,15 +374,15 @@ func registerDataTablesCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.SearchDataTableRowsWithResponse(ctx.Context(), p0, p1, body)
+			resp, err := client.SearchTableRowsWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, "searchDataTableRows", resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "searchTableRows", resp.StatusCode(), resp.Body)
 		})
 
-	dataTablesGrp.Command("update-table").
-		Description("Update a data table").
+	tablesGrp.Command("update").
+		Description("Update a table").
 		Args("table-name").
 		Flags(
 			cli.String("description", "").Help("description"),
@@ -399,7 +399,7 @@ func registerDataTablesCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			var body api.UpdateDataTableJSONRequestBody
+			var body api.UpdateTableJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
 			}
@@ -418,14 +418,14 @@ func registerDataTablesCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.UpdateDataTableWithResponse(ctx.Context(), p0, p1, body)
+			resp, err := client.UpdateTableWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, "updateDataTable", resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "updateTable", resp.StatusCode(), resp.Body)
 		})
 
-	dataTablesGrp.Command("update-table-row").
+	tablesGrp.Command("update-row").
 		Description("Update a row (PATCH — merges into existing data)").
 		Args("table-name", "row-id").
 		Flags(
@@ -444,7 +444,7 @@ func registerDataTablesCommands(app *cli.App) {
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			p2 := ctx.Arg(1)
-			var body api.UpdateDataTableRowJSONRequestBody
+			var body api.UpdateTableRowJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
 			}
@@ -463,14 +463,14 @@ func registerDataTablesCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.UpdateDataTableRowWithResponse(ctx.Context(), p0, p1, p2, body)
+			resp, err := client.UpdateTableRowWithResponse(ctx.Context(), p0, p1, p2, body)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, "updateDataTableRow", resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "updateTableRow", resp.StatusCode(), resp.Body)
 		})
 
-	dataTablesGrp.Command("upsert-data-table-row").
+	tablesGrp.Command("upsert-row").
 		Description("Upsert a row").
 		Args("table-name").
 		Flags(
@@ -488,7 +488,7 @@ func registerDataTablesCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			var body api.UpsertDataTableRowJSONRequestBody
+			var body api.UpsertTableRowJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
 			}
@@ -509,11 +509,11 @@ func registerDataTablesCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.UpsertDataTableRowWithResponse(ctx.Context(), p0, p1, body)
+			resp, err := client.UpsertTableRowWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, "upsertDataTableRow", resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "upsertTableRow", resp.StatusCode(), resp.Body)
 		})
 
 }
