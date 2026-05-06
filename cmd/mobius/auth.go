@@ -419,9 +419,11 @@ func runAuthStatus(ctx *cli.Context) error {
 		printSavedCredentialStatus(ctx, auth.Profile)
 	case authSourceEnv:
 		ctx.Println("Auth source: MOBIUS_API_KEY environment variable")
+		printAPIKeyScope(ctx, auth.APIKey)
 		printAuthVerification(ctx, "raw API key")
 	case authSourceFlag:
 		ctx.Println("Auth source: --api-key flag")
+		printAPIKeyScope(ctx, auth.APIKey)
 		printAuthVerification(ctx, "raw API key")
 	default:
 		ctx.Println("Auth source: none")
@@ -429,6 +431,19 @@ func runAuthStatus(ctx *cli.Context) error {
 		ctx.Println("Run `mobius auth login --profile <name>` to sign in from the browser.")
 	}
 	return nil
+}
+
+// printAPIKeyScope surfaces what a raw API key carries — project-pinned vs
+// org-scoped — so "why is my key getting 403s?" stops being a guessing game.
+// Today the server doesn't expose a whoami endpoint, so SA name and agent
+// binding can't be resolved from the key alone; that gap is tracked as a
+// follow-up.
+func printAPIKeyScope(ctx *cli.Context, apiKey string) {
+	if handle, ok := mobius.ProjectHandleFromAPIKey(apiKey); ok {
+		ctx.Printf("Scope: project:%s\n", handle)
+	} else if apiKey != "" {
+		ctx.Println("Scope: org")
+	}
 }
 
 func printSavedCredentialStatus(ctx *cli.Context, cred *authstore.Profile) {
@@ -444,6 +459,17 @@ func printSavedCredentialStatus(ctx *cli.Context, cred *authstore.Profile) {
 	}
 	if cred.CredentialID != "" {
 		ctx.Printf("Credential ID: %s\n", cred.CredentialID)
+	}
+	// Browser-issued profiles carry the user identity; project-pinned
+	// profiles carry the project handle. Surface scope explicitly so the
+	// reader doesn't have to infer it from which fields happen to be set.
+	switch {
+	case cred.ProjectHandle != "" || cred.ProjectID != "":
+		ctx.Printf("Scope: project:%s\n", firstNonEmpty(cred.ProjectHandle, cred.ProjectID))
+	case cred.UserEmail != "" || cred.UserID != "":
+		ctx.Println("Scope: user")
+	default:
+		ctx.Println("Scope: org")
 	}
 	if cred.OrgName != "" || cred.OrgID != "" {
 		ctx.Printf("Org: %s\n", firstNonEmpty(cred.OrgName, cred.OrgID))

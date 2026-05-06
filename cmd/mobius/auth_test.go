@@ -112,6 +112,67 @@ func TestAuthStatusReportsRejectedCredential(t *testing.T) {
 	}
 }
 
+func TestAuthStatusReportsScopeForProjectPinnedAPIKey(t *testing.T) {
+	srv := newAuthProbeServer(t, "mbc_token.my-project", "/v1/projects/my-project/workflows", http.StatusOK)
+	defer srv.Close()
+	t.Setenv("MOBIUS_API_KEY", "mbc_token.my-project")
+	t.Setenv("MOBIUS_API_URL", srv.URL)
+	t.Setenv("MOBIUS_CONFIG_DIR", t.TempDir())
+	resetActiveAuth(t)
+
+	result := newApp().Test(t, cli.TestArgs("auth", "status"))
+	if !result.Success() {
+		t.Fatalf("auth status failed: %v\nstderr: %s", result.Err, result.Stderr)
+	}
+	if !strings.Contains(result.Stdout, "Scope: project:my-project") {
+		t.Fatalf("stdout missing project scope:\n%s", result.Stdout)
+	}
+}
+
+func TestAuthStatusReportsOrgScopeForRawAPIKey(t *testing.T) {
+	srv := newAuthProbeServer(t, "mbx_env", "/v1/projects", http.StatusOK)
+	defer srv.Close()
+	t.Setenv("MOBIUS_API_KEY", "mbx_env")
+	t.Setenv("MOBIUS_API_URL", srv.URL)
+	t.Setenv("MOBIUS_CONFIG_DIR", t.TempDir())
+	resetActiveAuth(t)
+
+	result := newApp().Test(t, cli.TestArgs("auth", "status"))
+	if !result.Success() {
+		t.Fatalf("auth status failed: %v\nstderr: %s", result.Err, result.Stderr)
+	}
+	if !strings.Contains(result.Stdout, "Scope: org") {
+		t.Fatalf("stdout missing org scope:\n%s", result.Stdout)
+	}
+}
+
+func TestAuthStatusReportsUserScopeForBrowserCredential(t *testing.T) {
+	unsetEnv(t, "MOBIUS_API_KEY")
+	unsetEnv(t, "MOBIUS_API_URL")
+	t.Setenv("MOBIUS_CONFIG_DIR", t.TempDir())
+	resetActiveAuth(t)
+	srv := newAuthProbeServer(t, "mbc_saved", "/v1/projects", http.StatusOK)
+	defer srv.Close()
+
+	if err := authstore.Save(&authstore.Credential{
+		Source:    authstore.SourceBrowserLogin,
+		APIURL:    srv.URL,
+		Token:     "mbc_saved",
+		UserEmail: "user@example.invalid",
+		// No project — pure browser-issued user credential.
+	}); err != nil {
+		t.Fatalf("save credential: %v", err)
+	}
+
+	result := newApp().Test(t, cli.TestArgs("auth", "status"))
+	if !result.Success() {
+		t.Fatalf("auth status failed: %v\nstderr: %s", result.Err, result.Stderr)
+	}
+	if !strings.Contains(result.Stdout, "Scope: user") {
+		t.Fatalf("stdout missing user scope:\n%s", result.Stdout)
+	}
+}
+
 func TestAuthProbePathUsesProjectScopedEndpointForPinnedCLIToken(t *testing.T) {
 	tests := []struct {
 		name string
