@@ -22,6 +22,10 @@ type Source string
 
 const (
 	SourceBrowserLogin Source = "browser-login"
+	// SourceAgentInstall marks profiles minted by `mobius agents create
+	// --install-credentials` (or `mobius agents issue-key`). They authenticate
+	// as a service-account-backed agent identity rather than a user.
+	SourceAgentInstall Source = "agent-install"
 )
 
 // ErrNoDefaultProfile is returned when no profile is marked default and no
@@ -29,22 +33,34 @@ const (
 var ErrNoDefaultProfile = errors.New("no default profile")
 
 // Profile is one named CLI credential profile.
+//
+// AgentID and AgentName are populated only for profiles minted by `mobius
+// agents create --install-credentials` (or `mobius agents issue-key`). They
+// let `mobius auth list` and `mobius auth status` distinguish agent
+// credentials from user credentials at a glance — the SA-to-agent join
+// happens server-side at issue time, so the CLI just records what the server
+// reported. ServiceAccountID is the SA backing the credential; for agent
+// profiles it is the SA bound to AgentID, for raw SA-backed profiles
+// (no agent) it is set on its own.
 type Profile struct {
-	Name          string `toml:"-"`
-	Default       bool   `toml:"default,omitempty"`
-	Source        Source `toml:"source,omitempty"`
-	APIURL        string `toml:"endpoint,omitempty"`
-	Token         string `toml:"token,omitempty"`
-	CredentialID  string `toml:"credential_id,omitempty"`
-	OrgID         string `toml:"org_id,omitempty"`
-	OrgName       string `toml:"org_name,omitempty"`
-	ProjectID     string `toml:"project_id,omitempty"`
-	ProjectHandle string `toml:"project,omitempty"`
-	UserID        string `toml:"user_id,omitempty"`
-	UserEmail     string `toml:"user_email,omitempty"`
-	UserName      string `toml:"user_name,omitempty"`
-	CreatedAt     string `toml:"created_at,omitempty"`
-	LastUsedAt    string `toml:"last_used_at,omitempty"`
+	Name             string `toml:"-"`
+	Default          bool   `toml:"default,omitempty"`
+	Source           Source `toml:"source,omitempty"`
+	APIURL           string `toml:"endpoint,omitempty"`
+	Token            string `toml:"token,omitempty"`
+	CredentialID     string `toml:"credential_id,omitempty"`
+	OrgID            string `toml:"org_id,omitempty"`
+	OrgName          string `toml:"org_name,omitempty"`
+	ProjectID        string `toml:"project_id,omitempty"`
+	ProjectHandle    string `toml:"project,omitempty"`
+	UserID           string `toml:"user_id,omitempty"`
+	UserEmail        string `toml:"user_email,omitempty"`
+	UserName         string `toml:"user_name,omitempty"`
+	ServiceAccountID string `toml:"service_account_id,omitempty"`
+	AgentID          string `toml:"agent_id,omitempty"`
+	AgentName        string `toml:"agent_name,omitempty"`
+	CreatedAt        string `toml:"created_at,omitempty"`
+	LastUsedAt       string `toml:"last_used_at,omitempty"`
 }
 
 // Credential is kept as a compatibility alias for older single-profile code.
