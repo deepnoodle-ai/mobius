@@ -6,6 +6,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 
 ## [Unreleased]
 
+## [0.0.20] - 2026-05-06
+
+### Changed
+
+- CLI / SDKs: the `data-tables` command group is renamed to `tables`
+  (alias `table`), and `DataTable` / `DataTableRow` schemas are
+  renamed to `Table` / `TableRow` in all three regenerated clients.
+  Operation IDs follow (`listDataTables` → `listTables`, etc.). URL
+  paths were already `/v1/projects/{project}/tables/...`. The
+  `TriggerKind` wire enum value `"data_table_row"` is now
+  `"table_row"`. (#71)
+- CLI: row commands inside the `tables` group spell their leaves
+  consistently — `query-rows`, `search-rows`, `insert-row`,
+  `upsert-row`, `bulk-insert-rows` — instead of the awkward
+  auto-derived forms (`bulk-table-rows`, `query-table-rows`, etc.).
+
 ## [0.0.19] - 2026-05-06
 
 ### Added
