@@ -764,7 +764,6 @@ paths:
                   action: summarize-document
                   parameters:
                     document_id: ${inputs.document_id}
-                  store: summary
                   next:
                   - step: approve
                 - name: approve
@@ -1071,6 +1070,7 @@ paths:
                   running: 0
                   completed: 0
                   failed: 0
+                  skipped: 0
                   cancelled: 0
                 wait_summary:
                   waiting_paths: 0
@@ -4547,6 +4547,7 @@ paths:
       tags:
       - data-tables
       summary: List data tables
+      description: List project-scoped data tables visible to the caller.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/CursorParam'
@@ -4565,6 +4566,7 @@ paths:
       tags:
       - data-tables
       summary: Create a data table
+      description: Create a project-scoped data table with a typed column schema.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       requestBody:
@@ -4590,6 +4592,7 @@ paths:
       tags:
       - data-tables
       summary: Get a data table
+      description: Get data-table metadata and schema by table name.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/TableNameParam'
@@ -4609,6 +4612,7 @@ paths:
       tags:
       - data-tables
       summary: Update a data table
+      description: Update data-table description or schema and resync declared indexes.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/TableNameParam'
@@ -4636,6 +4640,7 @@ paths:
       tags:
       - data-tables
       summary: Delete a data table and all its rows
+      description: Delete one data table and all rows stored under it.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/TableNameParam'
@@ -4646,12 +4651,37 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
+  /v1/projects/{project}/tables/{table_name}/stats:
+    get:
+      operationId: getDataTableStats
+      tags:
+      - data-tables
+      summary: Get data table storage stats
+      description: 'Returns an operational snapshot for one data table: row count, approximate
+        data/index bytes, declared index shape, and whether the backend search index is present.
+        Values are point-in-time estimates intended for capacity planning and operator UI,
+        not billing.'
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/TableNameParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataTableStats'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /v1/projects/{project}/tables/{table_name}/rows:
     post:
       operationId: insertDataTableRow
       tags:
       - data-tables
       summary: Insert a row
+      description: Validate and insert one row into the named data table.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/TableNameParam'
@@ -4706,6 +4736,36 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
+  /v1/projects/{project}/tables/{table_name}/rows/search:
+    post:
+      operationId: searchDataTableRows
+      tags:
+      - data-tables
+      summary: Search rows
+      description: Full-text keyword search over row data within one data table. Optional
+        field filters use the same syntax as row queries and are applied before text search.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/TableNameParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SearchRowsRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchRowsResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /v1/projects/{project}/tables/{table_name}/rows/upsert:
     post:
       operationId: upsertDataTableRow
@@ -4752,6 +4812,7 @@ paths:
       tags:
       - data-tables
       summary: Bulk insert rows
+      description: Validate and insert up to 1,000 rows into the named data table.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/TableNameParam'
@@ -4780,6 +4841,7 @@ paths:
       tags:
       - data-tables
       summary: Get a row by ID
+      description: Get one data-table row by row ID.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/TableNameParam'
@@ -4804,6 +4866,8 @@ paths:
       tags:
       - data-tables
       summary: Update a row (PATCH — merges into existing data)
+      description: Validate and merge fields into an existing row, optionally checking the
+        current row version.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/TableNameParam'
@@ -4838,6 +4902,7 @@ paths:
       tags:
       - data-tables
       summary: Delete a row
+      description: Delete one row from the named data table.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/TableNameParam'
@@ -5702,6 +5767,35 @@ components:
       - input
       description: 'Interaction kind: `approval` captures a decision, `review` captures acknowledgement
         or notes, and `input` collects free-form data.'
+    InteractionOrigin:
+      type: string
+      enum:
+      - manual
+      - workflow_step
+      - job_scoped
+      - system
+      description: Server-derived origin of the interaction.
+    InteractionSource:
+      type: object
+      additionalProperties: false
+      required:
+      - type
+      - id
+      description: Server-derived actor or system context that requested the interaction.
+        Public create requests do not supply this field.
+      properties:
+        type:
+          type: string
+          enum:
+          - user
+          - agent
+          - workflow
+          - system
+          - integration
+        id:
+          type: string
+        display_name:
+          type: string
     InteractionTarget:
       type: object
       required:
@@ -5909,6 +6003,7 @@ components:
       - id
       - type
       - status
+      - origin
       - target
       - created_at
       - updated_at
@@ -5936,6 +6031,11 @@ components:
           - cancelled
           description: 'Current status of the interaction: pending, completed, expired, or
             cancelled.'
+        origin:
+          $ref: '#/components/schemas/InteractionOrigin'
+        source:
+          $ref: '#/components/schemas/InteractionSource'
+          nullable: true
         message:
           type: string
           nullable: true
@@ -6161,14 +6261,11 @@ components:
           items:
             $ref: '#/components/schemas/WorkflowInput'
         outputs:
-          type: array
-          description: Declared output values produced by this workflow.
-          items:
-            $ref: '#/components/schemas/WorkflowOutput'
-        state:
           type: object
-          additionalProperties: true
-          description: Initial workflow state.
+          description: Declared terminal contract. Compact values are expressions; long-form
+            values may include value/schema/description.
+          additionalProperties:
+            $ref: '#/components/schemas/WorkflowOutput'
         steps:
           type: array
           description: Ordered list of steps that make up this workflow.
@@ -6194,34 +6291,36 @@ components:
         default:
           description: Optional default value.
     WorkflowOutput:
-      type: object
-      description: Declares one named output value produced by a workflow spec.
-      required:
-      - name
-      - variable
-      additionalProperties: false
-      properties:
-        name:
-          type: string
-          description: Output name exposed to callers and downstream steps.
-        variable:
-          type: string
-          description: State variable name whose value is mapped to this output.
-        branch:
-          type: string
-          description: Defaults to `main` when omitted.
-        description:
-          type: string
-          description: Human-readable description of this output value.
+      description: Declares one output value produced by a workflow spec.
+      oneOf:
+      - type: string
+        description: Compact expression form, e.g. `${steps.summarize.result.text}`.
+      - type: object
+        required:
+        - value
+        additionalProperties: false
+        properties:
+          value:
+            description: Expression or literal output value.
+          schema:
+            type: object
+            additionalProperties: true
+            description: Optional JSON Schema for this output.
+          description:
+            type: string
+            description: Human-readable description of this output value.
     WorkflowStep:
-      description: A workflow step. Exactly one step shape should be used. Step variants are
-        identified by their distinctive required property (`action`, `join`, `wait_signal`,
-        `sleep`, `pause`, or `interaction`). The current authored shape intentionally does
-        not add a separate discriminator field, so existing workflow YAML stays compact.
+      description: 'A workflow step. Exactly one step shape should be used. Step variants
+        are identified by their distinctive required property (`action`, `type: set`, `join`,
+        `wait_signal`, `wait_event`, `sleep`, `pause`, or `interaction`). The current authored
+        shape intentionally does not add a separate discriminator field, so existing workflow
+        YAML stays compact.'
       oneOf:
       - $ref: '#/components/schemas/WorkflowExecutableStep'
+      - $ref: '#/components/schemas/WorkflowSetStep'
       - $ref: '#/components/schemas/WorkflowJoinStep'
       - $ref: '#/components/schemas/WorkflowWaitSignalStep'
+      - $ref: '#/components/schemas/WorkflowWaitEventStep'
       - $ref: '#/components/schemas/WorkflowSleepStep'
       - $ref: '#/components/schemas/WorkflowPauseStep'
       - $ref: '#/components/schemas/WorkflowInteractionStep'
@@ -6239,7 +6338,7 @@ components:
           description: Vertical position of the step in the editor canvas.
     WorkflowExecutableStep:
       type: object
-      description: Executes a worker or server action and stores its result in workflow state.
+      description: Executes a worker or server action and exposes its result at `steps.<name>.result`.
       additionalProperties: false
       required:
       - name
@@ -6275,9 +6374,12 @@ components:
           $ref: '#/components/schemas/WorkflowActionKind'
           description: Whether `action` is handled by a worker or by a Mobius-managed server
             action.
-        store:
-          type: string
-          description: State variable name where the action result is stored.
+        bind:
+          type: object
+          additionalProperties:
+            type: string
+          description: Optional writes to top-level `vars.*` keys, evaluated after the step
+            completes. Targets must look like `vars.foo`.
         parameters:
           type: object
           additionalProperties: true
@@ -6297,6 +6399,41 @@ components:
         action: summarize-document
         parameters:
           doc_id: ${inputs.doc_id}
+    WorkflowSetStep:
+      type: object
+      description: Binds one or more top-level vars and produces the bound object as this
+        step's result.
+      additionalProperties: false
+      required:
+      - name
+      - type
+      - vars
+      properties:
+        name:
+          type: string
+          description: Unique step name within the workflow, used for routing and logging.
+        type:
+          type: string
+          enum:
+          - set
+        description:
+          type: string
+        next:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkflowEdge'
+        edge_matching_strategy:
+          $ref: '#/components/schemas/WorkflowEdgeMatchingStrategy'
+        each:
+          $ref: '#/components/schemas/WorkflowEach'
+        layout:
+          $ref: '#/components/schemas/WorkflowStepLayout'
+        vars:
+          type: object
+          minProperties: 1
+          additionalProperties: true
+          description: 'Bindings keyed by top-level vars key. `repo: ${steps.fetch.result}`
+            writes `vars.repo`.'
     WorkflowJoinStep:
       type: object
       description: Waits for one or more parallel branches before continuing.
@@ -6359,6 +6496,40 @@ components:
         wait_signal:
           $ref: '#/components/schemas/WorkflowWaitSignalConfig'
           description: Signal topic, timeout, and storage behavior for this suspension.
+    WorkflowWaitEventStep:
+      type: object
+      description: Suspends a branch until an integration event of the configured type is
+        delivered to the project and (optionally) satisfies an `expr` predicate over its payload.
+        Same operational model as `wait_signal` but matches against the event bus directly,
+        without requiring a separate `signal_run` trigger.
+      additionalProperties: false
+      required:
+      - name
+      - wait_event
+      properties:
+        name:
+          type: string
+          description: Unique step name within the workflow, used for routing and logging.
+        description:
+          type: string
+          description: Optional human-readable description of what this step does.
+        next:
+          type: array
+          description: Outbound edges controlling which step executes after this one.
+          items:
+            $ref: '#/components/schemas/WorkflowEdge'
+        edge_matching_strategy:
+          $ref: '#/components/schemas/WorkflowEdgeMatchingStrategy'
+          description: How outbound edge conditions are evaluated after the event arrives.
+        each:
+          $ref: '#/components/schemas/WorkflowEach'
+          description: Optional fan-out configuration for repeated event waits.
+        layout:
+          $ref: '#/components/schemas/WorkflowStepLayout'
+          description: Optional visual-editor position hint; ignored by the execution engine.
+        wait_event:
+          $ref: '#/components/schemas/WorkflowWaitEventConfig'
+          description: Event type, condition, timeout, and storage behavior for this suspension.
     WorkflowSleepStep:
       type: object
       description: Suspends a branch for a fixed duration before continuing.
@@ -6546,9 +6717,6 @@ components:
         next:
           type: string
           description: Step name to transition to when this clause is matched.
-        store:
-          type: string
-          description: State variable name where the caught error is stored.
     WorkflowJoinConfig:
       type: object
       additionalProperties: false
@@ -6564,11 +6732,10 @@ components:
           minimum: 0
           description: Minimum number of branches that must complete. Defaults to all listed
             branches.
-        branch_mappings:
+        result:
           type: object
-          additionalProperties:
-            type: string
-          description: Maps branch names to variable names for storing per-branch results.
+          additionalProperties: true
+          description: Explicit object this join produces. Expressions may read `branch.<branch>.<step>.result`.
     WorkflowWaitSignalConfig:
       type: object
       required:
@@ -6583,13 +6750,38 @@ components:
         timeout:
           type: string
           description: Maximum wait duration as a Go duration string (e.g. "24h", "30m").
-        store:
-          type: string
-          description: Variable name to store the signal payload in after resumption.
         on_timeout:
           type: string
           description: Step name to transition to if the timeout elapses without a signal.
             Fails the run if omitted.
+    WorkflowWaitEventConfig:
+      type: object
+      required:
+      - event_type
+      - timeout
+      additionalProperties: false
+      description: Suspends the run until an integration event matching `event_type` (and
+        `condition`, when provided) is delivered to the project. `event_type` is prefix-matched
+        against the delivered event, mirroring trigger semantics — `github.pull_request` matches
+        `.opened`, `.closed`, etc.
+      properties:
+        event_type:
+          type: string
+          description: Integration event type (or prefix) to wait for, e.g. `github.pull_request.closed`
+            or `stripe.invoice.paid`.
+        condition:
+          type: string
+          description: Optional bare-form `expr` predicate over `{ event, meta, inputs, steps,
+            vars, each, run }`. The event resumes the step only when the expression evaluates
+            truthy. Empty means "any event of the matching type resumes". Predicate fields
+            use bare `expr`; `${...}` templating is reserved for value-producing fields.
+        timeout:
+          type: string
+          description: Maximum wait duration as a Go duration string (e.g. "24h", "30m").
+        on_timeout:
+          type: string
+          description: Step name to transition to if the timeout elapses without a matching
+            event. Fails the run if omitted.
     WorkflowSleepConfig:
       type: object
       description: Configuration for a sleep step.
@@ -6850,6 +7042,7 @@ components:
       - pause
       - join
       - retry
+      - wait_event
       description: What a waiting path is blocked on.
     WorkflowRunWaitDetail:
       type: object
@@ -6889,6 +7082,15 @@ components:
         max_attempts:
           type: integer
           description: Maximum attempts for `retry` waits.
+        event_type:
+          type: string
+          description: Event type pattern this path is waiting for. Set when `kind` is `wait_event`.
+            Matches integration events using the same prefix rule event triggers apply.
+        condition:
+          type: string
+          description: Optional `expr` predicate the matching event must satisfy before resuming
+            the path. Set when `kind` is `wait_event`; empty when any event of the matching
+            type resumes.
     WorkflowRunPath:
       type: object
       additionalProperties: false
@@ -6995,6 +7197,7 @@ components:
       - running
       - completed
       - failed
+      - skipped
       - cancelled
       description: Aggregate count of run-step rows for this run grouped by status. Counts
         every attempt of every step (one row per step x attempt x path), so it reflects durable
@@ -7008,6 +7211,8 @@ components:
         completed:
           type: integer
         failed:
+          type: integer
+        skipped:
           type: integer
         cancelled:
           type: integer
@@ -7164,9 +7369,11 @@ components:
           - run_cancelled
           - step_failed
           - run_failed
+          - output_extraction_failed
+          - output_validation_failed
           description: 'Typed run-level failure cause: `run_timeout`, `run_cancelled`, `step_failed`,
-            or `run_failed`. Its own vocabulary, not a superset of the job-level `error_type`.
-            Present when `status=failed`.'
+            `run_failed`, `output_extraction_failed`, or `output_validation_failed`. Its own
+            vocabulary, not a superset of the job-level `error_type`. Present when `status=failed`.'
         resolved_config:
           $ref: '#/components/schemas/ResolvedConfig'
           description: Run-level cascade config frozen when the run was started.
@@ -7243,6 +7450,7 @@ components:
       - running
       - completed
       - failed
+      - skipped
       - cancelled
     RunStep:
       type: object
@@ -7301,10 +7509,19 @@ components:
         status:
           allOf:
           - $ref: '#/components/schemas/RunStepStatus'
+        reason:
+          type: string
+          description: Optional suppression reason, most commonly set when status is `skipped`.
         parameters:
           type: object
           description: Resolved parameters/input for this step attempt.
           additionalProperties: true
+        bindings:
+          type: array
+          description: Vars written by this step, with the source expression used for each
+            binding.
+          items:
+            $ref: '#/components/schemas/RunStepBinding'
         job_id:
           type: string
           description: Linked live worker job when one exists. Terminal jobs may be reaped
@@ -7340,6 +7557,19 @@ components:
         updated_at:
           type: string
           format: date-time
+    RunStepBinding:
+      type: object
+      additionalProperties: false
+      required:
+      - var
+      - source
+      properties:
+        var:
+          type: string
+          description: Bound top-level vars path, e.g. `vars.repo`.
+        source:
+          type: string
+          description: Source expression or literal used to produce the bound value.
     RunStepListResponse:
       type: object
       description: Paginated durable run-step history. Use this response for historical run
@@ -8704,13 +8934,10 @@ components:
           type: object
           additionalProperties:
             type: string
-          description: '(launch_run only) Maps workflow input names to expressions evaluated
-            against the event environment (`{ meta, event }`). Values use Mobius''s `${expr}`
-            template syntax — pure expressions (`${event.actor.id}`) preserve their native
-            type, mixed templates (`Bearer ${meta.id}`) always render to a string, and other
-            literals pass through as-is. Legacy JSONPath-like values (`$.…`) and unwrapped
-            `event.` / `meta.` references are rejected with 400 on create/update. Example:
-            `{"user_id": "${event.actor.id}"}`.'
+          description: |-
+            (launch_run only) Maps workflow input names to expressions evaluated against the event environment (`{ meta, event }`). Values use Mobius's `${expr}` template syntax — pure expressions (`${event.actor.id}`) preserve their native type, mixed templates (`Bearer ${meta.id}`) always render to a string, and other literals pass through as-is. Legacy JSONPath-like values (`$.…`) and unwrapped `event.` / `meta.` references are rejected with 400 on create/update.
+
+            Resolution is fail-closed: an expression that references a missing field (`${event.pull_request.merged_by.login}` on an event without `merged_by`) fails the dispatch with `input_resolution_error` naming the offending key. No run is launched. Author expressions to reference only fields you expect to be present. Example: `{"user_id": "${event.actor.id}"}`.
         external_id_template:
           type: string
           description: '(launch_run only) `${expr}` template that derives the new run''s `external_id`
@@ -8728,6 +8955,9 @@ components:
             type: string
           description: (signal_run only) Maps the signal payload keys to expressions evaluated
             against the event environment. Available to the workflow as `signal.payload`.
+            Resolution is fail-closed — an expression that references a missing field fails
+            the target with `signal_payload_resolution_error` (the signal-side analogue of
+            `input_mapping`'s `input_resolution_error`) and the signal is not delivered.
         enabled:
           type: boolean
           description: When false, this target is paused and will not fire.
@@ -8866,12 +9096,25 @@ components:
       additionalProperties: false
       required:
       - target_id
+      - kind
       - status
-      description: Outcome of a single target within a trigger fire activation.
+      description: Outcome of a single target within a trigger fire activation. `kind` discriminates
+        the result shape so consumers can branch on it instead of inferring from optional
+        fields like `workflow_id` or `external_id_resolved`.
       properties:
         target_id:
           type: string
           description: ID of the trigger target that was evaluated.
+        kind:
+          type: string
+          enum:
+          - launch_run
+          - signal_run
+          default: launch_run
+          description: Effect kind of the evaluated target. `launch_run` started (or attempted)
+            a new workflow run; `signal_run` delivered (or attempted to deliver) a signal
+            to an existing run. Lets clients reliably branch on `kind` instead of inspecting
+            optional fields like `workflow_id` or `external_id_resolved`.
         workflow_id:
           type: string
           description: ID of the workflow definition that was started or attempted. Present
@@ -8886,7 +9129,21 @@ components:
           description: 'Outcome for this target: `success`, `skipped`, or `failed`.'
         error:
           type: string
-          description: Error detail when status is `failed`.
+          description: Error detail when status is `failed`. Empty for `success` and `skipped`
+            results — `skipped` causes go in `reason` instead. Pre-split historical rows persisted
+            skip causes here, so consumers should fall back to `error` when `reason` is empty
+            on a skipped row.
+        reason:
+          type: string
+          description: 'Why the target was skipped, when status is `skipped`. Examples: `condition
+            false`, `target disabled`, `no run matching external_id <id>`. Empty for `success`
+            and `failed` results.'
+        external_id_resolved:
+          type: string
+          description: Rendered value of the target's `external_id_template` (launch_run)
+            or `run_selector.external_id_template` (signal_run). Lets operators verify the
+            two templates produce matching strings without re-deriving them by hand. Absent
+            when the target has no template or when rendering failed before a value was produced.
     ScheduleSourceConfig:
       type: object
       additionalProperties: false
@@ -9162,6 +9419,7 @@ components:
       additionalProperties: false
       required:
       - target_id
+      - kind
       - status
       - would_launch
       description: Per-target outcome of a test-fire. Mirrors TriggerFireTargetResult but
@@ -9171,9 +9429,18 @@ components:
         target_id:
           type: string
           description: ID of the trigger target this result is for.
+        kind:
+          type: string
+          enum:
+          - launch_run
+          - signal_run
+          description: 'Effect kind of this target. Discriminates which resolved field is
+            populated: `launch_run` populates `input_mapping_resolved`; `signal_run` populates
+            `signal_payload_resolved`.'
         workflow_id:
           type: string
-          description: Workflow definition the target points at.
+          description: Workflow definition the target points at. Present only for `launch_run`
+            targets.
         enabled:
           type: boolean
           description: Whether the target is enabled. Disabled targets are skipped without
@@ -9183,21 +9450,47 @@ components:
         input_mapping_resolved:
           type: object
           additionalProperties: true
-          description: Resolved input map handed to the workflow.
+          description: (launch_run only) Resolved input map handed to the workflow.
+        signal_payload_resolved:
+          type: object
+          additionalProperties: true
+          description: (signal_run only) Resolved signal payload that would be delivered to
+            the matched run's `wait_signal` step.
         input_resolution_error:
           type: string
-          description: Error encountered resolving input_mapping, when one occurred.
+          description: Error encountered resolving the target's `input_mapping` for a `launch_run`
+            target. `signal_run` targets report `signal_payload_mapping` failures via `signal_payload_resolution_error`
+            instead, so clients can distinguish which resolution step failed without parsing
+            the error string. Errors rendering the run-selector template (`run_selector.external_id_template`
+            for `signal_run`, or the `external_id_template` for `launch_run`) surface in `launch_error`.
+        signal_payload_resolution_error:
+          type: string
+          description: (signal_run only) Error encountered resolving `signal_payload_mapping`
+            — the payload that would be delivered to the matched run's `wait_signal` step
+            (and exposed under `signal_payload_resolved`). Reported separately from `input_resolution_error`
+            so clients don't reuse launch-run-specific fields for signal failures.
+        external_id_resolved:
+          type: string
+          description: Rendered value of `external_id_template` (launch_run) or `run_selector.external_id_template`
+            (signal_run). Lets authors verify the two templates produce matching strings.
+            Absent when the target has no template or rendering failed.
         would_launch:
           type: boolean
-          description: True when the target would launch a run (or signal a run once `signal_run`
-            lands). False for disabled targets and for targets whose condition evaluated to
-            false.
+          description: True when the target would launch a run (`launch_run`) or signal an
+            existing run (`signal_run`). False for disabled targets and targets whose condition
+            evaluated to false.
         run_id:
           type: string
-          description: ID of the launched run (only set in execute mode).
+          description: ID of the launched (`launch_run`) or signaled (`signal_run`) run. Only
+            set in execute mode.
+        reason:
+          type: string
+          description: Why the target was skipped, when status is `skipped`. Empty for `success`
+            and `failed` results.
         launch_error:
           type: string
-          description: Error from the launcher when execute mode failed to start the run.
+          description: Error from the launcher (`launch_run`) or signal sender (`signal_run`)
+            when execute mode failed to act on the target.
     TriggerFireListResponse:
       type: object
       additionalProperties: false
@@ -11908,6 +12201,11 @@ components:
         unique:
           type: boolean
           default: false
+        indexed:
+          type: boolean
+          default: false
+          description: Marks the column as an expected filter/sort field so backends can maintain
+            efficient indexes.
         default:
           description: Default value applied when column is absent on insert
         description:
@@ -11994,6 +12292,45 @@ components:
           type: boolean
         next_cursor:
           type: string
+    DataTableStats:
+      type: object
+      required:
+      - table_id
+      - row_count
+      - approx_data_bytes
+      - approx_index_bytes
+      - indexed_column_count
+      - declared_index_count
+      - search_index_present
+      - generated_at
+      additionalProperties: false
+      properties:
+        table_id:
+          type: string
+        row_count:
+          type: integer
+          format: int64
+        approx_data_bytes:
+          type: integer
+          format: int64
+        approx_index_bytes:
+          type: integer
+          format: int64
+        indexed_column_count:
+          type: integer
+        declared_index_count:
+          type: integer
+        search_index_present:
+          type: boolean
+        generated_at:
+          type: string
+          format: date-time
+        oldest_row_created_at:
+          type: string
+          format: date-time
+        newest_row_updated_at:
+          type: string
+          format: date-time
     CreateDataTableRequest:
       type: object
       required:
@@ -12096,10 +12433,9 @@ components:
           minimum: 1
           maximum: 1000
           default: 100
-        offset:
-          type: integer
-          minimum: 0
-          default: 0
+        cursor:
+          type: string
+          description: Opaque cursor from a prior response.
     QueryRowsResponse:
       type: object
       required:
@@ -12114,8 +12450,46 @@ components:
           type: boolean
         limit:
           type: integer
-        offset:
+        next_cursor:
+          type: string
+    SearchRowsRequest:
+      type: object
+      required:
+      - query
+      additionalProperties: false
+      properties:
+        query:
+          type: string
+          minLength: 1
+          description: Keyword search query.
+        filter:
+          type: object
+          additionalProperties: true
+          description: Optional column equality or operator filter applied before text search.
+        limit:
           type: integer
+          minimum: 1
+          maximum: 1000
+          default: 100
+        cursor:
+          type: string
+          description: Opaque cursor from a prior search response.
+    SearchRowsResponse:
+      type: object
+      required:
+      - rows
+      - has_more
+      properties:
+        rows:
+          type: array
+          items:
+            $ref: '#/components/schemas/DataTableRow'
+        has_more:
+          type: boolean
+        limit:
+          type: integer
+        next_cursor:
+          type: string
     BulkInsertRowsRequest:
       type: object
       required:

@@ -845,6 +845,30 @@ func (e InteractionMode) Valid() bool {
 	}
 }
 
+// Defines values for InteractionOrigin.
+const (
+	InteractionOriginJobScoped    InteractionOrigin = "job_scoped"
+	InteractionOriginManual       InteractionOrigin = "manual"
+	InteractionOriginSystem       InteractionOrigin = "system"
+	InteractionOriginWorkflowStep InteractionOrigin = "workflow_step"
+)
+
+// Valid indicates whether the value is a known member of the InteractionOrigin enum.
+func (e InteractionOrigin) Valid() bool {
+	switch e {
+	case InteractionOriginJobScoped:
+		return true
+	case InteractionOriginManual:
+		return true
+	case InteractionOriginSystem:
+		return true
+	case InteractionOriginWorkflowStep:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for InteractionResponderType.
 const (
 	InteractionResponderTypeAgent InteractionResponderType = "agent"
@@ -875,6 +899,33 @@ func (e InteractionResponseResponderType) Valid() bool {
 	case InteractionResponseResponderTypeAgent:
 		return true
 	case InteractionResponseResponderTypeUser:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for InteractionSourceType.
+const (
+	InteractionSourceTypeAgent       InteractionSourceType = "agent"
+	InteractionSourceTypeIntegration InteractionSourceType = "integration"
+	InteractionSourceTypeSystem      InteractionSourceType = "system"
+	InteractionSourceTypeUser        InteractionSourceType = "user"
+	InteractionSourceTypeWorkflow    InteractionSourceType = "workflow"
+)
+
+// Valid indicates whether the value is a known member of the InteractionSourceType enum.
+func (e InteractionSourceType) Valid() bool {
+	switch e {
+	case InteractionSourceTypeAgent:
+		return true
+	case InteractionSourceTypeIntegration:
+		return true
+	case InteractionSourceTypeSystem:
+		return true
+	case InteractionSourceTypeUser:
+		return true
+	case InteractionSourceTypeWorkflow:
 		return true
 	default:
 		return false
@@ -1188,6 +1239,7 @@ const (
 	RunStepStatusFailed    RunStepStatus = "failed"
 	RunStepStatusPending   RunStepStatus = "pending"
 	RunStepStatusRunning   RunStepStatus = "running"
+	RunStepStatusSkipped   RunStepStatus = "skipped"
 )
 
 // Valid indicates whether the value is a known member of the RunStepStatus enum.
@@ -1202,6 +1254,8 @@ func (e RunStepStatus) Valid() bool {
 	case RunStepStatusPending:
 		return true
 	case RunStepStatusRunning:
+		return true
+	case RunStepStatusSkipped:
 		return true
 	default:
 		return false
@@ -1343,6 +1397,24 @@ func (e SystemTextBlockType) Valid() bool {
 	}
 }
 
+// Defines values for TestFireTargetResultKind.
+const (
+	TestFireTargetResultKindLaunchRun TestFireTargetResultKind = "launch_run"
+	TestFireTargetResultKindSignalRun TestFireTargetResultKind = "signal_run"
+)
+
+// Valid indicates whether the value is a known member of the TestFireTargetResultKind enum.
+func (e TestFireTargetResultKind) Valid() bool {
+	switch e {
+	case TestFireTargetResultKindLaunchRun:
+		return true
+	case TestFireTargetResultKindSignalRun:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for TestFireTargetStatus.
 const (
 	TestFireTargetStatusFailed  TestFireTargetStatus = "failed"
@@ -1463,6 +1535,24 @@ func (e TriggerFireStatus) Valid() bool {
 	case TriggerFireStatusSkipped:
 		return true
 	case TriggerFireStatusSuccess:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for TriggerFireTargetResultKind.
+const (
+	TriggerFireTargetResultKindLaunchRun TriggerFireTargetResultKind = "launch_run"
+	TriggerFireTargetResultKindSignalRun TriggerFireTargetResultKind = "signal_run"
+)
+
+// Valid indicates whether the value is a known member of the TriggerFireTargetResultKind enum.
+func (e TriggerFireTargetResultKind) Valid() bool {
+	switch e {
+	case TriggerFireTargetResultKindLaunchRun:
+		return true
+	case TriggerFireTargetResultKindSignalRun:
 		return true
 	default:
 		return false
@@ -1720,15 +1810,21 @@ func (e WorkflowRetryJitterStrategy) Valid() bool {
 
 // Defines values for WorkflowRunErrorType.
 const (
-	WorkflowRunErrorTypeRunCancelled WorkflowRunErrorType = "run_cancelled"
-	WorkflowRunErrorTypeRunFailed    WorkflowRunErrorType = "run_failed"
-	WorkflowRunErrorTypeRunTimeout   WorkflowRunErrorType = "run_timeout"
-	WorkflowRunErrorTypeStepFailed   WorkflowRunErrorType = "step_failed"
+	WorkflowRunErrorTypeOutputExtractionFailed WorkflowRunErrorType = "output_extraction_failed"
+	WorkflowRunErrorTypeOutputValidationFailed WorkflowRunErrorType = "output_validation_failed"
+	WorkflowRunErrorTypeRunCancelled           WorkflowRunErrorType = "run_cancelled"
+	WorkflowRunErrorTypeRunFailed              WorkflowRunErrorType = "run_failed"
+	WorkflowRunErrorTypeRunTimeout             WorkflowRunErrorType = "run_timeout"
+	WorkflowRunErrorTypeStepFailed             WorkflowRunErrorType = "step_failed"
 )
 
 // Valid indicates whether the value is a known member of the WorkflowRunErrorType enum.
 func (e WorkflowRunErrorType) Valid() bool {
 	switch e {
+	case WorkflowRunErrorTypeOutputExtractionFailed:
+		return true
+	case WorkflowRunErrorTypeOutputValidationFailed:
+		return true
 	case WorkflowRunErrorTypeRunCancelled:
 		return true
 	case WorkflowRunErrorTypeRunFailed:
@@ -1744,15 +1840,21 @@ func (e WorkflowRunErrorType) Valid() bool {
 
 // Defines values for WorkflowRunDetailErrorType.
 const (
-	WorkflowRunDetailErrorTypeRunCancelled WorkflowRunDetailErrorType = "run_cancelled"
-	WorkflowRunDetailErrorTypeRunFailed    WorkflowRunDetailErrorType = "run_failed"
-	WorkflowRunDetailErrorTypeRunTimeout   WorkflowRunDetailErrorType = "run_timeout"
-	WorkflowRunDetailErrorTypeStepFailed   WorkflowRunDetailErrorType = "step_failed"
+	WorkflowRunDetailErrorTypeOutputExtractionFailed WorkflowRunDetailErrorType = "output_extraction_failed"
+	WorkflowRunDetailErrorTypeOutputValidationFailed WorkflowRunDetailErrorType = "output_validation_failed"
+	WorkflowRunDetailErrorTypeRunCancelled           WorkflowRunDetailErrorType = "run_cancelled"
+	WorkflowRunDetailErrorTypeRunFailed              WorkflowRunDetailErrorType = "run_failed"
+	WorkflowRunDetailErrorTypeRunTimeout             WorkflowRunDetailErrorType = "run_timeout"
+	WorkflowRunDetailErrorTypeStepFailed             WorkflowRunDetailErrorType = "step_failed"
 )
 
 // Valid indicates whether the value is a known member of the WorkflowRunDetailErrorType enum.
 func (e WorkflowRunDetailErrorType) Valid() bool {
 	switch e {
+	case WorkflowRunDetailErrorTypeOutputExtractionFailed:
+		return true
+	case WorkflowRunDetailErrorTypeOutputValidationFailed:
+		return true
 	case WorkflowRunDetailErrorTypeRunCancelled:
 		return true
 	case WorkflowRunDetailErrorTypeRunFailed:
@@ -1819,6 +1921,7 @@ const (
 	WorkflowRunWaitKindRetry       WorkflowRunWaitKind = "retry"
 	WorkflowRunWaitKindSignal      WorkflowRunWaitKind = "signal"
 	WorkflowRunWaitKindSleep       WorkflowRunWaitKind = "sleep"
+	WorkflowRunWaitKindWaitEvent   WorkflowRunWaitKind = "wait_event"
 )
 
 // Valid indicates whether the value is a known member of the WorkflowRunWaitKind enum.
@@ -1835,6 +1938,23 @@ func (e WorkflowRunWaitKind) Valid() bool {
 	case WorkflowRunWaitKindSignal:
 		return true
 	case WorkflowRunWaitKindSleep:
+		return true
+	case WorkflowRunWaitKindWaitEvent:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for WorkflowSetStepType.
+const (
+	WorkflowSetStepTypeSet WorkflowSetStepType = "set"
+)
+
+// Valid indicates whether the value is a known member of the WorkflowSetStepType enum.
+func (e WorkflowSetStepType) Valid() bool {
+	switch e {
+	case WorkflowSetStepTypeSet:
 		return true
 	default:
 		return false
@@ -2735,10 +2855,13 @@ type ColumnDef struct {
 	Default     interface{} `json:"default,omitempty"`
 	Deprecated  *bool       `json:"deprecated,omitempty"`
 	Description *string     `json:"description,omitempty"`
-	Name        string      `json:"name"`
-	Required    *bool       `json:"required,omitempty"`
-	Type        ColumnType  `json:"type"`
-	Unique      *bool       `json:"unique,omitempty"`
+
+	// Indexed Marks the column as an expected filter/sort field so backends can maintain efficient indexes.
+	Indexed  *bool      `json:"indexed,omitempty"`
+	Name     string     `json:"name"`
+	Required *bool      `json:"required,omitempty"`
+	Type     ColumnType `json:"type"`
+	Unique   *bool      `json:"unique,omitempty"`
 }
 
 // ColumnType defines model for ColumnType.
@@ -3321,6 +3444,20 @@ type DataTableSchema struct {
 	Indexes *[]IndexDef `json:"indexes,omitempty"`
 }
 
+// DataTableStats defines model for DataTableStats.
+type DataTableStats struct {
+	ApproxDataBytes    int64      `json:"approx_data_bytes"`
+	ApproxIndexBytes   int64      `json:"approx_index_bytes"`
+	DeclaredIndexCount int        `json:"declared_index_count"`
+	GeneratedAt        time.Time  `json:"generated_at"`
+	IndexedColumnCount int        `json:"indexed_column_count"`
+	NewestRowUpdatedAt *time.Time `json:"newest_row_updated_at,omitempty"`
+	OldestRowCreatedAt *time.Time `json:"oldest_row_created_at,omitempty"`
+	RowCount           int64      `json:"row_count"`
+	SearchIndexPresent bool       `json:"search_index_present"`
+	TableId            string     `json:"table_id"`
+}
+
 // EmailSourceConfig Source configuration for `email` triggers.
 type EmailSourceConfig struct {
 	// AgentId ID of the agent whose inbox fires this trigger. When omitted, any agent inbox in the project can fire the trigger.
@@ -3680,6 +3817,9 @@ type Interaction struct {
 	// Message Human-readable message shown to the responder when supplied.
 	Message *string `json:"message,omitempty"`
 
+	// Origin Server-derived origin of the interaction.
+	Origin InteractionOrigin `json:"origin"`
+
 	// Outcome Free-form JSON payload. Used both for responder-supplied values and for policy-derived values (e.g. `Interaction.outcome`, `ResolutionPolicy.proposal`); each consumer documents which.
 	Outcome *InteractionValue `json:"outcome,omitempty"`
 
@@ -3709,6 +3849,9 @@ type Interaction struct {
 
 	// SignalName Signal name used to resume the originating run when run-backed.
 	SignalName *string `json:"signal_name,omitempty"`
+
+	// Source Server-derived actor or system context that requested the interaction. Public create requests do not supply this field.
+	Source *InteractionSource `json:"source,omitempty"`
 
 	// Spec Declarative dialog contract for rendering and validating an interaction. Used at both authoring time (inside a workflow definition) and runtime (persisted on an interaction). Compatibility rules are enforced server-side:
 	//
@@ -3784,6 +3927,9 @@ type InteractionOption struct {
 	Value string `json:"value"`
 }
 
+// InteractionOrigin Server-derived origin of the interaction.
+type InteractionOrigin string
+
 // InteractionResponder Identifies who answered an interaction. Groups cannot themselves respond — only a user within a group — so `group` is not a valid responder type.
 type InteractionResponder struct {
 	// Id User ID for user; agent ID for agent.
@@ -3825,6 +3971,16 @@ type InteractionResponse struct {
 
 // InteractionResponseResponderType Actor class behind this response. Asymmetric policies route on this; majority/threshold ignore it.
 type InteractionResponseResponderType string
+
+// InteractionSource Server-derived actor or system context that requested the interaction. Public create requests do not supply this field.
+type InteractionSource struct {
+	DisplayName *string               `json:"display_name,omitempty"`
+	Id          string                `json:"id"`
+	Type        InteractionSourceType `json:"type"`
+}
+
+// InteractionSourceType defines model for InteractionSource.Type.
+type InteractionSourceType string
 
 // InteractionSpec Declarative dialog contract for rendering and validating an interaction. Used at both authoring time (inside a workflow definition) and runtime (persisted on an interaction). Compatibility rules are enforced server-side:
 //
@@ -4380,10 +4536,12 @@ type ProjectMetrics struct {
 
 // QueryRowsRequest defines model for QueryRowsRequest.
 type QueryRowsRequest struct {
+	// Cursor Opaque cursor from a prior response.
+	Cursor *string `json:"cursor,omitempty"`
+
 	// Filter Column equality or operator filter
 	Filter *map[string]interface{} `json:"filter,omitempty"`
 	Limit  *int                    `json:"limit,omitempty"`
-	Offset *int                    `json:"offset,omitempty"`
 	Sort   *[]struct {
 		Field string                     `json:"field"`
 		Order *QueryRowsRequestSortOrder `json:"order,omitempty"`
@@ -4395,10 +4553,10 @@ type QueryRowsRequestSortOrder string
 
 // QueryRowsResponse defines model for QueryRowsResponse.
 type QueryRowsResponse struct {
-	HasMore bool           `json:"has_more"`
-	Limit   *int           `json:"limit,omitempty"`
-	Offset  *int           `json:"offset,omitempty"`
-	Rows    []DataTableRow `json:"rows"`
+	HasMore    bool           `json:"has_more"`
+	Limit      *int           `json:"limit,omitempty"`
+	NextCursor *string        `json:"next_cursor,omitempty"`
+	Rows       []DataTableRow `json:"rows"`
 }
 
 // ReferenceCandidate defines model for ReferenceCandidate.
@@ -4632,11 +4790,14 @@ type RunStep struct {
 	Action string `json:"action"`
 
 	// Attempt Zero-based retry attempt for this step/path pair.
-	Attempt      int        `json:"attempt"`
-	CompletedAt  *time.Time `json:"completed_at,omitempty"`
-	CreatedAt    time.Time  `json:"created_at"`
-	ErrorMessage *string    `json:"error_message,omitempty"`
-	ErrorType    *string    `json:"error_type,omitempty"`
+	Attempt int `json:"attempt"`
+
+	// Bindings Vars written by this step, with the source expression used for each binding.
+	Bindings     *[]RunStepBinding `json:"bindings,omitempty"`
+	CompletedAt  *time.Time        `json:"completed_at,omitempty"`
+	CreatedAt    time.Time         `json:"created_at"`
+	ErrorMessage *string           `json:"error_message,omitempty"`
+	ErrorType    *string           `json:"error_type,omitempty"`
 
 	// Id Stable run-step identifier. Use this value as `{step_id}` in `GET /runs/{id}/steps/{step_id}` and as `from_step_id` in `POST /runs/{id}/forks`.
 	Id string `json:"id"`
@@ -4652,6 +4813,9 @@ type RunStep struct {
 
 	// PathId Workflow path identifier for branch/fanout execution.
 	PathId string `json:"path_id"`
+
+	// Reason Optional suppression reason, most commonly set when status is `skipped`.
+	Reason *string `json:"reason,omitempty"`
 
 	// ResultB64 Base64-encoded serialized step result, when present.
 	ResultB64 *string `json:"result_b64,omitempty"`
@@ -4681,6 +4845,15 @@ type RunStep struct {
 	UpdatedAt     time.Time `json:"updated_at"`
 }
 
+// RunStepBinding defines model for RunStepBinding.
+type RunStepBinding struct {
+	// Source Source expression or literal used to produce the bound value.
+	Source string `json:"source"`
+
+	// Var Bound top-level vars path, e.g. `vars.repo`.
+	Var string `json:"var"`
+}
+
 // RunStepKind defines model for RunStepKind.
 type RunStepKind string
 
@@ -4704,6 +4877,27 @@ type ScheduleSourceConfig struct {
 
 	// Interval Go duration string, e.g. `5m`, `1h`, `30s`. Must be positive.
 	Interval *string `json:"interval,omitempty"`
+}
+
+// SearchRowsRequest defines model for SearchRowsRequest.
+type SearchRowsRequest struct {
+	// Cursor Opaque cursor from a prior search response.
+	Cursor *string `json:"cursor,omitempty"`
+
+	// Filter Optional column equality or operator filter applied before text search.
+	Filter *map[string]interface{} `json:"filter,omitempty"`
+	Limit  *int                    `json:"limit,omitempty"`
+
+	// Query Keyword search query.
+	Query string `json:"query"`
+}
+
+// SearchRowsResponse defines model for SearchRowsResponse.
+type SearchRowsResponse struct {
+	HasMore    bool           `json:"has_more"`
+	Limit      *int           `json:"limit,omitempty"`
+	NextCursor *string        `json:"next_cursor,omitempty"`
+	Rows       []DataTableRow `json:"rows"`
 }
 
 // SendChannelMessageRequest Fields used to post a new channel message. Sender attribution is determined entirely by the authenticated credential and cannot be overridden via this request body.
@@ -4970,17 +5164,32 @@ type TestFireTargetResult struct {
 	// Enabled Whether the target is enabled. Disabled targets are skipped without resolution.
 	Enabled *bool `json:"enabled,omitempty"`
 
-	// InputMappingResolved Resolved input map handed to the workflow.
+	// ExternalIdResolved Rendered value of `external_id_template` (launch_run) or `run_selector.external_id_template` (signal_run). Lets authors verify the two templates produce matching strings. Absent when the target has no template or rendering failed.
+	ExternalIdResolved *string `json:"external_id_resolved,omitempty"`
+
+	// InputMappingResolved (launch_run only) Resolved input map handed to the workflow.
 	InputMappingResolved *map[string]interface{} `json:"input_mapping_resolved,omitempty"`
 
-	// InputResolutionError Error encountered resolving input_mapping, when one occurred.
+	// InputResolutionError Error encountered resolving the target's `input_mapping` for a `launch_run` target. `signal_run` targets report `signal_payload_mapping` failures via `signal_payload_resolution_error` instead, so clients can distinguish which resolution step failed without parsing the error string. Errors rendering the run-selector template (`run_selector.external_id_template` for `signal_run`, or the `external_id_template` for `launch_run`) surface in `launch_error`.
 	InputResolutionError *string `json:"input_resolution_error,omitempty"`
 
-	// LaunchError Error from the launcher when execute mode failed to start the run.
+	// Kind Effect kind of this target. Discriminates which resolved field is populated: `launch_run` populates `input_mapping_resolved`; `signal_run` populates `signal_payload_resolved`.
+	Kind TestFireTargetResultKind `json:"kind"`
+
+	// LaunchError Error from the launcher (`launch_run`) or signal sender (`signal_run`) when execute mode failed to act on the target.
 	LaunchError *string `json:"launch_error,omitempty"`
 
-	// RunId ID of the launched run (only set in execute mode).
+	// Reason Why the target was skipped, when status is `skipped`. Empty for `success` and `failed` results.
+	Reason *string `json:"reason,omitempty"`
+
+	// RunId ID of the launched (`launch_run`) or signaled (`signal_run`) run. Only set in execute mode.
 	RunId *string `json:"run_id,omitempty"`
+
+	// SignalPayloadResolutionError (signal_run only) Error encountered resolving `signal_payload_mapping` — the payload that would be delivered to the matched run's `wait_signal` step (and exposed under `signal_payload_resolved`). Reported separately from `input_resolution_error` so clients don't reuse launch-run-specific fields for signal failures.
+	SignalPayloadResolutionError *string `json:"signal_payload_resolution_error,omitempty"`
+
+	// SignalPayloadResolved (signal_run only) Resolved signal payload that would be delivered to the matched run's `wait_signal` step.
+	SignalPayloadResolved *map[string]interface{} `json:"signal_payload_resolved,omitempty"`
 
 	// Status Per-target outcome of a test-fire dispatch. Distinct from `TriggerFireStatus`, which carries aggregate values like `partial_failure` that are only meaningful at the trigger level.
 	Status TestFireTargetStatus `json:"status"`
@@ -4988,12 +5197,15 @@ type TestFireTargetResult struct {
 	// TargetId ID of the trigger target this result is for.
 	TargetId string `json:"target_id"`
 
-	// WorkflowId Workflow definition the target points at.
+	// WorkflowId Workflow definition the target points at. Present only for `launch_run` targets.
 	WorkflowId *string `json:"workflow_id,omitempty"`
 
-	// WouldLaunch True when the target would launch a run (or signal a run once `signal_run` lands). False for disabled targets and for targets whose condition evaluated to false.
+	// WouldLaunch True when the target would launch a run (`launch_run`) or signal an existing run (`signal_run`). False for disabled targets and targets whose condition evaluated to false.
 	WouldLaunch bool `json:"would_launch"`
 }
+
+// TestFireTargetResultKind Effect kind of this target. Discriminates which resolved field is populated: `launch_run` populates `input_mapping_resolved`; `signal_run` populates `signal_payload_resolved`.
+type TestFireTargetResultKind string
 
 // TestFireTargetStatus Per-target outcome of a test-fire dispatch. Distinct from `TriggerFireStatus`, which carries aggregate values like `partial_failure` that are only meaningful at the trigger level.
 type TestFireTargetStatus string
@@ -5212,10 +5424,19 @@ type TriggerFireListResponse struct {
 // - `skipped` — the concurrency policy suppressed the entire activation.
 type TriggerFireStatus string
 
-// TriggerFireTargetResult Outcome of a single target within a trigger fire activation.
+// TriggerFireTargetResult Outcome of a single target within a trigger fire activation. `kind` discriminates the result shape so consumers can branch on it instead of inferring from optional fields like `workflow_id` or `external_id_resolved`.
 type TriggerFireTargetResult struct {
-	// Error Error detail when status is `failed`.
+	// Error Error detail when status is `failed`. Empty for `success` and `skipped` results — `skipped` causes go in `reason` instead. Pre-split historical rows persisted skip causes here, so consumers should fall back to `error` when `reason` is empty on a skipped row.
 	Error *string `json:"error,omitempty"`
+
+	// ExternalIdResolved Rendered value of the target's `external_id_template` (launch_run) or `run_selector.external_id_template` (signal_run). Lets operators verify the two templates produce matching strings without re-deriving them by hand. Absent when the target has no template or when rendering failed before a value was produced.
+	ExternalIdResolved *string `json:"external_id_resolved,omitempty"`
+
+	// Kind Effect kind of the evaluated target. `launch_run` started (or attempted) a new workflow run; `signal_run` delivered (or attempted to deliver) a signal to an existing run. Lets clients reliably branch on `kind` instead of inspecting optional fields like `workflow_id` or `external_id_resolved`.
+	Kind TriggerFireTargetResultKind `json:"kind"`
+
+	// Reason Why the target was skipped, when status is `skipped`. Examples: `condition false`, `target disabled`, `no run matching external_id <id>`. Empty for `success` and `failed` results.
+	Reason *string `json:"reason,omitempty"`
 
 	// RunId ID of the run that was launched or signaled. Absent when the target failed or was skipped before resolving a run.
 	RunId *string `json:"run_id,omitempty"`
@@ -5229,6 +5450,9 @@ type TriggerFireTargetResult struct {
 	// WorkflowId ID of the workflow definition that was started or attempted. Present only for `launch_run` targets — `signal_run` targets deliver a signal to an existing run and have no workflow definition association of their own.
 	WorkflowId *string `json:"workflow_id,omitempty"`
 }
+
+// TriggerFireTargetResultKind Effect kind of the evaluated target. `launch_run` started (or attempted) a new workflow run; `signal_run` delivered (or attempted to deliver) a signal to an existing run. Lets clients reliably branch on `kind` instead of inspecting optional fields like `workflow_id` or `external_id_resolved`.
+type TriggerFireTargetResultKind string
 
 // TriggerFireTargetStatus Outcome for a single target within a trigger fire activation. Per-target results never aggregate, so `partial_failure` cannot appear here.
 type TriggerFireTargetStatus string
@@ -5278,7 +5502,9 @@ type TriggerTarget struct {
 	// Id Unique identifier for this target.
 	Id string `json:"id"`
 
-	// InputMapping (launch_run only) Maps workflow input names to expressions evaluated against the event environment (`{ meta, event }`). Values use Mobius's `${expr}` template syntax — pure expressions (`${event.actor.id}`) preserve their native type, mixed templates (`Bearer ${meta.id}`) always render to a string, and other literals pass through as-is. Legacy JSONPath-like values (`$.…`) and unwrapped `event.` / `meta.` references are rejected with 400 on create/update. Example: `{"user_id": "${event.actor.id}"}`.
+	// InputMapping (launch_run only) Maps workflow input names to expressions evaluated against the event environment (`{ meta, event }`). Values use Mobius's `${expr}` template syntax — pure expressions (`${event.actor.id}`) preserve their native type, mixed templates (`Bearer ${meta.id}`) always render to a string, and other literals pass through as-is. Legacy JSONPath-like values (`$.…`) and unwrapped `event.` / `meta.` references are rejected with 400 on create/update.
+	//
+	// Resolution is fail-closed: an expression that references a missing field (`${event.pull_request.merged_by.login}` on an event without `merged_by`) fails the dispatch with `input_resolution_error` naming the offending key. No run is launched. Author expressions to reference only fields you expect to be present. Example: `{"user_id": "${event.actor.id}"}`.
 	InputMapping *map[string]string `json:"input_mapping,omitempty"`
 
 	// Kind Discriminates the target's effect. `launch_run` starts a new workflow run; `signal_run` signals an existing run.
@@ -5287,7 +5513,7 @@ type TriggerTarget struct {
 	// RunSelector (signal_run only) Locates an existing run to deliver a signal to. Today only `external_id_template` is supported; the shape is reserved as an object so future filters (e.g. workflow scope, multi-run match) can be added without breaking the API.
 	RunSelector *TriggerTargetRunSelector `json:"run_selector,omitempty"`
 
-	// SignalPayloadMapping (signal_run only) Maps the signal payload keys to expressions evaluated against the event environment. Available to the workflow as `signal.payload`.
+	// SignalPayloadMapping (signal_run only) Maps the signal payload keys to expressions evaluated against the event environment. Available to the workflow as `signal.payload`. Resolution is fail-closed — an expression that references a missing field fails the target with `signal_payload_resolution_error` (the signal-side analogue of `input_mapping`'s `input_resolution_error`) and the signal is not delivered.
 	SignalPayloadMapping *map[string]string `json:"signal_payload_mapping,omitempty"`
 
 	// SignalTopic (signal_run only) The `wait_signal` topic to deliver to the located run.
@@ -5828,9 +6054,6 @@ type WorkflowCatch struct {
 
 	// Next Step name to transition to when this clause is matched.
 	Next string `json:"next"`
-
-	// Store State variable name where the caught error is stored.
-	Store *string `json:"store,omitempty"`
 }
 
 // WorkflowDefinition defines model for WorkflowDefinition.
@@ -5942,13 +6165,16 @@ type WorkflowEdge struct {
 // WorkflowEdgeMatchingStrategy Controls matching when multiple outbound edge conditions are true: `all` follows every matching edge in parallel, while `first` follows only the first matching edge in declaration order.
 type WorkflowEdgeMatchingStrategy string
 
-// WorkflowExecutableStep Executes a worker or server action and stores its result in workflow state.
+// WorkflowExecutableStep Executes a worker or server action and exposes its result at `steps.<name>.result`.
 type WorkflowExecutableStep struct {
 	// Action Canonical executable-step field. When `action_kind` is omitted, the engine treats this as a worker action. Use `action_kind: server` for Mobius-managed server actions.
 	Action string `json:"action"`
 
 	// ActionKind Execution mode for `action` steps: `worker` creates claimable jobs for external workers, while `server` executes Mobius-managed actions such as integrations inside the service. Omit for the current default of `worker`.
 	ActionKind *WorkflowActionKind `json:"action_kind,omitempty"`
+
+	// Bind Optional writes to top-level `vars.*` keys, evaluated after the step completes. Targets must look like `vars.foo`.
+	Bind *map[string]string `json:"bind,omitempty"`
 
 	// Catch Error catch clauses that redirect execution on specific failures.
 	Catch *[]WorkflowCatch `json:"catch,omitempty"`
@@ -5976,9 +6202,6 @@ type WorkflowExecutableStep struct {
 
 	// Retry Retry policies applied when the action fails.
 	Retry *[]WorkflowRetry `json:"retry,omitempty"`
-
-	// Store State variable name where the action result is stored.
-	Store *string `json:"store,omitempty"`
 }
 
 // WorkflowInput Declares one named input accepted by a workflow spec.
@@ -6053,14 +6276,14 @@ type WorkflowInteractionStep struct {
 
 // WorkflowJoinConfig Waits for one or more parallel branches to complete before proceeding.
 type WorkflowJoinConfig struct {
-	// BranchMappings Maps branch names to variable names for storing per-branch results.
-	BranchMappings *map[string]string `json:"branch_mappings,omitempty"`
-
 	// Branches Branch names to wait for. Defaults to all branches if omitted.
 	Branches *[]string `json:"branches,omitempty"`
 
 	// Count Minimum number of branches that must complete. Defaults to all listed branches.
 	Count *int `json:"count,omitempty"`
+
+	// Result Explicit object this join produces. Expressions may read `branch.<branch>.<step>.result`.
+	Result *map[string]interface{} `json:"result,omitempty"`
 }
 
 // WorkflowJoinStep Waits for one or more parallel branches before continuing.
@@ -6087,19 +6310,24 @@ type WorkflowJoinStep struct {
 	Next *[]WorkflowEdge `json:"next,omitempty"`
 }
 
-// WorkflowOutput Declares one named output value produced by a workflow spec.
+// WorkflowOutput Declares one output value produced by a workflow spec.
 type WorkflowOutput struct {
-	// Branch Defaults to `main` when omitted.
-	Branch *string `json:"branch,omitempty"`
+	union json.RawMessage
+}
 
+// WorkflowOutput0 Compact expression form, e.g. `${steps.summarize.result.text}`.
+type WorkflowOutput0 = string
+
+// WorkflowOutput1 defines model for .
+type WorkflowOutput1 struct {
 	// Description Human-readable description of this output value.
 	Description *string `json:"description,omitempty"`
 
-	// Name Output name exposed to callers and downstream steps.
-	Name string `json:"name"`
+	// Schema Optional JSON Schema for this output.
+	Schema *map[string]interface{} `json:"schema,omitempty"`
 
-	// Variable State variable name whose value is mapped to this output.
-	Variable string `json:"variable"`
+	// Value Expression or literal output value.
+	Value interface{} `json:"value"`
 }
 
 // WorkflowPauseConfig Configuration for a manual pause step.
@@ -6194,7 +6422,7 @@ type WorkflowRun struct {
 	// ErrorMessage Error message from the most recent failure. Present when status is failed.
 	ErrorMessage *string `json:"error_message,omitempty"`
 
-	// ErrorType Typed run-level failure cause: `run_timeout`, `run_cancelled`, `step_failed`, or `run_failed`. Its own vocabulary, not a superset of the job-level `error_type`. Present when `status=failed`.
+	// ErrorType Typed run-level failure cause: `run_timeout`, `run_cancelled`, `step_failed`, `run_failed`, `output_extraction_failed`, or `output_validation_failed`. Its own vocabulary, not a superset of the job-level `error_type`. Present when `status=failed`.
 	ErrorType *WorkflowRunErrorType `json:"error_type,omitempty"`
 
 	// Errors Run-level errors that caused a failed lifecycle.
@@ -6263,7 +6491,7 @@ type WorkflowRun struct {
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
-// WorkflowRunErrorType Typed run-level failure cause: `run_timeout`, `run_cancelled`, `step_failed`, or `run_failed`. Its own vocabulary, not a superset of the job-level `error_type`. Present when `status=failed`.
+// WorkflowRunErrorType Typed run-level failure cause: `run_timeout`, `run_cancelled`, `step_failed`, `run_failed`, `output_extraction_failed`, or `output_validation_failed`. Its own vocabulary, not a superset of the job-level `error_type`. Present when `status=failed`.
 type WorkflowRunErrorType string
 
 // WorkflowRunDetail defines model for WorkflowRunDetail.
@@ -6301,7 +6529,7 @@ type WorkflowRunDetail struct {
 	// ErrorMessage Error message from the most recent failure. Present when status is failed.
 	ErrorMessage *string `json:"error_message,omitempty"`
 
-	// ErrorType Typed run-level failure cause: `run_timeout`, `run_cancelled`, `step_failed`, or `run_failed`. Its own vocabulary, not a superset of the job-level `error_type`. Present when `status=failed`.
+	// ErrorType Typed run-level failure cause: `run_timeout`, `run_cancelled`, `step_failed`, `run_failed`, `output_extraction_failed`, or `output_validation_failed`. Its own vocabulary, not a superset of the job-level `error_type`. Present when `status=failed`.
 	ErrorType *WorkflowRunDetailErrorType `json:"error_type,omitempty"`
 
 	// Errors Run-level errors that caused a failed lifecycle.
@@ -6387,7 +6615,7 @@ type WorkflowRunDetail struct {
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
-// WorkflowRunDetailErrorType Typed run-level failure cause: `run_timeout`, `run_cancelled`, `step_failed`, or `run_failed`. Its own vocabulary, not a superset of the job-level `error_type`. Present when `status=failed`.
+// WorkflowRunDetailErrorType Typed run-level failure cause: `run_timeout`, `run_cancelled`, `step_failed`, `run_failed`, `output_extraction_failed`, or `output_validation_failed`. Its own vocabulary, not a superset of the job-level `error_type`. Present when `status=failed`.
 type WorkflowRunDetailErrorType string
 
 // WorkflowRunError defines model for WorkflowRunError.
@@ -6455,12 +6683,19 @@ type WorkflowRunStepCounts struct {
 	Failed    int `json:"failed"`
 	Pending   int `json:"pending"`
 	Running   int `json:"running"`
+	Skipped   int `json:"skipped"`
 }
 
 // WorkflowRunWaitDetail defines model for WorkflowRunWaitDetail.
 type WorkflowRunWaitDetail struct {
 	// Attempt Retry attempt number for `retry` waits.
 	Attempt *int `json:"attempt,omitempty"`
+
+	// Condition Optional `expr` predicate the matching event must satisfy before resuming the path. Set when `kind` is `wait_event`; empty when any event of the matching type resumes.
+	Condition *string `json:"condition,omitempty"`
+
+	// EventType Event type pattern this path is waiting for. Set when `kind` is `wait_event`. Matches integration events using the same prefix rule event triggers apply.
+	EventType *string `json:"event_type,omitempty"`
 
 	// InteractionId Pending interaction linked to this wait.
 	InteractionId *string `json:"interaction_id,omitempty"`
@@ -6506,6 +6741,31 @@ type WorkflowRunWaitSummary struct {
 	WaitingPaths         int        `json:"waiting_paths"`
 }
 
+// WorkflowSetStep Binds one or more top-level vars and produces the bound object as this step's result.
+type WorkflowSetStep struct {
+	Description *string `json:"description,omitempty"`
+
+	// Each Fan-out configuration that repeats a step over a collection.
+	Each *WorkflowEach `json:"each,omitempty"`
+
+	// EdgeMatchingStrategy Controls matching when multiple outbound edge conditions are true: `all` follows every matching edge in parallel, while `first` follows only the first matching edge in declaration order.
+	EdgeMatchingStrategy *WorkflowEdgeMatchingStrategy `json:"edge_matching_strategy,omitempty"`
+
+	// Layout Optional presentation hint for the visual editor. Ignored by the execution engine; when absent, editors auto-lay out the step.
+	Layout *WorkflowStepLayout `json:"layout,omitempty"`
+
+	// Name Unique step name within the workflow, used for routing and logging.
+	Name string              `json:"name"`
+	Next *[]WorkflowEdge     `json:"next,omitempty"`
+	Type WorkflowSetStepType `json:"type"`
+
+	// Vars Bindings keyed by top-level vars key. `repo: ${steps.fetch.result}` writes `vars.repo`.
+	Vars map[string]interface{} `json:"vars"`
+}
+
+// WorkflowSetStepType defines model for WorkflowSetStep.Type.
+type WorkflowSetStepType string
+
 // WorkflowSleepConfig Configuration for a sleep step.
 type WorkflowSleepConfig struct {
 	// Duration Go duration string.
@@ -6549,20 +6809,17 @@ type WorkflowSpec struct {
 	// Name Workflow name.
 	Name string `json:"name"`
 
-	// Outputs Declared output values produced by this workflow.
-	Outputs *[]WorkflowOutput `json:"outputs,omitempty"`
+	// Outputs Declared terminal contract. Compact values are expressions; long-form values may include value/schema/description.
+	Outputs *map[string]WorkflowOutput `json:"outputs,omitempty"`
 
 	// StartAt Step name to start execution from. Defaults to the first step.
 	StartAt *string `json:"start_at,omitempty"`
-
-	// State Initial workflow state.
-	State *map[string]interface{} `json:"state,omitempty"`
 
 	// Steps Ordered list of steps that make up this workflow.
 	Steps []WorkflowStep `json:"steps"`
 }
 
-// WorkflowStep A workflow step. Exactly one step shape should be used. Step variants are identified by their distinctive required property (`action`, `join`, `wait_signal`, `sleep`, `pause`, or `interaction`). The current authored shape intentionally does not add a separate discriminator field, so existing workflow YAML stays compact.
+// WorkflowStep A workflow step. Exactly one step shape should be used. Step variants are identified by their distinctive required property (`action`, `type: set`, `join`, `wait_signal`, `wait_event`, `sleep`, `pause`, or `interaction`). The current authored shape intentionally does not add a separate discriminator field, so existing workflow YAML stays compact.
 type WorkflowStep struct {
 	union json.RawMessage
 }
@@ -6619,13 +6876,49 @@ type WorkflowVersionSummary struct {
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
+// WorkflowWaitEventConfig Suspends the run until an integration event matching `event_type` (and `condition`, when provided) is delivered to the project. `event_type` is prefix-matched against the delivered event, mirroring trigger semantics — `github.pull_request` matches `.opened`, `.closed`, etc.
+type WorkflowWaitEventConfig struct {
+	// Condition Optional bare-form `expr` predicate over `{ event, meta, inputs, steps, vars, each, run }`. The event resumes the step only when the expression evaluates truthy. Empty means "any event of the matching type resumes". Predicate fields use bare `expr`; `${...}` templating is reserved for value-producing fields.
+	Condition *string `json:"condition,omitempty"`
+
+	// EventType Integration event type (or prefix) to wait for, e.g. `github.pull_request.closed` or `stripe.invoice.paid`.
+	EventType string `json:"event_type"`
+
+	// OnTimeout Step name to transition to if the timeout elapses without a matching event. Fails the run if omitted.
+	OnTimeout *string `json:"on_timeout,omitempty"`
+
+	// Timeout Maximum wait duration as a Go duration string (e.g. "24h", "30m").
+	Timeout string `json:"timeout"`
+}
+
+// WorkflowWaitEventStep Suspends a branch until an integration event of the configured type is delivered to the project and (optionally) satisfies an `expr` predicate over its payload. Same operational model as `wait_signal` but matches against the event bus directly, without requiring a separate `signal_run` trigger.
+type WorkflowWaitEventStep struct {
+	// Description Optional human-readable description of what this step does.
+	Description *string `json:"description,omitempty"`
+
+	// Each Fan-out configuration that repeats a step over a collection.
+	Each *WorkflowEach `json:"each,omitempty"`
+
+	// EdgeMatchingStrategy Controls matching when multiple outbound edge conditions are true: `all` follows every matching edge in parallel, while `first` follows only the first matching edge in declaration order.
+	EdgeMatchingStrategy *WorkflowEdgeMatchingStrategy `json:"edge_matching_strategy,omitempty"`
+
+	// Layout Optional presentation hint for the visual editor. Ignored by the execution engine; when absent, editors auto-lay out the step.
+	Layout *WorkflowStepLayout `json:"layout,omitempty"`
+
+	// Name Unique step name within the workflow, used for routing and logging.
+	Name string `json:"name"`
+
+	// Next Outbound edges controlling which step executes after this one.
+	Next *[]WorkflowEdge `json:"next,omitempty"`
+
+	// WaitEvent Suspends the run until an integration event matching `event_type` (and `condition`, when provided) is delivered to the project. `event_type` is prefix-matched against the delivered event, mirroring trigger semantics — `github.pull_request` matches `.opened`, `.closed`, etc.
+	WaitEvent WorkflowWaitEventConfig `json:"wait_event"`
+}
+
 // WorkflowWaitSignalConfig Suspends the run until a signal with the matching topic arrives.
 type WorkflowWaitSignalConfig struct {
 	// OnTimeout Step name to transition to if the timeout elapses without a signal. Fails the run if omitted.
 	OnTimeout *string `json:"on_timeout,omitempty"`
-
-	// Store Variable name to store the signal payload in after resumption.
-	Store *string `json:"store,omitempty"`
 
 	// Timeout Maximum wait duration as a Go duration string (e.g. "24h", "30m").
 	Timeout string `json:"timeout"`
@@ -7359,6 +7652,9 @@ type BulkInsertDataTableRowsJSONRequestBody = BulkInsertRowsRequest
 
 // QueryDataTableRowsJSONRequestBody defines body for QueryDataTableRows for application/json ContentType.
 type QueryDataTableRowsJSONRequestBody = QueryRowsRequest
+
+// SearchDataTableRowsJSONRequestBody defines body for SearchDataTableRows for application/json ContentType.
+type SearchDataTableRowsJSONRequestBody = SearchRowsRequest
 
 // UpsertDataTableRowJSONRequestBody defines body for UpsertDataTableRow for application/json ContentType.
 type UpsertDataTableRowJSONRequestBody = UpsertRowRequest
@@ -11124,6 +11420,68 @@ func (t *TriggerSourceConfig) UnmarshalJSON(b []byte) error {
 	return err
 }
 
+// AsWorkflowOutput0 returns the union data inside the WorkflowOutput as a WorkflowOutput0
+func (t WorkflowOutput) AsWorkflowOutput0() (WorkflowOutput0, error) {
+	var body WorkflowOutput0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromWorkflowOutput0 overwrites any union data inside the WorkflowOutput as the provided WorkflowOutput0
+func (t *WorkflowOutput) FromWorkflowOutput0(v WorkflowOutput0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeWorkflowOutput0 performs a merge with any union data inside the WorkflowOutput, using the provided WorkflowOutput0
+func (t *WorkflowOutput) MergeWorkflowOutput0(v WorkflowOutput0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsWorkflowOutput1 returns the union data inside the WorkflowOutput as a WorkflowOutput1
+func (t WorkflowOutput) AsWorkflowOutput1() (WorkflowOutput1, error) {
+	var body WorkflowOutput1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromWorkflowOutput1 overwrites any union data inside the WorkflowOutput as the provided WorkflowOutput1
+func (t *WorkflowOutput) FromWorkflowOutput1(v WorkflowOutput1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeWorkflowOutput1 performs a merge with any union data inside the WorkflowOutput, using the provided WorkflowOutput1
+func (t *WorkflowOutput) MergeWorkflowOutput1(v WorkflowOutput1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t WorkflowOutput) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *WorkflowOutput) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
 // AsWorkflowExecutableStep returns the union data inside the WorkflowStep as a WorkflowExecutableStep
 func (t WorkflowStep) AsWorkflowExecutableStep() (WorkflowExecutableStep, error) {
 	var body WorkflowExecutableStep
@@ -11140,6 +11498,32 @@ func (t *WorkflowStep) FromWorkflowExecutableStep(v WorkflowExecutableStep) erro
 
 // MergeWorkflowExecutableStep performs a merge with any union data inside the WorkflowStep, using the provided WorkflowExecutableStep
 func (t *WorkflowStep) MergeWorkflowExecutableStep(v WorkflowExecutableStep) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsWorkflowSetStep returns the union data inside the WorkflowStep as a WorkflowSetStep
+func (t WorkflowStep) AsWorkflowSetStep() (WorkflowSetStep, error) {
+	var body WorkflowSetStep
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromWorkflowSetStep overwrites any union data inside the WorkflowStep as the provided WorkflowSetStep
+func (t *WorkflowStep) FromWorkflowSetStep(v WorkflowSetStep) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeWorkflowSetStep performs a merge with any union data inside the WorkflowStep, using the provided WorkflowSetStep
+func (t *WorkflowStep) MergeWorkflowSetStep(v WorkflowSetStep) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -11192,6 +11576,32 @@ func (t *WorkflowStep) FromWorkflowWaitSignalStep(v WorkflowWaitSignalStep) erro
 
 // MergeWorkflowWaitSignalStep performs a merge with any union data inside the WorkflowStep, using the provided WorkflowWaitSignalStep
 func (t *WorkflowStep) MergeWorkflowWaitSignalStep(v WorkflowWaitSignalStep) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsWorkflowWaitEventStep returns the union data inside the WorkflowStep as a WorkflowWaitEventStep
+func (t WorkflowStep) AsWorkflowWaitEventStep() (WorkflowWaitEventStep, error) {
+	var body WorkflowWaitEventStep
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromWorkflowWaitEventStep overwrites any union data inside the WorkflowStep as the provided WorkflowWaitEventStep
+func (t *WorkflowStep) FromWorkflowWaitEventStep(v WorkflowWaitEventStep) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeWorkflowWaitEventStep performs a merge with any union data inside the WorkflowStep, using the provided WorkflowWaitEventStep
+func (t *WorkflowStep) MergeWorkflowWaitEventStep(v WorkflowWaitEventStep) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -11775,6 +12185,11 @@ type ClientInterface interface {
 
 	QueryDataTableRows(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body QueryDataTableRowsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// SearchDataTableRowsWithBody request with any body
+	SearchDataTableRowsWithBody(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	SearchDataTableRows(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body SearchDataTableRowsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// UpsertDataTableRowWithBody request with any body
 	UpsertDataTableRowWithBody(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -11790,6 +12205,9 @@ type ClientInterface interface {
 	UpdateDataTableRowWithBody(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	UpdateDataTableRow(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, body UpdateDataTableRowJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetDataTableStats request
+	GetDataTableStats(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListProjectTraces request
 	ListProjectTraces(ctx context.Context, project ProjectHandleParam, params *ListProjectTracesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -13734,6 +14152,30 @@ func (c *Client) QueryDataTableRows(ctx context.Context, project ProjectHandlePa
 	return c.Client.Do(req)
 }
 
+func (c *Client) SearchDataTableRowsWithBody(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSearchDataTableRowsRequestWithBody(c.Server, project, tableName, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) SearchDataTableRows(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body SearchDataTableRowsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSearchDataTableRowsRequest(c.Server, project, tableName, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) UpsertDataTableRowWithBody(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewUpsertDataTableRowRequestWithBody(c.Server, project, tableName, contentType, body)
 	if err != nil {
@@ -13796,6 +14238,18 @@ func (c *Client) UpdateDataTableRowWithBody(ctx context.Context, project Project
 
 func (c *Client) UpdateDataTableRow(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, body UpdateDataTableRowJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewUpdateDataTableRowRequest(c.Server, project, tableName, rowId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetDataTableStats(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetDataTableStatsRequest(c.Server, project, tableName)
 	if err != nil {
 		return nil, err
 	}
@@ -20827,6 +21281,60 @@ func NewQueryDataTableRowsRequestWithBody(server string, project ProjectHandlePa
 	return req, nil
 }
 
+// NewSearchDataTableRowsRequest calls the generic SearchDataTableRows builder with application/json body
+func NewSearchDataTableRowsRequest(server string, project ProjectHandleParam, tableName TableNameParam, body SearchDataTableRowsJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewSearchDataTableRowsRequestWithBody(server, project, tableName, "application/json", bodyReader)
+}
+
+// NewSearchDataTableRowsRequestWithBody generates requests for SearchDataTableRows with any type of body
+func NewSearchDataTableRowsRequestWithBody(server string, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "table_name", tableName, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/tables/%s/rows/search", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewUpsertDataTableRowRequest calls the generic UpsertDataTableRow builder with application/json body
 func NewUpsertDataTableRowRequest(server string, project ProjectHandleParam, tableName TableNameParam, body UpsertDataTableRowJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
@@ -21034,6 +21542,47 @@ func NewUpdateDataTableRowRequestWithBody(server string, project ProjectHandlePa
 	}
 
 	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetDataTableStatsRequest generates requests for GetDataTableStats
+func NewGetDataTableStatsRequest(server string, project ProjectHandleParam, tableName TableNameParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "table_name", tableName, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/tables/%s/stats", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
 
 	return req, nil
 }
@@ -23292,6 +23841,11 @@ type ClientWithResponsesInterface interface {
 
 	QueryDataTableRowsWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body QueryDataTableRowsJSONRequestBody, reqEditors ...RequestEditorFn) (*QueryDataTableRowsResponse, error)
 
+	// SearchDataTableRowsWithBodyWithResponse request with any body
+	SearchDataTableRowsWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SearchDataTableRowsResponse, error)
+
+	SearchDataTableRowsWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body SearchDataTableRowsJSONRequestBody, reqEditors ...RequestEditorFn) (*SearchDataTableRowsResponse, error)
+
 	// UpsertDataTableRowWithBodyWithResponse request with any body
 	UpsertDataTableRowWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpsertDataTableRowResponse, error)
 
@@ -23307,6 +23861,9 @@ type ClientWithResponsesInterface interface {
 	UpdateDataTableRowWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateDataTableRowResponse, error)
 
 	UpdateDataTableRowWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, body UpdateDataTableRowJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateDataTableRowResponse, error)
+
+	// GetDataTableStatsWithResponse request
+	GetDataTableStatsWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, reqEditors ...RequestEditorFn) (*GetDataTableStatsResponse, error)
 
 	// ListProjectTracesWithResponse request
 	ListProjectTracesWithResponse(ctx context.Context, project ProjectHandleParam, params *ListProjectTracesParams, reqEditors ...RequestEditorFn) (*ListProjectTracesResponse, error)
@@ -26086,6 +26643,31 @@ func (r QueryDataTableRowsResponse) StatusCode() int {
 	return 0
 }
 
+type SearchDataTableRowsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *SearchRowsResponse
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r SearchDataTableRowsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r SearchDataTableRowsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type UpsertDataTableRowResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -26180,6 +26762,30 @@ func (r UpdateDataTableRowResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r UpdateDataTableRowResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetDataTableStatsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *DataTableStats
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r GetDataTableStatsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetDataTableStatsResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -28291,6 +28897,23 @@ func (c *ClientWithResponses) QueryDataTableRowsWithResponse(ctx context.Context
 	return ParseQueryDataTableRowsResponse(rsp)
 }
 
+// SearchDataTableRowsWithBodyWithResponse request with arbitrary body returning *SearchDataTableRowsResponse
+func (c *ClientWithResponses) SearchDataTableRowsWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SearchDataTableRowsResponse, error) {
+	rsp, err := c.SearchDataTableRowsWithBody(ctx, project, tableName, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSearchDataTableRowsResponse(rsp)
+}
+
+func (c *ClientWithResponses) SearchDataTableRowsWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body SearchDataTableRowsJSONRequestBody, reqEditors ...RequestEditorFn) (*SearchDataTableRowsResponse, error) {
+	rsp, err := c.SearchDataTableRows(ctx, project, tableName, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSearchDataTableRowsResponse(rsp)
+}
+
 // UpsertDataTableRowWithBodyWithResponse request with arbitrary body returning *UpsertDataTableRowResponse
 func (c *ClientWithResponses) UpsertDataTableRowWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpsertDataTableRowResponse, error) {
 	rsp, err := c.UpsertDataTableRowWithBody(ctx, project, tableName, contentType, body, reqEditors...)
@@ -28341,6 +28964,15 @@ func (c *ClientWithResponses) UpdateDataTableRowWithResponse(ctx context.Context
 		return nil, err
 	}
 	return ParseUpdateDataTableRowResponse(rsp)
+}
+
+// GetDataTableStatsWithResponse request returning *GetDataTableStatsResponse
+func (c *ClientWithResponses) GetDataTableStatsWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, reqEditors ...RequestEditorFn) (*GetDataTableStatsResponse, error) {
+	rsp, err := c.GetDataTableStats(ctx, project, tableName, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetDataTableStatsResponse(rsp)
 }
 
 // ListProjectTracesWithResponse request returning *ListProjectTracesResponse
@@ -33511,6 +34143,53 @@ func ParseQueryDataTableRowsResponse(rsp *http.Response) (*QueryDataTableRowsRes
 	return response, nil
 }
 
+// ParseSearchDataTableRowsResponse parses an HTTP response from a SearchDataTableRowsWithResponse call
+func ParseSearchDataTableRowsResponse(rsp *http.Response) (*SearchDataTableRowsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &SearchDataTableRowsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest SearchRowsResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseUpsertDataTableRowResponse parses an HTTP response from a UpsertDataTableRowWithResponse call
 func ParseUpsertDataTableRowResponse(rsp *http.Response) (*UpsertDataTableRowResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -33693,6 +34372,46 @@ func ParseUpdateDataTableRowResponse(rsp *http.Response) (*UpdateDataTableRowRes
 			return nil, err
 		}
 		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetDataTableStatsResponse parses an HTTP response from a GetDataTableStatsWithResponse call
+func ParseGetDataTableStatsResponse(rsp *http.Response) (*GetDataTableStatsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetDataTableStatsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest DataTableStats
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
 
 	}
 

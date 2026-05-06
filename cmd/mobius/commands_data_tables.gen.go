@@ -185,6 +185,25 @@ func registerDataTablesCommands(app *cli.App) {
 			return printResponse(ctx, "getDataTableRow", resp.StatusCode(), resp.Body)
 		})
 
+	dataTablesGrp.Command("get-table-stats").
+		Description("Get data table storage stats").
+		Args("table-name").
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			p1 := ctx.Arg(0)
+			resp, err := client.GetDataTableStatsWithResponse(ctx.Context(), p0, p1)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "getDataTableStats", resp.StatusCode(), resp.Body)
+		})
+
 	dataTablesGrp.Command("insert-data-table-row").
 		Description("Insert a row").
 		Args("table-name").
@@ -258,9 +277,9 @@ func registerDataTablesCommands(app *cli.App) {
 		Description("Query rows").
 		Args("table-name").
 		Flags(
+			cli.String("cursor", "").Help("Opaque cursor from a prior response."),
 			cli.String("filter", "").Help("Column equality or operator filter Accepts JSON, @file, or @-."),
 			cli.Int("limit", "").Help("limit"),
-			cli.Int("offset", "").Help("offset"),
 			cli.String("sort", "").Help("sort Accepts JSON, @file, or @-."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
@@ -278,6 +297,10 @@ func registerDataTablesCommands(app *cli.App) {
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
 			}
+			if ctx.IsSet("cursor") {
+				v := ctx.String("cursor")
+				body.Cursor = &v
+			}
 			if ctx.IsSet("filter") {
 				if err := decodeFlagJSON(ctx, "filter", ctx.String("filter"), &body.Filter); err != nil {
 					return err
@@ -287,16 +310,12 @@ func registerDataTablesCommands(app *cli.App) {
 				v := ctx.Int("limit")
 				body.Limit = &v
 			}
-			if ctx.IsSet("offset") {
-				v := ctx.Int("offset")
-				body.Offset = &v
-			}
 			if ctx.IsSet("sort") {
 				if err := decodeFlagJSON(ctx, "sort", ctx.String("sort"), &body.Sort); err != nil {
 					return err
 				}
 			}
-			if ctx.String("file") == "" && !ctx.IsSet("filter") && !ctx.IsSet("limit") && !ctx.IsSet("offset") && !ctx.IsSet("sort") {
+			if ctx.String("file") == "" && !ctx.IsSet("cursor") && !ctx.IsSet("filter") && !ctx.IsSet("limit") && !ctx.IsSet("sort") {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
 			if ctx.Bool("dry-run") {
@@ -307,6 +326,59 @@ func registerDataTablesCommands(app *cli.App) {
 				return err
 			}
 			return printResponse(ctx, "queryDataTableRows", resp.StatusCode(), resp.Body)
+		})
+
+	dataTablesGrp.Command("search-data-table-rows").
+		Description("Search rows").
+		Args("table-name").
+		Flags(
+			cli.String("cursor", "").Help("Opaque cursor from a prior search response."),
+			cli.String("filter", "").Help("Optional column equality or operator filter applied before text search. Accepts JSON, @file, or @-."),
+			cli.Int("limit", "").Help("limit"),
+			cli.String("query", "").Help("[required] Keyword search query."),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			p1 := ctx.Arg(0)
+			var body api.SearchDataTableRowsJSONRequestBody
+			if err := readJSONBody(ctx, &body); err != nil {
+				return err
+			}
+			if ctx.IsSet("cursor") {
+				v := ctx.String("cursor")
+				body.Cursor = &v
+			}
+			if ctx.IsSet("filter") {
+				if err := decodeFlagJSON(ctx, "filter", ctx.String("filter"), &body.Filter); err != nil {
+					return err
+				}
+			}
+			if ctx.IsSet("limit") {
+				v := ctx.Int("limit")
+				body.Limit = &v
+			}
+			if ctx.IsSet("query") {
+				body.Query = ctx.String("query")
+			}
+			if body.Query == "" {
+				return fmt.Errorf("--query is required (or supply it via --file)")
+			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
+			}
+			resp, err := client.SearchDataTableRowsWithResponse(ctx.Context(), p0, p1, body)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "searchDataTableRows", resp.StatusCode(), resp.Body)
 		})
 
 	dataTablesGrp.Command("update-table").
