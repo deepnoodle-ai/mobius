@@ -117,6 +117,38 @@ func registerObservablesCommands(app *cli.App) {
 			return printResponse(ctx, "deleteObservable", resp.StatusCode(), resp.Body)
 		})
 
+	observablesGrp.Command("events").
+		Description("List change events for an Observable").
+		Args("observable-id").
+		Flags(
+			cli.String("cursor", "").Help("cursor"),
+			cli.Int("limit", "").Help("limit"),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			p1 := ctx.Arg(0)
+			params := &api.ListObservableEventsParams{}
+			if ctx.IsSet("cursor") {
+				v := api.CursorParam(ctx.String("cursor"))
+				params.Cursor = &v
+			}
+			if ctx.IsSet("limit") {
+				v := api.LimitParam(ctx.Int("limit"))
+				params.Limit = &v
+			}
+			resp, err := client.ListObservableEventsWithResponse(ctx.Context(), p0, p1, params)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "listObservableEvents", resp.StatusCode(), resp.Body)
+		})
+
 	observablesGrp.Command("get").
 		Description("Get an Observable by ID or name").
 		Args("observable-id").
@@ -176,11 +208,10 @@ func registerObservablesCommands(app *cli.App) {
 			return printResponse(ctx, "listObservables", resp.StatusCode(), resp.Body)
 		})
 
-	observablesGrp.Command("list-events").
-		Description("List change events for an Observable").
+	observablesGrp.Command("list-waiters").
+		Description("List workflow paths waiting on an Observable").
 		Args("observable-id").
 		Flags(
-			cli.String("cursor", "").Help("cursor"),
 			cli.Int("limit", "").Help("limit"),
 		).
 		Use(requireAuth()).
@@ -192,23 +223,19 @@ func registerObservablesCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			params := &api.ListObservableEventsParams{}
-			if ctx.IsSet("cursor") {
-				v := api.CursorParam(ctx.String("cursor"))
-				params.Cursor = &v
-			}
+			params := &api.ListObservableWaitersParams{}
 			if ctx.IsSet("limit") {
 				v := api.LimitParam(ctx.Int("limit"))
 				params.Limit = &v
 			}
-			resp, err := client.ListObservableEventsWithResponse(ctx.Context(), p0, p1, params)
+			resp, err := client.ListObservableWaitersWithResponse(ctx.Context(), p0, p1, params)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, "listObservableEvents", resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "listObservableWaiters", resp.StatusCode(), resp.Body)
 		})
 
-	observablesGrp.Command("list-observations").
+	observablesGrp.Command("observations").
 		Description("List observations for an Observable").
 		Args("observable-id").
 		Flags(
@@ -245,66 +272,7 @@ func registerObservablesCommands(app *cli.App) {
 			return printResponse(ctx, "listObservableObservations", resp.StatusCode(), resp.Body)
 		})
 
-	observablesGrp.Command("list-state-versions").
-		Description("List state versions for an Observable").
-		Args("observable-id").
-		Flags(
-			cli.String("cursor", "").Help("cursor"),
-			cli.Int("limit", "").Help("limit"),
-		).
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			params := &api.ListObservableStateVersionsParams{}
-			if ctx.IsSet("cursor") {
-				v := api.CursorParam(ctx.String("cursor"))
-				params.Cursor = &v
-			}
-			if ctx.IsSet("limit") {
-				v := api.LimitParam(ctx.Int("limit"))
-				params.Limit = &v
-			}
-			resp, err := client.ListObservableStateVersionsWithResponse(ctx.Context(), p0, p1, params)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "listObservableStateVersions", resp.StatusCode(), resp.Body)
-		})
-
-	observablesGrp.Command("list-waiters").
-		Description("List workflow paths waiting on an Observable").
-		Args("observable-id").
-		Flags(
-			cli.Int("limit", "").Help("limit"),
-		).
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			params := &api.ListObservableWaitersParams{}
-			if ctx.IsSet("limit") {
-				v := api.LimitParam(ctx.Int("limit"))
-				params.Limit = &v
-			}
-			resp, err := client.ListObservableWaitersWithResponse(ctx.Context(), p0, p1, params)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "listObservableWaiters", resp.StatusCode(), resp.Body)
-		})
-
-	observablesGrp.Command("submit-observable-observation").
+	observablesGrp.Command("observe").
 		Description("Submit an observation").
 		Args("observable-id").
 		Flags(
@@ -445,6 +413,38 @@ func registerObservablesCommands(app *cli.App) {
 				return err
 			}
 			return printResponse(ctx, "updateObservable", resp.StatusCode(), resp.Body)
+		})
+
+	observablesGrp.Command("versions").
+		Description("List state versions for an Observable").
+		Args("observable-id").
+		Flags(
+			cli.String("cursor", "").Help("cursor"),
+			cli.Int("limit", "").Help("limit"),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			p1 := ctx.Arg(0)
+			params := &api.ListObservableStateVersionsParams{}
+			if ctx.IsSet("cursor") {
+				v := api.CursorParam(ctx.String("cursor"))
+				params.Cursor = &v
+			}
+			if ctx.IsSet("limit") {
+				v := api.LimitParam(ctx.Int("limit"))
+				params.Limit = &v
+			}
+			resp, err := client.ListObservableStateVersionsWithResponse(ctx.Context(), p0, p1, params)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "listObservableStateVersions", resp.StatusCode(), resp.Body)
 		})
 
 }
