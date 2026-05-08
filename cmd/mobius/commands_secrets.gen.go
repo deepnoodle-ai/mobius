@@ -59,7 +59,7 @@ func registerSecretsCommands(app *cli.App) {
 				return fmt.Errorf("--values is required (or supply it via --file)")
 			}
 			if ctx.Bool("dry-run") {
-				return printDryRun(ctx, body)
+				return printDryRun(ctx, body, "values")
 			}
 			resp, err := client.CreateSecretWithResponse(ctx.Context(), p0, body)
 			if err != nil {
@@ -210,7 +210,7 @@ func registerSecretsCommands(app *cli.App) {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
 			if ctx.Bool("dry-run") {
-				return printDryRun(ctx, body)
+				return printDryRun(ctx, body, "values")
 			}
 			resp, err := client.UpdateSecretWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {

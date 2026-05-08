@@ -292,14 +292,54 @@ func applyVars(ctx *cli.Context, data []byte) ([]byte, error) {
 
 // printDryRun pretty-prints a request body without sending HTTP. Generated
 // handlers call this when --dry-run is set, then return its result so the
-// command exits 0.
-func printDryRun(ctx *cli.Context, body any) error {
-	pretty, err := marshalForOutput(ctx, body)
+// command exits 0. When redactFields is non-empty, the named top-level JSON
+// fields are replaced with a redaction marker before printing so secret
+// payloads never reach the terminal (used by the secrets commands).
+func printDryRun(ctx *cli.Context, body any, redactFields ...string) error {
+	out := body
+	if len(redactFields) > 0 {
+		if redacted, ok := redactBodyFields(body, redactFields); ok {
+			out = redacted
+		}
+	}
+	pretty, err := marshalForOutput(ctx, out)
 	if err != nil {
 		return err
 	}
 	ctx.Println(string(pretty))
 	return nil
+}
+
+// redactBodyFields returns a JSON-shaped copy of body with the named top-level
+// fields replaced by a redaction marker. Map values have each entry redacted
+// (preserving keys); scalar values are replaced wholesale. Returns (nil, false)
+// when body cannot be JSON-roundtripped, leaving the caller to fall back to
+// the original body.
+func redactBodyFields(body any, fields []string) (any, bool) {
+	raw, err := json.Marshal(body)
+	if err != nil {
+		return nil, false
+	}
+	var m map[string]any
+	if err := json.Unmarshal(raw, &m); err != nil {
+		return nil, false
+	}
+	for _, f := range fields {
+		v, present := m[f]
+		if !present {
+			continue
+		}
+		if mp, ok := v.(map[string]any); ok {
+			masked := make(map[string]any, len(mp))
+			for k := range mp {
+				masked[k] = "***REDACTED***"
+			}
+			m[f] = masked
+			continue
+		}
+		m[f] = "***REDACTED***"
+	}
+	return m, true
 }
 
 // parseTagFlags converts repeatable --tag KEY=VALUE flags into a map. Returns

@@ -18,7 +18,7 @@ import (
 // registerAgentCapabilitiesCommands registers every generated subcommand in the "agent-capabilities" group.
 func registerAgentCapabilitiesCommands(app *cli.App) {
 	agentCapabilitiesGrp := app.Group("agent-capabilities")
-	agentCapabilitiesGrp.Alias("agent-capabilitie")
+	agentCapabilitiesGrp.Alias("agent-capability")
 	agentCapabilitiesGrp.Command("create").
 		Description("Create a skill").
 		Flags(

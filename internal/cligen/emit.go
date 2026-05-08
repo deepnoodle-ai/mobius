@@ -482,10 +482,14 @@ func groupFileName(group string) string {
 // singularAlias returns the singular form of a group name when the group name
 // looks like a regular English plural (ending in "s"). It returns "" when no
 // sensible singular alias exists — e.g. for "slack", or group names too short
-// to strip a character from.
+// to strip a character from. Handles the "-ies" → "-y" pattern so e.g.
+// "agent-capabilities" aliases to "agent-capability", not "agent-capabilitie".
 func singularAlias(group string) string {
 	if len(group) < 2 || !strings.HasSuffix(group, "s") {
 		return ""
+	}
+	if strings.HasSuffix(group, "ies") && len(group) >= 4 {
+		return group[:len(group)-3] + "y"
 	}
 	return group[:len(group)-1]
 }
@@ -867,8 +871,18 @@ func renderCommand(b *bytes.Buffer, group string, c PlannedCommand) error {
 			fmt.Fprintf(b, "\t\t\tif %s { return fmt.Errorf(\"at least one flag or --file is required\") }\n",
 				strings.Join(conds, " && "))
 		}
-		// --dry-run: print the assembled body and exit before HTTP.
-		fmt.Fprintf(b, "\t\t\tif ctx.Bool(\"dry-run\") { return printDryRun(ctx, body) }\n")
+		// --dry-run: print the assembled body and exit before HTTP. For
+		// secret-bearing commands, pass the JSON field names whose contents
+		// must be redacted before printing so plaintext never reaches stdout.
+		var redactArgs string
+		if c.Group == "secrets" {
+			for _, f := range c.Body.Fields {
+				if f.FlagName == "value" || f.FlagName == "values" {
+					redactArgs += fmt.Sprintf(", %q", f.FlagName)
+				}
+			}
+		}
+		fmt.Fprintf(b, "\t\t\tif ctx.Bool(\"dry-run\") { return printDryRun(ctx, body%s) }\n", redactArgs)
 	}
 
 	// Build the call argument list, matching method signature order.
@@ -1129,14 +1143,54 @@ func applyVars(ctx *cli.Context, data []byte) ([]byte, error) {
 
 // printDryRun pretty-prints a request body without sending HTTP. Generated
 // handlers call this when --dry-run is set, then return its result so the
-// command exits 0.
-func printDryRun(ctx *cli.Context, body any) error {
-	pretty, err := marshalForOutput(ctx, body)
+// command exits 0. When redactFields is non-empty, the named top-level JSON
+// fields are replaced with a redaction marker before printing so secret
+// payloads never reach the terminal (used by the secrets commands).
+func printDryRun(ctx *cli.Context, body any, redactFields ...string) error {
+	out := body
+	if len(redactFields) > 0 {
+		if redacted, ok := redactBodyFields(body, redactFields); ok {
+			out = redacted
+		}
+	}
+	pretty, err := marshalForOutput(ctx, out)
 	if err != nil {
 		return err
 	}
 	ctx.Println(string(pretty))
 	return nil
+}
+
+// redactBodyFields returns a JSON-shaped copy of body with the named top-level
+// fields replaced by a redaction marker. Map values have each entry redacted
+// (preserving keys); scalar values are replaced wholesale. Returns (nil, false)
+// when body cannot be JSON-roundtripped, leaving the caller to fall back to
+// the original body.
+func redactBodyFields(body any, fields []string) (any, bool) {
+	raw, err := json.Marshal(body)
+	if err != nil {
+		return nil, false
+	}
+	var m map[string]any
+	if err := json.Unmarshal(raw, &m); err != nil {
+		return nil, false
+	}
+	for _, f := range fields {
+		v, present := m[f]
+		if !present {
+			continue
+		}
+		if mp, ok := v.(map[string]any); ok {
+			masked := make(map[string]any, len(mp))
+			for k := range mp {
+				masked[k] = "***REDACTED***"
+			}
+			m[f] = masked
+			continue
+		}
+		m[f] = "***REDACTED***"
+	}
+	return m, true
 }
 
 // parseTagFlags converts repeatable --tag KEY=VALUE flags into a map. Returns
