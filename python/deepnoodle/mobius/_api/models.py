@@ -197,6 +197,25 @@ class Kind(StrEnum):
     channel = 'channel'
 
 
+class Purpose(StrEnum):
+    """
+    `general` channels are ordinary rooms. `resolve_interactions` channels exist to resolve one or more purpose-linked interactions.
+    """
+
+    general = 'general'
+    resolve_interactions = 'resolve_interactions'
+
+
+class CompletionBehavior(StrEnum):
+    """
+    Behavior to apply when every purpose-linked interaction is terminal.
+    """
+
+    none = 'none'
+    mark_inactive = 'mark_inactive'
+    archive = 'archive'
+
+
 class Channel(BaseModel):
     """
     Project-scoped messaging room or direct-message thread.
@@ -227,6 +246,17 @@ class Channel(BaseModel):
     )
     created_by: str = Field(
         ..., description='User ID of the org member who created the channel.'
+    )
+    purpose: Purpose = Field(
+        ...,
+        description='`general` channels are ordinary rooms. `resolve_interactions` channels exist to resolve one or more purpose-linked interactions.',
+    )
+    completion_behavior: CompletionBehavior = Field(
+        ...,
+        description='Behavior to apply when every purpose-linked interaction is terminal.',
+    )
+    completed_at: AwareDatetime | None = Field(
+        None, description='Set when this purpose-scoped channel has completed.'
     )
     archived_at: AwareDatetime | None = Field(
         None,
@@ -459,6 +489,25 @@ class Kind1(StrEnum):
     channel = 'channel'
 
 
+class Purpose1(StrEnum):
+    """
+    Optional purpose for the channel.
+    """
+
+    general = 'general'
+    resolve_interactions = 'resolve_interactions'
+
+
+class CompletionBehavior1(StrEnum):
+    """
+    Behavior to apply when all purpose-linked interactions are terminal.
+    """
+
+    none = 'none'
+    mark_inactive = 'mark_inactive'
+    archive = 'archive'
+
+
 class CreateChannelRequest(BaseModel):
     """
     Fields used to create a project channel or direct-message thread.
@@ -486,7 +535,27 @@ class CreateChannelRequest(BaseModel):
         None,
         description='Optional list of user or agent IDs to add as members at creation time. All receive the `member` role; the creator is added as `admin` separately.',
     )
+    purpose: Purpose1 = Field(
+        'general', description='Optional purpose for the channel.'
+    )
+    associated_interaction_ids: list[str] | None = Field(
+        None,
+        description="Existing same-project interaction IDs to link as the channel's purpose at creation time. Required when `purpose` is `resolve_interactions`.",
+    )
+    completion_behavior: CompletionBehavior1 = Field(
+        'none',
+        description='Behavior to apply when all purpose-linked interactions are terminal.',
+    )
     tags: TagMap | None = Field(None, description='Initial tag set.')
+
+
+class Purpose2(StrEnum):
+    """
+    Channel purpose. `resolve_interactions` requires at least one purpose-linked interaction.
+    """
+
+    general = 'general'
+    resolve_interactions = 'resolve_interactions'
 
 
 class UpdateChannelRequest(BaseModel):
@@ -500,6 +569,14 @@ class UpdateChannelRequest(BaseModel):
     display_name: str | None = Field(None, description='Updated display name.')
     topic: str | None = Field(None, description='Updated topic or description.')
     private: bool | None = Field(None, description='Toggle invite-only visibility.')
+    purpose: Purpose2 | None = Field(
+        None,
+        description='Channel purpose. `resolve_interactions` requires at least one purpose-linked interaction.',
+    )
+    completion_behavior: CompletionBehavior1 | None = Field(
+        'none',
+        description='Behavior to apply when all purpose-linked interactions are terminal.',
+    )
     tags: TagMap | None = Field(
         None,
         description='When supplied, replaces the user tag set on the channel. System tags (`mobius:*`) are preserved.',
@@ -523,11 +600,73 @@ class AddChannelMemberRequest(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    user_id: str = Field(..., description='User or agent ID to add to the channel.')
+    participant_id: str = Field(
+        ..., description='User or agent ID to add to the channel.'
+    )
     role: Role1 = Field(
         'member',
         description='Role to assign the new member, either `member` or `admin`.',
     )
+
+
+class Relation(StrEnum):
+    """
+    Relation between the channel and interaction.
+    """
+
+    purpose = 'purpose'
+    context = 'context'
+    followup = 'followup'
+
+
+class AssociateChannelInteractionRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    interaction_id: str = Field(
+        ..., description='Existing same-project interaction ID to associate.'
+    )
+    relation: Relation = Field(
+        'purpose', description='Relation between the channel and interaction.'
+    )
+
+
+class Relation1(StrEnum):
+    """
+    How the interaction is associated with the channel.
+    """
+
+    purpose = 'purpose'
+    context = 'context'
+    followup = 'followup'
+
+
+class ChannelInteractionLink(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str = Field(..., description='Unique identifier for this association.')
+    channel_id: str = Field(..., description='Channel ID.')
+    interaction_id: str = Field(..., description='Interaction ID.')
+    relation: Relation1 = Field(
+        ..., description='How the interaction is associated with the channel.'
+    )
+    created_by_type: str = Field(
+        ..., description='Actor type that created the association.'
+    )
+    created_by_id: str = Field(
+        ..., description='Actor ID that created the association.'
+    )
+    created_at: AwareDatetime = Field(
+        ..., description='Timestamp when the association was created.'
+    )
+
+
+class ChannelInteractionLinkListResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    items: list[ChannelInteractionLink]
 
 
 class Display2(StrEnum):
@@ -1154,13 +1293,13 @@ class WorkflowWaitEventConfig(BaseModel):
         ...,
         description='Integration event type to wait for, e.g. `github.pull_request.closed` or `stripe.invoice.paid`.',
     )
-    match_mode: MatchMode = Field(
-        'exact',
+    match_mode: MatchMode | None = Field(
+        None,
         description='Event type match mode. `exact` is the default. `prefix` requires a non-empty condition and matches descendants separated by `.`.',
     )
     condition: str | None = Field(
         None,
-        description='Optional bare-form `expr` predicate over `{ event, meta, inputs, steps, vars, each, run }`. The event resumes the step only when the expression evaluates truthy. Empty means "any event of the matching type resumes". Predicate fields use bare `expr`; `${...}` templating is reserved for value-producing fields.',
+        description='Optional bare-form `expr` predicate over `{ event, meta, inputs, steps, vars, each, run }`. The event resumes the step only when the expression evaluates bool true. Empty means "any event of the matching type resumes". Predicate fields use bare `expr`; `${...}` templating is reserved for value-producing fields.',
     )
     timeout: str = Field(
         ...,
@@ -1753,6 +1892,179 @@ class RunSignal(BaseModel):
     )
 
 
+class IntegrationEventSample(BaseModel):
+    id: str = Field(
+        ..., description='Stable sample identifier, unique across providers.'
+    )
+    provider: str = Field(..., description='Provider name, e.g. `github`.')
+    event_type: str = Field(
+        ..., description='Dotted integration event type this sample fires.'
+    )
+    name: str = Field(..., description='Human-readable sample name.')
+    description: str | None = Field(
+        None, description='What the sample is useful for testing.'
+    )
+    payload: dict[str, Any] = Field(
+        ..., description='Canonical Mobius integration-event payload.'
+    )
+    meta: dict[str, Any] | None = Field(
+        None, description='Optional extra metadata merged into test-fire requests.'
+    )
+
+
+class IntegrationEventSamplesResponse(BaseModel):
+    samples: list[IntegrationEventSample]
+
+
+class IntegrationEventFireMode(StrEnum):
+    """
+    `preview` evaluates matches without persistence; `deliver` persists a synthetic integration event and publishes it through normal delivery.
+    """
+
+    preview = 'preview'
+    deliver = 'deliver'
+
+
+class IntegrationEventFireRequest(BaseModel):
+    mode: IntegrationEventFireMode | None = None
+    sample_id: str | None = Field(
+        None,
+        description='Optional sample id to prefill provider, event_type, payload, and meta.',
+    )
+    provider: str | None = Field(
+        None,
+        description='Provider name. Defaults to the sample provider or the event_type prefix.',
+    )
+    event_type: str | None = Field(
+        None,
+        description='Dotted integration event type to fire. Required when sample_id is omitted.',
+    )
+    integration_id: str | None = Field(
+        None,
+        description='Optional integration id metadata. Defaults to `synthetic:<provider>`.',
+    )
+    dedup_key: str | None = Field(
+        None,
+        description='Optional dedup key for deliver mode. Defaults to the generated synthetic event id.',
+    )
+    payload: dict[str, Any] | None = Field(
+        None,
+        description='Canonical event payload. When sample_id is set, this replaces the sample payload.',
+    )
+    meta: dict[str, Any] | None = Field(
+        None,
+        description='Optional metadata overrides. Reserved event metadata is controlled by the top-level request fields.',
+    )
+
+
+class Source1(StrEnum):
+    synthetic = 'synthetic'
+
+
+class IntegrationEventFireEvent(BaseModel):
+    id: str | None = Field(
+        None, description='Persisted event id. Present in deliver mode.'
+    )
+    provider: str
+    event_type: str
+    integration_id: str | None = None
+    source: Source1
+    dedup_key: str | None = None
+    payload: dict[str, Any]
+    meta: dict[str, Any] | None = None
+
+
+class IntegrationEventFireWaiterMatch(BaseModel):
+    run_id: str
+    path_id: str | None = None
+    step_name: str
+    event_type: str | None = None
+    match_mode: str | None = None
+    condition: str | None = None
+    matches: bool
+    reason: str | None = None
+
+
+class TestFireTargetStatus(StrEnum):
+    """
+    Per-target outcome of a test-fire dispatch. Distinct from `TriggerFireStatus`, which carries aggregate values like `partial_failure` that are only meaningful at the trigger level.
+    """
+
+    success = 'success'
+    failed = 'failed'
+    skipped = 'skipped'
+
+
+class Kind2(StrEnum):
+    """
+    Effect kind of this target. Discriminates which resolved field is populated: `launch_run` populates `input_mapping_resolved`; `signal_run` populates `signal_payload_resolved`.
+    """
+
+    launch_run = 'launch_run'
+    signal_run = 'signal_run'
+
+
+class TestFireTargetResult(BaseModel):
+    """
+    Per-target outcome of a test-fire. Mirrors TriggerFireTargetResult but exposes the resolved input mapping and would-launch decision so trigger authors can debug each layer in isolation.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    target_id: str = Field(
+        ..., description='ID of the trigger target this result is for.'
+    )
+    kind: Kind2 = Field(
+        ...,
+        description='Effect kind of this target. Discriminates which resolved field is populated: `launch_run` populates `input_mapping_resolved`; `signal_run` populates `signal_payload_resolved`.',
+    )
+    workflow_id: str | None = Field(
+        None,
+        description='Workflow definition the target points at. Present only for `launch_run` targets.',
+    )
+    enabled: bool | None = Field(
+        None,
+        description='Whether the target is enabled. Disabled targets are skipped without resolution.',
+    )
+    status: TestFireTargetStatus
+    input_mapping_resolved: dict[str, Any] | None = Field(
+        None, description='(launch_run only) Resolved input map handed to the workflow.'
+    )
+    signal_payload_resolved: dict[str, Any] | None = Field(
+        None,
+        description="(signal_run only) Resolved signal payload that would be delivered to the matched run's `wait_signal` step.",
+    )
+    input_resolution_error: str | None = Field(
+        None,
+        description="Error encountered resolving the target's `input_mapping` for a `launch_run` target. `signal_run` targets report `signal_payload_mapping` failures via `signal_payload_resolution_error` instead, so clients can distinguish which resolution step failed without parsing the error string. Errors rendering the run-selector template (`run_selector.external_id_template` for `signal_run`, or the `external_id_template` for `launch_run`) surface in `launch_error`.",
+    )
+    signal_payload_resolution_error: str | None = Field(
+        None,
+        description="(signal_run only) Error encountered resolving `signal_payload_mapping` — the payload that would be delivered to the matched run's `wait_signal` step (and exposed under `signal_payload_resolved`). Reported separately from `input_resolution_error` so clients don't reuse launch-run-specific fields for signal failures.",
+    )
+    external_id_resolved: str | None = Field(
+        None,
+        description='Rendered value of `external_id_template` (launch_run) or `run_selector.external_id_template` (signal_run). Lets authors verify the two templates produce matching strings. Absent when the target has no template or rendering failed.',
+    )
+    would_launch: bool = Field(
+        ...,
+        description='True when the target would launch a run (`launch_run`) or signal an existing run (`signal_run`). False for disabled targets and targets whose condition evaluated to false.',
+    )
+    run_id: str | None = Field(
+        None,
+        description='ID of the launched (`launch_run`) or signaled (`signal_run`) run. Only set in execute mode.',
+    )
+    reason: str | None = Field(
+        None,
+        description='Why the target was skipped, when status is `skipped`. Empty for `success` and `failed` results.',
+    )
+    launch_error: str | None = Field(
+        None,
+        description='Error from the launcher (`launch_run`) or signal sender (`signal_run`) when execute mode failed to act on the target.',
+    )
+
+
 class ActionAnnotationsRequest(BaseModel):
     """
     Request hints that describe the safe-use properties of the action. Used by the engine and tooling to decide retry behavior, dry-run eligibility, etc. Unknown request properties are rejected.
@@ -1961,7 +2273,7 @@ class EndpointKind1(StrEnum):
     workflow = 'workflow'
 
 
-class Source1(StrEnum):
+class Source2(StrEnum):
     """
     Origin of this action: "platform" for built-in or integration-backed actions provided by Mobius, "custom" for project-owned HTTP endpoints registered as actions. The `integration` field carries the provider slug for integration-backed platform actions.
     """
@@ -1999,7 +2311,7 @@ class ActionCatalogEntry(BaseModel):
         None,
         description='Integration slug this action belongs to (e.g. "slack"), if platform-provided.',
     )
-    source: Source1 = Field(
+    source: Source2 = Field(
         ...,
         description='Origin of this action: "platform" for built-in or integration-backed actions provided by Mobius, "custom" for project-owned HTTP endpoints registered as actions. The `integration` field carries the provider slug for integration-backed platform actions.',
     )
@@ -2157,6 +2469,348 @@ class ActionInvocationListResponse(BaseModel):
         description='Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.',
     )
     has_more: bool = Field(..., description='Whether additional pages are available.')
+
+
+class EnvironmentProvider(StrEnum):
+    sprites = 'sprites'
+    cloudflare_containers = 'cloudflare_containers'
+
+
+class EnvironmentStatus(StrEnum):
+    provisioning = 'provisioning'
+    ready = 'ready'
+    running = 'running'
+    retained = 'retained'
+    destroying = 'destroying'
+    destroyed = 'destroyed'
+    failed = 'failed'
+    orphaned = 'orphaned'
+
+
+class EnvironmentPurpose(StrEnum):
+    implementation = 'implementation'
+    review = 'review'
+    verification = 'verification'
+    preview = 'preview'
+    debug = 'debug'
+    worker = 'worker'
+    custom = 'custom'
+
+
+class EnvironmentOwnerType(StrEnum):
+    none = 'none'
+    user = 'user'
+    agent = 'agent'
+    workflow_run = 'workflow_run'
+    worker_session = 'worker_session'
+    service = 'service'
+
+
+class EnvironmentRetentionPolicy(StrEnum):
+    manual = 'manual'
+    destroy_on_success = 'destroy_on_success'
+    retain_on_failure = 'retain_on_failure'
+    retain_always = 'retain_always'
+
+
+class EnvironmentCleanupStatus(StrEnum):
+    none = 'none'
+    pending = 'pending'
+    succeeded = 'succeeded'
+    failed = 'failed'
+    skipped = 'skipped'
+
+
+class EnvironmentLeaseStatus(StrEnum):
+    active = 'active'
+    released = 'released'
+    expired = 'expired'
+    revoked = 'revoked'
+
+
+class TemplateId(StrEnum):
+    coding_default = 'coding-default'
+
+
+class Environment(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str
+    name: str
+    provider: EnvironmentProvider
+    provider_resource_id: str | None = None
+    provider_resource_name: str | None = None
+    status: EnvironmentStatus
+    purpose: EnvironmentPurpose | None = None
+    owner_type: EnvironmentOwnerType | None = None
+    owner_id: str | None = None
+    created_by: str | None = None
+    run_id: str | None = None
+    job_id: str | None = None
+    current_worker_session_id: str | None = None
+    agent_id: str | None = None
+    template_id: TemplateId | None = None
+    capabilities: list[str] = Field(..., max_length=50)
+    spec_version: int = Field(..., ge=1)
+    spec: dict[str, Any] | None = None
+    runtime: dict[str, Any] = Field(
+        ...,
+        description='Provider-observed runtime data. URLs live under runtime.urls, with runtime.urls.primary as the primary URL when present.',
+    )
+    tags: TagMap | None = None
+    contains_secrets: bool
+    cleanup_status: EnvironmentCleanupStatus
+    retention_policy: EnvironmentRetentionPolicy
+    lease_expires_at: AwareDatetime | None = None
+    last_seen_at: AwareDatetime | None = None
+    last_reconciled_at: AwareDatetime | None = None
+    last_error: str | None = None
+    created_at: AwareDatetime
+    updated_at: AwareDatetime
+    destroyed_at: AwareDatetime | None = None
+
+
+class EnvironmentLease(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str
+    environment_id: str
+    holder_type: EnvironmentOwnerType | None = None
+    holder_id: str | None = None
+    purpose: EnvironmentPurpose | None = None
+    status: EnvironmentLeaseStatus
+    acquired_at: AwareDatetime
+    expires_at: AwareDatetime | None = None
+    released_at: AwareDatetime | None = None
+
+
+class EnvironmentListResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    items: list[Environment]
+    has_more: bool
+    next_cursor: str | None = None
+
+
+class TemplateId1(StrEnum):
+    """
+    V1 supports only coding-default.
+    """
+
+    coding_default = 'coding-default'
+
+
+class CreateEnvironmentRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    name: str | None = None
+    provider: EnvironmentProvider | None = None
+    purpose: EnvironmentPurpose | None = None
+    owner_type: EnvironmentOwnerType | None = None
+    owner_id: str | None = None
+    template_id: TemplateId1 | None = Field(
+        None, description='V1 supports only coding-default.'
+    )
+    spec: dict[str, Any] | None = None
+    tags: TagMap | None = None
+    retention_policy: EnvironmentRetentionPolicy | None = None
+
+
+class UpdateEnvironmentRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    purpose: EnvironmentPurpose | None = None
+    retention_policy: EnvironmentRetentionPolicy | None = None
+    owner_type: EnvironmentOwnerType | None = None
+    owner_id: str | None = None
+    tags: TagMap | None = None
+
+
+class AcquireEnvironmentRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    environment_id: str | None = None
+    template_id: TemplateId1 | None = Field(
+        None, description='V1 supports only coding-default.'
+    )
+    name: str | None = None
+    provider: EnvironmentProvider | None = None
+    purpose: EnvironmentPurpose | None = None
+    holder_type: EnvironmentOwnerType | None = None
+    holder_id: str | None = None
+    owner_type: EnvironmentOwnerType | None = None
+    owner_id: str | None = None
+    spec: dict[str, Any] | None = None
+    tags: TagMap | None = None
+    lease_ttl: str | None = Field(
+        None, description='Go duration string, for example 30m or 2h.'
+    )
+
+
+class EnvironmentAcquireResult(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    environment: Environment
+    lease: EnvironmentLease
+
+
+class ExecEnvironmentRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    command: list[str] = Field(..., min_length=1)
+    dir: str | None = None
+    env: list[str] | None = None
+    stdin: str | None = None
+
+
+class EnvironmentExecResult(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    stdout: str
+    stderr: str
+    exit_code: int
+
+
+class WriteEnvironmentFileRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    path: str
+    content: str
+
+
+class StartEnvironmentWorkerRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    api_url: str | None = None
+    command: list[str] | None = None
+    dir: str | None = None
+
+
+class EnvironmentStartWorkerResult(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    environment: Environment
+    api_key_id: str
+    key_expires_at: AwareDatetime
+    stdout: str
+    stderr: str
+    exit_code: int
+
+
+class SecretValues(RootModel[dict[str, str]]):
+    """
+    JSON key/value payload encrypted as a SecretVersion.
+    """
+
+    root: dict[str, str]
+
+
+class SecretVersionState(StrEnum):
+    """
+    Secret version lifecycle state.
+    """
+
+    ENABLED = 'ENABLED'
+    DISABLED = 'DISABLED'
+    DESTROYED = 'DESTROYED'
+
+
+class Secret(BaseModel):
+    """
+    Project-scoped secret metadata. Values are never returned.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str = Field(..., description='Unique secret ID.')
+    name: str = Field(..., description='Project-scoped secret name.')
+    description: str | None = Field(
+        None, description='Optional human-readable description.'
+    )
+    version: int = Field(..., description='Latest version number.')
+    key_names: list[str] = Field(
+        ..., description='Sorted keys present in the latest version.'
+    )
+    created_by: str | None = Field(
+        None, description='Actor that created the secret, when known.'
+    )
+    created_at: AwareDatetime
+    updated_at: AwareDatetime
+
+
+class SecretVersion(BaseModel):
+    """
+    SecretVersion metadata. Values are never returned.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str = Field(..., description='Unique secret version ID.')
+    secret_id: str = Field(..., description='Parent secret ID.')
+    version: int = Field(..., description='Version number.')
+    state: SecretVersionState
+    sha256: str = Field(
+        ...,
+        description='SHA-256 of the canonical JSON plaintext, for change detection only.',
+    )
+    kms_key_id: str | None = Field(
+        None, description='Key identifier used to seal the payload.'
+    )
+    created_by: str | None = Field(
+        None, description='Actor that created this version, when known.'
+    )
+    created_at: AwareDatetime
+    destroyed_at: AwareDatetime | None = None
+
+
+class SecretListResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    items: list[Secret]
+    next_cursor: str | None = Field(
+        None, description='Cursor for the next page, when more results exist.'
+    )
+
+
+class SecretVersionListResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    items: list[SecretVersion]
+
+
+class CreateSecretRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    name: str = Field(..., description='Project-scoped secret name.')
+    description: str | None = Field(
+        None, description='Optional human-readable description.'
+    )
+    values: SecretValues
+
+
+class UpdateSecretRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    description: str | None = Field(None, description='Replacement description.')
+    values: SecretValues | None = None
 
 
 class ReferenceCandidate(BaseModel):
@@ -2470,16 +3124,6 @@ class TriggerFireStatus(StrEnum):
     skipped = 'skipped'
 
 
-class TestFireTargetStatus(StrEnum):
-    """
-    Per-target outcome of a test-fire dispatch. Distinct from `TriggerFireStatus`, which carries aggregate values like `partial_failure` that are only meaningful at the trigger level.
-    """
-
-    success = 'success'
-    failed = 'failed'
-    skipped = 'skipped'
-
-
 class TriggerFireTargetStatus(StrEnum):
     """
     Outcome for a single target within a trigger fire activation. Per-target results never aggregate, so `partial_failure` cannot appear here.
@@ -2490,7 +3134,7 @@ class TriggerFireTargetStatus(StrEnum):
     skipped = 'skipped'
 
 
-class Kind2(StrEnum):
+class Kind3(StrEnum):
     """
     Discriminates the target's effect. `launch_run` starts a new workflow run; `signal_run` signals an existing run.
     """
@@ -2514,7 +3158,7 @@ class TriggerTargetRunSelector(BaseModel):
     )
 
 
-class Kind3(StrEnum):
+class Kind4(StrEnum):
     launch_run = 'launch_run'
     signal_run = 'signal_run'
 
@@ -2527,7 +3171,7 @@ class CreateTriggerTargetRequest(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    kind: Kind3 = 'launch_run'
+    kind: Kind4 = 'launch_run'
     workflow_id: str | None = Field(
         None,
         description='(launch_run only) ID of the workflow definition to run. Required when `kind=launch_run`.',
@@ -2556,7 +3200,7 @@ class CreateTriggerTargetRequest(BaseModel):
     )
 
 
-class Kind4(StrEnum):
+class Kind5(StrEnum):
     """
     Replacement kind. Changing kind requires the corresponding kind-specific fields to be updated in the same request.
     """
@@ -2573,7 +3217,7 @@ class UpdateTriggerTargetRequest(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    kind: Kind4 | None = Field(
+    kind: Kind5 | None = Field(
         None,
         description='Replacement kind. Changing kind requires the corresponding kind-specific fields to be updated in the same request.',
     )
@@ -2602,7 +3246,7 @@ class UpdateTriggerTargetRequest(BaseModel):
     )
 
 
-class Kind5(StrEnum):
+class Kind6(StrEnum):
     """
     Effect kind of the evaluated target. `launch_run` started (or attempted) a new workflow run; `signal_run` delivered (or attempted to deliver) a signal to an existing run. Lets clients reliably branch on `kind` instead of inspecting optional fields like `workflow_id` or `external_id_resolved`.
     """
@@ -2622,7 +3266,7 @@ class TriggerFireTargetResult(BaseModel):
     target_id: str = Field(
         ..., description='ID of the trigger target that was evaluated.'
     )
-    kind: Kind5 = Field(
+    kind: Kind6 = Field(
         ...,
         description='Effect kind of the evaluated target. `launch_run` started (or attempted) a new workflow run; `signal_run` delivered (or attempted to deliver) a signal to an existing run. Lets clients reliably branch on `kind` instead of inspecting optional fields like `workflow_id` or `external_id_resolved`.',
     )
@@ -2790,6 +3434,14 @@ class Mode2(StrEnum):
     execute = 'execute'
 
 
+class TestFireTriggerResult(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    mode: Mode2
+    targets: list[TestFireTargetResult]
+
+
 class Mode3(StrEnum):
     """
     `preview` resolves input mappings and condition outcomes without launching runs. `execute` runs the real dispatcher path — runs are tagged with source_label `test-fire` so they are filterable in the run list.
@@ -2818,76 +3470,6 @@ class TestFireTriggerRequest(BaseModel):
     mode: Mode3 = Field(
         'preview',
         description='`preview` resolves input mappings and condition outcomes without launching runs. `execute` runs the real dispatcher path — runs are tagged with source_label `test-fire` so they are filterable in the run list.',
-    )
-
-
-class Kind6(StrEnum):
-    """
-    Effect kind of this target. Discriminates which resolved field is populated: `launch_run` populates `input_mapping_resolved`; `signal_run` populates `signal_payload_resolved`.
-    """
-
-    launch_run = 'launch_run'
-    signal_run = 'signal_run'
-
-
-class TestFireTargetResult(BaseModel):
-    """
-    Per-target outcome of a test-fire. Mirrors TriggerFireTargetResult but exposes the resolved input mapping and would-launch decision so trigger authors can debug each layer in isolation.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    target_id: str = Field(
-        ..., description='ID of the trigger target this result is for.'
-    )
-    kind: Kind6 = Field(
-        ...,
-        description='Effect kind of this target. Discriminates which resolved field is populated: `launch_run` populates `input_mapping_resolved`; `signal_run` populates `signal_payload_resolved`.',
-    )
-    workflow_id: str | None = Field(
-        None,
-        description='Workflow definition the target points at. Present only for `launch_run` targets.',
-    )
-    enabled: bool | None = Field(
-        None,
-        description='Whether the target is enabled. Disabled targets are skipped without resolution.',
-    )
-    status: TestFireTargetStatus
-    input_mapping_resolved: dict[str, Any] | None = Field(
-        None, description='(launch_run only) Resolved input map handed to the workflow.'
-    )
-    signal_payload_resolved: dict[str, Any] | None = Field(
-        None,
-        description="(signal_run only) Resolved signal payload that would be delivered to the matched run's `wait_signal` step.",
-    )
-    input_resolution_error: str | None = Field(
-        None,
-        description="Error encountered resolving the target's `input_mapping` for a `launch_run` target. `signal_run` targets report `signal_payload_mapping` failures via `signal_payload_resolution_error` instead, so clients can distinguish which resolution step failed without parsing the error string. Errors rendering the run-selector template (`run_selector.external_id_template` for `signal_run`, or the `external_id_template` for `launch_run`) surface in `launch_error`.",
-    )
-    signal_payload_resolution_error: str | None = Field(
-        None,
-        description="(signal_run only) Error encountered resolving `signal_payload_mapping` — the payload that would be delivered to the matched run's `wait_signal` step (and exposed under `signal_payload_resolved`). Reported separately from `input_resolution_error` so clients don't reuse launch-run-specific fields for signal failures.",
-    )
-    external_id_resolved: str | None = Field(
-        None,
-        description='Rendered value of `external_id_template` (launch_run) or `run_selector.external_id_template` (signal_run). Lets authors verify the two templates produce matching strings. Absent when the target has no template or rendering failed.',
-    )
-    would_launch: bool = Field(
-        ...,
-        description='True when the target would launch a run (`launch_run`) or signal an existing run (`signal_run`). False for disabled targets and targets whose condition evaluated to false.',
-    )
-    run_id: str | None = Field(
-        None,
-        description='ID of the launched (`launch_run`) or signaled (`signal_run`) run. Only set in execute mode.',
-    )
-    reason: str | None = Field(
-        None,
-        description='Why the target was skipped, when status is `skipped`. Empty for `success` and `failed` results.',
-    )
-    launch_error: str | None = Field(
-        None,
-        description='Error from the launcher (`launch_run`) or signal sender (`signal_run`) when execute mode failed to act on the target.',
     )
 
 
@@ -3697,7 +4279,59 @@ class PingWebhookResult(BaseModel):
     )
 
 
-class IntegrationCatalogEventType(BaseModel):
+class IntegrationStatus(StrEnum):
+    """
+    `active` — integration is enabled and usable by workflows. `inactive` — manually disabled; no automatic expiry behavior. `expired` — token/credential has expired (e.g., OAuth token not refreshed).
+    """
+
+    active = 'active'
+    inactive = 'inactive'
+    expired = 'expired'
+
+
+class IntegrationProviderConnection(BaseModel):
+    """
+    Project-local connection summary for a provider.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    connected: bool = Field(
+        ...,
+        description='True when this project has an active integration row for the provider.',
+    )
+    integration_id: str | None = Field(
+        None,
+        description='Most relevant integration ID for this provider in the project, when one exists.',
+    )
+    integration_name: str | None = Field(
+        None,
+        description='Most relevant integration name for this provider in the project, when one exists.',
+    )
+    status: IntegrationStatus | None = None
+    updated_at: AwareDatetime | None = Field(
+        None,
+        description='Timestamp when the most relevant integration row was last updated.',
+    )
+
+
+class IntegrationProviderTriggerPattern(BaseModel):
+    """
+    Catalog descriptor for creating a trigger from a provider-owned event pattern. The array is currently empty for all providers; this schema reserves the response shape for the trigger-pattern rollout.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str
+    label: str
+    description: str | None = None
+    event_type: str | None = None
+    category: str | None = None
+
+
+class IntegrationProviderEventType(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
@@ -3715,7 +4349,7 @@ class IntegrationCatalogEventType(BaseModel):
     )
 
 
-class IntegrationCatalogAction(BaseModel):
+class IntegrationProviderAction(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
@@ -4111,66 +4745,6 @@ class AgentSessionStatus(StrEnum):
     stale = 'stale'
 
 
-class Agent(BaseModel):
-    """
-    Project-scoped automated worker identity backed by a service account. Agents are useful when workflows need to target a named machine actor with capabilities, configuration, and session presence.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    id: str = Field(..., description='Unique identifier for this agent.')
-    service_account_id: str = Field(
-        ...,
-        description='The service account whose credentials this agent uses to authenticate. Each service account backs at most one agent; this binding is immutable after creation.',
-    )
-    name: str = Field(
-        ...,
-        description='Mutable unique name within the project. Free-form human-readable label; use `id` for stable references and job targeting.',
-        max_length=63,
-        min_length=1,
-    )
-    description: str | None = Field(
-        None, description='Optional human-readable description.', max_length=500
-    )
-    kind: str | None = Field(
-        None,
-        description='Freeform agent classification for tooling and filtering (e.g. "llm", "rpa").',
-    )
-    color: str | None = Field(
-        None,
-        description='Display color for this agent in UI surfaces such as channel avatars and message rails. One of the Mantine color palette keys (e.g. `indigo`, `teal`, `grape`); empty string falls back to a hash-derived color.',
-        max_length=24,
-    )
-    capabilities: dict[str, Any] | None = Field(
-        None,
-        description='Arbitrary capability map used by orchestrators to select suitable agents.',
-    )
-    config: dict[str, Any] | None = Field(
-        None,
-        description='Agent-specific configuration blob stored and returned opaquely.',
-    )
-    status: AgentStatus = Field(
-        ..., description='Current agent status: `active` or `disabled`.'
-    )
-    presence: AgentPresence = Field(
-        ..., description='Current agent presence: `online`, `offline`, or `unknown`.'
-    )
-    email_address: str | None = Field(
-        None,
-        description='Inbox address provisioned via POST /v1/projects/{project}/agents/{id}/inbox (opt-in; not created automatically at agent creation). The field is populated only after a successful provisioning call. Use this address to add the agent as a member on external platforms (Linear, GitHub, Slack, etc.) so the platform can deliver notifications to the agent.',
-    )
-    tags: TagMap | None = Field(
-        None, description='Resource tags applied to this agent.'
-    )
-    created_at: AwareDatetime = Field(
-        ..., description='Timestamp when this agent was created.'
-    )
-    updated_at: AwareDatetime = Field(
-        ..., description='Timestamp when this agent was last updated.'
-    )
-
-
 class AgentSession(BaseModel):
     """
     Live or historical connection from an agent process. Use sessions to monitor availability, transport, metadata, and heartbeat freshness for automated workers.
@@ -4208,13 +4782,6 @@ class AgentSession(BaseModel):
     )
 
 
-class AgentListResponse(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    items: list[Agent] = Field(..., description='The list of results for this page.')
-
-
 class AgentSessionListResponse(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
@@ -4222,6 +4789,293 @@ class AgentSessionListResponse(BaseModel):
     items: list[AgentSession] = Field(
         ..., description='The list of results for this page.'
     )
+
+
+class Risk(StrEnum):
+    low = 'low'
+    medium = 'medium'
+    high = 'high'
+    critical = 'critical'
+
+
+class AgentNativeTool(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str = Field(
+        ..., description='Stable native-tool grant ID, such as `mobius_table_read`.'
+    )
+    label: str = Field(
+        ..., description='Human-readable tool label for toolkit editors.'
+    )
+    description: str = Field(..., description='What this native tool allows.')
+    concrete_tools: list[str] = Field(
+        ..., description='Model-facing concrete tools exposed by this native grant.'
+    )
+    risk: Risk
+
+
+class SelectorType(StrEnum):
+    """
+    How to match action catalog names.
+    """
+
+    exact = 'exact'
+    group = 'group'
+    platform = 'platform'
+    custom = 'custom'
+    workflow = 'workflow'
+    wildcard = 'wildcard'
+
+
+class ToolkitActionGrant(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    selector_type: SelectorType = Field(
+        ..., description='How to match action catalog names.'
+    )
+    selector: str = Field(
+        ...,
+        description='Selector value. Examples: `github.list_issues`, `github.*`, `platform.github.*`, `custom.*`, `workflow.*`, or `*`.',
+    )
+
+
+class Source3(StrEnum):
+    system = 'system'
+    project = 'project'
+
+
+class Status4(StrEnum):
+    active = 'active'
+    archived = 'archived'
+
+
+class Toolkit(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str = Field(..., description='Toolkit ID (TypeID `tk_...`).')
+    org_id: str
+    project_id: str
+    name: str
+    slug: str | None = None
+    description: str | None = None
+    source: Source3
+    status: Status4
+    native_tool_ids: list[str] = Field(
+        ..., description='Native-tool grant IDs owned by this toolkit.'
+    )
+    native_tools: list[AgentNativeTool] | None = Field(
+        None, description="Expanded native-tool metadata for the toolkit's tool grants."
+    )
+    action_grants: list[ToolkitActionGrant]
+    created_at: AwareDatetime
+    updated_at: AwareDatetime
+
+
+class ToolkitRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    name: str = Field(..., max_length=80, min_length=1)
+    slug: str | None = Field(
+        None,
+        description='Optional stable slug. When omitted, the server derives one from `name`.',
+    )
+    description: str | None = Field(None, max_length=1000)
+    native_tool_ids: list[str] | None = Field(
+        None, description='Native-tool grant IDs to allow.'
+    )
+    action_grants: list[ToolkitActionGrant] | None = None
+
+
+class ToolkitListResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    items: list[Toolkit]
+
+
+class ToolkitAssignment(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    agent_id: str
+    toolkit_id: str
+    toolkit: Toolkit | None = None
+    position: int
+    created_at: AwareDatetime
+
+
+class ReplaceToolkitsRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    toolkit_ids: list[str]
+
+
+class ToolkitAssignmentListResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    items: list[ToolkitAssignment]
+
+
+class Source4(StrEnum):
+    system = 'system'
+    project = 'project'
+    imported = 'imported'
+
+
+class Skill(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str = Field(..., description='Skill ID (TypeID `skl_...`).')
+    org_id: str
+    project_id: str
+    name: str
+    slug: str | None = None
+    description: str | None = None
+    source: Source4
+    status: Status4
+    instructions: str = Field(
+        ..., description='Markdown instructions loaded when the skill is active.'
+    )
+    allowed_tools: list[str] = Field(
+        ...,
+        description='Requested native-tool IDs, concrete tool names, or known aliases.',
+    )
+    allowed_actions: list[str] = Field(
+        ..., description='Requested action names/selectors.'
+    )
+    frontmatter: dict[str, Any] | None = Field(
+        None, description='Original imported frontmatter preserved for round-tripping.'
+    )
+    model_hint: str | None = Field(
+        None,
+        description='Advisory model preference; it does not override the agent model in v1.',
+    )
+    user_invocable: bool | None = Field(
+        None, description='Whether users may directly request this skill by name.'
+    )
+    created_at: AwareDatetime
+    updated_at: AwareDatetime
+
+
+class SkillRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    name: str = Field(..., max_length=80, min_length=1)
+    slug: str | None = None
+    description: str | None = Field(None, max_length=1000)
+    instructions: str = Field(..., min_length=1)
+    allowed_tools: list[str] | None = None
+    allowed_actions: list[str] | None = None
+    frontmatter: dict[str, Any] | None = None
+    model_hint: str | None = None
+    user_invocable: bool | None = None
+
+
+class ImportSkillRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    content: str = Field(
+        ..., description='Full skill document, optionally with YAML frontmatter.'
+    )
+    name: str | None = Field(None, description='Optional name override.')
+
+
+class SkillListResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    items: list[Skill]
+
+
+class SkillAssignment(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    agent_id: str
+    skill_id: str
+    skill: Skill | None = None
+    enabled: bool
+    position: int
+    created_at: AwareDatetime
+
+
+class ReplaceSkillsRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    skill_ids: list[str]
+
+
+class SkillAssignmentListResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    items: list[SkillAssignment]
+
+
+class SkillManifestEntry(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str
+    name: str
+    instructions: str
+    active: bool
+    allowed_tools: list[str]
+    allowed_actions: list[str]
+    model_hint: str | None = None
+    user_invocable: bool | None = None
+
+
+class AgentCapabilityWarning(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    code: str
+    message: str
+    skill_id: str | None = None
+    toolkit_id: str | None = None
+    tool: str | None = None
+    action: str | None = None
+
+
+class AgentBlockedActionGrant(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    selector_type: str
+    selector: str
+    reason: str
+
+
+class AgentCapabilityManifest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    agent_id: str
+    project_id: str
+    policy_hash: str
+    toolkit_ids: list[str]
+    native_tools: list[AgentNativeTool]
+    concrete_tools: list[str] = Field(
+        ..., description='Dotted model-facing tool names available to the agent.'
+    )
+    actions: list[ActionCatalogEntry] = Field(
+        ...,
+        description='Action catalog entries visible and executable under the manifest.',
+    )
+    skills: list[SkillManifestEntry]
+    warnings: list[AgentCapabilityWarning]
+    blocked_action_grants: list[AgentBlockedActionGrant]
 
 
 class CreateAgentRequest(BaseModel):
@@ -4317,187 +5171,22 @@ class CreateAgentSessionRequest(BaseModel):
     )
 
 
-class AgentInvocationStatus(StrEnum):
-    """
-    Lifecycle status of one `agent.invoke` call:
-    - `pending`: dispatched but the agent runtime hasn't claimed it yet.
-    - `running`: the agent runtime acknowledged and is executing.
-    - `completed`: the runtime returned a final response.
-    - `failed`: the runtime reported an error or the engine timed out.
-    - `cancelled`: the workflow run was cancelled before completion.
-    """
-
-    pending = 'pending'
-    running = 'running'
-    completed = 'completed'
-    failed = 'failed'
-    cancelled = 'cancelled'
+class ActorConnectionStatus(StrEnum):
+    online = 'online'
+    idle = 'idle'
+    offline = 'offline'
 
 
-class AgentInvocationErrorType(StrEnum):
-    """
-    Typed failure classification for completed-with-error invocations.
-    """
-
-    agent_unavailable = 'agent_unavailable'
-    agent_error = 'agent_error'
-    timeout = 'timeout'
-    tool_violation = 'tool_violation'
-    schema_violation = 'schema_violation'
-    no_tools_available = 'no_tools_available'
-    forbidden = 'forbidden'
-    cancelled = 'cancelled'
-
-
-class AgentInvocationToolCall(BaseModel):
-    """
-    Counts of tool calls made by the agent during one invocation. Names are surfaced in the durable record; full call traces ship via OTel when configured.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    name: str = Field(..., description='Tool name (e.g. `mobius_query_table`).')
-    count: int = Field(
-        ..., description='Number of times the tool was invoked during the loop.', ge=0
-    )
-
-
-class AgentInvocationTokens(BaseModel):
-    """
-    Token-usage attribution for one invocation.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    input: int = Field(..., description='Input/prompt tokens consumed.', ge=0)
-    output: int = Field(..., description='Output/completion tokens emitted.', ge=0)
-    total: int | None = Field(None, description='Sum of input and output tokens.', ge=0)
-
-
-class AgentInvocation(BaseModel):
-    """
-    Durable record of one `agent.invoke` workflow action call. Carries the dispatch payload, the agent runtime's response or error, and the signal topic the suspended workflow branch waits on.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    id: str = Field(..., description='Invocation ID (TypeID `ainv_…`).')
-    org_id: str = Field(..., description='Owning organization ID.')
-    project_id: str = Field(..., description='Owning project ID.')
-    agent_id: str = Field(..., description='Agent that was (or will be) invoked.')
-    agent_kind: str | None = Field(
-        None, description="Snapshot of the agent's `kind` at dispatch time."
-    )
-    status: AgentInvocationStatus
-    workflow_run_id: str = Field(
-        ..., description='Workflow run that issued the invocation.'
-    )
-    step_name: str = Field(..., description='Workflow step that issued the invocation.')
-    path_id: str = Field(..., description='Branch identifier within the workflow run.')
-    topic: str = Field(
-        ..., description='SignalStore topic the suspended branch waits on.'
-    )
-    prompt: str = Field(..., description='User-turn prompt the agent receives.')
-    instructions: str | None = Field(
-        None, description='Optional system-prompt addendum applied for this call only.'
-    )
-    context: dict[str, Any] | None = Field(
-        None, description='Caller-supplied structured context surfaced to the agent.'
-    )
-    allowed_tools: list[str] | None = Field(
-        None,
-        description='Optional restriction on which tools the agent may call. Empty array means no restriction.',
-    )
-    output_schema: dict[str, Any] | None = Field(
-        None,
-        description="Optional JSON Schema the agent's structured response must satisfy.",
-    )
-    timeout_seconds: int = Field(
-        ..., description='Hard timeout applied to this invocation.'
-    )
-    response_text: str | None = Field(
-        None,
-        description='Final assistant-turn text returned by the agent. Empty until completion.',
-    )
-    response_struct: dict[str, Any] | None = Field(
-        None,
-        description='Structured output (if `output_schema` was supplied and the agent emitted JSON). Empty otherwise.',
-    )
-    tool_calls: list[AgentInvocationToolCall] | None = Field(
-        None, description='Per-tool counts surfaced from the loop.'
-    )
-    tool_calls_count: int | None = Field(
-        None, description='Total tool calls across the loop.'
-    )
-    tokens: AgentInvocationTokens | None = None
-    error_type: AgentInvocationErrorType | None = Field(
-        None, description='Set on failed invocations.'
-    )
-    error_message: str | None = Field(
-        None, description='Human-readable error description for failed invocations.'
-    )
-    created_at: AwareDatetime = Field(
-        ..., description='When the invocation row was created.'
-    )
-    dispatched_at: AwareDatetime | None = Field(
-        None, description='When the invocation was handed off to the agent runtime.'
-    )
-    completed_at: AwareDatetime | None = Field(
-        None, description='When the invocation reached a terminal status.'
-    )
-
-
-class AgentInvocationCompleteRequest(BaseModel):
-    """
-    Worker-supplied result of an in-flight invocation. The server validates `tool_calls` against the original `allowed_tools` and `structured` against `output_schema` before resuming the workflow branch.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    text: str = Field(..., description='Final assistant-turn text from the agent.')
-    structured: dict[str, Any] | None = Field(
-        None,
-        description='Optional structured output. Required when the invocation specified `output_schema`.',
-    )
-    tool_calls: list[AgentInvocationToolCall] | None = Field(
-        None,
-        description='Per-tool counts observed during the loop. Used for tool-restriction audit.',
-    )
-    tokens: AgentInvocationTokens | None = Field(
-        None, description='Token-usage attribution for this invocation.'
-    )
-
-
-class AgentInvocationFailRequest(BaseModel):
-    """
-    Worker-reported failure for an in-flight invocation.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    error_type: AgentInvocationErrorType
-    error_message: str = Field(
-        ..., description='Human-readable description of the failure.'
-    )
+class ActorPresenceSource(StrEnum):
+    web = 'web'
+    worker_session = 'worker_session'
+    agent_session = 'agent_session'
+    platform_hosted = 'platform_hosted'
 
 
 class ActorStateActorKind(StrEnum):
     user = 'user'
     agent = 'agent'
-
-
-class ActorStateSource(StrEnum):
-    manual = 'manual'
-    session = 'session'
-    agent_report = 'agent_report'
-    derived = 'derived'
-    calendar = 'calendar'
-    integration = 'integration'
 
 
 class ActorStateVisibility(StrEnum):
@@ -4506,67 +5195,26 @@ class ActorStateVisibility(StrEnum):
     self = 'self'
 
 
-class ActorAssignmentRole(StrEnum):
-    doing = 'doing'
-    queued = 'queued'
-    next = 'next'
-
-
-class ActorAssignmentSourceKind(StrEnum):
-    job_claim = 'job_claim'
-    manual = 'manual'
-    agent_report = 'agent_report'
-    trigger = 'trigger'
-
-
-class ActorReference(BaseModel):
-    """
-    Polymorphic target reference compatible with Reference Pickers.
-    """
-
-    model_config = ConfigDict(
-        extra='allow',
-    )
-
-
-class ActorFocus(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    headline: str | None = Field(None, max_length=120)
-    ref: ActorReference | None = None
-    url: AnyUrl | None = None
-
-
-class ActorCapacity(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    in_use: int | None = Field(None, ge=0)
-    max: int | None = Field(None, ge=0)
-    accepting_new: bool | None = None
-
-
-class Role4(StrEnum):
-    """
-    Client reports may set queued or next assignments only.
-    """
-
-    queued = 'queued'
-    next = 'next'
+class ActorAssignmentStatus(StrEnum):
+    todo = 'todo'
+    in_progress = 'in_progress'
+    blocked = 'blocked'
+    done = 'done'
 
 
 class ActorAssignmentInput(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    role: Role4 = Field(
-        ..., description='Client reports may set queued or next assignments only.'
+    status: ActorAssignmentStatus
+    headline: str = Field(..., max_length=120)
+    description: str | None = Field(None, max_length=4000)
+    started_at: AwareDatetime | None = Field(
+        None, description='When the actor actually began working on this assignment.'
     )
-    target_ref: ActorReference
-    target_key: str
-    headline: str | None = Field(None, max_length=120)
-    due_at: AwareDatetime | None = None
+    due_by: AwareDatetime | None = Field(
+        None, description='When the assignment is expected to be completed.'
+    )
 
 
 class ActorAssignment(BaseModel):
@@ -4575,13 +5223,11 @@ class ActorAssignment(BaseModel):
     )
     id: str
     actor_state_id: str
-    role: ActorAssignmentRole
-    target_ref: ActorReference
-    target_key: str
-    headline: str | None = None
-    claimed_at: AwareDatetime | None = None
-    due_at: AwareDatetime | None = None
-    source_kind: ActorAssignmentSourceKind
+    status: ActorAssignmentStatus
+    headline: str
+    description: str | None = None
+    started_at: AwareDatetime | None = None
+    due_by: AwareDatetime | None = None
     created_at: AwareDatetime
     updated_at: AwareDatetime
 
@@ -4594,10 +5240,8 @@ class ActorState(BaseModel):
     actor_id: str
     actor_kind: ActorStateActorKind
     availability: ActorAvailability
-    focus: ActorFocus | None = None
-    capacity: ActorCapacity | None = None
+    description: str | None = None
     last_seen_at: AwareDatetime | None = None
-    status_source: ActorStateSource
     expires_at: AwareDatetime | None = None
     visibility: ActorStateVisibility
     stale: bool
@@ -4606,23 +5250,13 @@ class ActorState(BaseModel):
     updated_at: AwareDatetime
 
 
-class StatusSource(StrEnum):
-    manual = 'manual'
-    agent_report = 'agent_report'
-
-
 class UpsertActorStateRequest(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
     actor_kind: ActorStateActorKind
     availability: ActorAvailability
-    focus: ActorFocus | None = None
-    capacity: ActorCapacity | None = Field(
-        None,
-        description='Accepted for humans. Ignored for agents because agent capacity is server-derived.',
-    )
-    status_source: StatusSource
+    description: str | None = Field(None, max_length=4000)
     expires_at: AwareDatetime | None = None
     visibility: ActorStateVisibility | None = None
     assignments: list[ActorAssignmentInput] | None = None
@@ -4640,6 +5274,84 @@ class ActorAssignmentListResponse(BaseModel):
         extra='forbid',
     )
     items: list[ActorAssignment]
+
+
+class UserPresenceMode(StrEnum):
+    automatic = 'automatic'
+    appear_offline = 'appear_offline'
+
+
+class WebPresenceHeartbeatRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    session_id: str = Field(..., max_length=160, min_length=1)
+    project_id: str | None = None
+    visible: bool = True
+    last_active_at: AwareDatetime | None = None
+
+
+class UserPresencePreferences(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    mode: UserPresenceMode
+    updated_at: AwareDatetime
+
+
+class UpdateUserPresencePreferencesRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    mode: UserPresenceMode
+
+
+class ProjectTeamMemberKind(StrEnum):
+    user = 'user'
+    agent = 'agent'
+
+
+class ProjectTeamMemberLinks(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    agent_href: str | None = None
+    access_href: str | None = None
+    ask_href: str | None = None
+
+
+class ProjectTeamMember(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    actor_id: str
+    actor_kind: ProjectTeamMemberKind
+    display_name: str
+    secondary_label: str | None = None
+    avatar_url: str | None = None
+    availability: ActorAvailability | None = None
+    status_description: str | None = None
+    assignments: list[ActorAssignment]
+    stale: bool
+    can_update_status: bool = Field(
+        ...,
+        description="True when the current caller can update this teammate's Actor State.",
+    )
+    last_seen_at: AwareDatetime | None = None
+    connection_status: ActorConnectionStatus
+    connection_last_seen_at: AwareDatetime | None = None
+    presence_source: ActorPresenceSource | None = None
+    links: ProjectTeamMemberLinks | None = None
+
+
+class ProjectTeamListResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    items: list[ProjectTeamMember]
+    truncated: bool = Field(
+        ..., description='True when more than 500 rows matched the query.'
+    )
 
 
 class SpanKind(StrEnum):
@@ -5285,7 +5997,7 @@ class CreateObservableRequest(BaseModel):
         extra='forbid',
     )
     name: str
-    subject_kind: str
+    subject_kind: str | None = None
     subject: JSONDocument | None = None
     state_schema: JSONDocument
     update_config: JSONDocument | None = None
@@ -5384,6 +6096,34 @@ class ObservableEvent(BaseModel):
     created_at: AwareDatetime
 
 
+class RunStatus(StrEnum):
+    active = 'active'
+    completed = 'completed'
+    failed = 'failed'
+
+
+class ObservableWaiter(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    run_id: str
+    workflow_name: str
+    run_status: RunStatus
+    path_id: str
+    step_name: str
+    condition: str | None = Field(
+        None, description='Bare `expr` condition the Observable state must satisfy.'
+    )
+    observed_version: int = Field(
+        ..., description='Observable version observed when this path parked.'
+    )
+    deadline_at: AwareDatetime | None = Field(
+        None, description='Fixed timeout deadline for the wait, when configured.'
+    )
+    run_created_at: AwareDatetime
+    run_updated_at: AwareDatetime
+
+
 class SubmitObservableObservationRequest(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
@@ -5437,6 +6177,13 @@ class ObservableEventListResponse(BaseModel):
     )
     items: list[ObservableEvent]
     next_cursor: str | None = None
+
+
+class ObservableWaiterListResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    items: list[ObservableWaiter]
 
 
 class ChannelInteractionRespondRequest(BaseModel):
@@ -6028,6 +6775,28 @@ class JobListResponse(BaseModel):
     items: list[Job] = Field(..., description='The list of jobs for this run.')
 
 
+class IntegrationEventFireTriggerMatch(BaseModel):
+    trigger_id: str
+    name: str
+    target_count: int
+    targets: list[TestFireTargetResult] | None = None
+
+
+class IntegrationEventFireResponse(BaseModel):
+    mode: IntegrationEventFireMode
+    sample_id: str | None = None
+    event: IntegrationEventFireEvent
+    triggers: list[IntegrationEventFireTriggerMatch]
+    waiters: list[IntegrationEventFireWaiterMatch]
+    delivered: bool = Field(
+        ..., description='True when the event was persisted and published.'
+    )
+    deduped: bool | None = Field(
+        None,
+        description='True when deliver mode reused an existing event row by dedup key.',
+    )
+
+
 class JobEventsRequest(BaseModel):
     """
     Fenced batch of custom run events published by the worker holding a job's lease. Every event in `events` is published under the same `worker_session_token` + `attempt` fence; mismatch against the job's `claimed_by_session_token` returns 409 lease-lost.
@@ -6074,7 +6843,7 @@ class TriggerTarget(BaseModel):
     trigger_id: str = Field(
         ..., description='ID of the trigger this target belongs to.'
     )
-    kind: Kind2 = Field(
+    kind: Kind3 = Field(
         ...,
         description="Discriminates the target's effect. `launch_run` starts a new workflow run; `signal_run` signals an existing run.",
     )
@@ -6140,17 +6909,6 @@ class ActorStateTriggerSourceConfig(BaseModel):
     )
     from_availability: ActorAvailability | None = None
     to_availability: ActorAvailability | None = None
-    require_free_capacity: bool | None = Field(
-        None, description='When true, only fire if the new state has spare capacity.'
-    )
-
-
-class TestFireTriggerResult(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    mode: Mode2
-    targets: list[TestFireTargetResult]
 
 
 class WorkerSession(BaseModel):
@@ -6261,7 +7019,7 @@ class LLMGenerateResponse(BaseModel):
     usage: LLMGenerateUsage
 
 
-class IntegrationCatalogProvider(BaseModel):
+class IntegrationProvider(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
@@ -6269,6 +7027,16 @@ class IntegrationCatalogProvider(BaseModel):
         ..., description='Stable provider identifier (`github`, `slack`, …).'
     )
     display_name: str
+    description: str | None = Field(
+        None,
+        description='Human-readable provider summary for directory and detail surfaces.',
+    )
+    category: str | None = Field(
+        None, description='Human-readable grouping label for directory surfaces.'
+    )
+    icon: str | None = Field(
+        None, description='Stable icon key that clients may map to their own icon set.'
+    )
     auth_kind: str = Field(
         ...,
         description='Authentication mechanism the provider uses (e.g. `github_app_install`, `oauth2`, `api_key`).',
@@ -6280,8 +7048,84 @@ class IntegrationCatalogProvider(BaseModel):
         ...,
         description='Boolean capability flags reflecting which framework interfaces the provider implements (`connect`, `sync`, `live_status`, etc.).',
     )
-    events: list[IntegrationCatalogEventType]
-    actions: list[IntegrationCatalogAction]
+    connection: IntegrationProviderConnection
+    events: list[IntegrationProviderEventType]
+    actions: list[IntegrationProviderAction]
+    trigger_patterns: list[IntegrationProviderTriggerPattern] = Field(
+        ...,
+        description='Provider-owned trigger authoring presets. Empty until trigger patterns are registered for this provider.',
+    )
+
+
+class Agent(BaseModel):
+    """
+    Project-scoped automated worker identity backed by a service account. Agents are useful when workflows need to target a named machine actor with capabilities, configuration, and session presence.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str = Field(..., description='Unique identifier for this agent.')
+    service_account_id: str = Field(
+        ...,
+        description='The service account whose credentials this agent uses to authenticate. Each service account backs at most one agent; this binding is immutable after creation.',
+    )
+    name: str = Field(
+        ...,
+        description='Mutable unique name within the project. Free-form human-readable label; use `id` for stable references and job targeting.',
+        max_length=63,
+        min_length=1,
+    )
+    description: str | None = Field(
+        None, description='Optional human-readable description.', max_length=500
+    )
+    kind: str | None = Field(
+        None,
+        description='Freeform agent classification for tooling and filtering (e.g. "llm", "rpa").',
+    )
+    color: str | None = Field(
+        None,
+        description='Display color for this agent in UI surfaces such as channel avatars and message rails. One of the Mantine color palette keys (e.g. `indigo`, `teal`, `grape`); empty string falls back to a hash-derived color.',
+        max_length=24,
+    )
+    capabilities: dict[str, Any] | None = Field(
+        None,
+        description='Arbitrary capability map used by orchestrators to select suitable agents.',
+    )
+    config: dict[str, Any] | None = Field(
+        None,
+        description='Agent-specific configuration blob stored and returned opaquely.',
+    )
+    status: AgentStatus = Field(
+        ..., description='Current agent status: `active` or `disabled`.'
+    )
+    presence: AgentPresence = Field(
+        ...,
+        description='Deprecated alias of connection_status for first rollout compatibility.',
+    )
+    connection_status: ActorConnectionStatus
+    connection_last_seen_at: AwareDatetime | None = None
+    presence_source: ActorPresenceSource | None = None
+    email_address: str | None = Field(
+        None,
+        description='Inbox address provisioned via POST /v1/projects/{project}/agents/{id}/inbox (opt-in; not created automatically at agent creation). The field is populated only after a successful provisioning call. Use this address to add the agent as a member on external platforms (Linear, GitHub, Slack, etc.) so the platform can deliver notifications to the agent.',
+    )
+    tags: TagMap | None = Field(
+        None, description='Resource tags applied to this agent.'
+    )
+    created_at: AwareDatetime = Field(
+        ..., description='Timestamp when this agent was created.'
+    )
+    updated_at: AwareDatetime = Field(
+        ..., description='Timestamp when this agent was last updated.'
+    )
+
+
+class AgentListResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    items: list[Agent] = Field(..., description='The list of results for this page.')
 
 
 class WorkflowWaitUntilConfig(BaseModel):
@@ -6608,15 +7452,15 @@ class UpdateTriggerRequest(BaseModel):
     )
 
 
-class IntegrationCatalog(BaseModel):
+class IntegrationProvidersResponse(BaseModel):
     """
-    Capability catalog for the integrations registered on this server.
+    Integration providers and capabilities available to a project.
     """
 
     model_config = ConfigDict(
         extra='forbid',
     )
-    providers: list[IntegrationCatalogProvider]
+    providers: list[IntegrationProvider]
 
 
 class WorkflowWaitUntilStep(BaseModel):

@@ -27,7 +27,7 @@ func registerObservablesCommands(app *cli.App) {
 			cli.String("reducer-config", "").Help("reducer-config Accepts JSON, @file, or @-."),
 			cli.String("state-schema", "").Help("[required] state-schema Accepts JSON, @file, or @-."),
 			cli.String("subject", "").Help("subject Accepts JSON, @file, or @-."),
-			cli.String("subject-kind", "").Help("[required] subject-kind"),
+			cli.String("subject-kind", "").Help("subject-kind"),
 			cli.String("tags", "").Help("tags Accepts JSON, @file, or @-."),
 			cli.String("update-config", "").Help("update-config Accepts JSON, @file, or @-."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
@@ -69,7 +69,8 @@ func registerObservablesCommands(app *cli.App) {
 				}
 			}
 			if ctx.IsSet("subject-kind") {
-				body.SubjectKind = ctx.String("subject-kind")
+				v := ctx.String("subject-kind")
+				body.SubjectKind = &v
 			}
 			if ctx.IsSet("tags") {
 				if err := decodeFlagJSON(ctx, "tags", ctx.String("tags"), &body.Tags); err != nil {
@@ -86,9 +87,6 @@ func registerObservablesCommands(app *cli.App) {
 			}
 			if ctx.String("file") == "" && !ctx.IsSet("state-schema") {
 				return fmt.Errorf("--state-schema is required (or supply it via --file)")
-			}
-			if body.SubjectKind == "" {
-				return fmt.Errorf("--subject-kind is required (or supply it via --file)")
 			}
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
@@ -277,6 +275,33 @@ func registerObservablesCommands(app *cli.App) {
 				return err
 			}
 			return printResponse(ctx, "listObservableStateVersions", resp.StatusCode(), resp.Body)
+		})
+
+	observablesGrp.Command("list-waiters").
+		Description("List workflow paths waiting on an Observable").
+		Args("observable-id").
+		Flags(
+			cli.Int("limit", "").Help("limit"),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			p1 := ctx.Arg(0)
+			params := &api.ListObservableWaitersParams{}
+			if ctx.IsSet("limit") {
+				v := api.LimitParam(ctx.Int("limit"))
+				params.Limit = &v
+			}
+			resp, err := client.ListObservableWaitersWithResponse(ctx.Context(), p0, p1, params)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "listObservableWaiters", resp.StatusCode(), resp.Body)
 		})
 
 	observablesGrp.Command("submit-observable-observation").

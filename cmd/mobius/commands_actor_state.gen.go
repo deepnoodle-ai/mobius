@@ -38,9 +38,9 @@ func registerActorStateCommands(app *cli.App) {
 		})
 
 	actorStateGrp.Command("list-assignments").
-		Description("List actor assignments by target").
+		Description("List actor assignments").
 		Flags(
-			cli.String("role", "").Help("role"),
+			cli.String("status", "").Help("status"),
 		).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -51,9 +51,9 @@ func registerActorStateCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			params := &api.ListActorAssignmentsParams{}
-			if ctx.IsSet("role") {
-				v := api.ActorAssignmentRole(ctx.String("role"))
-				params.Role = &v
+			if ctx.IsSet("status") {
+				v := api.ActorAssignmentStatus(ctx.String("status"))
+				params.Status = &v
 			}
 			resp, err := client.ListActorAssignmentsWithResponse(ctx.Context(), p0, params)
 			if err != nil {
@@ -103,16 +103,14 @@ func registerActorStateCommands(app *cli.App) {
 		})
 
 	actorStateGrp.Command("upsert-actor-state").
-		Description("Upsert reportable actor state").
+		Description("Upsert actor state").
 		Args("actor-id").
 		Flags(
 			cli.String("actor-kind", "").Help("[required] actor-kind"),
 			cli.String("assignments", "").Help("assignments Accepts JSON, @file, or @-."),
 			cli.String("availability", "").Help("[required] availability"),
-			cli.String("capacity", "").Help("capacity Accepts JSON, @file, or @-."),
+			cli.String("description", "").Help("description"),
 			cli.String("expires-at", "").Help("expires-at Accepts JSON, @file, or @-."),
-			cli.String("focus", "").Help("focus Accepts JSON, @file, or @-."),
-			cli.String("status-source", "").Help("[required] status-source"),
 			cli.String("visibility", "").Help("visibility"),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
@@ -141,23 +139,14 @@ func registerActorStateCommands(app *cli.App) {
 			if ctx.IsSet("availability") {
 				body.Availability = api.ActorAvailability(ctx.String("availability"))
 			}
-			if ctx.IsSet("capacity") {
-				if err := decodeFlagJSON(ctx, "capacity", ctx.String("capacity"), &body.Capacity); err != nil {
-					return err
-				}
+			if ctx.IsSet("description") {
+				v := ctx.String("description")
+				body.Description = &v
 			}
 			if ctx.IsSet("expires-at") {
 				if err := decodeFlagJSON(ctx, "expires-at", ctx.String("expires-at"), &body.ExpiresAt); err != nil {
 					return err
 				}
-			}
-			if ctx.IsSet("focus") {
-				if err := decodeFlagJSON(ctx, "focus", ctx.String("focus"), &body.Focus); err != nil {
-					return err
-				}
-			}
-			if ctx.IsSet("status-source") {
-				body.StatusSource = api.UpsertActorStateRequestStatusSource(ctx.String("status-source"))
 			}
 			if ctx.IsSet("visibility") {
 				v := api.ActorStateVisibility(ctx.String("visibility"))
@@ -168,9 +157,6 @@ func registerActorStateCommands(app *cli.App) {
 			}
 			if body.Availability == "" {
 				return fmt.Errorf("--availability is required (or supply it via --file)")
-			}
-			if body.StatusSource == "" {
-				return fmt.Errorf("--status-source is required (or supply it via --file)")
 			}
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)

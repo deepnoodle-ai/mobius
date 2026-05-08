@@ -23,8 +23,8 @@ func registerChannelsCommands(app *cli.App) {
 		Description("Add a member to a channel").
 		Args("id").
 		Flags(
+			cli.String("participant-id", "").Help("[required] User or agent ID to add to the channel."),
 			cli.String("role", "").Help("Role to assign the new member, either `member` or `admin`."),
-			cli.String("user-id", "").Help("[required] User or agent ID to add to the channel."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -41,15 +41,15 @@ func registerChannelsCommands(app *cli.App) {
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
 			}
+			if ctx.IsSet("participant-id") {
+				body.ParticipantId = ctx.String("participant-id")
+			}
 			if ctx.IsSet("role") {
 				v := api.AddChannelMemberRequestRole(ctx.String("role"))
 				body.Role = &v
 			}
-			if ctx.IsSet("user-id") {
-				body.UserId = ctx.String("user-id")
-			}
-			if body.UserId == "" {
-				return fmt.Errorf("--user-id is required (or supply it via --file)")
+			if body.ParticipantId == "" {
+				return fmt.Errorf("--participant-id is required (or supply it via --file)")
 			}
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
@@ -59,6 +59,48 @@ func registerChannelsCommands(app *cli.App) {
 				return err
 			}
 			return printResponse(ctx, "addChannelMember", resp.StatusCode(), resp.Body)
+		})
+
+	channelsGrp.Command("associate-channel-interaction").
+		Description("Associate an interaction with a channel").
+		Args("id").
+		Flags(
+			cli.String("interaction-id", "").Help("[required] Existing same-project interaction ID to associate."),
+			cli.String("relation", "").Help("Relation between the channel and interaction."),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			p1 := ctx.Arg(0)
+			var body api.AssociateChannelInteractionJSONRequestBody
+			if err := readJSONBody(ctx, &body); err != nil {
+				return err
+			}
+			if ctx.IsSet("interaction-id") {
+				body.InteractionId = ctx.String("interaction-id")
+			}
+			if ctx.IsSet("relation") {
+				v := api.AssociateChannelInteractionRequestRelation(ctx.String("relation"))
+				body.Relation = &v
+			}
+			if body.InteractionId == "" {
+				return fmt.Errorf("--interaction-id is required (or supply it via --file)")
+			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
+			}
+			resp, err := client.AssociateChannelInteractionWithResponse(ctx.Context(), p0, p1, body)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "associateChannelInteraction", resp.StatusCode(), resp.Body)
 		})
 
 	channelsGrp.Command("claim-interaction").
@@ -84,11 +126,14 @@ func registerChannelsCommands(app *cli.App) {
 	channelsGrp.Command("create").
 		Description("Create a channel").
 		Flags(
+			cli.Strings("associated-interaction-ids", "").Help("Existing same-project interaction IDs to link as the channel's purpose at creation time. Required w…"),
+			cli.String("completion-behavior", "").Help("Behavior to apply when all purpose-linked interactions are terminal."),
 			cli.String("display-name", "").Help("[required] Human-facing display name shown in the UI."),
 			cli.String("kind", "").Help("[required] Channel kind, either `dm` or `channel`. Cannot be changed after creation."),
 			cli.Strings("member-ids", "").Help("Optional list of user or agent IDs to add as members at creation time. All receive the `member` rol…"),
 			cli.String("name", "").Help("[required] URL-safe handle, unique within the project. Immutable after creation — choose carefully."),
 			cli.Bool("private", "").Help("When true, the channel is invite-only."),
+			cli.String("purpose", "").Help("Optional purpose for the channel."),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
 			cli.String("topic", "").Help("Optional channel topic or description."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
@@ -106,6 +151,14 @@ func registerChannelsCommands(app *cli.App) {
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
 			}
+			if ctx.IsSet("associated-interaction-ids") {
+				v := ctx.Strings("associated-interaction-ids")
+				body.AssociatedInteractionIds = &v
+			}
+			if ctx.IsSet("completion-behavior") {
+				v := api.CreateChannelRequestCompletionBehavior(ctx.String("completion-behavior"))
+				body.CompletionBehavior = &v
+			}
 			if ctx.IsSet("display-name") {
 				body.DisplayName = ctx.String("display-name")
 			}
@@ -122,6 +175,10 @@ func registerChannelsCommands(app *cli.App) {
 			if ctx.IsSet("private") {
 				v := ctx.Bool("private")
 				body.Private = &v
+			}
+			if ctx.IsSet("purpose") {
+				v := api.CreateChannelRequestPurpose(ctx.String("purpose"))
+				body.Purpose = &v
 			}
 			if tags, err := parseTagFlags(ctx); err != nil {
 				return err
@@ -230,6 +287,33 @@ func registerChannelsCommands(app *cli.App) {
 			return printResponse(ctx, "listChannels", resp.StatusCode(), resp.Body)
 		})
 
+	channelsGrp.Command("list-interactions").
+		Description("List channel interaction links").
+		Args("id").
+		Flags(
+			cli.String("relation", "").Help("Filter by association relation."),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			p1 := ctx.Arg(0)
+			params := &api.ListChannelInteractionsParams{}
+			if ctx.IsSet("relation") {
+				v := api.ListChannelInteractionsParamsRelation(ctx.String("relation"))
+				params.Relation = &v
+			}
+			resp, err := client.ListChannelInteractionsWithResponse(ctx.Context(), p0, p1, params)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "listChannelInteractions", resp.StatusCode(), resp.Body)
+		})
+
 	channelsGrp.Command("list-members").
 		Description("List channel members").
 		Args("id").
@@ -280,6 +364,34 @@ func registerChannelsCommands(app *cli.App) {
 				return err
 			}
 			return printResponse(ctx, "releaseChannelInteraction", resp.StatusCode(), resp.Body)
+		})
+
+	channelsGrp.Command("remove-interaction").
+		Description("Remove a channel interaction association").
+		Args("id", "interaction-id").
+		Flags(
+			cli.String("relation", "").Help("Relation to remove. Defaults to `purpose`."),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			p1 := ctx.Arg(0)
+			p2 := ctx.Arg(1)
+			params := &api.RemoveChannelInteractionParams{}
+			if ctx.IsSet("relation") {
+				v := api.RemoveChannelInteractionParamsRelation(ctx.String("relation"))
+				params.Relation = &v
+			}
+			resp, err := client.RemoveChannelInteractionWithResponse(ctx.Context(), p0, p1, p2, params)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "removeChannelInteraction", resp.StatusCode(), resp.Body)
 		})
 
 	channelsGrp.Command("remove-member").
@@ -411,8 +523,10 @@ func registerChannelsCommands(app *cli.App) {
 		Description("Update a channel").
 		Args("id").
 		Flags(
+			cli.String("completion-behavior", "").Help("Behavior to apply when all purpose-linked interactions are terminal."),
 			cli.String("display-name", "").Help("Updated display name."),
 			cli.Bool("private", "").Help("Toggle invite-only visibility."),
+			cli.String("purpose", "").Help("Channel purpose. `resolve_interactions` requires at least one purpose-linked interaction."),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
 			cli.String("topic", "").Help("Updated topic or description."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
@@ -431,6 +545,10 @@ func registerChannelsCommands(app *cli.App) {
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
 			}
+			if ctx.IsSet("completion-behavior") {
+				v := api.UpdateChannelRequestCompletionBehavior(ctx.String("completion-behavior"))
+				body.CompletionBehavior = &v
+			}
 			if ctx.IsSet("display-name") {
 				v := ctx.String("display-name")
 				body.DisplayName = &v
@@ -438,6 +556,10 @@ func registerChannelsCommands(app *cli.App) {
 			if ctx.IsSet("private") {
 				v := ctx.Bool("private")
 				body.Private = &v
+			}
+			if ctx.IsSet("purpose") {
+				v := api.UpdateChannelRequestPurpose(ctx.String("purpose"))
+				body.Purpose = &v
 			}
 			if tags, err := parseTagFlags(ctx); err != nil {
 				return err
@@ -449,7 +571,7 @@ func registerChannelsCommands(app *cli.App) {
 				v := ctx.String("topic")
 				body.Topic = &v
 			}
-			if ctx.String("file") == "" && !ctx.IsSet("display-name") && !ctx.IsSet("private") && !ctx.IsSet("tag") && !ctx.IsSet("topic") {
+			if ctx.String("file") == "" && !ctx.IsSet("completion-behavior") && !ctx.IsSet("display-name") && !ctx.IsSet("private") && !ctx.IsSet("purpose") && !ctx.IsSet("tag") && !ctx.IsSet("topic") {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
 			if ctx.Bool("dry-run") {
