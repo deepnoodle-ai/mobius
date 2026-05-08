@@ -1145,13 +1145,17 @@ func applyVars(ctx *cli.Context, data []byte) ([]byte, error) {
 // handlers call this when --dry-run is set, then return its result so the
 // command exits 0. When redactFields is non-empty, the named top-level JSON
 // fields are replaced with a redaction marker before printing so secret
-// payloads never reach the terminal (used by the secrets commands).
+// payloads never reach the terminal (used by the secrets commands). If
+// redaction fails for any reason the function refuses to print and returns
+// an error, since printing the unredacted body would leak the secret.
 func printDryRun(ctx *cli.Context, body any, redactFields ...string) error {
 	out := body
 	if len(redactFields) > 0 {
-		if redacted, ok := redactBodyFields(body, redactFields); ok {
-			out = redacted
+		redacted, ok := redactBodyFields(body, redactFields)
+		if !ok {
+			return fmt.Errorf("dry-run: cannot redact secret fields %v; refusing to print request body", redactFields)
 		}
+		out = redacted
 	}
 	pretty, err := marshalForOutput(ctx, out)
 	if err != nil {
@@ -1164,8 +1168,8 @@ func printDryRun(ctx *cli.Context, body any, redactFields ...string) error {
 // redactBodyFields returns a JSON-shaped copy of body with the named top-level
 // fields replaced by a redaction marker. Map values have each entry redacted
 // (preserving keys); scalar values are replaced wholesale. Returns (nil, false)
-// when body cannot be JSON-roundtripped, leaving the caller to fall back to
-// the original body.
+// when body cannot be JSON-roundtripped; callers handling secret-bearing
+// bodies must treat this as a hard failure rather than printing the original.
 func redactBodyFields(body any, fields []string) (any, bool) {
 	raw, err := json.Marshal(body)
 	if err != nil {
