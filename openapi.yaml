@@ -33,6 +33,12 @@ tags:
 - name: actions
   x-displayName: Actions
   description: Project and catalog actions invoked by workflow steps.
+- name: environments
+  x-displayName: Environments
+  description: Environments API operations.
+- name: secrets
+  x-displayName: Secrets
+  description: Secrets API operations.
 - name: references
   x-displayName: References
   description: References API operations.
@@ -55,9 +61,9 @@ tags:
 - name: webhooks
   x-displayName: Webhooks
   description: Outgoing webhook subscriptions, tests, and delivery history.
-- name: integration-catalog
-  x-displayName: Integration Catalog
-  description: Integration Catalog API operations.
+- name: integration-providers
+  x-displayName: Integration Providers
+  description: Integration Providers API operations.
 - name: metrics
   x-displayName: Metrics
   description: Project operational metrics for workflow and worker activity.
@@ -70,12 +76,18 @@ tags:
 - name: agents
   x-displayName: Agents
   description: Agent identities, sessions, presence, and lifecycle administration.
-- name: agent-invocations
-  x-displayName: Agent Invocations
-  description: Agent Invocations API operations.
+- name: agent-capabilities
+  x-displayName: Agent Capabilities
+  description: Agent Capabilities API operations.
 - name: actor-state
   x-displayName: Actor State
   description: Actor State API operations.
+- name: presence
+  x-displayName: Presence
+  description: Presence API operations.
+- name: team
+  x-displayName: Team
+  description: Team API operations.
 - name: spans
   x-displayName: Spans
   description: Spans API operations.
@@ -288,6 +300,102 @@ paths:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/IDParam'
       - $ref: '#/components/parameters/member_id'
+      responses:
+        '204':
+          description: No Content
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/projects/{project}/channels/{id}/interactions:
+    get:
+      operationId: listChannelInteractions
+      tags:
+      - channels
+      summary: List channel interaction links
+      description: Returns interactions associated with this channel. Purpose links mean the
+        channel exists to resolve those interactions and can drive channel completion behavior.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/IDParam'
+      - name: relation
+        in: query
+        schema:
+          type: string
+          enum:
+          - purpose
+          - context
+          - followup
+        description: Filter by association relation.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChannelInteractionLinkListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      operationId: associateChannelInteraction
+      tags:
+      - channels
+      summary: Associate an interaction with a channel
+      description: Associates an existing same-project interaction with the channel. When
+        `relation` is `purpose`, the interaction participates in the channel's purpose completion
+        rule.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/IDParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssociateChannelInteractionRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChannelInteractionLink'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /v1/projects/{project}/channels/{id}/interactions/{interaction_id}:
+    delete:
+      operationId: removeChannelInteraction
+      tags:
+      - channels
+      summary: Remove a channel interaction association
+      description: Removes an interaction association from a channel.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/IDParam'
+      - name: interaction_id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Interaction ID to unlink.
+      - name: relation
+        in: query
+        schema:
+          type: string
+          enum:
+          - purpose
+          - context
+          - followup
+          default: purpose
+        description: Relation to remove. Defaults to `purpose`.
       responses:
         '204':
           description: No Content
@@ -1469,6 +1577,70 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
+  /v1/projects/{project}/integration-events/test/samples:
+    get:
+      operationId: listIntegrationEventTestSamples
+      tags:
+      - events
+      summary: List synthetic integration event samples
+      description: 'Returns provider-owned sample event payloads for testing event triggers
+        and `wait_event` workflow steps. Samples use Mobius''s canonical integration-event
+        payload shape and are safe starter fixtures: callers can copy, edit, and pass the
+        payload to `POST /v1/projects/{project}/integration-events/test/fires`.'
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - name: provider
+        in: query
+        description: Filter samples by provider name, e.g. `github`.
+        schema:
+          type: string
+      - name: event_type
+        in: query
+        description: Filter samples by exact event type.
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IntegrationEventSamplesResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/projects/{project}/integration-events/test/fires:
+    post:
+      operationId: createIntegrationEventTestFire
+      tags:
+      - events
+      summary: Preview or deliver a synthetic integration event
+      description: |-
+        Builds a synthetic integration event from an explicit payload or a sample fixture. In `preview` mode the server evaluates currently matching event triggers and parked `wait_event` branches without persisting or delivering the event. In `deliver` mode it persists an integration event row with `source: synthetic` and publishes it through the same event bus consumed by event triggers and `wait_event` delivery.
+
+        Synthetic fires are for local testing and authoring diagnostics. They never verify upstream signatures and should not be treated as provider-originated webhooks.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IntegrationEventFireRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IntegrationEventFireResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
   /v1/projects/{project}/events:
     get:
       operationId: streamProjectEvents
@@ -1871,6 +2043,474 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ActionCatalogEntry'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/projects/{project}/environments:
+    get:
+      operationId: listEnvironments
+      tags:
+      - environments
+      summary: List environments
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/CursorParam'
+      - $ref: '#/components/parameters/LimitParam'
+      - name: provider
+        in: query
+        schema:
+          $ref: '#/components/schemas/EnvironmentProvider'
+      - name: status
+        in: query
+        schema:
+          $ref: '#/components/schemas/EnvironmentStatus'
+      - name: purpose
+        in: query
+        schema:
+          $ref: '#/components/schemas/EnvironmentPurpose'
+      - name: owner_type
+        in: query
+        schema:
+          $ref: '#/components/schemas/EnvironmentOwnerType'
+      - name: owner_id
+        in: query
+        schema:
+          type: string
+      - name: include_destroyed
+        in: query
+        description: Include all destroyed environments in the inventory. Recently destroyed
+          environments may remain visible briefly by default; older destroyed environments
+          are hidden unless this is true or status=destroyed is requested.
+        schema:
+          type: boolean
+          default: false
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnvironmentListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      operationId: createEnvironment
+      tags:
+      - environments
+      summary: Create an environment
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEnvironmentRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Environment'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /v1/projects/{project}/environments/acquire:
+    post:
+      operationId: acquireEnvironment
+      tags:
+      - environments
+      summary: Acquire an environment lease
+      description: Collection-level acquire creates or claims an environment and creates a
+        single active lease. There is intentionally no per-environment acquire endpoint.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AcquireEnvironmentRequest'
+      responses:
+        '200':
+          description: Acquired
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnvironmentAcquireResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /v1/projects/{project}/environments/leases/{lease_id}/release:
+    post:
+      operationId: releaseEnvironmentLease
+      tags:
+      - environments
+      summary: Release an environment lease
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - name: lease_id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Released
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnvironmentLease'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/projects/{project}/environments/{environment_id}:
+    get:
+      operationId: getEnvironment
+      tags:
+      - environments
+      summary: Get an environment
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/EnvironmentIDParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Environment'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      operationId: updateEnvironment
+      tags:
+      - environments
+      summary: Update environment metadata
+      description: Only purpose, retention_policy, owner_type, owner_id, and tags are mutable.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/EnvironmentIDParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateEnvironmentRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Environment'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      operationId: destroyEnvironment
+      tags:
+      - environments
+      summary: Destroy an environment
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/EnvironmentIDParam'
+      responses:
+        '200':
+          description: Destroyed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Environment'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/projects/{project}/environments/{environment_id}/reconcile:
+    post:
+      operationId: reconcileEnvironment
+      tags:
+      - environments
+      summary: Reconcile environment provider state
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/EnvironmentIDParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Environment'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/projects/{project}/environments/{environment_id}/exec:
+    post:
+      operationId: execEnvironment
+      tags:
+      - environments
+      summary: Execute a command inside an environment
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/EnvironmentIDParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExecEnvironmentRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnvironmentExecResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /v1/projects/{project}/environments/{environment_id}/files:
+    put:
+      operationId: writeEnvironmentFile
+      tags:
+      - environments
+      summary: Write a file into an environment
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/EnvironmentIDParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WriteEnvironmentFileRequest'
+      responses:
+        '204':
+          $ref: '#/components/responses/NoContent'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /v1/projects/{project}/environments/{environment_id}/workers/start:
+    post:
+      operationId: startEnvironmentWorker
+      tags:
+      - environments
+      summary: Start a Mobius worker in an environment
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/EnvironmentIDParam'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StartEnvironmentWorkerRequest'
+      responses:
+        '200':
+          description: Started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnvironmentStartWorkerResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /v1/projects/{project}/secrets:
+    get:
+      operationId: listSecrets
+      tags:
+      - secrets
+      summary: List secrets
+      description: Returns project secret metadata and key names. Secret values are never
+        returned.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/CursorParam'
+      - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SecretListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      operationId: createSecret
+      tags:
+      - secrets
+      summary: Create a secret
+      description: Creates a project secret and its first enabled version. `values` must be
+        a JSON object whose values are strings. The response returns metadata only; plaintext
+        values are not returned.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSecretRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Secret'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /v1/projects/{project}/secrets/{secret}:
+    get:
+      operationId: getSecret
+      tags:
+      - secrets
+      summary: Get a secret
+      description: Returns project secret metadata by ID or name. Values are never returned.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/SecretParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Secret'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      operationId: updateSecret
+      tags:
+      - secrets
+      summary: Update a secret
+      description: Updates metadata and optionally creates a new enabled SecretVersion from
+        replacement `values`. Omit `values` to update metadata only. Secret values are not
+        returned.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/SecretParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateSecretRequest'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Secret'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+    delete:
+      operationId: deleteSecret
+      tags:
+      - secrets
+      summary: Delete a secret
+      description: Hard-deletes the secret and its versions.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/SecretParam'
+      responses:
+        '204':
+          description: No Content
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/projects/{project}/secrets/{secret}/versions:
+    get:
+      operationId: listSecretVersions
+      tags:
+      - secrets
+      summary: List secret versions
+      description: Lists metadata for all versions of a secret. Values are never returned.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/SecretParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SecretVersionListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/projects/{project}/secrets/{secret}/versions/{version}:
+    get:
+      operationId: getSecretVersion
+      tags:
+      - secrets
+      summary: Get secret version metadata
+      description: Returns metadata for a specific version. Use `latest` or a positive integer
+        version. Values are never returned.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/SecretParam'
+      - $ref: '#/components/parameters/SecretVersionParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SecretVersion'
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
@@ -3368,23 +4008,27 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /v1/integrations/providers:
+  /v1/projects/{project}/integration-providers:
     get:
       operationId: listIntegrationProviders
       tags:
-      - integration-catalog
+      - integration-providers
       summary: List available integration providers and their capabilities
       description: |-
-        Returns the catalog of integration providers the server has registered, including the dotted event types each provider can emit (with payload JSON Schema where reflectable) and the workflow actions that call back into the integration (with input/output JSON Schema).
+        Returns the integration providers available to this project. Most provider metadata is registered at server or org scope, but the project-scoped path lets project-pinned credentials discover providers through the same authorization boundary they use for workflow and integration APIs.
 
-        The catalog is the single source of truth that the integration page, the new-trigger wizard's event-type picker, the workflow editor's action picker, and the public docs all read from. A new provider added in the framework appears here at startup with zero frontend changes.
+        The response includes provider presentation metadata, project connection state, the dotted event types each provider can emit (with payload JSON Schema where reflectable), and the workflow actions that call back into the integration (with input/output JSON Schema).
+
+        This response is the single source of truth that the integration page, provider detail pages, the new-trigger wizard's event-type picker, and public docs all read from. Workflow action pickers continue to use `/actions/catalog` because that catalog includes user-created and workflow-backed actions too.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
       responses:
         '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/IntegrationCatalog'
+                $ref: '#/components/schemas/IntegrationProvidersResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
   /v1/projects/{project}/metrics:
@@ -4241,20 +4885,139 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /v1/agent-invocations/{invocation_id}:
+  /v1/projects/{project}/agents/{id}/toolkits:
     get:
-      operationId: getAgentInvocation
+      operationId: listToolkitAssignments
       tags:
-      - agent-invocations
-      summary: Get an agent invocation
-      description: Returns the durable record of a single `agent.invoke` call. Lifecycle statuses
-        are `pending` → `running` → `completed`/`failed`/`cancelled`. Workers driving a remote
-        agent use this endpoint to inspect the dispatch payload before reporting a result.
+      - agent-capabilities
+      summary: List assigned toolkits
+      description: Returns the toolkits assigned to an agent in assignment order.
       parameters:
-      - name: invocation_id
-        in: path
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/IDParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToolkitAssignmentListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      operationId: replaceToolkits
+      tags:
+      - agent-capabilities
+      summary: Replace assigned toolkits
+      description: Replaces the agent's toolkit assignment set as a whole. The effective tool
+        surface is the union of assigned toolkit grants intersected with service-account permissions
+        and any per-invocation narrowing.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/IDParam'
+      requestBody:
         required: true
-        description: Invocation ID (TypeID with `ainv_` prefix).
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReplaceToolkitsRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToolkitAssignmentListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/projects/{project}/agents/{id}/skills:
+    get:
+      operationId: listSkillAssignments
+      tags:
+      - agent-capabilities
+      summary: List assigned skills
+      description: Returns the skills assigned to an agent in assignment order.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/IDParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SkillAssignmentListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      operationId: replaceSkills
+      tags:
+      - agent-capabilities
+      summary: Replace assigned skills
+      description: Replaces the agent's skill assignment set as a whole. Skills request tools
+        and actions; the manifest enforces only the intersection with toolkit grants and service-account
+        permissions.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/IDParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReplaceSkillsRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SkillAssignmentListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/projects/{project}/agents/{id}/capability-manifest:
+    get:
+      operationId: getAgentCapabilityManifest
+      tags:
+      - agent-capabilities
+      summary: Resolve an agent capability manifest
+      description: 'Resolves the effective capability manifest for an agent. This is the same
+        snapshot shape used by channel mentions and `agent.invoke`: toolkit grants, service-account
+        permissions, optional toolkit filters, optional action filters, and optional active
+        skill narrowing all meet here.'
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/IDParam'
+      - name: toolkit_ids
+        in: query
+        description: Optional comma-separated toolkit subset to apply.
+        schema:
+          type: string
+      - name: skill_name
+        in: query
+        description: Optional assigned skill name to preselect as active.
+        schema:
+          type: string
+      - name: allowed_tools
+        in: query
+        description: Optional comma-separated concrete tool names or known aliases.
+        schema:
+          type: string
+      - name: allowed_actions
+        in: query
+        description: Optional comma-separated action names to apply as a per-invocation filter.
         schema:
           type: string
       responses:
@@ -4263,28 +5026,104 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AgentInvocation'
+                $ref: '#/components/schemas/AgentCapabilityManifest'
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /v1/agent-invocations/{invocation_id}/complete:
-    post:
-      operationId: completeAgentInvocation
+  /v1/projects/{project}/toolkits:
+    get:
+      operationId: listToolkits
       tags:
-      - agent-invocations
-      summary: Report a successful agent invocation
-      description: |-
-        Records the worker-supplied response on the invocation row and signals the suspended workflow branch so it resumes with the response as the step output.
-
-        Validation: `tool_calls` is checked against the original `allowed_tools` (calling a forbidden tool fails the invocation with `tool_violation`); `structured` is validated against `output_schema` if one was supplied (a mismatch fails with `schema_violation`).
-
-        Idempotent on `invocation_id`: a repeat call after a terminal state returns the recorded final state without re-signalling. Late completes after timeout are recorded but do not resume the branch.
+      - agent-capabilities
+      summary: List toolkits
+      description: Returns project-local and system toolkit templates visible to the project.
       parameters:
-      - name: invocation_id
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - name: include_system
+        in: query
+        description: Include read-only system templates.
+        schema:
+          type: boolean
+          default: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToolkitListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      operationId: createToolkit
+      tags:
+      - agent-capabilities
+      summary: Create an toolkit
+      description: Creates a project-local toolkit with native tool grants and action grants.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ToolkitRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Toolkit'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /v1/projects/{project}/toolkits/{toolkit_id}:
+    get:
+      operationId: getToolkit
+      tags:
+      - agent-capabilities
+      summary: Get an toolkit
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - name: toolkit_id
         in: path
         required: true
-        description: Invocation ID.
+        description: Toolkit ID (TypeID `tk_...`).
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Toolkit'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      operationId: updateToolkit
+      tags:
+      - agent-capabilities
+      summary: Update an toolkit
+      description: Replaces mutable toolkit metadata and grant arrays when supplied.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - name: toolkit_id
+        in: path
+        required: true
         schema:
           type: string
       requestBody:
@@ -4292,43 +5131,165 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/AgentInvocationCompleteRequest'
+              $ref: '#/components/schemas/ToolkitRequest'
       responses:
         '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AgentInvocation'
+                $ref: '#/components/schemas/Toolkit'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-        '410':
-          description: The invocation has already reached a terminal state (timed out, cancelled,
-            or previously completed). The body returns the recorded final record so callers
-            can reconcile.
+        '409':
+          $ref: '#/components/responses/Conflict'
+    delete:
+      operationId: deleteToolkit
+      tags:
+      - agent-capabilities
+      summary: Delete an toolkit
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - name: toolkit_id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '204':
+          description: No Content
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /v1/projects/{project}/skills:
+    get:
+      operationId: listSkills
+      tags:
+      - agent-capabilities
+      summary: List skills
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - name: include_system
+        in: query
+        description: Include read-only system skill templates.
+        schema:
+          type: boolean
+          default: true
+      responses:
+        '200':
+          description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AgentInvocation'
-  /v1/agent-invocations/{invocation_id}/fail:
+                $ref: '#/components/schemas/SkillListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
     post:
-      operationId: failAgentInvocation
+      operationId: createSkill
       tags:
-      - agent-invocations
-      summary: Report a failed agent invocation
-      description: |-
-        Records a worker-reported error on the invocation row and signals the suspended workflow branch so it resumes by surfacing the error as a typed workflow failure.
-
-        Idempotent on `invocation_id`. The error_type field is one of: `agent_unavailable`, `agent_error`, `timeout`, `tool_violation`, `schema_violation`, `cancelled`.
+      - agent-capabilities
+      summary: Create a skill
+      description: Creates a project-local skill with instructions and requested capabilities.
       parameters:
-      - name: invocation_id
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SkillRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Skill'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /v1/projects/{project}/skills:import:
+    post:
+      operationId: importSkill
+      tags:
+      - agent-capabilities
+      summary: Import a skill
+      description: Imports a Claude Code or Dive-style skill document into a project-local
+        Mobius skill.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ImportSkillRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Skill'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /v1/projects/{project}/skills/{skill_id}:
+    get:
+      operationId: getSkill
+      tags:
+      - agent-capabilities
+      summary: Get a skill
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - name: skill_id
         in: path
         required: true
-        description: Invocation ID.
+        description: Skill ID (TypeID `skl_...`).
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Skill'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      operationId: updateSkill
+      tags:
+      - agent-capabilities
+      summary: Update a skill
+      description: Replaces mutable skill metadata, instructions, and requested capabilities
+        when supplied.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - name: skill_id
+        in: path
+        required: true
         schema:
           type: string
       requestBody:
@@ -4336,20 +5297,43 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/AgentInvocationFailRequest'
+              $ref: '#/components/schemas/SkillRequest'
       responses:
         '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AgentInvocation'
+                $ref: '#/components/schemas/Skill'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+    delete:
+      operationId: deleteSkill
+      tags:
+      - agent-capabilities
+      summary: Delete a skill
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - name: skill_id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '204':
+          description: No Content
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
   /v1/projects/{project}/actor-state:
     get:
       operationId: listActorStates
@@ -4388,21 +5372,14 @@ paths:
       operationId: listActorAssignments
       tags:
       - actor-state
-      summary: List actor assignments by target
-      description: Returns assignments matching a target key, for "Working on this" surfaces
-        on runs, steps, interactions, channels, and external refs.
+      summary: List actor assignments
+      description: Returns explicitly reported high-level actor assignments.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
-      - name: target_key
-        in: query
-        required: true
-        schema:
-          type: string
-        description: Canonical target key, e.g. `mobius.run:run_123`.
-      - name: role
+      - name: status
         in: query
         schema:
-          $ref: '#/components/schemas/ActorAssignmentRole'
+          $ref: '#/components/schemas/ActorAssignmentStatus'
       responses:
         '200':
           description: OK
@@ -4444,9 +5421,10 @@ paths:
       operationId: upsertActorState
       tags:
       - actor-state
-      summary: Upsert reportable actor state
-      description: Upserts manual or agent-reported status. Server-derived capacity and job-claim
-        assignments are not writable through this endpoint.
+      summary: Upsert actor state
+      description: Upserts explicitly reported high-level actor availability, status description,
+        and assignments. This endpoint does not infer state from unrelated platform lifecycle
+        events.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - name: actor_id
@@ -4467,6 +5445,107 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ActorState'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/presence/web/heartbeat:
+    post:
+      operationId: heartbeatWebPresence
+      tags:
+      - presence
+      summary: Record web presence heartbeat
+      description: Refreshes the current user's short-lived web presence session. The server
+        derives org and user identity from authentication context.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WebPresenceHeartbeatRequest'
+      responses:
+        '204':
+          description: No Content
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /v1/users/me/presence-preferences:
+    get:
+      operationId: getCurrentUserPresencePreferences
+      tags:
+      - presence
+      summary: Get presence preferences
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserPresencePreferences'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    put:
+      operationId: updateCurrentUserPresencePreferences
+      tags:
+      - presence
+      summary: Update presence preferences
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserPresencePreferencesRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserPresencePreferences'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/projects/{project}/team:
+    get:
+      operationId: listProjectTeam
+      tags:
+      - team
+      summary: List project team
+      description: Returns project-visible humans and agents in one roster.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - name: kind
+        in: query
+        schema:
+          $ref: '#/components/schemas/ProjectTeamMemberKind'
+      - name: availability
+        in: query
+        schema:
+          $ref: '#/components/schemas/ActorAvailability'
+      - name: assignment_status
+        in: query
+        schema:
+          $ref: '#/components/schemas/ActorAssignmentStatus'
+      - name: q
+        in: query
+        schema:
+          type: string
+          maxLength: 120
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectTeamListResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -5605,6 +6684,29 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
+  /v1/projects/{project}/observables/{observable_id}/waiters:
+    get:
+      operationId: listObservableWaiters
+      tags:
+      - observables
+      summary: List workflow paths waiting on an Observable
+      description: Returns active workflow paths currently parked on this Observable via `wait_until.observable`.
+        The list is intended for operator visibility; terminal runs are omitted.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/ObservableIdParam'
+      - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObservableWaiterListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
 components:
   securitySchemes:
     BearerAuth:
@@ -5725,6 +6827,26 @@ components:
       description: Optional project scope for this request. When `project_id` is provided,
         the API key operation is resolved in that project's permission context. When `project_id`
         is omitted, the request is treated as org-level and project-pinned keys are excluded.
+    EnvironmentIDParam:
+      name: environment_id
+      in: path
+      required: true
+      schema:
+        type: string
+    SecretParam:
+      name: secret
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Secret ID or project-scoped secret name.
+    SecretVersionParam:
+      name: version
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Secret version number or `latest`.
     ReferenceTypeParam:
       name: reference_type
       in: path
@@ -6053,6 +7175,8 @@ components:
       - kind
       - private
       - created_by
+      - purpose
+      - completion_behavior
       - created_at
       - updated_at
       properties:
@@ -6082,6 +7206,25 @@ components:
         created_by:
           type: string
           description: User ID of the org member who created the channel.
+        purpose:
+          type: string
+          enum:
+          - general
+          - resolve_interactions
+          description: '`general` channels are ordinary rooms. `resolve_interactions` channels
+            exist to resolve one or more purpose-linked interactions.'
+        completion_behavior:
+          type: string
+          enum:
+          - none
+          - mark_inactive
+          - archive
+          description: Behavior to apply when every purpose-linked interaction is terminal.
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Set when this purpose-scoped channel has completed.
         archived_at:
           type: string
           format: date-time
@@ -6366,6 +7509,27 @@ components:
             type: string
           description: Optional list of user or agent IDs to add as members at creation time.
             All receive the `member` role; the creator is added as `admin` separately.
+        purpose:
+          type: string
+          enum:
+          - general
+          - resolve_interactions
+          default: general
+          description: Optional purpose for the channel.
+        associated_interaction_ids:
+          type: array
+          items:
+            type: string
+          description: Existing same-project interaction IDs to link as the channel's purpose
+            at creation time. Required when `purpose` is `resolve_interactions`.
+        completion_behavior:
+          type: string
+          enum:
+          - none
+          - mark_inactive
+          - archive
+          default: none
+          description: Behavior to apply when all purpose-linked interactions are terminal.
         tags:
           $ref: '#/components/schemas/TagMap'
           description: Initial tag set.
@@ -6383,6 +7547,20 @@ components:
         private:
           type: boolean
           description: Toggle invite-only visibility.
+        purpose:
+          type: string
+          enum:
+          - general
+          - resolve_interactions
+          description: Channel purpose. `resolve_interactions` requires at least one purpose-linked
+            interaction.
+        completion_behavior:
+          type: string
+          enum:
+          - none
+          - mark_inactive
+          - archive
+          description: Behavior to apply when all purpose-linked interactions are terminal.
         tags:
           $ref: '#/components/schemas/TagMap'
           description: When supplied, replaces the user tag set on the channel. System tags
@@ -6392,9 +7570,9 @@ components:
       additionalProperties: false
       description: Member identity and role to add to a channel.
       required:
-      - user_id
+      - participant_id
       properties:
-        user_id:
+        participant_id:
           type: string
           description: User or agent ID to add to the channel.
         role:
@@ -6404,6 +7582,71 @@ components:
           - admin
           default: member
           description: Role to assign the new member, either `member` or `admin`.
+    AssociateChannelInteractionRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - interaction_id
+      properties:
+        interaction_id:
+          type: string
+          description: Existing same-project interaction ID to associate.
+        relation:
+          type: string
+          enum:
+          - purpose
+          - context
+          - followup
+          default: purpose
+          description: Relation between the channel and interaction.
+    ChannelInteractionLink:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - channel_id
+      - interaction_id
+      - relation
+      - created_by_type
+      - created_by_id
+      - created_at
+      properties:
+        id:
+          type: string
+          description: Unique identifier for this association.
+        channel_id:
+          type: string
+          description: Channel ID.
+        interaction_id:
+          type: string
+          description: Interaction ID.
+        relation:
+          type: string
+          enum:
+          - purpose
+          - context
+          - followup
+          description: How the interaction is associated with the channel.
+        created_by_type:
+          type: string
+          description: Actor type that created the association.
+        created_by_id:
+          type: string
+          description: Actor ID that created the association.
+        created_at:
+          type: string
+          format: date-time
+          description: Timestamp when the association was created.
+    ChannelInteractionLinkListResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChannelInteractionLink'
     SendChannelMessageRequest:
       type: object
       additionalProperties: false
@@ -7517,14 +8760,13 @@ components:
           enum:
           - exact
           - prefix
-          default: exact
           description: Event type match mode. `exact` is the default. `prefix` requires a
             non-empty condition and matches descendants separated by `.`.
         condition:
           type: string
           description: Optional bare-form `expr` predicate over `{ event, meta, inputs, steps,
             vars, each, run }`. The event resumes the step only when the expression evaluates
-            truthy. Empty means "any event of the matching type resumes". Predicate fields
+            bool true. Empty means "any event of the matching type resumes". Predicate fields
             use bare `expr`; `${...}` templating is reserved for value-producing fields.
         timeout:
           type: string
@@ -7940,7 +9182,6 @@ components:
           description: Fixed timeout deadline for `wait_until`.
         last_result:
           description: Latest poll result preview for `wait_until`.
-          nullable: true
         last_error_type:
           type: string
           description: Latest poll error type for `wait_until`.
@@ -8876,6 +10117,269 @@ components:
         name:
           type: string
           description: Signal topic name matching the wait_signal step's topic.
+    IntegrationEventSample:
+      type: object
+      required:
+      - id
+      - provider
+      - event_type
+      - name
+      - payload
+      properties:
+        id:
+          type: string
+          description: Stable sample identifier, unique across providers.
+        provider:
+          type: string
+          description: Provider name, e.g. `github`.
+        event_type:
+          type: string
+          description: Dotted integration event type this sample fires.
+        name:
+          type: string
+          description: Human-readable sample name.
+        description:
+          type: string
+          description: What the sample is useful for testing.
+        payload:
+          type: object
+          additionalProperties: true
+          description: Canonical Mobius integration-event payload.
+        meta:
+          type: object
+          additionalProperties: true
+          description: Optional extra metadata merged into test-fire requests.
+    IntegrationEventSamplesResponse:
+      type: object
+      required:
+      - samples
+      properties:
+        samples:
+          type: array
+          items:
+            $ref: '#/components/schemas/IntegrationEventSample'
+    IntegrationEventFireMode:
+      type: string
+      enum:
+      - preview
+      - deliver
+      description: '`preview` evaluates matches without persistence; `deliver` persists a
+        synthetic integration event and publishes it through normal delivery.'
+    IntegrationEventFireRequest:
+      type: object
+      properties:
+        mode:
+          $ref: '#/components/schemas/IntegrationEventFireMode'
+        sample_id:
+          type: string
+          description: Optional sample id to prefill provider, event_type, payload, and meta.
+        provider:
+          type: string
+          description: Provider name. Defaults to the sample provider or the event_type prefix.
+        event_type:
+          type: string
+          description: Dotted integration event type to fire. Required when sample_id is omitted.
+        integration_id:
+          type: string
+          description: Optional integration id metadata. Defaults to `synthetic:<provider>`.
+        dedup_key:
+          type: string
+          description: Optional dedup key for deliver mode. Defaults to the generated synthetic
+            event id.
+        payload:
+          type: object
+          additionalProperties: true
+          description: Canonical event payload. When sample_id is set, this replaces the sample
+            payload.
+        meta:
+          type: object
+          additionalProperties: true
+          description: Optional metadata overrides. Reserved event metadata is controlled
+            by the top-level request fields.
+    IntegrationEventFireEvent:
+      type: object
+      required:
+      - provider
+      - event_type
+      - source
+      - payload
+      properties:
+        id:
+          type: string
+          description: Persisted event id. Present in deliver mode.
+        provider:
+          type: string
+        event_type:
+          type: string
+        integration_id:
+          type: string
+        source:
+          type: string
+          enum:
+          - synthetic
+        dedup_key:
+          type: string
+        payload:
+          type: object
+          additionalProperties: true
+        meta:
+          type: object
+          additionalProperties: true
+    IntegrationEventFireTriggerMatch:
+      type: object
+      required:
+      - trigger_id
+      - name
+      - target_count
+      properties:
+        trigger_id:
+          type: string
+        name:
+          type: string
+        target_count:
+          type: integer
+        targets:
+          type: array
+          items:
+            $ref: '#/components/schemas/TestFireTargetResult'
+    IntegrationEventFireWaiterMatch:
+      type: object
+      required:
+      - run_id
+      - step_name
+      - matches
+      properties:
+        run_id:
+          type: string
+        path_id:
+          type: string
+        step_name:
+          type: string
+        event_type:
+          type: string
+        match_mode:
+          type: string
+        condition:
+          type: string
+        matches:
+          type: boolean
+        reason:
+          type: string
+    IntegrationEventFireResponse:
+      type: object
+      required:
+      - mode
+      - event
+      - triggers
+      - waiters
+      - delivered
+      properties:
+        mode:
+          $ref: '#/components/schemas/IntegrationEventFireMode'
+        sample_id:
+          type: string
+        event:
+          $ref: '#/components/schemas/IntegrationEventFireEvent'
+        triggers:
+          type: array
+          items:
+            $ref: '#/components/schemas/IntegrationEventFireTriggerMatch'
+        waiters:
+          type: array
+          items:
+            $ref: '#/components/schemas/IntegrationEventFireWaiterMatch'
+        delivered:
+          type: boolean
+          description: True when the event was persisted and published.
+        deduped:
+          type: boolean
+          description: True when deliver mode reused an existing event row by dedup key.
+    TestFireTargetStatus:
+      type: string
+      enum:
+      - success
+      - failed
+      - skipped
+      description: Per-target outcome of a test-fire dispatch. Distinct from `TriggerFireStatus`,
+        which carries aggregate values like `partial_failure` that are only meaningful at
+        the trigger level.
+    TestFireTargetResult:
+      type: object
+      additionalProperties: false
+      required:
+      - target_id
+      - kind
+      - status
+      - would_launch
+      description: Per-target outcome of a test-fire. Mirrors TriggerFireTargetResult but
+        exposes the resolved input mapping and would-launch decision so trigger authors can
+        debug each layer in isolation.
+      properties:
+        target_id:
+          type: string
+          description: ID of the trigger target this result is for.
+        kind:
+          type: string
+          enum:
+          - launch_run
+          - signal_run
+          description: 'Effect kind of this target. Discriminates which resolved field is
+            populated: `launch_run` populates `input_mapping_resolved`; `signal_run` populates
+            `signal_payload_resolved`.'
+        workflow_id:
+          type: string
+          description: Workflow definition the target points at. Present only for `launch_run`
+            targets.
+        enabled:
+          type: boolean
+          description: Whether the target is enabled. Disabled targets are skipped without
+            resolution.
+        status:
+          $ref: '#/components/schemas/TestFireTargetStatus'
+        input_mapping_resolved:
+          type: object
+          additionalProperties: true
+          description: (launch_run only) Resolved input map handed to the workflow.
+        signal_payload_resolved:
+          type: object
+          additionalProperties: true
+          description: (signal_run only) Resolved signal payload that would be delivered to
+            the matched run's `wait_signal` step.
+        input_resolution_error:
+          type: string
+          description: Error encountered resolving the target's `input_mapping` for a `launch_run`
+            target. `signal_run` targets report `signal_payload_mapping` failures via `signal_payload_resolution_error`
+            instead, so clients can distinguish which resolution step failed without parsing
+            the error string. Errors rendering the run-selector template (`run_selector.external_id_template`
+            for `signal_run`, or the `external_id_template` for `launch_run`) surface in `launch_error`.
+        signal_payload_resolution_error:
+          type: string
+          description: (signal_run only) Error encountered resolving `signal_payload_mapping`
+            — the payload that would be delivered to the matched run's `wait_signal` step
+            (and exposed under `signal_payload_resolved`). Reported separately from `input_resolution_error`
+            so clients don't reuse launch-run-specific fields for signal failures.
+        external_id_resolved:
+          type: string
+          description: Rendered value of `external_id_template` (launch_run) or `run_selector.external_id_template`
+            (signal_run). Lets authors verify the two templates produce matching strings.
+            Absent when the target has no template or rendering failed.
+        would_launch:
+          type: boolean
+          description: True when the target would launch a run (`launch_run`) or signal an
+            existing run (`signal_run`). False for disabled targets and targets whose condition
+            evaluated to false.
+        run_id:
+          type: string
+          description: ID of the launched (`launch_run`) or signaled (`signal_run`) run. Only
+            set in execute mode.
+        reason:
+          type: string
+          description: Why the target was skipped, when status is `skipped`. Empty for `success`
+            and `failed` results.
+        launch_error:
+          type: string
+          description: Error from the launcher (`launch_run`) or signal sender (`signal_run`)
+            when execute mode failed to act on the target.
     ActionAnnotationsRequest:
       type: object
       additionalProperties: false
@@ -9282,6 +10786,503 @@ components:
         has_more:
           type: boolean
           description: Whether additional pages are available.
+    EnvironmentProvider:
+      type: string
+      enum:
+      - sprites
+      - cloudflare_containers
+    EnvironmentStatus:
+      type: string
+      enum:
+      - provisioning
+      - ready
+      - running
+      - retained
+      - destroying
+      - destroyed
+      - failed
+      - orphaned
+    EnvironmentPurpose:
+      type: string
+      enum:
+      - implementation
+      - review
+      - verification
+      - preview
+      - debug
+      - worker
+      - custom
+    EnvironmentOwnerType:
+      type: string
+      enum:
+      - none
+      - user
+      - agent
+      - workflow_run
+      - worker_session
+      - service
+    EnvironmentRetentionPolicy:
+      type: string
+      enum:
+      - manual
+      - destroy_on_success
+      - retain_on_failure
+      - retain_always
+    EnvironmentCleanupStatus:
+      type: string
+      enum:
+      - none
+      - pending
+      - succeeded
+      - failed
+      - skipped
+    EnvironmentLeaseStatus:
+      type: string
+      enum:
+      - active
+      - released
+      - expired
+      - revoked
+    Environment:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - name
+      - provider
+      - status
+      - capabilities
+      - spec_version
+      - runtime
+      - contains_secrets
+      - cleanup_status
+      - retention_policy
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        provider:
+          $ref: '#/components/schemas/EnvironmentProvider'
+        provider_resource_id:
+          type: string
+        provider_resource_name:
+          type: string
+        status:
+          $ref: '#/components/schemas/EnvironmentStatus'
+        purpose:
+          $ref: '#/components/schemas/EnvironmentPurpose'
+        owner_type:
+          $ref: '#/components/schemas/EnvironmentOwnerType'
+        owner_id:
+          type: string
+        created_by:
+          type: string
+        run_id:
+          type: string
+        job_id:
+          type: string
+        current_worker_session_id:
+          type: string
+        agent_id:
+          type: string
+        template_id:
+          type: string
+          enum:
+          - coding-default
+        capabilities:
+          type: array
+          maxItems: 50
+          items:
+            type: string
+        spec_version:
+          type: integer
+          minimum: 1
+        spec:
+          type: object
+          additionalProperties: true
+        runtime:
+          type: object
+          additionalProperties: true
+          description: Provider-observed runtime data. URLs live under runtime.urls, with
+            runtime.urls.primary as the primary URL when present.
+        tags:
+          $ref: '#/components/schemas/TagMap'
+        contains_secrets:
+          type: boolean
+        cleanup_status:
+          $ref: '#/components/schemas/EnvironmentCleanupStatus'
+        retention_policy:
+          $ref: '#/components/schemas/EnvironmentRetentionPolicy'
+        lease_expires_at:
+          type: string
+          format: date-time
+        last_seen_at:
+          type: string
+          format: date-time
+        last_reconciled_at:
+          type: string
+          format: date-time
+        last_error:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        destroyed_at:
+          type: string
+          format: date-time
+    EnvironmentLease:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - environment_id
+      - status
+      - acquired_at
+      properties:
+        id:
+          type: string
+        environment_id:
+          type: string
+        holder_type:
+          $ref: '#/components/schemas/EnvironmentOwnerType'
+        holder_id:
+          type: string
+        purpose:
+          $ref: '#/components/schemas/EnvironmentPurpose'
+        status:
+          $ref: '#/components/schemas/EnvironmentLeaseStatus'
+        acquired_at:
+          type: string
+          format: date-time
+        expires_at:
+          type: string
+          format: date-time
+        released_at:
+          type: string
+          format: date-time
+    EnvironmentListResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - has_more
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Environment'
+        has_more:
+          type: boolean
+        next_cursor:
+          type: string
+    CreateEnvironmentRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+        provider:
+          $ref: '#/components/schemas/EnvironmentProvider'
+        purpose:
+          $ref: '#/components/schemas/EnvironmentPurpose'
+        owner_type:
+          $ref: '#/components/schemas/EnvironmentOwnerType'
+        owner_id:
+          type: string
+        template_id:
+          type: string
+          enum:
+          - coding-default
+          description: V1 supports only coding-default.
+        spec:
+          type: object
+          additionalProperties: true
+        tags:
+          $ref: '#/components/schemas/TagMap'
+        retention_policy:
+          $ref: '#/components/schemas/EnvironmentRetentionPolicy'
+    UpdateEnvironmentRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        purpose:
+          $ref: '#/components/schemas/EnvironmentPurpose'
+        retention_policy:
+          $ref: '#/components/schemas/EnvironmentRetentionPolicy'
+        owner_type:
+          $ref: '#/components/schemas/EnvironmentOwnerType'
+        owner_id:
+          type: string
+        tags:
+          $ref: '#/components/schemas/TagMap'
+    AcquireEnvironmentRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        environment_id:
+          type: string
+        template_id:
+          type: string
+          enum:
+          - coding-default
+          description: V1 supports only coding-default.
+        name:
+          type: string
+        provider:
+          $ref: '#/components/schemas/EnvironmentProvider'
+        purpose:
+          $ref: '#/components/schemas/EnvironmentPurpose'
+        holder_type:
+          $ref: '#/components/schemas/EnvironmentOwnerType'
+        holder_id:
+          type: string
+        owner_type:
+          $ref: '#/components/schemas/EnvironmentOwnerType'
+        owner_id:
+          type: string
+        spec:
+          type: object
+          additionalProperties: true
+        tags:
+          $ref: '#/components/schemas/TagMap'
+        lease_ttl:
+          type: string
+          description: Go duration string, for example 30m or 2h.
+    EnvironmentAcquireResult:
+      type: object
+      additionalProperties: false
+      required:
+      - environment
+      - lease
+      properties:
+        environment:
+          $ref: '#/components/schemas/Environment'
+        lease:
+          $ref: '#/components/schemas/EnvironmentLease'
+    ExecEnvironmentRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - command
+      properties:
+        command:
+          type: array
+          minItems: 1
+          items:
+            type: string
+        dir:
+          type: string
+        env:
+          type: array
+          items:
+            type: string
+        stdin:
+          type: string
+    EnvironmentExecResult:
+      type: object
+      additionalProperties: false
+      required:
+      - stdout
+      - stderr
+      - exit_code
+      properties:
+        stdout:
+          type: string
+        stderr:
+          type: string
+        exit_code:
+          type: integer
+    WriteEnvironmentFileRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - path
+      - content
+      properties:
+        path:
+          type: string
+        content:
+          type: string
+    StartEnvironmentWorkerRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        api_url:
+          type: string
+        command:
+          type: array
+          items:
+            type: string
+        dir:
+          type: string
+    EnvironmentStartWorkerResult:
+      type: object
+      additionalProperties: false
+      required:
+      - environment
+      - api_key_id
+      - key_expires_at
+      - stdout
+      - stderr
+      - exit_code
+      properties:
+        environment:
+          $ref: '#/components/schemas/Environment'
+        api_key_id:
+          type: string
+        key_expires_at:
+          type: string
+          format: date-time
+        stdout:
+          type: string
+        stderr:
+          type: string
+        exit_code:
+          type: integer
+    SecretValues:
+      type: object
+      additionalProperties:
+        type: string
+      minProperties: 1
+      description: JSON key/value payload encrypted as a SecretVersion.
+    SecretVersionState:
+      type: string
+      enum:
+      - ENABLED
+      - DISABLED
+      - DESTROYED
+      description: Secret version lifecycle state.
+    Secret:
+      type: object
+      additionalProperties: false
+      description: Project-scoped secret metadata. Values are never returned.
+      required:
+      - id
+      - name
+      - version
+      - key_names
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+          description: Unique secret ID.
+        name:
+          type: string
+          description: Project-scoped secret name.
+        description:
+          type: string
+          description: Optional human-readable description.
+        version:
+          type: integer
+          format: int64
+          description: Latest version number.
+        key_names:
+          type: array
+          items:
+            type: string
+          description: Sorted keys present in the latest version.
+        created_by:
+          type: string
+          description: Actor that created the secret, when known.
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    SecretVersion:
+      type: object
+      additionalProperties: false
+      description: SecretVersion metadata. Values are never returned.
+      required:
+      - id
+      - secret_id
+      - version
+      - state
+      - sha256
+      - created_at
+      properties:
+        id:
+          type: string
+          description: Unique secret version ID.
+        secret_id:
+          type: string
+          description: Parent secret ID.
+        version:
+          type: integer
+          format: int64
+          description: Version number.
+        state:
+          $ref: '#/components/schemas/SecretVersionState'
+        sha256:
+          type: string
+          description: SHA-256 of the canonical JSON plaintext, for change detection only.
+        kms_key_id:
+          type: string
+          description: Key identifier used to seal the payload.
+        created_by:
+          type: string
+          description: Actor that created this version, when known.
+        created_at:
+          type: string
+          format: date-time
+        destroyed_at:
+          type: string
+          format: date-time
+    SecretListResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Secret'
+        next_cursor:
+          type: string
+          description: Cursor for the next page, when more results exist.
+    SecretVersionListResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/SecretVersion'
+    CreateSecretRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - name
+      - values
+      properties:
+        name:
+          type: string
+          description: Project-scoped secret name.
+        description:
+          type: string
+          description: Optional human-readable description.
+        values:
+          $ref: '#/components/schemas/SecretValues'
+    UpdateSecretRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        description:
+          type: string
+          description: Replacement description.
+        values:
+          $ref: '#/components/schemas/SecretValues'
     ReferenceCandidate:
       type: object
       additionalProperties: false
@@ -9722,15 +11723,6 @@ components:
         - `partial_failure` — at least one target failed while others succeeded.
         - `failed` — all targets failed, or a trigger-level error prevented any target.
         - `skipped` — the concurrency policy suppressed the entire activation.
-    TestFireTargetStatus:
-      type: string
-      enum:
-      - success
-      - failed
-      - skipped
-      description: Per-target outcome of a test-fire dispatch. Distinct from `TriggerFireStatus`,
-        which carries aggregate values like `partial_failure` that are only meaningful at
-        the trigger level.
     TriggerFireTargetStatus:
       type: string
       enum:
@@ -10056,9 +12048,6 @@ components:
           $ref: '#/components/schemas/ActorAvailability'
         to_availability:
           $ref: '#/components/schemas/ActorAvailability'
-        require_free_capacity:
-          type: boolean
-          description: When true, only fire if the new state has spare capacity.
     ChannelMessageSourceConfig:
       type: object
       additionalProperties: false
@@ -10288,83 +12277,6 @@ components:
           description: '`preview` resolves input mappings and condition outcomes without launching
             runs. `execute` runs the real dispatcher path — runs are tagged with source_label
             `test-fire` so they are filterable in the run list.'
-    TestFireTargetResult:
-      type: object
-      additionalProperties: false
-      required:
-      - target_id
-      - kind
-      - status
-      - would_launch
-      description: Per-target outcome of a test-fire. Mirrors TriggerFireTargetResult but
-        exposes the resolved input mapping and would-launch decision so trigger authors can
-        debug each layer in isolation.
-      properties:
-        target_id:
-          type: string
-          description: ID of the trigger target this result is for.
-        kind:
-          type: string
-          enum:
-          - launch_run
-          - signal_run
-          description: 'Effect kind of this target. Discriminates which resolved field is
-            populated: `launch_run` populates `input_mapping_resolved`; `signal_run` populates
-            `signal_payload_resolved`.'
-        workflow_id:
-          type: string
-          description: Workflow definition the target points at. Present only for `launch_run`
-            targets.
-        enabled:
-          type: boolean
-          description: Whether the target is enabled. Disabled targets are skipped without
-            resolution.
-        status:
-          $ref: '#/components/schemas/TestFireTargetStatus'
-        input_mapping_resolved:
-          type: object
-          additionalProperties: true
-          description: (launch_run only) Resolved input map handed to the workflow.
-        signal_payload_resolved:
-          type: object
-          additionalProperties: true
-          description: (signal_run only) Resolved signal payload that would be delivered to
-            the matched run's `wait_signal` step.
-        input_resolution_error:
-          type: string
-          description: Error encountered resolving the target's `input_mapping` for a `launch_run`
-            target. `signal_run` targets report `signal_payload_mapping` failures via `signal_payload_resolution_error`
-            instead, so clients can distinguish which resolution step failed without parsing
-            the error string. Errors rendering the run-selector template (`run_selector.external_id_template`
-            for `signal_run`, or the `external_id_template` for `launch_run`) surface in `launch_error`.
-        signal_payload_resolution_error:
-          type: string
-          description: (signal_run only) Error encountered resolving `signal_payload_mapping`
-            — the payload that would be delivered to the matched run's `wait_signal` step
-            (and exposed under `signal_payload_resolved`). Reported separately from `input_resolution_error`
-            so clients don't reuse launch-run-specific fields for signal failures.
-        external_id_resolved:
-          type: string
-          description: Rendered value of `external_id_template` (launch_run) or `run_selector.external_id_template`
-            (signal_run). Lets authors verify the two templates produce matching strings.
-            Absent when the target has no template or rendering failed.
-        would_launch:
-          type: boolean
-          description: True when the target would launch a run (`launch_run`) or signal an
-            existing run (`signal_run`). False for disabled targets and targets whose condition
-            evaluated to false.
-        run_id:
-          type: string
-          description: ID of the launched (`launch_run`) or signaled (`signal_run`) run. Only
-            set in execute mode.
-        reason:
-          type: string
-          description: Why the target was skipped, when status is `skipped`. Empty for `success`
-            and `failed` results.
-        launch_error:
-          type: string
-          description: Error from the launcher (`launch_run`) or signal sender (`signal_run`)
-            when execute mode failed to act on the target.
     TriggerFireListResponse:
       type: object
       additionalProperties: false
@@ -11576,18 +13488,27 @@ components:
         latency_ms:
           type: integer
           description: Round-trip latency in milliseconds.
-    IntegrationCatalog:
+    IntegrationStatus:
+      type: string
+      enum:
+      - active
+      - inactive
+      - expired
+      description: '`active` — integration is enabled and usable by workflows. `inactive`
+        — manually disabled; no automatic expiry behavior. `expired` — token/credential has
+        expired (e.g., OAuth token not refreshed).'
+    IntegrationProvidersResponse:
       type: object
       additionalProperties: false
       required:
       - providers
-      description: Capability catalog for the integrations registered on this server.
+      description: Integration providers and capabilities available to a project.
       properties:
         providers:
           type: array
           items:
-            $ref: '#/components/schemas/IntegrationCatalogProvider'
-    IntegrationCatalogProvider:
+            $ref: '#/components/schemas/IntegrationProvider'
+    IntegrationProvider:
       type: object
       additionalProperties: false
       required:
@@ -11595,14 +13516,25 @@ components:
       - display_name
       - auth_kind
       - capabilities
+      - connection
       - events
       - actions
+      - trigger_patterns
       properties:
         name:
           type: string
           description: Stable provider identifier (`github`, `slack`, …).
         display_name:
           type: string
+        description:
+          type: string
+          description: Human-readable provider summary for directory and detail surfaces.
+        category:
+          type: string
+          description: Human-readable grouping label for directory surfaces.
+        icon:
+          type: string
+          description: Stable icon key that clients may map to their own icon set.
         auth_kind:
           type: string
           description: Authentication mechanism the provider uses (e.g. `github_app_install`,
@@ -11616,15 +13548,67 @@ components:
             type: boolean
           description: Boolean capability flags reflecting which framework interfaces the
             provider implements (`connect`, `sync`, `live_status`, etc.).
+        connection:
+          $ref: '#/components/schemas/IntegrationProviderConnection'
         events:
           type: array
           items:
-            $ref: '#/components/schemas/IntegrationCatalogEventType'
+            $ref: '#/components/schemas/IntegrationProviderEventType'
         actions:
           type: array
           items:
-            $ref: '#/components/schemas/IntegrationCatalogAction'
-    IntegrationCatalogEventType:
+            $ref: '#/components/schemas/IntegrationProviderAction'
+        trigger_patterns:
+          type: array
+          description: Provider-owned trigger authoring presets. Empty until trigger patterns
+            are registered for this provider.
+          items:
+            $ref: '#/components/schemas/IntegrationProviderTriggerPattern'
+    IntegrationProviderConnection:
+      type: object
+      additionalProperties: false
+      required:
+      - connected
+      description: Project-local connection summary for a provider.
+      properties:
+        connected:
+          type: boolean
+          description: True when this project has an active integration row for the provider.
+        integration_id:
+          type: string
+          description: Most relevant integration ID for this provider in the project, when
+            one exists.
+        integration_name:
+          type: string
+          description: Most relevant integration name for this provider in the project, when
+            one exists.
+        status:
+          $ref: '#/components/schemas/IntegrationStatus'
+        updated_at:
+          type: string
+          format: date-time
+          description: Timestamp when the most relevant integration row was last updated.
+    IntegrationProviderTriggerPattern:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - label
+      description: Catalog descriptor for creating a trigger from a provider-owned event pattern.
+        The array is currently empty for all providers; this schema reserves the response
+        shape for the trigger-pattern rollout.
+      properties:
+        id:
+          type: string
+        label:
+          type: string
+        description:
+          type: string
+        event_type:
+          type: string
+        category:
+          type: string
+    IntegrationProviderEventType:
       type: object
       additionalProperties: false
       required:
@@ -11645,7 +13629,7 @@ components:
           description: JSON Schema for the event payload. Absent when the registered Go type
             cannot be reflected meaningfully (for example, `map[string]any` aliases of raw
             upstream payloads).
-    IntegrationCatalogAction:
+    IntegrationProviderAction:
       type: object
       additionalProperties: false
       required:
@@ -12246,6 +14230,7 @@ components:
       - name
       - status
       - presence
+      - connection_status
       - created_at
       - updated_at
       properties:
@@ -12290,7 +14275,14 @@ components:
           description: 'Current agent status: `active` or `disabled`.'
         presence:
           $ref: '#/components/schemas/AgentPresence'
-          description: 'Current agent presence: `online`, `offline`, or `unknown`.'
+          description: Deprecated alias of connection_status for first rollout compatibility.
+        connection_status:
+          $ref: '#/components/schemas/ActorConnectionStatus'
+        connection_last_seen_at:
+          type: string
+          format: date-time
+        presence_source:
+          $ref: '#/components/schemas/ActorPresenceSource'
         email_address:
           type: string
           description: Inbox address provisioned via POST /v1/projects/{project}/agents/{id}/inbox
@@ -12383,6 +14375,475 @@ components:
           description: The list of results for this page.
           items:
             $ref: '#/components/schemas/AgentSession'
+    AgentNativeTool:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - label
+      - description
+      - concrete_tools
+      - risk
+      properties:
+        id:
+          type: string
+          description: Stable native-tool grant ID, such as `mobius_table_read`.
+        label:
+          type: string
+          description: Human-readable tool label for toolkit editors.
+        description:
+          type: string
+          description: What this native tool allows.
+        concrete_tools:
+          type: array
+          description: Model-facing concrete tools exposed by this native grant.
+          items:
+            type: string
+        risk:
+          type: string
+          enum:
+          - low
+          - medium
+          - high
+          - critical
+    ToolkitActionGrant:
+      type: object
+      additionalProperties: false
+      required:
+      - selector_type
+      - selector
+      properties:
+        selector_type:
+          type: string
+          enum:
+          - exact
+          - group
+          - platform
+          - custom
+          - workflow
+          - wildcard
+          description: How to match action catalog names.
+        selector:
+          type: string
+          description: 'Selector value. Examples: `github.list_issues`, `github.*`, `platform.github.*`,
+            `custom.*`, `workflow.*`, or `*`.'
+    Toolkit:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - org_id
+      - project_id
+      - name
+      - source
+      - status
+      - native_tool_ids
+      - action_grants
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+          description: Toolkit ID (TypeID `tk_...`).
+        org_id:
+          type: string
+        project_id:
+          type: string
+        name:
+          type: string
+        slug:
+          type: string
+        description:
+          type: string
+        source:
+          type: string
+          enum:
+          - system
+          - project
+        status:
+          type: string
+          enum:
+          - active
+          - archived
+        native_tool_ids:
+          type: array
+          description: Native-tool grant IDs owned by this toolkit.
+          items:
+            type: string
+        native_tools:
+          type: array
+          description: Expanded native-tool metadata for the toolkit's tool grants.
+          items:
+            $ref: '#/components/schemas/AgentNativeTool'
+        action_grants:
+          type: array
+          items:
+            $ref: '#/components/schemas/ToolkitActionGrant'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    ToolkitRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - name
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 80
+        slug:
+          type: string
+          description: Optional stable slug. When omitted, the server derives one from `name`.
+        description:
+          type: string
+          maxLength: 1000
+        native_tool_ids:
+          type: array
+          description: Native-tool grant IDs to allow.
+          items:
+            type: string
+        action_grants:
+          type: array
+          items:
+            $ref: '#/components/schemas/ToolkitActionGrant'
+    ToolkitListResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Toolkit'
+    ToolkitAssignment:
+      type: object
+      additionalProperties: false
+      required:
+      - agent_id
+      - toolkit_id
+      - position
+      - created_at
+      properties:
+        agent_id:
+          type: string
+        toolkit_id:
+          type: string
+        toolkit:
+          $ref: '#/components/schemas/Toolkit'
+        position:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+    ReplaceToolkitsRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - toolkit_ids
+      properties:
+        toolkit_ids:
+          type: array
+          items:
+            type: string
+    ToolkitAssignmentListResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ToolkitAssignment'
+    Skill:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - org_id
+      - project_id
+      - name
+      - source
+      - status
+      - instructions
+      - allowed_tools
+      - allowed_actions
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+          description: Skill ID (TypeID `skl_...`).
+        org_id:
+          type: string
+        project_id:
+          type: string
+        name:
+          type: string
+        slug:
+          type: string
+        description:
+          type: string
+        source:
+          type: string
+          enum:
+          - system
+          - project
+          - imported
+        status:
+          type: string
+          enum:
+          - active
+          - archived
+        instructions:
+          type: string
+          description: Markdown instructions loaded when the skill is active.
+        allowed_tools:
+          type: array
+          description: Requested native-tool IDs, concrete tool names, or known aliases.
+          items:
+            type: string
+        allowed_actions:
+          type: array
+          description: Requested action names/selectors.
+          items:
+            type: string
+        frontmatter:
+          type: object
+          additionalProperties: true
+          description: Original imported frontmatter preserved for round-tripping.
+        model_hint:
+          type: string
+          description: Advisory model preference; it does not override the agent model in
+            v1.
+        user_invocable:
+          type: boolean
+          description: Whether users may directly request this skill by name.
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    SkillRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - name
+      - instructions
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 80
+        slug:
+          type: string
+        description:
+          type: string
+          maxLength: 1000
+        instructions:
+          type: string
+          minLength: 1
+        allowed_tools:
+          type: array
+          items:
+            type: string
+        allowed_actions:
+          type: array
+          items:
+            type: string
+        frontmatter:
+          type: object
+          additionalProperties: true
+        model_hint:
+          type: string
+        user_invocable:
+          type: boolean
+    ImportSkillRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - content
+      properties:
+        content:
+          type: string
+          description: Full skill document, optionally with YAML frontmatter.
+        name:
+          type: string
+          description: Optional name override.
+    SkillListResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Skill'
+    SkillAssignment:
+      type: object
+      additionalProperties: false
+      required:
+      - agent_id
+      - skill_id
+      - enabled
+      - position
+      - created_at
+      properties:
+        agent_id:
+          type: string
+        skill_id:
+          type: string
+        skill:
+          $ref: '#/components/schemas/Skill'
+        enabled:
+          type: boolean
+        position:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+    ReplaceSkillsRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - skill_ids
+      properties:
+        skill_ids:
+          type: array
+          items:
+            type: string
+    SkillAssignmentListResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/SkillAssignment'
+    SkillManifestEntry:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - name
+      - instructions
+      - active
+      - allowed_tools
+      - allowed_actions
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        instructions:
+          type: string
+        active:
+          type: boolean
+        allowed_tools:
+          type: array
+          items:
+            type: string
+        allowed_actions:
+          type: array
+          items:
+            type: string
+        model_hint:
+          type: string
+        user_invocable:
+          type: boolean
+    AgentCapabilityWarning:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        skill_id:
+          type: string
+        toolkit_id:
+          type: string
+        tool:
+          type: string
+        action:
+          type: string
+    AgentBlockedActionGrant:
+      type: object
+      additionalProperties: false
+      required:
+      - selector_type
+      - selector
+      - reason
+      properties:
+        selector_type:
+          type: string
+        selector:
+          type: string
+        reason:
+          type: string
+    AgentCapabilityManifest:
+      type: object
+      additionalProperties: false
+      required:
+      - agent_id
+      - project_id
+      - policy_hash
+      - toolkit_ids
+      - native_tools
+      - concrete_tools
+      - actions
+      - skills
+      - warnings
+      - blocked_action_grants
+      properties:
+        agent_id:
+          type: string
+        project_id:
+          type: string
+        policy_hash:
+          type: string
+        toolkit_ids:
+          type: array
+          items:
+            type: string
+        native_tools:
+          type: array
+          items:
+            $ref: '#/components/schemas/AgentNativeTool'
+        concrete_tools:
+          type: array
+          description: Dotted model-facing tool names available to the agent.
+          items:
+            type: string
+        actions:
+          type: array
+          description: Action catalog entries visible and executable under the manifest.
+          items:
+            $ref: '#/components/schemas/ActionCatalogEntry'
+        skills:
+          type: array
+          items:
+            $ref: '#/components/schemas/SkillManifestEntry'
+        warnings:
+          type: array
+          items:
+            $ref: '#/components/schemas/AgentCapabilityWarning'
+        blocked_action_grants:
+          type: array
+          items:
+            $ref: '#/components/schemas/AgentBlockedActionGrant'
     CreateAgentRequest:
       type: object
       additionalProperties: false
@@ -12486,313 +14947,68 @@ components:
           type: object
           additionalProperties: true
           description: Optional metadata such as hostname, SDK version, or region.
-    AgentInvocationStatus:
+    ActorConnectionStatus:
       type: string
-      description: |-
-        Lifecycle status of one `agent.invoke` call:
-        - `pending`: dispatched but the agent runtime hasn't claimed it yet.
-        - `running`: the agent runtime acknowledged and is executing.
-        - `completed`: the runtime returned a final response.
-        - `failed`: the runtime reported an error or the engine timed out.
-        - `cancelled`: the workflow run was cancelled before completion.
       enum:
-      - pending
-      - running
-      - completed
-      - failed
-      - cancelled
-    AgentInvocationErrorType:
+      - online
+      - idle
+      - offline
+    ActorPresenceSource:
       type: string
-      description: Typed failure classification for completed-with-error invocations.
       enum:
-      - agent_unavailable
-      - agent_error
-      - timeout
-      - tool_violation
-      - schema_violation
-      - no_tools_available
-      - forbidden
-      - cancelled
-    AgentInvocationToolCall:
-      type: object
-      additionalProperties: false
-      description: Counts of tool calls made by the agent during one invocation. Names are
-        surfaced in the durable record; full call traces ship via OTel when configured.
-      required:
-      - name
-      - count
-      properties:
-        name:
-          type: string
-          description: Tool name (e.g. `mobius_query_table`).
-        count:
-          type: integer
-          minimum: 0
-          description: Number of times the tool was invoked during the loop.
-    AgentInvocationTokens:
-      type: object
-      additionalProperties: false
-      description: Token-usage attribution for one invocation.
-      required:
-      - input
-      - output
-      properties:
-        input:
-          type: integer
-          minimum: 0
-          description: Input/prompt tokens consumed.
-        output:
-          type: integer
-          minimum: 0
-          description: Output/completion tokens emitted.
-        total:
-          type: integer
-          minimum: 0
-          description: Sum of input and output tokens.
-    AgentInvocation:
-      type: object
-      additionalProperties: false
-      description: Durable record of one `agent.invoke` workflow action call. Carries the
-        dispatch payload, the agent runtime's response or error, and the signal topic the
-        suspended workflow branch waits on.
-      required:
-      - id
-      - org_id
-      - project_id
-      - agent_id
-      - status
-      - workflow_run_id
-      - step_name
-      - path_id
-      - topic
-      - prompt
-      - timeout_seconds
-      - created_at
-      properties:
-        id:
-          type: string
-          description: Invocation ID (TypeID `ainv_…`).
-        org_id:
-          type: string
-          description: Owning organization ID.
-        project_id:
-          type: string
-          description: Owning project ID.
-        agent_id:
-          type: string
-          description: Agent that was (or will be) invoked.
-        agent_kind:
-          type: string
-          description: Snapshot of the agent's `kind` at dispatch time.
-        status:
-          $ref: '#/components/schemas/AgentInvocationStatus'
-        workflow_run_id:
-          type: string
-          description: Workflow run that issued the invocation.
-        step_name:
-          type: string
-          description: Workflow step that issued the invocation.
-        path_id:
-          type: string
-          description: Branch identifier within the workflow run.
-        topic:
-          type: string
-          description: SignalStore topic the suspended branch waits on.
-        prompt:
-          type: string
-          description: User-turn prompt the agent receives.
-        instructions:
-          type: string
-          description: Optional system-prompt addendum applied for this call only.
-        context:
-          type: object
-          additionalProperties: true
-          description: Caller-supplied structured context surfaced to the agent.
-        allowed_tools:
-          type: array
-          description: Optional restriction on which tools the agent may call. Empty array
-            means no restriction.
-          items:
-            type: string
-        output_schema:
-          type: object
-          additionalProperties: true
-          description: Optional JSON Schema the agent's structured response must satisfy.
-        timeout_seconds:
-          type: integer
-          description: Hard timeout applied to this invocation.
-        response_text:
-          type: string
-          description: Final assistant-turn text returned by the agent. Empty until completion.
-        response_struct:
-          type: object
-          additionalProperties: true
-          description: Structured output (if `output_schema` was supplied and the agent emitted
-            JSON). Empty otherwise.
-        tool_calls:
-          type: array
-          items:
-            $ref: '#/components/schemas/AgentInvocationToolCall'
-          description: Per-tool counts surfaced from the loop.
-        tool_calls_count:
-          type: integer
-          description: Total tool calls across the loop.
-        tokens:
-          $ref: '#/components/schemas/AgentInvocationTokens'
-        error_type:
-          $ref: '#/components/schemas/AgentInvocationErrorType'
-          description: Set on failed invocations.
-        error_message:
-          type: string
-          description: Human-readable error description for failed invocations.
-        created_at:
-          type: string
-          format: date-time
-          description: When the invocation row was created.
-        dispatched_at:
-          type: string
-          format: date-time
-          nullable: true
-          description: When the invocation was handed off to the agent runtime.
-        completed_at:
-          type: string
-          format: date-time
-          nullable: true
-          description: When the invocation reached a terminal status.
-    AgentInvocationCompleteRequest:
-      type: object
-      additionalProperties: false
-      description: Worker-supplied result of an in-flight invocation. The server validates
-        `tool_calls` against the original `allowed_tools` and `structured` against `output_schema`
-        before resuming the workflow branch.
-      required:
-      - text
-      properties:
-        text:
-          type: string
-          description: Final assistant-turn text from the agent.
-        structured:
-          type: object
-          additionalProperties: true
-          description: Optional structured output. Required when the invocation specified
-            `output_schema`.
-        tool_calls:
-          type: array
-          items:
-            $ref: '#/components/schemas/AgentInvocationToolCall'
-          description: Per-tool counts observed during the loop. Used for tool-restriction
-            audit.
-        tokens:
-          $ref: '#/components/schemas/AgentInvocationTokens'
-          description: Token-usage attribution for this invocation.
-    AgentInvocationFailRequest:
-      type: object
-      additionalProperties: false
-      description: Worker-reported failure for an in-flight invocation.
-      required:
-      - error_type
-      - error_message
-      properties:
-        error_type:
-          $ref: '#/components/schemas/AgentInvocationErrorType'
-        error_message:
-          type: string
-          description: Human-readable description of the failure.
+      - web
+      - worker_session
+      - agent_session
+      - platform_hosted
     ActorStateActorKind:
       type: string
       enum:
       - user
       - agent
-    ActorStateSource:
-      type: string
-      enum:
-      - manual
-      - session
-      - agent_report
-      - derived
-      - calendar
-      - integration
     ActorStateVisibility:
       type: string
       enum:
       - org
       - project
       - self
-    ActorAssignmentRole:
+    ActorAssignmentStatus:
       type: string
       enum:
-      - doing
-      - queued
-      - next
-    ActorAssignmentSourceKind:
-      type: string
-      enum:
-      - job_claim
-      - manual
-      - agent_report
-      - trigger
-    ActorReference:
-      type: object
-      additionalProperties: true
-      description: Polymorphic target reference compatible with Reference Pickers.
-    ActorFocus:
-      type: object
-      additionalProperties: false
-      properties:
-        headline:
-          type: string
-          maxLength: 120
-        ref:
-          $ref: '#/components/schemas/ActorReference'
-        url:
-          type: string
-          format: uri
-    ActorCapacity:
-      type: object
-      additionalProperties: false
-      properties:
-        in_use:
-          type: integer
-          minimum: 0
-        max:
-          type: integer
-          minimum: 0
-        accepting_new:
-          type: boolean
+      - todo
+      - in_progress
+      - blocked
+      - done
     ActorAssignmentInput:
       type: object
       additionalProperties: false
       required:
-      - role
-      - target_ref
-      - target_key
+      - status
+      - headline
       properties:
-        role:
-          type: string
-          enum:
-          - queued
-          - next
-          description: Client reports may set queued or next assignments only.
-        target_ref:
-          $ref: '#/components/schemas/ActorReference'
-        target_key:
-          type: string
+        status:
+          $ref: '#/components/schemas/ActorAssignmentStatus'
         headline:
           type: string
           maxLength: 120
-        due_at:
+        description:
+          type: string
+          maxLength: 4000
+        started_at:
           type: string
           format: date-time
+          description: When the actor actually began working on this assignment.
+        due_by:
+          type: string
+          format: date-time
+          description: When the assignment is expected to be completed.
     ActorAssignment:
       type: object
       additionalProperties: false
       required:
       - id
       - actor_state_id
-      - role
-      - target_ref
-      - target_key
-      - source_kind
+      - status
+      - headline
       - created_at
       - updated_at
       properties:
@@ -12800,22 +15016,18 @@ components:
           type: string
         actor_state_id:
           type: string
-        role:
-          $ref: '#/components/schemas/ActorAssignmentRole'
-        target_ref:
-          $ref: '#/components/schemas/ActorReference'
-        target_key:
-          type: string
+        status:
+          $ref: '#/components/schemas/ActorAssignmentStatus'
         headline:
           type: string
-        claimed_at:
+        description:
+          type: string
+        started_at:
           type: string
           format: date-time
-        due_at:
+        due_by:
           type: string
           format: date-time
-        source_kind:
-          $ref: '#/components/schemas/ActorAssignmentSourceKind'
         created_at:
           type: string
           format: date-time
@@ -12830,7 +15042,6 @@ components:
       - actor_id
       - actor_kind
       - availability
-      - status_source
       - visibility
       - stale
       - assignments
@@ -12845,15 +15056,11 @@ components:
           $ref: '#/components/schemas/ActorStateActorKind'
         availability:
           $ref: '#/components/schemas/ActorAvailability'
-        focus:
-          $ref: '#/components/schemas/ActorFocus'
-        capacity:
-          $ref: '#/components/schemas/ActorCapacity'
+        description:
+          type: string
         last_seen_at:
           type: string
           format: date-time
-        status_source:
-          $ref: '#/components/schemas/ActorStateSource'
         expires_at:
           type: string
           format: date-time
@@ -12877,22 +15084,14 @@ components:
       required:
       - actor_kind
       - availability
-      - status_source
       properties:
         actor_kind:
           $ref: '#/components/schemas/ActorStateActorKind'
         availability:
           $ref: '#/components/schemas/ActorAvailability'
-        focus:
-          $ref: '#/components/schemas/ActorFocus'
-        capacity:
-          $ref: '#/components/schemas/ActorCapacity'
-          description: Accepted for humans. Ignored for agents because agent capacity is server-derived.
-        status_source:
+        description:
           type: string
-          enum:
-          - manual
-          - agent_report
+          maxLength: 4000
         expires_at:
           type: string
           format: date-time
@@ -12922,6 +15121,125 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ActorAssignment'
+    UserPresenceMode:
+      type: string
+      enum:
+      - automatic
+      - appear_offline
+    WebPresenceHeartbeatRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - session_id
+      properties:
+        session_id:
+          type: string
+          minLength: 1
+          maxLength: 160
+        project_id:
+          type: string
+        visible:
+          type: boolean
+          default: true
+        last_active_at:
+          type: string
+          format: date-time
+    UserPresencePreferences:
+      type: object
+      additionalProperties: false
+      required:
+      - mode
+      - updated_at
+      properties:
+        mode:
+          $ref: '#/components/schemas/UserPresenceMode'
+        updated_at:
+          type: string
+          format: date-time
+    UpdateUserPresencePreferencesRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - mode
+      properties:
+        mode:
+          $ref: '#/components/schemas/UserPresenceMode'
+    ProjectTeamMemberKind:
+      type: string
+      enum:
+      - user
+      - agent
+    ProjectTeamMemberLinks:
+      type: object
+      additionalProperties: false
+      properties:
+        agent_href:
+          type: string
+        access_href:
+          type: string
+        ask_href:
+          type: string
+    ProjectTeamMember:
+      type: object
+      additionalProperties: false
+      required:
+      - actor_id
+      - actor_kind
+      - display_name
+      - assignments
+      - stale
+      - connection_status
+      - can_update_status
+      properties:
+        actor_id:
+          type: string
+        actor_kind:
+          $ref: '#/components/schemas/ProjectTeamMemberKind'
+        display_name:
+          type: string
+        secondary_label:
+          type: string
+        avatar_url:
+          type: string
+        availability:
+          $ref: '#/components/schemas/ActorAvailability'
+        status_description:
+          type: string
+        assignments:
+          type: array
+          items:
+            $ref: '#/components/schemas/ActorAssignment'
+        stale:
+          type: boolean
+        can_update_status:
+          type: boolean
+          description: True when the current caller can update this teammate's Actor State.
+        last_seen_at:
+          type: string
+          format: date-time
+        connection_status:
+          $ref: '#/components/schemas/ActorConnectionStatus'
+        connection_last_seen_at:
+          type: string
+          format: date-time
+        presence_source:
+          $ref: '#/components/schemas/ActorPresenceSource'
+        links:
+          $ref: '#/components/schemas/ProjectTeamMemberLinks'
+    ProjectTeamListResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - truncated
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProjectTeamMember'
+        truncated:
+          type: boolean
+          description: True when more than 500 rows matched the query.
     SpanKind:
       type: string
       description: Mirrors the OpenTelemetry `SpanKind` enum. Stored lowercase.
@@ -13963,7 +16281,6 @@ components:
       additionalProperties: false
       required:
       - name
-      - subject_kind
       - state_schema
       properties:
         name:
@@ -14190,6 +16507,51 @@ components:
         created_at:
           type: string
           format: date-time
+    ObservableWaiter:
+      type: object
+      additionalProperties: false
+      required:
+      - run_id
+      - workflow_name
+      - run_status
+      - path_id
+      - step_name
+      - observed_version
+      - run_created_at
+      - run_updated_at
+      properties:
+        run_id:
+          type: string
+        workflow_name:
+          type: string
+        run_status:
+          type: string
+          enum:
+          - active
+          - completed
+          - failed
+        path_id:
+          type: string
+        step_name:
+          type: string
+        condition:
+          type: string
+          description: Bare `expr` condition the Observable state must satisfy.
+        observed_version:
+          type: integer
+          format: int64
+          description: Observable version observed when this path parked.
+        deadline_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Fixed timeout deadline for the wait, when configured.
+        run_created_at:
+          type: string
+          format: date-time
+        run_updated_at:
+          type: string
+          format: date-time
     SubmitObservableObservationRequest:
       type: object
       additionalProperties: false
@@ -14278,6 +16640,16 @@ components:
             $ref: '#/components/schemas/ObservableEvent'
         next_cursor:
           type: string
+    ObservableWaiterListResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ObservableWaiter'
 x-tagGroups:
 - name: Channels
   tags:
@@ -14296,6 +16668,12 @@ x-tagGroups:
 - name: Actions
   tags:
   - actions
+- name: Environments
+  tags:
+  - environments
+- name: Secrets
+  tags:
+  - secrets
 - name: Reference lookup
   tags:
   - references
@@ -14319,7 +16697,7 @@ x-tagGroups:
   - webhooks
 - name: Integrations
   tags:
-  - integration-catalog
+  - integration-providers
 - name: Metrics
   tags:
   - metrics
@@ -14332,10 +16710,16 @@ x-tagGroups:
 - name: Agents
   tags:
   - agents
-  - agent-invocations
+  - agent-capabilities
 - name: Actor State
   tags:
   - actor-state
+- name: Presence
+  tags:
+  - presence
+- name: Project Team
+  tags:
+  - team
 - name: Spans
   tags:
   - spans

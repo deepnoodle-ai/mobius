@@ -8,6 +8,8 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/deepnoodle-ai/wonton/cli"
 
 	"github.com/deepnoodle-ai/mobius/mobius/api"
@@ -17,6 +19,109 @@ import (
 func registerEventsCommands(app *cli.App) {
 	eventsGrp := app.Group("events").Description("Live event streams for runs and projects (SSE)")
 	eventsGrp.Alias("event")
+	eventsGrp.Command("create-event-test-fire").
+		Description("Preview or deliver a synthetic integration event").
+		Flags(
+			cli.String("dedup-key", "").Help("Optional dedup key for deliver mode. Defaults to the generated synthetic event id."),
+			cli.String("event-type", "").Help("Dotted integration event type to fire. Required when sample_id is omitted."),
+			cli.String("integration-id", "").Help("Optional integration id metadata. Defaults to `synthetic:<provider>`."),
+			cli.String("meta", "").Help("Optional metadata overrides. Reserved event metadata is controlled by the top-level request fields. Accepts JSON, @file, or @-."),
+			cli.String("mode", "").Help("`preview` evaluates matches without persistence; `deliver` persists a synthetic integration event a…"),
+			cli.String("payload", "").Help("Canonical event payload. When sample_id is set, this replaces the sample payload. Accepts JSON, @file, or @-."),
+			cli.String("provider", "").Help("Provider name. Defaults to the sample provider or the event_type prefix."),
+			cli.String("sample-id", "").Help("Optional sample id to prefill provider, event_type, payload, and meta."),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			var body api.CreateIntegrationEventTestFireJSONRequestBody
+			if err := readJSONBody(ctx, &body); err != nil {
+				return err
+			}
+			if ctx.IsSet("dedup-key") {
+				v := ctx.String("dedup-key")
+				body.DedupKey = &v
+			}
+			if ctx.IsSet("event-type") {
+				v := ctx.String("event-type")
+				body.EventType = &v
+			}
+			if ctx.IsSet("integration-id") {
+				v := ctx.String("integration-id")
+				body.IntegrationId = &v
+			}
+			if ctx.IsSet("meta") {
+				if err := decodeFlagJSON(ctx, "meta", ctx.String("meta"), &body.Meta); err != nil {
+					return err
+				}
+			}
+			if ctx.IsSet("mode") {
+				v := api.IntegrationEventFireMode(ctx.String("mode"))
+				body.Mode = &v
+			}
+			if ctx.IsSet("payload") {
+				if err := decodeFlagJSON(ctx, "payload", ctx.String("payload"), &body.Payload); err != nil {
+					return err
+				}
+			}
+			if ctx.IsSet("provider") {
+				v := ctx.String("provider")
+				body.Provider = &v
+			}
+			if ctx.IsSet("sample-id") {
+				v := ctx.String("sample-id")
+				body.SampleId = &v
+			}
+			if ctx.String("file") == "" && !ctx.IsSet("dedup-key") && !ctx.IsSet("event-type") && !ctx.IsSet("integration-id") && !ctx.IsSet("meta") && !ctx.IsSet("mode") && !ctx.IsSet("payload") && !ctx.IsSet("provider") && !ctx.IsSet("sample-id") {
+				return fmt.Errorf("at least one flag or --file is required")
+			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
+			}
+			resp, err := client.CreateIntegrationEventTestFireWithResponse(ctx.Context(), p0, body)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "createIntegrationEventTestFire", resp.StatusCode(), resp.Body)
+		})
+
+	eventsGrp.Command("list-event-test-samples").
+		Description("List synthetic integration event samples").
+		Flags(
+			cli.String("provider", "").Help("Filter samples by provider name, e.g. `github`."),
+			cli.String("event-type", "").Help("Filter samples by exact event type."),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			params := &api.ListIntegrationEventTestSamplesParams{}
+			if ctx.IsSet("provider") {
+				v := ctx.String("provider")
+				params.Provider = &v
+			}
+			if ctx.IsSet("event-type") {
+				v := ctx.String("event-type")
+				params.EventType = &v
+			}
+			resp, err := client.ListIntegrationEventTestSamplesWithResponse(ctx.Context(), p0, params)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "listIntegrationEventTestSamples", resp.StatusCode(), resp.Body)
+		})
+
 	eventsGrp.Command("stream-project-events").
 		Description("Subscribe to a project-wide live event stream (SSE)").
 		Flags(

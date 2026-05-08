@@ -23,6 +23,21 @@ const (
 	XApiKeyAuthScopes = "XApiKeyAuth.Scopes"
 )
 
+// Defines values for AcquireEnvironmentRequestTemplateId.
+const (
+	AcquireEnvironmentRequestTemplateIdCodingDefault AcquireEnvironmentRequestTemplateId = "coding-default"
+)
+
+// Valid indicates whether the value is a known member of the AcquireEnvironmentRequestTemplateId enum.
+func (e AcquireEnvironmentRequestTemplateId) Valid() bool {
+	switch e {
+	case AcquireEnvironmentRequestTemplateIdCodingDefault:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ActionEndpointKind.
 const (
 	ActionEndpointKindHttp     ActionEndpointKind = "http"
@@ -98,63 +113,24 @@ func (e ActionInvocationResultStatus) Valid() bool {
 	}
 }
 
-// Defines values for ActorAssignmentInputRole.
+// Defines values for ActorAssignmentStatus.
 const (
-	ActorAssignmentInputRoleNext   ActorAssignmentInputRole = "next"
-	ActorAssignmentInputRoleQueued ActorAssignmentInputRole = "queued"
+	ActorAssignmentStatusBlocked    ActorAssignmentStatus = "blocked"
+	ActorAssignmentStatusDone       ActorAssignmentStatus = "done"
+	ActorAssignmentStatusInProgress ActorAssignmentStatus = "in_progress"
+	ActorAssignmentStatusTodo       ActorAssignmentStatus = "todo"
 )
 
-// Valid indicates whether the value is a known member of the ActorAssignmentInputRole enum.
-func (e ActorAssignmentInputRole) Valid() bool {
+// Valid indicates whether the value is a known member of the ActorAssignmentStatus enum.
+func (e ActorAssignmentStatus) Valid() bool {
 	switch e {
-	case ActorAssignmentInputRoleNext:
+	case ActorAssignmentStatusBlocked:
 		return true
-	case ActorAssignmentInputRoleQueued:
+	case ActorAssignmentStatusDone:
 		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for ActorAssignmentRole.
-const (
-	ActorAssignmentRoleDoing  ActorAssignmentRole = "doing"
-	ActorAssignmentRoleNext   ActorAssignmentRole = "next"
-	ActorAssignmentRoleQueued ActorAssignmentRole = "queued"
-)
-
-// Valid indicates whether the value is a known member of the ActorAssignmentRole enum.
-func (e ActorAssignmentRole) Valid() bool {
-	switch e {
-	case ActorAssignmentRoleDoing:
+	case ActorAssignmentStatusInProgress:
 		return true
-	case ActorAssignmentRoleNext:
-		return true
-	case ActorAssignmentRoleQueued:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for ActorAssignmentSourceKind.
-const (
-	ActorAssignmentSourceKindAgentReport ActorAssignmentSourceKind = "agent_report"
-	ActorAssignmentSourceKindJobClaim    ActorAssignmentSourceKind = "job_claim"
-	ActorAssignmentSourceKindManual      ActorAssignmentSourceKind = "manual"
-	ActorAssignmentSourceKindTrigger     ActorAssignmentSourceKind = "trigger"
-)
-
-// Valid indicates whether the value is a known member of the ActorAssignmentSourceKind enum.
-func (e ActorAssignmentSourceKind) Valid() bool {
-	switch e {
-	case ActorAssignmentSourceKindAgentReport:
-		return true
-	case ActorAssignmentSourceKindJobClaim:
-		return true
-	case ActorAssignmentSourceKindManual:
-		return true
-	case ActorAssignmentSourceKindTrigger:
+	case ActorAssignmentStatusTodo:
 		return true
 	default:
 		return false
@@ -191,6 +167,51 @@ func (e ActorAvailability) Valid() bool {
 	}
 }
 
+// Defines values for ActorConnectionStatus.
+const (
+	ActorConnectionStatusIdle    ActorConnectionStatus = "idle"
+	ActorConnectionStatusOffline ActorConnectionStatus = "offline"
+	ActorConnectionStatusOnline  ActorConnectionStatus = "online"
+)
+
+// Valid indicates whether the value is a known member of the ActorConnectionStatus enum.
+func (e ActorConnectionStatus) Valid() bool {
+	switch e {
+	case ActorConnectionStatusIdle:
+		return true
+	case ActorConnectionStatusOffline:
+		return true
+	case ActorConnectionStatusOnline:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ActorPresenceSource.
+const (
+	ActorPresenceSourceAgentSession   ActorPresenceSource = "agent_session"
+	ActorPresenceSourcePlatformHosted ActorPresenceSource = "platform_hosted"
+	ActorPresenceSourceWeb            ActorPresenceSource = "web"
+	ActorPresenceSourceWorkerSession  ActorPresenceSource = "worker_session"
+)
+
+// Valid indicates whether the value is a known member of the ActorPresenceSource enum.
+func (e ActorPresenceSource) Valid() bool {
+	switch e {
+	case ActorPresenceSourceAgentSession:
+		return true
+	case ActorPresenceSourcePlatformHosted:
+		return true
+	case ActorPresenceSourceWeb:
+		return true
+	case ActorPresenceSourceWorkerSession:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ActorStateActorKind.
 const (
 	ActorStateActorKindAgent ActorStateActorKind = "agent"
@@ -203,36 +224,6 @@ func (e ActorStateActorKind) Valid() bool {
 	case ActorStateActorKindAgent:
 		return true
 	case ActorStateActorKindUser:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for ActorStateSource.
-const (
-	ActorStateSourceAgentReport ActorStateSource = "agent_report"
-	ActorStateSourceCalendar    ActorStateSource = "calendar"
-	ActorStateSourceDerived     ActorStateSource = "derived"
-	ActorStateSourceIntegration ActorStateSource = "integration"
-	ActorStateSourceManual      ActorStateSource = "manual"
-	ActorStateSourceSession     ActorStateSource = "session"
-)
-
-// Valid indicates whether the value is a known member of the ActorStateSource enum.
-func (e ActorStateSource) Valid() bool {
-	switch e {
-	case ActorStateSourceAgentReport:
-		return true
-	case ActorStateSourceCalendar:
-		return true
-	case ActorStateSourceDerived:
-		return true
-	case ActorStateSourceIntegration:
-		return true
-	case ActorStateSourceManual:
-		return true
-	case ActorStateSourceSession:
 		return true
 	default:
 		return false
@@ -278,63 +269,24 @@ func (e AddChannelMemberRequestRole) Valid() bool {
 	}
 }
 
-// Defines values for AgentInvocationErrorType.
+// Defines values for AgentNativeToolRisk.
 const (
-	AgentInvocationErrorTypeAgentError       AgentInvocationErrorType = "agent_error"
-	AgentInvocationErrorTypeAgentUnavailable AgentInvocationErrorType = "agent_unavailable"
-	AgentInvocationErrorTypeCancelled        AgentInvocationErrorType = "cancelled"
-	AgentInvocationErrorTypeForbidden        AgentInvocationErrorType = "forbidden"
-	AgentInvocationErrorTypeNoToolsAvailable AgentInvocationErrorType = "no_tools_available"
-	AgentInvocationErrorTypeSchemaViolation  AgentInvocationErrorType = "schema_violation"
-	AgentInvocationErrorTypeTimeout          AgentInvocationErrorType = "timeout"
-	AgentInvocationErrorTypeToolViolation    AgentInvocationErrorType = "tool_violation"
+	AgentNativeToolRiskCritical AgentNativeToolRisk = "critical"
+	AgentNativeToolRiskHigh     AgentNativeToolRisk = "high"
+	AgentNativeToolRiskLow      AgentNativeToolRisk = "low"
+	AgentNativeToolRiskMedium   AgentNativeToolRisk = "medium"
 )
 
-// Valid indicates whether the value is a known member of the AgentInvocationErrorType enum.
-func (e AgentInvocationErrorType) Valid() bool {
+// Valid indicates whether the value is a known member of the AgentNativeToolRisk enum.
+func (e AgentNativeToolRisk) Valid() bool {
 	switch e {
-	case AgentInvocationErrorTypeAgentError:
+	case AgentNativeToolRiskCritical:
 		return true
-	case AgentInvocationErrorTypeAgentUnavailable:
+	case AgentNativeToolRiskHigh:
 		return true
-	case AgentInvocationErrorTypeCancelled:
+	case AgentNativeToolRiskLow:
 		return true
-	case AgentInvocationErrorTypeForbidden:
-		return true
-	case AgentInvocationErrorTypeNoToolsAvailable:
-		return true
-	case AgentInvocationErrorTypeSchemaViolation:
-		return true
-	case AgentInvocationErrorTypeTimeout:
-		return true
-	case AgentInvocationErrorTypeToolViolation:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for AgentInvocationStatus.
-const (
-	AgentInvocationStatusCancelled AgentInvocationStatus = "cancelled"
-	AgentInvocationStatusCompleted AgentInvocationStatus = "completed"
-	AgentInvocationStatusFailed    AgentInvocationStatus = "failed"
-	AgentInvocationStatusPending   AgentInvocationStatus = "pending"
-	AgentInvocationStatusRunning   AgentInvocationStatus = "running"
-)
-
-// Valid indicates whether the value is a known member of the AgentInvocationStatus enum.
-func (e AgentInvocationStatus) Valid() bool {
-	switch e {
-	case AgentInvocationStatusCancelled:
-		return true
-	case AgentInvocationStatusCompleted:
-		return true
-	case AgentInvocationStatusFailed:
-		return true
-	case AgentInvocationStatusPending:
-		return true
-	case AgentInvocationStatusRunning:
+	case AgentNativeToolRiskMedium:
 		return true
 	default:
 		return false
@@ -446,6 +398,27 @@ func (e ArtifactStorageBackend) Valid() bool {
 	}
 }
 
+// Defines values for AssociateChannelInteractionRequestRelation.
+const (
+	AssociateChannelInteractionRequestRelationContext  AssociateChannelInteractionRequestRelation = "context"
+	AssociateChannelInteractionRequestRelationFollowup AssociateChannelInteractionRequestRelation = "followup"
+	AssociateChannelInteractionRequestRelationPurpose  AssociateChannelInteractionRequestRelation = "purpose"
+)
+
+// Valid indicates whether the value is a known member of the AssociateChannelInteractionRequestRelation enum.
+func (e AssociateChannelInteractionRequestRelation) Valid() bool {
+	switch e {
+	case AssociateChannelInteractionRequestRelationContext:
+		return true
+	case AssociateChannelInteractionRequestRelationFollowup:
+		return true
+	case AssociateChannelInteractionRequestRelationPurpose:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for AsymmetricActorRuleRule.
 const (
 	AsymmetricActorRuleRuleDecide  AsymmetricActorRuleRule = "decide"
@@ -494,6 +467,27 @@ func (e AuditLogEntryAction) Valid() bool {
 	}
 }
 
+// Defines values for ChannelCompletionBehavior.
+const (
+	ChannelCompletionBehaviorArchive      ChannelCompletionBehavior = "archive"
+	ChannelCompletionBehaviorMarkInactive ChannelCompletionBehavior = "mark_inactive"
+	ChannelCompletionBehaviorNone         ChannelCompletionBehavior = "none"
+)
+
+// Valid indicates whether the value is a known member of the ChannelCompletionBehavior enum.
+func (e ChannelCompletionBehavior) Valid() bool {
+	switch e {
+	case ChannelCompletionBehaviorArchive:
+		return true
+	case ChannelCompletionBehaviorMarkInactive:
+		return true
+	case ChannelCompletionBehaviorNone:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ChannelKind.
 const (
 	ChannelKindChannel ChannelKind = "channel"
@@ -506,6 +500,45 @@ func (e ChannelKind) Valid() bool {
 	case ChannelKindChannel:
 		return true
 	case ChannelKindDm:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ChannelPurpose.
+const (
+	ChannelPurposeGeneral             ChannelPurpose = "general"
+	ChannelPurposeResolveInteractions ChannelPurpose = "resolve_interactions"
+)
+
+// Valid indicates whether the value is a known member of the ChannelPurpose enum.
+func (e ChannelPurpose) Valid() bool {
+	switch e {
+	case ChannelPurposeGeneral:
+		return true
+	case ChannelPurposeResolveInteractions:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ChannelInteractionLinkRelation.
+const (
+	ChannelInteractionLinkRelationContext  ChannelInteractionLinkRelation = "context"
+	ChannelInteractionLinkRelationFollowup ChannelInteractionLinkRelation = "followup"
+	ChannelInteractionLinkRelationPurpose  ChannelInteractionLinkRelation = "purpose"
+)
+
+// Valid indicates whether the value is a known member of the ChannelInteractionLinkRelation enum.
+func (e ChannelInteractionLinkRelation) Valid() bool {
+	switch e {
+	case ChannelInteractionLinkRelationContext:
+		return true
+	case ChannelInteractionLinkRelationFollowup:
+		return true
+	case ChannelInteractionLinkRelationPurpose:
 		return true
 	default:
 		return false
@@ -641,6 +674,27 @@ func (e CreateChannelMessageTriggerRequestKind) Valid() bool {
 	}
 }
 
+// Defines values for CreateChannelRequestCompletionBehavior.
+const (
+	CreateChannelRequestCompletionBehaviorArchive      CreateChannelRequestCompletionBehavior = "archive"
+	CreateChannelRequestCompletionBehaviorMarkInactive CreateChannelRequestCompletionBehavior = "mark_inactive"
+	CreateChannelRequestCompletionBehaviorNone         CreateChannelRequestCompletionBehavior = "none"
+)
+
+// Valid indicates whether the value is a known member of the CreateChannelRequestCompletionBehavior enum.
+func (e CreateChannelRequestCompletionBehavior) Valid() bool {
+	switch e {
+	case CreateChannelRequestCompletionBehaviorArchive:
+		return true
+	case CreateChannelRequestCompletionBehaviorMarkInactive:
+		return true
+	case CreateChannelRequestCompletionBehaviorNone:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for CreateChannelRequestKind.
 const (
 	CreateChannelRequestKindChannel CreateChannelRequestKind = "channel"
@@ -659,6 +713,24 @@ func (e CreateChannelRequestKind) Valid() bool {
 	}
 }
 
+// Defines values for CreateChannelRequestPurpose.
+const (
+	CreateChannelRequestPurposeGeneral             CreateChannelRequestPurpose = "general"
+	CreateChannelRequestPurposeResolveInteractions CreateChannelRequestPurpose = "resolve_interactions"
+)
+
+// Valid indicates whether the value is a known member of the CreateChannelRequestPurpose enum.
+func (e CreateChannelRequestPurpose) Valid() bool {
+	switch e {
+	case CreateChannelRequestPurposeGeneral:
+		return true
+	case CreateChannelRequestPurposeResolveInteractions:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for CreateEmailTriggerRequestKind.
 const (
 	CreateEmailTriggerRequestKindEmail CreateEmailTriggerRequestKind = "email"
@@ -668,6 +740,21 @@ const (
 func (e CreateEmailTriggerRequestKind) Valid() bool {
 	switch e {
 	case CreateEmailTriggerRequestKindEmail:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CreateEnvironmentRequestTemplateId.
+const (
+	CreateEnvironmentRequestTemplateIdCodingDefault CreateEnvironmentRequestTemplateId = "coding-default"
+)
+
+// Valid indicates whether the value is a known member of the CreateEnvironmentRequestTemplateId enum.
+func (e CreateEnvironmentRequestTemplateId) Valid() bool {
+	switch e {
+	case CreateEnvironmentRequestTemplateIdCodingDefault:
 		return true
 	default:
 		return false
@@ -803,6 +890,213 @@ func (e EntityReferenceType) Valid() bool {
 	case EntityReferenceTypeWorkflowDefinition:
 		return true
 	case EntityReferenceTypeWorkflowRun:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for EnvironmentTemplateId.
+const (
+	EnvironmentTemplateIdCodingDefault EnvironmentTemplateId = "coding-default"
+)
+
+// Valid indicates whether the value is a known member of the EnvironmentTemplateId enum.
+func (e EnvironmentTemplateId) Valid() bool {
+	switch e {
+	case EnvironmentTemplateIdCodingDefault:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for EnvironmentCleanupStatus.
+const (
+	EnvironmentCleanupStatusFailed    EnvironmentCleanupStatus = "failed"
+	EnvironmentCleanupStatusNone      EnvironmentCleanupStatus = "none"
+	EnvironmentCleanupStatusPending   EnvironmentCleanupStatus = "pending"
+	EnvironmentCleanupStatusSkipped   EnvironmentCleanupStatus = "skipped"
+	EnvironmentCleanupStatusSucceeded EnvironmentCleanupStatus = "succeeded"
+)
+
+// Valid indicates whether the value is a known member of the EnvironmentCleanupStatus enum.
+func (e EnvironmentCleanupStatus) Valid() bool {
+	switch e {
+	case EnvironmentCleanupStatusFailed:
+		return true
+	case EnvironmentCleanupStatusNone:
+		return true
+	case EnvironmentCleanupStatusPending:
+		return true
+	case EnvironmentCleanupStatusSkipped:
+		return true
+	case EnvironmentCleanupStatusSucceeded:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for EnvironmentLeaseStatus.
+const (
+	EnvironmentLeaseStatusActive   EnvironmentLeaseStatus = "active"
+	EnvironmentLeaseStatusExpired  EnvironmentLeaseStatus = "expired"
+	EnvironmentLeaseStatusReleased EnvironmentLeaseStatus = "released"
+	EnvironmentLeaseStatusRevoked  EnvironmentLeaseStatus = "revoked"
+)
+
+// Valid indicates whether the value is a known member of the EnvironmentLeaseStatus enum.
+func (e EnvironmentLeaseStatus) Valid() bool {
+	switch e {
+	case EnvironmentLeaseStatusActive:
+		return true
+	case EnvironmentLeaseStatusExpired:
+		return true
+	case EnvironmentLeaseStatusReleased:
+		return true
+	case EnvironmentLeaseStatusRevoked:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for EnvironmentOwnerType.
+const (
+	EnvironmentOwnerTypeAgent         EnvironmentOwnerType = "agent"
+	EnvironmentOwnerTypeNone          EnvironmentOwnerType = "none"
+	EnvironmentOwnerTypeService       EnvironmentOwnerType = "service"
+	EnvironmentOwnerTypeUser          EnvironmentOwnerType = "user"
+	EnvironmentOwnerTypeWorkerSession EnvironmentOwnerType = "worker_session"
+	EnvironmentOwnerTypeWorkflowRun   EnvironmentOwnerType = "workflow_run"
+)
+
+// Valid indicates whether the value is a known member of the EnvironmentOwnerType enum.
+func (e EnvironmentOwnerType) Valid() bool {
+	switch e {
+	case EnvironmentOwnerTypeAgent:
+		return true
+	case EnvironmentOwnerTypeNone:
+		return true
+	case EnvironmentOwnerTypeService:
+		return true
+	case EnvironmentOwnerTypeUser:
+		return true
+	case EnvironmentOwnerTypeWorkerSession:
+		return true
+	case EnvironmentOwnerTypeWorkflowRun:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for EnvironmentProvider.
+const (
+	EnvironmentProviderCloudflareContainers EnvironmentProvider = "cloudflare_containers"
+	EnvironmentProviderSprites              EnvironmentProvider = "sprites"
+)
+
+// Valid indicates whether the value is a known member of the EnvironmentProvider enum.
+func (e EnvironmentProvider) Valid() bool {
+	switch e {
+	case EnvironmentProviderCloudflareContainers:
+		return true
+	case EnvironmentProviderSprites:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for EnvironmentPurpose.
+const (
+	EnvironmentPurposeCustom         EnvironmentPurpose = "custom"
+	EnvironmentPurposeDebug          EnvironmentPurpose = "debug"
+	EnvironmentPurposeImplementation EnvironmentPurpose = "implementation"
+	EnvironmentPurposePreview        EnvironmentPurpose = "preview"
+	EnvironmentPurposeReview         EnvironmentPurpose = "review"
+	EnvironmentPurposeVerification   EnvironmentPurpose = "verification"
+	EnvironmentPurposeWorker         EnvironmentPurpose = "worker"
+)
+
+// Valid indicates whether the value is a known member of the EnvironmentPurpose enum.
+func (e EnvironmentPurpose) Valid() bool {
+	switch e {
+	case EnvironmentPurposeCustom:
+		return true
+	case EnvironmentPurposeDebug:
+		return true
+	case EnvironmentPurposeImplementation:
+		return true
+	case EnvironmentPurposePreview:
+		return true
+	case EnvironmentPurposeReview:
+		return true
+	case EnvironmentPurposeVerification:
+		return true
+	case EnvironmentPurposeWorker:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for EnvironmentRetentionPolicy.
+const (
+	EnvironmentRetentionPolicyDestroyOnSuccess EnvironmentRetentionPolicy = "destroy_on_success"
+	EnvironmentRetentionPolicyManual           EnvironmentRetentionPolicy = "manual"
+	EnvironmentRetentionPolicyRetainAlways     EnvironmentRetentionPolicy = "retain_always"
+	EnvironmentRetentionPolicyRetainOnFailure  EnvironmentRetentionPolicy = "retain_on_failure"
+)
+
+// Valid indicates whether the value is a known member of the EnvironmentRetentionPolicy enum.
+func (e EnvironmentRetentionPolicy) Valid() bool {
+	switch e {
+	case EnvironmentRetentionPolicyDestroyOnSuccess:
+		return true
+	case EnvironmentRetentionPolicyManual:
+		return true
+	case EnvironmentRetentionPolicyRetainAlways:
+		return true
+	case EnvironmentRetentionPolicyRetainOnFailure:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for EnvironmentStatus.
+const (
+	EnvironmentStatusDestroyed    EnvironmentStatus = "destroyed"
+	EnvironmentStatusDestroying   EnvironmentStatus = "destroying"
+	EnvironmentStatusFailed       EnvironmentStatus = "failed"
+	EnvironmentStatusOrphaned     EnvironmentStatus = "orphaned"
+	EnvironmentStatusProvisioning EnvironmentStatus = "provisioning"
+	EnvironmentStatusReady        EnvironmentStatus = "ready"
+	EnvironmentStatusRetained     EnvironmentStatus = "retained"
+	EnvironmentStatusRunning      EnvironmentStatus = "running"
+)
+
+// Valid indicates whether the value is a known member of the EnvironmentStatus enum.
+func (e EnvironmentStatus) Valid() bool {
+	switch e {
+	case EnvironmentStatusDestroyed:
+		return true
+	case EnvironmentStatusDestroying:
+		return true
+	case EnvironmentStatusFailed:
+		return true
+	case EnvironmentStatusOrphaned:
+		return true
+	case EnvironmentStatusProvisioning:
+		return true
+	case EnvironmentStatusReady:
+		return true
+	case EnvironmentStatusRetained:
+		return true
+	case EnvironmentStatusRunning:
 		return true
 	default:
 		return false
@@ -959,6 +1253,60 @@ const (
 func (e ImageContentBlockType) Valid() bool {
 	switch e {
 	case ImageContentBlockTypeImage:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for IntegrationEventFireEventSource.
+const (
+	IntegrationEventFireEventSourceSynthetic IntegrationEventFireEventSource = "synthetic"
+)
+
+// Valid indicates whether the value is a known member of the IntegrationEventFireEventSource enum.
+func (e IntegrationEventFireEventSource) Valid() bool {
+	switch e {
+	case IntegrationEventFireEventSourceSynthetic:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for IntegrationEventFireMode.
+const (
+	IntegrationEventFireModeDeliver IntegrationEventFireMode = "deliver"
+	IntegrationEventFireModePreview IntegrationEventFireMode = "preview"
+)
+
+// Valid indicates whether the value is a known member of the IntegrationEventFireMode enum.
+func (e IntegrationEventFireMode) Valid() bool {
+	switch e {
+	case IntegrationEventFireModeDeliver:
+		return true
+	case IntegrationEventFireModePreview:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for IntegrationStatus.
+const (
+	IntegrationStatusActive   IntegrationStatus = "active"
+	IntegrationStatusExpired  IntegrationStatus = "expired"
+	IntegrationStatusInactive IntegrationStatus = "inactive"
+)
+
+// Valid indicates whether the value is a known member of the IntegrationStatus enum.
+func (e IntegrationStatus) Valid() bool {
+	switch e {
+	case IntegrationStatusActive:
+		return true
+	case IntegrationStatusExpired:
+		return true
+	case IntegrationStatusInactive:
 		return true
 	default:
 		return false
@@ -1334,6 +1682,27 @@ func (e ObservableReducerKind) Valid() bool {
 	}
 }
 
+// Defines values for ObservableWaiterRunStatus.
+const (
+	ObservableWaiterRunStatusActive    ObservableWaiterRunStatus = "active"
+	ObservableWaiterRunStatusCompleted ObservableWaiterRunStatus = "completed"
+	ObservableWaiterRunStatusFailed    ObservableWaiterRunStatus = "failed"
+)
+
+// Valid indicates whether the value is a known member of the ObservableWaiterRunStatus enum.
+func (e ObservableWaiterRunStatus) Valid() bool {
+	switch e {
+	case ObservableWaiterRunStatusActive:
+		return true
+	case ObservableWaiterRunStatusCompleted:
+		return true
+	case ObservableWaiterRunStatusFailed:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ProjectAccessMode.
 const (
 	ProjectAccessModeOrgOpen    ProjectAccessMode = "org_open"
@@ -1346,6 +1715,24 @@ func (e ProjectAccessMode) Valid() bool {
 	case ProjectAccessModeOrgOpen:
 		return true
 	case ProjectAccessModeRestricted:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ProjectTeamMemberKind.
+const (
+	ProjectTeamMemberKindAgent ProjectTeamMemberKind = "agent"
+	ProjectTeamMemberKindUser  ProjectTeamMemberKind = "user"
+)
+
+// Valid indicates whether the value is a known member of the ProjectTeamMemberKind enum.
+func (e ProjectTeamMemberKind) Valid() bool {
+	switch e {
+	case ProjectTeamMemberKindAgent:
+		return true
+	case ProjectTeamMemberKindUser:
 		return true
 	default:
 		return false
@@ -1550,6 +1937,27 @@ func (e RunStepStatus) Valid() bool {
 	}
 }
 
+// Defines values for SecretVersionState.
+const (
+	SecretVersionStateDESTROYED SecretVersionState = "DESTROYED"
+	SecretVersionStateDISABLED  SecretVersionState = "DISABLED"
+	SecretVersionStateENABLED   SecretVersionState = "ENABLED"
+)
+
+// Valid indicates whether the value is a known member of the SecretVersionState enum.
+func (e SecretVersionState) Valid() bool {
+	switch e {
+	case SecretVersionStateDESTROYED:
+		return true
+	case SecretVersionStateDISABLED:
+		return true
+	case SecretVersionStateENABLED:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for SendChannelMessageRequestDisplay.
 const (
 	SendChannelMessageRequestDisplayCard    SendChannelMessageRequestDisplay = "card"
@@ -1586,6 +1994,45 @@ func (e ShareChannelEntityRequestDisplay) Valid() bool {
 	case ShareChannelEntityRequestDisplayMessage:
 		return true
 	case ShareChannelEntityRequestDisplayNotice:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SkillSource.
+const (
+	SkillSourceImported SkillSource = "imported"
+	SkillSourceProject  SkillSource = "project"
+	SkillSourceSystem   SkillSource = "system"
+)
+
+// Valid indicates whether the value is a known member of the SkillSource enum.
+func (e SkillSource) Valid() bool {
+	switch e {
+	case SkillSourceImported:
+		return true
+	case SkillSourceProject:
+		return true
+	case SkillSourceSystem:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SkillStatus.
+const (
+	SkillStatusActive   SkillStatus = "active"
+	SkillStatusArchived SkillStatus = "archived"
+)
+
+// Valid indicates whether the value is a known member of the SkillStatus enum.
+func (e SkillStatus) Valid() bool {
+	switch e {
+	case SkillStatusActive:
+		return true
+	case SkillStatusArchived:
 		return true
 	default:
 		return false
@@ -1826,6 +2273,72 @@ func (e ToolUseContentBlockType) Valid() bool {
 	}
 }
 
+// Defines values for ToolkitSource.
+const (
+	ToolkitSourceProject ToolkitSource = "project"
+	ToolkitSourceSystem  ToolkitSource = "system"
+)
+
+// Valid indicates whether the value is a known member of the ToolkitSource enum.
+func (e ToolkitSource) Valid() bool {
+	switch e {
+	case ToolkitSourceProject:
+		return true
+	case ToolkitSourceSystem:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ToolkitStatus.
+const (
+	ToolkitStatusActive   ToolkitStatus = "active"
+	ToolkitStatusArchived ToolkitStatus = "archived"
+)
+
+// Valid indicates whether the value is a known member of the ToolkitStatus enum.
+func (e ToolkitStatus) Valid() bool {
+	switch e {
+	case ToolkitStatusActive:
+		return true
+	case ToolkitStatusArchived:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ToolkitActionGrantSelectorType.
+const (
+	ToolkitActionGrantSelectorTypeCustom   ToolkitActionGrantSelectorType = "custom"
+	ToolkitActionGrantSelectorTypeExact    ToolkitActionGrantSelectorType = "exact"
+	ToolkitActionGrantSelectorTypeGroup    ToolkitActionGrantSelectorType = "group"
+	ToolkitActionGrantSelectorTypePlatform ToolkitActionGrantSelectorType = "platform"
+	ToolkitActionGrantSelectorTypeWildcard ToolkitActionGrantSelectorType = "wildcard"
+	ToolkitActionGrantSelectorTypeWorkflow ToolkitActionGrantSelectorType = "workflow"
+)
+
+// Valid indicates whether the value is a known member of the ToolkitActionGrantSelectorType enum.
+func (e ToolkitActionGrantSelectorType) Valid() bool {
+	switch e {
+	case ToolkitActionGrantSelectorTypeCustom:
+		return true
+	case ToolkitActionGrantSelectorTypeExact:
+		return true
+	case ToolkitActionGrantSelectorTypeGroup:
+		return true
+	case ToolkitActionGrantSelectorTypePlatform:
+		return true
+	case ToolkitActionGrantSelectorTypeWildcard:
+		return true
+	case ToolkitActionGrantSelectorTypeWorkflow:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for TriggerFireStatus.
 const (
 	TriggerFireStatusFailed         TriggerFireStatus = "failed"
@@ -1937,6 +2450,45 @@ func (e TriggerTargetKind) Valid() bool {
 	}
 }
 
+// Defines values for UpdateChannelRequestCompletionBehavior.
+const (
+	UpdateChannelRequestCompletionBehaviorArchive      UpdateChannelRequestCompletionBehavior = "archive"
+	UpdateChannelRequestCompletionBehaviorMarkInactive UpdateChannelRequestCompletionBehavior = "mark_inactive"
+	UpdateChannelRequestCompletionBehaviorNone         UpdateChannelRequestCompletionBehavior = "none"
+)
+
+// Valid indicates whether the value is a known member of the UpdateChannelRequestCompletionBehavior enum.
+func (e UpdateChannelRequestCompletionBehavior) Valid() bool {
+	switch e {
+	case UpdateChannelRequestCompletionBehaviorArchive:
+		return true
+	case UpdateChannelRequestCompletionBehaviorMarkInactive:
+		return true
+	case UpdateChannelRequestCompletionBehaviorNone:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for UpdateChannelRequestPurpose.
+const (
+	UpdateChannelRequestPurposeGeneral             UpdateChannelRequestPurpose = "general"
+	UpdateChannelRequestPurposeResolveInteractions UpdateChannelRequestPurpose = "resolve_interactions"
+)
+
+// Valid indicates whether the value is a known member of the UpdateChannelRequestPurpose enum.
+func (e UpdateChannelRequestPurpose) Valid() bool {
+	switch e {
+	case UpdateChannelRequestPurposeGeneral:
+		return true
+	case UpdateChannelRequestPurposeResolveInteractions:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for UpdateGroupRequestRoutingPolicy.
 const (
 	UpdateGroupRequestRoutingPolicyAllMembers     UpdateGroupRequestRoutingPolicy = "all_members"
@@ -1973,18 +2525,18 @@ func (e UpdateTriggerTargetRequestKind) Valid() bool {
 	}
 }
 
-// Defines values for UpsertActorStateRequestStatusSource.
+// Defines values for UserPresenceMode.
 const (
-	UpsertActorStateRequestStatusSourceAgentReport UpsertActorStateRequestStatusSource = "agent_report"
-	UpsertActorStateRequestStatusSourceManual      UpsertActorStateRequestStatusSource = "manual"
+	UserPresenceModeAppearOffline UserPresenceMode = "appear_offline"
+	UserPresenceModeAutomatic     UserPresenceMode = "automatic"
 )
 
-// Valid indicates whether the value is a known member of the UpsertActorStateRequestStatusSource enum.
-func (e UpsertActorStateRequestStatusSource) Valid() bool {
+// Valid indicates whether the value is a known member of the UserPresenceMode enum.
+func (e UserPresenceMode) Valid() bool {
 	switch e {
-	case UpsertActorStateRequestStatusSourceAgentReport:
+	case UserPresenceModeAppearOffline:
 		return true
-	case UpsertActorStateRequestStatusSourceManual:
+	case UserPresenceModeAutomatic:
 		return true
 	default:
 		return false
@@ -2348,6 +2900,48 @@ func (e ListChannelsParamsKind) Valid() bool {
 	}
 }
 
+// Defines values for ListChannelInteractionsParamsRelation.
+const (
+	ListChannelInteractionsParamsRelationContext  ListChannelInteractionsParamsRelation = "context"
+	ListChannelInteractionsParamsRelationFollowup ListChannelInteractionsParamsRelation = "followup"
+	ListChannelInteractionsParamsRelationPurpose  ListChannelInteractionsParamsRelation = "purpose"
+)
+
+// Valid indicates whether the value is a known member of the ListChannelInteractionsParamsRelation enum.
+func (e ListChannelInteractionsParamsRelation) Valid() bool {
+	switch e {
+	case ListChannelInteractionsParamsRelationContext:
+		return true
+	case ListChannelInteractionsParamsRelationFollowup:
+		return true
+	case ListChannelInteractionsParamsRelationPurpose:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RemoveChannelInteractionParamsRelation.
+const (
+	RemoveChannelInteractionParamsRelationContext  RemoveChannelInteractionParamsRelation = "context"
+	RemoveChannelInteractionParamsRelationFollowup RemoveChannelInteractionParamsRelation = "followup"
+	RemoveChannelInteractionParamsRelationPurpose  RemoveChannelInteractionParamsRelation = "purpose"
+)
+
+// Valid indicates whether the value is a known member of the RemoveChannelInteractionParamsRelation enum.
+func (e RemoveChannelInteractionParamsRelation) Valid() bool {
+	switch e {
+	case RemoveChannelInteractionParamsRelationContext:
+		return true
+	case RemoveChannelInteractionParamsRelationFollowup:
+		return true
+	case RemoveChannelInteractionParamsRelationPurpose:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ListInteractionsParamsStatus.
 const (
 	ListInteractionsParamsStatusCancelled ListInteractionsParamsStatus = "cancelled"
@@ -2425,6 +3019,31 @@ func (e GetRunStepParamsInclude) Valid() bool {
 		return false
 	}
 }
+
+// AcquireEnvironmentRequest defines model for AcquireEnvironmentRequest.
+type AcquireEnvironmentRequest struct {
+	EnvironmentId *string               `json:"environment_id,omitempty"`
+	HolderId      *string               `json:"holder_id,omitempty"`
+	HolderType    *EnvironmentOwnerType `json:"holder_type,omitempty"`
+
+	// LeaseTtl Go duration string, for example 30m or 2h.
+	LeaseTtl  *string                 `json:"lease_ttl,omitempty"`
+	Name      *string                 `json:"name,omitempty"`
+	OwnerId   *string                 `json:"owner_id,omitempty"`
+	OwnerType *EnvironmentOwnerType   `json:"owner_type,omitempty"`
+	Provider  *EnvironmentProvider    `json:"provider,omitempty"`
+	Purpose   *EnvironmentPurpose     `json:"purpose,omitempty"`
+	Spec      *map[string]interface{} `json:"spec,omitempty"`
+
+	// Tags Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints.
+	Tags *TagMap `json:"tags,omitempty"`
+
+	// TemplateId V1 supports only coding-default.
+	TemplateId *AcquireEnvironmentRequestTemplateId `json:"template_id,omitempty"`
+}
+
+// AcquireEnvironmentRequestTemplateId V1 supports only coding-default.
+type AcquireEnvironmentRequestTemplateId string
 
 // Action Project-owned HTTP action endpoint callable by workflow steps.
 type Action struct {
@@ -2648,69 +3267,46 @@ type ActionListResponse struct {
 
 // ActorAssignment defines model for ActorAssignment.
 type ActorAssignment struct {
-	ActorStateId string                    `json:"actor_state_id"`
-	ClaimedAt    *time.Time                `json:"claimed_at,omitempty"`
-	CreatedAt    time.Time                 `json:"created_at"`
-	DueAt        *time.Time                `json:"due_at,omitempty"`
-	Headline     *string                   `json:"headline,omitempty"`
-	Id           string                    `json:"id"`
-	Role         ActorAssignmentRole       `json:"role"`
-	SourceKind   ActorAssignmentSourceKind `json:"source_kind"`
-	TargetKey    string                    `json:"target_key"`
-
-	// TargetRef Polymorphic target reference compatible with Reference Pickers.
-	TargetRef ActorReference `json:"target_ref"`
-	UpdatedAt time.Time      `json:"updated_at"`
+	ActorStateId string                `json:"actor_state_id"`
+	CreatedAt    time.Time             `json:"created_at"`
+	Description  *string               `json:"description,omitempty"`
+	DueBy        *time.Time            `json:"due_by,omitempty"`
+	Headline     string                `json:"headline"`
+	Id           string                `json:"id"`
+	StartedAt    *time.Time            `json:"started_at,omitempty"`
+	Status       ActorAssignmentStatus `json:"status"`
+	UpdatedAt    time.Time             `json:"updated_at"`
 }
 
 // ActorAssignmentInput defines model for ActorAssignmentInput.
 type ActorAssignmentInput struct {
-	DueAt    *time.Time `json:"due_at,omitempty"`
-	Headline *string    `json:"headline,omitempty"`
+	Description *string `json:"description,omitempty"`
 
-	// Role Client reports may set queued or next assignments only.
-	Role      ActorAssignmentInputRole `json:"role"`
-	TargetKey string                   `json:"target_key"`
+	// DueBy When the assignment is expected to be completed.
+	DueBy    *time.Time `json:"due_by,omitempty"`
+	Headline string     `json:"headline"`
 
-	// TargetRef Polymorphic target reference compatible with Reference Pickers.
-	TargetRef ActorReference `json:"target_ref"`
+	// StartedAt When the actor actually began working on this assignment.
+	StartedAt *time.Time            `json:"started_at,omitempty"`
+	Status    ActorAssignmentStatus `json:"status"`
 }
-
-// ActorAssignmentInputRole Client reports may set queued or next assignments only.
-type ActorAssignmentInputRole string
 
 // ActorAssignmentListResponse defines model for ActorAssignmentListResponse.
 type ActorAssignmentListResponse struct {
 	Items []ActorAssignment `json:"items"`
 }
 
-// ActorAssignmentRole defines model for ActorAssignmentRole.
-type ActorAssignmentRole string
-
-// ActorAssignmentSourceKind defines model for ActorAssignmentSourceKind.
-type ActorAssignmentSourceKind string
+// ActorAssignmentStatus defines model for ActorAssignmentStatus.
+type ActorAssignmentStatus string
 
 // ActorAvailability defines model for ActorAvailability.
 type ActorAvailability string
 
-// ActorCapacity defines model for ActorCapacity.
-type ActorCapacity struct {
-	AcceptingNew *bool `json:"accepting_new,omitempty"`
-	InUse        *int  `json:"in_use,omitempty"`
-	Max          *int  `json:"max,omitempty"`
-}
+// ActorConnectionStatus defines model for ActorConnectionStatus.
+type ActorConnectionStatus string
 
-// ActorFocus defines model for ActorFocus.
-type ActorFocus struct {
-	Headline *string `json:"headline,omitempty"`
-
-	// Ref Polymorphic target reference compatible with Reference Pickers.
-	Ref *ActorReference `json:"ref,omitempty"`
-	Url *string         `json:"url,omitempty"`
-}
-
-// ActorReference Polymorphic target reference compatible with Reference Pickers.
-type ActorReference map[string]interface{}
+// ActorPresenceSource defines model for ActorPresenceSource.
+type ActorPresenceSource string
 
 // ActorState defines model for ActorState.
 type ActorState struct {
@@ -2718,14 +3314,12 @@ type ActorState struct {
 	ActorKind    ActorStateActorKind  `json:"actor_kind"`
 	Assignments  []ActorAssignment    `json:"assignments"`
 	Availability ActorAvailability    `json:"availability"`
-	Capacity     *ActorCapacity       `json:"capacity,omitempty"`
 	CreatedAt    time.Time            `json:"created_at"`
+	Description  *string              `json:"description,omitempty"`
 	ExpiresAt    *time.Time           `json:"expires_at,omitempty"`
-	Focus        *ActorFocus          `json:"focus,omitempty"`
 	Id           string               `json:"id"`
 	LastSeenAt   *time.Time           `json:"last_seen_at,omitempty"`
 	Stale        bool                 `json:"stale"`
-	StatusSource ActorStateSource     `json:"status_source"`
 	UpdatedAt    time.Time            `json:"updated_at"`
 	Visibility   ActorStateVisibility `json:"visibility"`
 }
@@ -2738,18 +3332,12 @@ type ActorStateListResponse struct {
 	Items []ActorState `json:"items"`
 }
 
-// ActorStateSource defines model for ActorStateSource.
-type ActorStateSource string
-
 // ActorStateTriggerSourceConfig Narrow transition filter for Actor State event triggers.
 type ActorStateTriggerSourceConfig struct {
 	// ActorId Actor ID to match. Omit to match any actor in the project.
 	ActorId          *string            `json:"actor_id,omitempty"`
 	FromAvailability *ActorAvailability `json:"from_availability,omitempty"`
-
-	// RequireFreeCapacity When true, only fire if the new state has spare capacity.
-	RequireFreeCapacity *bool              `json:"require_free_capacity,omitempty"`
-	ToAvailability      *ActorAvailability `json:"to_availability,omitempty"`
+	ToAvailability   *ActorAvailability `json:"to_availability,omitempty"`
 }
 
 // ActorStateVisibility defines model for ActorStateVisibility.
@@ -2757,11 +3345,11 @@ type ActorStateVisibility string
 
 // AddChannelMemberRequest Member identity and role to add to a channel.
 type AddChannelMemberRequest struct {
+	// ParticipantId User or agent ID to add to the channel.
+	ParticipantId string `json:"participant_id"`
+
 	// Role Role to assign the new member, either `member` or `admin`.
 	Role *AddChannelMemberRequestRole `json:"role,omitempty"`
-
-	// UserId User or agent ID to add to the channel.
-	UserId string `json:"user_id"`
 }
 
 // AddChannelMemberRequestRole Role to assign the new member, either `member` or `admin`.
@@ -2788,7 +3376,9 @@ type Agent struct {
 	Color *string `json:"color,omitempty"`
 
 	// Config Agent-specific configuration blob stored and returned opaquely.
-	Config *map[string]interface{} `json:"config,omitempty"`
+	Config               *map[string]interface{} `json:"config,omitempty"`
+	ConnectionLastSeenAt *time.Time              `json:"connection_last_seen_at,omitempty"`
+	ConnectionStatus     ActorConnectionStatus   `json:"connection_status"`
 
 	// CreatedAt Timestamp when this agent was created.
 	CreatedAt time.Time `json:"created_at"`
@@ -2809,7 +3399,8 @@ type Agent struct {
 	Name string `json:"name"`
 
 	// Presence Computed from the most recent 20 sessions. `online` means a connected session with a fresh heartbeat; `stale` means heartbeats are overdue; `offline` means no connected sessions.
-	Presence AgentPresence `json:"presence"`
+	Presence       AgentPresence        `json:"presence"`
+	PresenceSource *ActorPresenceSource `json:"presence_source,omitempty"`
 
 	// ServiceAccountId The service account whose credentials this agent uses to authenticate. Each service account backs at most one agent; this binding is immutable after creation.
 	ServiceAccountId string `json:"service_account_id"`
@@ -2824,146 +3415,38 @@ type Agent struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-// AgentInvocation Durable record of one `agent.invoke` workflow action call. Carries the dispatch payload, the agent runtime's response or error, and the signal topic the suspended workflow branch waits on.
-type AgentInvocation struct {
-	// AgentId Agent that was (or will be) invoked.
-	AgentId string `json:"agent_id"`
-
-	// AgentKind Snapshot of the agent's `kind` at dispatch time.
-	AgentKind *string `json:"agent_kind,omitempty"`
-
-	// AllowedTools Optional restriction on which tools the agent may call. Empty array means no restriction.
-	AllowedTools *[]string `json:"allowed_tools,omitempty"`
-
-	// CompletedAt When the invocation reached a terminal status.
-	CompletedAt *time.Time `json:"completed_at,omitempty"`
-
-	// Context Caller-supplied structured context surfaced to the agent.
-	Context *map[string]interface{} `json:"context,omitempty"`
-
-	// CreatedAt When the invocation row was created.
-	CreatedAt time.Time `json:"created_at"`
-
-	// DispatchedAt When the invocation was handed off to the agent runtime.
-	DispatchedAt *time.Time `json:"dispatched_at,omitempty"`
-
-	// ErrorMessage Human-readable error description for failed invocations.
-	ErrorMessage *string `json:"error_message,omitempty"`
-
-	// ErrorType Typed failure classification for completed-with-error invocations.
-	ErrorType *AgentInvocationErrorType `json:"error_type,omitempty"`
-
-	// Id Invocation ID (TypeID `ainv_…`).
-	Id string `json:"id"`
-
-	// Instructions Optional system-prompt addendum applied for this call only.
-	Instructions *string `json:"instructions,omitempty"`
-
-	// OrgId Owning organization ID.
-	OrgId string `json:"org_id"`
-
-	// OutputSchema Optional JSON Schema the agent's structured response must satisfy.
-	OutputSchema *map[string]interface{} `json:"output_schema,omitempty"`
-
-	// PathId Branch identifier within the workflow run.
-	PathId string `json:"path_id"`
-
-	// ProjectId Owning project ID.
-	ProjectId string `json:"project_id"`
-
-	// Prompt User-turn prompt the agent receives.
-	Prompt string `json:"prompt"`
-
-	// ResponseStruct Structured output (if `output_schema` was supplied and the agent emitted JSON). Empty otherwise.
-	ResponseStruct *map[string]interface{} `json:"response_struct,omitempty"`
-
-	// ResponseText Final assistant-turn text returned by the agent. Empty until completion.
-	ResponseText *string `json:"response_text,omitempty"`
-
-	// Status Lifecycle status of one `agent.invoke` call:
-	// - `pending`: dispatched but the agent runtime hasn't claimed it yet.
-	// - `running`: the agent runtime acknowledged and is executing.
-	// - `completed`: the runtime returned a final response.
-	// - `failed`: the runtime reported an error or the engine timed out.
-	// - `cancelled`: the workflow run was cancelled before completion.
-	Status AgentInvocationStatus `json:"status"`
-
-	// StepName Workflow step that issued the invocation.
-	StepName string `json:"step_name"`
-
-	// TimeoutSeconds Hard timeout applied to this invocation.
-	TimeoutSeconds int `json:"timeout_seconds"`
-
-	// Tokens Token-usage attribution for one invocation.
-	Tokens *AgentInvocationTokens `json:"tokens,omitempty"`
-
-	// ToolCalls Per-tool counts surfaced from the loop.
-	ToolCalls *[]AgentInvocationToolCall `json:"tool_calls,omitempty"`
-
-	// ToolCallsCount Total tool calls across the loop.
-	ToolCallsCount *int `json:"tool_calls_count,omitempty"`
-
-	// Topic SignalStore topic the suspended branch waits on.
-	Topic string `json:"topic"`
-
-	// WorkflowRunId Workflow run that issued the invocation.
-	WorkflowRunId string `json:"workflow_run_id"`
+// AgentBlockedActionGrant defines model for AgentBlockedActionGrant.
+type AgentBlockedActionGrant struct {
+	Reason       string `json:"reason"`
+	Selector     string `json:"selector"`
+	SelectorType string `json:"selector_type"`
 }
 
-// AgentInvocationCompleteRequest Worker-supplied result of an in-flight invocation. The server validates `tool_calls` against the original `allowed_tools` and `structured` against `output_schema` before resuming the workflow branch.
-type AgentInvocationCompleteRequest struct {
-	// Structured Optional structured output. Required when the invocation specified `output_schema`.
-	Structured *map[string]interface{} `json:"structured,omitempty"`
+// AgentCapabilityManifest defines model for AgentCapabilityManifest.
+type AgentCapabilityManifest struct {
+	// Actions Action catalog entries visible and executable under the manifest.
+	Actions             []ActionCatalogEntry      `json:"actions"`
+	AgentId             string                    `json:"agent_id"`
+	BlockedActionGrants []AgentBlockedActionGrant `json:"blocked_action_grants"`
 
-	// Text Final assistant-turn text from the agent.
-	Text string `json:"text"`
-
-	// Tokens Token-usage attribution for one invocation.
-	Tokens *AgentInvocationTokens `json:"tokens,omitempty"`
-
-	// ToolCalls Per-tool counts observed during the loop. Used for tool-restriction audit.
-	ToolCalls *[]AgentInvocationToolCall `json:"tool_calls,omitempty"`
+	// ConcreteTools Dotted model-facing tool names available to the agent.
+	ConcreteTools []string                 `json:"concrete_tools"`
+	NativeTools   []AgentNativeTool        `json:"native_tools"`
+	PolicyHash    string                   `json:"policy_hash"`
+	ProjectId     string                   `json:"project_id"`
+	Skills        []SkillManifestEntry     `json:"skills"`
+	ToolkitIds    []string                 `json:"toolkit_ids"`
+	Warnings      []AgentCapabilityWarning `json:"warnings"`
 }
 
-// AgentInvocationErrorType Typed failure classification for completed-with-error invocations.
-type AgentInvocationErrorType string
-
-// AgentInvocationFailRequest Worker-reported failure for an in-flight invocation.
-type AgentInvocationFailRequest struct {
-	// ErrorMessage Human-readable description of the failure.
-	ErrorMessage string `json:"error_message"`
-
-	// ErrorType Typed failure classification for completed-with-error invocations.
-	ErrorType AgentInvocationErrorType `json:"error_type"`
-}
-
-// AgentInvocationStatus Lifecycle status of one `agent.invoke` call:
-// - `pending`: dispatched but the agent runtime hasn't claimed it yet.
-// - `running`: the agent runtime acknowledged and is executing.
-// - `completed`: the runtime returned a final response.
-// - `failed`: the runtime reported an error or the engine timed out.
-// - `cancelled`: the workflow run was cancelled before completion.
-type AgentInvocationStatus string
-
-// AgentInvocationTokens Token-usage attribution for one invocation.
-type AgentInvocationTokens struct {
-	// Input Input/prompt tokens consumed.
-	Input int `json:"input"`
-
-	// Output Output/completion tokens emitted.
-	Output int `json:"output"`
-
-	// Total Sum of input and output tokens.
-	Total *int `json:"total,omitempty"`
-}
-
-// AgentInvocationToolCall Counts of tool calls made by the agent during one invocation. Names are surfaced in the durable record; full call traces ship via OTel when configured.
-type AgentInvocationToolCall struct {
-	// Count Number of times the tool was invoked during the loop.
-	Count int `json:"count"`
-
-	// Name Tool name (e.g. `mobius_query_table`).
-	Name string `json:"name"`
+// AgentCapabilityWarning defines model for AgentCapabilityWarning.
+type AgentCapabilityWarning struct {
+	Action    *string `json:"action,omitempty"`
+	Code      string  `json:"code"`
+	Message   string  `json:"message"`
+	SkillId   *string `json:"skill_id,omitempty"`
+	Tool      *string `json:"tool,omitempty"`
+	ToolkitId *string `json:"toolkit_id,omitempty"`
 }
 
 // AgentListResponse defines model for AgentListResponse.
@@ -2971,6 +3454,25 @@ type AgentListResponse struct {
 	// Items The list of results for this page.
 	Items []Agent `json:"items"`
 }
+
+// AgentNativeTool defines model for AgentNativeTool.
+type AgentNativeTool struct {
+	// ConcreteTools Model-facing concrete tools exposed by this native grant.
+	ConcreteTools []string `json:"concrete_tools"`
+
+	// Description What this native tool allows.
+	Description string `json:"description"`
+
+	// Id Stable native-tool grant ID, such as `mobius_table_read`.
+	Id string `json:"id"`
+
+	// Label Human-readable tool label for toolkit editors.
+	Label string              `json:"label"`
+	Risk  AgentNativeToolRisk `json:"risk"`
+}
+
+// AgentNativeToolRisk defines model for AgentNativeTool.Risk.
+type AgentNativeToolRisk string
 
 // AgentPresence Computed from the most recent 20 sessions. `online` means a connected session with a fresh heartbeat; `stale` means heartbeats are overdue; `offline` means no connected sessions.
 type AgentPresence string
@@ -3096,6 +3598,18 @@ type ArtifactStorageSettings struct {
 // ArtifactStorageSettingsUpdate defines model for ArtifactStorageSettingsUpdate.
 type ArtifactStorageSettingsUpdate = ArtifactStorageSettings
 
+// AssociateChannelInteractionRequest defines model for AssociateChannelInteractionRequest.
+type AssociateChannelInteractionRequest struct {
+	// InteractionId Existing same-project interaction ID to associate.
+	InteractionId string `json:"interaction_id"`
+
+	// Relation Relation between the channel and interaction.
+	Relation *AssociateChannelInteractionRequestRelation `json:"relation,omitempty"`
+}
+
+// AssociateChannelInteractionRequestRelation Relation between the channel and interaction.
+type AssociateChannelInteractionRequestRelation string
+
 // AsymmetricActorRule Per-actor-class rule under an asymmetric resolution policy. `propose` records responses for audit but ignores them for resolution. `decide` applies the optional `sub_policy` to that class's responses to drive resolution. `ignore` is reserved for future use.
 type AsymmetricActorRule struct {
 	// Rule Role this actor class plays.
@@ -3196,6 +3710,12 @@ type Channel struct {
 	// ArchivedAt Set when the channel is archived. Archived channels are hidden in the UI but their message history remains accessible.
 	ArchivedAt *time.Time `json:"archived_at,omitempty"`
 
+	// CompletedAt Set when this purpose-scoped channel has completed.
+	CompletedAt *time.Time `json:"completed_at,omitempty"`
+
+	// CompletionBehavior Behavior to apply when every purpose-linked interaction is terminal.
+	CompletionBehavior ChannelCompletionBehavior `json:"completion_behavior"`
+
 	// CreatedAt Timestamp when this channel was created.
 	CreatedAt time.Time `json:"created_at"`
 
@@ -3217,6 +3737,9 @@ type Channel struct {
 	// Private When true, the channel is invite-only and not visible in public listings.
 	Private bool `json:"private"`
 
+	// Purpose `general` channels are ordinary rooms. `resolve_interactions` channels exist to resolve one or more purpose-linked interactions.
+	Purpose ChannelPurpose `json:"purpose"`
+
 	// Tags Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints.
 	Tags *TagMap `json:"tags,omitempty"`
 
@@ -3227,8 +3750,14 @@ type Channel struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
+// ChannelCompletionBehavior Behavior to apply when every purpose-linked interaction is terminal.
+type ChannelCompletionBehavior string
+
 // ChannelKind `channel` — persistent named room. `dm` — direct-message thread, typically between a small fixed set of participants.
 type ChannelKind string
+
+// ChannelPurpose `general` channels are ordinary rooms. `resolve_interactions` channels exist to resolve one or more purpose-linked interactions.
+type ChannelPurpose string
 
 // ChannelInteractionActionResponse Result of a channel-scoped interaction operation.
 type ChannelInteractionActionResponse struct {
@@ -3237,6 +3766,38 @@ type ChannelInteractionActionResponse struct {
 
 	// Message Message posted in a channel, including sender attribution and rendering metadata.
 	Message ChannelMessage `json:"message"`
+}
+
+// ChannelInteractionLink defines model for ChannelInteractionLink.
+type ChannelInteractionLink struct {
+	// ChannelId Channel ID.
+	ChannelId string `json:"channel_id"`
+
+	// CreatedAt Timestamp when the association was created.
+	CreatedAt time.Time `json:"created_at"`
+
+	// CreatedById Actor ID that created the association.
+	CreatedById string `json:"created_by_id"`
+
+	// CreatedByType Actor type that created the association.
+	CreatedByType string `json:"created_by_type"`
+
+	// Id Unique identifier for this association.
+	Id string `json:"id"`
+
+	// InteractionId Interaction ID.
+	InteractionId string `json:"interaction_id"`
+
+	// Relation How the interaction is associated with the channel.
+	Relation ChannelInteractionLinkRelation `json:"relation"`
+}
+
+// ChannelInteractionLinkRelation How the interaction is associated with the channel.
+type ChannelInteractionLinkRelation string
+
+// ChannelInteractionLinkListResponse defines model for ChannelInteractionLinkListResponse.
+type ChannelInteractionLinkListResponse struct {
+	Items []ChannelInteractionLink `json:"items"`
 }
 
 // ChannelInteractionRespondRequest Response payload submitted to an interaction from a channel card.
@@ -3567,6 +4128,12 @@ type CreateChannelMessageTriggerRequestKind string
 
 // CreateChannelRequest Fields used to create a project channel or direct-message thread.
 type CreateChannelRequest struct {
+	// AssociatedInteractionIds Existing same-project interaction IDs to link as the channel's purpose at creation time. Required when `purpose` is `resolve_interactions`.
+	AssociatedInteractionIds *[]string `json:"associated_interaction_ids,omitempty"`
+
+	// CompletionBehavior Behavior to apply when all purpose-linked interactions are terminal.
+	CompletionBehavior *CreateChannelRequestCompletionBehavior `json:"completion_behavior,omitempty"`
+
 	// DisplayName Human-facing display name shown in the UI.
 	DisplayName string `json:"display_name"`
 
@@ -3582,6 +4149,9 @@ type CreateChannelRequest struct {
 	// Private When true, the channel is invite-only.
 	Private *bool `json:"private,omitempty"`
 
+	// Purpose Optional purpose for the channel.
+	Purpose *CreateChannelRequestPurpose `json:"purpose,omitempty"`
+
 	// Tags Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints.
 	Tags *TagMap `json:"tags,omitempty"`
 
@@ -3589,8 +4159,14 @@ type CreateChannelRequest struct {
 	Topic *string `json:"topic,omitempty"`
 }
 
+// CreateChannelRequestCompletionBehavior Behavior to apply when all purpose-linked interactions are terminal.
+type CreateChannelRequestCompletionBehavior string
+
 // CreateChannelRequestKind Channel kind, either `dm` or `channel`. Cannot be changed after creation.
 type CreateChannelRequestKind string
+
+// CreateChannelRequestPurpose Optional purpose for the channel.
+type CreateChannelRequestPurpose string
 
 // CreateEmailTriggerRequest Creates a trigger that fires when an inbound email arrives at the agent's inbox.
 type CreateEmailTriggerRequest struct {
@@ -3621,6 +4197,26 @@ type CreateEmailTriggerRequest struct {
 
 // CreateEmailTriggerRequestKind Discriminator value — must be `email`.
 type CreateEmailTriggerRequestKind string
+
+// CreateEnvironmentRequest defines model for CreateEnvironmentRequest.
+type CreateEnvironmentRequest struct {
+	Name            *string                     `json:"name,omitempty"`
+	OwnerId         *string                     `json:"owner_id,omitempty"`
+	OwnerType       *EnvironmentOwnerType       `json:"owner_type,omitempty"`
+	Provider        *EnvironmentProvider        `json:"provider,omitempty"`
+	Purpose         *EnvironmentPurpose         `json:"purpose,omitempty"`
+	RetentionPolicy *EnvironmentRetentionPolicy `json:"retention_policy,omitempty"`
+	Spec            *map[string]interface{}     `json:"spec,omitempty"`
+
+	// Tags Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints.
+	Tags *TagMap `json:"tags,omitempty"`
+
+	// TemplateId V1 supports only coding-default.
+	TemplateId *CreateEnvironmentRequestTemplateId `json:"template_id,omitempty"`
+}
+
+// CreateEnvironmentRequestTemplateId V1 supports only coding-default.
+type CreateEnvironmentRequestTemplateId string
 
 // CreateEventTriggerRequest Creates an event trigger for platform-originated events.
 type CreateEventTriggerRequest struct {
@@ -3722,7 +4318,7 @@ type CreateObservableRequest struct {
 	ReducerConfig   *ObservableReducerConfig   `json:"reducer_config,omitempty"`
 	StateSchema     JSONDocument               `json:"state_schema"`
 	Subject         *JSONDocument              `json:"subject,omitempty"`
-	SubjectKind     string                     `json:"subject_kind"`
+	SubjectKind     *string                    `json:"subject_kind,omitempty"`
 	Tags            *map[string]string         `json:"tags,omitempty"`
 	UpdateConfig    *JSONDocument              `json:"update_config,omitempty"`
 }
@@ -3811,6 +4407,18 @@ type CreateScheduleTriggerRequest struct {
 
 // CreateScheduleTriggerRequestKind Discriminator value — must be `schedule`.
 type CreateScheduleTriggerRequestKind string
+
+// CreateSecretRequest defines model for CreateSecretRequest.
+type CreateSecretRequest struct {
+	// Description Optional human-readable description.
+	Description *string `json:"description,omitempty"`
+
+	// Name Project-scoped secret name.
+	Name string `json:"name"`
+
+	// Values JSON key/value payload encrypted as a SecretVersion.
+	Values SecretValues `json:"values"`
+}
 
 // CreateStandaloneInteractionRequest Creates a standalone interaction. Completion records the response but does not deliver a workflow signal.
 type CreateStandaloneInteractionRequest struct {
@@ -4020,6 +4628,111 @@ type EntityReference struct {
 // EntityReferenceType Mobius entity kind that can be attached to a channel message.
 type EntityReferenceType string
 
+// Environment defines model for Environment.
+type Environment struct {
+	AgentId                *string                    `json:"agent_id,omitempty"`
+	Capabilities           []string                   `json:"capabilities"`
+	CleanupStatus          EnvironmentCleanupStatus   `json:"cleanup_status"`
+	ContainsSecrets        bool                       `json:"contains_secrets"`
+	CreatedAt              time.Time                  `json:"created_at"`
+	CreatedBy              *string                    `json:"created_by,omitempty"`
+	CurrentWorkerSessionId *string                    `json:"current_worker_session_id,omitempty"`
+	DestroyedAt            *time.Time                 `json:"destroyed_at,omitempty"`
+	Id                     string                     `json:"id"`
+	JobId                  *string                    `json:"job_id,omitempty"`
+	LastError              *string                    `json:"last_error,omitempty"`
+	LastReconciledAt       *time.Time                 `json:"last_reconciled_at,omitempty"`
+	LastSeenAt             *time.Time                 `json:"last_seen_at,omitempty"`
+	LeaseExpiresAt         *time.Time                 `json:"lease_expires_at,omitempty"`
+	Name                   string                     `json:"name"`
+	OwnerId                *string                    `json:"owner_id,omitempty"`
+	OwnerType              *EnvironmentOwnerType      `json:"owner_type,omitempty"`
+	Provider               EnvironmentProvider        `json:"provider"`
+	ProviderResourceId     *string                    `json:"provider_resource_id,omitempty"`
+	ProviderResourceName   *string                    `json:"provider_resource_name,omitempty"`
+	Purpose                *EnvironmentPurpose        `json:"purpose,omitempty"`
+	RetentionPolicy        EnvironmentRetentionPolicy `json:"retention_policy"`
+	RunId                  *string                    `json:"run_id,omitempty"`
+
+	// Runtime Provider-observed runtime data. URLs live under runtime.urls, with runtime.urls.primary as the primary URL when present.
+	Runtime     map[string]interface{}  `json:"runtime"`
+	Spec        *map[string]interface{} `json:"spec,omitempty"`
+	SpecVersion int                     `json:"spec_version"`
+	Status      EnvironmentStatus       `json:"status"`
+
+	// Tags Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints.
+	Tags       *TagMap                `json:"tags,omitempty"`
+	TemplateId *EnvironmentTemplateId `json:"template_id,omitempty"`
+	UpdatedAt  time.Time              `json:"updated_at"`
+}
+
+// EnvironmentTemplateId defines model for Environment.TemplateId.
+type EnvironmentTemplateId string
+
+// EnvironmentAcquireResult defines model for EnvironmentAcquireResult.
+type EnvironmentAcquireResult struct {
+	Environment Environment      `json:"environment"`
+	Lease       EnvironmentLease `json:"lease"`
+}
+
+// EnvironmentCleanupStatus defines model for EnvironmentCleanupStatus.
+type EnvironmentCleanupStatus string
+
+// EnvironmentExecResult defines model for EnvironmentExecResult.
+type EnvironmentExecResult struct {
+	ExitCode int    `json:"exit_code"`
+	Stderr   string `json:"stderr"`
+	Stdout   string `json:"stdout"`
+}
+
+// EnvironmentLease defines model for EnvironmentLease.
+type EnvironmentLease struct {
+	AcquiredAt    time.Time              `json:"acquired_at"`
+	EnvironmentId string                 `json:"environment_id"`
+	ExpiresAt     *time.Time             `json:"expires_at,omitempty"`
+	HolderId      *string                `json:"holder_id,omitempty"`
+	HolderType    *EnvironmentOwnerType  `json:"holder_type,omitempty"`
+	Id            string                 `json:"id"`
+	Purpose       *EnvironmentPurpose    `json:"purpose,omitempty"`
+	ReleasedAt    *time.Time             `json:"released_at,omitempty"`
+	Status        EnvironmentLeaseStatus `json:"status"`
+}
+
+// EnvironmentLeaseStatus defines model for EnvironmentLeaseStatus.
+type EnvironmentLeaseStatus string
+
+// EnvironmentListResponse defines model for EnvironmentListResponse.
+type EnvironmentListResponse struct {
+	HasMore    bool          `json:"has_more"`
+	Items      []Environment `json:"items"`
+	NextCursor *string       `json:"next_cursor,omitempty"`
+}
+
+// EnvironmentOwnerType defines model for EnvironmentOwnerType.
+type EnvironmentOwnerType string
+
+// EnvironmentProvider defines model for EnvironmentProvider.
+type EnvironmentProvider string
+
+// EnvironmentPurpose defines model for EnvironmentPurpose.
+type EnvironmentPurpose string
+
+// EnvironmentRetentionPolicy defines model for EnvironmentRetentionPolicy.
+type EnvironmentRetentionPolicy string
+
+// EnvironmentStartWorkerResult defines model for EnvironmentStartWorkerResult.
+type EnvironmentStartWorkerResult struct {
+	ApiKeyId     string      `json:"api_key_id"`
+	Environment  Environment `json:"environment"`
+	ExitCode     int         `json:"exit_code"`
+	KeyExpiresAt time.Time   `json:"key_expires_at"`
+	Stderr       string      `json:"stderr"`
+	Stdout       string      `json:"stdout"`
+}
+
+// EnvironmentStatus defines model for EnvironmentStatus.
+type EnvironmentStatus string
+
 // ErrorResponse Standard error envelope returned by API endpoints.
 type ErrorResponse struct {
 	// Error Error detail.
@@ -4042,6 +4755,14 @@ type EventSourceConfig struct {
 
 	// EventType Platform event type to match, e.g. `run.completed`.
 	EventType *string `json:"event_type,omitempty"`
+}
+
+// ExecEnvironmentRequest defines model for ExecEnvironmentRequest.
+type ExecEnvironmentRequest struct {
+	Command []string  `json:"command"`
+	Dir     *string   `json:"dir,omitempty"`
+	Env     *[]string `json:"env,omitempty"`
+	Stdin   *string   `json:"stdin,omitempty"`
 }
 
 // GenerateMessage defines model for GenerateMessage.
@@ -4258,6 +4979,15 @@ type ImageContentBlock struct {
 // ImageContentBlockType defines model for ImageContentBlock.Type.
 type ImageContentBlockType string
 
+// ImportSkillRequest defines model for ImportSkillRequest.
+type ImportSkillRequest struct {
+	// Content Full skill document, optionally with YAML frontmatter.
+	Content string `json:"content"`
+
+	// Name Optional name override.
+	Name *string `json:"name,omitempty"`
+}
+
 // IndexDef defines model for IndexDef.
 type IndexDef struct {
 	Columns []string `json:"columns"`
@@ -4270,13 +5000,154 @@ type InsertRowRequest struct {
 	Data map[string]interface{} `json:"data"`
 }
 
-// IntegrationCatalog Capability catalog for the integrations registered on this server.
-type IntegrationCatalog struct {
-	Providers []IntegrationCatalogProvider `json:"providers"`
+// IntegrationEventFireEvent defines model for IntegrationEventFireEvent.
+type IntegrationEventFireEvent struct {
+	DedupKey  *string `json:"dedup_key,omitempty"`
+	EventType string  `json:"event_type"`
+
+	// Id Persisted event id. Present in deliver mode.
+	Id            *string                         `json:"id,omitempty"`
+	IntegrationId *string                         `json:"integration_id,omitempty"`
+	Meta          *map[string]interface{}         `json:"meta,omitempty"`
+	Payload       map[string]interface{}          `json:"payload"`
+	Provider      string                          `json:"provider"`
+	Source        IntegrationEventFireEventSource `json:"source"`
 }
 
-// IntegrationCatalogAction defines model for IntegrationCatalogAction.
-type IntegrationCatalogAction struct {
+// IntegrationEventFireEventSource defines model for IntegrationEventFireEvent.Source.
+type IntegrationEventFireEventSource string
+
+// IntegrationEventFireMode `preview` evaluates matches without persistence; `deliver` persists a synthetic integration event and publishes it through normal delivery.
+type IntegrationEventFireMode string
+
+// IntegrationEventFireRequest defines model for IntegrationEventFireRequest.
+type IntegrationEventFireRequest struct {
+	// DedupKey Optional dedup key for deliver mode. Defaults to the generated synthetic event id.
+	DedupKey *string `json:"dedup_key,omitempty"`
+
+	// EventType Dotted integration event type to fire. Required when sample_id is omitted.
+	EventType *string `json:"event_type,omitempty"`
+
+	// IntegrationId Optional integration id metadata. Defaults to `synthetic:<provider>`.
+	IntegrationId *string `json:"integration_id,omitempty"`
+
+	// Meta Optional metadata overrides. Reserved event metadata is controlled by the top-level request fields.
+	Meta *map[string]interface{} `json:"meta,omitempty"`
+
+	// Mode `preview` evaluates matches without persistence; `deliver` persists a synthetic integration event and publishes it through normal delivery.
+	Mode *IntegrationEventFireMode `json:"mode,omitempty"`
+
+	// Payload Canonical event payload. When sample_id is set, this replaces the sample payload.
+	Payload *map[string]interface{} `json:"payload,omitempty"`
+
+	// Provider Provider name. Defaults to the sample provider or the event_type prefix.
+	Provider *string `json:"provider,omitempty"`
+
+	// SampleId Optional sample id to prefill provider, event_type, payload, and meta.
+	SampleId *string `json:"sample_id,omitempty"`
+}
+
+// IntegrationEventFireResponse defines model for IntegrationEventFireResponse.
+type IntegrationEventFireResponse struct {
+	// Deduped True when deliver mode reused an existing event row by dedup key.
+	Deduped *bool `json:"deduped,omitempty"`
+
+	// Delivered True when the event was persisted and published.
+	Delivered bool                      `json:"delivered"`
+	Event     IntegrationEventFireEvent `json:"event"`
+
+	// Mode `preview` evaluates matches without persistence; `deliver` persists a synthetic integration event and publishes it through normal delivery.
+	Mode     IntegrationEventFireMode           `json:"mode"`
+	SampleId *string                            `json:"sample_id,omitempty"`
+	Triggers []IntegrationEventFireTriggerMatch `json:"triggers"`
+	Waiters  []IntegrationEventFireWaiterMatch  `json:"waiters"`
+}
+
+// IntegrationEventFireTriggerMatch defines model for IntegrationEventFireTriggerMatch.
+type IntegrationEventFireTriggerMatch struct {
+	Name        string                  `json:"name"`
+	TargetCount int                     `json:"target_count"`
+	Targets     *[]TestFireTargetResult `json:"targets,omitempty"`
+	TriggerId   string                  `json:"trigger_id"`
+}
+
+// IntegrationEventFireWaiterMatch defines model for IntegrationEventFireWaiterMatch.
+type IntegrationEventFireWaiterMatch struct {
+	Condition *string `json:"condition,omitempty"`
+	EventType *string `json:"event_type,omitempty"`
+	MatchMode *string `json:"match_mode,omitempty"`
+	Matches   bool    `json:"matches"`
+	PathId    *string `json:"path_id,omitempty"`
+	Reason    *string `json:"reason,omitempty"`
+	RunId     string  `json:"run_id"`
+	StepName  string  `json:"step_name"`
+}
+
+// IntegrationEventSample defines model for IntegrationEventSample.
+type IntegrationEventSample struct {
+	// Description What the sample is useful for testing.
+	Description *string `json:"description,omitempty"`
+
+	// EventType Dotted integration event type this sample fires.
+	EventType string `json:"event_type"`
+
+	// Id Stable sample identifier, unique across providers.
+	Id string `json:"id"`
+
+	// Meta Optional extra metadata merged into test-fire requests.
+	Meta *map[string]interface{} `json:"meta,omitempty"`
+
+	// Name Human-readable sample name.
+	Name string `json:"name"`
+
+	// Payload Canonical Mobius integration-event payload.
+	Payload map[string]interface{} `json:"payload"`
+
+	// Provider Provider name, e.g. `github`.
+	Provider string `json:"provider"`
+}
+
+// IntegrationEventSamplesResponse defines model for IntegrationEventSamplesResponse.
+type IntegrationEventSamplesResponse struct {
+	Samples []IntegrationEventSample `json:"samples"`
+}
+
+// IntegrationProvider defines model for IntegrationProvider.
+type IntegrationProvider struct {
+	Actions []IntegrationProviderAction `json:"actions"`
+
+	// AuthKind Authentication mechanism the provider uses (e.g. `github_app_install`, `oauth2`, `api_key`).
+	AuthKind string `json:"auth_kind"`
+
+	// Capabilities Boolean capability flags reflecting which framework interfaces the provider implements (`connect`, `sync`, `live_status`, etc.).
+	Capabilities map[string]bool `json:"capabilities"`
+
+	// Category Human-readable grouping label for directory surfaces.
+	Category *string `json:"category,omitempty"`
+
+	// Connection Project-local connection summary for a provider.
+	Connection IntegrationProviderConnection `json:"connection"`
+
+	// Description Human-readable provider summary for directory and detail surfaces.
+	Description *string `json:"description,omitempty"`
+	DisplayName string  `json:"display_name"`
+
+	// DocsUrl Link to upstream provider docs, when known.
+	DocsUrl *string                        `json:"docs_url,omitempty"`
+	Events  []IntegrationProviderEventType `json:"events"`
+
+	// Icon Stable icon key that clients may map to their own icon set.
+	Icon *string `json:"icon,omitempty"`
+
+	// Name Stable provider identifier (`github`, `slack`, …).
+	Name string `json:"name"`
+
+	// TriggerPatterns Provider-owned trigger authoring presets. Empty until trigger patterns are registered for this provider.
+	TriggerPatterns []IntegrationProviderTriggerPattern `json:"trigger_patterns"`
+}
+
+// IntegrationProviderAction defines model for IntegrationProviderAction.
+type IntegrationProviderAction struct {
 	Description *string `json:"description,omitempty"`
 
 	// InputSchema JSON Schema for the action's parameters object.
@@ -4290,8 +5161,26 @@ type IntegrationCatalogAction struct {
 	Title        *string                 `json:"title,omitempty"`
 }
 
-// IntegrationCatalogEventType defines model for IntegrationCatalogEventType.
-type IntegrationCatalogEventType struct {
+// IntegrationProviderConnection Project-local connection summary for a provider.
+type IntegrationProviderConnection struct {
+	// Connected True when this project has an active integration row for the provider.
+	Connected bool `json:"connected"`
+
+	// IntegrationId Most relevant integration ID for this provider in the project, when one exists.
+	IntegrationId *string `json:"integration_id,omitempty"`
+
+	// IntegrationName Most relevant integration name for this provider in the project, when one exists.
+	IntegrationName *string `json:"integration_name,omitempty"`
+
+	// Status `active` — integration is enabled and usable by workflows. `inactive` — manually disabled; no automatic expiry behavior. `expired` — token/credential has expired (e.g., OAuth token not refreshed).
+	Status *IntegrationStatus `json:"status,omitempty"`
+
+	// UpdatedAt Timestamp when the most relevant integration row was last updated.
+	UpdatedAt *time.Time `json:"updated_at,omitempty"`
+}
+
+// IntegrationProviderEventType defines model for IntegrationProviderEventType.
+type IntegrationProviderEventType struct {
 	Description *string `json:"description,omitempty"`
 
 	// Name Dotted event-type identifier (`github.pull_request.opened`).
@@ -4304,24 +5193,22 @@ type IntegrationCatalogEventType struct {
 	SchemaVersion int `json:"schema_version"`
 }
 
-// IntegrationCatalogProvider defines model for IntegrationCatalogProvider.
-type IntegrationCatalogProvider struct {
-	Actions []IntegrationCatalogAction `json:"actions"`
-
-	// AuthKind Authentication mechanism the provider uses (e.g. `github_app_install`, `oauth2`, `api_key`).
-	AuthKind string `json:"auth_kind"`
-
-	// Capabilities Boolean capability flags reflecting which framework interfaces the provider implements (`connect`, `sync`, `live_status`, etc.).
-	Capabilities map[string]bool `json:"capabilities"`
-	DisplayName  string          `json:"display_name"`
-
-	// DocsUrl Link to upstream provider docs, when known.
-	DocsUrl *string                       `json:"docs_url,omitempty"`
-	Events  []IntegrationCatalogEventType `json:"events"`
-
-	// Name Stable provider identifier (`github`, `slack`, …).
-	Name string `json:"name"`
+// IntegrationProviderTriggerPattern Catalog descriptor for creating a trigger from a provider-owned event pattern. The array is currently empty for all providers; this schema reserves the response shape for the trigger-pattern rollout.
+type IntegrationProviderTriggerPattern struct {
+	Category    *string `json:"category,omitempty"`
+	Description *string `json:"description,omitempty"`
+	EventType   *string `json:"event_type,omitempty"`
+	Id          string  `json:"id"`
+	Label       string  `json:"label"`
 }
+
+// IntegrationProvidersResponse Integration providers and capabilities available to a project.
+type IntegrationProvidersResponse struct {
+	Providers []IntegrationProvider `json:"providers"`
+}
+
+// IntegrationStatus `active` — integration is enabled and usable by workflows. `inactive` — manually disabled; no automatic expiry behavior. `expired` — token/credential has expired (e.g., OAuth token not refreshed).
+type IntegrationStatus string
 
 // Interaction Human or agent interaction request and its current response state.
 type Interaction struct {
@@ -5033,6 +5920,33 @@ type ObservableStateVersionListResponse struct {
 	NextCursor *string                  `json:"next_cursor,omitempty"`
 }
 
+// ObservableWaiter defines model for ObservableWaiter.
+type ObservableWaiter struct {
+	// Condition Bare `expr` condition the Observable state must satisfy.
+	Condition *string `json:"condition,omitempty"`
+
+	// DeadlineAt Fixed timeout deadline for the wait, when configured.
+	DeadlineAt *time.Time `json:"deadline_at,omitempty"`
+
+	// ObservedVersion Observable version observed when this path parked.
+	ObservedVersion int64                     `json:"observed_version"`
+	PathId          string                    `json:"path_id"`
+	RunCreatedAt    time.Time                 `json:"run_created_at"`
+	RunId           string                    `json:"run_id"`
+	RunStatus       ObservableWaiterRunStatus `json:"run_status"`
+	RunUpdatedAt    time.Time                 `json:"run_updated_at"`
+	StepName        string                    `json:"step_name"`
+	WorkflowName    string                    `json:"workflow_name"`
+}
+
+// ObservableWaiterRunStatus defines model for ObservableWaiter.RunStatus.
+type ObservableWaiterRunStatus string
+
+// ObservableWaiterListResponse defines model for ObservableWaiterListResponse.
+type ObservableWaiterListResponse struct {
+	Items []ObservableWaiter `json:"items"`
+}
+
 // PingWebhookRequest defines model for PingWebhookRequest.
 type PingWebhookRequest struct {
 	// Url URL to test. When supplied, the ping is sent to this URL instead of the webhook's saved URL — use this to validate a candidate URL before saving it. When omitted, the webhook's current saved URL is used.
@@ -5189,6 +6103,45 @@ type ProjectMetrics struct {
 	Workers WorkerMetrics `json:"workers"`
 }
 
+// ProjectTeamListResponse defines model for ProjectTeamListResponse.
+type ProjectTeamListResponse struct {
+	Items []ProjectTeamMember `json:"items"`
+
+	// Truncated True when more than 500 rows matched the query.
+	Truncated bool `json:"truncated"`
+}
+
+// ProjectTeamMember defines model for ProjectTeamMember.
+type ProjectTeamMember struct {
+	ActorId      string                `json:"actor_id"`
+	ActorKind    ProjectTeamMemberKind `json:"actor_kind"`
+	Assignments  []ActorAssignment     `json:"assignments"`
+	Availability *ActorAvailability    `json:"availability,omitempty"`
+	AvatarUrl    *string               `json:"avatar_url,omitempty"`
+
+	// CanUpdateStatus True when the current caller can update this teammate's Actor State.
+	CanUpdateStatus      bool                    `json:"can_update_status"`
+	ConnectionLastSeenAt *time.Time              `json:"connection_last_seen_at,omitempty"`
+	ConnectionStatus     ActorConnectionStatus   `json:"connection_status"`
+	DisplayName          string                  `json:"display_name"`
+	LastSeenAt           *time.Time              `json:"last_seen_at,omitempty"`
+	Links                *ProjectTeamMemberLinks `json:"links,omitempty"`
+	PresenceSource       *ActorPresenceSource    `json:"presence_source,omitempty"`
+	SecondaryLabel       *string                 `json:"secondary_label,omitempty"`
+	Stale                bool                    `json:"stale"`
+	StatusDescription    *string                 `json:"status_description,omitempty"`
+}
+
+// ProjectTeamMemberKind defines model for ProjectTeamMemberKind.
+type ProjectTeamMemberKind string
+
+// ProjectTeamMemberLinks defines model for ProjectTeamMemberLinks.
+type ProjectTeamMemberLinks struct {
+	AccessHref *string `json:"access_href,omitempty"`
+	AgentHref  *string `json:"agent_href,omitempty"`
+	AskHref    *string `json:"ask_href,omitempty"`
+}
+
 // QueryRowsRequest defines model for QueryRowsRequest.
 type QueryRowsRequest struct {
 	// Cursor Opaque cursor from a prior response.
@@ -5247,6 +6200,16 @@ type ReferenceResolveRequest struct {
 type ReferenceResolveResponse struct {
 	Items      []ReferenceCandidate `json:"items"`
 	Unresolved []string             `json:"unresolved"`
+}
+
+// ReplaceSkillsRequest defines model for ReplaceSkillsRequest.
+type ReplaceSkillsRequest struct {
+	SkillIds []string `json:"skill_ids"`
+}
+
+// ReplaceToolkitsRequest defines model for ReplaceToolkitsRequest.
+type ReplaceToolkitsRequest struct {
+	ToolkitIds []string `json:"toolkit_ids"`
 }
 
 // ResolutionPolicy Declarative resolution rule attached to an Interaction. Determines how participant responses become a final outcome.
@@ -5555,6 +6518,76 @@ type SearchRowsResponse struct {
 	Rows       []TableRow `json:"rows"`
 }
 
+// Secret Project-scoped secret metadata. Values are never returned.
+type Secret struct {
+	CreatedAt time.Time `json:"created_at"`
+
+	// CreatedBy Actor that created the secret, when known.
+	CreatedBy *string `json:"created_by,omitempty"`
+
+	// Description Optional human-readable description.
+	Description *string `json:"description,omitempty"`
+
+	// Id Unique secret ID.
+	Id string `json:"id"`
+
+	// KeyNames Sorted keys present in the latest version.
+	KeyNames []string `json:"key_names"`
+
+	// Name Project-scoped secret name.
+	Name      string    `json:"name"`
+	UpdatedAt time.Time `json:"updated_at"`
+
+	// Version Latest version number.
+	Version int64 `json:"version"`
+}
+
+// SecretListResponse defines model for SecretListResponse.
+type SecretListResponse struct {
+	Items []Secret `json:"items"`
+
+	// NextCursor Cursor for the next page, when more results exist.
+	NextCursor *string `json:"next_cursor,omitempty"`
+}
+
+// SecretValues JSON key/value payload encrypted as a SecretVersion.
+type SecretValues map[string]string
+
+// SecretVersion SecretVersion metadata. Values are never returned.
+type SecretVersion struct {
+	CreatedAt time.Time `json:"created_at"`
+
+	// CreatedBy Actor that created this version, when known.
+	CreatedBy   *string    `json:"created_by,omitempty"`
+	DestroyedAt *time.Time `json:"destroyed_at,omitempty"`
+
+	// Id Unique secret version ID.
+	Id string `json:"id"`
+
+	// KmsKeyId Key identifier used to seal the payload.
+	KmsKeyId *string `json:"kms_key_id,omitempty"`
+
+	// SecretId Parent secret ID.
+	SecretId string `json:"secret_id"`
+
+	// Sha256 SHA-256 of the canonical JSON plaintext, for change detection only.
+	Sha256 string `json:"sha256"`
+
+	// State Secret version lifecycle state.
+	State SecretVersionState `json:"state"`
+
+	// Version Version number.
+	Version int64 `json:"version"`
+}
+
+// SecretVersionListResponse defines model for SecretVersionListResponse.
+type SecretVersionListResponse struct {
+	Items []SecretVersion `json:"items"`
+}
+
+// SecretVersionState Secret version lifecycle state.
+type SecretVersionState string
+
 // SendChannelMessageRequest Fields used to post a new channel message. Sender attribution is determined entirely by the authenticated credential and cannot be overridden via this request body.
 type SendChannelMessageRequest struct {
 	// Content Message body in Markdown.
@@ -5608,6 +6641,90 @@ type ShareChannelEntityRequest struct {
 
 // ShareChannelEntityRequestDisplay Rendering hint for the created channel message.
 type ShareChannelEntityRequestDisplay string
+
+// Skill defines model for Skill.
+type Skill struct {
+	// AllowedActions Requested action names/selectors.
+	AllowedActions []string `json:"allowed_actions"`
+
+	// AllowedTools Requested native-tool IDs, concrete tool names, or known aliases.
+	AllowedTools []string  `json:"allowed_tools"`
+	CreatedAt    time.Time `json:"created_at"`
+	Description  *string   `json:"description,omitempty"`
+
+	// Frontmatter Original imported frontmatter preserved for round-tripping.
+	Frontmatter *map[string]interface{} `json:"frontmatter,omitempty"`
+
+	// Id Skill ID (TypeID `skl_...`).
+	Id string `json:"id"`
+
+	// Instructions Markdown instructions loaded when the skill is active.
+	Instructions string `json:"instructions"`
+
+	// ModelHint Advisory model preference; it does not override the agent model in v1.
+	ModelHint *string     `json:"model_hint,omitempty"`
+	Name      string      `json:"name"`
+	OrgId     string      `json:"org_id"`
+	ProjectId string      `json:"project_id"`
+	Slug      *string     `json:"slug,omitempty"`
+	Source    SkillSource `json:"source"`
+	Status    SkillStatus `json:"status"`
+	UpdatedAt time.Time   `json:"updated_at"`
+
+	// UserInvocable Whether users may directly request this skill by name.
+	UserInvocable *bool `json:"user_invocable,omitempty"`
+}
+
+// SkillSource defines model for Skill.Source.
+type SkillSource string
+
+// SkillStatus defines model for Skill.Status.
+type SkillStatus string
+
+// SkillAssignment defines model for SkillAssignment.
+type SkillAssignment struct {
+	AgentId   string    `json:"agent_id"`
+	CreatedAt time.Time `json:"created_at"`
+	Enabled   bool      `json:"enabled"`
+	Position  int       `json:"position"`
+	Skill     *Skill    `json:"skill,omitempty"`
+	SkillId   string    `json:"skill_id"`
+}
+
+// SkillAssignmentListResponse defines model for SkillAssignmentListResponse.
+type SkillAssignmentListResponse struct {
+	Items []SkillAssignment `json:"items"`
+}
+
+// SkillListResponse defines model for SkillListResponse.
+type SkillListResponse struct {
+	Items []Skill `json:"items"`
+}
+
+// SkillManifestEntry defines model for SkillManifestEntry.
+type SkillManifestEntry struct {
+	Active         bool     `json:"active"`
+	AllowedActions []string `json:"allowed_actions"`
+	AllowedTools   []string `json:"allowed_tools"`
+	Id             string   `json:"id"`
+	Instructions   string   `json:"instructions"`
+	ModelHint      *string  `json:"model_hint,omitempty"`
+	Name           string   `json:"name"`
+	UserInvocable  *bool    `json:"user_invocable,omitempty"`
+}
+
+// SkillRequest defines model for SkillRequest.
+type SkillRequest struct {
+	AllowedActions *[]string               `json:"allowed_actions,omitempty"`
+	AllowedTools   *[]string               `json:"allowed_tools,omitempty"`
+	Description    *string                 `json:"description,omitempty"`
+	Frontmatter    *map[string]interface{} `json:"frontmatter,omitempty"`
+	Instructions   string                  `json:"instructions"`
+	ModelHint      *string                 `json:"model_hint,omitempty"`
+	Name           string                  `json:"name"`
+	Slug           *string                 `json:"slug,omitempty"`
+	UserInvocable  *bool                   `json:"user_invocable,omitempty"`
+}
 
 // Span Domain projection of one persisted OTLP span. Linkage fields (`run_id`, `step_id`, `job_id`, `agent_id`, `service_account_id`) are resolved at ingest time from semantic-convention attributes and may be absent when no Mobius entity could be matched.
 type Span struct {
@@ -5723,6 +6840,13 @@ type StartBoundRunRequest struct {
 
 	// Tags Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints.
 	Tags *TagMap `json:"tags,omitempty"`
+}
+
+// StartEnvironmentWorkerRequest defines model for StartEnvironmentWorkerRequest.
+type StartEnvironmentWorkerRequest struct {
+	ApiUrl  *string   `json:"api_url,omitempty"`
+	Command *[]string `json:"command,omitempty"`
+	Dir     *string   `json:"dir,omitempty"`
 }
 
 // StartInlineRunRequest Run an ephemeral workflow from an inline spec. Selected by `mode: inline` on `POST /v1/projects/{project}/runs`. No `WorkflowDefinition` is persisted; the spec is snapshotted onto the returned run.
@@ -6013,6 +7137,79 @@ type ToolUseContentBlock struct {
 
 // ToolUseContentBlockType defines model for ToolUseContentBlock.Type.
 type ToolUseContentBlockType string
+
+// Toolkit defines model for Toolkit.
+type Toolkit struct {
+	ActionGrants []ToolkitActionGrant `json:"action_grants"`
+	CreatedAt    time.Time            `json:"created_at"`
+	Description  *string              `json:"description,omitempty"`
+
+	// Id Toolkit ID (TypeID `tk_...`).
+	Id   string `json:"id"`
+	Name string `json:"name"`
+
+	// NativeToolIds Native-tool grant IDs owned by this toolkit.
+	NativeToolIds []string `json:"native_tool_ids"`
+
+	// NativeTools Expanded native-tool metadata for the toolkit's tool grants.
+	NativeTools *[]AgentNativeTool `json:"native_tools,omitempty"`
+	OrgId       string             `json:"org_id"`
+	ProjectId   string             `json:"project_id"`
+	Slug        *string            `json:"slug,omitempty"`
+	Source      ToolkitSource      `json:"source"`
+	Status      ToolkitStatus      `json:"status"`
+	UpdatedAt   time.Time          `json:"updated_at"`
+}
+
+// ToolkitSource defines model for Toolkit.Source.
+type ToolkitSource string
+
+// ToolkitStatus defines model for Toolkit.Status.
+type ToolkitStatus string
+
+// ToolkitActionGrant defines model for ToolkitActionGrant.
+type ToolkitActionGrant struct {
+	// Selector Selector value. Examples: `github.list_issues`, `github.*`, `platform.github.*`, `custom.*`, `workflow.*`, or `*`.
+	Selector string `json:"selector"`
+
+	// SelectorType How to match action catalog names.
+	SelectorType ToolkitActionGrantSelectorType `json:"selector_type"`
+}
+
+// ToolkitActionGrantSelectorType How to match action catalog names.
+type ToolkitActionGrantSelectorType string
+
+// ToolkitAssignment defines model for ToolkitAssignment.
+type ToolkitAssignment struct {
+	AgentId   string    `json:"agent_id"`
+	CreatedAt time.Time `json:"created_at"`
+	Position  int       `json:"position"`
+	Toolkit   *Toolkit  `json:"toolkit,omitempty"`
+	ToolkitId string    `json:"toolkit_id"`
+}
+
+// ToolkitAssignmentListResponse defines model for ToolkitAssignmentListResponse.
+type ToolkitAssignmentListResponse struct {
+	Items []ToolkitAssignment `json:"items"`
+}
+
+// ToolkitListResponse defines model for ToolkitListResponse.
+type ToolkitListResponse struct {
+	Items []Toolkit `json:"items"`
+}
+
+// ToolkitRequest defines model for ToolkitRequest.
+type ToolkitRequest struct {
+	ActionGrants *[]ToolkitActionGrant `json:"action_grants,omitempty"`
+	Description  *string               `json:"description,omitempty"`
+	Name         string                `json:"name"`
+
+	// NativeToolIds Native-tool grant IDs to allow.
+	NativeToolIds *[]string `json:"native_tool_ids,omitempty"`
+
+	// Slug Optional stable slug. When omitted, the server derives one from `name`.
+	Slug *string `json:"slug,omitempty"`
+}
 
 // TraceDetail Full span tree for one trace. The client reconstructs parent / child links from `parent_span_id` on each span.
 type TraceDetail struct {
@@ -6348,17 +7545,40 @@ type UpdateChannelMessageRequest struct {
 
 // UpdateChannelRequest Mutable channel fields.
 type UpdateChannelRequest struct {
+	// CompletionBehavior Behavior to apply when all purpose-linked interactions are terminal.
+	CompletionBehavior *UpdateChannelRequestCompletionBehavior `json:"completion_behavior,omitempty"`
+
 	// DisplayName Updated display name.
 	DisplayName *string `json:"display_name,omitempty"`
 
 	// Private Toggle invite-only visibility.
 	Private *bool `json:"private,omitempty"`
 
+	// Purpose Channel purpose. `resolve_interactions` requires at least one purpose-linked interaction.
+	Purpose *UpdateChannelRequestPurpose `json:"purpose,omitempty"`
+
 	// Tags Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints.
 	Tags *TagMap `json:"tags,omitempty"`
 
 	// Topic Updated topic or description.
 	Topic *string `json:"topic,omitempty"`
+}
+
+// UpdateChannelRequestCompletionBehavior Behavior to apply when all purpose-linked interactions are terminal.
+type UpdateChannelRequestCompletionBehavior string
+
+// UpdateChannelRequestPurpose Channel purpose. `resolve_interactions` requires at least one purpose-linked interaction.
+type UpdateChannelRequestPurpose string
+
+// UpdateEnvironmentRequest defines model for UpdateEnvironmentRequest.
+type UpdateEnvironmentRequest struct {
+	OwnerId         *string                     `json:"owner_id,omitempty"`
+	OwnerType       *EnvironmentOwnerType       `json:"owner_type,omitempty"`
+	Purpose         *EnvironmentPurpose         `json:"purpose,omitempty"`
+	RetentionPolicy *EnvironmentRetentionPolicy `json:"retention_policy,omitempty"`
+
+	// Tags Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints.
+	Tags *TagMap `json:"tags,omitempty"`
 }
 
 // UpdateGroupRequest defines model for UpdateGroupRequest.
@@ -6415,6 +7635,15 @@ type UpdateRowRequest struct {
 
 	// Version Expected version for optimistic locking. Omit or 0 to skip the check.
 	Version *int `json:"version,omitempty"`
+}
+
+// UpdateSecretRequest defines model for UpdateSecretRequest.
+type UpdateSecretRequest struct {
+	// Description Replacement description.
+	Description *string `json:"description,omitempty"`
+
+	// Values JSON key/value payload encrypted as a SecretVersion.
+	Values *SecretValues `json:"values,omitempty"`
 }
 
 // UpdateTableRequest defines model for UpdateTableRequest.
@@ -6480,6 +7709,11 @@ type UpdateTriggerTargetRequest struct {
 // UpdateTriggerTargetRequestKind Replacement kind. Changing kind requires the corresponding kind-specific fields to be updated in the same request.
 type UpdateTriggerTargetRequestKind string
 
+// UpdateUserPresencePreferencesRequest defines model for UpdateUserPresencePreferencesRequest.
+type UpdateUserPresencePreferencesRequest struct {
+	Mode UserPresenceMode `json:"mode"`
+}
+
 // UpdateWebhookRequest defines model for UpdateWebhookRequest.
 type UpdateWebhookRequest struct {
 	// Enabled Set to false to disable delivery without deleting the webhook.
@@ -6523,18 +7757,13 @@ type UpdateWorkflowRequest struct {
 
 // UpsertActorStateRequest defines model for UpsertActorStateRequest.
 type UpsertActorStateRequest struct {
-	ActorKind    ActorStateActorKind                 `json:"actor_kind"`
-	Assignments  *[]ActorAssignmentInput             `json:"assignments,omitempty"`
-	Availability ActorAvailability                   `json:"availability"`
-	Capacity     *ActorCapacity                      `json:"capacity,omitempty"`
-	ExpiresAt    *time.Time                          `json:"expires_at,omitempty"`
-	Focus        *ActorFocus                         `json:"focus,omitempty"`
-	StatusSource UpsertActorStateRequestStatusSource `json:"status_source"`
-	Visibility   *ActorStateVisibility               `json:"visibility,omitempty"`
+	ActorKind    ActorStateActorKind     `json:"actor_kind"`
+	Assignments  *[]ActorAssignmentInput `json:"assignments,omitempty"`
+	Availability ActorAvailability       `json:"availability"`
+	Description  *string                 `json:"description,omitempty"`
+	ExpiresAt    *time.Time              `json:"expires_at,omitempty"`
+	Visibility   *ActorStateVisibility   `json:"visibility,omitempty"`
 }
-
-// UpsertActorStateRequestStatusSource defines model for UpsertActorStateRequest.StatusSource.
-type UpsertActorStateRequestStatusSource string
 
 // UpsertRowRequest defines model for UpsertRowRequest.
 type UpsertRowRequest struct {
@@ -6574,6 +7803,23 @@ type User struct {
 
 	// UpdatedAt Timestamp when this user record was last synced from Clerk.
 	UpdatedAt time.Time `json:"updated_at"`
+}
+
+// UserPresenceMode defines model for UserPresenceMode.
+type UserPresenceMode string
+
+// UserPresencePreferences defines model for UserPresencePreferences.
+type UserPresencePreferences struct {
+	Mode      UserPresenceMode `json:"mode"`
+	UpdatedAt time.Time        `json:"updated_at"`
+}
+
+// WebPresenceHeartbeatRequest defines model for WebPresenceHeartbeatRequest.
+type WebPresenceHeartbeatRequest struct {
+	LastActiveAt *time.Time `json:"last_active_at,omitempty"`
+	ProjectId    *string    `json:"project_id,omitempty"`
+	SessionId    string     `json:"session_id"`
+	Visible      *bool      `json:"visible,omitempty"`
 }
 
 // Webhook A project-level outgoing webhook subscription. When a subscribed event fires, Mobius POSTs the event payload to `url`.
@@ -7683,7 +8929,7 @@ type WorkflowVersionSummary struct {
 
 // WorkflowWaitEventConfig Suspends the run until an integration event matching `event_type` (and `condition`, when provided) is delivered to the project. `event_type` is exact-matched by default. Set `match_mode: prefix` for descendant matching such as `github.pull_request` matching `.opened`, `.closed`, etc.
 type WorkflowWaitEventConfig struct {
-	// Condition Optional bare-form `expr` predicate over `{ event, meta, inputs, steps, vars, each, run }`. The event resumes the step only when the expression evaluates truthy. Empty means "any event of the matching type resumes". Predicate fields use bare `expr`; `${...}` templating is reserved for value-producing fields.
+	// Condition Optional bare-form `expr` predicate over `{ event, meta, inputs, steps, vars, each, run }`. The event resumes the step only when the expression evaluates bool true. Empty means "any event of the matching type resumes". Predicate fields use bare `expr`; `${...}` templating is reserved for value-producing fields.
 	Condition *string `json:"condition,omitempty"`
 
 	// EventType Integration event type to wait for, e.g. `github.pull_request.closed` or `stripe.invoice.paid`.
@@ -7827,6 +9073,12 @@ type WorkflowWaitUntilStep struct {
 	WaitUntil WorkflowWaitUntilConfig `json:"wait_until"`
 }
 
+// WriteEnvironmentFileRequest defines model for WriteEnvironmentFileRequest.
+type WriteEnvironmentFileRequest struct {
+	Content string `json:"content"`
+	Path    string `json:"path"`
+}
+
 // ActionNameParam defines model for ActionNameParam.
 type ActionNameParam = string
 
@@ -7835,6 +9087,9 @@ type ArtifactIdParam = string
 
 // CursorParam defines model for CursorParam.
 type CursorParam = string
+
+// EnvironmentIDParam defines model for EnvironmentIDParam.
+type EnvironmentIDParam = string
 
 // GroupParam defines model for GroupParam.
 type GroupParam = string
@@ -7856,6 +9111,12 @@ type ReferenceTypeParam = string
 
 // RunIdParam defines model for RunIdParam.
 type RunIdParam = string
+
+// SecretParam defines model for SecretParam.
+type SecretParam = string
+
+// SecretVersionParam defines model for SecretVersionParam.
+type SecretVersionParam = string
 
 // TableNameParam defines model for TableNameParam.
 type TableNameParam = string
@@ -8015,9 +9276,7 @@ type ListActorStatesParams struct {
 
 // ListActorAssignmentsParams defines parameters for ListActorAssignments.
 type ListActorAssignmentsParams struct {
-	// TargetKey Canonical target key, e.g. `mobius.run:run_123`.
-	TargetKey string               `form:"target_key" json:"target_key"`
-	Role      *ActorAssignmentRole `form:"role,omitempty" json:"role,omitempty"`
+	Status *ActorAssignmentStatus `form:"status,omitempty" json:"status,omitempty"`
 }
 
 // ListAgentsParams defines parameters for ListAgents.
@@ -8037,6 +9296,21 @@ type ListAgentsParams struct {
 
 	// Limit Maximum number of items to return
 	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// GetAgentCapabilityManifestParams defines parameters for GetAgentCapabilityManifest.
+type GetAgentCapabilityManifestParams struct {
+	// ToolkitIds Optional comma-separated toolkit subset to apply.
+	ToolkitIds *string `form:"toolkit_ids,omitempty" json:"toolkit_ids,omitempty"`
+
+	// SkillName Optional assigned skill name to preselect as active.
+	SkillName *string `form:"skill_name,omitempty" json:"skill_name,omitempty"`
+
+	// AllowedTools Optional comma-separated concrete tool names or known aliases.
+	AllowedTools *string `form:"allowed_tools,omitempty" json:"allowed_tools,omitempty"`
+
+	// AllowedActions Optional comma-separated action names to apply as a per-invocation filter.
+	AllowedActions *string `form:"allowed_actions,omitempty" json:"allowed_actions,omitempty"`
 }
 
 // ListAgentSessionsParams defines parameters for ListAgentSessions.
@@ -8086,6 +9360,24 @@ type ListChannelsParams struct {
 // ListChannelsParamsKind defines parameters for ListChannels.
 type ListChannelsParamsKind string
 
+// ListChannelInteractionsParams defines parameters for ListChannelInteractions.
+type ListChannelInteractionsParams struct {
+	// Relation Filter by association relation.
+	Relation *ListChannelInteractionsParamsRelation `form:"relation,omitempty" json:"relation,omitempty"`
+}
+
+// ListChannelInteractionsParamsRelation defines parameters for ListChannelInteractions.
+type ListChannelInteractionsParamsRelation string
+
+// RemoveChannelInteractionParams defines parameters for RemoveChannelInteraction.
+type RemoveChannelInteractionParams struct {
+	// Relation Relation to remove. Defaults to `purpose`.
+	Relation *RemoveChannelInteractionParamsRelation `form:"relation,omitempty" json:"relation,omitempty"`
+}
+
+// RemoveChannelInteractionParamsRelation defines parameters for RemoveChannelInteraction.
+type RemoveChannelInteractionParamsRelation string
+
 // ListChannelMembersParams defines parameters for ListChannelMembers.
 type ListChannelMembersParams struct {
 	// Cursor Cursor for pagination (opaque string from previous response)
@@ -8131,6 +9423,23 @@ type ListMessagesParams struct {
 	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
+// ListEnvironmentsParams defines parameters for ListEnvironments.
+type ListEnvironmentsParams struct {
+	// Cursor Cursor for pagination (opaque string from previous response)
+	Cursor *CursorParam `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Limit Maximum number of items to return
+	Limit     *LimitParam           `form:"limit,omitempty" json:"limit,omitempty"`
+	Provider  *EnvironmentProvider  `form:"provider,omitempty" json:"provider,omitempty"`
+	Status    *EnvironmentStatus    `form:"status,omitempty" json:"status,omitempty"`
+	Purpose   *EnvironmentPurpose   `form:"purpose,omitempty" json:"purpose,omitempty"`
+	OwnerType *EnvironmentOwnerType `form:"owner_type,omitempty" json:"owner_type,omitempty"`
+	OwnerId   *string               `form:"owner_id,omitempty" json:"owner_id,omitempty"`
+
+	// IncludeDestroyed Include all destroyed environments in the inventory. Recently destroyed environments may remain visible briefly by default; older destroyed environments are hidden unless this is true or status=destroyed is requested.
+	IncludeDestroyed *bool `form:"include_destroyed,omitempty" json:"include_destroyed,omitempty"`
+}
+
 // StreamProjectEventsParams defines parameters for StreamProjectEvents.
 type StreamProjectEventsParams struct {
 	// Since Durable event cursor to replay from, expressed as a unix-nano timestamp matching the largest `seq` the client has received on this project-wide stream. Do not pass a run-local `seq` from `streamRunEvents` here.
@@ -8162,6 +9471,15 @@ type ListGroupMembersParams struct {
 
 	// Limit Maximum number of items to return
 	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// ListIntegrationEventTestSamplesParams defines parameters for ListIntegrationEventTestSamples.
+type ListIntegrationEventTestSamplesParams struct {
+	// Provider Filter samples by provider name, e.g. `github`.
+	Provider *string `form:"provider,omitempty" json:"provider,omitempty"`
+
+	// EventType Filter samples by exact event type.
+	EventType *string `form:"event_type,omitempty" json:"event_type,omitempty"`
 }
 
 // ListInteractionsParams defines parameters for ListInteractions.
@@ -8255,6 +9573,12 @@ type ListObservableStateVersionsParams struct {
 	// Cursor Cursor for pagination (opaque string from previous response)
 	Cursor *CursorParam `form:"cursor,omitempty" json:"cursor,omitempty"`
 
+	// Limit Maximum number of items to return
+	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// ListObservableWaitersParams defines parameters for ListObservableWaiters.
+type ListObservableWaitersParams struct {
 	// Limit Maximum number of items to return
 	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
 }
@@ -8373,6 +9697,21 @@ type ListRunArtifactsParams struct {
 	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
+// ListSecretsParams defines parameters for ListSecrets.
+type ListSecretsParams struct {
+	// Cursor Cursor for pagination (opaque string from previous response)
+	Cursor *CursorParam `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Limit Maximum number of items to return
+	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// ListSkillsParams defines parameters for ListSkills.
+type ListSkillsParams struct {
+	// IncludeSystem Include read-only system skill templates.
+	IncludeSystem *bool `form:"include_system,omitempty" json:"include_system,omitempty"`
+}
+
 // ListProjectSpansParams defines parameters for ListProjectSpans.
 type ListProjectSpansParams struct {
 	// Cursor Cursor for pagination (opaque string from previous response)
@@ -8404,6 +9743,20 @@ type ListTablesParams struct {
 
 	// Limit Maximum number of items to return
 	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// ListProjectTeamParams defines parameters for ListProjectTeam.
+type ListProjectTeamParams struct {
+	Kind             *ProjectTeamMemberKind `form:"kind,omitempty" json:"kind,omitempty"`
+	Availability     *ActorAvailability     `form:"availability,omitempty" json:"availability,omitempty"`
+	AssignmentStatus *ActorAssignmentStatus `form:"assignment_status,omitempty" json:"assignment_status,omitempty"`
+	Q                *string                `form:"q,omitempty" json:"q,omitempty"`
+}
+
+// ListToolkitsParams defines parameters for ListToolkits.
+type ListToolkitsParams struct {
+	// IncludeSystem Include read-only system templates.
+	IncludeSystem *bool `form:"include_system,omitempty" json:"include_system,omitempty"`
 }
 
 // ListProjectTracesParams defines parameters for ListProjectTraces.
@@ -8499,14 +9852,11 @@ type ListWorkflowsParams struct {
 	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
-// CompleteAgentInvocationJSONRequestBody defines body for CompleteAgentInvocation for application/json ContentType.
-type CompleteAgentInvocationJSONRequestBody = AgentInvocationCompleteRequest
-
-// FailAgentInvocationJSONRequestBody defines body for FailAgentInvocation for application/json ContentType.
-type FailAgentInvocationJSONRequestBody = AgentInvocationFailRequest
-
 // CreateMessageJSONRequestBody defines body for CreateMessage for application/json ContentType.
 type CreateMessageJSONRequestBody = GenerateRequest
+
+// HeartbeatWebPresenceJSONRequestBody defines body for HeartbeatWebPresence for application/json ContentType.
+type HeartbeatWebPresenceJSONRequestBody = WebPresenceHeartbeatRequest
 
 // CreateProjectJSONRequestBody defines body for CreateProject for application/json ContentType.
 type CreateProjectJSONRequestBody = CreateProjectRequest
@@ -8541,6 +9891,12 @@ type UpdateAgentJSONRequestBody = UpdateAgentRequest
 // CreateAgentSessionJSONRequestBody defines body for CreateAgentSession for application/json ContentType.
 type CreateAgentSessionJSONRequestBody = CreateAgentSessionRequest
 
+// ReplaceSkillsJSONRequestBody defines body for ReplaceSkills for application/json ContentType.
+type ReplaceSkillsJSONRequestBody = ReplaceSkillsRequest
+
+// ReplaceToolkitsJSONRequestBody defines body for ReplaceToolkits for application/json ContentType.
+type ReplaceToolkitsJSONRequestBody = ReplaceToolkitsRequest
+
 // CommitArtifactJSONRequestBody defines body for CommitArtifact for application/json ContentType.
 type CommitArtifactJSONRequestBody = CommitArtifactRequest
 
@@ -8552,6 +9908,9 @@ type CreateChannelJSONRequestBody = CreateChannelRequest
 
 // UpdateChannelJSONRequestBody defines body for UpdateChannel for application/json ContentType.
 type UpdateChannelJSONRequestBody = UpdateChannelRequest
+
+// AssociateChannelInteractionJSONRequestBody defines body for AssociateChannelInteraction for application/json ContentType.
+type AssociateChannelInteractionJSONRequestBody = AssociateChannelInteractionRequest
 
 // RespondToChannelInteractionJSONRequestBody defines body for RespondToChannelInteraction for application/json ContentType.
 type RespondToChannelInteractionJSONRequestBody = ChannelInteractionRespondRequest
@@ -8571,6 +9930,24 @@ type MarkMessagesReadJSONRequestBody = MarkChannelMessagesReadRequest
 // ShareChannelEntityJSONRequestBody defines body for ShareChannelEntity for application/json ContentType.
 type ShareChannelEntityJSONRequestBody = ShareChannelEntityRequest
 
+// CreateEnvironmentJSONRequestBody defines body for CreateEnvironment for application/json ContentType.
+type CreateEnvironmentJSONRequestBody = CreateEnvironmentRequest
+
+// AcquireEnvironmentJSONRequestBody defines body for AcquireEnvironment for application/json ContentType.
+type AcquireEnvironmentJSONRequestBody = AcquireEnvironmentRequest
+
+// UpdateEnvironmentJSONRequestBody defines body for UpdateEnvironment for application/json ContentType.
+type UpdateEnvironmentJSONRequestBody = UpdateEnvironmentRequest
+
+// ExecEnvironmentJSONRequestBody defines body for ExecEnvironment for application/json ContentType.
+type ExecEnvironmentJSONRequestBody = ExecEnvironmentRequest
+
+// WriteEnvironmentFileJSONRequestBody defines body for WriteEnvironmentFile for application/json ContentType.
+type WriteEnvironmentFileJSONRequestBody = WriteEnvironmentFileRequest
+
+// StartEnvironmentWorkerJSONRequestBody defines body for StartEnvironmentWorker for application/json ContentType.
+type StartEnvironmentWorkerJSONRequestBody = StartEnvironmentWorkerRequest
+
 // CreateGroupJSONRequestBody defines body for CreateGroup for application/json ContentType.
 type CreateGroupJSONRequestBody = CreateGroupRequest
 
@@ -8579,6 +9956,9 @@ type UpdateGroupJSONRequestBody = UpdateGroupRequest
 
 // AddGroupMemberJSONRequestBody defines body for AddGroupMember for application/json ContentType.
 type AddGroupMemberJSONRequestBody = AddGroupMemberRequest
+
+// CreateIntegrationEventTestFireJSONRequestBody defines body for CreateIntegrationEventTestFire for application/json ContentType.
+type CreateIntegrationEventTestFireJSONRequestBody = IntegrationEventFireRequest
 
 // CreateInteractionJSONRequestBody defines body for CreateInteraction for application/json ContentType.
 type CreateInteractionJSONRequestBody = CreateInteractionRequest
@@ -8634,8 +10014,23 @@ type ForkRunJSONRequestBody = RunForkRequest
 // SendRunSignalJSONRequestBody defines body for SendRunSignal for application/json ContentType.
 type SendRunSignalJSONRequestBody = SendRunSignalRequest
 
+// CreateSecretJSONRequestBody defines body for CreateSecret for application/json ContentType.
+type CreateSecretJSONRequestBody = CreateSecretRequest
+
+// UpdateSecretJSONRequestBody defines body for UpdateSecret for application/json ContentType.
+type UpdateSecretJSONRequestBody = UpdateSecretRequest
+
 // UpdateArtifactStorageSettingsJSONRequestBody defines body for UpdateArtifactStorageSettings for application/json ContentType.
 type UpdateArtifactStorageSettingsJSONRequestBody = ArtifactStorageSettingsUpdate
+
+// CreateSkillJSONRequestBody defines body for CreateSkill for application/json ContentType.
+type CreateSkillJSONRequestBody = SkillRequest
+
+// UpdateSkillJSONRequestBody defines body for UpdateSkill for application/json ContentType.
+type UpdateSkillJSONRequestBody = SkillRequest
+
+// ImportSkillJSONRequestBody defines body for ImportSkill for application/json ContentType.
+type ImportSkillJSONRequestBody = ImportSkillRequest
 
 // CreateTableJSONRequestBody defines body for CreateTable for application/json ContentType.
 type CreateTableJSONRequestBody = CreateTableRequest
@@ -8660,6 +10055,12 @@ type UpsertTableRowJSONRequestBody = UpsertRowRequest
 
 // UpdateTableRowJSONRequestBody defines body for UpdateTableRow for application/json ContentType.
 type UpdateTableRowJSONRequestBody = UpdateRowRequest
+
+// CreateToolkitJSONRequestBody defines body for CreateToolkit for application/json ContentType.
+type CreateToolkitJSONRequestBody = ToolkitRequest
+
+// UpdateToolkitJSONRequestBody defines body for UpdateToolkit for application/json ContentType.
+type UpdateToolkitJSONRequestBody = ToolkitRequest
 
 // CreateTriggerJSONRequestBody defines body for CreateTrigger for application/json ContentType.
 type CreateTriggerJSONRequestBody = CreateTriggerRequest
@@ -8693,6 +10094,9 @@ type UpdateWorkflowJSONRequestBody = UpdateWorkflowRequest
 
 // StartWorkflowRunJSONRequestBody defines body for StartWorkflowRun for application/json ContentType.
 type StartWorkflowRunJSONRequestBody = StartBoundRunRequest
+
+// UpdateCurrentUserPresencePreferencesJSONRequestBody defines body for UpdateCurrentUserPresencePreferences for application/json ContentType.
+type UpdateCurrentUserPresencePreferencesJSONRequestBody = UpdateUserPresencePreferencesRequest
 
 // Getter for additional properties for ActionAnnotationsResponse. Returns the specified
 // element and whether it was found
@@ -12798,29 +14202,18 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 
 // The interface specification for the client above.
 type ClientInterface interface {
-	// GetAgentInvocation request
-	GetAgentInvocation(ctx context.Context, invocationId string, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// CompleteAgentInvocationWithBody request with any body
-	CompleteAgentInvocationWithBody(ctx context.Context, invocationId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	CompleteAgentInvocation(ctx context.Context, invocationId string, body CompleteAgentInvocationJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// FailAgentInvocationWithBody request with any body
-	FailAgentInvocationWithBody(ctx context.Context, invocationId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	FailAgentInvocation(ctx context.Context, invocationId string, body FailAgentInvocationJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
 	// ListAuditLogs request
 	ListAuditLogs(ctx context.Context, params *ListAuditLogsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// ListIntegrationProviders request
-	ListIntegrationProviders(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// CreateMessageWithBody request with any body
 	CreateMessageWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	CreateMessage(ctx context.Context, body CreateMessageJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// HeartbeatWebPresenceWithBody request with any body
+	HeartbeatWebPresenceWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	HeartbeatWebPresence(ctx context.Context, body HeartbeatWebPresenceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListProjects request
 	ListProjects(ctx context.Context, params *ListProjectsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -12938,6 +14331,9 @@ type ClientInterface interface {
 
 	UpdateAgent(ctx context.Context, project ProjectHandleParam, id IDParam, body UpdateAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetAgentCapabilityManifest request
+	GetAgentCapabilityManifest(ctx context.Context, project ProjectHandleParam, id IDParam, params *GetAgentCapabilityManifestParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ProvisionAgentInbox request
 	ProvisionAgentInbox(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -12957,6 +14353,22 @@ type ClientInterface interface {
 
 	// HeartbeatAgentSession request
 	HeartbeatAgentSession(ctx context.Context, project ProjectHandleParam, id IDParam, sessionId SessionId, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListSkillAssignments request
+	ListSkillAssignments(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ReplaceSkillsWithBody request with any body
+	ReplaceSkillsWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	ReplaceSkills(ctx context.Context, project ProjectHandleParam, id IDParam, body ReplaceSkillsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListToolkitAssignments request
+	ListToolkitAssignments(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ReplaceToolkitsWithBody request with any body
+	ReplaceToolkitsWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	ReplaceToolkits(ctx context.Context, project ProjectHandleParam, id IDParam, body ReplaceToolkitsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// DeleteArtifact request
 	DeleteArtifact(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, params *DeleteArtifactParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -13001,6 +14413,17 @@ type ClientInterface interface {
 	UpdateChannelWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	UpdateChannel(ctx context.Context, project ProjectHandleParam, id IDParam, body UpdateChannelJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListChannelInteractions request
+	ListChannelInteractions(ctx context.Context, project ProjectHandleParam, id IDParam, params *ListChannelInteractionsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// AssociateChannelInteractionWithBody request with any body
+	AssociateChannelInteractionWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	AssociateChannelInteraction(ctx context.Context, project ProjectHandleParam, id IDParam, body AssociateChannelInteractionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RemoveChannelInteraction request
+	RemoveChannelInteraction(ctx context.Context, project ProjectHandleParam, id IDParam, interactionId string, params *RemoveChannelInteractionParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ClaimChannelInteraction request
 	ClaimChannelInteraction(ctx context.Context, project ProjectHandleParam, id IDParam, interactionId string, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -13050,6 +14473,51 @@ type ClientInterface interface {
 
 	ShareChannelEntity(ctx context.Context, project ProjectHandleParam, id IDParam, body ShareChannelEntityJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ListEnvironments request
+	ListEnvironments(ctx context.Context, project ProjectHandleParam, params *ListEnvironmentsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateEnvironmentWithBody request with any body
+	CreateEnvironmentWithBody(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	CreateEnvironment(ctx context.Context, project ProjectHandleParam, body CreateEnvironmentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// AcquireEnvironmentWithBody request with any body
+	AcquireEnvironmentWithBody(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	AcquireEnvironment(ctx context.Context, project ProjectHandleParam, body AcquireEnvironmentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ReleaseEnvironmentLease request
+	ReleaseEnvironmentLease(ctx context.Context, project ProjectHandleParam, leaseId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DestroyEnvironment request
+	DestroyEnvironment(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetEnvironment request
+	GetEnvironment(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateEnvironmentWithBody request with any body
+	UpdateEnvironmentWithBody(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	UpdateEnvironment(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, body UpdateEnvironmentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ExecEnvironmentWithBody request with any body
+	ExecEnvironmentWithBody(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	ExecEnvironment(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, body ExecEnvironmentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// WriteEnvironmentFileWithBody request with any body
+	WriteEnvironmentFileWithBody(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	WriteEnvironmentFile(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, body WriteEnvironmentFileJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ReconcileEnvironment request
+	ReconcileEnvironment(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// StartEnvironmentWorkerWithBody request with any body
+	StartEnvironmentWorkerWithBody(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	StartEnvironmentWorker(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, body StartEnvironmentWorkerJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// StreamProjectEvents request
 	StreamProjectEvents(ctx context.Context, project ProjectHandleParam, params *StreamProjectEventsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -13082,6 +14550,17 @@ type ClientInterface interface {
 
 	// RemoveGroupMember request
 	RemoveGroupMember(ctx context.Context, project ProjectHandleParam, group GroupParam, userId UserId, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateIntegrationEventTestFireWithBody request with any body
+	CreateIntegrationEventTestFireWithBody(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	CreateIntegrationEventTestFire(ctx context.Context, project ProjectHandleParam, body CreateIntegrationEventTestFireJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListIntegrationEventTestSamples request
+	ListIntegrationEventTestSamples(ctx context.Context, project ProjectHandleParam, params *ListIntegrationEventTestSamplesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListIntegrationProviders request
+	ListIntegrationProviders(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListInteractions request
 	ListInteractions(ctx context.Context, project ProjectHandleParam, params *ListInteractionsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -13195,6 +14674,9 @@ type ClientInterface interface {
 	// ListObservableStateVersions request
 	ListObservableStateVersions(ctx context.Context, project ProjectHandleParam, observableId ObservableIdParam, params *ListObservableStateVersionsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ListObservableWaiters request
+	ListObservableWaiters(ctx context.Context, project ProjectHandleParam, observableId ObservableIdParam, params *ListObservableWaitersParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// LookupReferences request
 	LookupReferences(ctx context.Context, project ProjectHandleParam, referenceType ReferenceTypeParam, params *LookupReferencesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -13245,6 +14727,31 @@ type ClientInterface interface {
 	// ListRunArtifacts request
 	ListRunArtifacts(ctx context.Context, project ProjectHandleParam, runId RunIdParam, params *ListRunArtifactsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ListSecrets request
+	ListSecrets(ctx context.Context, project ProjectHandleParam, params *ListSecretsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateSecretWithBody request with any body
+	CreateSecretWithBody(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	CreateSecret(ctx context.Context, project ProjectHandleParam, body CreateSecretJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DeleteSecret request
+	DeleteSecret(ctx context.Context, project ProjectHandleParam, secret SecretParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetSecret request
+	GetSecret(ctx context.Context, project ProjectHandleParam, secret SecretParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateSecretWithBody request with any body
+	UpdateSecretWithBody(ctx context.Context, project ProjectHandleParam, secret SecretParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	UpdateSecret(ctx context.Context, project ProjectHandleParam, secret SecretParam, body UpdateSecretJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListSecretVersions request
+	ListSecretVersions(ctx context.Context, project ProjectHandleParam, secret SecretParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetSecretVersion request
+	GetSecretVersion(ctx context.Context, project ProjectHandleParam, secret SecretParam, version SecretVersionParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetArtifactStorageSettings request
 	GetArtifactStorageSettings(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -13255,6 +14762,30 @@ type ClientInterface interface {
 
 	// GetArtifactStorageQuota request
 	GetArtifactStorageQuota(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListSkills request
+	ListSkills(ctx context.Context, project ProjectHandleParam, params *ListSkillsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateSkillWithBody request with any body
+	CreateSkillWithBody(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	CreateSkill(ctx context.Context, project ProjectHandleParam, body CreateSkillJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DeleteSkill request
+	DeleteSkill(ctx context.Context, project ProjectHandleParam, skillId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetSkill request
+	GetSkill(ctx context.Context, project ProjectHandleParam, skillId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateSkillWithBody request with any body
+	UpdateSkillWithBody(ctx context.Context, project ProjectHandleParam, skillId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	UpdateSkill(ctx context.Context, project ProjectHandleParam, skillId string, body UpdateSkillJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ImportSkillWithBody request with any body
+	ImportSkillWithBody(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	ImportSkill(ctx context.Context, project ProjectHandleParam, body ImportSkillJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListProjectSpans request
 	ListProjectSpans(ctx context.Context, project ProjectHandleParam, params *ListProjectSpansParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -13319,6 +14850,28 @@ type ClientInterface interface {
 
 	// GetTableStats request
 	GetTableStats(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListProjectTeam request
+	ListProjectTeam(ctx context.Context, project ProjectHandleParam, params *ListProjectTeamParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListToolkits request
+	ListToolkits(ctx context.Context, project ProjectHandleParam, params *ListToolkitsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateToolkitWithBody request with any body
+	CreateToolkitWithBody(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	CreateToolkit(ctx context.Context, project ProjectHandleParam, body CreateToolkitJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DeleteToolkit request
+	DeleteToolkit(ctx context.Context, project ProjectHandleParam, toolkitId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetToolkit request
+	GetToolkit(ctx context.Context, project ProjectHandleParam, toolkitId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateToolkitWithBody request with any body
+	UpdateToolkitWithBody(ctx context.Context, project ProjectHandleParam, toolkitId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	UpdateToolkit(ctx context.Context, project ProjectHandleParam, toolkitId string, body UpdateToolkitJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListProjectTraces request
 	ListProjectTraces(ctx context.Context, project ProjectHandleParam, params *ListProjectTracesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -13437,82 +14990,18 @@ type ClientInterface interface {
 
 	// GetWorkflowVersion request
 	GetWorkflowVersion(ctx context.Context, project ProjectHandleParam, id IDParam, version int, reqEditors ...RequestEditorFn) (*http.Response, error)
-}
 
-func (c *Client) GetAgentInvocation(ctx context.Context, invocationId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetAgentInvocationRequest(c.Server, invocationId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
+	// GetCurrentUserPresencePreferences request
+	GetCurrentUserPresencePreferences(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-func (c *Client) CompleteAgentInvocationWithBody(ctx context.Context, invocationId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCompleteAgentInvocationRequestWithBody(c.Server, invocationId, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
+	// UpdateCurrentUserPresencePreferencesWithBody request with any body
+	UpdateCurrentUserPresencePreferencesWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-func (c *Client) CompleteAgentInvocation(ctx context.Context, invocationId string, body CompleteAgentInvocationJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCompleteAgentInvocationRequest(c.Server, invocationId, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) FailAgentInvocationWithBody(ctx context.Context, invocationId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewFailAgentInvocationRequestWithBody(c.Server, invocationId, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) FailAgentInvocation(ctx context.Context, invocationId string, body FailAgentInvocationJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewFailAgentInvocationRequest(c.Server, invocationId, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
+	UpdateCurrentUserPresencePreferences(ctx context.Context, body UpdateCurrentUserPresencePreferencesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
 func (c *Client) ListAuditLogs(ctx context.Context, params *ListAuditLogsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListAuditLogsRequest(c.Server, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) ListIntegrationProviders(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListIntegrationProvidersRequest(c.Server)
 	if err != nil {
 		return nil, err
 	}
@@ -13537,6 +15026,30 @@ func (c *Client) CreateMessageWithBody(ctx context.Context, contentType string, 
 
 func (c *Client) CreateMessage(ctx context.Context, body CreateMessageJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewCreateMessageRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) HeartbeatWebPresenceWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewHeartbeatWebPresenceRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) HeartbeatWebPresence(ctx context.Context, body HeartbeatWebPresenceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewHeartbeatWebPresenceRequest(c.Server, body)
 	if err != nil {
 		return nil, err
 	}
@@ -14051,6 +15564,18 @@ func (c *Client) UpdateAgent(ctx context.Context, project ProjectHandleParam, id
 	return c.Client.Do(req)
 }
 
+func (c *Client) GetAgentCapabilityManifest(ctx context.Context, project ProjectHandleParam, id IDParam, params *GetAgentCapabilityManifestParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetAgentCapabilityManifestRequest(c.Server, project, id, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) ProvisionAgentInbox(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewProvisionAgentInboxRequest(c.Server, project, id)
 	if err != nil {
@@ -14125,6 +15650,78 @@ func (c *Client) DisconnectAgentSession(ctx context.Context, project ProjectHand
 
 func (c *Client) HeartbeatAgentSession(ctx context.Context, project ProjectHandleParam, id IDParam, sessionId SessionId, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewHeartbeatAgentSessionRequest(c.Server, project, id, sessionId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListSkillAssignments(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListSkillAssignmentsRequest(c.Server, project, id)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ReplaceSkillsWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewReplaceSkillsRequestWithBody(c.Server, project, id, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ReplaceSkills(ctx context.Context, project ProjectHandleParam, id IDParam, body ReplaceSkillsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewReplaceSkillsRequest(c.Server, project, id, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListToolkitAssignments(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListToolkitAssignmentsRequest(c.Server, project, id)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ReplaceToolkitsWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewReplaceToolkitsRequestWithBody(c.Server, project, id, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ReplaceToolkits(ctx context.Context, project ProjectHandleParam, id IDParam, body ReplaceToolkitsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewReplaceToolkitsRequest(c.Server, project, id, body)
 	if err != nil {
 		return nil, err
 	}
@@ -14317,6 +15914,54 @@ func (c *Client) UpdateChannelWithBody(ctx context.Context, project ProjectHandl
 
 func (c *Client) UpdateChannel(ctx context.Context, project ProjectHandleParam, id IDParam, body UpdateChannelJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewUpdateChannelRequest(c.Server, project, id, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListChannelInteractions(ctx context.Context, project ProjectHandleParam, id IDParam, params *ListChannelInteractionsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListChannelInteractionsRequest(c.Server, project, id, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) AssociateChannelInteractionWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAssociateChannelInteractionRequestWithBody(c.Server, project, id, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) AssociateChannelInteraction(ctx context.Context, project ProjectHandleParam, id IDParam, body AssociateChannelInteractionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAssociateChannelInteractionRequest(c.Server, project, id, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) RemoveChannelInteraction(ctx context.Context, project ProjectHandleParam, id IDParam, interactionId string, params *RemoveChannelInteractionParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRemoveChannelInteractionRequest(c.Server, project, id, interactionId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -14543,6 +16188,210 @@ func (c *Client) ShareChannelEntity(ctx context.Context, project ProjectHandlePa
 	return c.Client.Do(req)
 }
 
+func (c *Client) ListEnvironments(ctx context.Context, project ProjectHandleParam, params *ListEnvironmentsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListEnvironmentsRequest(c.Server, project, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateEnvironmentWithBody(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateEnvironmentRequestWithBody(c.Server, project, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateEnvironment(ctx context.Context, project ProjectHandleParam, body CreateEnvironmentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateEnvironmentRequest(c.Server, project, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) AcquireEnvironmentWithBody(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAcquireEnvironmentRequestWithBody(c.Server, project, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) AcquireEnvironment(ctx context.Context, project ProjectHandleParam, body AcquireEnvironmentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAcquireEnvironmentRequest(c.Server, project, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ReleaseEnvironmentLease(ctx context.Context, project ProjectHandleParam, leaseId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewReleaseEnvironmentLeaseRequest(c.Server, project, leaseId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) DestroyEnvironment(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDestroyEnvironmentRequest(c.Server, project, environmentId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetEnvironment(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetEnvironmentRequest(c.Server, project, environmentId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateEnvironmentWithBody(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateEnvironmentRequestWithBody(c.Server, project, environmentId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateEnvironment(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, body UpdateEnvironmentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateEnvironmentRequest(c.Server, project, environmentId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ExecEnvironmentWithBody(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewExecEnvironmentRequestWithBody(c.Server, project, environmentId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ExecEnvironment(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, body ExecEnvironmentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewExecEnvironmentRequest(c.Server, project, environmentId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) WriteEnvironmentFileWithBody(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewWriteEnvironmentFileRequestWithBody(c.Server, project, environmentId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) WriteEnvironmentFile(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, body WriteEnvironmentFileJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewWriteEnvironmentFileRequest(c.Server, project, environmentId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ReconcileEnvironment(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewReconcileEnvironmentRequest(c.Server, project, environmentId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) StartEnvironmentWorkerWithBody(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewStartEnvironmentWorkerRequestWithBody(c.Server, project, environmentId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) StartEnvironmentWorker(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, body StartEnvironmentWorkerJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewStartEnvironmentWorkerRequest(c.Server, project, environmentId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) StreamProjectEvents(ctx context.Context, project ProjectHandleParam, params *StreamProjectEventsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewStreamProjectEventsRequest(c.Server, project, params)
 	if err != nil {
@@ -14677,6 +16526,54 @@ func (c *Client) AddGroupMember(ctx context.Context, project ProjectHandleParam,
 
 func (c *Client) RemoveGroupMember(ctx context.Context, project ProjectHandleParam, group GroupParam, userId UserId, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewRemoveGroupMemberRequest(c.Server, project, group, userId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateIntegrationEventTestFireWithBody(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateIntegrationEventTestFireRequestWithBody(c.Server, project, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateIntegrationEventTestFire(ctx context.Context, project ProjectHandleParam, body CreateIntegrationEventTestFireJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateIntegrationEventTestFireRequest(c.Server, project, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListIntegrationEventTestSamples(ctx context.Context, project ProjectHandleParam, params *ListIntegrationEventTestSamplesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListIntegrationEventTestSamplesRequest(c.Server, project, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListIntegrationProviders(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListIntegrationProvidersRequest(c.Server, project)
 	if err != nil {
 		return nil, err
 	}
@@ -15191,6 +17088,18 @@ func (c *Client) ListObservableStateVersions(ctx context.Context, project Projec
 	return c.Client.Do(req)
 }
 
+func (c *Client) ListObservableWaiters(ctx context.Context, project ProjectHandleParam, observableId ObservableIdParam, params *ListObservableWaitersParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListObservableWaitersRequest(c.Server, project, observableId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) LookupReferences(ctx context.Context, project ProjectHandleParam, referenceType ReferenceTypeParam, params *LookupReferencesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewLookupReferencesRequest(c.Server, project, referenceType, params)
 	if err != nil {
@@ -15407,6 +17316,114 @@ func (c *Client) ListRunArtifacts(ctx context.Context, project ProjectHandlePara
 	return c.Client.Do(req)
 }
 
+func (c *Client) ListSecrets(ctx context.Context, project ProjectHandleParam, params *ListSecretsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListSecretsRequest(c.Server, project, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateSecretWithBody(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateSecretRequestWithBody(c.Server, project, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateSecret(ctx context.Context, project ProjectHandleParam, body CreateSecretJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateSecretRequest(c.Server, project, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) DeleteSecret(ctx context.Context, project ProjectHandleParam, secret SecretParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteSecretRequest(c.Server, project, secret)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetSecret(ctx context.Context, project ProjectHandleParam, secret SecretParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetSecretRequest(c.Server, project, secret)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateSecretWithBody(ctx context.Context, project ProjectHandleParam, secret SecretParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateSecretRequestWithBody(c.Server, project, secret, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateSecret(ctx context.Context, project ProjectHandleParam, secret SecretParam, body UpdateSecretJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateSecretRequest(c.Server, project, secret, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListSecretVersions(ctx context.Context, project ProjectHandleParam, secret SecretParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListSecretVersionsRequest(c.Server, project, secret)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetSecretVersion(ctx context.Context, project ProjectHandleParam, secret SecretParam, version SecretVersionParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetSecretVersionRequest(c.Server, project, secret, version)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) GetArtifactStorageSettings(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetArtifactStorageSettingsRequest(c.Server, project)
 	if err != nil {
@@ -15445,6 +17462,114 @@ func (c *Client) UpdateArtifactStorageSettings(ctx context.Context, project Proj
 
 func (c *Client) GetArtifactStorageQuota(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetArtifactStorageQuotaRequest(c.Server, project)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListSkills(ctx context.Context, project ProjectHandleParam, params *ListSkillsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListSkillsRequest(c.Server, project, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateSkillWithBody(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateSkillRequestWithBody(c.Server, project, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateSkill(ctx context.Context, project ProjectHandleParam, body CreateSkillJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateSkillRequest(c.Server, project, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) DeleteSkill(ctx context.Context, project ProjectHandleParam, skillId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteSkillRequest(c.Server, project, skillId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetSkill(ctx context.Context, project ProjectHandleParam, skillId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetSkillRequest(c.Server, project, skillId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateSkillWithBody(ctx context.Context, project ProjectHandleParam, skillId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateSkillRequestWithBody(c.Server, project, skillId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateSkill(ctx context.Context, project ProjectHandleParam, skillId string, body UpdateSkillJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateSkillRequest(c.Server, project, skillId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ImportSkillWithBody(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewImportSkillRequestWithBody(c.Server, project, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ImportSkill(ctx context.Context, project ProjectHandleParam, body ImportSkillJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewImportSkillRequest(c.Server, project, body)
 	if err != nil {
 		return nil, err
 	}
@@ -15733,6 +17858,102 @@ func (c *Client) UpdateTableRow(ctx context.Context, project ProjectHandleParam,
 
 func (c *Client) GetTableStats(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetTableStatsRequest(c.Server, project, tableName)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListProjectTeam(ctx context.Context, project ProjectHandleParam, params *ListProjectTeamParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListProjectTeamRequest(c.Server, project, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListToolkits(ctx context.Context, project ProjectHandleParam, params *ListToolkitsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListToolkitsRequest(c.Server, project, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateToolkitWithBody(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateToolkitRequestWithBody(c.Server, project, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateToolkit(ctx context.Context, project ProjectHandleParam, body CreateToolkitJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateToolkitRequest(c.Server, project, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) DeleteToolkit(ctx context.Context, project ProjectHandleParam, toolkitId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteToolkitRequest(c.Server, project, toolkitId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetToolkit(ctx context.Context, project ProjectHandleParam, toolkitId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetToolkitRequest(c.Server, project, toolkitId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateToolkitWithBody(ctx context.Context, project ProjectHandleParam, toolkitId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateToolkitRequestWithBody(c.Server, project, toolkitId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateToolkit(ctx context.Context, project ProjectHandleParam, toolkitId string, body UpdateToolkitJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateToolkitRequest(c.Server, project, toolkitId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -16259,132 +18480,40 @@ func (c *Client) GetWorkflowVersion(ctx context.Context, project ProjectHandlePa
 	return c.Client.Do(req)
 }
 
-// NewGetAgentInvocationRequest generates requests for GetAgentInvocation
-func NewGetAgentInvocationRequest(server string, invocationId string) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "invocation_id", invocationId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+func (c *Client) GetCurrentUserPresencePreferences(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetCurrentUserPresencePreferencesRequest(c.Server)
 	if err != nil {
 		return nil, err
 	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
 		return nil, err
 	}
-
-	operationPath := fmt.Sprintf("/v1/agent-invocations/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("GET", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
+	return c.Client.Do(req)
 }
 
-// NewCompleteAgentInvocationRequest calls the generic CompleteAgentInvocation builder with application/json body
-func NewCompleteAgentInvocationRequest(server string, invocationId string, body CompleteAgentInvocationJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
+func (c *Client) UpdateCurrentUserPresencePreferencesWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateCurrentUserPresencePreferencesRequestWithBody(c.Server, contentType, body)
 	if err != nil {
 		return nil, err
 	}
-	bodyReader = bytes.NewReader(buf)
-	return NewCompleteAgentInvocationRequestWithBody(server, invocationId, "application/json", bodyReader)
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
 }
 
-// NewCompleteAgentInvocationRequestWithBody generates requests for CompleteAgentInvocation with any type of body
-func NewCompleteAgentInvocationRequestWithBody(server string, invocationId string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "invocation_id", invocationId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+func (c *Client) UpdateCurrentUserPresencePreferences(ctx context.Context, body UpdateCurrentUserPresencePreferencesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateCurrentUserPresencePreferencesRequest(c.Server, body)
 	if err != nil {
 		return nil, err
 	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
 		return nil, err
 	}
-
-	operationPath := fmt.Sprintf("/v1/agent-invocations/%s/complete", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("POST", queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewFailAgentInvocationRequest calls the generic FailAgentInvocation builder with application/json body
-func NewFailAgentInvocationRequest(server string, invocationId string, body FailAgentInvocationJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewFailAgentInvocationRequestWithBody(server, invocationId, "application/json", bodyReader)
-}
-
-// NewFailAgentInvocationRequestWithBody generates requests for FailAgentInvocation with any type of body
-func NewFailAgentInvocationRequestWithBody(server string, invocationId string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "invocation_id", invocationId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/agent-invocations/%s/fail", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("POST", queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
+	return c.Client.Do(req)
 }
 
 // NewListAuditLogsRequest generates requests for ListAuditLogs
@@ -16596,33 +18725,6 @@ func NewListAuditLogsRequest(server string, params *ListAuditLogsParams) (*http.
 	return req, nil
 }
 
-// NewListIntegrationProvidersRequest generates requests for ListIntegrationProviders
-func NewListIntegrationProvidersRequest(server string) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/integrations/providers")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("GET", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
 // NewCreateMessageRequest calls the generic CreateMessage builder with application/json body
 func NewCreateMessageRequest(server string, body CreateMessageJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
@@ -16644,6 +18746,46 @@ func NewCreateMessageRequestWithBody(server string, contentType string, body io.
 	}
 
 	operationPath := fmt.Sprintf("/v1/messages")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewHeartbeatWebPresenceRequest calls the generic HeartbeatWebPresence builder with application/json body
+func NewHeartbeatWebPresenceRequest(server string, body HeartbeatWebPresenceJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewHeartbeatWebPresenceRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewHeartbeatWebPresenceRequestWithBody generates requests for HeartbeatWebPresence with any type of body
+func NewHeartbeatWebPresenceRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/presence/web/heartbeat")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -17952,21 +20094,9 @@ func NewListActorAssignmentsRequest(server string, project ProjectHandleParam, p
 	if params != nil {
 		queryValues := queryURL.Query()
 
-		if queryFrag, err := runtime.StyleParamWithOptions("form", true, "target_key", params.TargetKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-			return nil, err
-		} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-			return nil, err
-		} else {
-			for k, v := range parsed {
-				for _, v2 := range v {
-					queryValues.Add(k, v2)
-				}
-			}
-		}
+		if params.Status != nil {
 
-		if params.Role != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "role", *params.Role, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "status", *params.Status, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
 				return nil, err
 			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
 				return nil, err
@@ -18373,6 +20503,117 @@ func NewUpdateAgentRequestWithBody(server string, project ProjectHandleParam, id
 	return req, nil
 }
 
+// NewGetAgentCapabilityManifestRequest generates requests for GetAgentCapabilityManifest
+func NewGetAgentCapabilityManifestRequest(server string, project ProjectHandleParam, id IDParam, params *GetAgentCapabilityManifestParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/agents/%s/capability-manifest", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.ToolkitIds != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "toolkit_ids", *params.ToolkitIds, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.SkillName != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "skill_name", *params.SkillName, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.AllowedTools != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "allowed_tools", *params.AllowedTools, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.AllowedActions != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "allowed_actions", *params.AllowedActions, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewProvisionAgentInboxRequest generates requests for ProvisionAgentInbox
 func NewProvisionAgentInboxRequest(server string, project ProjectHandleParam, id IDParam) (*http.Request, error) {
 	var err error
@@ -18703,6 +20944,196 @@ func NewHeartbeatAgentSessionRequest(server string, project ProjectHandleParam, 
 	if err != nil {
 		return nil, err
 	}
+
+	return req, nil
+}
+
+// NewListSkillAssignmentsRequest generates requests for ListSkillAssignments
+func NewListSkillAssignmentsRequest(server string, project ProjectHandleParam, id IDParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/agents/%s/skills", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewReplaceSkillsRequest calls the generic ReplaceSkills builder with application/json body
+func NewReplaceSkillsRequest(server string, project ProjectHandleParam, id IDParam, body ReplaceSkillsJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewReplaceSkillsRequestWithBody(server, project, id, "application/json", bodyReader)
+}
+
+// NewReplaceSkillsRequestWithBody generates requests for ReplaceSkills with any type of body
+func NewReplaceSkillsRequestWithBody(server string, project ProjectHandleParam, id IDParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/agents/%s/skills", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PUT", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewListToolkitAssignmentsRequest generates requests for ListToolkitAssignments
+func NewListToolkitAssignmentsRequest(server string, project ProjectHandleParam, id IDParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/agents/%s/toolkits", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewReplaceToolkitsRequest calls the generic ReplaceToolkits builder with application/json body
+func NewReplaceToolkitsRequest(server string, project ProjectHandleParam, id IDParam, body ReplaceToolkitsJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewReplaceToolkitsRequestWithBody(server, project, id, "application/json", bodyReader)
+}
+
+// NewReplaceToolkitsRequestWithBody generates requests for ReplaceToolkits with any type of body
+func NewReplaceToolkitsRequestWithBody(server string, project ProjectHandleParam, id IDParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/agents/%s/toolkits", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PUT", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
 }
@@ -19356,6 +21787,193 @@ func NewUpdateChannelRequestWithBody(server string, project ProjectHandleParam, 
 	}
 
 	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewListChannelInteractionsRequest generates requests for ListChannelInteractions
+func NewListChannelInteractionsRequest(server string, project ProjectHandleParam, id IDParam, params *ListChannelInteractionsParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/channels/%s/interactions", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Relation != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "relation", *params.Relation, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewAssociateChannelInteractionRequest calls the generic AssociateChannelInteraction builder with application/json body
+func NewAssociateChannelInteractionRequest(server string, project ProjectHandleParam, id IDParam, body AssociateChannelInteractionJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewAssociateChannelInteractionRequestWithBody(server, project, id, "application/json", bodyReader)
+}
+
+// NewAssociateChannelInteractionRequestWithBody generates requests for AssociateChannelInteraction with any type of body
+func NewAssociateChannelInteractionRequestWithBody(server string, project ProjectHandleParam, id IDParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/channels/%s/interactions", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewRemoveChannelInteractionRequest generates requests for RemoveChannelInteraction
+func NewRemoveChannelInteractionRequest(server string, project ProjectHandleParam, id IDParam, interactionId string, params *RemoveChannelInteractionParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam2 string
+
+	pathParam2, err = runtime.StyleParamWithOptions("simple", false, "interaction_id", interactionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/channels/%s/interactions/%s", pathParam0, pathParam1, pathParam2)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Relation != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "relation", *params.Relation, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
 
 	return req, nil
 }
@@ -20160,6 +22778,648 @@ func NewShareChannelEntityRequestWithBody(server string, project ProjectHandlePa
 	return req, nil
 }
 
+// NewListEnvironmentsRequest generates requests for ListEnvironments
+func NewListEnvironmentsRequest(server string, project ProjectHandleParam, params *ListEnvironmentsParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/environments", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Cursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "cursor", *params.Cursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Provider != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "provider", *params.Provider, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Status != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "status", *params.Status, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Purpose != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "purpose", *params.Purpose, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.OwnerType != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "owner_type", *params.OwnerType, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.OwnerId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "owner_id", *params.OwnerId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.IncludeDestroyed != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "include_destroyed", *params.IncludeDestroyed, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "boolean", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCreateEnvironmentRequest calls the generic CreateEnvironment builder with application/json body
+func NewCreateEnvironmentRequest(server string, project ProjectHandleParam, body CreateEnvironmentJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateEnvironmentRequestWithBody(server, project, "application/json", bodyReader)
+}
+
+// NewCreateEnvironmentRequestWithBody generates requests for CreateEnvironment with any type of body
+func NewCreateEnvironmentRequestWithBody(server string, project ProjectHandleParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/environments", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewAcquireEnvironmentRequest calls the generic AcquireEnvironment builder with application/json body
+func NewAcquireEnvironmentRequest(server string, project ProjectHandleParam, body AcquireEnvironmentJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewAcquireEnvironmentRequestWithBody(server, project, "application/json", bodyReader)
+}
+
+// NewAcquireEnvironmentRequestWithBody generates requests for AcquireEnvironment with any type of body
+func NewAcquireEnvironmentRequestWithBody(server string, project ProjectHandleParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/environments/acquire", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewReleaseEnvironmentLeaseRequest generates requests for ReleaseEnvironmentLease
+func NewReleaseEnvironmentLeaseRequest(server string, project ProjectHandleParam, leaseId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "lease_id", leaseId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/environments/leases/%s/release", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewDestroyEnvironmentRequest generates requests for DestroyEnvironment
+func NewDestroyEnvironmentRequest(server string, project ProjectHandleParam, environmentId EnvironmentIDParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "environment_id", environmentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/environments/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetEnvironmentRequest generates requests for GetEnvironment
+func NewGetEnvironmentRequest(server string, project ProjectHandleParam, environmentId EnvironmentIDParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "environment_id", environmentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/environments/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewUpdateEnvironmentRequest calls the generic UpdateEnvironment builder with application/json body
+func NewUpdateEnvironmentRequest(server string, project ProjectHandleParam, environmentId EnvironmentIDParam, body UpdateEnvironmentJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpdateEnvironmentRequestWithBody(server, project, environmentId, "application/json", bodyReader)
+}
+
+// NewUpdateEnvironmentRequestWithBody generates requests for UpdateEnvironment with any type of body
+func NewUpdateEnvironmentRequestWithBody(server string, project ProjectHandleParam, environmentId EnvironmentIDParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "environment_id", environmentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/environments/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PATCH", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewExecEnvironmentRequest calls the generic ExecEnvironment builder with application/json body
+func NewExecEnvironmentRequest(server string, project ProjectHandleParam, environmentId EnvironmentIDParam, body ExecEnvironmentJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewExecEnvironmentRequestWithBody(server, project, environmentId, "application/json", bodyReader)
+}
+
+// NewExecEnvironmentRequestWithBody generates requests for ExecEnvironment with any type of body
+func NewExecEnvironmentRequestWithBody(server string, project ProjectHandleParam, environmentId EnvironmentIDParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "environment_id", environmentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/environments/%s/exec", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewWriteEnvironmentFileRequest calls the generic WriteEnvironmentFile builder with application/json body
+func NewWriteEnvironmentFileRequest(server string, project ProjectHandleParam, environmentId EnvironmentIDParam, body WriteEnvironmentFileJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewWriteEnvironmentFileRequestWithBody(server, project, environmentId, "application/json", bodyReader)
+}
+
+// NewWriteEnvironmentFileRequestWithBody generates requests for WriteEnvironmentFile with any type of body
+func NewWriteEnvironmentFileRequestWithBody(server string, project ProjectHandleParam, environmentId EnvironmentIDParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "environment_id", environmentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/environments/%s/files", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PUT", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewReconcileEnvironmentRequest generates requests for ReconcileEnvironment
+func NewReconcileEnvironmentRequest(server string, project ProjectHandleParam, environmentId EnvironmentIDParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "environment_id", environmentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/environments/%s/reconcile", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewStartEnvironmentWorkerRequest calls the generic StartEnvironmentWorker builder with application/json body
+func NewStartEnvironmentWorkerRequest(server string, project ProjectHandleParam, environmentId EnvironmentIDParam, body StartEnvironmentWorkerJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewStartEnvironmentWorkerRequestWithBody(server, project, environmentId, "application/json", bodyReader)
+}
+
+// NewStartEnvironmentWorkerRequestWithBody generates requests for StartEnvironmentWorker with any type of body
+func NewStartEnvironmentWorkerRequestWithBody(server string, project ProjectHandleParam, environmentId EnvironmentIDParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "environment_id", environmentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/environments/%s/workers/start", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewStreamProjectEventsRequest generates requests for StreamProjectEvents
 func NewStreamProjectEventsRequest(server string, project ProjectHandleParam, params *StreamProjectEventsParams) (*http.Request, error) {
 	var err error
@@ -20693,6 +23953,159 @@ func NewRemoveGroupMemberRequest(server string, project ProjectHandleParam, grou
 	}
 
 	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCreateIntegrationEventTestFireRequest calls the generic CreateIntegrationEventTestFire builder with application/json body
+func NewCreateIntegrationEventTestFireRequest(server string, project ProjectHandleParam, body CreateIntegrationEventTestFireJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateIntegrationEventTestFireRequestWithBody(server, project, "application/json", bodyReader)
+}
+
+// NewCreateIntegrationEventTestFireRequestWithBody generates requests for CreateIntegrationEventTestFire with any type of body
+func NewCreateIntegrationEventTestFireRequestWithBody(server string, project ProjectHandleParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/integration-events/test/fires", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewListIntegrationEventTestSamplesRequest generates requests for ListIntegrationEventTestSamples
+func NewListIntegrationEventTestSamplesRequest(server string, project ProjectHandleParam, params *ListIntegrationEventTestSamplesParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/integration-events/test/samples", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Provider != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "provider", *params.Provider, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.EventType != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "event_type", *params.EventType, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewListIntegrationProvidersRequest generates requests for ListIntegrationProviders
+func NewListIntegrationProvidersRequest(server string, project ProjectHandleParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/integration-providers", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -22410,6 +25823,69 @@ func NewListObservableStateVersionsRequest(server string, project ProjectHandleP
 	return req, nil
 }
 
+// NewListObservableWaitersRequest generates requests for ListObservableWaiters
+func NewListObservableWaitersRequest(server string, project ProjectHandleParam, observableId ObservableIdParam, params *ListObservableWaitersParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "observable_id", observableId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/observables/%s/waiters", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewLookupReferencesRequest generates requests for LookupReferences
 func NewLookupReferencesRequest(server string, project ProjectHandleParam, referenceType ReferenceTypeParam, params *LookupReferencesParams) (*http.Request, error) {
 	var err error
@@ -23561,6 +27037,350 @@ func NewListRunArtifactsRequest(server string, project ProjectHandleParam, runId
 	return req, nil
 }
 
+// NewListSecretsRequest generates requests for ListSecrets
+func NewListSecretsRequest(server string, project ProjectHandleParam, params *ListSecretsParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/secrets", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Cursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "cursor", *params.Cursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCreateSecretRequest calls the generic CreateSecret builder with application/json body
+func NewCreateSecretRequest(server string, project ProjectHandleParam, body CreateSecretJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateSecretRequestWithBody(server, project, "application/json", bodyReader)
+}
+
+// NewCreateSecretRequestWithBody generates requests for CreateSecret with any type of body
+func NewCreateSecretRequestWithBody(server string, project ProjectHandleParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/secrets", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewDeleteSecretRequest generates requests for DeleteSecret
+func NewDeleteSecretRequest(server string, project ProjectHandleParam, secret SecretParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "secret", secret, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/secrets/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetSecretRequest generates requests for GetSecret
+func NewGetSecretRequest(server string, project ProjectHandleParam, secret SecretParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "secret", secret, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/secrets/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewUpdateSecretRequest calls the generic UpdateSecret builder with application/json body
+func NewUpdateSecretRequest(server string, project ProjectHandleParam, secret SecretParam, body UpdateSecretJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpdateSecretRequestWithBody(server, project, secret, "application/json", bodyReader)
+}
+
+// NewUpdateSecretRequestWithBody generates requests for UpdateSecret with any type of body
+func NewUpdateSecretRequestWithBody(server string, project ProjectHandleParam, secret SecretParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "secret", secret, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/secrets/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PATCH", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewListSecretVersionsRequest generates requests for ListSecretVersions
+func NewListSecretVersionsRequest(server string, project ProjectHandleParam, secret SecretParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "secret", secret, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/secrets/%s/versions", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetSecretVersionRequest generates requests for GetSecretVersion
+func NewGetSecretVersionRequest(server string, project ProjectHandleParam, secret SecretParam, version SecretVersionParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "secret", secret, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam2 string
+
+	pathParam2, err = runtime.StyleParamWithOptions("simple", false, "version", version, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/secrets/%s/versions/%s", pathParam0, pathParam1, pathParam2)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewGetArtifactStorageSettingsRequest generates requests for GetArtifactStorageSettings
 func NewGetArtifactStorageSettingsRequest(server string, project ProjectHandleParam) (*http.Request, error) {
 	var err error
@@ -23672,6 +27492,292 @@ func NewGetArtifactStorageQuotaRequest(server string, project ProjectHandleParam
 	if err != nil {
 		return nil, err
 	}
+
+	return req, nil
+}
+
+// NewListSkillsRequest generates requests for ListSkills
+func NewListSkillsRequest(server string, project ProjectHandleParam, params *ListSkillsParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/skills", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.IncludeSystem != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "include_system", *params.IncludeSystem, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "boolean", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCreateSkillRequest calls the generic CreateSkill builder with application/json body
+func NewCreateSkillRequest(server string, project ProjectHandleParam, body CreateSkillJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateSkillRequestWithBody(server, project, "application/json", bodyReader)
+}
+
+// NewCreateSkillRequestWithBody generates requests for CreateSkill with any type of body
+func NewCreateSkillRequestWithBody(server string, project ProjectHandleParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/skills", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewDeleteSkillRequest generates requests for DeleteSkill
+func NewDeleteSkillRequest(server string, project ProjectHandleParam, skillId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "skill_id", skillId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/skills/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetSkillRequest generates requests for GetSkill
+func NewGetSkillRequest(server string, project ProjectHandleParam, skillId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "skill_id", skillId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/skills/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewUpdateSkillRequest calls the generic UpdateSkill builder with application/json body
+func NewUpdateSkillRequest(server string, project ProjectHandleParam, skillId string, body UpdateSkillJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpdateSkillRequestWithBody(server, project, skillId, "application/json", bodyReader)
+}
+
+// NewUpdateSkillRequestWithBody generates requests for UpdateSkill with any type of body
+func NewUpdateSkillRequestWithBody(server string, project ProjectHandleParam, skillId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "skill_id", skillId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/skills/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PUT", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewImportSkillRequest calls the generic ImportSkill builder with application/json body
+func NewImportSkillRequest(server string, project ProjectHandleParam, body ImportSkillJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewImportSkillRequestWithBody(server, project, "application/json", bodyReader)
+}
+
+// NewImportSkillRequestWithBody generates requests for ImportSkill with any type of body
+func NewImportSkillRequestWithBody(server string, project ProjectHandleParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/skills:import", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
 }
@@ -24567,6 +28673,349 @@ func NewGetTableStatsRequest(server string, project ProjectHandleParam, tableNam
 	if err != nil {
 		return nil, err
 	}
+
+	return req, nil
+}
+
+// NewListProjectTeamRequest generates requests for ListProjectTeam
+func NewListProjectTeamRequest(server string, project ProjectHandleParam, params *ListProjectTeamParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/team", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Kind != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "kind", *params.Kind, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Availability != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "availability", *params.Availability, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.AssignmentStatus != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "assignment_status", *params.AssignmentStatus, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Q != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "q", *params.Q, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewListToolkitsRequest generates requests for ListToolkits
+func NewListToolkitsRequest(server string, project ProjectHandleParam, params *ListToolkitsParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/toolkits", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.IncludeSystem != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "include_system", *params.IncludeSystem, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "boolean", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCreateToolkitRequest calls the generic CreateToolkit builder with application/json body
+func NewCreateToolkitRequest(server string, project ProjectHandleParam, body CreateToolkitJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateToolkitRequestWithBody(server, project, "application/json", bodyReader)
+}
+
+// NewCreateToolkitRequestWithBody generates requests for CreateToolkit with any type of body
+func NewCreateToolkitRequestWithBody(server string, project ProjectHandleParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/toolkits", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewDeleteToolkitRequest generates requests for DeleteToolkit
+func NewDeleteToolkitRequest(server string, project ProjectHandleParam, toolkitId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "toolkit_id", toolkitId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/toolkits/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetToolkitRequest generates requests for GetToolkit
+func NewGetToolkitRequest(server string, project ProjectHandleParam, toolkitId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "toolkit_id", toolkitId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/toolkits/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewUpdateToolkitRequest calls the generic UpdateToolkit builder with application/json body
+func NewUpdateToolkitRequest(server string, project ProjectHandleParam, toolkitId string, body UpdateToolkitJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpdateToolkitRequestWithBody(server, project, toolkitId, "application/json", bodyReader)
+}
+
+// NewUpdateToolkitRequestWithBody generates requests for UpdateToolkit with any type of body
+func NewUpdateToolkitRequestWithBody(server string, project ProjectHandleParam, toolkitId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "toolkit_id", toolkitId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/toolkits/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PUT", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
 }
@@ -26370,6 +30819,73 @@ func NewGetWorkflowVersionRequest(server string, project ProjectHandleParam, id 
 	return req, nil
 }
 
+// NewGetCurrentUserPresencePreferencesRequest generates requests for GetCurrentUserPresencePreferences
+func NewGetCurrentUserPresencePreferencesRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/users/me/presence-preferences")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewUpdateCurrentUserPresencePreferencesRequest calls the generic UpdateCurrentUserPresencePreferences builder with application/json body
+func NewUpdateCurrentUserPresencePreferencesRequest(server string, body UpdateCurrentUserPresencePreferencesJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpdateCurrentUserPresencePreferencesRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewUpdateCurrentUserPresencePreferencesRequestWithBody generates requests for UpdateCurrentUserPresencePreferences with any type of body
+func NewUpdateCurrentUserPresencePreferencesRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/users/me/presence-preferences")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PUT", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 func (c *Client) applyEditors(ctx context.Context, req *http.Request, additionalEditors []RequestEditorFn) error {
 	for _, r := range c.RequestEditors {
 		if err := r(ctx, req); err != nil {
@@ -26413,29 +30929,18 @@ func WithBaseURL(baseURL string) ClientOption {
 
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
-	// GetAgentInvocationWithResponse request
-	GetAgentInvocationWithResponse(ctx context.Context, invocationId string, reqEditors ...RequestEditorFn) (*GetAgentInvocationResponse, error)
-
-	// CompleteAgentInvocationWithBodyWithResponse request with any body
-	CompleteAgentInvocationWithBodyWithResponse(ctx context.Context, invocationId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CompleteAgentInvocationResponse, error)
-
-	CompleteAgentInvocationWithResponse(ctx context.Context, invocationId string, body CompleteAgentInvocationJSONRequestBody, reqEditors ...RequestEditorFn) (*CompleteAgentInvocationResponse, error)
-
-	// FailAgentInvocationWithBodyWithResponse request with any body
-	FailAgentInvocationWithBodyWithResponse(ctx context.Context, invocationId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*FailAgentInvocationResponse, error)
-
-	FailAgentInvocationWithResponse(ctx context.Context, invocationId string, body FailAgentInvocationJSONRequestBody, reqEditors ...RequestEditorFn) (*FailAgentInvocationResponse, error)
-
 	// ListAuditLogsWithResponse request
 	ListAuditLogsWithResponse(ctx context.Context, params *ListAuditLogsParams, reqEditors ...RequestEditorFn) (*ListAuditLogsResponse, error)
-
-	// ListIntegrationProvidersWithResponse request
-	ListIntegrationProvidersWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListIntegrationProvidersResponse, error)
 
 	// CreateMessageWithBodyWithResponse request with any body
 	CreateMessageWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateMessageResponse, error)
 
 	CreateMessageWithResponse(ctx context.Context, body CreateMessageJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateMessageResponse, error)
+
+	// HeartbeatWebPresenceWithBodyWithResponse request with any body
+	HeartbeatWebPresenceWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*HeartbeatWebPresenceResponse, error)
+
+	HeartbeatWebPresenceWithResponse(ctx context.Context, body HeartbeatWebPresenceJSONRequestBody, reqEditors ...RequestEditorFn) (*HeartbeatWebPresenceResponse, error)
 
 	// ListProjectsWithResponse request
 	ListProjectsWithResponse(ctx context.Context, params *ListProjectsParams, reqEditors ...RequestEditorFn) (*ListProjectsResponse, error)
@@ -26553,6 +31058,9 @@ type ClientWithResponsesInterface interface {
 
 	UpdateAgentWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body UpdateAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateAgentResponse, error)
 
+	// GetAgentCapabilityManifestWithResponse request
+	GetAgentCapabilityManifestWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, params *GetAgentCapabilityManifestParams, reqEditors ...RequestEditorFn) (*GetAgentCapabilityManifestResponse, error)
+
 	// ProvisionAgentInboxWithResponse request
 	ProvisionAgentInboxWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*ProvisionAgentInboxResponse, error)
 
@@ -26572,6 +31080,22 @@ type ClientWithResponsesInterface interface {
 
 	// HeartbeatAgentSessionWithResponse request
 	HeartbeatAgentSessionWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, sessionId SessionId, reqEditors ...RequestEditorFn) (*HeartbeatAgentSessionResponse, error)
+
+	// ListSkillAssignmentsWithResponse request
+	ListSkillAssignmentsWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*ListSkillAssignmentsResponse, error)
+
+	// ReplaceSkillsWithBodyWithResponse request with any body
+	ReplaceSkillsWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ReplaceSkillsResponse, error)
+
+	ReplaceSkillsWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body ReplaceSkillsJSONRequestBody, reqEditors ...RequestEditorFn) (*ReplaceSkillsResponse, error)
+
+	// ListToolkitAssignmentsWithResponse request
+	ListToolkitAssignmentsWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*ListToolkitAssignmentsResponse, error)
+
+	// ReplaceToolkitsWithBodyWithResponse request with any body
+	ReplaceToolkitsWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ReplaceToolkitsResponse, error)
+
+	ReplaceToolkitsWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body ReplaceToolkitsJSONRequestBody, reqEditors ...RequestEditorFn) (*ReplaceToolkitsResponse, error)
 
 	// DeleteArtifactWithResponse request
 	DeleteArtifactWithResponse(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, params *DeleteArtifactParams, reqEditors ...RequestEditorFn) (*DeleteArtifactResponse, error)
@@ -26616,6 +31140,17 @@ type ClientWithResponsesInterface interface {
 	UpdateChannelWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateChannelResponse, error)
 
 	UpdateChannelWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body UpdateChannelJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateChannelResponse, error)
+
+	// ListChannelInteractionsWithResponse request
+	ListChannelInteractionsWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, params *ListChannelInteractionsParams, reqEditors ...RequestEditorFn) (*ListChannelInteractionsResponse, error)
+
+	// AssociateChannelInteractionWithBodyWithResponse request with any body
+	AssociateChannelInteractionWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AssociateChannelInteractionResponse, error)
+
+	AssociateChannelInteractionWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body AssociateChannelInteractionJSONRequestBody, reqEditors ...RequestEditorFn) (*AssociateChannelInteractionResponse, error)
+
+	// RemoveChannelInteractionWithResponse request
+	RemoveChannelInteractionWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, interactionId string, params *RemoveChannelInteractionParams, reqEditors ...RequestEditorFn) (*RemoveChannelInteractionResponse, error)
 
 	// ClaimChannelInteractionWithResponse request
 	ClaimChannelInteractionWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, interactionId string, reqEditors ...RequestEditorFn) (*ClaimChannelInteractionResponse, error)
@@ -26665,6 +31200,51 @@ type ClientWithResponsesInterface interface {
 
 	ShareChannelEntityWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body ShareChannelEntityJSONRequestBody, reqEditors ...RequestEditorFn) (*ShareChannelEntityResponse, error)
 
+	// ListEnvironmentsWithResponse request
+	ListEnvironmentsWithResponse(ctx context.Context, project ProjectHandleParam, params *ListEnvironmentsParams, reqEditors ...RequestEditorFn) (*ListEnvironmentsResponse, error)
+
+	// CreateEnvironmentWithBodyWithResponse request with any body
+	CreateEnvironmentWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateEnvironmentResponse, error)
+
+	CreateEnvironmentWithResponse(ctx context.Context, project ProjectHandleParam, body CreateEnvironmentJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateEnvironmentResponse, error)
+
+	// AcquireEnvironmentWithBodyWithResponse request with any body
+	AcquireEnvironmentWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AcquireEnvironmentResponse, error)
+
+	AcquireEnvironmentWithResponse(ctx context.Context, project ProjectHandleParam, body AcquireEnvironmentJSONRequestBody, reqEditors ...RequestEditorFn) (*AcquireEnvironmentResponse, error)
+
+	// ReleaseEnvironmentLeaseWithResponse request
+	ReleaseEnvironmentLeaseWithResponse(ctx context.Context, project ProjectHandleParam, leaseId string, reqEditors ...RequestEditorFn) (*ReleaseEnvironmentLeaseResponse, error)
+
+	// DestroyEnvironmentWithResponse request
+	DestroyEnvironmentWithResponse(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, reqEditors ...RequestEditorFn) (*DestroyEnvironmentResponse, error)
+
+	// GetEnvironmentWithResponse request
+	GetEnvironmentWithResponse(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, reqEditors ...RequestEditorFn) (*GetEnvironmentResponse, error)
+
+	// UpdateEnvironmentWithBodyWithResponse request with any body
+	UpdateEnvironmentWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateEnvironmentResponse, error)
+
+	UpdateEnvironmentWithResponse(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, body UpdateEnvironmentJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateEnvironmentResponse, error)
+
+	// ExecEnvironmentWithBodyWithResponse request with any body
+	ExecEnvironmentWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ExecEnvironmentResponse, error)
+
+	ExecEnvironmentWithResponse(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, body ExecEnvironmentJSONRequestBody, reqEditors ...RequestEditorFn) (*ExecEnvironmentResponse, error)
+
+	// WriteEnvironmentFileWithBodyWithResponse request with any body
+	WriteEnvironmentFileWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*WriteEnvironmentFileResponse, error)
+
+	WriteEnvironmentFileWithResponse(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, body WriteEnvironmentFileJSONRequestBody, reqEditors ...RequestEditorFn) (*WriteEnvironmentFileResponse, error)
+
+	// ReconcileEnvironmentWithResponse request
+	ReconcileEnvironmentWithResponse(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, reqEditors ...RequestEditorFn) (*ReconcileEnvironmentResponse, error)
+
+	// StartEnvironmentWorkerWithBodyWithResponse request with any body
+	StartEnvironmentWorkerWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*StartEnvironmentWorkerResponse, error)
+
+	StartEnvironmentWorkerWithResponse(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, body StartEnvironmentWorkerJSONRequestBody, reqEditors ...RequestEditorFn) (*StartEnvironmentWorkerResponse, error)
+
 	// StreamProjectEventsWithResponse request
 	StreamProjectEventsWithResponse(ctx context.Context, project ProjectHandleParam, params *StreamProjectEventsParams, reqEditors ...RequestEditorFn) (*StreamProjectEventsResponse, error)
 
@@ -26697,6 +31277,17 @@ type ClientWithResponsesInterface interface {
 
 	// RemoveGroupMemberWithResponse request
 	RemoveGroupMemberWithResponse(ctx context.Context, project ProjectHandleParam, group GroupParam, userId UserId, reqEditors ...RequestEditorFn) (*RemoveGroupMemberResponse, error)
+
+	// CreateIntegrationEventTestFireWithBodyWithResponse request with any body
+	CreateIntegrationEventTestFireWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateIntegrationEventTestFireResponse, error)
+
+	CreateIntegrationEventTestFireWithResponse(ctx context.Context, project ProjectHandleParam, body CreateIntegrationEventTestFireJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateIntegrationEventTestFireResponse, error)
+
+	// ListIntegrationEventTestSamplesWithResponse request
+	ListIntegrationEventTestSamplesWithResponse(ctx context.Context, project ProjectHandleParam, params *ListIntegrationEventTestSamplesParams, reqEditors ...RequestEditorFn) (*ListIntegrationEventTestSamplesResponse, error)
+
+	// ListIntegrationProvidersWithResponse request
+	ListIntegrationProvidersWithResponse(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*ListIntegrationProvidersResponse, error)
 
 	// ListInteractionsWithResponse request
 	ListInteractionsWithResponse(ctx context.Context, project ProjectHandleParam, params *ListInteractionsParams, reqEditors ...RequestEditorFn) (*ListInteractionsResponse, error)
@@ -26810,6 +31401,9 @@ type ClientWithResponsesInterface interface {
 	// ListObservableStateVersionsWithResponse request
 	ListObservableStateVersionsWithResponse(ctx context.Context, project ProjectHandleParam, observableId ObservableIdParam, params *ListObservableStateVersionsParams, reqEditors ...RequestEditorFn) (*ListObservableStateVersionsResponse, error)
 
+	// ListObservableWaitersWithResponse request
+	ListObservableWaitersWithResponse(ctx context.Context, project ProjectHandleParam, observableId ObservableIdParam, params *ListObservableWaitersParams, reqEditors ...RequestEditorFn) (*ListObservableWaitersResponse, error)
+
 	// LookupReferencesWithResponse request
 	LookupReferencesWithResponse(ctx context.Context, project ProjectHandleParam, referenceType ReferenceTypeParam, params *LookupReferencesParams, reqEditors ...RequestEditorFn) (*LookupReferencesResponse, error)
 
@@ -26860,6 +31454,31 @@ type ClientWithResponsesInterface interface {
 	// ListRunArtifactsWithResponse request
 	ListRunArtifactsWithResponse(ctx context.Context, project ProjectHandleParam, runId RunIdParam, params *ListRunArtifactsParams, reqEditors ...RequestEditorFn) (*ListRunArtifactsResponse, error)
 
+	// ListSecretsWithResponse request
+	ListSecretsWithResponse(ctx context.Context, project ProjectHandleParam, params *ListSecretsParams, reqEditors ...RequestEditorFn) (*ListSecretsResponse, error)
+
+	// CreateSecretWithBodyWithResponse request with any body
+	CreateSecretWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateSecretResponse, error)
+
+	CreateSecretWithResponse(ctx context.Context, project ProjectHandleParam, body CreateSecretJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateSecretResponse, error)
+
+	// DeleteSecretWithResponse request
+	DeleteSecretWithResponse(ctx context.Context, project ProjectHandleParam, secret SecretParam, reqEditors ...RequestEditorFn) (*DeleteSecretResponse, error)
+
+	// GetSecretWithResponse request
+	GetSecretWithResponse(ctx context.Context, project ProjectHandleParam, secret SecretParam, reqEditors ...RequestEditorFn) (*GetSecretResponse, error)
+
+	// UpdateSecretWithBodyWithResponse request with any body
+	UpdateSecretWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, secret SecretParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateSecretResponse, error)
+
+	UpdateSecretWithResponse(ctx context.Context, project ProjectHandleParam, secret SecretParam, body UpdateSecretJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateSecretResponse, error)
+
+	// ListSecretVersionsWithResponse request
+	ListSecretVersionsWithResponse(ctx context.Context, project ProjectHandleParam, secret SecretParam, reqEditors ...RequestEditorFn) (*ListSecretVersionsResponse, error)
+
+	// GetSecretVersionWithResponse request
+	GetSecretVersionWithResponse(ctx context.Context, project ProjectHandleParam, secret SecretParam, version SecretVersionParam, reqEditors ...RequestEditorFn) (*GetSecretVersionResponse, error)
+
 	// GetArtifactStorageSettingsWithResponse request
 	GetArtifactStorageSettingsWithResponse(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*GetArtifactStorageSettingsResponse, error)
 
@@ -26870,6 +31489,30 @@ type ClientWithResponsesInterface interface {
 
 	// GetArtifactStorageQuotaWithResponse request
 	GetArtifactStorageQuotaWithResponse(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*GetArtifactStorageQuotaResponse, error)
+
+	// ListSkillsWithResponse request
+	ListSkillsWithResponse(ctx context.Context, project ProjectHandleParam, params *ListSkillsParams, reqEditors ...RequestEditorFn) (*ListSkillsResponse, error)
+
+	// CreateSkillWithBodyWithResponse request with any body
+	CreateSkillWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateSkillResponse, error)
+
+	CreateSkillWithResponse(ctx context.Context, project ProjectHandleParam, body CreateSkillJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateSkillResponse, error)
+
+	// DeleteSkillWithResponse request
+	DeleteSkillWithResponse(ctx context.Context, project ProjectHandleParam, skillId string, reqEditors ...RequestEditorFn) (*DeleteSkillResponse, error)
+
+	// GetSkillWithResponse request
+	GetSkillWithResponse(ctx context.Context, project ProjectHandleParam, skillId string, reqEditors ...RequestEditorFn) (*GetSkillResponse, error)
+
+	// UpdateSkillWithBodyWithResponse request with any body
+	UpdateSkillWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, skillId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateSkillResponse, error)
+
+	UpdateSkillWithResponse(ctx context.Context, project ProjectHandleParam, skillId string, body UpdateSkillJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateSkillResponse, error)
+
+	// ImportSkillWithBodyWithResponse request with any body
+	ImportSkillWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ImportSkillResponse, error)
+
+	ImportSkillWithResponse(ctx context.Context, project ProjectHandleParam, body ImportSkillJSONRequestBody, reqEditors ...RequestEditorFn) (*ImportSkillResponse, error)
 
 	// ListProjectSpansWithResponse request
 	ListProjectSpansWithResponse(ctx context.Context, project ProjectHandleParam, params *ListProjectSpansParams, reqEditors ...RequestEditorFn) (*ListProjectSpansResponse, error)
@@ -26934,6 +31577,28 @@ type ClientWithResponsesInterface interface {
 
 	// GetTableStatsWithResponse request
 	GetTableStatsWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, reqEditors ...RequestEditorFn) (*GetTableStatsResponse, error)
+
+	// ListProjectTeamWithResponse request
+	ListProjectTeamWithResponse(ctx context.Context, project ProjectHandleParam, params *ListProjectTeamParams, reqEditors ...RequestEditorFn) (*ListProjectTeamResponse, error)
+
+	// ListToolkitsWithResponse request
+	ListToolkitsWithResponse(ctx context.Context, project ProjectHandleParam, params *ListToolkitsParams, reqEditors ...RequestEditorFn) (*ListToolkitsResponse, error)
+
+	// CreateToolkitWithBodyWithResponse request with any body
+	CreateToolkitWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateToolkitResponse, error)
+
+	CreateToolkitWithResponse(ctx context.Context, project ProjectHandleParam, body CreateToolkitJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateToolkitResponse, error)
+
+	// DeleteToolkitWithResponse request
+	DeleteToolkitWithResponse(ctx context.Context, project ProjectHandleParam, toolkitId string, reqEditors ...RequestEditorFn) (*DeleteToolkitResponse, error)
+
+	// GetToolkitWithResponse request
+	GetToolkitWithResponse(ctx context.Context, project ProjectHandleParam, toolkitId string, reqEditors ...RequestEditorFn) (*GetToolkitResponse, error)
+
+	// UpdateToolkitWithBodyWithResponse request with any body
+	UpdateToolkitWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, toolkitId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateToolkitResponse, error)
+
+	UpdateToolkitWithResponse(ctx context.Context, project ProjectHandleParam, toolkitId string, body UpdateToolkitJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateToolkitResponse, error)
 
 	// ListProjectTracesWithResponse request
 	ListProjectTracesWithResponse(ctx context.Context, project ProjectHandleParam, params *ListProjectTracesParams, reqEditors ...RequestEditorFn) (*ListProjectTracesResponse, error)
@@ -27052,81 +31717,14 @@ type ClientWithResponsesInterface interface {
 
 	// GetWorkflowVersionWithResponse request
 	GetWorkflowVersionWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, version int, reqEditors ...RequestEditorFn) (*GetWorkflowVersionResponse, error)
-}
 
-type GetAgentInvocationResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *AgentInvocation
-	JSON401      *Unauthorized
-	JSON404      *NotFound
-}
+	// GetCurrentUserPresencePreferencesWithResponse request
+	GetCurrentUserPresencePreferencesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetCurrentUserPresencePreferencesResponse, error)
 
-// Status returns HTTPResponse.Status
-func (r GetAgentInvocationResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
+	// UpdateCurrentUserPresencePreferencesWithBodyWithResponse request with any body
+	UpdateCurrentUserPresencePreferencesWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateCurrentUserPresencePreferencesResponse, error)
 
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetAgentInvocationResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type CompleteAgentInvocationResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *AgentInvocation
-	JSON400      *BadRequest
-	JSON401      *Unauthorized
-	JSON404      *NotFound
-	JSON410      *AgentInvocation
-}
-
-// Status returns HTTPResponse.Status
-func (r CompleteAgentInvocationResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r CompleteAgentInvocationResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type FailAgentInvocationResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *AgentInvocation
-	JSON400      *BadRequest
-	JSON401      *Unauthorized
-	JSON404      *NotFound
-}
-
-// Status returns HTTPResponse.Status
-func (r FailAgentInvocationResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r FailAgentInvocationResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
+	UpdateCurrentUserPresencePreferencesWithResponse(ctx context.Context, body UpdateCurrentUserPresencePreferencesJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateCurrentUserPresencePreferencesResponse, error)
 }
 
 type ListAuditLogsResponse struct {
@@ -27146,29 +31744,6 @@ func (r ListAuditLogsResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r ListAuditLogsResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type ListIntegrationProvidersResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *IntegrationCatalog
-	JSON401      *Unauthorized
-}
-
-// Status returns HTTPResponse.Status
-func (r ListIntegrationProvidersResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ListIntegrationProvidersResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -27195,6 +31770,30 @@ func (r CreateMessageResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r CreateMessageResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type HeartbeatWebPresenceResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+}
+
+// Status returns HTTPResponse.Status
+func (r HeartbeatWebPresenceResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r HeartbeatWebPresenceResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -27986,6 +32585,31 @@ func (r UpdateAgentResponse) StatusCode() int {
 	return 0
 }
 
+type GetAgentCapabilityManifestResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *AgentCapabilityManifest
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r GetAgentCapabilityManifestResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetAgentCapabilityManifestResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type ProvisionAgentInboxResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -28126,6 +32750,104 @@ func (r HeartbeatAgentSessionResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r HeartbeatAgentSessionResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ListSkillAssignmentsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *SkillAssignmentListResponse
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r ListSkillAssignmentsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListSkillAssignmentsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ReplaceSkillsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *SkillAssignmentListResponse
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r ReplaceSkillsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ReplaceSkillsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ListToolkitAssignmentsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ToolkitAssignmentListResponse
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r ListToolkitAssignmentsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListToolkitAssignmentsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ReplaceToolkitsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ToolkitAssignmentListResponse
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r ReplaceToolkitsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ReplaceToolkitsResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -28420,6 +33142,79 @@ func (r UpdateChannelResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r UpdateChannelResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ListChannelInteractionsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ChannelInteractionLinkListResponse
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r ListChannelInteractionsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListChannelInteractionsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type AssociateChannelInteractionResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON201      *ChannelInteractionLink
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+	JSON409      *Conflict
+}
+
+// Status returns HTTPResponse.Status
+func (r AssociateChannelInteractionResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r AssociateChannelInteractionResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type RemoveChannelInteractionResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r RemoveChannelInteractionResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r RemoveChannelInteractionResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -28728,6 +33523,277 @@ func (r ShareChannelEntityResponse) StatusCode() int {
 	return 0
 }
 
+type ListEnvironmentsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *EnvironmentListResponse
+	JSON401      *Unauthorized
+}
+
+// Status returns HTTPResponse.Status
+func (r ListEnvironmentsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListEnvironmentsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type CreateEnvironmentResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON201      *Environment
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON409      *Conflict
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateEnvironmentResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateEnvironmentResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type AcquireEnvironmentResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *EnvironmentAcquireResult
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON409      *Conflict
+}
+
+// Status returns HTTPResponse.Status
+func (r AcquireEnvironmentResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r AcquireEnvironmentResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ReleaseEnvironmentLeaseResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *EnvironmentLease
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r ReleaseEnvironmentLeaseResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ReleaseEnvironmentLeaseResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type DestroyEnvironmentResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Environment
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r DestroyEnvironmentResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DestroyEnvironmentResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetEnvironmentResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Environment
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r GetEnvironmentResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetEnvironmentResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type UpdateEnvironmentResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Environment
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r UpdateEnvironmentResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpdateEnvironmentResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ExecEnvironmentResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *EnvironmentExecResult
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+	JSON409      *Conflict
+}
+
+// Status returns HTTPResponse.Status
+func (r ExecEnvironmentResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ExecEnvironmentResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type WriteEnvironmentFileResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+	JSON409      *Conflict
+}
+
+// Status returns HTTPResponse.Status
+func (r WriteEnvironmentFileResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r WriteEnvironmentFileResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ReconcileEnvironmentResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Environment
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r ReconcileEnvironmentResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ReconcileEnvironmentResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type StartEnvironmentWorkerResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *EnvironmentStartWorkerResult
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+	JSON409      *Conflict
+}
+
+// Status returns HTTPResponse.Status
+func (r StartEnvironmentWorkerResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r StartEnvironmentWorkerResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type StreamProjectEventsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -28939,6 +34005,78 @@ func (r RemoveGroupMemberResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r RemoveGroupMemberResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type CreateIntegrationEventTestFireResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *IntegrationEventFireResponse
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+	JSON503      *ServiceUnavailable
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateIntegrationEventTestFireResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateIntegrationEventTestFireResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ListIntegrationEventTestSamplesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *IntegrationEventSamplesResponse
+	JSON401      *Unauthorized
+}
+
+// Status returns HTTPResponse.Status
+func (r ListIntegrationEventTestSamplesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListIntegrationEventTestSamplesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ListIntegrationProvidersResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *IntegrationProvidersResponse
+	JSON401      *Unauthorized
+}
+
+// Status returns HTTPResponse.Status
+func (r ListIntegrationProvidersResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListIntegrationProvidersResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -29639,6 +34777,30 @@ func (r ListObservableStateVersionsResponse) StatusCode() int {
 	return 0
 }
 
+type ListObservableWaitersResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ObservableWaiterListResponse
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r ListObservableWaitersResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListObservableWaitersResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type LookupReferencesResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -29987,6 +35149,178 @@ func (r ListRunArtifactsResponse) StatusCode() int {
 	return 0
 }
 
+type ListSecretsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *SecretListResponse
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r ListSecretsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListSecretsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type CreateSecretResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON201      *Secret
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+	JSON409      *Conflict
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateSecretResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateSecretResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type DeleteSecretResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteSecretResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteSecretResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetSecretResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Secret
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r GetSecretResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetSecretResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type UpdateSecretResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Secret
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+	JSON409      *Conflict
+}
+
+// Status returns HTTPResponse.Status
+func (r UpdateSecretResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpdateSecretResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ListSecretVersionsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *SecretVersionListResponse
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r ListSecretVersionsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListSecretVersionsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetSecretVersionResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *SecretVersion
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r GetSecretVersionResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetSecretVersionResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type GetArtifactStorageSettingsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -30051,6 +35385,156 @@ func (r GetArtifactStorageQuotaResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r GetArtifactStorageQuotaResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ListSkillsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *SkillListResponse
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r ListSkillsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListSkillsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type CreateSkillResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON201      *Skill
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+	JSON409      *Conflict
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateSkillResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateSkillResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type DeleteSkillResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+	JSON409      *Conflict
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteSkillResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteSkillResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetSkillResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Skill
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r GetSkillResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetSkillResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type UpdateSkillResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Skill
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+	JSON409      *Conflict
+}
+
+// Status returns HTTPResponse.Status
+func (r UpdateSkillResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpdateSkillResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ImportSkillResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON201      *Skill
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+	JSON409      *Conflict
+}
+
+// Status returns HTTPResponse.Status
+func (r ImportSkillResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ImportSkillResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -30442,6 +35926,156 @@ func (r GetTableStatsResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r GetTableStatsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ListProjectTeamResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ProjectTeamListResponse
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r ListProjectTeamResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListProjectTeamResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ListToolkitsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ToolkitListResponse
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r ListToolkitsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListToolkitsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type CreateToolkitResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON201      *Toolkit
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+	JSON409      *Conflict
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateToolkitResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateToolkitResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type DeleteToolkitResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+	JSON409      *Conflict
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteToolkitResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteToolkitResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetToolkitResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Toolkit
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r GetToolkitResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetToolkitResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type UpdateToolkitResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Toolkit
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+	JSON409      *Conflict
+}
+
+// Status returns HTTPResponse.Status
+func (r UpdateToolkitResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpdateToolkitResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -31229,47 +36863,51 @@ func (r GetWorkflowVersionResponse) StatusCode() int {
 	return 0
 }
 
-// GetAgentInvocationWithResponse request returning *GetAgentInvocationResponse
-func (c *ClientWithResponses) GetAgentInvocationWithResponse(ctx context.Context, invocationId string, reqEditors ...RequestEditorFn) (*GetAgentInvocationResponse, error) {
-	rsp, err := c.GetAgentInvocation(ctx, invocationId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetAgentInvocationResponse(rsp)
+type GetCurrentUserPresencePreferencesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *UserPresencePreferences
+	JSON401      *Unauthorized
 }
 
-// CompleteAgentInvocationWithBodyWithResponse request with arbitrary body returning *CompleteAgentInvocationResponse
-func (c *ClientWithResponses) CompleteAgentInvocationWithBodyWithResponse(ctx context.Context, invocationId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CompleteAgentInvocationResponse, error) {
-	rsp, err := c.CompleteAgentInvocationWithBody(ctx, invocationId, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
+// Status returns HTTPResponse.Status
+func (r GetCurrentUserPresencePreferencesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
 	}
-	return ParseCompleteAgentInvocationResponse(rsp)
+	return http.StatusText(0)
 }
 
-func (c *ClientWithResponses) CompleteAgentInvocationWithResponse(ctx context.Context, invocationId string, body CompleteAgentInvocationJSONRequestBody, reqEditors ...RequestEditorFn) (*CompleteAgentInvocationResponse, error) {
-	rsp, err := c.CompleteAgentInvocation(ctx, invocationId, body, reqEditors...)
-	if err != nil {
-		return nil, err
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetCurrentUserPresencePreferencesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
 	}
-	return ParseCompleteAgentInvocationResponse(rsp)
+	return 0
 }
 
-// FailAgentInvocationWithBodyWithResponse request with arbitrary body returning *FailAgentInvocationResponse
-func (c *ClientWithResponses) FailAgentInvocationWithBodyWithResponse(ctx context.Context, invocationId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*FailAgentInvocationResponse, error) {
-	rsp, err := c.FailAgentInvocationWithBody(ctx, invocationId, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseFailAgentInvocationResponse(rsp)
+type UpdateCurrentUserPresencePreferencesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *UserPresencePreferences
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
 }
 
-func (c *ClientWithResponses) FailAgentInvocationWithResponse(ctx context.Context, invocationId string, body FailAgentInvocationJSONRequestBody, reqEditors ...RequestEditorFn) (*FailAgentInvocationResponse, error) {
-	rsp, err := c.FailAgentInvocation(ctx, invocationId, body, reqEditors...)
-	if err != nil {
-		return nil, err
+// Status returns HTTPResponse.Status
+func (r UpdateCurrentUserPresencePreferencesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
 	}
-	return ParseFailAgentInvocationResponse(rsp)
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpdateCurrentUserPresencePreferencesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
 }
 
 // ListAuditLogsWithResponse request returning *ListAuditLogsResponse
@@ -31279,15 +36917,6 @@ func (c *ClientWithResponses) ListAuditLogsWithResponse(ctx context.Context, par
 		return nil, err
 	}
 	return ParseListAuditLogsResponse(rsp)
-}
-
-// ListIntegrationProvidersWithResponse request returning *ListIntegrationProvidersResponse
-func (c *ClientWithResponses) ListIntegrationProvidersWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListIntegrationProvidersResponse, error) {
-	rsp, err := c.ListIntegrationProviders(ctx, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseListIntegrationProvidersResponse(rsp)
 }
 
 // CreateMessageWithBodyWithResponse request with arbitrary body returning *CreateMessageResponse
@@ -31305,6 +36934,23 @@ func (c *ClientWithResponses) CreateMessageWithResponse(ctx context.Context, bod
 		return nil, err
 	}
 	return ParseCreateMessageResponse(rsp)
+}
+
+// HeartbeatWebPresenceWithBodyWithResponse request with arbitrary body returning *HeartbeatWebPresenceResponse
+func (c *ClientWithResponses) HeartbeatWebPresenceWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*HeartbeatWebPresenceResponse, error) {
+	rsp, err := c.HeartbeatWebPresenceWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseHeartbeatWebPresenceResponse(rsp)
+}
+
+func (c *ClientWithResponses) HeartbeatWebPresenceWithResponse(ctx context.Context, body HeartbeatWebPresenceJSONRequestBody, reqEditors ...RequestEditorFn) (*HeartbeatWebPresenceResponse, error) {
+	rsp, err := c.HeartbeatWebPresence(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseHeartbeatWebPresenceResponse(rsp)
 }
 
 // ListProjectsWithResponse request returning *ListProjectsResponse
@@ -31675,6 +37321,15 @@ func (c *ClientWithResponses) UpdateAgentWithResponse(ctx context.Context, proje
 	return ParseUpdateAgentResponse(rsp)
 }
 
+// GetAgentCapabilityManifestWithResponse request returning *GetAgentCapabilityManifestResponse
+func (c *ClientWithResponses) GetAgentCapabilityManifestWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, params *GetAgentCapabilityManifestParams, reqEditors ...RequestEditorFn) (*GetAgentCapabilityManifestResponse, error) {
+	rsp, err := c.GetAgentCapabilityManifest(ctx, project, id, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetAgentCapabilityManifestResponse(rsp)
+}
+
 // ProvisionAgentInboxWithResponse request returning *ProvisionAgentInboxResponse
 func (c *ClientWithResponses) ProvisionAgentInboxWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*ProvisionAgentInboxResponse, error) {
 	rsp, err := c.ProvisionAgentInbox(ctx, project, id, reqEditors...)
@@ -31735,6 +37390,58 @@ func (c *ClientWithResponses) HeartbeatAgentSessionWithResponse(ctx context.Cont
 		return nil, err
 	}
 	return ParseHeartbeatAgentSessionResponse(rsp)
+}
+
+// ListSkillAssignmentsWithResponse request returning *ListSkillAssignmentsResponse
+func (c *ClientWithResponses) ListSkillAssignmentsWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*ListSkillAssignmentsResponse, error) {
+	rsp, err := c.ListSkillAssignments(ctx, project, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListSkillAssignmentsResponse(rsp)
+}
+
+// ReplaceSkillsWithBodyWithResponse request with arbitrary body returning *ReplaceSkillsResponse
+func (c *ClientWithResponses) ReplaceSkillsWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ReplaceSkillsResponse, error) {
+	rsp, err := c.ReplaceSkillsWithBody(ctx, project, id, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseReplaceSkillsResponse(rsp)
+}
+
+func (c *ClientWithResponses) ReplaceSkillsWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body ReplaceSkillsJSONRequestBody, reqEditors ...RequestEditorFn) (*ReplaceSkillsResponse, error) {
+	rsp, err := c.ReplaceSkills(ctx, project, id, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseReplaceSkillsResponse(rsp)
+}
+
+// ListToolkitAssignmentsWithResponse request returning *ListToolkitAssignmentsResponse
+func (c *ClientWithResponses) ListToolkitAssignmentsWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*ListToolkitAssignmentsResponse, error) {
+	rsp, err := c.ListToolkitAssignments(ctx, project, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListToolkitAssignmentsResponse(rsp)
+}
+
+// ReplaceToolkitsWithBodyWithResponse request with arbitrary body returning *ReplaceToolkitsResponse
+func (c *ClientWithResponses) ReplaceToolkitsWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ReplaceToolkitsResponse, error) {
+	rsp, err := c.ReplaceToolkitsWithBody(ctx, project, id, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseReplaceToolkitsResponse(rsp)
+}
+
+func (c *ClientWithResponses) ReplaceToolkitsWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body ReplaceToolkitsJSONRequestBody, reqEditors ...RequestEditorFn) (*ReplaceToolkitsResponse, error) {
+	rsp, err := c.ReplaceToolkits(ctx, project, id, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseReplaceToolkitsResponse(rsp)
 }
 
 // DeleteArtifactWithResponse request returning *DeleteArtifactResponse
@@ -31875,6 +37582,41 @@ func (c *ClientWithResponses) UpdateChannelWithResponse(ctx context.Context, pro
 		return nil, err
 	}
 	return ParseUpdateChannelResponse(rsp)
+}
+
+// ListChannelInteractionsWithResponse request returning *ListChannelInteractionsResponse
+func (c *ClientWithResponses) ListChannelInteractionsWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, params *ListChannelInteractionsParams, reqEditors ...RequestEditorFn) (*ListChannelInteractionsResponse, error) {
+	rsp, err := c.ListChannelInteractions(ctx, project, id, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListChannelInteractionsResponse(rsp)
+}
+
+// AssociateChannelInteractionWithBodyWithResponse request with arbitrary body returning *AssociateChannelInteractionResponse
+func (c *ClientWithResponses) AssociateChannelInteractionWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AssociateChannelInteractionResponse, error) {
+	rsp, err := c.AssociateChannelInteractionWithBody(ctx, project, id, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAssociateChannelInteractionResponse(rsp)
+}
+
+func (c *ClientWithResponses) AssociateChannelInteractionWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body AssociateChannelInteractionJSONRequestBody, reqEditors ...RequestEditorFn) (*AssociateChannelInteractionResponse, error) {
+	rsp, err := c.AssociateChannelInteraction(ctx, project, id, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAssociateChannelInteractionResponse(rsp)
+}
+
+// RemoveChannelInteractionWithResponse request returning *RemoveChannelInteractionResponse
+func (c *ClientWithResponses) RemoveChannelInteractionWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, interactionId string, params *RemoveChannelInteractionParams, reqEditors ...RequestEditorFn) (*RemoveChannelInteractionResponse, error) {
+	rsp, err := c.RemoveChannelInteraction(ctx, project, id, interactionId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRemoveChannelInteractionResponse(rsp)
 }
 
 // ClaimChannelInteractionWithResponse request returning *ClaimChannelInteractionResponse
@@ -32033,6 +37775,153 @@ func (c *ClientWithResponses) ShareChannelEntityWithResponse(ctx context.Context
 	return ParseShareChannelEntityResponse(rsp)
 }
 
+// ListEnvironmentsWithResponse request returning *ListEnvironmentsResponse
+func (c *ClientWithResponses) ListEnvironmentsWithResponse(ctx context.Context, project ProjectHandleParam, params *ListEnvironmentsParams, reqEditors ...RequestEditorFn) (*ListEnvironmentsResponse, error) {
+	rsp, err := c.ListEnvironments(ctx, project, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListEnvironmentsResponse(rsp)
+}
+
+// CreateEnvironmentWithBodyWithResponse request with arbitrary body returning *CreateEnvironmentResponse
+func (c *ClientWithResponses) CreateEnvironmentWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateEnvironmentResponse, error) {
+	rsp, err := c.CreateEnvironmentWithBody(ctx, project, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateEnvironmentResponse(rsp)
+}
+
+func (c *ClientWithResponses) CreateEnvironmentWithResponse(ctx context.Context, project ProjectHandleParam, body CreateEnvironmentJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateEnvironmentResponse, error) {
+	rsp, err := c.CreateEnvironment(ctx, project, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateEnvironmentResponse(rsp)
+}
+
+// AcquireEnvironmentWithBodyWithResponse request with arbitrary body returning *AcquireEnvironmentResponse
+func (c *ClientWithResponses) AcquireEnvironmentWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AcquireEnvironmentResponse, error) {
+	rsp, err := c.AcquireEnvironmentWithBody(ctx, project, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAcquireEnvironmentResponse(rsp)
+}
+
+func (c *ClientWithResponses) AcquireEnvironmentWithResponse(ctx context.Context, project ProjectHandleParam, body AcquireEnvironmentJSONRequestBody, reqEditors ...RequestEditorFn) (*AcquireEnvironmentResponse, error) {
+	rsp, err := c.AcquireEnvironment(ctx, project, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAcquireEnvironmentResponse(rsp)
+}
+
+// ReleaseEnvironmentLeaseWithResponse request returning *ReleaseEnvironmentLeaseResponse
+func (c *ClientWithResponses) ReleaseEnvironmentLeaseWithResponse(ctx context.Context, project ProjectHandleParam, leaseId string, reqEditors ...RequestEditorFn) (*ReleaseEnvironmentLeaseResponse, error) {
+	rsp, err := c.ReleaseEnvironmentLease(ctx, project, leaseId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseReleaseEnvironmentLeaseResponse(rsp)
+}
+
+// DestroyEnvironmentWithResponse request returning *DestroyEnvironmentResponse
+func (c *ClientWithResponses) DestroyEnvironmentWithResponse(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, reqEditors ...RequestEditorFn) (*DestroyEnvironmentResponse, error) {
+	rsp, err := c.DestroyEnvironment(ctx, project, environmentId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDestroyEnvironmentResponse(rsp)
+}
+
+// GetEnvironmentWithResponse request returning *GetEnvironmentResponse
+func (c *ClientWithResponses) GetEnvironmentWithResponse(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, reqEditors ...RequestEditorFn) (*GetEnvironmentResponse, error) {
+	rsp, err := c.GetEnvironment(ctx, project, environmentId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetEnvironmentResponse(rsp)
+}
+
+// UpdateEnvironmentWithBodyWithResponse request with arbitrary body returning *UpdateEnvironmentResponse
+func (c *ClientWithResponses) UpdateEnvironmentWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateEnvironmentResponse, error) {
+	rsp, err := c.UpdateEnvironmentWithBody(ctx, project, environmentId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateEnvironmentResponse(rsp)
+}
+
+func (c *ClientWithResponses) UpdateEnvironmentWithResponse(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, body UpdateEnvironmentJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateEnvironmentResponse, error) {
+	rsp, err := c.UpdateEnvironment(ctx, project, environmentId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateEnvironmentResponse(rsp)
+}
+
+// ExecEnvironmentWithBodyWithResponse request with arbitrary body returning *ExecEnvironmentResponse
+func (c *ClientWithResponses) ExecEnvironmentWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ExecEnvironmentResponse, error) {
+	rsp, err := c.ExecEnvironmentWithBody(ctx, project, environmentId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseExecEnvironmentResponse(rsp)
+}
+
+func (c *ClientWithResponses) ExecEnvironmentWithResponse(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, body ExecEnvironmentJSONRequestBody, reqEditors ...RequestEditorFn) (*ExecEnvironmentResponse, error) {
+	rsp, err := c.ExecEnvironment(ctx, project, environmentId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseExecEnvironmentResponse(rsp)
+}
+
+// WriteEnvironmentFileWithBodyWithResponse request with arbitrary body returning *WriteEnvironmentFileResponse
+func (c *ClientWithResponses) WriteEnvironmentFileWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*WriteEnvironmentFileResponse, error) {
+	rsp, err := c.WriteEnvironmentFileWithBody(ctx, project, environmentId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseWriteEnvironmentFileResponse(rsp)
+}
+
+func (c *ClientWithResponses) WriteEnvironmentFileWithResponse(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, body WriteEnvironmentFileJSONRequestBody, reqEditors ...RequestEditorFn) (*WriteEnvironmentFileResponse, error) {
+	rsp, err := c.WriteEnvironmentFile(ctx, project, environmentId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseWriteEnvironmentFileResponse(rsp)
+}
+
+// ReconcileEnvironmentWithResponse request returning *ReconcileEnvironmentResponse
+func (c *ClientWithResponses) ReconcileEnvironmentWithResponse(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, reqEditors ...RequestEditorFn) (*ReconcileEnvironmentResponse, error) {
+	rsp, err := c.ReconcileEnvironment(ctx, project, environmentId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseReconcileEnvironmentResponse(rsp)
+}
+
+// StartEnvironmentWorkerWithBodyWithResponse request with arbitrary body returning *StartEnvironmentWorkerResponse
+func (c *ClientWithResponses) StartEnvironmentWorkerWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*StartEnvironmentWorkerResponse, error) {
+	rsp, err := c.StartEnvironmentWorkerWithBody(ctx, project, environmentId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseStartEnvironmentWorkerResponse(rsp)
+}
+
+func (c *ClientWithResponses) StartEnvironmentWorkerWithResponse(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, body StartEnvironmentWorkerJSONRequestBody, reqEditors ...RequestEditorFn) (*StartEnvironmentWorkerResponse, error) {
+	rsp, err := c.StartEnvironmentWorker(ctx, project, environmentId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseStartEnvironmentWorkerResponse(rsp)
+}
+
 // StreamProjectEventsWithResponse request returning *StreamProjectEventsResponse
 func (c *ClientWithResponses) StreamProjectEventsWithResponse(ctx context.Context, project ProjectHandleParam, params *StreamProjectEventsParams, reqEditors ...RequestEditorFn) (*StreamProjectEventsResponse, error) {
 	rsp, err := c.StreamProjectEvents(ctx, project, params, reqEditors...)
@@ -32136,6 +38025,41 @@ func (c *ClientWithResponses) RemoveGroupMemberWithResponse(ctx context.Context,
 		return nil, err
 	}
 	return ParseRemoveGroupMemberResponse(rsp)
+}
+
+// CreateIntegrationEventTestFireWithBodyWithResponse request with arbitrary body returning *CreateIntegrationEventTestFireResponse
+func (c *ClientWithResponses) CreateIntegrationEventTestFireWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateIntegrationEventTestFireResponse, error) {
+	rsp, err := c.CreateIntegrationEventTestFireWithBody(ctx, project, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateIntegrationEventTestFireResponse(rsp)
+}
+
+func (c *ClientWithResponses) CreateIntegrationEventTestFireWithResponse(ctx context.Context, project ProjectHandleParam, body CreateIntegrationEventTestFireJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateIntegrationEventTestFireResponse, error) {
+	rsp, err := c.CreateIntegrationEventTestFire(ctx, project, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateIntegrationEventTestFireResponse(rsp)
+}
+
+// ListIntegrationEventTestSamplesWithResponse request returning *ListIntegrationEventTestSamplesResponse
+func (c *ClientWithResponses) ListIntegrationEventTestSamplesWithResponse(ctx context.Context, project ProjectHandleParam, params *ListIntegrationEventTestSamplesParams, reqEditors ...RequestEditorFn) (*ListIntegrationEventTestSamplesResponse, error) {
+	rsp, err := c.ListIntegrationEventTestSamples(ctx, project, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListIntegrationEventTestSamplesResponse(rsp)
+}
+
+// ListIntegrationProvidersWithResponse request returning *ListIntegrationProvidersResponse
+func (c *ClientWithResponses) ListIntegrationProvidersWithResponse(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*ListIntegrationProvidersResponse, error) {
+	rsp, err := c.ListIntegrationProviders(ctx, project, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListIntegrationProvidersResponse(rsp)
 }
 
 // ListInteractionsWithResponse request returning *ListInteractionsResponse
@@ -32502,6 +38426,15 @@ func (c *ClientWithResponses) ListObservableStateVersionsWithResponse(ctx contex
 	return ParseListObservableStateVersionsResponse(rsp)
 }
 
+// ListObservableWaitersWithResponse request returning *ListObservableWaitersResponse
+func (c *ClientWithResponses) ListObservableWaitersWithResponse(ctx context.Context, project ProjectHandleParam, observableId ObservableIdParam, params *ListObservableWaitersParams, reqEditors ...RequestEditorFn) (*ListObservableWaitersResponse, error) {
+	rsp, err := c.ListObservableWaiters(ctx, project, observableId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListObservableWaitersResponse(rsp)
+}
+
 // LookupReferencesWithResponse request returning *LookupReferencesResponse
 func (c *ClientWithResponses) LookupReferencesWithResponse(ctx context.Context, project ProjectHandleParam, referenceType ReferenceTypeParam, params *LookupReferencesParams, reqEditors ...RequestEditorFn) (*LookupReferencesResponse, error) {
 	rsp, err := c.LookupReferences(ctx, project, referenceType, params, reqEditors...)
@@ -32660,6 +38593,85 @@ func (c *ClientWithResponses) ListRunArtifactsWithResponse(ctx context.Context, 
 	return ParseListRunArtifactsResponse(rsp)
 }
 
+// ListSecretsWithResponse request returning *ListSecretsResponse
+func (c *ClientWithResponses) ListSecretsWithResponse(ctx context.Context, project ProjectHandleParam, params *ListSecretsParams, reqEditors ...RequestEditorFn) (*ListSecretsResponse, error) {
+	rsp, err := c.ListSecrets(ctx, project, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListSecretsResponse(rsp)
+}
+
+// CreateSecretWithBodyWithResponse request with arbitrary body returning *CreateSecretResponse
+func (c *ClientWithResponses) CreateSecretWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateSecretResponse, error) {
+	rsp, err := c.CreateSecretWithBody(ctx, project, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateSecretResponse(rsp)
+}
+
+func (c *ClientWithResponses) CreateSecretWithResponse(ctx context.Context, project ProjectHandleParam, body CreateSecretJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateSecretResponse, error) {
+	rsp, err := c.CreateSecret(ctx, project, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateSecretResponse(rsp)
+}
+
+// DeleteSecretWithResponse request returning *DeleteSecretResponse
+func (c *ClientWithResponses) DeleteSecretWithResponse(ctx context.Context, project ProjectHandleParam, secret SecretParam, reqEditors ...RequestEditorFn) (*DeleteSecretResponse, error) {
+	rsp, err := c.DeleteSecret(ctx, project, secret, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteSecretResponse(rsp)
+}
+
+// GetSecretWithResponse request returning *GetSecretResponse
+func (c *ClientWithResponses) GetSecretWithResponse(ctx context.Context, project ProjectHandleParam, secret SecretParam, reqEditors ...RequestEditorFn) (*GetSecretResponse, error) {
+	rsp, err := c.GetSecret(ctx, project, secret, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetSecretResponse(rsp)
+}
+
+// UpdateSecretWithBodyWithResponse request with arbitrary body returning *UpdateSecretResponse
+func (c *ClientWithResponses) UpdateSecretWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, secret SecretParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateSecretResponse, error) {
+	rsp, err := c.UpdateSecretWithBody(ctx, project, secret, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateSecretResponse(rsp)
+}
+
+func (c *ClientWithResponses) UpdateSecretWithResponse(ctx context.Context, project ProjectHandleParam, secret SecretParam, body UpdateSecretJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateSecretResponse, error) {
+	rsp, err := c.UpdateSecret(ctx, project, secret, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateSecretResponse(rsp)
+}
+
+// ListSecretVersionsWithResponse request returning *ListSecretVersionsResponse
+func (c *ClientWithResponses) ListSecretVersionsWithResponse(ctx context.Context, project ProjectHandleParam, secret SecretParam, reqEditors ...RequestEditorFn) (*ListSecretVersionsResponse, error) {
+	rsp, err := c.ListSecretVersions(ctx, project, secret, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListSecretVersionsResponse(rsp)
+}
+
+// GetSecretVersionWithResponse request returning *GetSecretVersionResponse
+func (c *ClientWithResponses) GetSecretVersionWithResponse(ctx context.Context, project ProjectHandleParam, secret SecretParam, version SecretVersionParam, reqEditors ...RequestEditorFn) (*GetSecretVersionResponse, error) {
+	rsp, err := c.GetSecretVersion(ctx, project, secret, version, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetSecretVersionResponse(rsp)
+}
+
 // GetArtifactStorageSettingsWithResponse request returning *GetArtifactStorageSettingsResponse
 func (c *ClientWithResponses) GetArtifactStorageSettingsWithResponse(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*GetArtifactStorageSettingsResponse, error) {
 	rsp, err := c.GetArtifactStorageSettings(ctx, project, reqEditors...)
@@ -32693,6 +38705,84 @@ func (c *ClientWithResponses) GetArtifactStorageQuotaWithResponse(ctx context.Co
 		return nil, err
 	}
 	return ParseGetArtifactStorageQuotaResponse(rsp)
+}
+
+// ListSkillsWithResponse request returning *ListSkillsResponse
+func (c *ClientWithResponses) ListSkillsWithResponse(ctx context.Context, project ProjectHandleParam, params *ListSkillsParams, reqEditors ...RequestEditorFn) (*ListSkillsResponse, error) {
+	rsp, err := c.ListSkills(ctx, project, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListSkillsResponse(rsp)
+}
+
+// CreateSkillWithBodyWithResponse request with arbitrary body returning *CreateSkillResponse
+func (c *ClientWithResponses) CreateSkillWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateSkillResponse, error) {
+	rsp, err := c.CreateSkillWithBody(ctx, project, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateSkillResponse(rsp)
+}
+
+func (c *ClientWithResponses) CreateSkillWithResponse(ctx context.Context, project ProjectHandleParam, body CreateSkillJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateSkillResponse, error) {
+	rsp, err := c.CreateSkill(ctx, project, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateSkillResponse(rsp)
+}
+
+// DeleteSkillWithResponse request returning *DeleteSkillResponse
+func (c *ClientWithResponses) DeleteSkillWithResponse(ctx context.Context, project ProjectHandleParam, skillId string, reqEditors ...RequestEditorFn) (*DeleteSkillResponse, error) {
+	rsp, err := c.DeleteSkill(ctx, project, skillId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteSkillResponse(rsp)
+}
+
+// GetSkillWithResponse request returning *GetSkillResponse
+func (c *ClientWithResponses) GetSkillWithResponse(ctx context.Context, project ProjectHandleParam, skillId string, reqEditors ...RequestEditorFn) (*GetSkillResponse, error) {
+	rsp, err := c.GetSkill(ctx, project, skillId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetSkillResponse(rsp)
+}
+
+// UpdateSkillWithBodyWithResponse request with arbitrary body returning *UpdateSkillResponse
+func (c *ClientWithResponses) UpdateSkillWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, skillId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateSkillResponse, error) {
+	rsp, err := c.UpdateSkillWithBody(ctx, project, skillId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateSkillResponse(rsp)
+}
+
+func (c *ClientWithResponses) UpdateSkillWithResponse(ctx context.Context, project ProjectHandleParam, skillId string, body UpdateSkillJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateSkillResponse, error) {
+	rsp, err := c.UpdateSkill(ctx, project, skillId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateSkillResponse(rsp)
+}
+
+// ImportSkillWithBodyWithResponse request with arbitrary body returning *ImportSkillResponse
+func (c *ClientWithResponses) ImportSkillWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ImportSkillResponse, error) {
+	rsp, err := c.ImportSkillWithBody(ctx, project, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseImportSkillResponse(rsp)
+}
+
+func (c *ClientWithResponses) ImportSkillWithResponse(ctx context.Context, project ProjectHandleParam, body ImportSkillJSONRequestBody, reqEditors ...RequestEditorFn) (*ImportSkillResponse, error) {
+	rsp, err := c.ImportSkill(ctx, project, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseImportSkillResponse(rsp)
 }
 
 // ListProjectSpansWithResponse request returning *ListProjectSpansResponse
@@ -32901,6 +38991,76 @@ func (c *ClientWithResponses) GetTableStatsWithResponse(ctx context.Context, pro
 		return nil, err
 	}
 	return ParseGetTableStatsResponse(rsp)
+}
+
+// ListProjectTeamWithResponse request returning *ListProjectTeamResponse
+func (c *ClientWithResponses) ListProjectTeamWithResponse(ctx context.Context, project ProjectHandleParam, params *ListProjectTeamParams, reqEditors ...RequestEditorFn) (*ListProjectTeamResponse, error) {
+	rsp, err := c.ListProjectTeam(ctx, project, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListProjectTeamResponse(rsp)
+}
+
+// ListToolkitsWithResponse request returning *ListToolkitsResponse
+func (c *ClientWithResponses) ListToolkitsWithResponse(ctx context.Context, project ProjectHandleParam, params *ListToolkitsParams, reqEditors ...RequestEditorFn) (*ListToolkitsResponse, error) {
+	rsp, err := c.ListToolkits(ctx, project, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListToolkitsResponse(rsp)
+}
+
+// CreateToolkitWithBodyWithResponse request with arbitrary body returning *CreateToolkitResponse
+func (c *ClientWithResponses) CreateToolkitWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateToolkitResponse, error) {
+	rsp, err := c.CreateToolkitWithBody(ctx, project, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateToolkitResponse(rsp)
+}
+
+func (c *ClientWithResponses) CreateToolkitWithResponse(ctx context.Context, project ProjectHandleParam, body CreateToolkitJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateToolkitResponse, error) {
+	rsp, err := c.CreateToolkit(ctx, project, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateToolkitResponse(rsp)
+}
+
+// DeleteToolkitWithResponse request returning *DeleteToolkitResponse
+func (c *ClientWithResponses) DeleteToolkitWithResponse(ctx context.Context, project ProjectHandleParam, toolkitId string, reqEditors ...RequestEditorFn) (*DeleteToolkitResponse, error) {
+	rsp, err := c.DeleteToolkit(ctx, project, toolkitId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteToolkitResponse(rsp)
+}
+
+// GetToolkitWithResponse request returning *GetToolkitResponse
+func (c *ClientWithResponses) GetToolkitWithResponse(ctx context.Context, project ProjectHandleParam, toolkitId string, reqEditors ...RequestEditorFn) (*GetToolkitResponse, error) {
+	rsp, err := c.GetToolkit(ctx, project, toolkitId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetToolkitResponse(rsp)
+}
+
+// UpdateToolkitWithBodyWithResponse request with arbitrary body returning *UpdateToolkitResponse
+func (c *ClientWithResponses) UpdateToolkitWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, toolkitId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateToolkitResponse, error) {
+	rsp, err := c.UpdateToolkitWithBody(ctx, project, toolkitId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateToolkitResponse(rsp)
+}
+
+func (c *ClientWithResponses) UpdateToolkitWithResponse(ctx context.Context, project ProjectHandleParam, toolkitId string, body UpdateToolkitJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateToolkitResponse, error) {
+	rsp, err := c.UpdateToolkit(ctx, project, toolkitId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateToolkitResponse(rsp)
 }
 
 // ListProjectTracesWithResponse request returning *ListProjectTracesResponse
@@ -33279,145 +39439,30 @@ func (c *ClientWithResponses) GetWorkflowVersionWithResponse(ctx context.Context
 	return ParseGetWorkflowVersionResponse(rsp)
 }
 
-// ParseGetAgentInvocationResponse parses an HTTP response from a GetAgentInvocationWithResponse call
-func ParseGetAgentInvocationResponse(rsp *http.Response) (*GetAgentInvocationResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
+// GetCurrentUserPresencePreferencesWithResponse request returning *GetCurrentUserPresencePreferencesResponse
+func (c *ClientWithResponses) GetCurrentUserPresencePreferencesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetCurrentUserPresencePreferencesResponse, error) {
+	rsp, err := c.GetCurrentUserPresencePreferences(ctx, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-
-	response := &GetAgentInvocationResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest AgentInvocation
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	}
-
-	return response, nil
+	return ParseGetCurrentUserPresencePreferencesResponse(rsp)
 }
 
-// ParseCompleteAgentInvocationResponse parses an HTTP response from a CompleteAgentInvocationWithResponse call
-func ParseCompleteAgentInvocationResponse(rsp *http.Response) (*CompleteAgentInvocationResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
+// UpdateCurrentUserPresencePreferencesWithBodyWithResponse request with arbitrary body returning *UpdateCurrentUserPresencePreferencesResponse
+func (c *ClientWithResponses) UpdateCurrentUserPresencePreferencesWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateCurrentUserPresencePreferencesResponse, error) {
+	rsp, err := c.UpdateCurrentUserPresencePreferencesWithBody(ctx, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-
-	response := &CompleteAgentInvocationResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest AgentInvocation
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest BadRequest
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 410:
-		var dest AgentInvocation
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON410 = &dest
-
-	}
-
-	return response, nil
+	return ParseUpdateCurrentUserPresencePreferencesResponse(rsp)
 }
 
-// ParseFailAgentInvocationResponse parses an HTTP response from a FailAgentInvocationWithResponse call
-func ParseFailAgentInvocationResponse(rsp *http.Response) (*FailAgentInvocationResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
+func (c *ClientWithResponses) UpdateCurrentUserPresencePreferencesWithResponse(ctx context.Context, body UpdateCurrentUserPresencePreferencesJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateCurrentUserPresencePreferencesResponse, error) {
+	rsp, err := c.UpdateCurrentUserPresencePreferences(ctx, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-
-	response := &FailAgentInvocationResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest AgentInvocation
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest BadRequest
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	}
-
-	return response, nil
+	return ParseUpdateCurrentUserPresencePreferencesResponse(rsp)
 }
 
 // ParseListAuditLogsResponse parses an HTTP response from a ListAuditLogsWithResponse call
@@ -33436,39 +39481,6 @@ func ParseListAuditLogsResponse(rsp *http.Response) (*ListAuditLogsResponse, err
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest AuditLogListResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseListIntegrationProvidersResponse parses an HTTP response from a ListIntegrationProvidersWithResponse call
-func ParseListIntegrationProvidersResponse(rsp *http.Response) (*ListIntegrationProvidersResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ListIntegrationProvidersResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest IntegrationCatalog
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -33537,6 +39549,46 @@ func ParseCreateMessageResponse(rsp *http.Response) (*CreateMessageResponse, err
 
 	case rsp.StatusCode == 200:
 		// Content-type (text/event-stream) unsupported
+
+	}
+
+	return response, nil
+}
+
+// ParseHeartbeatWebPresenceResponse parses an HTTP response from a HeartbeatWebPresenceWithResponse call
+func ParseHeartbeatWebPresenceResponse(rsp *http.Response) (*HeartbeatWebPresenceResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &HeartbeatWebPresenceResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	}
 
@@ -34942,6 +40994,53 @@ func ParseUpdateAgentResponse(rsp *http.Response) (*UpdateAgentResponse, error) 
 	return response, nil
 }
 
+// ParseGetAgentCapabilityManifestResponse parses an HTTP response from a GetAgentCapabilityManifestWithResponse call
+func ParseGetAgentCapabilityManifestResponse(rsp *http.Response) (*GetAgentCapabilityManifestResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetAgentCapabilityManifestResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest AgentCapabilityManifest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseProvisionAgentInboxResponse parses an HTTP response from a ProvisionAgentInboxWithResponse call
 func ParseProvisionAgentInboxResponse(rsp *http.Response) (*ProvisionAgentInboxResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -35176,6 +41275,180 @@ func ParseHeartbeatAgentSessionResponse(rsp *http.Response) (*HeartbeatAgentSess
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListSkillAssignmentsResponse parses an HTTP response from a ListSkillAssignmentsWithResponse call
+func ParseListSkillAssignmentsResponse(rsp *http.Response) (*ListSkillAssignmentsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListSkillAssignmentsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest SkillAssignmentListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseReplaceSkillsResponse parses an HTTP response from a ReplaceSkillsWithResponse call
+func ParseReplaceSkillsResponse(rsp *http.Response) (*ReplaceSkillsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ReplaceSkillsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest SkillAssignmentListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListToolkitAssignmentsResponse parses an HTTP response from a ListToolkitAssignmentsWithResponse call
+func ParseListToolkitAssignmentsResponse(rsp *http.Response) (*ListToolkitAssignmentsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListToolkitAssignmentsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ToolkitAssignmentListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseReplaceToolkitsResponse parses an HTTP response from a ReplaceToolkitsWithResponse call
+func ParseReplaceToolkitsResponse(rsp *http.Response) (*ReplaceToolkitsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ReplaceToolkitsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ToolkitAssignmentListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
 		var dest Unauthorized
@@ -35699,6 +41972,133 @@ func ParseUpdateChannelResponse(rsp *http.Response) (*UpdateChannelResponse, err
 		}
 		response.JSON400 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListChannelInteractionsResponse parses an HTTP response from a ListChannelInteractionsWithResponse call
+func ParseListChannelInteractionsResponse(rsp *http.Response) (*ListChannelInteractionsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListChannelInteractionsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ChannelInteractionLinkListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseAssociateChannelInteractionResponse parses an HTTP response from a AssociateChannelInteractionWithResponse call
+func ParseAssociateChannelInteractionResponse(rsp *http.Response) (*AssociateChannelInteractionResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &AssociateChannelInteractionResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest ChannelInteractionLink
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseRemoveChannelInteractionResponse parses an HTTP response from a RemoveChannelInteractionWithResponse call
+func ParseRemoveChannelInteractionResponse(rsp *http.Response) (*RemoveChannelInteractionResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &RemoveChannelInteractionResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
 		var dest Unauthorized
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -36296,6 +42696,495 @@ func ParseShareChannelEntityResponse(rsp *http.Response) (*ShareChannelEntityRes
 	return response, nil
 }
 
+// ParseListEnvironmentsResponse parses an HTTP response from a ListEnvironmentsWithResponse call
+func ParseListEnvironmentsResponse(rsp *http.Response) (*ListEnvironmentsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListEnvironmentsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest EnvironmentListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateEnvironmentResponse parses an HTTP response from a CreateEnvironmentWithResponse call
+func ParseCreateEnvironmentResponse(rsp *http.Response) (*CreateEnvironmentResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateEnvironmentResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest Environment
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseAcquireEnvironmentResponse parses an HTTP response from a AcquireEnvironmentWithResponse call
+func ParseAcquireEnvironmentResponse(rsp *http.Response) (*AcquireEnvironmentResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &AcquireEnvironmentResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest EnvironmentAcquireResult
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseReleaseEnvironmentLeaseResponse parses an HTTP response from a ReleaseEnvironmentLeaseWithResponse call
+func ParseReleaseEnvironmentLeaseResponse(rsp *http.Response) (*ReleaseEnvironmentLeaseResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ReleaseEnvironmentLeaseResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest EnvironmentLease
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDestroyEnvironmentResponse parses an HTTP response from a DestroyEnvironmentWithResponse call
+func ParseDestroyEnvironmentResponse(rsp *http.Response) (*DestroyEnvironmentResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DestroyEnvironmentResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Environment
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetEnvironmentResponse parses an HTTP response from a GetEnvironmentWithResponse call
+func ParseGetEnvironmentResponse(rsp *http.Response) (*GetEnvironmentResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetEnvironmentResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Environment
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUpdateEnvironmentResponse parses an HTTP response from a UpdateEnvironmentWithResponse call
+func ParseUpdateEnvironmentResponse(rsp *http.Response) (*UpdateEnvironmentResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpdateEnvironmentResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Environment
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseExecEnvironmentResponse parses an HTTP response from a ExecEnvironmentWithResponse call
+func ParseExecEnvironmentResponse(rsp *http.Response) (*ExecEnvironmentResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ExecEnvironmentResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest EnvironmentExecResult
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseWriteEnvironmentFileResponse parses an HTTP response from a WriteEnvironmentFileWithResponse call
+func ParseWriteEnvironmentFileResponse(rsp *http.Response) (*WriteEnvironmentFileResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &WriteEnvironmentFileResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseReconcileEnvironmentResponse parses an HTTP response from a ReconcileEnvironmentWithResponse call
+func ParseReconcileEnvironmentResponse(rsp *http.Response) (*ReconcileEnvironmentResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ReconcileEnvironmentResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Environment
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseStartEnvironmentWorkerResponse parses an HTTP response from a StartEnvironmentWorkerWithResponse call
+func ParseStartEnvironmentWorkerResponse(rsp *http.Response) (*StartEnvironmentWorkerResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &StartEnvironmentWorkerResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest EnvironmentStartWorkerResult
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseStreamProjectEventsResponse parses an HTTP response from a StreamProjectEventsWithResponse call
 func ParseStreamProjectEventsResponse(rsp *http.Response) (*StreamProjectEventsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -36657,6 +43546,126 @@ func ParseRemoveGroupMemberResponse(rsp *http.Response) (*RemoveGroupMemberRespo
 			return nil, err
 		}
 		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateIntegrationEventTestFireResponse parses an HTTP response from a CreateIntegrationEventTestFireWithResponse call
+func ParseCreateIntegrationEventTestFireResponse(rsp *http.Response) (*CreateIntegrationEventTestFireResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateIntegrationEventTestFireResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest IntegrationEventFireResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest ServiceUnavailable
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListIntegrationEventTestSamplesResponse parses an HTTP response from a ListIntegrationEventTestSamplesWithResponse call
+func ParseListIntegrationEventTestSamplesResponse(rsp *http.Response) (*ListIntegrationEventTestSamplesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListIntegrationEventTestSamplesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest IntegrationEventSamplesResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListIntegrationProvidersResponse parses an HTTP response from a ListIntegrationProvidersWithResponse call
+func ParseListIntegrationProvidersResponse(rsp *http.Response) (*ListIntegrationProvidersResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListIntegrationProvidersResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest IntegrationProvidersResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
 
 	}
 
@@ -37937,6 +44946,46 @@ func ParseListObservableStateVersionsResponse(rsp *http.Response) (*ListObservab
 	return response, nil
 }
 
+// ParseListObservableWaitersResponse parses an HTTP response from a ListObservableWaitersWithResponse call
+func ParseListObservableWaitersResponse(rsp *http.Response) (*ListObservableWaitersResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListObservableWaitersResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ObservableWaiterListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseLookupReferencesResponse parses an HTTP response from a LookupReferencesWithResponse call
 func ParseLookupReferencesResponse(rsp *http.Response) (*LookupReferencesResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -38581,6 +45630,314 @@ func ParseListRunArtifactsResponse(rsp *http.Response) (*ListRunArtifactsRespons
 	return response, nil
 }
 
+// ParseListSecretsResponse parses an HTTP response from a ListSecretsWithResponse call
+func ParseListSecretsResponse(rsp *http.Response) (*ListSecretsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListSecretsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest SecretListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateSecretResponse parses an HTTP response from a CreateSecretWithResponse call
+func ParseCreateSecretResponse(rsp *http.Response) (*CreateSecretResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateSecretResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest Secret
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDeleteSecretResponse parses an HTTP response from a DeleteSecretWithResponse call
+func ParseDeleteSecretResponse(rsp *http.Response) (*DeleteSecretResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteSecretResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetSecretResponse parses an HTTP response from a GetSecretWithResponse call
+func ParseGetSecretResponse(rsp *http.Response) (*GetSecretResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetSecretResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Secret
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUpdateSecretResponse parses an HTTP response from a UpdateSecretWithResponse call
+func ParseUpdateSecretResponse(rsp *http.Response) (*UpdateSecretResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpdateSecretResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Secret
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListSecretVersionsResponse parses an HTTP response from a ListSecretVersionsWithResponse call
+func ParseListSecretVersionsResponse(rsp *http.Response) (*ListSecretVersionsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListSecretVersionsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest SecretVersionListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetSecretVersionResponse parses an HTTP response from a GetSecretVersionWithResponse call
+func ParseGetSecretVersionResponse(rsp *http.Response) (*GetSecretVersionResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetSecretVersionResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest SecretVersion
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseGetArtifactStorageSettingsResponse parses an HTTP response from a GetArtifactStorageSettingsWithResponse call
 func ParseGetArtifactStorageSettingsResponse(rsp *http.Response) (*GetArtifactStorageSettingsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -38681,6 +46038,288 @@ func ParseGetArtifactStorageQuotaResponse(rsp *http.Response) (*GetArtifactStora
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListSkillsResponse parses an HTTP response from a ListSkillsWithResponse call
+func ParseListSkillsResponse(rsp *http.Response) (*ListSkillsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListSkillsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest SkillListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateSkillResponse parses an HTTP response from a CreateSkillWithResponse call
+func ParseCreateSkillResponse(rsp *http.Response) (*CreateSkillResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateSkillResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest Skill
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDeleteSkillResponse parses an HTTP response from a DeleteSkillWithResponse call
+func ParseDeleteSkillResponse(rsp *http.Response) (*DeleteSkillResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteSkillResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetSkillResponse parses an HTTP response from a GetSkillWithResponse call
+func ParseGetSkillResponse(rsp *http.Response) (*GetSkillResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetSkillResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Skill
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUpdateSkillResponse parses an HTTP response from a UpdateSkillWithResponse call
+func ParseUpdateSkillResponse(rsp *http.Response) (*UpdateSkillResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpdateSkillResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Skill
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseImportSkillResponse parses an HTTP response from a ImportSkillWithResponse call
+func ParseImportSkillResponse(rsp *http.Response) (*ImportSkillResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ImportSkillResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest Skill
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	}
 
@@ -39370,6 +47009,288 @@ func ParseGetTableStatsResponse(rsp *http.Response) (*GetTableStatsResponse, err
 			return nil, err
 		}
 		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListProjectTeamResponse parses an HTTP response from a ListProjectTeamWithResponse call
+func ParseListProjectTeamResponse(rsp *http.Response) (*ListProjectTeamResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListProjectTeamResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ProjectTeamListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListToolkitsResponse parses an HTTP response from a ListToolkitsWithResponse call
+func ParseListToolkitsResponse(rsp *http.Response) (*ListToolkitsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListToolkitsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ToolkitListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateToolkitResponse parses an HTTP response from a CreateToolkitWithResponse call
+func ParseCreateToolkitResponse(rsp *http.Response) (*CreateToolkitResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateToolkitResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest Toolkit
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDeleteToolkitResponse parses an HTTP response from a DeleteToolkitWithResponse call
+func ParseDeleteToolkitResponse(rsp *http.Response) (*DeleteToolkitResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteToolkitResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetToolkitResponse parses an HTTP response from a GetToolkitWithResponse call
+func ParseGetToolkitResponse(rsp *http.Response) (*GetToolkitResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetToolkitResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Toolkit
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUpdateToolkitResponse parses an HTTP response from a UpdateToolkitWithResponse call
+func ParseUpdateToolkitResponse(rsp *http.Response) (*UpdateToolkitResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpdateToolkitResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Toolkit
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	}
 
@@ -40741,6 +48662,79 @@ func ParseGetWorkflowVersionResponse(rsp *http.Response) (*GetWorkflowVersionRes
 			return nil, err
 		}
 		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetCurrentUserPresencePreferencesResponse parses an HTTP response from a GetCurrentUserPresencePreferencesWithResponse call
+func ParseGetCurrentUserPresencePreferencesResponse(rsp *http.Response) (*GetCurrentUserPresencePreferencesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetCurrentUserPresencePreferencesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest UserPresencePreferences
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUpdateCurrentUserPresencePreferencesResponse parses an HTTP response from a UpdateCurrentUserPresencePreferencesWithResponse call
+func ParseUpdateCurrentUserPresencePreferencesResponse(rsp *http.Response) (*UpdateCurrentUserPresencePreferencesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpdateCurrentUserPresencePreferencesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest UserPresencePreferences
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
 
 	}
 

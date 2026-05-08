@@ -11,10 +11,11 @@ import (
 	"github.com/deepnoodle-ai/wonton/cli"
 )
 
-// registerIntegrationCatalogCommands registers every generated subcommand in the "integration-catalog" group.
-func registerIntegrationCatalogCommands(app *cli.App) {
-	integrationCatalogGrp := app.Group("integration-catalog").Description("Available integration providers and capabilities")
-	integrationCatalogGrp.Command("list-providers").
+// registerIntegrationProvidersCommands registers every generated subcommand in the "integration-providers" group.
+func registerIntegrationProvidersCommands(app *cli.App) {
+	integrationProvidersGrp := app.Group("integration-providers")
+	integrationProvidersGrp.Alias("integration-provider")
+	integrationProvidersGrp.Command("list-providers").
 		Description("List available integration providers and their capabilities").
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -23,7 +24,8 @@ func registerIntegrationCatalogCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			resp, err := client.ListIntegrationProvidersWithResponse(ctx.Context())
+			p0 := authFor(ctx).Project
+			resp, err := client.ListIntegrationProvidersWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
 			}

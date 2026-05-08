@@ -28,26 +28,30 @@ import (
 func registerGeneratedCommands(app *cli.App) {
 	registerActionsCommands(app)
 	registerActorStateCommands(app)
-	registerAgentInvocationsCommands(app)
+	registerAgentCapabilitiesCommands(app)
 	registerAgentsCommands(app)
 	registerArtifactsCommands(app)
 	registerAuditLogsCommands(app)
 	registerChannelsCommands(app)
+	registerEnvironmentsCommands(app)
 	registerEventsCommands(app)
 	registerGenerateCommands(app)
 	registerGroupsCommands(app)
-	registerIntegrationCatalogCommands(app)
+	registerIntegrationProvidersCommands(app)
 	registerInteractionsCommands(app)
 	registerJobsCommands(app)
 	registerLogsCommands(app)
 	registerMessagesCommands(app)
 	registerMetricsCommands(app)
 	registerObservablesCommands(app)
+	registerPresenceCommands(app)
 	registerProjectsCommands(app)
 	registerReferencesCommands(app)
 	registerRunsCommands(app)
+	registerSecretsCommands(app)
 	registerSpansCommands(app)
 	registerTablesCommands(app)
+	registerTeamCommands(app)
 	registerTriggersCommands(app)
 	registerWebhooksCommands(app)
 	registerWorkerSessionsCommands(app)
@@ -288,14 +292,58 @@ func applyVars(ctx *cli.Context, data []byte) ([]byte, error) {
 
 // printDryRun pretty-prints a request body without sending HTTP. Generated
 // handlers call this when --dry-run is set, then return its result so the
-// command exits 0.
-func printDryRun(ctx *cli.Context, body any) error {
-	pretty, err := marshalForOutput(ctx, body)
+// command exits 0. When redactFields is non-empty, the named top-level JSON
+// fields are replaced with a redaction marker before printing so secret
+// payloads never reach the terminal (used by the secrets commands). If
+// redaction fails for any reason the function refuses to print and returns
+// an error, since printing the unredacted body would leak the secret.
+func printDryRun(ctx *cli.Context, body any, redactFields ...string) error {
+	out := body
+	if len(redactFields) > 0 {
+		redacted, ok := redactBodyFields(body, redactFields)
+		if !ok {
+			return fmt.Errorf("dry-run: cannot redact secret fields %v; refusing to print request body", redactFields)
+		}
+		out = redacted
+	}
+	pretty, err := marshalForOutput(ctx, out)
 	if err != nil {
 		return err
 	}
 	ctx.Println(string(pretty))
 	return nil
+}
+
+// redactBodyFields returns a JSON-shaped copy of body with the named top-level
+// fields replaced by a redaction marker. Map values have each entry redacted
+// (preserving keys); scalar values are replaced wholesale. Returns (nil, false)
+// when body cannot be JSON-roundtripped; callers handling secret-bearing
+// bodies must treat this as a hard failure rather than printing the original.
+func redactBodyFields(body any, fields []string) (any, bool) {
+	raw, err := json.Marshal(body)
+	if err != nil {
+		return nil, false
+	}
+	var m map[string]any
+	if err := json.Unmarshal(raw, &m); err != nil {
+		return nil, false
+	}
+	for _, f := range fields {
+		v, present := m[f]
+		if !present {
+			continue
+		}
+		if mp, ok := v.(map[string]any); ok {
+			masked := make(map[string]any, len(mp))
+			for k := range mp {
+				masked[k] = "***REDACTED***"
+			}
+			m[f] = masked
+			continue
+		}
+		m[f] = "***REDACTED***"
+	}
+	return m, true
 }
 
 // parseTagFlags converts repeatable --tag KEY=VALUE flags into a map. Returns
