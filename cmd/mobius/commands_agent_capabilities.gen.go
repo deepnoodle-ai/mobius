@@ -22,7 +22,6 @@ func registerAgentCapabilitiesCommands(app *cli.App) {
 	agentCapabilitiesGrp.Command("create").
 		Description("Create a skill").
 		Flags(
-			cli.Strings("allowed-actions", "").Help("allowed-actions"),
 			cli.Strings("allowed-tools", "").Help("allowed-tools"),
 			cli.String("description", "").Help("description"),
 			cli.String("frontmatter", "").Help("frontmatter Accepts JSON, @file, or @-."),
@@ -45,10 +44,6 @@ func registerAgentCapabilitiesCommands(app *cli.App) {
 			var body api.CreateSkillJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
-			}
-			if ctx.IsSet("allowed-actions") {
-				v := ctx.Strings("allowed-actions")
-				body.AllowedActions = &v
 			}
 			if ctx.IsSet("allowed-tools") {
 				v := ctx.Strings("allowed-tools")
@@ -90,7 +85,7 @@ func registerAgentCapabilitiesCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.CreateSkillWithResponse(ctx.Context(), p0, body)
+			resp, err := client.CreateSkillWithResponse(ctx.Context(), api.ProjectHandleParam(p0), body)
 			if err != nil {
 				return err
 			}
@@ -103,7 +98,6 @@ func registerAgentCapabilitiesCommands(app *cli.App) {
 			cli.String("action-grants", "").Help("action-grants Accepts JSON, @file, or @-."),
 			cli.String("description", "").Help("description"),
 			cli.String("name", "").Help("[required] name"),
-			cli.Strings("native-tool-ids", "").Help("Native-tool grant IDs to allow."),
 			cli.String("slug", "").Help("Optional stable slug. When omitted, the server derives one from `name`."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
@@ -132,10 +126,6 @@ func registerAgentCapabilitiesCommands(app *cli.App) {
 			if ctx.IsSet("name") {
 				body.Name = ctx.String("name")
 			}
-			if ctx.IsSet("native-tool-ids") {
-				v := ctx.Strings("native-tool-ids")
-				body.NativeToolIds = &v
-			}
 			if ctx.IsSet("slug") {
 				v := ctx.String("slug")
 				body.Slug = &v
@@ -146,7 +136,7 @@ func registerAgentCapabilitiesCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.CreateToolkitWithResponse(ctx.Context(), p0, body)
+			resp, err := client.CreateToolkitWithResponse(ctx.Context(), api.ProjectHandleParam(p0), body)
 			if err != nil {
 				return err
 			}
@@ -165,7 +155,7 @@ func registerAgentCapabilitiesCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			resp, err := client.DeleteSkillWithResponse(ctx.Context(), p0, p1)
+			resp, err := client.DeleteSkillWithResponse(ctx.Context(), api.ProjectHandleParam(p0), p1)
 			if err != nil {
 				return err
 			}
@@ -184,7 +174,7 @@ func registerAgentCapabilitiesCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			resp, err := client.DeleteToolkitWithResponse(ctx.Context(), p0, p1)
+			resp, err := client.DeleteToolkitWithResponse(ctx.Context(), api.ProjectHandleParam(p0), p1)
 			if err != nil {
 				return err
 			}
@@ -203,7 +193,7 @@ func registerAgentCapabilitiesCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			resp, err := client.GetSkillWithResponse(ctx.Context(), p0, p1)
+			resp, err := client.GetSkillWithResponse(ctx.Context(), api.ProjectHandleParam(p0), p1)
 			if err != nil {
 				return err
 			}
@@ -222,21 +212,20 @@ func registerAgentCapabilitiesCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			resp, err := client.GetToolkitWithResponse(ctx.Context(), p0, p1)
+			resp, err := client.GetToolkitWithResponse(ctx.Context(), api.ProjectHandleParam(p0), p1)
 			if err != nil {
 				return err
 			}
 			return printResponse(ctx, "getToolkit", resp.StatusCode(), resp.Body)
 		})
 
-	agentCapabilitiesGrp.Command("get-capability-manifest").
-		Description("Resolve an agent capability manifest").
+	agentCapabilitiesGrp.Command("get-tool-manifest").
+		Description("Resolve an agent tool manifest").
 		Args("id").
 		Flags(
 			cli.String("toolkit-ids", "").Help("Optional comma-separated toolkit subset to apply."),
 			cli.String("skill-name", "").Help("Optional assigned skill name to preselect as active."),
-			cli.String("allowed-tools", "").Help("Optional comma-separated concrete tool names or known aliases."),
-			cli.String("allowed-actions", "").Help("Optional comma-separated action names to apply as a per-invocation filter."),
+			cli.String("allowed-tools", "").Help("Optional comma-separated canonical action names, wildcard selectors, or group references to apply a…"),
 		).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -247,7 +236,7 @@ func registerAgentCapabilitiesCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			params := &api.GetAgentCapabilityManifestParams{}
+			params := &api.GetAgentToolManifestParams{}
 			if ctx.IsSet("toolkit-ids") {
 				v := ctx.String("toolkit-ids")
 				params.ToolkitIds = &v
@@ -260,15 +249,11 @@ func registerAgentCapabilitiesCommands(app *cli.App) {
 				v := ctx.String("allowed-tools")
 				params.AllowedTools = &v
 			}
-			if ctx.IsSet("allowed-actions") {
-				v := ctx.String("allowed-actions")
-				params.AllowedActions = &v
-			}
-			resp, err := client.GetAgentCapabilityManifestWithResponse(ctx.Context(), p0, p1, params)
+			resp, err := client.GetAgentToolManifestWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1), params)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, "getAgentCapabilityManifest", resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "getAgentToolManifest", resp.StatusCode(), resp.Body)
 		})
 
 	agentCapabilitiesGrp.Command("import-skill").
@@ -304,7 +289,7 @@ func registerAgentCapabilitiesCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.ImportSkillWithResponse(ctx.Context(), p0, body)
+			resp, err := client.ImportSkillWithResponse(ctx.Context(), api.ProjectHandleParam(p0), body)
 			if err != nil {
 				return err
 			}
@@ -329,7 +314,7 @@ func registerAgentCapabilitiesCommands(app *cli.App) {
 				v := ctx.Bool("include-system")
 				params.IncludeSystem = &v
 			}
-			resp, err := client.ListSkillsWithResponse(ctx.Context(), p0, params)
+			resp, err := client.ListSkillsWithResponse(ctx.Context(), api.ProjectHandleParam(p0), params)
 			if err != nil {
 				return err
 			}
@@ -354,7 +339,7 @@ func registerAgentCapabilitiesCommands(app *cli.App) {
 				v := ctx.Bool("include-system")
 				params.IncludeSystem = &v
 			}
-			resp, err := client.ListToolkitsWithResponse(ctx.Context(), p0, params)
+			resp, err := client.ListToolkitsWithResponse(ctx.Context(), api.ProjectHandleParam(p0), params)
 			if err != nil {
 				return err
 			}
@@ -373,7 +358,7 @@ func registerAgentCapabilitiesCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			resp, err := client.ListSkillAssignmentsWithResponse(ctx.Context(), p0, p1)
+			resp, err := client.ListSkillAssignmentsWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1))
 			if err != nil {
 				return err
 			}
@@ -392,7 +377,7 @@ func registerAgentCapabilitiesCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			resp, err := client.ListToolkitAssignmentsWithResponse(ctx.Context(), p0, p1)
+			resp, err := client.ListToolkitAssignmentsWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1))
 			if err != nil {
 				return err
 			}
@@ -429,7 +414,7 @@ func registerAgentCapabilitiesCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.ReplaceSkillsWithResponse(ctx.Context(), p0, p1, body)
+			resp, err := client.ReplaceSkillsWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1), body)
 			if err != nil {
 				return err
 			}
@@ -466,7 +451,7 @@ func registerAgentCapabilitiesCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.ReplaceToolkitsWithResponse(ctx.Context(), p0, p1, body)
+			resp, err := client.ReplaceToolkitsWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1), body)
 			if err != nil {
 				return err
 			}
@@ -477,7 +462,6 @@ func registerAgentCapabilitiesCommands(app *cli.App) {
 		Description("Update a skill").
 		Args("skill-id").
 		Flags(
-			cli.Strings("allowed-actions", "").Help("allowed-actions"),
 			cli.Strings("allowed-tools", "").Help("allowed-tools"),
 			cli.String("description", "").Help("description"),
 			cli.String("frontmatter", "").Help("frontmatter Accepts JSON, @file, or @-."),
@@ -501,10 +485,6 @@ func registerAgentCapabilitiesCommands(app *cli.App) {
 			var body api.UpdateSkillJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
-			}
-			if ctx.IsSet("allowed-actions") {
-				v := ctx.Strings("allowed-actions")
-				body.AllowedActions = &v
 			}
 			if ctx.IsSet("allowed-tools") {
 				v := ctx.Strings("allowed-tools")
@@ -546,7 +526,7 @@ func registerAgentCapabilitiesCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.UpdateSkillWithResponse(ctx.Context(), p0, p1, body)
+			resp, err := client.UpdateSkillWithResponse(ctx.Context(), api.ProjectHandleParam(p0), p1, body)
 			if err != nil {
 				return err
 			}
@@ -560,7 +540,6 @@ func registerAgentCapabilitiesCommands(app *cli.App) {
 			cli.String("action-grants", "").Help("action-grants Accepts JSON, @file, or @-."),
 			cli.String("description", "").Help("description"),
 			cli.String("name", "").Help("[required] name"),
-			cli.Strings("native-tool-ids", "").Help("Native-tool grant IDs to allow."),
 			cli.String("slug", "").Help("Optional stable slug. When omitted, the server derives one from `name`."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
@@ -590,10 +569,6 @@ func registerAgentCapabilitiesCommands(app *cli.App) {
 			if ctx.IsSet("name") {
 				body.Name = ctx.String("name")
 			}
-			if ctx.IsSet("native-tool-ids") {
-				v := ctx.Strings("native-tool-ids")
-				body.NativeToolIds = &v
-			}
 			if ctx.IsSet("slug") {
 				v := ctx.String("slug")
 				body.Slug = &v
@@ -604,7 +579,7 @@ func registerAgentCapabilitiesCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.UpdateToolkitWithResponse(ctx.Context(), p0, p1, body)
+			resp, err := client.UpdateToolkitWithResponse(ctx.Context(), api.ProjectHandleParam(p0), p1, body)
 			if err != nil {
 				return err
 			}

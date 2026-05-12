@@ -78,7 +78,7 @@ func registerWorkflowsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.CreateWorkflowWithResponse(ctx.Context(), p0, body)
+			resp, err := client.CreateWorkflowWithResponse(ctx.Context(), api.ProjectHandleParam(p0), body)
 			if err != nil {
 				return err
 			}
@@ -97,7 +97,7 @@ func registerWorkflowsCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			resp, err := client.DeleteWorkflowWithResponse(ctx.Context(), p0, p1)
+			resp, err := client.DeleteWorkflowWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1))
 			if err != nil {
 				return err
 			}
@@ -116,7 +116,7 @@ func registerWorkflowsCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			resp, err := client.GetWorkflowWithResponse(ctx.Context(), p0, p1)
+			resp, err := client.GetWorkflowWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1))
 			if err != nil {
 				return err
 			}
@@ -139,7 +139,7 @@ func registerWorkflowsCommands(app *cli.App) {
 			if err != nil {
 				return err
 			}
-			resp, err := client.GetWorkflowVersionWithResponse(ctx.Context(), p0, p1, p2)
+			resp, err := client.GetWorkflowVersionWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1), p2)
 			if err != nil {
 				return err
 			}
@@ -169,7 +169,7 @@ func registerWorkflowsCommands(app *cli.App) {
 				v := ctx.Int("limit")
 				params.Limit = &v
 			}
-			resp, err := client.ListWorkflowsWithResponse(ctx.Context(), p0, params)
+			resp, err := client.ListWorkflowsWithResponse(ctx.Context(), api.ProjectHandleParam(p0), params)
 			if err != nil {
 				return err
 			}
@@ -188,7 +188,7 @@ func registerWorkflowsCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			resp, err := client.ListWorkflowVersionsWithResponse(ctx.Context(), p0, p1)
+			resp, err := client.ListWorkflowVersionsWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1))
 			if err != nil {
 				return err
 			}
@@ -249,7 +249,7 @@ func registerWorkflowsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.UpdateWorkflowWithResponse(ctx.Context(), p0, p1, body)
+			resp, err := client.UpdateWorkflowWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1), body)
 			if err != nil {
 				return err
 			}

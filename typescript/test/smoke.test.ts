@@ -85,9 +85,9 @@ test("smoke: claimJob returns job on 200", async () => {
       run_id: "run_1",
       workflow_name: "hello",
       step_name: "greet",
-      action: "print",
-      parameters: { msg: "hi" },
-      attempt: 1,
+      spec: { kind: "action", name: "print", parameters: { msg: "hi" } },
+      lease_token: "lease-1",
+      attempt_number: 1,
       queue: "default",
     },
   });
@@ -98,7 +98,10 @@ test("smoke: claimJob returns job on 200", async () => {
   });
   assert.ok(job);
   assert.equal(job!.job_id, "job_1");
-  assert.equal(job!.action, "print");
+  assert.equal(job!.spec.kind, "action");
+  if (job!.spec.kind === "action") {
+    assert.equal(job!.spec.name, "print");
+  }
 });
 
 test("smoke: claimJob 409 with worker_instance_conflict envelope raises typed error", async () => {
@@ -130,32 +133,30 @@ test("smoke: heartbeatJob 409 raises LeaseLostError", async () => {
     () =>
       client.heartbeatJob("job_1", {
         worker_instance_id: "w",
-        worker_session_token: "test-session-token",
-        attempt: 1,
+        lease_token: "lease-1",
       }),
     LeaseLostError,
   );
 });
 
-test("smoke: completeJob 409 raises LeaseLostError", async () => {
+test("smoke: reportJob 409 raises LeaseLostError", async () => {
   const client = clientWithFakeFetch({ status: 409 });
   await assert.rejects(
     () =>
-      client.completeJob("job_1", {
+      client.reportJob("job_1", {
         worker_instance_id: "w",
-        worker_session_token: "test-session-token",
-        attempt: 1,
-        status: "completed",
+        lease_token: "lease-1",
+        outcomes: [{ kind: "complete" }],
       }),
     LeaseLostError,
   );
 });
 
-// Session-token is the preferred fence value (the SDK stamps it on
-// every claim and presents it on heartbeat / complete / events).
-// The tests below mirror the worker_instance_id paths above so any
-// drift in the token-bearing wire shape fails the suite.
-test("smoke: heartbeatJob with worker_session_token serializes the token", async () => {
+// lease_token is the fence value (returned by claim, echoed on
+// heartbeat / report / events). The tests below mirror the
+// worker_instance_id paths above so any drift in the token-bearing
+// wire shape fails the suite.
+test("smoke: heartbeatJob serializes lease_token", async () => {
   let requestBody = "";
   globalThis.fetch = (async (_input: RequestInfo | URL, init?: RequestInit) => {
     requestBody = String(init?.body ?? "");
@@ -169,15 +170,14 @@ test("smoke: heartbeatJob with worker_session_token serializes the token", async
   await assert.rejects(
     () =>
       client.heartbeatJob("job_1", {
-        worker_session_token: "tok-abc",
-        attempt: 1,
+        lease_token: "lease-abc",
       }),
     LeaseLostError,
   );
-  assert.match(requestBody, /"worker_session_token":"tok-abc"/);
+  assert.match(requestBody, /"lease_token":"lease-abc"/);
 });
 
-test("smoke: completeJob with worker_session_token serializes the token", async () => {
+test("smoke: reportJob serializes lease_token", async () => {
   let requestBody = "";
   globalThis.fetch = (async (_input: RequestInfo | URL, init?: RequestInit) => {
     requestBody = String(init?.body ?? "");
@@ -188,12 +188,11 @@ test("smoke: completeJob with worker_session_token serializes the token", async 
     baseURL: "https://api.example.invalid",
     project: "test-project",
   });
-  await client.completeJob("job_1", {
-    worker_session_token: "tok-abc",
-    attempt: 1,
-    status: "completed",
+  await client.reportJob("job_1", {
+    lease_token: "lease-abc",
+    outcomes: [{ kind: "complete" }],
   });
-  assert.match(requestBody, /"worker_session_token":"tok-abc"/);
+  assert.match(requestBody, /"lease_token":"lease-abc"/);
 });
 
 test("smoke: emitJobEvent posts to project events endpoint", async () => {
@@ -212,7 +211,7 @@ test("smoke: emitJobEvent posts to project events endpoint", async () => {
   });
   await client.emitJobEvent("job_1", {
     worker_instance_id: "worker-1",
-    attempt: 1,
+    lease_token: "lease-1",
     type: "scrape.page_done",
     payload: { url: "https://example.com" },
   });
@@ -230,7 +229,7 @@ test("smoke: emitJobEvents 413 raises PayloadTooLargeError", async () => {
     () =>
       client.emitJobEvent("job_1", {
         worker_instance_id: "w",
-        attempt: 1,
+        lease_token: "lease-1",
         type: "oversize",
         payload: { blob: "x" },
       }),
@@ -262,7 +261,7 @@ test("smoke: emitJobEvents 429 raises RateLimitError", async () => {
     () =>
       client.emitJobEvent("job_1", {
         worker_instance_id: "w",
-        attempt: 1,
+        lease_token: "lease-1",
         type: "progress",
         payload: { pct: 10 },
       }),

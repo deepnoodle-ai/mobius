@@ -3,12 +3,16 @@
   "run_id": "run_01H0000000000000000002",
   "workflow_name": "charge-customer",
   "step_name": "charge",
-  "action": "stripe_charge",
-  "parameters": {
-    "amount": 4200,
-    "currency": "usd"
+  "spec": {
+    "kind": "action",
+    "name": "stripe_charge",
+    "parameters": {
+      "amount": 4200,
+      "currency": "usd"
+    }
   },
-  "attempt": 1,
+  "lease_token": "lease-token-opaque",
+  "attempt_number": 1,
   "queue": "billing",
   "heartbeat_interval_seconds": 20
 }

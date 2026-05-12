@@ -9,6 +9,8 @@ package main
 
 import (
 	"github.com/deepnoodle-ai/wonton/cli"
+
+	"github.com/deepnoodle-ai/mobius/mobius/api"
 )
 
 // registerIntegrationProvidersCommands registers every generated subcommand in the "integration-providers" group.
@@ -25,7 +27,7 @@ func registerIntegrationProvidersCommands(app *cli.App) {
 			}
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
-			resp, err := client.ListIntegrationProvidersWithResponse(ctx.Context(), p0)
+			resp, err := client.ListIntegrationProvidersWithResponse(ctx.Context(), api.ProjectHandleParam(p0))
 			if err != nil {
 				return err
 			}

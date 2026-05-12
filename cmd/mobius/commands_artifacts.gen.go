@@ -56,7 +56,7 @@ func registerArtifactsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.CommitArtifactWithResponse(ctx.Context(), p0, p1, body)
+			resp, err := client.CommitArtifactWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.ArtifactIdParam(p1), body)
 			if err != nil {
 				return err
 			}
@@ -157,7 +157,7 @@ func registerArtifactsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.CreateArtifactSlotWithResponse(ctx.Context(), p0, body)
+			resp, err := client.CreateArtifactSlotWithResponse(ctx.Context(), api.ProjectHandleParam(p0), body)
 			if err != nil {
 				return err
 			}
@@ -184,7 +184,7 @@ func registerArtifactsCommands(app *cli.App) {
 				v := ctx.Bool("force")
 				params.Force = &v
 			}
-			resp, err := client.DeleteArtifactWithResponse(ctx.Context(), p0, p1, params)
+			resp, err := client.DeleteArtifactWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.ArtifactIdParam(p1), params)
 			if err != nil {
 				return err
 			}
@@ -203,7 +203,7 @@ func registerArtifactsCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			resp, err := client.GetArtifactWithResponse(ctx.Context(), p0, p1)
+			resp, err := client.GetArtifactWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.ArtifactIdParam(p1))
 			if err != nil {
 				return err
 			}
@@ -230,7 +230,7 @@ func registerArtifactsCommands(app *cli.App) {
 				v := ctx.Bool("inline")
 				params.Inline = &v
 			}
-			resp, err := client.GetArtifactContentWithResponse(ctx.Context(), p0, p1, params)
+			resp, err := client.GetArtifactContentWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.ArtifactIdParam(p1), params)
 			if err != nil {
 				return err
 			}
@@ -247,7 +247,7 @@ func registerArtifactsCommands(app *cli.App) {
 			}
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
-			resp, err := client.GetArtifactStorageQuotaWithResponse(ctx.Context(), p0)
+			resp, err := client.GetArtifactStorageQuotaWithResponse(ctx.Context(), api.ProjectHandleParam(p0))
 			if err != nil {
 				return err
 			}
@@ -264,11 +264,61 @@ func registerArtifactsCommands(app *cli.App) {
 			}
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
-			resp, err := client.GetArtifactStorageSettingsWithResponse(ctx.Context(), p0)
+			resp, err := client.GetArtifactStorageSettingsWithResponse(ctx.Context(), api.ProjectHandleParam(p0))
 			if err != nil {
 				return err
 			}
 			return printResponse(ctx, "getArtifactStorageSettings", resp.StatusCode(), resp.Body)
+		})
+
+	artifactsGrp.Command("list").
+		Description("List artifacts in a project").
+		Flags(
+			cli.String("run-id", "").Help("run-id"),
+			cli.String("step-id", "").Help("step-id"),
+			cli.String("mime", "").Help("Mime prefix filter (e.g. `image/`)"),
+			cli.String("state", "").Help("state"),
+			cli.String("cursor", "").Help("cursor"),
+			cli.Int("limit", "").Help("limit"),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			params := &api.ListArtifactsParams{}
+			if ctx.IsSet("run-id") {
+				v := ctx.String("run-id")
+				params.RunId = &v
+			}
+			if ctx.IsSet("step-id") {
+				v := ctx.String("step-id")
+				params.StepId = &v
+			}
+			if ctx.IsSet("mime") {
+				v := ctx.String("mime")
+				params.Mime = &v
+			}
+			if ctx.IsSet("state") {
+				v := api.ArtifactState(ctx.String("state"))
+				params.State = &v
+			}
+			if ctx.IsSet("cursor") {
+				v := api.CursorParam(ctx.String("cursor"))
+				params.Cursor = &v
+			}
+			if ctx.IsSet("limit") {
+				v := api.LimitParam(ctx.Int("limit"))
+				params.Limit = &v
+			}
+			resp, err := client.ListArtifactsWithResponse(ctx.Context(), api.ProjectHandleParam(p0), params)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "listArtifacts", resp.StatusCode(), resp.Body)
 		})
 
 	artifactsGrp.Command("list-artifacts").
@@ -311,7 +361,7 @@ func registerArtifactsCommands(app *cli.App) {
 				v := api.LimitParam(ctx.Int("limit"))
 				params.Limit = &v
 			}
-			resp, err := client.ListRunArtifactsWithResponse(ctx.Context(), p0, p1, params)
+			resp, err := client.ListRunArtifactsWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.RunIdParam(p1), params)
 			if err != nil {
 				return err
 			}
@@ -330,7 +380,7 @@ func registerArtifactsCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			resp, err := client.PinArtifactWithResponse(ctx.Context(), p0, p1)
+			resp, err := client.PinArtifactWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.ArtifactIdParam(p1))
 			if err != nil {
 				return err
 			}
@@ -349,7 +399,7 @@ func registerArtifactsCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			resp, err := client.UnpinArtifactWithResponse(ctx.Context(), p0, p1)
+			resp, err := client.UnpinArtifactWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.ArtifactIdParam(p1))
 			if err != nil {
 				return err
 			}
@@ -380,7 +430,7 @@ func registerArtifactsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.UpdateArtifactStorageSettingsWithResponse(ctx.Context(), p0, body)
+			resp, err := client.UpdateArtifactStorageSettingsWithResponse(ctx.Context(), api.ProjectHandleParam(p0), body)
 			if err != nil {
 				return err
 			}

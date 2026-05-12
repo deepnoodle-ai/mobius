@@ -16,9 +16,9 @@ from pydantic import BaseModel
 from deepnoodle.mobius._api.models import (
     JobClaim,
     JobClaimRequest,
-    JobCompleteRequest,
     JobFenceRequest,
     JobHeartbeat,
+    JobReportRequest,
 )
 
 from .conftest import canonicalize, load_fixture, load_manifest
@@ -30,7 +30,7 @@ SCHEMA_BINDINGS: dict[str, type[BaseModel]] = {
     "JobClaim": JobClaim,
     "JobFenceRequest": JobFenceRequest,
     "JobHeartbeat": JobHeartbeat,
-    "JobCompleteRequest": JobCompleteRequest,
+    "JobReportRequest": JobReportRequest,
 }
 
 

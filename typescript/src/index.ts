@@ -65,12 +65,18 @@ export type {
 } from "./worker.js";
 
 export type {
+  JobActionSpec,
   JobClaim,
   JobClaimRequest,
-  JobCompleteRequest,
+  JobCodeSpec,
   JobFenceRequest,
   JobHeartbeat,
   JobHeartbeatDirectives,
+  JobReportRequest,
+  JobSpec,
+  Outcome,
+  OutcomeComplete,
+  OutcomeFail,
   RunSignal,
   SendRunSignalRequest,
   WorkflowDefinitionListResponse,

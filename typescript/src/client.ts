@@ -3,9 +3,9 @@ import type {
   CreateWorkflowRequest,
   JobClaim,
   JobClaimRequest,
-  JobCompleteRequest,
   JobFenceRequest,
   JobHeartbeat,
+  JobReportRequest,
   RunSignal,
   SendRunSignalRequest,
   StartBoundRunRequest,
@@ -165,8 +165,7 @@ export interface JobEventEntry {
 
 export interface JobEventsRequest {
   worker_instance_id?: string;
-  worker_session_token?: string;
-  attempt: number;
+  lease_token: string;
   events: JobEventEntry[];
 }
 
@@ -347,10 +346,10 @@ export class Client {
     return (await resp.json()) as JobHeartbeat;
   }
 
-  /** Report the terminal status of a claimed job. */
-  async completeJob(jobId: string, req: JobCompleteRequest): Promise<void> {
+  /** Report the terminal outcome(s) of a claimed job. */
+  async reportJob(jobId: string, req: JobReportRequest): Promise<void> {
     const resp = await this.request(
-      `/v1/projects/${encodeURIComponent(this.project)}/jobs/${encodeURIComponent(jobId)}/complete`,
+      `/v1/projects/${encodeURIComponent(this.project)}/jobs/${encodeURIComponent(jobId)}/report`,
       { method: "POST", body: req },
     );
     if (resp.status === 401) throw new AuthRevokedError(jobId);
@@ -373,16 +372,14 @@ export class Client {
     jobId: string,
     req: {
       worker_instance_id?: string;
-      worker_session_token?: string;
-      attempt: number;
+      lease_token: string;
       type: string;
       payload: Record<string, unknown>;
     },
   ): Promise<void> {
     await this.emitJobEvents(jobId, {
       worker_instance_id: req.worker_instance_id,
-      worker_session_token: req.worker_session_token,
-      attempt: req.attempt,
+      lease_token: req.lease_token,
       events: [{ type: req.type, payload: req.payload }],
     });
   }

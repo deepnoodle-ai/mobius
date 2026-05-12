@@ -91,7 +91,7 @@ func registerObservablesCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.CreateObservableWithResponse(ctx.Context(), p0, body)
+			resp, err := client.CreateObservableWithResponse(ctx.Context(), api.ProjectHandleParam(p0), body)
 			if err != nil {
 				return err
 			}
@@ -110,7 +110,7 @@ func registerObservablesCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			resp, err := client.DeleteObservableWithResponse(ctx.Context(), p0, p1)
+			resp, err := client.DeleteObservableWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.ObservableIdParam(p1))
 			if err != nil {
 				return err
 			}
@@ -142,7 +142,7 @@ func registerObservablesCommands(app *cli.App) {
 				v := api.LimitParam(ctx.Int("limit"))
 				params.Limit = &v
 			}
-			resp, err := client.ListObservableEventsWithResponse(ctx.Context(), p0, p1, params)
+			resp, err := client.ListObservableEventsWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.ObservableIdParam(p1), params)
 			if err != nil {
 				return err
 			}
@@ -161,7 +161,7 @@ func registerObservablesCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			resp, err := client.GetObservableWithResponse(ctx.Context(), p0, p1)
+			resp, err := client.GetObservableWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.ObservableIdParam(p1))
 			if err != nil {
 				return err
 			}
@@ -201,7 +201,7 @@ func registerObservablesCommands(app *cli.App) {
 				v := api.ObservableFreshnessStatus(ctx.String("freshness-status"))
 				params.FreshnessStatus = &v
 			}
-			resp, err := client.ListObservablesWithResponse(ctx.Context(), p0, params)
+			resp, err := client.ListObservablesWithResponse(ctx.Context(), api.ProjectHandleParam(p0), params)
 			if err != nil {
 				return err
 			}
@@ -228,7 +228,7 @@ func registerObservablesCommands(app *cli.App) {
 				v := api.LimitParam(ctx.Int("limit"))
 				params.Limit = &v
 			}
-			resp, err := client.ListObservableWaitersWithResponse(ctx.Context(), p0, p1, params)
+			resp, err := client.ListObservableWaitersWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.ObservableIdParam(p1), params)
 			if err != nil {
 				return err
 			}
@@ -265,7 +265,7 @@ func registerObservablesCommands(app *cli.App) {
 				v := api.ObservableObservationStatus(ctx.String("status"))
 				params.Status = &v
 			}
-			resp, err := client.ListObservableObservationsWithResponse(ctx.Context(), p0, p1, params)
+			resp, err := client.ListObservableObservationsWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.ObservableIdParam(p1), params)
 			if err != nil {
 				return err
 			}
@@ -329,7 +329,7 @@ func registerObservablesCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.SubmitObservableObservationWithResponse(ctx.Context(), p0, p1, body)
+			resp, err := client.SubmitObservableObservationWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.ObservableIdParam(p1), body)
 			if err != nil {
 				return err
 			}
@@ -408,7 +408,7 @@ func registerObservablesCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.UpdateObservableWithResponse(ctx.Context(), p0, p1, body)
+			resp, err := client.UpdateObservableWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.ObservableIdParam(p1), body)
 			if err != nil {
 				return err
 			}
@@ -440,7 +440,7 @@ func registerObservablesCommands(app *cli.App) {
 				v := api.LimitParam(ctx.Int("limit"))
 				params.Limit = &v
 			}
-			resp, err := client.ListObservableStateVersionsWithResponse(ctx.Context(), p0, p1, params)
+			resp, err := client.ListObservableStateVersionsWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.ObservableIdParam(p1), params)
 			if err != nil {
 				return err
 			}

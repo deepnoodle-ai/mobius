@@ -32,7 +32,7 @@ func registerMessagesCommands(app *cli.App) {
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			p2 := ctx.Arg(1)
-			resp, err := client.GetMessageWithResponse(ctx.Context(), p0, p1, p2)
+			resp, err := client.GetMessageWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1), api.MessageId(p2))
 			if err != nil {
 				return err
 			}
@@ -99,7 +99,7 @@ func registerMessagesCommands(app *cli.App) {
 				v := api.LimitParam(ctx.Int("limit"))
 				params.Limit = &v
 			}
-			resp, err := client.ListMessagesWithResponse(ctx.Context(), p0, p1, params)
+			resp, err := client.ListMessagesWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1), params)
 			if err != nil {
 				return err
 			}
@@ -137,7 +137,7 @@ func registerMessagesCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.MarkMessagesReadWithResponse(ctx.Context(), p0, p1, body)
+			resp, err := client.MarkMessagesReadWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1), body)
 			if err != nil {
 				return err
 			}
@@ -201,7 +201,7 @@ func registerMessagesCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.SendMessageWithResponse(ctx.Context(), p0, p1, body)
+			resp, err := client.SendMessageWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1), body)
 			if err != nil {
 				return err
 			}
@@ -257,7 +257,7 @@ func registerMessagesCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.UpdateMessageWithResponse(ctx.Context(), p0, p1, p2, body)
+			resp, err := client.UpdateMessageWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1), api.MessageId(p2), body)
 			if err != nil {
 				return err
 			}

@@ -4,8 +4,8 @@ import { test } from "node:test";
 import { Worker, WorkerPool } from "../src/worker.js";
 import type {
   JobClaim,
-  JobCompleteRequest,
   JobHeartbeat,
+  JobReportRequest,
 } from "../src/api/index.js";
 
 class FakeClient {
@@ -15,7 +15,7 @@ class FakeClient {
     type: string;
     payload: Record<string, unknown>;
   }> = [];
-  public completed: JobCompleteRequest[] = [];
+  public reported: JobReportRequest[] = [];
 
   async claimJob(_req?: { worker_instance_id?: string }): Promise<JobClaim | null> {
     return null;
@@ -37,8 +37,8 @@ class FakeClient {
     }
   }
 
-  async completeJob(_jobId: string, req: JobCompleteRequest): Promise<void> {
-    this.completed.push(req);
+  async reportJob(_jobId: string, req: JobReportRequest): Promise<void> {
+    this.reported.push(req);
   }
 }
 
@@ -78,9 +78,9 @@ const blockJob = (id: string): JobClaim => ({
   run_id: "run_1",
   workflow_name: "demo",
   step_name: "scrape",
-  action: "demo.block",
-  parameters: {},
-  attempt: 1,
+  spec: { kind: "action", name: "demo.block", parameters: {} },
+  lease_token: `lease-${id}`,
+  attempt_number: 1,
   queue: "default",
   heartbeat_interval_seconds: 3600,
 });
@@ -108,9 +108,13 @@ test("worker: action context can emit custom events", async () => {
       run_id: "run_1",
       workflow_name: "demo",
       step_name: "scrape",
-      action: "demo.action",
-      parameters: { url: "https://example.com" },
-      attempt: 1,
+      spec: {
+        kind: "action",
+        name: "demo.action",
+        parameters: { url: "https://example.com" },
+      },
+      lease_token: "lease-1",
+      attempt_number: 1,
       queue: "default",
       heartbeat_interval_seconds: 3600,
     },
@@ -124,8 +128,8 @@ test("worker: action context can emit custom events", async () => {
       payload: { url: "https://example.com" },
     },
   ]);
-  assert.equal(client.completed.length, 1);
-  assert.equal(client.completed[0].status, "completed");
+  assert.equal(client.reported.length, 1);
+  assert.equal(client.reported[0].outcomes[0].kind, "complete");
 });
 
 test("worker: claims next job only after current job completes", async () => {

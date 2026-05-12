@@ -1,0 +1,10 @@
+{
+  "worker_instance_id": "worker-abc",
+  "lease_token": "lease-token-opaque",
+  "outcomes": [
+    {
+      "kind": "complete",
+      "result_b64": "eyJvayI6dHJ1ZX0="
+    }
+  ]
+}

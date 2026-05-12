@@ -43,7 +43,7 @@ func registerLogsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.IngestProjectLogsWithResponse(ctx.Context(), p0, body)
+			resp, err := client.IngestProjectLogsWithResponse(ctx.Context(), api.ProjectHandleParam(p0), body)
 			if err != nil {
 				return err
 			}
@@ -74,7 +74,7 @@ func registerLogsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.IngestProjectLogsOTLPWithResponse(ctx.Context(), p0, body)
+			resp, err := client.IngestProjectLogsOTLPWithResponse(ctx.Context(), api.ProjectHandleParam(p0), body)
 			if err != nil {
 				return err
 			}
@@ -114,7 +114,7 @@ func registerLogsCommands(app *cli.App) {
 				v := ctx.Int("severity-min")
 				params.SeverityMin = &v
 			}
-			resp, err := client.ListProjectLogsWithResponse(ctx.Context(), p0, params)
+			resp, err := client.ListProjectLogsWithResponse(ctx.Context(), api.ProjectHandleParam(p0), params)
 			if err != nil {
 				return err
 			}

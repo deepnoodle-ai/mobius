@@ -117,7 +117,7 @@ func TestContext_RequestInteraction_BuildsJobScopedRequest(t *testing.T) {
 		_, _ = io.WriteString(w, `{
             "id":"int_1",
             "status":"pending",
-            "type":"review",
+            "kind":"review",
             "target":{"type":"user","id":"usr_1"},
             "created_at":"2026-04-29T00:00:00Z",
             "updated_at":"2026-04-29T00:00:00Z"
@@ -138,7 +138,7 @@ func TestContext_RequestInteraction_BuildsJobScopedRequest(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, got.Id, "int_1")
-	assert.Equal(t, string(got.Type), "review")
+	assert.Equal(t, string(got.Kind), "review")
 	// Step name is auto-threaded so the server can derive a default
 	// signal name without the worker passing it explicitly.
 	assert.Equal(t, sentBody["step_name"], "review-step")

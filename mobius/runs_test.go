@@ -29,7 +29,7 @@ func TestStartRun_HighLevelClient(t *testing.T) {
 	c, srv := newTestClient(t, h)
 	defer srv.Close()
 
-	spec := api.WorkflowSpec{Name: "demo", Steps: []api.WorkflowStep{}}
+	spec := api.WorkflowSpec{Name: "demo"}
 	run, err := c.StartRun(context.Background(), spec, &StartRunOptions{
 		Queue:      "research",
 		ExternalID: "external-1",
