@@ -6325,12 +6325,15 @@ type InteractionSpec struct {
 
 // InteractionSubmission One handoff submission attempt.
 type InteractionSubmission struct {
-	Attempt       int        `json:"attempt"`
-	Comment       *string    `json:"comment,omitempty"`
-	Id            string     `json:"id"`
-	InteractionId string     `json:"interaction_id"`
-	ReviewComment *string    `json:"review_comment,omitempty"`
-	ReviewedAt    *time.Time `json:"reviewed_at,omitempty"`
+	Attempt       int     `json:"attempt"`
+	Comment       *string `json:"comment,omitempty"`
+	Id            string  `json:"id"`
+	InteractionId string  `json:"interaction_id"`
+	ReviewComment *string `json:"review_comment,omitempty"`
+
+	// ReviewPolicy Reviewability policy for an interaction artifact (PRD 077 §3.5). Carried as a template on `Interaction.submission_review_policy` (so new submissions inherit a snapshot) and as the per-submission snapshot on `InteractionSubmission.review_policy`.
+	ReviewPolicy *ReviewPolicy `json:"review_policy,omitempty"`
+	ReviewedAt   *time.Time    `json:"reviewed_at,omitempty"`
 
 	// ReviewedBy Identifies who answered an interaction. Groups cannot themselves respond — only a user within a group — so `group` is not a valid responder type.
 	ReviewedBy  *InteractionResponder       `json:"reviewed_by,omitempty"`

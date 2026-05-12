@@ -8454,6 +8454,30 @@ components:
           maximum: 1
           nullable: true
           description: Optional 0..1 confidence score attached to this response.
+    ReviewPolicy:
+      type: object
+      additionalProperties: false
+      required:
+      - type
+      description: Reviewability policy for an interaction artifact (PRD 077 §3.5). Carried
+        as a template on `Interaction.submission_review_policy` (so new submissions inherit
+        a snapshot) and as the per-submission snapshot on `InteractionSubmission.review_policy`.
+      properties:
+        type:
+          type: string
+          enum:
+          - none
+          - requester_acceptance_required
+          description: '`none` completes a handoff when submitted. `requester_acceptance_required`
+            moves submitted handoffs to `in_review` until an authorized reviewer accepts or
+            sends back.'
+        reviewers:
+          type: array
+          items:
+            $ref: '#/components/schemas/InteractionTarget'
+          description: Optional explicit reviewers. When omitted for `requester_acceptance_required`,
+            the requester/source actor is the reviewer. Workflow, system, or integration-created
+            handoffs should provide explicit user, agent, or group reviewers.
     InteractionSubmission:
       type: object
       additionalProperties: false
@@ -8500,6 +8524,12 @@ components:
           type: string
           format: date-time
           nullable: true
+        review_policy:
+          $ref: '#/components/schemas/ReviewPolicy'
+          nullable: true
+          description: Per-submission reviewability snapshot taken at submit time from the
+            interaction's `submission_review_policy` template (PRD 077 §3.5). Captures the
+            policy under which this submission must be reviewed.
     InteractionEvent:
       type: object
       additionalProperties: false
@@ -8641,30 +8671,6 @@ components:
           description: Sub-rule applied to this class's responses when `rule` is `decide`.
             When omitted, decide-class defaults to `first_valid_response` over the class's
             responses.
-    ReviewPolicy:
-      type: object
-      additionalProperties: false
-      required:
-      - type
-      description: Reviewability policy for an interaction artifact (PRD 077 §3.5). Carried
-        as a template on `Interaction.submission_review_policy` (so new submissions inherit
-        a snapshot) and as the per-submission snapshot on `InteractionSubmission.review_policy`.
-      properties:
-        type:
-          type: string
-          enum:
-          - none
-          - requester_acceptance_required
-          description: '`none` completes a handoff when submitted. `requester_acceptance_required`
-            moves submitted handoffs to `in_review` until an authorized reviewer accepts or
-            sends back.'
-        reviewers:
-          type: array
-          items:
-            $ref: '#/components/schemas/InteractionTarget'
-          description: Optional explicit reviewers. When omitted for `requester_acceptance_required`,
-            the requester/source actor is the reviewer. Workflow, system, or integration-created
-            handoffs should provide explicit user, agent, or group reviewers.
     RunConsumer:
       type: object
       additionalProperties: false

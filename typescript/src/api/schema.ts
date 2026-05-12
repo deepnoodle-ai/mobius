@@ -3931,6 +3931,16 @@ export interface components {
              */
             confidence?: number | null;
         };
+        /** @description Reviewability policy for an interaction artifact (PRD 077 §3.5). Carried as a template on `Interaction.submission_review_policy` (so new submissions inherit a snapshot) and as the per-submission snapshot on `InteractionSubmission.review_policy`. */
+        ReviewPolicy: {
+            /**
+             * @description `none` completes a handoff when submitted. `requester_acceptance_required` moves submitted handoffs to `in_review` until an authorized reviewer accepts or sends back.
+             * @enum {string}
+             */
+            type: "none" | "requester_acceptance_required";
+            /** @description Optional explicit reviewers. When omitted for `requester_acceptance_required`, the requester/source actor is the reviewer. Workflow, system, or integration-created handoffs should provide explicit user, agent, or group reviewers. */
+            reviewers?: components["schemas"]["InteractionTarget"][];
+        };
         /** @description One handoff submission attempt. */
         InteractionSubmission: {
             id: string;
@@ -3947,6 +3957,8 @@ export interface components {
             review_comment?: string | null;
             /** Format: date-time */
             reviewed_at?: string | null;
+            /** @description Per-submission reviewability snapshot taken at submit time from the interaction's `submission_review_policy` template (PRD 077 §3.5). Captures the policy under which this submission must be reviewed. */
+            review_policy?: components["schemas"]["ReviewPolicy"];
         };
         /** @description Lifecycle timeline entry for an interaction. */
         InteractionEvent: {
@@ -4014,16 +4026,6 @@ export interface components {
             rule: "propose" | "decide" | "ignore";
             /** @description Sub-rule applied to this class's responses when `rule` is `decide`. When omitted, decide-class defaults to `first_valid_response` over the class's responses. */
             sub_policy?: components["schemas"]["ResolutionPolicy"];
-        };
-        /** @description Reviewability policy for an interaction artifact (PRD 077 §3.5). Carried as a template on `Interaction.submission_review_policy` (so new submissions inherit a snapshot) and as the per-submission snapshot on `InteractionSubmission.review_policy`. */
-        ReviewPolicy: {
-            /**
-             * @description `none` completes a handoff when submitted. `requester_acceptance_required` moves submitted handoffs to `in_review` until an authorized reviewer accepts or sends back.
-             * @enum {string}
-             */
-            type: "none" | "requester_acceptance_required";
-            /** @description Optional explicit reviewers. When omitted for `requester_acceptance_required`, the requester/source actor is the reviewer. Workflow, system, or integration-created handoffs should provide explicit user, agent, or group reviewers. */
-            reviewers?: components["schemas"]["InteractionTarget"][];
         };
         RunConsumer: {
             run_id: string;

@@ -906,6 +906,33 @@ class InteractionResponse(BaseModel):
     )
 
 
+class Type3(StrEnum):
+    """
+    `none` completes a handoff when submitted. `requester_acceptance_required` moves submitted handoffs to `in_review` until an authorized reviewer accepts or sends back.
+    """
+
+    none = 'none'
+    requester_acceptance_required = 'requester_acceptance_required'
+
+
+class ReviewPolicy(BaseModel):
+    """
+    Reviewability policy for an interaction artifact (PRD 077 §3.5). Carried as a template on `Interaction.submission_review_policy` (so new submissions inherit a snapshot) and as the per-submission snapshot on `InteractionSubmission.review_policy`.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    type: Type3 = Field(
+        ...,
+        description='`none` completes a handoff when submitted. `requester_acceptance_required` moves submitted handoffs to `in_review` until an authorized reviewer accepts or sends back.',
+    )
+    reviewers: list[InteractionTarget] | None = Field(
+        None,
+        description='Optional explicit reviewers. When omitted for `requester_acceptance_required`, the requester/source actor is the reviewer. Workflow, system, or integration-created handoffs should provide explicit user, agent, or group reviewers.',
+    )
+
+
 class Status(StrEnum):
     pending_review = 'pending_review'
     accepted = 'accepted'
@@ -931,9 +958,13 @@ class InteractionSubmission(BaseModel):
     reviewed_by: InteractionResponder | None = None
     review_comment: str | None = None
     reviewed_at: AwareDatetime | None = None
+    review_policy: ReviewPolicy | None = Field(
+        None,
+        description="Per-submission reviewability snapshot taken at submit time from the interaction's `submission_review_policy` template (PRD 077 §3.5). Captures the policy under which this submission must be reviewed.",
+    )
 
 
-class Type3(StrEnum):
+class Type4(StrEnum):
     created = 'created'
     submitted = 'submitted'
     accepted = 'accepted'
@@ -955,7 +986,7 @@ class InteractionEvent(BaseModel):
     )
     id: str
     interaction_id: str
-    type: Type3
+    type: Type4
     actor: InteractionResponder | None = None
     submission_id: str | None = None
     message: str | None = None
@@ -963,7 +994,7 @@ class InteractionEvent(BaseModel):
     created_at: AwareDatetime
 
 
-class Type4(StrEnum):
+class Type5(StrEnum):
     """
     Resolution rule. `first_valid_response` resolves on the first response (Tier 1 default). `all_required` waits for every eligible participant. `simple_majority` and `threshold` are voting policies. `weighted_vote` weighs responses by `confidence`. `speculative` resolves to `proposal` when the veto window closes without a veto. `asymmetric` runs different sub-rules per actor class (e.g. agents propose, humans decide via majority).
     """
@@ -1011,33 +1042,6 @@ class Rule(StrEnum):
     propose = 'propose'
     decide = 'decide'
     ignore = 'ignore'
-
-
-class Type5(StrEnum):
-    """
-    `none` completes a handoff when submitted. `requester_acceptance_required` moves submitted handoffs to `in_review` until an authorized reviewer accepts or sends back.
-    """
-
-    none = 'none'
-    requester_acceptance_required = 'requester_acceptance_required'
-
-
-class ReviewPolicy(BaseModel):
-    """
-    Reviewability policy for an interaction artifact (PRD 077 §3.5). Carried as a template on `Interaction.submission_review_policy` (so new submissions inherit a snapshot) and as the per-submission snapshot on `InteractionSubmission.review_policy`.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    type: Type5 = Field(
-        ...,
-        description='`none` completes a handoff when submitted. `requester_acceptance_required` moves submitted handoffs to `in_review` until an authorized reviewer accepts or sends back.',
-    )
-    reviewers: list[InteractionTarget] | None = Field(
-        None,
-        description='Optional explicit reviewers. When omitted for `requester_acceptance_required`, the requester/source actor is the reviewer. Workflow, system, or integration-created handoffs should provide explicit user, agent, or group reviewers.',
-    )
 
 
 class RunConsumer(BaseModel):
@@ -8724,7 +8728,7 @@ class ResolutionPolicy(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    type: Type4 = Field(
+    type: Type5 = Field(
         ...,
         description='Resolution rule. `first_valid_response` resolves on the first response (Tier 1 default). `all_required` waits for every eligible participant. `simple_majority` and `threshold` are voting policies. `weighted_vote` weighs responses by `confidence`. `speculative` resolves to `proposal` when the veto window closes without a veto. `asymmetric` runs different sub-rules per actor class (e.g. agents propose, humans decide via majority).',
     )
