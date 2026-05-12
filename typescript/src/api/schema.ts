@@ -2157,30 +2157,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/notification-preferences/{actor_type}/{actor_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get notification preferences for an actor
-         * @description Returns the actor's notification preferences (PRD 077 §3.8). When the actor has no preferences set, returns an empty `channels` list — callers should treat that as "use org defaults".
-         */
-        get: operations["getNotificationPreferences"];
-        /**
-         * Update notification preferences for an actor
-         * @description Replaces the actor's notification preferences with the supplied channel list. Users may edit their own preferences; org admins may edit any preferences within their org.
-         */
-        put: operations["updateNotificationPreferences"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/projects/{project}/groups": {
         parameters: {
             query?: never;
@@ -2366,7 +2342,7 @@ export interface paths {
         put?: never;
         /**
          * Provision email inbox
-         * @description Provisions a dedicated email inbox for the agent. The address is auto-generated (`agent-{8chars}@mobiusinbox.com`) and stored on the agent record. Idempotent: if an inbox is already provisioned, the existing agent is returned unchanged.
+         * @description Provisions a dedicated email inbox for the agent. The address is derived from the agent ID (`{agentID}@mobiusinbox.com`) and stored on the agent record. Idempotent: if an inbox is already provisioned, the existing agent is returned unchanged.
          */
         post: operations["provisionAgentInbox"];
         delete?: never;
@@ -2690,44 +2666,6 @@ export interface paths {
          * @description Upserts explicitly reported high-level actor availability, status description, and assignments. This endpoint does not infer state from unrelated platform lifecycle events.
          */
         put: operations["upsertActorState"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/presence/web/heartbeat": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Record web presence heartbeat
-         * @description Refreshes the current user's short-lived web presence session. The server derives org and user identity from authentication context.
-         */
-        post: operations["heartbeatWebPresence"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/users/me/presence-preferences": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get presence preferences */
-        get: operations["getCurrentUserPresencePreferences"];
-        /** Update presence preferences */
-        put: operations["updateCurrentUserPresencePreferences"];
         post?: never;
         delete?: never;
         options?: never;
@@ -7449,22 +7387,6 @@ export interface components {
                 [key: string]: number;
             };
         };
-        /** @description Per-actor delivery defaults applied when an interaction does not specify a `delivery` override (PRD 077 §3.8). One row per (org, actor_type, actor_id) in v1. */
-        NotificationPreferences: {
-            id?: string;
-            org_id: string;
-            /** @enum {string} */
-            actor_type: "user" | "agent";
-            actor_id: string;
-            channels?: components["schemas"]["DeliveryChannel"][];
-            /** Format: date-time */
-            created_at?: string;
-            /** Format: date-time */
-            updated_at?: string;
-        };
-        UpdateNotificationPreferencesRequest: {
-            channels: components["schemas"]["DeliveryChannel"][];
-        };
         InteractionListResponse: {
             /** @description The list of results for this page. */
             items: components["schemas"]["Interaction"][];
@@ -7830,7 +7752,7 @@ export interface components {
             selector: string;
         };
         Toolkit: {
-            /** @description Toolkit ID (TypeID `tk_...`). */
+            /** @description Toolkit ID (TypeID `kit_...`). */
             id: string;
             org_id: string;
             project_id: string;
@@ -7873,7 +7795,7 @@ export interface components {
             items: components["schemas"]["ToolkitAssignment"][];
         };
         Skill: {
-            /** @description Skill ID (TypeID `skl_...`). */
+            /** @description Skill ID (TypeID `skill_...`). */
             id: string;
             org_id: string;
             project_id: string;
@@ -8111,24 +8033,6 @@ export interface components {
         };
         ActorAssignmentListResponse: {
             items: components["schemas"]["ActorAssignment"][];
-        };
-        /** @enum {string} */
-        UserPresenceMode: "automatic" | "appear_offline";
-        WebPresenceHeartbeatRequest: {
-            session_id: string;
-            project_id?: string;
-            /** @default true */
-            visible: boolean;
-            /** Format: date-time */
-            last_active_at?: string;
-        };
-        UserPresencePreferences: {
-            mode: components["schemas"]["UserPresenceMode"];
-            /** Format: date-time */
-            updated_at: string;
-        };
-        UpdateUserPresencePreferencesRequest: {
-            mode: components["schemas"]["UserPresenceMode"];
         };
         /** @enum {string} */
         ProjectTeamMemberKind: "user" | "agent";
@@ -12752,7 +12656,7 @@ export interface operations {
                 content: {
                     /**
                      * @example {
-                     *       "id": "wh_01hw1t2u3v4w5x6y7z8a9b0c1d",
+                     *       "id": "wbh_01hw1t2u3v4w5x6y7z8a9b0c1d",
                      *       "name": "Run status sink",
                      *       "url": "https://hooks.example.test/mobius/run-status",
                      *       "events": [
@@ -12933,7 +12837,7 @@ export interface operations {
                      *       "items": [
                      *         {
                      *           "id": "whdel_01hw1u2v3w4x5y6z7a8b9c0d1e",
-                     *           "webhook_id": "wh_01hw1t2u3v4w5x6y7z8a9b0c1d",
+                     *           "webhook_id": "wbh_01hw1t2u3v4w5x6y7z8a9b0c1d",
                      *           "run_id": "run_01hw1n1a2b3c4d5e6f7g8h9j0k",
                      *           "event_type": "run.completed",
                      *           "status": "delivered",
@@ -13119,7 +13023,7 @@ export interface operations {
                      *       "expires_at": "2026-04-25T14:30:00Z",
                      *       "created_at": "2026-04-24T14:30:00Z",
                      *       "updated_at": "2026-04-24T14:30:00Z",
-                     *       "target_group_id": "grp_01hw1r0a2b3c4d5e6f7g8h9j0k",
+                     *       "target_group_id": "group_01hw1r0a2b3c4d5e6f7g8h9j0k",
                      *       "target_member_snapshot": [
                      *         "user_2f9s3k4m5n6p7q8r9s0t1u2v3w"
                      *       ],
@@ -13234,7 +13138,7 @@ export interface operations {
                      *       "completed_at": "2026-04-24T14:42:00Z",
                      *       "created_at": "2026-04-24T14:30:00Z",
                      *       "updated_at": "2026-04-24T14:42:00Z",
-                     *       "target_group_id": "grp_01hw1r0a2b3c4d5e6f7g8h9j0k",
+                     *       "target_group_id": "group_01hw1r0a2b3c4d5e6f7g8h9j0k",
                      *       "target_member_snapshot": [
                      *         "user_2f9s3k4m5n6p7q8r9s0t1u2v3w"
                      *       ],
@@ -13582,61 +13486,6 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
-        };
-    };
-    getNotificationPreferences: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                actor_type: "user" | "agent";
-                actor_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["NotificationPreferences"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    updateNotificationPreferences: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                actor_type: "user" | "agent";
-                actor_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateNotificationPreferencesRequest"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["NotificationPreferences"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
         };
     };
     listGroups: {
@@ -14458,7 +14307,7 @@ export interface operations {
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
-                /** @description Toolkit ID (TypeID `tk_...`). */
+                /** @description Toolkit ID (TypeID `kit_...`). */
                 toolkit_id: string;
             };
             cookie?: never;
@@ -14632,7 +14481,7 @@ export interface operations {
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
-                /** @description Skill ID (TypeID `skl_...`). */
+                /** @description Skill ID (TypeID `skill_...`). */
                 skill_id: string;
             };
             cookie?: never;
@@ -14824,78 +14673,6 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
-        };
-    };
-    heartbeatWebPresence: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["WebPresenceHeartbeatRequest"];
-            };
-        };
-        responses: {
-            /** @description No Content */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-        };
-    };
-    getCurrentUserPresencePreferences: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["UserPresencePreferences"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-        };
-    };
-    updateCurrentUserPresencePreferences: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateUserPresencePreferencesRequest"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["UserPresencePreferences"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
         };
     };
     listProjectTeam: {

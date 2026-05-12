@@ -4966,35 +4966,6 @@ class ProjectMetrics(BaseModel):
     )
 
 
-class ActorType(StrEnum):
-    user = 'user'
-    agent = 'agent'
-
-
-class NotificationPreferences(BaseModel):
-    """
-    Per-actor delivery defaults applied when an interaction does not specify a `delivery` override (PRD 077 §3.8). One row per (org, actor_type, actor_id) in v1.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    id: str | None = None
-    org_id: str
-    actor_type: ActorType
-    actor_id: str
-    channels: list[DeliveryChannel] | None = None
-    created_at: AwareDatetime | None = None
-    updated_at: AwareDatetime | None = None
-
-
-class UpdateNotificationPreferencesRequest(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    channels: list[DeliveryChannel]
-
-
 class RespondToInteractionRequest(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
@@ -5409,7 +5380,7 @@ class Toolkit(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    id: str = Field(..., description='Toolkit ID (TypeID `tk_...`).')
+    id: str = Field(..., description='Toolkit ID (TypeID `kit_...`).')
     org_id: str
     project_id: str
     name: str
@@ -5480,7 +5451,7 @@ class Skill(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    id: str = Field(..., description='Skill ID (TypeID `skl_...`).')
+    id: str = Field(..., description='Skill ID (TypeID `skill_...`).')
     org_id: str
     project_id: str
     name: str
@@ -5842,36 +5813,6 @@ class ActorAssignmentListResponse(BaseModel):
         extra='forbid',
     )
     items: list[ActorAssignment]
-
-
-class UserPresenceMode(StrEnum):
-    automatic = 'automatic'
-    appear_offline = 'appear_offline'
-
-
-class WebPresenceHeartbeatRequest(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    session_id: str = Field(..., max_length=160, min_length=1)
-    project_id: str | None = None
-    visible: bool = True
-    last_active_at: AwareDatetime | None = None
-
-
-class UserPresencePreferences(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    mode: UserPresenceMode
-    updated_at: AwareDatetime
-
-
-class UpdateUserPresencePreferencesRequest(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    mode: UserPresenceMode
 
 
 class ProjectTeamMemberKind(StrEnum):
