@@ -70,10 +70,6 @@ tags:
 - name: interactions
   x-displayName: Interactions
   description: Human-in-the-loop requests, responses, and group routing.
-- name: notification-preferences
-  x-displayName: Notification Preferences
-  description: Per-actor delivery defaults applied when an interaction does not override them
-    (PRD 077).
 - name: groups
   x-displayName: Groups
   description: Project groups, membership, and group interaction routing policy.
@@ -86,9 +82,6 @@ tags:
 - name: actor-state
   x-displayName: Actor State
   description: Actor State API operations.
-- name: presence
-  x-displayName: Presence
-  description: Presence API operations.
 - name: team
   x-displayName: Team
   description: Team API operations.
@@ -3956,7 +3949,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Webhook'
               example:
-                id: wh_01hw1t2u3v4w5x6y7z8a9b0c1d
+                id: wbh_01hw1t2u3v4w5x6y7z8a9b0c1d
                 name: Run status sink
                 url: https://hooks.example.test/mobius/run-status
                 events:
@@ -4119,7 +4112,7 @@ paths:
               example:
                 items:
                 - id: whdel_01hw1u2v3w4x5y6z7a8b9c0d1e
-                  webhook_id: wh_01hw1t2u3v4w5x6y7z8a9b0c1d
+                  webhook_id: wbh_01hw1t2u3v4w5x6y7z8a9b0c1d
                   run_id: run_01hw1n1a2b3c4d5e6f7g8h9j0k
                   event_type: run.completed
                   status: delivered
@@ -4239,7 +4232,7 @@ paths:
                 expires_at: '2026-04-25T14:30:00Z'
                 created_at: '2026-04-24T14:30:00Z'
                 updated_at: '2026-04-24T14:30:00Z'
-                target_group_id: grp_01hw1r0a2b3c4d5e6f7g8h9j0k
+                target_group_id: group_01hw1r0a2b3c4d5e6f7g8h9j0k
                 target_member_snapshot:
                 - user_2f9s3k4m5n6p7q8r9s0t1u2v3w
                 routing_policy_snapshot: first_responder
@@ -4409,7 +4402,7 @@ paths:
                 completed_at: '2026-04-24T14:42:00Z'
                 created_at: '2026-04-24T14:30:00Z'
                 updated_at: '2026-04-24T14:42:00Z'
-                target_group_id: grp_01hw1r0a2b3c4d5e6f7g8h9j0k
+                target_group_id: group_01hw1r0a2b3c4d5e6f7g8h9j0k
                 target_member_snapshot:
                 - user_2f9s3k4m5n6p7q8r9s0t1u2v3w
                 routing_policy_snapshot: first_responder
@@ -4726,81 +4719,6 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-  /v1/notification-preferences/{actor_type}/{actor_id}:
-    get:
-      operationId: getNotificationPreferences
-      tags:
-      - notification-preferences
-      summary: Get notification preferences for an actor
-      description: Returns the actor's notification preferences (PRD 077 §3.8). When the actor
-        has no preferences set, returns an empty `channels` list — callers should treat that
-        as "use org defaults".
-      parameters:
-      - name: actor_type
-        in: path
-        required: true
-        schema:
-          type: string
-          enum:
-          - user
-          - agent
-      - name: actor_id
-        in: path
-        required: true
-        schema:
-          type: string
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/NotificationPreferences'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-    put:
-      operationId: updateNotificationPreferences
-      tags:
-      - notification-preferences
-      summary: Update notification preferences for an actor
-      description: Replaces the actor's notification preferences with the supplied channel
-        list. Users may edit their own preferences; org admins may edit any preferences within
-        their org.
-      parameters:
-      - name: actor_type
-        in: path
-        required: true
-        schema:
-          type: string
-          enum:
-          - user
-          - agent
-      - name: actor_id
-        in: path
-        required: true
-        schema:
-          type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpdateNotificationPreferencesRequest'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/NotificationPreferences'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
   /v1/projects/{project}/groups:
     post:
       operationId: createGroup
@@ -5162,9 +5080,9 @@ paths:
       tags:
       - agents
       summary: Provision email inbox
-      description: 'Provisions a dedicated email inbox for the agent. The address is auto-generated
-        (`agent-{8chars}@mobiusinbox.com`) and stored on the agent record. Idempotent: if
-        an inbox is already provisioned, the existing agent is returned unchanged.'
+      description: 'Provisions a dedicated email inbox for the agent. The address is derived
+        from the agent ID (`{agentID}@mobiusinbox.com`) and stored on the agent record. Idempotent:
+        if an inbox is already provisioned, the existing agent is returned unchanged.'
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/IDParam'
@@ -5527,7 +5445,7 @@ paths:
       - name: toolkit_id
         in: path
         required: true
-        description: Toolkit ID (TypeID `tk_...`).
+        description: Toolkit ID (TypeID `kit_...`).
         schema:
           type: string
       responses:
@@ -5692,7 +5610,7 @@ paths:
       - name: skill_id
         in: path
         required: true
-        description: Skill ID (TypeID `skl_...`).
+        description: Skill ID (TypeID `skill_...`).
         schema:
           type: string
       responses:
@@ -5881,66 +5799,6 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-  /v1/presence/web/heartbeat:
-    post:
-      operationId: heartbeatWebPresence
-      tags:
-      - presence
-      summary: Record web presence heartbeat
-      description: Refreshes the current user's short-lived web presence session. The server
-        derives org and user identity from authentication context.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/WebPresenceHeartbeatRequest'
-      responses:
-        '204':
-          description: No Content
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-  /v1/users/me/presence-preferences:
-    get:
-      operationId: getCurrentUserPresencePreferences
-      tags:
-      - presence
-      summary: Get presence preferences
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UserPresencePreferences'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-    put:
-      operationId: updateCurrentUserPresencePreferences
-      tags:
-      - presence
-      summary: Update presence preferences
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpdateUserPresencePreferencesRequest'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UserPresencePreferences'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
   /v1/projects/{project}/team:
     get:
       operationId: listProjectTeam
@@ -15292,47 +15150,6 @@ components:
             type: integer
           description: 'Deprecated: use runs.status_breakdown.'
           x-deprecated: true
-    NotificationPreferences:
-      type: object
-      additionalProperties: false
-      required:
-      - org_id
-      - actor_type
-      - actor_id
-      description: Per-actor delivery defaults applied when an interaction does not specify
-        a `delivery` override (PRD 077 §3.8). One row per (org, actor_type, actor_id) in v1.
-      properties:
-        id:
-          type: string
-        org_id:
-          type: string
-        actor_type:
-          type: string
-          enum:
-          - user
-          - agent
-        actor_id:
-          type: string
-        channels:
-          type: array
-          items:
-            $ref: '#/components/schemas/DeliveryChannel'
-        created_at:
-          type: string
-          format: date-time
-        updated_at:
-          type: string
-          format: date-time
-    UpdateNotificationPreferencesRequest:
-      type: object
-      additionalProperties: false
-      required:
-      - channels
-      properties:
-        channels:
-          type: array
-          items:
-            $ref: '#/components/schemas/DeliveryChannel'
     InteractionListResponse:
       type: object
       additionalProperties: false
@@ -16032,7 +15849,7 @@ components:
       properties:
         id:
           type: string
-          description: Toolkit ID (TypeID `tk_...`).
+          description: Toolkit ID (TypeID `kit_...`).
         org_id:
           type: string
         project_id:
@@ -16152,7 +15969,7 @@ components:
       properties:
         id:
           type: string
-          description: Skill ID (TypeID `skl_...`).
+          description: Skill ID (TypeID `skill_...`).
         org_id:
           type: string
         project_id:
@@ -16709,49 +16526,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ActorAssignment'
-    UserPresenceMode:
-      type: string
-      enum:
-      - automatic
-      - appear_offline
-    WebPresenceHeartbeatRequest:
-      type: object
-      additionalProperties: false
-      required:
-      - session_id
-      properties:
-        session_id:
-          type: string
-          minLength: 1
-          maxLength: 160
-        project_id:
-          type: string
-        visible:
-          type: boolean
-          default: true
-        last_active_at:
-          type: string
-          format: date-time
-    UserPresencePreferences:
-      type: object
-      additionalProperties: false
-      required:
-      - mode
-      - updated_at
-      properties:
-        mode:
-          $ref: '#/components/schemas/UserPresenceMode'
-        updated_at:
-          type: string
-          format: date-time
-    UpdateUserPresencePreferencesRequest:
-      type: object
-      additionalProperties: false
-      required:
-      - mode
-      properties:
-        mode:
-          $ref: '#/components/schemas/UserPresenceMode'
     ProjectTeamMemberKind:
       type: string
       enum:
@@ -18292,9 +18066,6 @@ x-tagGroups:
 - name: Interactions
   tags:
   - interactions
-- name: Notification Preferences
-  tags:
-  - notification-preferences
 - name: Groups
   tags:
   - groups
@@ -18305,9 +18076,6 @@ x-tagGroups:
 - name: Actor State
   tags:
   - actor-state
-- name: Presence
-  tags:
-  - presence
 - name: Project Team
   tags:
   - team
