@@ -6,7 +6,15 @@ from __future__ import annotations
 from enum import StrEnum
 from typing import Any, Literal
 
-from pydantic import AnyUrl, AwareDatetime, BaseModel, ConfigDict, Field, RootModel
+from pydantic import (
+    AnyUrl,
+    AwareDatetime,
+    BaseModel,
+    ConfigDict,
+    EmailStr,
+    Field,
+    RootModel,
+)
 
 
 class Error(BaseModel):
@@ -88,45 +96,58 @@ class InteractionOption(BaseModel):
     )
 
 
-class InteractionSpec(BaseModel):
+class TieBreak(StrEnum):
     """
-    Declarative dialog contract for rendering and validating an interaction. Used at both authoring time (inside a workflow definition) and runtime (persisted on an interaction). Compatibility rules are enforced server-side:
+    How to resolve a tied top vote count on close.
+    """
 
-    - `approval` requires `mode = confirm`
-    - `review` requires `mode = select`
-    - `input` supports `input`, `select`, or `multi_select`
+    none = 'none'
+    first_cast = 'first_cast'
+    owner = 'owner'
+
+
+class VoteOption(BaseModel):
+    """
+    A choice on a vote ballot.
     """
 
     model_config = ConfigDict(
         extra='forbid',
     )
-    mode: InteractionMode = Field(
-        ..., description='UI/input mode used to render and validate the response.'
+    value: str = Field(..., description='Machine-readable choice value.')
+    label: str = Field(..., description='Display label.')
+    description: str | None = Field(None, description='Optional extra context.')
+
+
+class Kind(StrEnum):
+    explicit = 'explicit'
+    group_snapshot = 'group_snapshot'
+
+
+class Type(StrEnum):
+    """
+    Target kind: a specific user, an agent queue, or a group.
+    """
+
+    user = 'user'
+    agent = 'agent'
+    group = 'group'
+
+
+class InteractionTarget(BaseModel):
+    """
+    Identifies who should receive an interaction request. Note: distinct from the caller/audit `Actor` vocabulary — a target is a *recipient*, not someone who has acted yet.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
     )
-    options: list[InteractionOption] | None = Field(
-        None,
-        description='Required for `select` and `multi_select` modes.',
-        max_length=100,
+    type: Type = Field(
+        ..., description='Target kind: a specific user, an agent queue, or a group.'
     )
-    default_value: str | None = Field(
-        None, description='Default selected option for `select` mode.'
-    )
-    default_values: list[str] | None = Field(
-        None,
-        description='Default selected options for `multi_select` mode.',
-        max_length=100,
-    )
-    default_text: str | None = Field(
-        None, description='Initial text value for `input` mode.'
-    )
-    default_confirmed: bool | None = Field(
-        None, description='Initial yes/no value for `confirm` mode.'
-    )
-    placeholder: str | None = Field(
-        None, description='Hint text shown for `input` mode.'
-    )
-    multiline: bool | None = Field(
-        None, description='When true, render `input` mode as a multiline text area.'
+    id: str = Field(
+        ...,
+        description='User ID for user; queue name for agent; group ID or handle for group.',
     )
 
 
@@ -188,7 +209,7 @@ class EntityReference(BaseModel):
     )
 
 
-class Kind(StrEnum):
+class Kind1(StrEnum):
     """
     `channel` — persistent named room. `dm` — direct-message thread, typically between a small fixed set of participants.
     """
@@ -236,7 +257,7 @@ class Channel(BaseModel):
         None,
         description='Optional topic or description shown at the top of the channel.',
     )
-    kind: Kind = Field(
+    kind: Kind1 = Field(
         ...,
         description='`channel` — persistent named room. `dm` — direct-message thread, typically between a small fixed set of participants.',
     )
@@ -480,7 +501,7 @@ class ShareChannelEntityRequest(BaseModel):
     )
 
 
-class Kind1(StrEnum):
+class Kind2(StrEnum):
     """
     Channel kind, either `dm` or `channel`. Cannot be changed after creation.
     """
@@ -526,7 +547,7 @@ class CreateChannelRequest(BaseModel):
     topic: str | None = Field(
         None, description='Optional channel topic or description.'
     )
-    kind: Kind1 = Field(
+    kind: Kind2 = Field(
         ...,
         description='Channel kind, either `dm` or `channel`. Cannot be changed after creation.',
     )
@@ -742,14 +763,31 @@ class MarkChannelMessagesReadRequest(BaseModel):
     )
 
 
-class InteractionType(StrEnum):
+class InteractionKind(StrEnum):
     """
-    Interaction kind: `approval` captures a decision, `review` captures acknowledgement or notes, and `input` collects free-form data.
+    Protocol kind of the interaction (PRD 077). Each value names a
+    distinct multi-party coordination protocol:
+    * `approval` — a decision protocol (yes/no, optionally yes/no/defer)
+    * `review` — a judgment protocol that evaluates supplied material
+    * `request` — a data-collection protocol with structured or
+    free-form input
+    * `vote` — a collective-choice protocol with ballot semantics
+    (changeable until close, eligibility, quorum, anonymity,
+    tie-break). Vote ballots use the dedicated `/vote` endpoint.
+    * `handoff` — a work-completion protocol where ownership moves to
+    another actor who submits completed output
+    * `input` — *deprecated* alias of `request`; existing rows keep
+    this value but new interactions should be created with
+    `request`. The server normalises `input` to `request` on
+    create.
     """
 
     approval = 'approval'
     review = 'review'
     input = 'input'
+    request = 'request'
+    vote = 'vote'
+    handoff = 'handoff'
 
 
 class InteractionOrigin(StrEnum):
@@ -763,7 +801,7 @@ class InteractionOrigin(StrEnum):
     system = 'system'
 
 
-class Type(StrEnum):
+class Type1(StrEnum):
     user = 'user'
     agent = 'agent'
     workflow = 'workflow'
@@ -779,36 +817,41 @@ class InteractionSource(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    type: Type
+    type: Type1
     id: str
     display_name: str | None = None
 
 
-class Type1(StrEnum):
-    """
-    Target kind: a specific user, an agent queue, or a group.
-    """
-
-    user = 'user'
-    agent = 'agent'
-    group = 'group'
+class Kind3(StrEnum):
+    external_url = 'external_url'
+    mobius_entity = 'mobius_entity'
 
 
-class InteractionTarget(BaseModel):
+class InteractionReference(BaseModel):
     """
-    Identifies who should receive an interaction request. Note: distinct from the caller/audit `Actor` vocabulary — a target is a *recipient*, not someone who has acted yet.
+    Pointer to the work item, artifact, external ticket, or Mobius entity this interaction is about.
     """
 
     model_config = ConfigDict(
         extra='forbid',
     )
-    type: Type1 = Field(
-        ..., description='Target kind: a specific user, an agent queue, or a group.'
+    kind: Kind3
+    url: AnyUrl | None = Field(
+        None, description='Required when kind is `external_url`.'
     )
-    id: str = Field(
-        ...,
-        description='User ID for user; queue name for agent; group ID or handle for group.',
+    entity_type: str | None = Field(
+        None, description='Required when kind is `mobius_entity`.'
     )
+    entity_id: str | None = Field(
+        None, description='Required when kind is `mobius_entity`.'
+    )
+    project_id: str | None = Field(
+        None, description='Optional project scope for Mobius entity references.'
+    )
+    relation: str | None = Field(
+        None, description='Relationship such as `subject`, `evidence`, or `related`.'
+    )
+    label: str | None = Field(None, description='User-facing label for display.')
 
 
 class Type2(StrEnum):
@@ -882,7 +925,64 @@ class InteractionResponse(BaseModel):
     )
 
 
+class Status(StrEnum):
+    pending_review = 'pending_review'
+    accepted = 'accepted'
+    sent_back = 'sent_back'
+
+
+class InteractionSubmission(BaseModel):
+    """
+    One handoff submission attempt.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str
+    interaction_id: str
+    attempt: int = Field(..., ge=1)
+    status: Status
+    submitter: InteractionResponder
+    value: InteractionValue
+    comment: str | None = None
+    submitted_at: AwareDatetime
+    reviewed_by: InteractionResponder | None = None
+    review_comment: str | None = None
+    reviewed_at: AwareDatetime | None = None
+
+
 class Type3(StrEnum):
+    created = 'created'
+    submitted = 'submitted'
+    accepted = 'accepted'
+    sent_back = 'sent_back'
+    responded = 'responded'
+    cancelled = 'cancelled'
+    claimed = 'claimed'
+    released = 'released'
+    expired = 'expired'
+
+
+class InteractionEvent(BaseModel):
+    """
+    Lifecycle timeline entry for an interaction.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str
+    interaction_id: str
+    type: Type3
+    actor: InteractionResponder | None = None
+    submission_id: str | None = None
+    message: str | None = None
+    data: dict[str, Any] | None = None
+    created_at: AwareDatetime
+
+
+class Type4(StrEnum):
     """
     Resolution rule. `first_valid_response` resolves on the first response (Tier 1 default). `all_required` waits for every eligible participant. `simple_majority` and `threshold` are voting policies. `weighted_vote` weighs responses by `confidence`. `speculative` resolves to `proposal` when the veto window closes without a veto. `asymmetric` runs different sub-rules per actor class (e.g. agents propose, humans decide via majority).
     """
@@ -896,7 +996,7 @@ class Type3(StrEnum):
     asymmetric = 'asymmetric'
 
 
-class TieBreak(StrEnum):
+class TieBreak1(StrEnum):
     """
     Behavior on a tied top vote count for `simple_majority`. Null or absent keeps the interaction open; `first` picks the earliest-arriving value; `owner_decides` waits for `owner_id` to break the tie.
     """
@@ -932,18 +1032,164 @@ class Rule(StrEnum):
     ignore = 'ignore'
 
 
-class Status(StrEnum):
+class Type5(StrEnum):
     """
-    Current status of the interaction: pending, completed, expired, or cancelled.
+    `none` completes a handoff when submitted. `requester_acceptance_required` moves submitted handoffs to `in_review` until an authorized reviewer accepts or sends back.
+    """
+
+    none = 'none'
+    requester_acceptance_required = 'requester_acceptance_required'
+
+
+class ReviewPolicy(BaseModel):
+    """
+    Reviewability policy for an interaction artifact (PRD 077 §3.5). Carried as a template on `Interaction.submission_review_policy` (so new submissions inherit a snapshot) and as the per-submission snapshot on `InteractionSubmission.review_policy`.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    type: Type5 = Field(
+        ...,
+        description='`none` completes a handoff when submitted. `requester_acceptance_required` moves submitted handoffs to `in_review` until an authorized reviewer accepts or sends back.',
+    )
+    reviewers: list[InteractionTarget] | None = Field(
+        None,
+        description='Optional explicit reviewers. When omitted for `requester_acceptance_required`, the requester/source actor is the reviewer. Workflow, system, or integration-created handoffs should provide explicit user, agent, or group reviewers.',
+    )
+
+
+class RunConsumer(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    run_id: str
+    signal_name: str
+
+
+class AgentToolConsumer(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    invocation_id: str
+    tool_call_id: str
+
+
+class HttpSubscriberConsumer(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    callback_url: AnyUrl = Field(
+        ...,
+        description='Absolute http(s) URL the server POSTs to when the interaction resolves. The body is a JSON object with the interaction id, kind, status, outcome value, comment, responder, and `resolved_by`. Delivery is best-effort in v1 (no durable outbox or retries).',
+    )
+    secret_ref: str | None = Field(
+        None,
+        description='Reference to a project secret intended to sign deliveries. Forwarded to the deliverer as `X-Mobius-Secret-Ref` for forward compatibility; HMAC-SHA256 signing of the payload against the resolved plaintext is a follow-up.',
+    )
+
+
+class Kind4(StrEnum):
+    run = 'run'
+    agent_tool = 'agent_tool'
+    http_subscriber = 'http_subscriber'
+    none = 'none'
+
+
+class Consumer(BaseModel):
+    """
+    Polymorphic identifier of what is waiting on this interaction's resolution (PRD 077 §3.7). Replaces the previously special-cased `run_id` + `signal_name` pair. When `kind=run`, the legacy fields are also populated for compatibility. `http_subscriber` triggers a best-effort POST to `callback_url` when the interaction resolves; HMAC signing of the payload via the `secret_ref` is a follow-up — current callers should pin the `callback_url` to an authenticated endpoint until that lands.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    kind: Kind4
+    run: RunConsumer | None = None
+    agent_tool: AgentToolConsumer | None = None
+    http_subscriber: HttpSubscriberConsumer | None = None
+
+
+class ChannelThreadDelivery(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    channel_id: str
+    parent_message_id: str | None = None
+
+
+class EmailDelivery(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    to: list[EmailStr] = Field(..., min_length=1)
+
+
+class PageDelivery(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    policy_id: str
+
+
+class AgentQueueDelivery(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    queue: str
+
+
+class Kind5(StrEnum):
+    inbox_only = 'inbox_only'
+    email = 'email'
+    channel_thread = 'channel_thread'
+    agent_queue = 'agent_queue'
+    page = 'page'
+
+
+class DeliveryChannel(BaseModel):
+    """
+    A single delivery destination. `inbox_only` carries no payload; each other kind owns its variant. `page` is schema-only in v1 — the server rejects it at create until paging is implemented.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    kind: Kind5
+    channel_thread: ChannelThreadDelivery | None = None
+    email: EmailDelivery | None = None
+    page: PageDelivery | None = None
+    agent_queue: AgentQueueDelivery | None = None
+
+
+class Delivery(BaseModel):
+    """
+    Optional per-interaction delivery override (PRD 077 §3.8). When absent, each participant is notified per their own `NotificationPreferences`. When set, channels are added to the participant's preferences (additive default) or replace them (exclusive — `override_participant_preferences=true`).
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    channels: list[DeliveryChannel] = Field(..., min_length=1)
+    override_participant_preferences: bool | None = Field(
+        None,
+        description='When false (default), additive: deliver via the listed channels in addition to participant preferences. When true, exclusive: deliver *only* via the listed channels.',
+    )
+
+
+class Status1(StrEnum):
+    """
+    Current status of the interaction: pending, in_review, completed, expired, or cancelled.
     """
 
     pending = 'pending'
+    in_review = 'in_review'
     completed = 'completed'
     expired = 'expired'
     cancelled = 'cancelled'
 
 
-class Type4(StrEnum):
+class Type6(StrEnum):
     """
     Responder kind: a user or an agent.
     """
@@ -960,7 +1206,7 @@ class Responder(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    type: Type4 = Field(..., description='Responder kind: a user or an agent.')
+    type: Type6 = Field(..., description='Responder kind: a user or an agent.')
     id: str = Field(..., description='User ID for user; agent ID for agent.')
 
 
@@ -1112,8 +1358,31 @@ class WorkflowStepLayout(BaseModel):
     )
 
 
-class Type5(StrEnum):
+class Type7(StrEnum):
     set = 'set'
+
+
+class WorkflowCodeStepConfig(BaseModel):
+    """
+    Configuration for a code-handler step.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    handler: str = Field(
+        ...,
+        description='Stable identifier the worker SDK registered the handler under (typically equal to the workflow definition name). The server emits jobs whose handler parameter equals this value; the worker dispatches the job to the matching handler.',
+        min_length=1,
+    )
+    runtime: str | None = Field(
+        None,
+        description='Opaque hint identifying the language/runtime that owns this handler ("typescript", "python", etc.). Used by the UI for display only; the engine does not interpret it.',
+    )
+    queue: str | None = Field(
+        None,
+        description='Optional worker queue the code-invoke job is dispatched to. When empty, the run-level queue is used.',
+    )
 
 
 class WorkflowActionKind(StrEnum):
@@ -1352,7 +1621,7 @@ class WorkflowPauseConfig(BaseModel):
     )
 
 
-class Type6(StrEnum):
+class Type8(StrEnum):
     """
     Interaction kind: approval requires a yes/no decision, review requests acknowledgement, input collects free-form data.
     """
@@ -1362,36 +1631,40 @@ class Type6(StrEnum):
     input = 'input'
 
 
-class WorkflowInteractionConfig(BaseModel):
+class WorkflowInteractionDiscussionConfig(BaseModel):
     """
-    Configuration for an interaction step that waits on a response.
+    Creates or reuses a project channel for the surrounding discussion while the interaction remains the typed outcome that resumes the workflow.
     """
 
     model_config = ConfigDict(
         extra='forbid',
     )
-    type: Type6 = Field(
+    channel_id: str | None = Field(
+        None,
+        description='Existing channel ID to reuse. If omitted, channel_name is used.',
+    )
+    channel_name: str | None = Field(
+        None,
+        description='Existing or new project channel name to use for the discussion.',
+    )
+    display_name: str | None = Field(
+        None, description='Display name for a newly-created channel.'
+    )
+    topic: str | None = Field(None, description='Topic for a newly-created channel.')
+    member_ids: list[str] | None = Field(
+        None, description='Additional user or agent IDs to invite to the channel.'
+    )
+    opening_message: str = Field(
         ...,
-        description='Interaction kind: approval requires a yes/no decision, review requests acknowledgement, input collects free-form data.',
+        description='Opening brief posted into the channel before the workflow parks.',
+        min_length=1,
     )
-    message: str = Field(
-        ..., description='Prompt message shown to the interaction recipient.'
+    completion_behavior: CompletionBehavior1 | None = Field(
+        'none',
+        description='Behavior to apply when all purpose-linked interactions are terminal.',
     )
-    context: dict[str, Any] | None = Field(
-        None,
-        description='Arbitrary key-value context passed alongside the interaction for rendering.',
-    )
-    spec: InteractionSpec | None = Field(
-        None,
-        description='Response controls and validation rules rendered to the recipient.',
-    )
-    timeout: str = Field(..., description='Go duration string.')
-    target: InteractionTarget = Field(
-        ..., description='User, group, or agent that should receive the interaction.'
-    )
-    require_all: bool | None = Field(
-        None,
-        description='When true, all group members must respond before the interaction completes. Only meaningful when type is `group`.',
+    private: bool | None = Field(
+        None, description='Whether a newly-created channel is private.'
     )
 
 
@@ -1995,7 +2268,7 @@ class TestFireTargetStatus(StrEnum):
     skipped = 'skipped'
 
 
-class Kind2(StrEnum):
+class Kind6(StrEnum):
     """
     Effect kind of this target. Discriminates which resolved field is populated: `launch_run` populates `input_mapping_resolved`; `signal_run` populates `signal_payload_resolved`.
     """
@@ -2015,7 +2288,7 @@ class TestFireTargetResult(BaseModel):
     target_id: str = Field(
         ..., description='ID of the trigger target this result is for.'
     )
-    kind: Kind2 = Field(
+    kind: Kind6 = Field(
         ...,
         description='Effect kind of this target. Discriminates which resolved field is populated: `launch_run` populates `input_mapping_resolved`; `signal_run` populates `signal_payload_resolved`.',
     )
@@ -2266,9 +2539,10 @@ class RotateSecretResult(BaseModel):
 
 class EndpointKind1(StrEnum):
     """
-    Backing kind. "http" for HTTP endpoints (project-owned or platform-integration). "workflow" for actions backed by a workflow definition published as a tool.
+    Backing kind. "builtin" for Mobius platform actions implemented in Go (no DB row), "http" for project-owned or integration HTTP endpoints, "workflow" for actions backed by a workflow definition published as a tool.
     """
 
+    builtin = 'builtin'
     http = 'http'
     workflow = 'workflow'
 
@@ -2282,16 +2556,28 @@ class Source2(StrEnum):
     custom = 'custom'
 
 
+class Risk(StrEnum):
+    """
+    Author-declared risk classification. Used by toolkit-author UIs to surface warnings and by audit views to prioritize attention.
+    """
+
+    low = 'low'
+    medium = 'medium'
+    high = 'high'
+    critical = 'critical'
+
+
 class ActionCatalogEntry(BaseModel):
     """
-    One project, platform, or workflow-backed action available to workflow authors.
+    One built-in, integration, workflow-, or custom-backed action available to agents and workflow authors.
     """
 
     model_config = ConfigDict(
         extra='forbid',
     )
     name: str = Field(
-        ..., description='Action name as used in workflow step definitions.'
+        ...,
+        description='Canonical dotted action name (e.g. `mobius.channel.send_message`). Translated to the provider-safe form (`mobius_channel_send_message`) only at the LLM boundary.',
     )
     title: str | None = Field(
         None, description='Human-readable display title for the action.'
@@ -2301,11 +2587,11 @@ class ActionCatalogEntry(BaseModel):
     )
     endpoint_kind: EndpointKind1 = Field(
         ...,
-        description='Backing kind. "http" for HTTP endpoints (project-owned or platform-integration). "workflow" for actions backed by a workflow definition published as a tool.',
+        description='Backing kind. "builtin" for Mobius platform actions implemented in Go (no DB row), "http" for project-owned or integration HTTP endpoints, "workflow" for actions backed by a workflow definition published as a tool.',
     )
     workflow_handle: str | None = Field(
         None,
-        description='Workflow handle for endpoint_kind=workflow entries. Absent for http-backed actions.',
+        description='Workflow handle for endpoint_kind=workflow entries. Absent otherwise.',
     )
     integration: str | None = Field(
         None,
@@ -2317,10 +2603,15 @@ class ActionCatalogEntry(BaseModel):
     )
     available: bool = Field(
         ...,
-        description='Whether this action can currently be invoked. False if the required integration is not connected or the caller lacks permission.',
+        description='Whether this action can currently be invoked. False if the required integration is not connected, the action is a placeholder for a not-yet-implemented capability, or the caller lacks permission.',
     )
-    annotations: ActionAnnotationsResponse | None = Field(
-        None, description='Safe-use hints returned for this catalog action.'
+    risk: Risk = Field(
+        ...,
+        description='Author-declared risk classification. Used by toolkit-author UIs to surface warnings and by audit views to prioritize attention.',
+    )
+    annotations: ActionAnnotationsResponse = Field(
+        ...,
+        description='Safe-use hints returned for this catalog action. Always present; flags default to false.',
     )
     input_schema: dict[str, Any] | None = Field(
         None, description='JSON Schema describing expected input parameters.'
@@ -2370,7 +2661,7 @@ class ActionInvocationRequest(BaseModel):
     )
 
 
-class Status1(StrEnum):
+class Status2(StrEnum):
     """
     Terminal or in-progress status of the invocation.
     """
@@ -2388,7 +2679,7 @@ class ActionInvocationResult(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    status: Status1 = Field(
+    status: Status2 = Field(
         ..., description='Terminal or in-progress status of the invocation.'
     )
     run_id: str | None = Field(
@@ -2918,7 +3209,8 @@ class JobClaim(BaseModel):
         description='Step label from the workflow spec — used for UI and interaction signal name derivation.',
     )
     action: str = Field(
-        ..., description='Action name the worker must execute for this step.'
+        ...,
+        description='Action name the worker must execute for this step.\n\nThe reserved value `mobius.code.invoke` identifies a code-mode workflow invocation: the worker dispatches to the registered code handler named by `parameters._mobius_code_handler` and completes via `code-completion` / `code-yield` instead of `complete`. See `CodeInvokeJobParameters` for the parameter shape.',
     )
     agent_id: str | None = Field(
         None,
@@ -2929,7 +3221,7 @@ class JobClaim(BaseModel):
     )
     parameters: dict[str, Any] = Field(
         ...,
-        description='Input parameters for this step, resolved from the workflow spec and prior step outputs.',
+        description='Input parameters for this step, resolved from the workflow spec and prior step outputs.\n\nWhen `action == "mobius.code.invoke"`, parameters follow the `CodeInvokeJobParameters` shape — they carry the registered handler id, the run inputs, and the replay history rather than spec-authored values.',
     )
     attempt: int = Field(
         ...,
@@ -2988,11 +3280,11 @@ class JobFenceRequest(BaseModel):
         description="Per-boot token from the original claim. Compared against the job's `claimed_by_session_token`; mismatch returns 409 lease-lost.",
     )
     attempt: int = Field(
-        ..., description='Must match the `attempt` from the original claim.'
+        ..., description='Must match the `attempt` from the original claim.', ge=0
     )
 
 
-class Status2(StrEnum):
+class Status3(StrEnum):
     """
     Terminal status for this job attempt: `completed` or `failed`. `failed` triggers the workflow engine's retry logic if `attempt < max_attempts`.
     """
@@ -3017,9 +3309,9 @@ class JobCompleteRequest(BaseModel):
         description="Per-boot token from the claim. Compared against the job's `claimed_by_session_token`; mismatch returns 409 lease-lost.",
     )
     attempt: int = Field(
-        ..., description='Must match the `attempt` from the original claim.'
+        ..., description='Must match the `attempt` from the original claim.', ge=0
     )
-    status: Status2 = Field(
+    status: Status3 = Field(
         ...,
         description="Terminal status for this job attempt: `completed` or `failed`. `failed` triggers the workflow engine's retry logic if `attempt < max_attempts`.",
     )
@@ -3035,6 +3327,112 @@ class JobCompleteRequest(BaseModel):
         None,
         description='Human-readable error detail. Only relevant for failed status.',
     )
+
+
+class Kind7(StrEnum):
+    """
+    Sub-step kind. Only `run` carries a meaningful `result`; wait kinds capture "wait completed" markers.
+    """
+
+    run = 'run'
+    sleep = 'sleep'
+    wait_signal = 'wait_signal'
+    wait_event = 'wait_event'
+    interaction = 'interaction'
+    pause = 'pause'
+
+
+class Status4(StrEnum):
+    completed = 'completed'
+    failed = 'failed'
+    skipped = 'skipped'
+
+
+class CodeStepCompletion(BaseModel):
+    """
+    One durable sub-step the handler executed (or a wait it observed completing). Replayed back to the handler on the next invocation so step.run() / step.waitFor*() calls fast-forward without re-executing the user-supplied function.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    step_id: str = Field(
+        ...,
+        description='Deterministic identifier the handler passed to step.run() (or step.sleep, step.waitForSignal, etc.). Replay key.',
+        min_length=1,
+    )
+    kind: Kind7 = Field(
+        ...,
+        description='Sub-step kind. Only `run` carries a meaningful `result`; wait kinds capture "wait completed" markers.',
+    )
+    status: Status4
+    result: Any | None = Field(
+        None,
+        description='Value the handler should observe on replay. JSON-shape; kind-specific (handler return value for `run`, signal payload for `wait_signal`, etc.).',
+    )
+    error_type: str | None = Field(
+        None, description='Error class for a failed sub-step.'
+    )
+    error_message: str | None = Field(None, description='Human-readable error detail.')
+    attempt: int | None = Field(
+        None, description='Worker-side per-step retry counter. 0 for first try.', ge=0
+    )
+
+
+class Kind8(StrEnum):
+    sleep = 'sleep'
+
+
+class CodeYieldSleepSuspension(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    step_id: str = Field(..., min_length=1)
+    kind: Literal['sleep']
+    sleep: WorkflowSleepConfig
+
+
+class Kind9(StrEnum):
+    wait_signal = 'wait_signal'
+
+
+class CodeYieldWaitSignalSuspension(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    step_id: str = Field(..., min_length=1)
+    kind: Literal['wait_signal']
+    wait_signal: WorkflowWaitSignalConfig
+
+
+class Kind10(StrEnum):
+    wait_event = 'wait_event'
+
+
+class CodeYieldWaitEventSuspension(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    step_id: str = Field(..., min_length=1)
+    kind: Literal['wait_event']
+    wait_event: WorkflowWaitEventConfig
+
+
+class Kind11(StrEnum):
+    interaction = 'interaction'
+
+
+class Kind12(StrEnum):
+    pause = 'pause'
+
+
+class CodeYieldPauseSuspension(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    step_id: str = Field(..., min_length=1)
+    kind: Literal['pause']
+    pause: WorkflowPauseConfig | None = None
 
 
 class RunActionRequest(BaseModel):
@@ -3134,7 +3532,7 @@ class TriggerFireTargetStatus(StrEnum):
     skipped = 'skipped'
 
 
-class Kind3(StrEnum):
+class Kind13(StrEnum):
     """
     Discriminates the target's effect. `launch_run` starts a new workflow run; `signal_run` signals an existing run.
     """
@@ -3158,7 +3556,7 @@ class TriggerTargetRunSelector(BaseModel):
     )
 
 
-class Kind4(StrEnum):
+class Kind14(StrEnum):
     launch_run = 'launch_run'
     signal_run = 'signal_run'
 
@@ -3171,7 +3569,7 @@ class CreateTriggerTargetRequest(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    kind: Kind4 = 'launch_run'
+    kind: Kind14 = 'launch_run'
     workflow_id: str | None = Field(
         None,
         description='(launch_run only) ID of the workflow definition to run. Required when `kind=launch_run`.',
@@ -3200,7 +3598,7 @@ class CreateTriggerTargetRequest(BaseModel):
     )
 
 
-class Kind5(StrEnum):
+class Kind15(StrEnum):
     """
     Replacement kind. Changing kind requires the corresponding kind-specific fields to be updated in the same request.
     """
@@ -3217,7 +3615,7 @@ class UpdateTriggerTargetRequest(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    kind: Kind5 | None = Field(
+    kind: Kind15 | None = Field(
         None,
         description='Replacement kind. Changing kind requires the corresponding kind-specific fields to be updated in the same request.',
     )
@@ -3246,7 +3644,7 @@ class UpdateTriggerTargetRequest(BaseModel):
     )
 
 
-class Kind6(StrEnum):
+class Kind16(StrEnum):
     """
     Effect kind of the evaluated target. `launch_run` started (or attempted) a new workflow run; `signal_run` delivered (or attempted to deliver) a signal to an existing run. Lets clients reliably branch on `kind` instead of inspecting optional fields like `workflow_id` or `external_id_resolved`.
     """
@@ -3266,7 +3664,7 @@ class TriggerFireTargetResult(BaseModel):
     target_id: str = Field(
         ..., description='ID of the trigger target that was evaluated.'
     )
-    kind: Kind6 = Field(
+    kind: Kind16 = Field(
         ...,
         description='Effect kind of the evaluated target. `launch_run` started (or attempted) a new workflow run; `signal_run` delivered (or attempted to deliver) a signal to an existing run. Lets clients reliably branch on `kind` instead of inspecting optional fields like `workflow_id` or `external_id_resolved`.',
     )
@@ -3491,7 +3889,7 @@ class TriggerFireListResponse(BaseModel):
     has_more: bool = Field(..., description='Whether additional pages are available.')
 
 
-class Kind7(StrEnum):
+class Kind17(StrEnum):
     """
     Discriminator value — must be `schedule`.
     """
@@ -3530,7 +3928,7 @@ class CreateScheduleTriggerRequest(BaseModel):
     tags: TagMap | None = Field(None, description='Initial tag set.')
 
 
-class Kind8(StrEnum):
+class Kind18(StrEnum):
     """
     Discriminator value — must be `webhook`.
     """
@@ -3569,7 +3967,7 @@ class CreateWebhookTriggerRequest(BaseModel):
     tags: TagMap | None = Field(None, description='Initial tag set.')
 
 
-class Kind9(StrEnum):
+class Kind19(StrEnum):
     """
     Discriminator value — must be `event`.
     """
@@ -3577,7 +3975,7 @@ class Kind9(StrEnum):
     event = 'event'
 
 
-class Kind10(StrEnum):
+class Kind20(StrEnum):
     """
     Discriminator value — must be `channel_message`.
     """
@@ -3617,7 +4015,7 @@ class CreateChannelMessageTriggerRequest(BaseModel):
     tags: TagMap | None = Field(None, description='Initial tag set.')
 
 
-class Kind11(StrEnum):
+class Kind21(StrEnum):
     """
     Discriminator value — must be `table_row`.
     """
@@ -3656,7 +4054,7 @@ class CreateTableRowTriggerRequest(BaseModel):
     tags: TagMap | None = Field(None, description='Initial tag set.')
 
 
-class Kind12(StrEnum):
+class Kind22(StrEnum):
     """
     Discriminator value — must be `email`.
     """
@@ -3722,7 +4120,7 @@ class InstanceStatus(StrEnum):
     draining = 'draining'
 
 
-class Status3(StrEnum):
+class Status5(StrEnum):
     """
     Current job lifecycle state.
     """
@@ -3741,7 +4139,7 @@ class WorkerSessionJobRef(BaseModel):
     run_id: str = Field(..., description='Workflow run that owns the job.')
     step_name: str = Field(..., description='Workflow step name.')
     action: str = Field(..., description='Action executed by the worker.')
-    status: Status3 = Field(..., description='Current job lifecycle state.')
+    status: Status5 = Field(..., description='Current job lifecycle state.')
     claimed_at: AwareDatetime | None = Field(
         None, description='Timestamp when the worker claimed the job.'
     )
@@ -3965,7 +4363,7 @@ class Provider(StrEnum):
     xai = 'xai'
 
 
-class Type7(StrEnum):
+class Type9(StrEnum):
     text = 'text'
 
 
@@ -3973,7 +4371,7 @@ class SystemTextBlock(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    type: Type7
+    type: Type9
     text: str
     cache_control: dict[str, Any] | None = None
 
@@ -3987,12 +4385,12 @@ class TextContentBlock(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    type: Type7
+    type: Type9
     text: str
     cache_control: dict[str, Any] | None = None
 
 
-class Type9(StrEnum):
+class Type11(StrEnum):
     image = 'image'
 
 
@@ -4000,12 +4398,12 @@ class ImageContentBlock(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    type: Type9
+    type: Type11
     source: dict[str, Any]
     cache_control: dict[str, Any] | None = None
 
 
-class Type10(StrEnum):
+class Type12(StrEnum):
     tool_use = 'tool_use'
 
 
@@ -4013,13 +4411,13 @@ class ToolUseContentBlock(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    type: Type10
+    type: Type12
     id: str
     name: str
     input: dict[str, Any]
 
 
-class Type11(StrEnum):
+class Type13(StrEnum):
     tool_result = 'tool_result'
 
 
@@ -4032,7 +4430,7 @@ class GenerateToolDefinition(BaseModel):
     input_schema: dict[str, Any]
 
 
-class Type12(StrEnum):
+class Type14(StrEnum):
     auto = 'auto'
     any = 'any'
     tool = 'tool'
@@ -4044,11 +4442,11 @@ class GenerateToolChoice1(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    type: Type12
+    type: Type14
     name: str
 
 
-class Type13(StrEnum):
+class Type15(StrEnum):
     auto = 'auto'
     any = 'any'
     tool = 'tool'
@@ -4062,7 +4460,7 @@ class GenerateToolChoice2(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    type: Type13
+    type: Type15
     name: str | None = None
 
 
@@ -4070,7 +4468,7 @@ class GenerateToolChoice(RootModel[GenerateToolChoice1 | GenerateToolChoice2]):
     root: GenerateToolChoice1 | GenerateToolChoice2
 
 
-class Type14(StrEnum):
+class Type16(StrEnum):
     message = 'message'
 
 
@@ -4517,6 +4915,35 @@ class ProjectMetrics(BaseModel):
     )
 
 
+class ActorType(StrEnum):
+    user = 'user'
+    agent = 'agent'
+
+
+class NotificationPreferences(BaseModel):
+    """
+    Per-actor delivery defaults applied when an interaction does not specify a `delivery` override (PRD 077 §3.8). One row per (org, actor_type, actor_id) in v1.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str | None = None
+    org_id: str
+    actor_type: ActorType
+    actor_id: str
+    channels: list[DeliveryChannel] | None = None
+    created_at: AwareDatetime | None = None
+    updated_at: AwareDatetime | None = None
+
+
+class UpdateNotificationPreferencesRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    channels: list[DeliveryChannel]
+
+
 class RespondToInteractionRequest(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
@@ -4533,6 +4960,106 @@ class RespondToInteractionRequest(BaseModel):
         description="Optional 0..1 confidence score the responder attaches to their answer. Required when the interaction's resolution policy weights by confidence; ignored otherwise.",
         ge=0.0,
         le=1.0,
+    )
+
+
+class SubmitHandoffRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    value: InteractionValue = Field(
+        ..., description='Evidence or completion payload supplied by the assignee.'
+    )
+    comment: str | None = Field(None, description='Optional note from the assignee.')
+
+
+class ReviewHandoffRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    comment: str | None = Field(
+        None, description='Optional review note for acceptance.'
+    )
+
+
+class SendBackHandoffRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    comment: str = Field(
+        ...,
+        description='Feedback explaining what needs to change before resubmission.',
+        min_length=1,
+    )
+
+
+class VoterType(StrEnum):
+    """
+    Voter actor class.
+    """
+
+    user = 'user'
+    agent = 'agent'
+
+
+class InteractionBallot(BaseModel):
+    """
+    One voter's ballot on a vote-kind interaction. Distinct from `InteractionResponse` because ballots carry changeable, withdrawable, and optionally anonymous semantics (PRD 077).
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str
+    interaction_id: str
+    voter_type: VoterType = Field(..., description='Voter actor class.')
+    voter_id: str | None = Field(
+        None,
+        description="Voter identity. Anonymised (omitted) when the vote's `anonymous` rule is true and the caller is not the interaction owner.",
+    )
+    choices: list[str] | None = Field(
+        None, description='Option values selected by this voter.'
+    )
+    comment: str | None = None
+    cast_at: AwareDatetime
+    updated_at: AwareDatetime | None = None
+    withdrawn: bool | None = Field(
+        None, description='True when the voter withdrew before close.'
+    )
+    withdrawn_at: AwareDatetime | None = None
+
+
+class InteractionBallotListResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    items: list[InteractionBallot]
+
+
+class CastBallotRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    choices: list[str] = Field(
+        ...,
+        description='Option values the voter selects. `select`-mode votes accept exactly one entry; `multi_select` accepts one or more.',
+        min_length=1,
+    )
+    comment: str | None = Field(
+        None, description='Optional free-text comment alongside the vote.'
+    )
+
+
+class CloseVoteRequest(BaseModel):
+    """
+    Optional payload accompanying a close-vote call.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    comment: str | None = Field(
+        None, description='Free-text reason recorded with the close event.'
     )
 
 
@@ -4791,30 +5318,6 @@ class AgentSessionListResponse(BaseModel):
     )
 
 
-class Risk(StrEnum):
-    low = 'low'
-    medium = 'medium'
-    high = 'high'
-    critical = 'critical'
-
-
-class AgentNativeTool(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    id: str = Field(
-        ..., description='Stable native-tool grant ID, such as `mobius_table_read`.'
-    )
-    label: str = Field(
-        ..., description='Human-readable tool label for toolkit editors.'
-    )
-    description: str = Field(..., description='What this native tool allows.')
-    concrete_tools: list[str] = Field(
-        ..., description='Model-facing concrete tools exposed by this native grant.'
-    )
-    risk: Risk
-
-
 class SelectorType(StrEnum):
     """
     How to match action catalog names.
@@ -4846,7 +5349,7 @@ class Source3(StrEnum):
     project = 'project'
 
 
-class Status4(StrEnum):
+class Status6(StrEnum):
     active = 'active'
     archived = 'archived'
 
@@ -4862,14 +5365,11 @@ class Toolkit(BaseModel):
     slug: str | None = None
     description: str | None = None
     source: Source3
-    status: Status4
-    native_tool_ids: list[str] = Field(
-        ..., description='Native-tool grant IDs owned by this toolkit.'
+    status: Status6
+    action_grants: list[ToolkitActionGrant] = Field(
+        ...,
+        description='Action selectors granted by this toolkit. Each entry is matched against the unified action catalog at manifest-resolution time.',
     )
-    native_tools: list[AgentNativeTool] | None = Field(
-        None, description="Expanded native-tool metadata for the toolkit's tool grants."
-    )
-    action_grants: list[ToolkitActionGrant]
     created_at: AwareDatetime
     updated_at: AwareDatetime
 
@@ -4884,9 +5384,6 @@ class ToolkitRequest(BaseModel):
         description='Optional stable slug. When omitted, the server derives one from `name`.',
     )
     description: str | None = Field(None, max_length=1000)
-    native_tool_ids: list[str] | None = Field(
-        None, description='Native-tool grant IDs to allow.'
-    )
     action_grants: list[ToolkitActionGrant] | None = None
 
 
@@ -4939,16 +5436,13 @@ class Skill(BaseModel):
     slug: str | None = None
     description: str | None = None
     source: Source4
-    status: Status4
+    status: Status6
     instructions: str = Field(
         ..., description='Markdown instructions loaded when the skill is active.'
     )
     allowed_tools: list[str] = Field(
         ...,
-        description='Requested native-tool IDs, concrete tool names, or known aliases.',
-    )
-    allowed_actions: list[str] = Field(
-        ..., description='Requested action names/selectors.'
+        description="Canonical action names, wildcard selectors, or group references that narrow the agent's effective tool set while this skill is active. Uses the same selector vocabulary as toolkit grants.",
     )
     frontmatter: dict[str, Any] | None = Field(
         None, description='Original imported frontmatter preserved for round-tripping.'
@@ -4973,7 +5467,6 @@ class SkillRequest(BaseModel):
     description: str | None = Field(None, max_length=1000)
     instructions: str = Field(..., min_length=1)
     allowed_tools: list[str] | None = None
-    allowed_actions: list[str] | None = None
     frontmatter: dict[str, Any] | None = None
     model_hint: str | None = None
     user_invocable: bool | None = None
@@ -5030,13 +5523,13 @@ class SkillManifestEntry(BaseModel):
     name: str
     instructions: str
     active: bool
-    allowed_tools: list[str]
-    allowed_actions: list[str]
     model_hint: str | None = None
     user_invocable: bool | None = None
+    missing_required: list[str] | None = None
+    missing_recommended: list[str] | None = None
 
 
-class AgentCapabilityWarning(BaseModel):
+class AgentManifestWarning(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
@@ -5048,34 +5541,58 @@ class AgentCapabilityWarning(BaseModel):
     action: str | None = None
 
 
-class AgentBlockedActionGrant(BaseModel):
+class AgentBlockedGrant(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
     selector_type: str
     selector: str
+    action_name: str | None = Field(
+        None,
+        description='Canonical action name the selector resolved to, when the grant matched a real catalog entry that the service account is not permitted to invoke.',
+    )
     reason: str
+    permission_id: str | None = None
 
 
-class AgentCapabilityManifest(BaseModel):
+class ResolvedActionGroup(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    name: str = Field(
+        ..., description='Canonical group name (e.g. `mobius.table.read`).'
+    )
+    members: list[str] = Field(
+        ..., description='Action names the group expanded to during this resolution.'
+    )
+
+
+class AgentToolManifest(BaseModel):
+    """
+    The flat, resolved tool set visible to one agent. Replaces the prior Capability/Action split: every entry in `tools` is an action catalog entry the agent can invoke as its own named tool.
+    """
+
     model_config = ConfigDict(
         extra='forbid',
     )
     agent_id: str
     project_id: str
-    policy_hash: str
-    toolkit_ids: list[str]
-    native_tools: list[AgentNativeTool]
-    concrete_tools: list[str] = Field(
-        ..., description='Dotted model-facing tool names available to the agent.'
-    )
-    actions: list[ActionCatalogEntry] = Field(
+    policy_hash: str = Field(
         ...,
-        description='Action catalog entries visible and executable under the manifest.',
+        description='Stable hash over the resolved tool + skill set; bumps when grants or permissions change.',
+    )
+    toolkit_ids: list[str]
+    tools: list[ActionCatalogEntry] = Field(
+        ...,
+        description='Catalog entries the agent can invoke. Each entry surfaces to the LLM as its own named tool. Built-in, integration, workflow, and custom-HTTP actions are intermingled here.',
+    )
+    groups_resolved: list[ResolvedActionGroup] | None = Field(
+        None,
+        description='Audit trail of group selectors that contributed to the resolved tool set. Operators see groups; the LLM only sees the flat `tools` list.',
     )
     skills: list[SkillManifestEntry]
-    warnings: list[AgentCapabilityWarning]
-    blocked_action_grants: list[AgentBlockedActionGrant]
+    warnings: list[AgentManifestWarning]
+    blocked_grants: list[AgentBlockedGrant]
 
 
 class CreateAgentRequest(BaseModel):
@@ -6186,6 +6703,20 @@ class ObservableWaiterListResponse(BaseModel):
     items: list[ObservableWaiter]
 
 
+class VoteEligibility(BaseModel):
+    """
+    Who is eligible to vote on this interaction. `explicit` lists voters directly; `group_snapshot` uses the interaction's target group snapshot.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    kind: Kind
+    voters: list[InteractionTarget] | None = Field(
+        None, description='Required when `kind=explicit`.'
+    )
+
+
 class ChannelInteractionRespondRequest(BaseModel):
     """
     Response payload submitted to an interaction from a channel card.
@@ -6270,7 +6801,7 @@ class WorkflowSetStep(BaseModel):
         ...,
         description='Unique step name within the workflow, used for routing and logging.',
     )
-    type: Type5
+    type: Type7
     description: str | None = None
     next: list[WorkflowEdge] | None = None
     edge_matching_strategy: WorkflowEdgeMatchingStrategy | None = None
@@ -6459,9 +6990,11 @@ class WorkflowPauseStep(BaseModel):
     )
 
 
-class WorkflowInteractionStep(BaseModel):
+class WorkflowCodeStep(BaseModel):
     """
-    Creates a human or agent interaction and resumes when the interaction completes.
+    Delegates the entire workflow's control flow to a user-authored handler running on a worker (TypeScript today, with other runtimes to follow). The handler invokes step.run(), step.sleep(), step.waitForSignal() etc. via the SDK; each call is durably checkpointed against the run ledger so the handler replays deterministically across yield/resume cycles.
+
+    A code workflow contains exactly one step (this one) — the handler's runtime control flow is the graph. Authors cannot mix code steps with the declarative step shapes: `next`, `each`, `retry`, `catch`, `parameters`, etc. are rejected by validation.
     """
 
     model_config = ConfigDict(
@@ -6472,26 +7005,15 @@ class WorkflowInteractionStep(BaseModel):
         description='Unique step name within the workflow, used for routing and logging.',
     )
     description: str | None = Field(
-        None, description='Optional human-readable description of what this step does.'
-    )
-    next: list[WorkflowEdge] | None = Field(
         None,
-        description='Outbound edges controlling which step executes after this one.',
-    )
-    edge_matching_strategy: WorkflowEdgeMatchingStrategy | None = Field(
-        None,
-        description='How outbound edge conditions are evaluated after the interaction completes.',
-    )
-    each: WorkflowEach | None = Field(
-        None, description='Optional fan-out configuration for repeated interactions.'
+        description='Optional human-readable description of what this handler does.',
     )
     layout: WorkflowStepLayout | None = Field(
         None,
         description='Optional visual-editor position hint; ignored by the execution engine.',
     )
-    interaction: WorkflowInteractionConfig = Field(
-        ...,
-        description='Interaction prompt, recipient, response schema, and timeout behavior.',
+    code: WorkflowCodeStepConfig = Field(
+        ..., description='Identifies the registered handler the worker should invoke.'
     )
 
 
@@ -6797,6 +7319,41 @@ class IntegrationEventFireResponse(BaseModel):
     )
 
 
+class CodeJobCompleteRequest(BaseModel):
+    """
+    Final report for a code-invoke job. The handler returned (or threw a terminal error). `completions` carries the durable sub-step rows the handler accumulated during this invocation; the server appends them to the run-step ledger before marking the run completed.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    worker_instance_id: str = Field(
+        ...,
+        description="Worker process identifier from the claim. Required at the HTTP boundary so empty values fail schema validation in lockstep with the handler's runtime guard.",
+        min_length=1,
+    )
+    worker_session_token: str = Field(
+        ...,
+        description="Per-boot token from the claim. Compared against the job's `claimed_by_session_token`; mismatch returns 409 lease-lost.",
+    )
+    attempt: int = Field(
+        ..., description='Must match the `attempt` from the original claim.', ge=0
+    )
+    completions: list[CodeStepCompletion] | None = Field(
+        None,
+        description='Sub-step records the handler executed during this invocation that have not yet been durably checkpointed.',
+    )
+    result_b64: str | None = Field(
+        None,
+        description="Base64-encoded JSON bytes of the handler's return value. Persisted as the run output.",
+    )
+    error_type: str | None = Field(
+        None,
+        description='Short error class identifier when the handler threw a terminal error. Run is marked failed regardless of `result_b64`.',
+    )
+    error_message: str | None = Field(None, description='Human-readable error detail.')
+
+
 class JobEventsRequest(BaseModel):
     """
     Fenced batch of custom run events published by the worker holding a job's lease. Every event in `events` is published under the same `worker_session_token` + `attempt` fence; mismatch against the job's `claimed_by_session_token` returns 409 lease-lost.
@@ -6813,7 +7370,7 @@ class JobEventsRequest(BaseModel):
         description="Per-boot token from the claim. The lease fence value; mismatch against the job's `claimed_by_session_token` returns 409 lease-lost.",
     )
     attempt: int = Field(
-        ..., description='Must match the `attempt` from the original claim.'
+        ..., description='Must match the `attempt` from the original claim.', ge=0
     )
     events: list[JobEventEntry] = Field(
         ...,
@@ -6843,7 +7400,7 @@ class TriggerTarget(BaseModel):
     trigger_id: str = Field(
         ..., description='ID of the trigger this target belongs to.'
     )
-    kind: Kind3 = Field(
+    kind: Kind13 = Field(
         ...,
         description="Discriminates the target's effect. `launch_run` starts a new workflow run; `signal_run` signals an existing run.",
     )
@@ -7010,7 +7567,7 @@ class LLMGenerateResponse(BaseModel):
         extra='forbid',
     )
     id: str
-    type: Type14
+    type: Type16
     role: Role3
     model: str
     content: list[dict[str, Any]]
@@ -7126,6 +7683,53 @@ class AgentListResponse(BaseModel):
         extra='forbid',
     )
     items: list[Agent] = Field(..., description='The list of results for this page.')
+
+
+class VoteRules(BaseModel):
+    """
+    Parameters of a vote-kind interaction (PRD 077). Carries the electorate, ballot changeability, anonymity, quorum, close time, and tie-break behaviour.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    options: list[VoteOption] = Field(
+        ...,
+        description='Choices voters can select. Values must be unique.',
+        max_length=50,
+        min_length=2,
+    )
+    eligibility: VoteEligibility | None = Field(
+        None,
+        description="Explicit voter set or `group_snapshot` to use the interaction's target group snapshot. Omit for non-group interactions that accept any caller.",
+    )
+    anonymous: bool | None = Field(
+        None,
+        description='When true, the list-ballots endpoint omits voter IDs for non-owner callers. Anonymity is a UX property — the audit log retains real IDs.',
+    )
+    changeable: bool | None = Field(
+        None, description='When true, voters may re-cast before close.'
+    )
+    quorum_count: int | None = Field(
+        None,
+        description='Minimum number of active ballots before the vote can resolve.',
+        ge=0,
+    )
+    quorum_fraction: float | None = Field(
+        None,
+        description='Minimum fraction of eligible voters that must vote before the vote can resolve.',
+        ge=0.0,
+        le=1.0,
+    )
+    close_at: AwareDatetime | None = Field(
+        None, description='Time after which new ballots are rejected.'
+    )
+    tie_break: TieBreak | None = Field(
+        None, description='How to resolve a tied top vote count on close.'
+    )
+    reveal_live_tally: bool | None = Field(
+        None, description='Opt-in display of running counts before close.'
+    )
 
 
 class WorkflowWaitUntilConfig(BaseModel):
@@ -7463,6 +8067,55 @@ class IntegrationProvidersResponse(BaseModel):
     providers: list[IntegrationProvider]
 
 
+class InteractionSpec(BaseModel):
+    """
+    Declarative dialog contract for rendering and validating an interaction. Used at both authoring time (inside a workflow definition) and runtime (persisted on an interaction). PRD 077 decouples protocol kind from input shape: each kind declares which spec modes are *allowed*, not which is *implied*. An approval may now legitimately use `select` mode (approve/deny/defer), for example.
+
+    Allowed combinations:
+    * `approval` → `confirm`, `select`
+    * `review` → `select`, `input`
+    * `request` → `select`, `multi_select`, `input`
+    * `vote` → `select`, `multi_select` (requires `vote_rules`)
+    * `handoff` → `input`
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    mode: InteractionMode = Field(
+        ..., description='UI/input mode used to render and validate the response.'
+    )
+    options: list[InteractionOption] | None = Field(
+        None,
+        description='Required for `select` and `multi_select` modes.',
+        max_length=100,
+    )
+    default_value: str | None = Field(
+        None, description='Default selected option for `select` mode.'
+    )
+    default_values: list[str] | None = Field(
+        None,
+        description='Default selected options for `multi_select` mode.',
+        max_length=100,
+    )
+    default_text: str | None = Field(
+        None, description='Initial text value for `input` mode.'
+    )
+    default_confirmed: bool | None = Field(
+        None, description='Initial yes/no value for `confirm` mode.'
+    )
+    placeholder: str | None = Field(
+        None, description='Hint text shown for `input` mode.'
+    )
+    multiline: bool | None = Field(
+        None, description='When true, render `input` mode as a multiline text area.'
+    )
+    vote_rules: VoteRules | None = Field(
+        None,
+        description='Ballot-protocol parameters. Required for `vote`-kind interactions and rejected on other kinds.',
+    )
+
+
 class WorkflowWaitUntilStep(BaseModel):
     """
     Polls project or external state until a strict boolean condition evaluates true, parking the run durably between checks.
@@ -7499,6 +8152,52 @@ class WorkflowWaitUntilStep(BaseModel):
     )
 
 
+class WorkflowInteractionConfig(BaseModel):
+    """
+    Configuration for an interaction step that waits on a response.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    type: Type8 = Field(
+        ...,
+        description='Interaction kind: approval requires a yes/no decision, review requests acknowledgement, input collects free-form data.',
+    )
+    message: str = Field(
+        ..., description='Prompt message shown to the interaction recipient.'
+    )
+    context: dict[str, Any] | None = Field(
+        None,
+        description='Arbitrary key-value context passed alongside the interaction for rendering.',
+    )
+    spec: InteractionSpec | None = Field(
+        None,
+        description='Response controls and validation rules rendered to the recipient.',
+    )
+    timeout: str = Field(..., description='Go duration string.')
+    target: InteractionTarget = Field(
+        ..., description='User, group, or agent that should receive the interaction.'
+    )
+    require_all: bool | None = Field(
+        None,
+        description='When true, all group members must respond before the interaction completes. Only meaningful when type is `group`.',
+    )
+    discussion: WorkflowInteractionDiscussionConfig | None = Field(
+        None,
+        description='Optional focused channel to create or reuse around this typed interaction.',
+    )
+
+
+class CodeYieldInteractionSuspension(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    step_id: str = Field(..., min_length=1)
+    kind: Literal['interaction']
+    interaction: WorkflowInteractionConfig
+
+
 class CreateTriggerRequest(
     RootModel[
         CreateScheduleTriggerRequest
@@ -7523,6 +8222,64 @@ class CreateTriggerRequest(
     )
 
 
+class WorkflowInteractionStep(BaseModel):
+    """
+    Creates a human or agent interaction and resumes when the interaction completes.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    name: str = Field(
+        ...,
+        description='Unique step name within the workflow, used for routing and logging.',
+    )
+    description: str | None = Field(
+        None, description='Optional human-readable description of what this step does.'
+    )
+    next: list[WorkflowEdge] | None = Field(
+        None,
+        description='Outbound edges controlling which step executes after this one.',
+    )
+    edge_matching_strategy: WorkflowEdgeMatchingStrategy | None = Field(
+        None,
+        description='How outbound edge conditions are evaluated after the interaction completes.',
+    )
+    each: WorkflowEach | None = Field(
+        None, description='Optional fan-out configuration for repeated interactions.'
+    )
+    layout: WorkflowStepLayout | None = Field(
+        None,
+        description='Optional visual-editor position hint; ignored by the execution engine.',
+    )
+    interaction: WorkflowInteractionConfig = Field(
+        ...,
+        description='Interaction prompt, recipient, response schema, and timeout behavior.',
+    )
+
+
+class CodeYieldSuspension(
+    RootModel[
+        CodeYieldSleepSuspension
+        | CodeYieldWaitSignalSuspension
+        | CodeYieldWaitEventSuspension
+        | CodeYieldInteractionSuspension
+        | CodeYieldPauseSuspension
+    ]
+):
+    root: (
+        CodeYieldSleepSuspension
+        | CodeYieldWaitSignalSuspension
+        | CodeYieldWaitEventSuspension
+        | CodeYieldInteractionSuspension
+        | CodeYieldPauseSuspension
+    ) = Field(
+        ...,
+        description='Wait descriptor a code handler yielded. Discriminated by `kind`: each kind has its own variant requiring the matching config block (sleep, wait_signal, wait_event, interaction). The `pause` variant does not require a config — pause just suspends the run until an operator unpauses it; the optional `pause` block carries a human-readable reason for display. Reuses the declarative wait config schemas — code workflows ignore the `on_timeout` fields on those configs because the SDK handles timeout flows directly in the handler (try/catch around the await), but accepting the shape verbatim avoids forking schemas just for code mode.',
+        discriminator='kind',
+    )
+
+
 class WorkflowStep(
     RootModel[
         WorkflowExecutableStep
@@ -7534,6 +8291,7 @@ class WorkflowStep(
         | WorkflowSleepStep
         | WorkflowPauseStep
         | WorkflowInteractionStep
+        | WorkflowCodeStep
     ]
 ):
     root: (
@@ -7546,9 +8304,39 @@ class WorkflowStep(
         | WorkflowSleepStep
         | WorkflowPauseStep
         | WorkflowInteractionStep
+        | WorkflowCodeStep
     ) = Field(
         ...,
-        description='A workflow step. Exactly one step shape should be used. Step variants are identified by their distinctive required property (`action`, `type: set`, `join`, `wait_signal`, `wait_event`, `wait_until`, `sleep`, `pause`, or `interaction`). The current authored shape intentionally does not add a separate discriminator field, so existing workflow YAML stays compact.',
+        description='A workflow step. Exactly one step shape should be used. Step variants are identified by their distinctive required property (`action`, `type: set`, `join`, `wait_signal`, `wait_event`, `wait_until`, `sleep`, `pause`, `interaction`, or `code`). The current authored shape intentionally does not add a separate discriminator field, so existing workflow YAML stays compact.',
+    )
+
+
+class CodeJobYieldRequest(BaseModel):
+    """
+    Yield notification for a code-invoke job. Commits the accumulated sub-step completions and parks the run on the supplied wait. A fresh code-invoke job is emitted on wake.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    worker_instance_id: str = Field(
+        ...,
+        description="Worker process identifier from the claim. Required at the HTTP boundary so empty values fail schema validation in lockstep with the handler's runtime guard.",
+        min_length=1,
+    )
+    worker_session_token: str = Field(
+        ..., description='Per-boot token from the claim. Mismatch returns 409.'
+    )
+    attempt: int = Field(
+        ..., description='Must match the `attempt` from the original claim.', ge=0
+    )
+    completions: list[CodeStepCompletion] | None = Field(
+        None,
+        description='Sub-step records since the last yield. May be empty if the very first thing the handler did was hit a wait.',
+    )
+    suspension: CodeYieldSuspension = Field(
+        ...,
+        description='The wait the handler hit. Maps 1:1 to existing server suspension reasons (sleep, wait_signal, wait_event, interaction, pause).',
     )
 
 
@@ -7750,7 +8538,7 @@ class ResolutionPolicy(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    type: Type3 = Field(
+    type: Type4 = Field(
         ...,
         description='Resolution rule. `first_valid_response` resolves on the first response (Tier 1 default). `all_required` waits for every eligible participant. `simple_majority` and `threshold` are voting policies. `weighted_vote` weighs responses by `confidence`. `speculative` resolves to `proposal` when the veto window closes without a veto. `asymmetric` runs different sub-rules per actor class (e.g. agents propose, humans decide via majority).',
     )
@@ -7764,7 +8552,7 @@ class ResolutionPolicy(BaseModel):
         description='Vote count any option must reach to win under `threshold`.',
         ge=1,
     )
-    tie_break: TieBreak | None = Field(
+    tie_break: TieBreak1 | None = Field(
         None,
         description='Behavior on a tied top vote count for `simple_majority`. Null or absent keeps the interaction open; `first` picks the earliest-arriving value; `owner_decides` waits for `owner_id` to break the tie.',
     )
@@ -7832,18 +8620,24 @@ class Interaction(BaseModel):
         None,
         description='Signal name used to resume the originating run when run-backed.',
     )
-    type: InteractionType = Field(
+    kind: InteractionKind = Field(
         ...,
-        description='Interaction kind that determines the expected response experience.',
+        description='Protocol kind of the interaction (PRD 077). Replaces the v1 wire field `type`; the rename landed in the v-bump that also renamed `Interaction.review_policy` to `submission_review_policy`.',
     )
-    status: Status = Field(
+    status: Status1 = Field(
         ...,
-        description='Current status of the interaction: pending, completed, expired, or cancelled.',
+        description='Current status of the interaction: pending, in_review, completed, expired, or cancelled.',
     )
     origin: InteractionOrigin
     source: InteractionSource | None = None
     message: str | None = Field(
         None, description='Human-readable message shown to the responder when supplied.'
+    )
+    subject: InteractionReference | None = Field(
+        None, description='Primary work item or artifact the interaction is about.'
+    )
+    references: list[InteractionReference] | None = Field(
+        None, description='Supporting links and related entities.'
     )
     context: dict[str, Any] | None = Field(
         None,
@@ -7862,9 +8656,21 @@ class Interaction(BaseModel):
         None,
         description='ID of the response that triggered resolution. Null while the interaction is pending, when the speculative `proposal` is auto-accepted with no response, on cancel, and on expiry. Look up the response in `responses` for the full payload.',
     )
+    current_submission_id: str | None = Field(
+        None, description='Current handoff submission awaiting review.'
+    )
+    accepted_submission_id: str | None = Field(
+        None, description='Handoff submission accepted as the final outcome.'
+    )
     responses: list[InteractionResponse] | None = Field(
         None,
         description='All participant responses recorded against this interaction in arrival order. Empty until the first response is submitted. The full set is what the resolution-policy evaluator runs against.',
+    )
+    submissions: list[InteractionSubmission] | None = Field(
+        None, description='Handoff submission attempts, in arrival order.'
+    )
+    events: list[InteractionEvent] | None = Field(
+        None, description='Interaction lifecycle timeline, in arrival order.'
     )
     expires_at: AwareDatetime | None = Field(
         None, description='Timestamp when this interaction expires if not responded to.'
@@ -7905,6 +8711,18 @@ class Interaction(BaseModel):
         None,
         description='Declarative resolution rule attached at creation time. Legacy inputs (`require_all` / `first_responder`) are synthesized into an equivalent policy at create time, so on a freshly-created Interaction this should always be present; nullability covers historical rows that pre-date the synthesis.',
     )
+    submission_review_policy: ReviewPolicy | None = Field(
+        None,
+        description='Template review policy applied to new submissions of this interaction (PRD 077 §3.5). Each submission carries its own `review_policy` snapshot taken at submit time; this field is the create-time intent that the snapshot is copied from.',
+    )
+    consumer: Consumer | None = Field(
+        None,
+        description="Polymorphic identifier of what is waiting on this interaction's resolution (PRD 077 §3.7). Replaces the special-cased `run_id`/`signal_name` pair; the latter remain populated when `consumer.kind=run`.",
+    )
+    delivery: Delivery | None = Field(
+        None,
+        description="Optional per-interaction delivery override (PRD 077 §3.8). When absent, the dispatcher uses each participant's NotificationPreferences.",
+    )
     outcome: InteractionValue | None = Field(
         None,
         description="Final outcome selected by the resolution policy (not responder-supplied). Shape depends on the policy: `simple_majority` returns the winning option; `all_required` returns the array of every response; `speculative` returns either the proposal or the vetoer's value. Null while the interaction is still pending.",
@@ -7929,10 +8747,16 @@ class CreateJobInteractionRequest(BaseModel):
     target: InteractionTarget = Field(
         ..., description='User, group, or agent that should receive the interaction.'
     )
-    type: InteractionType = Field(
-        ..., description='Interaction kind that determines the response workflow.'
+    kind: InteractionKind = Field(
+        ..., description='Protocol kind. Renamed from `type` in the PRD 077 v-bump.'
     )
     message: str = Field(..., description='Message shown to the responder.')
+    subject: InteractionReference | None = Field(
+        None, description='Primary work item or artifact the interaction is about.'
+    )
+    references: list[InteractionReference] | None = Field(
+        None, description='Supporting links and related entities.'
+    )
     signal_name: str | None = Field(
         None,
         description='Optional signal name override. When omitted, the server derives the signal name from step_name or falls back to a default interaction signal name.',
@@ -7955,6 +8779,10 @@ class CreateJobInteractionRequest(BaseModel):
     resolution_policy: ResolutionPolicy | None = Field(
         None,
         description='Declarative resolution rule. When supplied the policy evaluator drives completion; legacy `require_all`/`first_responder` behaviour is bypassed for that interaction.',
+    )
+    submission_review_policy: ReviewPolicy | None = Field(
+        None,
+        description='Template review policy applied to submissions of this interaction (PRD 077 §3.5). Currently meaningful only for handoff-kind interactions.',
     )
     timeout: str | None = Field(
         None,
@@ -8009,7 +8837,7 @@ class ToolResultContentBlock(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    type: Type11
+    type: Type13
     tool_use_id: str
     content: str | list[ContentBlock]
     is_error: bool | None = None
@@ -8043,12 +8871,18 @@ class CreateStandaloneInteractionRequest(BaseModel):
     target: InteractionTarget = Field(
         ..., description='User, group, or agent that should receive the interaction.'
     )
-    type: InteractionType = Field(
-        ..., description='Interaction kind that determines the response workflow.'
+    kind: InteractionKind = Field(
+        ..., description='Protocol kind. Renamed from `type` in the PRD 077 v-bump.'
     )
     message: str = Field(
         ...,
         description='Message shown to the responder describing what response is needed.',
+    )
+    subject: InteractionReference | None = Field(
+        None, description='Primary work item or artifact the interaction is about.'
+    )
+    references: list[InteractionReference] | None = Field(
+        None, description='Supporting links and related entities.'
     )
     context: dict[str, Any] | None = Field(
         None,
@@ -8065,6 +8899,17 @@ class CreateStandaloneInteractionRequest(BaseModel):
     resolution_policy: ResolutionPolicy | None = Field(
         None,
         description='Declarative resolution rule. When supplied the policy evaluator drives completion; legacy `require_all`/`first_responder` behaviour is bypassed for that interaction.',
+    )
+    submission_review_policy: ReviewPolicy | None = Field(
+        None,
+        description='Template review policy applied to submissions of this interaction (PRD 077 §3.5). Currently meaningful only for handoff-kind interactions.',
+    )
+    consumer: Consumer | None = Field(
+        None,
+        description="Polymorphic identifier of what is waiting on this interaction's resolution (PRD 077 §3.7). When omitted on a run-backed create request, the server derives a `kind=run` consumer from `run_id` and `signal_name`.",
+    )
+    delivery: Delivery | None = Field(
+        None, description='Optional per-interaction delivery override (PRD 077 §3.8).'
     )
     expires_at: AwareDatetime | None = Field(
         None,
@@ -8091,12 +8936,18 @@ class CreateRunBackedInteractionRequest(BaseModel):
     target: InteractionTarget = Field(
         ..., description='User, group, or agent that should receive the interaction.'
     )
-    type: InteractionType = Field(
-        ..., description='Interaction kind that determines the response workflow.'
+    kind: InteractionKind = Field(
+        ..., description='Protocol kind. Renamed from `type` in the PRD 077 v-bump.'
     )
     message: str = Field(
         ...,
         description='Message shown to the responder describing what response is needed.',
+    )
+    subject: InteractionReference | None = Field(
+        None, description='Primary work item or artifact the interaction is about.'
+    )
+    references: list[InteractionReference] | None = Field(
+        None, description='Supporting links and related entities.'
     )
     context: dict[str, Any] | None = Field(
         None,
@@ -8113,6 +8964,17 @@ class CreateRunBackedInteractionRequest(BaseModel):
     resolution_policy: ResolutionPolicy | None = Field(
         None,
         description='Declarative resolution rule. When supplied the policy evaluator drives completion; legacy `require_all`/`first_responder` behaviour is bypassed for that interaction.',
+    )
+    submission_review_policy: ReviewPolicy | None = Field(
+        None,
+        description='Template review policy applied to submissions of this interaction (PRD 077 §3.5). Currently meaningful only for handoff-kind interactions.',
+    )
+    consumer: Consumer | None = Field(
+        None,
+        description="Polymorphic identifier of what is waiting on this interaction's resolution (PRD 077 §3.7). When omitted on a run-backed create request, the server derives a `kind=run` consumer from `run_id` and `signal_name`.",
+    )
+    delivery: Delivery | None = Field(
+        None, description='Optional per-interaction delivery override (PRD 077 §3.8).'
     )
     expires_at: AwareDatetime | None = Field(
         None,

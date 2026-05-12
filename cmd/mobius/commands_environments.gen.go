@@ -292,7 +292,7 @@ func registerEnvironmentsCommands(app *cli.App) {
 			cli.String("purpose", "").Help("purpose"),
 			cli.String("owner-type", "").Help("owner-type"),
 			cli.String("owner-id", "").Help("owner-id"),
-			cli.Bool("include-destroyed", "").Help("Include all destroyed environments in the inventory. Recently destroyed environments may remain vis…"),
+			cli.Bool("include-destroyed", "").Help("Include destroyed environments in the result. By default destroyed rows are excluded; set this to t…"),
 		).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {

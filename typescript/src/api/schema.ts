@@ -1231,6 +1231,8 @@ export interface paths {
          *     Each successful call also registers or refreshes the caller's worker session (used by `GET /v1/projects/{project}/worker-sessions`), so no separate registration step is needed.
          *
          *     The returned `JobClaim` includes the `heartbeat_interval_seconds` the worker should use for subsequent heartbeat calls.
+         *
+         *     Code-mode workers subscribe to the reserved action `mobius.code.invoke` by including it in `actions`. The resulting `JobClaim.parameters` follows the `CodeInvokeJobParameters` shape, and the worker must complete the job via `code-completion` or `code-yield` rather than `complete`.
          */
         post: operations["claimJob"];
         delete?: never;
@@ -1347,6 +1349,52 @@ export interface paths {
          * @description Executes a named action in the context of the currently claimed job. The action must be registered in the project or catalog. The `dry_run` flag invokes the action without side effects when the action supports it. Results are returned synchronously; for long- running actions use `timeout_seconds` to extend the deadline.
          */
         post: operations["runJobAction"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project}/jobs/{id}/code-completion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Report a code-handler return for a claimed code-invoke job
+         * @description Code-mode counterpart to `completeJob`. Used by language-runtime workers (e.g. the Mobius TypeScript SDK) when the user-authored handler returned. The body carries the batch of durable sub-step completions the handler accumulated during this invocation, plus the handler's return value (or a terminal error). The server records each completion in the run-step ledger, persists the return value as the run output, and marks the run completed (or failed when error fields are set).
+         *
+         *     `worker_session_token` + `attempt` enforce the lease fence as with `completeJob`; mismatch returns 409. The job's action must be the synthetic `mobius.code.invoke` — submitting a non-code job returns 400.
+         */
+        post: operations["completeCodeJob"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project}/jobs/{id}/code-yield": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Yield from a code-invoke handler when it hits a wait
+         * @description Code-mode counterpart to suspending a run on a wait. The handler hit one of the SDK's wait primitives (`step.sleep`, `step.waitForSignal`, `step.waitForEvent`, `step.waitForApproval`, `step.pause`) and could not satisfy it locally; the worker commits the batch of completions accumulated since the last yield and asks the server to park the run.
+         *
+         *     On wake (signal delivery, timer fire, interaction response, operator unpause), the server emits a fresh `mobius.code.invoke` job whose history parameter contains every previously committed sub-step. The handler replays deterministically through that history before reaching the new wait or returning.
+         *
+         *     Lease fencing is identical to `completeJob` / `completeCodeJob`. Submitting a non-code job returns 400.
+         */
+        post: operations["yieldCodeJob"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1915,6 +1963,146 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/projects/{project}/interactions/{id}/submit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Submit a handoff for review or completion
+         * @description Submits completion evidence for a `handoff` interaction. Handoffs without a review policy complete immediately. Handoffs with `requester_acceptance_required` move to `in_review` and do not resume their waiting run until accepted.
+         */
+        post: operations["submitInteractionHandoff"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project}/interactions/{id}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Accept a submitted handoff
+         * @description Accepts the current submission for an `in_review` handoff, marks the interaction completed, and resumes the waiting workflow path when the interaction is run-backed.
+         */
+        post: operations["acceptInteractionHandoff"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project}/interactions/{id}/send-back": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Send a submitted handoff back
+         * @description Rejects the current handoff submission with feedback and returns the interaction to `pending` for another attempt. The waiting workflow path remains suspended.
+         */
+        post: operations["sendBackInteractionHandoff"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project}/interactions/{id}/vote": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cast or change a ballot on a vote-kind interaction
+         * @description Casts the caller's ballot on a vote-kind interaction. If the voter already has an active ballot and the vote's `changeable` rule is true, the existing ballot is updated; otherwise a second cast is rejected. Withdrawn voters may re-cast (which un-withdraws and replaces the ballot).
+         */
+        post: operations["castInteractionBallot"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project}/interactions/{id}/withdraw-vote": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Withdraw the caller's ballot before close
+         * @description Marks the caller's active ballot as withdrawn. The ballot row remains for audit; the resolution evaluator skips withdrawn ballots when tallying.
+         */
+        post: operations["withdrawInteractionBallot"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project}/interactions/{id}/close-vote": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Manually close a vote-kind interaction
+         * @description Closes a vote-kind interaction and tallies its ballots. Only the interaction owner (the requester recorded in `source`) may call this. The resolved outcome includes per-option tally, the winning option (or list of tied winners), whether quorum was met, and the close reason.
+         */
+        post: operations["closeInteractionVote"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project}/interactions/{id}/ballots": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List ballots on a vote-kind interaction
+         * @description Returns ballots cast on a vote-kind interaction in arrival order. When the vote is anonymous and the caller is not the interaction owner, voter identities are omitted from the response.
+         */
+        get: operations["listInteractionBallots"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/projects/{project}/interactions/{id}/claim": {
         parameters: {
             query?: never;
@@ -1969,6 +2157,30 @@ export interface paths {
          * @description Cancels an open interaction, recording who cancelled and an optional reason. Run-backed interactions resume the waiting workflow path with a `{status: cancelled, reason}` signal payload so workflows can route to a fallback. Only humans may cancel by default — agents must request cancellation through an interaction.
          */
         post: operations["cancelInteraction"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/notification-preferences/{actor_type}/{actor_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get notification preferences for an actor
+         * @description Returns the actor's notification preferences (PRD 077 §3.8). When the actor has no preferences set, returns an empty `channels` list — callers should treat that as "use org defaults".
+         */
+        get: operations["getNotificationPreferences"];
+        /**
+         * Update notification preferences for an actor
+         * @description Replaces the actor's notification preferences with the supplied channel list. Users may edit their own preferences; org admins may edit any preferences within their org.
+         */
+        put: operations["updateNotificationPreferences"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -2301,7 +2513,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project}/agents/{id}/capability-manifest": {
+    "/v1/projects/{project}/agents/{id}/tool-manifest": {
         parameters: {
             query?: never;
             header?: never;
@@ -2309,10 +2521,10 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Resolve an agent capability manifest
-         * @description Resolves the effective capability manifest for an agent. This is the same snapshot shape used by channel mentions and `agent.invoke`: toolkit grants, service-account permissions, optional toolkit filters, optional action filters, and optional active skill narrowing all meet here.
+         * Resolve an agent tool manifest
+         * @description Resolves the effective tool manifest for an agent: the flat set of actions the agent can invoke, computed from toolkit grants, service- account permissions, optional toolkit filters, optional per-invocation tool filters, and optional active skill narrowing.
          */
-        get: operations["getAgentCapabilityManifest"];
+        get: operations["getAgentToolManifest"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2866,6 +3078,26 @@ export interface paths {
         patch: operations["updateTableRow"];
         trace?: never;
     };
+    "/v1/projects/{project}/artifacts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List artifacts in a project
+         * @description Returns artifacts in the project, ordered (created_at desc, id desc). Optional filters narrow by run, step, state, or mime prefix. Use the run-scoped `listRunArtifacts` endpoint when you already have a run id — this endpoint is for project-wide browsing.
+         */
+        get: operations["listArtifacts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/projects/{project}/artifacts:slot": {
         parameters: {
             query?: never;
@@ -3185,11 +3417,14 @@ export interface components {
             description?: string;
         };
         /**
-         * @description Declarative dialog contract for rendering and validating an interaction. Used at both authoring time (inside a workflow definition) and runtime (persisted on an interaction). Compatibility rules are enforced server-side:
+         * @description Declarative dialog contract for rendering and validating an interaction. Used at both authoring time (inside a workflow definition) and runtime (persisted on an interaction). PRD 077 decouples protocol kind from input shape: each kind declares which spec modes are *allowed*, not which is *implied*. An approval may now legitimately use `select` mode (approve/deny/defer), for example.
          *
-         *     - `approval` requires `mode = confirm`
-         *     - `review` requires `mode = select`
-         *     - `input` supports `input`, `select`, or `multi_select`
+         *     Allowed combinations:
+         *     * `approval` → `confirm`, `select`
+         *     * `review` → `select`, `input`
+         *     * `request` → `select`, `multi_select`, `input`
+         *     * `vote` → `select`, `multi_select` (requires `vote_rules`)
+         *     * `handoff` → `input`
          */
         InteractionSpec: {
             /** @description UI/input mode used to render and validate the response. */
@@ -3208,6 +3443,64 @@ export interface components {
             placeholder?: string;
             /** @description When true, render `input` mode as a multiline text area. */
             multiline?: boolean;
+            /** @description Ballot-protocol parameters. Required for `vote`-kind interactions and rejected on other kinds. */
+            vote_rules?: components["schemas"]["VoteRules"];
+        };
+        /** @description Parameters of a vote-kind interaction (PRD 077). Carries the electorate, ballot changeability, anonymity, quorum, close time, and tie-break behaviour. */
+        VoteRules: {
+            /** @description Choices voters can select. Values must be unique. */
+            options: components["schemas"]["VoteOption"][];
+            /** @description Explicit voter set or `group_snapshot` to use the interaction's target group snapshot. Omit for non-group interactions that accept any caller. */
+            eligibility?: components["schemas"]["VoteEligibility"];
+            /** @description When true, the list-ballots endpoint omits voter IDs for non-owner callers. Anonymity is a UX property — the audit log retains real IDs. */
+            anonymous?: boolean;
+            /** @description When true, voters may re-cast before close. */
+            changeable?: boolean;
+            /** @description Minimum number of active ballots before the vote can resolve. */
+            quorum_count?: number;
+            /**
+             * Format: double
+             * @description Minimum fraction of eligible voters that must vote before the vote can resolve.
+             */
+            quorum_fraction?: number;
+            /**
+             * Format: date-time
+             * @description Time after which new ballots are rejected.
+             */
+            close_at?: string;
+            /**
+             * @description How to resolve a tied top vote count on close.
+             * @enum {string}
+             */
+            tie_break?: "none" | "first_cast" | "owner";
+            /** @description Opt-in display of running counts before close. */
+            reveal_live_tally?: boolean;
+        };
+        /** @description A choice on a vote ballot. */
+        VoteOption: {
+            /** @description Machine-readable choice value. */
+            value: string;
+            /** @description Display label. */
+            label: string;
+            /** @description Optional extra context. */
+            description?: string;
+        };
+        /** @description Who is eligible to vote on this interaction. `explicit` lists voters directly; `group_snapshot` uses the interaction's target group snapshot. */
+        VoteEligibility: {
+            /** @enum {string} */
+            kind: "explicit" | "group_snapshot";
+            /** @description Required when `kind=explicit`. */
+            voters?: components["schemas"]["InteractionTarget"][];
+        };
+        /** @description Identifies who should receive an interaction request. Note: distinct from the caller/audit `Actor` vocabulary — a target is a *recipient*, not someone who has acted yet. */
+        InteractionTarget: {
+            /**
+             * @description Target kind: a specific user, an agent queue, or a group.
+             * @enum {string}
+             */
+            type: "user" | "agent" | "group";
+            /** @description User ID for user; queue name for agent; group ID or handle for group. */
+            id: string;
         };
         /**
          * @description Authenticated principal that posted the message, derived from the
@@ -3559,10 +3852,24 @@ export interface components {
             up_to_message_id?: string;
         };
         /**
-         * @description Interaction kind: `approval` captures a decision, `review` captures acknowledgement or notes, and `input` collects free-form data.
+         * @description Protocol kind of the interaction (PRD 077). Each value names a
+         *     distinct multi-party coordination protocol:
+         *     * `approval` — a decision protocol (yes/no, optionally yes/no/defer)
+         *     * `review` — a judgment protocol that evaluates supplied material
+         *     * `request` — a data-collection protocol with structured or
+         *     free-form input
+         *     * `vote` — a collective-choice protocol with ballot semantics
+         *     (changeable until close, eligibility, quorum, anonymity,
+         *     tie-break). Vote ballots use the dedicated `/vote` endpoint.
+         *     * `handoff` — a work-completion protocol where ownership moves to
+         *     another actor who submits completed output
+         *     * `input` — *deprecated* alias of `request`; existing rows keep
+         *     this value but new interactions should be created with
+         *     `request`. The server normalises `input` to `request` on
+         *     create.
          * @enum {string}
          */
-        InteractionType: "approval" | "review" | "input";
+        InteractionKind: "approval" | "review" | "input" | "request" | "vote" | "handoff";
         /**
          * @description Server-derived origin of the interaction.
          * @enum {string}
@@ -3575,15 +3882,25 @@ export interface components {
             id: string;
             display_name?: string;
         };
-        /** @description Identifies who should receive an interaction request. Note: distinct from the caller/audit `Actor` vocabulary — a target is a *recipient*, not someone who has acted yet. */
-        InteractionTarget: {
+        /** @description Pointer to the work item, artifact, external ticket, or Mobius entity this interaction is about. */
+        InteractionReference: {
+            /** @enum {string} */
+            kind: "external_url" | "mobius_entity";
             /**
-             * @description Target kind: a specific user, an agent queue, or a group.
-             * @enum {string}
+             * Format: uri
+             * @description Required when kind is `external_url`.
              */
-            type: "user" | "agent" | "group";
-            /** @description User ID for user; queue name for agent; group ID or handle for group. */
-            id: string;
+            url?: string;
+            /** @description Required when kind is `mobius_entity`. */
+            entity_type?: string;
+            /** @description Required when kind is `mobius_entity`. */
+            entity_id?: string;
+            /** @description Optional project scope for Mobius entity references. */
+            project_id?: string;
+            /** @description Relationship such as `subject`, `evidence`, or `related`. */
+            relation?: string;
+            /** @description User-facing label for display. */
+            label?: string;
         };
         /** @description Identifies who answered an interaction. Groups cannot themselves respond — only a user within a group — so `group` is not a valid responder type. */
         InteractionResponder: {
@@ -3626,6 +3943,38 @@ export interface components {
              * @description Optional 0..1 confidence score attached to this response.
              */
             confidence?: number | null;
+        };
+        /** @description One handoff submission attempt. */
+        InteractionSubmission: {
+            id: string;
+            interaction_id: string;
+            attempt: number;
+            /** @enum {string} */
+            status: "pending_review" | "accepted" | "sent_back";
+            submitter: components["schemas"]["InteractionResponder"];
+            value: components["schemas"]["InteractionValue"];
+            comment?: string | null;
+            /** Format: date-time */
+            submitted_at: string;
+            reviewed_by?: components["schemas"]["InteractionResponder"];
+            review_comment?: string | null;
+            /** Format: date-time */
+            reviewed_at?: string | null;
+        };
+        /** @description Lifecycle timeline entry for an interaction. */
+        InteractionEvent: {
+            id: string;
+            interaction_id: string;
+            /** @enum {string} */
+            type: "created" | "submitted" | "accepted" | "sent_back" | "responded" | "cancelled" | "claimed" | "released" | "expired";
+            actor?: components["schemas"]["InteractionResponder"];
+            submission_id?: string | null;
+            message?: string | null;
+            data?: {
+                [key: string]: unknown;
+            } | null;
+            /** Format: date-time */
+            created_at: string;
         };
         /** @description Declarative resolution rule attached to an Interaction. Determines how participant responses become a final outcome. */
         ResolutionPolicy: {
@@ -3679,6 +4028,69 @@ export interface components {
             /** @description Sub-rule applied to this class's responses when `rule` is `decide`. When omitted, decide-class defaults to `first_valid_response` over the class's responses. */
             sub_policy?: components["schemas"]["ResolutionPolicy"];
         };
+        /** @description Reviewability policy for an interaction artifact (PRD 077 §3.5). Carried as a template on `Interaction.submission_review_policy` (so new submissions inherit a snapshot) and as the per-submission snapshot on `InteractionSubmission.review_policy`. */
+        ReviewPolicy: {
+            /**
+             * @description `none` completes a handoff when submitted. `requester_acceptance_required` moves submitted handoffs to `in_review` until an authorized reviewer accepts or sends back.
+             * @enum {string}
+             */
+            type: "none" | "requester_acceptance_required";
+            /** @description Optional explicit reviewers. When omitted for `requester_acceptance_required`, the requester/source actor is the reviewer. Workflow, system, or integration-created handoffs should provide explicit user, agent, or group reviewers. */
+            reviewers?: components["schemas"]["InteractionTarget"][];
+        };
+        RunConsumer: {
+            run_id: string;
+            signal_name: string;
+        };
+        AgentToolConsumer: {
+            invocation_id: string;
+            tool_call_id: string;
+        };
+        HttpSubscriberConsumer: {
+            /**
+             * Format: uri
+             * @description Absolute http(s) URL the server POSTs to when the interaction resolves. The body is a JSON object with the interaction id, kind, status, outcome value, comment, responder, and `resolved_by`. Delivery is best-effort in v1 (no durable outbox or retries).
+             */
+            callback_url: string;
+            /** @description Reference to a project secret intended to sign deliveries. Forwarded to the deliverer as `X-Mobius-Secret-Ref` for forward compatibility; HMAC-SHA256 signing of the payload against the resolved plaintext is a follow-up. */
+            secret_ref?: string;
+        };
+        /** @description Polymorphic identifier of what is waiting on this interaction's resolution (PRD 077 §3.7). Replaces the previously special-cased `run_id` + `signal_name` pair. When `kind=run`, the legacy fields are also populated for compatibility. `http_subscriber` triggers a best-effort POST to `callback_url` when the interaction resolves; HMAC signing of the payload via the `secret_ref` is a follow-up — current callers should pin the `callback_url` to an authenticated endpoint until that lands. */
+        Consumer: {
+            /** @enum {string} */
+            kind: "run" | "agent_tool" | "http_subscriber" | "none";
+            run?: components["schemas"]["RunConsumer"];
+            agent_tool?: components["schemas"]["AgentToolConsumer"];
+            http_subscriber?: components["schemas"]["HttpSubscriberConsumer"];
+        };
+        ChannelThreadDelivery: {
+            channel_id: string;
+            parent_message_id?: string;
+        };
+        EmailDelivery: {
+            to: string[];
+        };
+        PageDelivery: {
+            policy_id: string;
+        };
+        AgentQueueDelivery: {
+            queue: string;
+        };
+        /** @description A single delivery destination. `inbox_only` carries no payload; each other kind owns its variant. `page` is schema-only in v1 — the server rejects it at create until paging is implemented. */
+        DeliveryChannel: {
+            /** @enum {string} */
+            kind: "inbox_only" | "email" | "channel_thread" | "agent_queue" | "page";
+            channel_thread?: components["schemas"]["ChannelThreadDelivery"];
+            email?: components["schemas"]["EmailDelivery"];
+            page?: components["schemas"]["PageDelivery"];
+            agent_queue?: components["schemas"]["AgentQueueDelivery"];
+        };
+        /** @description Optional per-interaction delivery override (PRD 077 §3.8). When absent, each participant is notified per their own `NotificationPreferences`. When set, channels are added to the participant's preferences (additive default) or replace them (exclusive — `override_participant_preferences=true`). */
+        Delivery: {
+            channels: components["schemas"]["DeliveryChannel"][];
+            /** @description When false (default), additive: deliver via the listed channels in addition to participant preferences. When true, exclusive: deliver *only* via the listed channels. */
+            override_participant_preferences?: boolean;
+        };
         /** @description Human or agent interaction request and its current response state. */
         Interaction: {
             /** @description Unique identifier for this interaction. */
@@ -3687,17 +4099,21 @@ export interface components {
             run_id?: string | null;
             /** @description Signal name used to resume the originating run when run-backed. */
             signal_name?: string | null;
-            /** @description Interaction kind that determines the expected response experience. */
-            type: components["schemas"]["InteractionType"];
+            /** @description Protocol kind of the interaction (PRD 077). Replaces the v1 wire field `type`; the rename landed in the v-bump that also renamed `Interaction.review_policy` to `submission_review_policy`. */
+            kind: components["schemas"]["InteractionKind"];
             /**
-             * @description Current status of the interaction: pending, completed, expired, or cancelled.
+             * @description Current status of the interaction: pending, in_review, completed, expired, or cancelled.
              * @enum {string}
              */
-            status: "pending" | "completed" | "expired" | "cancelled";
+            status: "pending" | "in_review" | "completed" | "expired" | "cancelled";
             origin: components["schemas"]["InteractionOrigin"];
             source?: components["schemas"]["InteractionSource"];
             /** @description Human-readable message shown to the responder when supplied. */
             message?: string | null;
+            /** @description Primary work item or artifact the interaction is about. */
+            subject?: components["schemas"]["InteractionReference"];
+            /** @description Supporting links and related entities. */
+            references?: components["schemas"]["InteractionReference"][];
             /** @description Additional key-value context surfaced in the UI alongside the message when supplied. */
             context?: {
                 [key: string]: unknown;
@@ -3710,8 +4126,16 @@ export interface components {
             responder?: components["schemas"]["InteractionResponder"];
             /** @description ID of the response that triggered resolution. Null while the interaction is pending, when the speculative `proposal` is auto-accepted with no response, on cancel, and on expiry. Look up the response in `responses` for the full payload. */
             resolving_response_id?: string | null;
+            /** @description Current handoff submission awaiting review. */
+            current_submission_id?: string | null;
+            /** @description Handoff submission accepted as the final outcome. */
+            accepted_submission_id?: string | null;
             /** @description All participant responses recorded against this interaction in arrival order. Empty until the first response is submitted. The full set is what the resolution-policy evaluator runs against. */
             responses?: components["schemas"]["InteractionResponse"][];
+            /** @description Handoff submission attempts, in arrival order. */
+            submissions?: components["schemas"]["InteractionSubmission"][];
+            /** @description Interaction lifecycle timeline, in arrival order. */
+            events?: components["schemas"]["InteractionEvent"][];
             /**
              * Format: date-time
              * @description Timestamp when this interaction expires if not responded to.
@@ -3752,6 +4176,12 @@ export interface components {
             claimed_at?: string | null;
             /** @description Declarative resolution rule attached at creation time. Legacy inputs (`require_all` / `first_responder`) are synthesized into an equivalent policy at create time, so on a freshly-created Interaction this should always be present; nullability covers historical rows that pre-date the synthesis. */
             resolution_policy?: components["schemas"]["ResolutionPolicy"];
+            /** @description Template review policy applied to new submissions of this interaction (PRD 077 §3.5). Each submission carries its own `review_policy` snapshot taken at submit time; this field is the create-time intent that the snapshot is copied from. */
+            submission_review_policy?: components["schemas"]["ReviewPolicy"];
+            /** @description Polymorphic identifier of what is waiting on this interaction's resolution (PRD 077 §3.7). Replaces the special-cased `run_id`/`signal_name` pair; the latter remain populated when `consumer.kind=run`. */
+            consumer?: components["schemas"]["Consumer"];
+            /** @description Optional per-interaction delivery override (PRD 077 §3.8). When absent, the dispatcher uses each participant's NotificationPreferences. */
+            delivery?: components["schemas"]["Delivery"];
             /** @description Final outcome selected by the resolution policy (not responder-supplied). Shape depends on the policy: `simple_majority` returns the winning option; `all_required` returns the array of every response; `speculative` returns either the proposal or the vetoer's value. Null while the interaction is still pending. */
             outcome?: components["schemas"]["InteractionValue"];
             /** @description Short audit string identifying which policy rule fired (e.g. `simple_majority`, `speculative_no_veto`, `simple_majority_owner_decides`). Null until the interaction reaches a resolved state. */
@@ -3853,8 +4283,8 @@ export interface components {
             /** @description Human-readable description of this output value. */
             description?: string;
         };
-        /** @description A workflow step. Exactly one step shape should be used. Step variants are identified by their distinctive required property (`action`, `type: set`, `join`, `wait_signal`, `wait_event`, `wait_until`, `sleep`, `pause`, or `interaction`). The current authored shape intentionally does not add a separate discriminator field, so existing workflow YAML stays compact. */
-        WorkflowStep: components["schemas"]["WorkflowExecutableStep"] | components["schemas"]["WorkflowSetStep"] | components["schemas"]["WorkflowJoinStep"] | components["schemas"]["WorkflowWaitSignalStep"] | components["schemas"]["WorkflowWaitEventStep"] | components["schemas"]["WorkflowWaitUntilStep"] | components["schemas"]["WorkflowSleepStep"] | components["schemas"]["WorkflowPauseStep"] | components["schemas"]["WorkflowInteractionStep"];
+        /** @description A workflow step. Exactly one step shape should be used. Step variants are identified by their distinctive required property (`action`, `type: set`, `join`, `wait_signal`, `wait_event`, `wait_until`, `sleep`, `pause`, `interaction`, or `code`). The current authored shape intentionally does not add a separate discriminator field, so existing workflow YAML stays compact. */
+        WorkflowStep: components["schemas"]["WorkflowExecutableStep"] | components["schemas"]["WorkflowSetStep"] | components["schemas"]["WorkflowJoinStep"] | components["schemas"]["WorkflowWaitSignalStep"] | components["schemas"]["WorkflowWaitEventStep"] | components["schemas"]["WorkflowWaitUntilStep"] | components["schemas"]["WorkflowSleepStep"] | components["schemas"]["WorkflowPauseStep"] | components["schemas"]["WorkflowInteractionStep"] | components["schemas"]["WorkflowCodeStep"];
         /** @description Optional presentation hint for the visual editor. Ignored by the execution engine; when absent, editors auto-lay out the step. */
         WorkflowStepLayout: {
             /** @description Horizontal position of the step in the editor canvas. */
@@ -4038,6 +4468,30 @@ export interface components {
             interaction: components["schemas"]["WorkflowInteractionConfig"];
         };
         /**
+         * @description Delegates the entire workflow's control flow to a user-authored handler running on a worker (TypeScript today, with other runtimes to follow). The handler invokes step.run(), step.sleep(), step.waitForSignal() etc. via the SDK; each call is durably checkpointed against the run ledger so the handler replays deterministically across yield/resume cycles.
+         *
+         *     A code workflow contains exactly one step (this one) — the handler's runtime control flow is the graph. Authors cannot mix code steps with the declarative step shapes: `next`, `each`, `retry`, `catch`, `parameters`, etc. are rejected by validation.
+         */
+        WorkflowCodeStep: {
+            /** @description Unique step name within the workflow, used for routing and logging. */
+            name: string;
+            /** @description Optional human-readable description of what this handler does. */
+            description?: string;
+            /** @description Optional visual-editor position hint; ignored by the execution engine. */
+            layout?: components["schemas"]["WorkflowStepLayout"];
+            /** @description Identifies the registered handler the worker should invoke. */
+            code: components["schemas"]["WorkflowCodeStepConfig"];
+        };
+        /** @description Configuration for a code-handler step. */
+        WorkflowCodeStepConfig: {
+            /** @description Stable identifier the worker SDK registered the handler under (typically equal to the workflow definition name). The server emits jobs whose handler parameter equals this value; the worker dispatches the job to the matching handler. */
+            handler: string;
+            /** @description Opaque hint identifying the language/runtime that owns this handler ("typescript", "python", etc.). Used by the UI for display only; the engine does not interpret it. */
+            runtime?: string;
+            /** @description Optional worker queue the code-invoke job is dispatched to. When empty, the run-level queue is used. */
+            queue?: string;
+        };
+        /**
          * @description Execution mode for `action` steps: `worker` creates claimable jobs for external workers, while `server` executes Mobius-managed actions such as integrations inside the service. Omit for the current default of `worker`.
          * @enum {string}
          */
@@ -4191,6 +4645,30 @@ export interface components {
             target: components["schemas"]["InteractionTarget"];
             /** @description When true, all group members must respond before the interaction completes. Only meaningful when type is `group`. */
             require_all?: boolean;
+            /** @description Optional focused channel to create or reuse around this typed interaction. */
+            discussion?: components["schemas"]["WorkflowInteractionDiscussionConfig"];
+        };
+        /** @description Creates or reuses a project channel for the surrounding discussion while the interaction remains the typed outcome that resumes the workflow. */
+        WorkflowInteractionDiscussionConfig: {
+            /** @description Existing channel ID to reuse. If omitted, channel_name is used. */
+            channel_id?: string;
+            /** @description Existing or new project channel name to use for the discussion. */
+            channel_name?: string;
+            /** @description Display name for a newly-created channel. */
+            display_name?: string;
+            /** @description Topic for a newly-created channel. */
+            topic?: string;
+            /** @description Additional user or agent IDs to invite to the channel. */
+            member_ids?: string[];
+            /** @description Opening brief posted into the channel before the workflow parks. */
+            opening_message: string;
+            /**
+             * @description Behavior to apply when all purpose-linked interactions are terminal.
+             * @enum {string}
+             */
+            completion_behavior?: "none" | "mark_inactive" | "archive";
+            /** @description Whether a newly-created channel is private. */
+            private?: boolean;
         };
         /** @description Workflow definition metadata without the executable `spec`. Returned by list endpoints; fetch a single definition via `getWorkflow` to get the full spec. */
         WorkflowDefinitionSummary: {
@@ -5112,20 +5590,20 @@ export interface components {
             /** @description The new raw signing secret. Store it immediately — this is the only time it is returned. */
             signing_secret: string;
         };
-        /** @description One project, platform, or workflow-backed action available to workflow authors. */
+        /** @description One built-in, integration, workflow-, or custom-backed action available to agents and workflow authors. */
         ActionCatalogEntry: {
-            /** @description Action name as used in workflow step definitions. */
+            /** @description Canonical dotted action name (e.g. `mobius.channel.send_message`). Translated to the provider-safe form (`mobius_channel_send_message`) only at the LLM boundary. */
             name: string;
             /** @description Human-readable display title for the action. */
             title?: string;
             /** @description Markdown description of what the action does. */
             description?: string;
             /**
-             * @description Backing kind. "http" for HTTP endpoints (project-owned or platform-integration). "workflow" for actions backed by a workflow definition published as a tool.
+             * @description Backing kind. "builtin" for Mobius platform actions implemented in Go (no DB row), "http" for project-owned or integration HTTP endpoints, "workflow" for actions backed by a workflow definition published as a tool.
              * @enum {string}
              */
-            endpoint_kind: "http" | "workflow";
-            /** @description Workflow handle for endpoint_kind=workflow entries. Absent for http-backed actions. */
+            endpoint_kind: "builtin" | "http" | "workflow";
+            /** @description Workflow handle for endpoint_kind=workflow entries. Absent otherwise. */
             workflow_handle?: string;
             /** @description Integration slug this action belongs to (e.g. "slack"), if platform-provided. */
             integration?: string;
@@ -5134,10 +5612,15 @@ export interface components {
              * @enum {string}
              */
             source: "platform" | "custom";
-            /** @description Whether this action can currently be invoked. False if the required integration is not connected or the caller lacks permission. */
+            /** @description Whether this action can currently be invoked. False if the required integration is not connected, the action is a placeholder for a not-yet-implemented capability, or the caller lacks permission. */
             available: boolean;
-            /** @description Safe-use hints returned for this catalog action. */
-            annotations?: components["schemas"]["ActionAnnotationsResponse"];
+            /**
+             * @description Author-declared risk classification. Used by toolkit-author UIs to surface warnings and by audit views to prioritize attention.
+             * @enum {string}
+             */
+            risk: "low" | "medium" | "high" | "critical";
+            /** @description Safe-use hints returned for this catalog action. Always present; flags default to false. */
+            annotations: components["schemas"]["ActionAnnotationsResponse"];
             /** @description JSON Schema describing expected input parameters. */
             input_schema?: {
                 [key: string]: unknown;
@@ -5523,13 +6006,21 @@ export interface components {
             workflow_name: string;
             /** @description Step label from the workflow spec — used for UI and interaction signal name derivation. */
             step_name: string;
-            /** @description Action name the worker must execute for this step. */
+            /**
+             * @description Action name the worker must execute for this step.
+             *
+             *     The reserved value `mobius.code.invoke` identifies a code-mode workflow invocation: the worker dispatches to the registered code handler named by `parameters._mobius_code_handler` and completes via `code-completion` / `code-yield` instead of `complete`. See `CodeInvokeJobParameters` for the parameter shape.
+             */
             action: string;
             /** @description Agent that should execute this job, when the step is agent-targeted. */
             agent_id?: string;
             /** @description Agent session the job was routed to, when applicable. */
             agent_session_id?: string;
-            /** @description Input parameters for this step, resolved from the workflow spec and prior step outputs. */
+            /**
+             * @description Input parameters for this step, resolved from the workflow spec and prior step outputs.
+             *
+             *     When `action == "mobius.code.invoke"`, parameters follow the `CodeInvokeJobParameters` shape — they carry the registered handler id, the run inputs, and the replay history rather than spec-authored values.
+             */
             parameters: {
                 [key: string]: unknown;
             };
@@ -5584,6 +6075,103 @@ export interface components {
             /** @description Human-readable error detail. Only relevant for failed status. */
             error_message?: string;
         };
+        /** @description Final report for a code-invoke job. The handler returned (or threw a terminal error). `completions` carries the durable sub-step rows the handler accumulated during this invocation; the server appends them to the run-step ledger before marking the run completed. */
+        CodeJobCompleteRequest: {
+            /** @description Worker process identifier from the claim. Required at the HTTP boundary so empty values fail schema validation in lockstep with the handler's runtime guard. */
+            worker_instance_id: string;
+            /** @description Per-boot token from the claim. Compared against the job's `claimed_by_session_token`; mismatch returns 409 lease-lost. */
+            worker_session_token: string;
+            /** @description Must match the `attempt` from the original claim. */
+            attempt: number;
+            /** @description Sub-step records the handler executed during this invocation that have not yet been durably checkpointed. */
+            completions?: components["schemas"]["CodeStepCompletion"][];
+            /** @description Base64-encoded JSON bytes of the handler's return value. Persisted as the run output. */
+            result_b64?: string;
+            /** @description Short error class identifier when the handler threw a terminal error. Run is marked failed regardless of `result_b64`. */
+            error_type?: string;
+            /** @description Human-readable error detail. */
+            error_message?: string;
+        };
+        /** @description Yield notification for a code-invoke job. Commits the accumulated sub-step completions and parks the run on the supplied wait. A fresh code-invoke job is emitted on wake. */
+        CodeJobYieldRequest: {
+            /** @description Worker process identifier from the claim. Required at the HTTP boundary so empty values fail schema validation in lockstep with the handler's runtime guard. */
+            worker_instance_id: string;
+            /** @description Per-boot token from the claim. Mismatch returns 409. */
+            worker_session_token: string;
+            /** @description Must match the `attempt` from the original claim. */
+            attempt: number;
+            /** @description Sub-step records since the last yield. May be empty if the very first thing the handler did was hit a wait. */
+            completions?: components["schemas"]["CodeStepCompletion"][];
+            /** @description The wait the handler hit. Maps 1:1 to existing server suspension reasons (sleep, wait_signal, wait_event, interaction, pause). */
+            suspension: components["schemas"]["CodeYieldSuspension"];
+        };
+        /** @description One durable sub-step the handler executed (or a wait it observed completing). Replayed back to the handler on the next invocation so step.run() / step.waitFor*() calls fast-forward without re-executing the user-supplied function. */
+        CodeStepCompletion: {
+            /** @description Deterministic identifier the handler passed to step.run() (or step.sleep, step.waitForSignal, etc.). Replay key. */
+            step_id: string;
+            /**
+             * @description Sub-step kind. Only `run` carries a meaningful `result`; wait kinds capture "wait completed" markers.
+             * @enum {string}
+             */
+            kind: "run" | "sleep" | "wait_signal" | "wait_event" | "interaction" | "pause";
+            /** @enum {string} */
+            status: "completed" | "failed" | "skipped";
+            /** @description Value the handler should observe on replay. JSON-shape; kind-specific (handler return value for `run`, signal payload for `wait_signal`, etc.). */
+            result?: unknown;
+            /** @description Error class for a failed sub-step. */
+            error_type?: string;
+            /** @description Human-readable error detail. */
+            error_message?: string;
+            /** @description Worker-side per-step retry counter. 0 for first try. */
+            attempt?: number;
+        };
+        /** @description Wait descriptor a code handler yielded. Discriminated by `kind`: each kind has its own variant requiring the matching config block (sleep, wait_signal, wait_event, interaction). The `pause` variant does not require a config — pause just suspends the run until an operator unpauses it; the optional `pause` block carries a human-readable reason for display. Reuses the declarative wait config schemas — code workflows ignore the `on_timeout` fields on those configs because the SDK handles timeout flows directly in the handler (try/catch around the await), but accepting the shape verbatim avoids forking schemas just for code mode. */
+        CodeYieldSuspension: components["schemas"]["CodeYieldSleepSuspension"] | components["schemas"]["CodeYieldWaitSignalSuspension"] | components["schemas"]["CodeYieldWaitEventSuspension"] | components["schemas"]["CodeYieldInteractionSuspension"] | components["schemas"]["CodeYieldPauseSuspension"];
+        CodeYieldSleepSuspension: {
+            step_id: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "sleep";
+            sleep: components["schemas"]["WorkflowSleepConfig"];
+        };
+        CodeYieldWaitSignalSuspension: {
+            step_id: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "wait_signal";
+            wait_signal: components["schemas"]["WorkflowWaitSignalConfig"];
+        };
+        CodeYieldWaitEventSuspension: {
+            step_id: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "wait_event";
+            wait_event: components["schemas"]["WorkflowWaitEventConfig"];
+        };
+        CodeYieldInteractionSuspension: {
+            step_id: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "interaction";
+            interaction: components["schemas"]["WorkflowInteractionConfig"];
+        };
+        CodeYieldPauseSuspension: {
+            step_id: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "pause";
+            pause?: components["schemas"]["WorkflowPauseConfig"];
+        };
         RunActionRequest: {
             /** @description Input parameters passed to the action handler. */
             parameters?: {
@@ -5624,10 +6212,14 @@ export interface components {
         CreateJobInteractionRequest: {
             /** @description User, group, or agent that should receive the interaction. */
             target: components["schemas"]["InteractionTarget"];
-            /** @description Interaction kind that determines the response workflow. */
-            type: components["schemas"]["InteractionType"];
+            /** @description Protocol kind. Renamed from `type` in the PRD 077 v-bump. */
+            kind: components["schemas"]["InteractionKind"];
             /** @description Message shown to the responder. */
             message: string;
+            /** @description Primary work item or artifact the interaction is about. */
+            subject?: components["schemas"]["InteractionReference"];
+            /** @description Supporting links and related entities. */
+            references?: components["schemas"]["InteractionReference"][];
             /** @description Optional signal name override. When omitted, the server derives the signal name from step_name or falls back to a default interaction signal name. */
             signal_name?: string;
             /** @description Optional workflow step label for UI/debugging context */
@@ -5642,6 +6234,8 @@ export interface components {
             require_all?: boolean;
             /** @description Declarative resolution rule. When supplied the policy evaluator drives completion; legacy `require_all`/`first_responder` behaviour is bypassed for that interaction. */
             resolution_policy?: components["schemas"]["ResolutionPolicy"];
+            /** @description Template review policy applied to submissions of this interaction (PRD 077 §3.5). Currently meaningful only for handoff-kind interactions. */
+            submission_review_policy?: components["schemas"]["ReviewPolicy"];
             /** @description Optional duration string (e.g. "24h", "30m") specifying how long the interaction should remain open before expiring. When absent the caller is responsible for setting expires_at directly. */
             timeout?: string;
             /**
@@ -6802,6 +7396,22 @@ export interface components {
                 [key: string]: number;
             };
         };
+        /** @description Per-actor delivery defaults applied when an interaction does not specify a `delivery` override (PRD 077 §3.8). One row per (org, actor_type, actor_id) in v1. */
+        NotificationPreferences: {
+            id?: string;
+            org_id: string;
+            /** @enum {string} */
+            actor_type: "user" | "agent";
+            actor_id: string;
+            channels?: components["schemas"]["DeliveryChannel"][];
+            /** Format: date-time */
+            created_at?: string;
+            /** Format: date-time */
+            updated_at?: string;
+        };
+        UpdateNotificationPreferencesRequest: {
+            channels: components["schemas"]["DeliveryChannel"][];
+        };
         InteractionListResponse: {
             /** @description The list of results for this page. */
             items: components["schemas"]["Interaction"][];
@@ -6816,10 +7426,14 @@ export interface components {
         CreateStandaloneInteractionRequest: {
             /** @description User, group, or agent that should receive the interaction. */
             target: components["schemas"]["InteractionTarget"];
-            /** @description Interaction kind that determines the response workflow. */
-            type: components["schemas"]["InteractionType"];
+            /** @description Protocol kind. Renamed from `type` in the PRD 077 v-bump. */
+            kind: components["schemas"]["InteractionKind"];
             /** @description Message shown to the responder describing what response is needed. */
             message: string;
+            /** @description Primary work item or artifact the interaction is about. */
+            subject?: components["schemas"]["InteractionReference"];
+            /** @description Supporting links and related entities. */
+            references?: components["schemas"]["InteractionReference"][];
             /** @description Additional key-value context surfaced in the UI alongside the message. */
             context?: {
                 [key: string]: unknown;
@@ -6830,6 +7444,12 @@ export interface components {
             require_all?: boolean;
             /** @description Declarative resolution rule. When supplied the policy evaluator drives completion; legacy `require_all`/`first_responder` behaviour is bypassed for that interaction. */
             resolution_policy?: components["schemas"]["ResolutionPolicy"];
+            /** @description Template review policy applied to submissions of this interaction (PRD 077 §3.5). Currently meaningful only for handoff-kind interactions. */
+            submission_review_policy?: components["schemas"]["ReviewPolicy"];
+            /** @description Polymorphic identifier of what is waiting on this interaction's resolution (PRD 077 §3.7). When omitted on a run-backed create request, the server derives a `kind=run` consumer from `run_id` and `signal_name`. */
+            consumer?: components["schemas"]["Consumer"];
+            /** @description Optional per-interaction delivery override (PRD 077 §3.8). */
+            delivery?: components["schemas"]["Delivery"];
             /**
              * Format: date-time
              * @description Timestamp after which this interaction expires if not responded to.
@@ -6844,10 +7464,14 @@ export interface components {
             signal_name: string;
             /** @description User, group, or agent that should receive the interaction. */
             target: components["schemas"]["InteractionTarget"];
-            /** @description Interaction kind that determines the response workflow. */
-            type: components["schemas"]["InteractionType"];
+            /** @description Protocol kind. Renamed from `type` in the PRD 077 v-bump. */
+            kind: components["schemas"]["InteractionKind"];
             /** @description Message shown to the responder describing what response is needed. */
             message: string;
+            /** @description Primary work item or artifact the interaction is about. */
+            subject?: components["schemas"]["InteractionReference"];
+            /** @description Supporting links and related entities. */
+            references?: components["schemas"]["InteractionReference"][];
             /** @description Additional key-value context surfaced in the UI alongside the message. */
             context?: {
                 [key: string]: unknown;
@@ -6858,6 +7482,12 @@ export interface components {
             require_all?: boolean;
             /** @description Declarative resolution rule. When supplied the policy evaluator drives completion; legacy `require_all`/`first_responder` behaviour is bypassed for that interaction. */
             resolution_policy?: components["schemas"]["ResolutionPolicy"];
+            /** @description Template review policy applied to submissions of this interaction (PRD 077 §3.5). Currently meaningful only for handoff-kind interactions. */
+            submission_review_policy?: components["schemas"]["ReviewPolicy"];
+            /** @description Polymorphic identifier of what is waiting on this interaction's resolution (PRD 077 §3.7). When omitted on a run-backed create request, the server derives a `kind=run` consumer from `run_id` and `signal_name`. */
+            consumer?: components["schemas"]["Consumer"];
+            /** @description Optional per-interaction delivery override (PRD 077 §3.8). */
+            delivery?: components["schemas"]["Delivery"];
             /**
              * Format: date-time
              * @description Timestamp after which this interaction expires if not responded to.
@@ -6874,6 +7504,57 @@ export interface components {
              * @description Optional 0..1 confidence score the responder attaches to their answer. Required when the interaction's resolution policy weights by confidence; ignored otherwise.
              */
             confidence?: number;
+        };
+        SubmitHandoffRequest: {
+            /** @description Evidence or completion payload supplied by the assignee. */
+            value: components["schemas"]["InteractionValue"];
+            /** @description Optional note from the assignee. */
+            comment?: string;
+        };
+        ReviewHandoffRequest: {
+            /** @description Optional review note for acceptance. */
+            comment?: string;
+        };
+        SendBackHandoffRequest: {
+            /** @description Feedback explaining what needs to change before resubmission. */
+            comment: string;
+        };
+        /** @description One voter's ballot on a vote-kind interaction. Distinct from `InteractionResponse` because ballots carry changeable, withdrawable, and optionally anonymous semantics (PRD 077). */
+        InteractionBallot: {
+            id: string;
+            interaction_id: string;
+            /**
+             * @description Voter actor class.
+             * @enum {string}
+             */
+            voter_type: "user" | "agent";
+            /** @description Voter identity. Anonymised (omitted) when the vote's `anonymous` rule is true and the caller is not the interaction owner. */
+            voter_id?: string;
+            /** @description Option values selected by this voter. */
+            choices?: string[];
+            comment?: string | null;
+            /** Format: date-time */
+            cast_at: string;
+            /** Format: date-time */
+            updated_at?: string;
+            /** @description True when the voter withdrew before close. */
+            withdrawn?: boolean;
+            /** Format: date-time */
+            withdrawn_at?: string | null;
+        };
+        InteractionBallotListResponse: {
+            items: components["schemas"]["InteractionBallot"][];
+        };
+        CastBallotRequest: {
+            /** @description Option values the voter selects. `select`-mode votes accept exactly one entry; `multi_select` accepts one or more. */
+            choices: string[];
+            /** @description Optional free-text comment alongside the vote. */
+            comment?: string;
+        };
+        /** @description Optional payload accompanying a close-vote call. */
+        CloseVoteRequest: {
+            /** @description Free-text reason recorded with the close event. */
+            comment?: string;
         };
         /** @description Optional payload accompanying a cancel request. The reason is recorded on the interaction and forwarded in the cancellation signal so workflows can route to a fallback. */
         CancelInteractionRequest: {
@@ -7086,18 +7767,6 @@ export interface components {
             /** @description The list of results for this page. */
             items: components["schemas"]["AgentSession"][];
         };
-        AgentNativeTool: {
-            /** @description Stable native-tool grant ID, such as `mobius_table_read`. */
-            id: string;
-            /** @description Human-readable tool label for toolkit editors. */
-            label: string;
-            /** @description What this native tool allows. */
-            description: string;
-            /** @description Model-facing concrete tools exposed by this native grant. */
-            concrete_tools: string[];
-            /** @enum {string} */
-            risk: "low" | "medium" | "high" | "critical";
-        };
         ToolkitActionGrant: {
             /**
              * @description How to match action catalog names.
@@ -7119,10 +7788,7 @@ export interface components {
             source: "system" | "project";
             /** @enum {string} */
             status: "active" | "archived";
-            /** @description Native-tool grant IDs owned by this toolkit. */
-            native_tool_ids: string[];
-            /** @description Expanded native-tool metadata for the toolkit's tool grants. */
-            native_tools?: components["schemas"]["AgentNativeTool"][];
+            /** @description Action selectors granted by this toolkit. Each entry is matched against the unified action catalog at manifest-resolution time. */
             action_grants: components["schemas"]["ToolkitActionGrant"][];
             /** Format: date-time */
             created_at: string;
@@ -7134,8 +7800,6 @@ export interface components {
             /** @description Optional stable slug. When omitted, the server derives one from `name`. */
             slug?: string;
             description?: string;
-            /** @description Native-tool grant IDs to allow. */
-            native_tool_ids?: string[];
             action_grants?: components["schemas"]["ToolkitActionGrant"][];
         };
         ToolkitListResponse: {
@@ -7169,10 +7833,8 @@ export interface components {
             status: "active" | "archived";
             /** @description Markdown instructions loaded when the skill is active. */
             instructions: string;
-            /** @description Requested native-tool IDs, concrete tool names, or known aliases. */
+            /** @description Canonical action names, wildcard selectors, or group references that narrow the agent's effective tool set while this skill is active. Uses the same selector vocabulary as toolkit grants. */
             allowed_tools: string[];
-            /** @description Requested action names/selectors. */
-            allowed_actions: string[];
             /** @description Original imported frontmatter preserved for round-tripping. */
             frontmatter?: {
                 [key: string]: unknown;
@@ -7192,7 +7854,6 @@ export interface components {
             description?: string;
             instructions: string;
             allowed_tools?: string[];
-            allowed_actions?: string[];
             frontmatter?: {
                 [key: string]: unknown;
             };
@@ -7228,12 +7889,12 @@ export interface components {
             name: string;
             instructions: string;
             active: boolean;
-            allowed_tools: string[];
-            allowed_actions: string[];
             model_hint?: string;
             user_invocable?: boolean;
+            missing_required?: string[];
+            missing_recommended?: string[];
         };
-        AgentCapabilityWarning: {
+        AgentManifestWarning: {
             code: string;
             message: string;
             skill_id?: string;
@@ -7241,24 +7902,34 @@ export interface components {
             tool?: string;
             action?: string;
         };
-        AgentBlockedActionGrant: {
+        AgentBlockedGrant: {
             selector_type: string;
             selector: string;
+            /** @description Canonical action name the selector resolved to, when the grant matched a real catalog entry that the service account is not permitted to invoke. */
+            action_name?: string;
             reason: string;
+            permission_id?: string;
         };
-        AgentCapabilityManifest: {
+        ResolvedActionGroup: {
+            /** @description Canonical group name (e.g. `mobius.table.read`). */
+            name: string;
+            /** @description Action names the group expanded to during this resolution. */
+            members: string[];
+        };
+        /** @description The flat, resolved tool set visible to one agent. Replaces the prior Capability/Action split: every entry in `tools` is an action catalog entry the agent can invoke as its own named tool. */
+        AgentToolManifest: {
             agent_id: string;
             project_id: string;
+            /** @description Stable hash over the resolved tool + skill set; bumps when grants or permissions change. */
             policy_hash: string;
             toolkit_ids: string[];
-            native_tools: components["schemas"]["AgentNativeTool"][];
-            /** @description Dotted model-facing tool names available to the agent. */
-            concrete_tools: string[];
-            /** @description Action catalog entries visible and executable under the manifest. */
-            actions: components["schemas"]["ActionCatalogEntry"][];
+            /** @description Catalog entries the agent can invoke. Each entry surfaces to the LLM as its own named tool. Built-in, integration, workflow, and custom-HTTP actions are intermingled here. */
+            tools: components["schemas"]["ActionCatalogEntry"][];
+            /** @description Audit trail of group selectors that contributed to the resolved tool set. Operators see groups; the LLM only sees the flat `tools` list. */
+            groups_resolved?: components["schemas"]["ResolvedActionGroup"][];
             skills: components["schemas"]["SkillManifestEntry"][];
-            warnings: components["schemas"]["AgentCapabilityWarning"][];
-            blocked_action_grants: components["schemas"]["AgentBlockedActionGrant"][];
+            warnings: components["schemas"]["AgentManifestWarning"][];
+            blocked_grants: components["schemas"]["AgentBlockedGrant"][];
         };
         CreateAgentRequest: {
             /** @description Service account that backs this agent. Must be active, belong to the same project, and currently back zero other agents. If omitted, a new service account is auto-created with the same name as the agent. */
@@ -10142,8 +10813,10 @@ export interface operations {
                 purpose?: components["schemas"]["EnvironmentPurpose"];
                 owner_type?: components["schemas"]["EnvironmentOwnerType"];
                 owner_id?: string;
-                /** @description Include all destroyed environments in the inventory. Recently destroyed environments may remain visible briefly by default; older destroyed environments are hidden unless this is true or status=destroyed is requested. */
+                /** @description Include destroyed environments in the result. By default destroyed rows are excluded; set this to true (or pass status=destroyed) to see them. */
                 include_destroyed?: boolean;
+                /** @description Narrow destroyed rows to those torn down at or after this timestamp. Composes with `status=destroyed` to fetch a "recently destroyed" tombstone window (e.g. last hour). Non-destroyed rows are unaffected when this is combined with the default (no-status) view. */
+                destroyed_since?: string;
             };
             header?: never;
             path: {
@@ -11052,6 +11725,68 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
+        };
+    };
+    completeCodeJob: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
+                id: components["parameters"]["IDParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CodeJobCompleteRequest"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    yieldCodeJob: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
+                id: components["parameters"]["IDParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CodeJobYieldRequest"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
         };
     };
     listTriggers: {
@@ -12263,7 +12998,7 @@ export interface operations {
         parameters: {
             query?: {
                 /** @description Filter by status */
-                status?: "pending" | "completed" | "expired" | "cancelled";
+                status?: "pending" | "in_review" | "completed" | "expired" | "cancelled";
                 /** @description Filter by originating run ID */
                 run_id?: string;
                 /** @description Filter by target type */
@@ -12272,6 +13007,10 @@ export interface operations {
                 target_id?: string;
                 /** @description When true, returns only interactions visible to the authenticated user (direct + group membership) */
                 inbox?: boolean;
+                /** @description Filter handoffs by reviewer type. Defaults to user when reviewer_id is provided. */
+                reviewer_type?: "user" | "agent" | "group";
+                /** @description Filter handoffs awaiting review by the specified reviewer. */
+                reviewer_id?: string;
                 /** @description Cursor for pagination (opaque string from previous response) */
                 cursor?: components["parameters"]["CursorParam"];
                 /** @description Maximum number of items to return */
@@ -12326,7 +13065,7 @@ export interface operations {
                  *         "type": "group",
                  *         "id": "approvers"
                  *       },
-                 *       "type": "approval",
+                 *       "kind": "approval",
                  *       "message": "Approve publishing the April billing report?",
                  *       "context": {
                  *         "report_id": "rpt_2026_04",
@@ -12355,7 +13094,7 @@ export interface operations {
                      *       "id": "int_01hw1r2s3t4u5v6w7x8y9z0a1b",
                      *       "run_id": "run_01hw1n1a2b3c4d5e6f7g8h9j0k",
                      *       "signal_name": "manager_approval",
-                     *       "type": "approval",
+                     *       "kind": "approval",
                      *       "status": "pending",
                      *       "message": "Approve publishing the April billing report?",
                      *       "context": {
@@ -12451,7 +13190,7 @@ export interface operations {
                      *       "id": "int_01hw1r2s3t4u5v6w7x8y9z0a1b",
                      *       "run_id": "run_01hw1n1a2b3c4d5e6f7g8h9j0k",
                      *       "signal_name": "manager_approval",
-                     *       "type": "approval",
+                     *       "kind": "approval",
                      *       "status": "completed",
                      *       "message": "Approve publishing the April billing report?",
                      *       "context": {
@@ -12505,6 +13244,243 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+        };
+    };
+    submitInteractionHandoff: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
+                id: components["parameters"]["IDParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "value": {
+                 *         "url": "https://jira.example.com/browse/MOB-123",
+                 *         "summary": "Implementation is ready for requester acceptance."
+                 *       },
+                 *       "comment": "All tests are green."
+                 *     }
+                 */
+                "application/json": components["schemas"]["SubmitHandoffRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Interaction"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    acceptInteractionHandoff: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
+                id: components["parameters"]["IDParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                /**
+                 * @example {
+                 *       "comment": "Looks good."
+                 *     }
+                 */
+                "application/json": components["schemas"]["ReviewHandoffRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Interaction"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    sendBackInteractionHandoff: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
+                id: components["parameters"]["IDParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "comment": "Please attach the deployment checklist before resubmitting."
+                 *     }
+                 */
+                "application/json": components["schemas"]["SendBackHandoffRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Interaction"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    castInteractionBallot: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
+                id: components["parameters"]["IDParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CastBallotRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InteractionBallot"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    withdrawInteractionBallot: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
+                id: components["parameters"]["IDParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InteractionBallot"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    closeInteractionVote: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
+                id: components["parameters"]["IDParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CloseVoteRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Interaction"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listInteractionBallots: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
+                id: components["parameters"]["IDParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InteractionBallotListResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
         };
     };
     claimInteraction: {
@@ -12599,6 +13575,61 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+        };
+    };
+    getNotificationPreferences: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                actor_type: "user" | "agent";
+                actor_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationPreferences"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    updateNotificationPreferences: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                actor_type: "user" | "agent";
+                actor_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateNotificationPreferencesRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationPreferences"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
         };
     };
     listGroups: {
@@ -13319,17 +14350,15 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
-    getAgentCapabilityManifest: {
+    getAgentToolManifest: {
         parameters: {
             query?: {
                 /** @description Optional comma-separated toolkit subset to apply. */
                 toolkit_ids?: string;
                 /** @description Optional assigned skill name to preselect as active. */
                 skill_name?: string;
-                /** @description Optional comma-separated concrete tool names or known aliases. */
+                /** @description Optional comma-separated canonical action names, wildcard selectors, or group references to apply as a per-invocation filter against the resolved tool set. */
                 allowed_tools?: string;
-                /** @description Optional comma-separated action names to apply as a per-invocation filter. */
-                allowed_actions?: string;
             };
             header?: never;
             path: {
@@ -13348,7 +14377,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AgentCapabilityManifest"];
+                    "application/json": components["schemas"]["AgentToolManifest"];
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -14538,6 +15567,40 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+        };
+    };
+    listArtifacts: {
+        parameters: {
+            query?: {
+                run_id?: string;
+                step_id?: string;
+                /** @description Mime prefix filter (e.g. `image/`) */
+                mime?: string;
+                state?: components["schemas"]["ArtifactState"];
+                /** @description Cursor for pagination (opaque string from previous response) */
+                cursor?: components["parameters"]["CursorParam"];
+                /** @description Maximum number of items to return */
+                limit?: components["parameters"]["LimitParam"];
+            };
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArtifactListResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
         };
     };
     createArtifactSlot: {

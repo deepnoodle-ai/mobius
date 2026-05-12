@@ -271,6 +271,56 @@ func registerArtifactsCommands(app *cli.App) {
 			return printResponse(ctx, "getArtifactStorageSettings", resp.StatusCode(), resp.Body)
 		})
 
+	artifactsGrp.Command("list").
+		Description("List artifacts in a project").
+		Flags(
+			cli.String("run-id", "").Help("run-id"),
+			cli.String("step-id", "").Help("step-id"),
+			cli.String("mime", "").Help("Mime prefix filter (e.g. `image/`)"),
+			cli.String("state", "").Help("state"),
+			cli.String("cursor", "").Help("cursor"),
+			cli.Int("limit", "").Help("limit"),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			params := &api.ListArtifactsParams{}
+			if ctx.IsSet("run-id") {
+				v := ctx.String("run-id")
+				params.RunId = &v
+			}
+			if ctx.IsSet("step-id") {
+				v := ctx.String("step-id")
+				params.StepId = &v
+			}
+			if ctx.IsSet("mime") {
+				v := ctx.String("mime")
+				params.Mime = &v
+			}
+			if ctx.IsSet("state") {
+				v := api.ArtifactState(ctx.String("state"))
+				params.State = &v
+			}
+			if ctx.IsSet("cursor") {
+				v := api.CursorParam(ctx.String("cursor"))
+				params.Cursor = &v
+			}
+			if ctx.IsSet("limit") {
+				v := api.LimitParam(ctx.Int("limit"))
+				params.Limit = &v
+			}
+			resp, err := client.ListArtifactsWithResponse(ctx.Context(), p0, params)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "listArtifacts", resp.StatusCode(), resp.Body)
+		})
+
 	artifactsGrp.Command("list-artifacts").
 		Description("List artifacts produced by a run").
 		Args("run-id").

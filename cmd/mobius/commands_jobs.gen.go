@@ -93,6 +93,78 @@ func registerJobsCommands(app *cli.App) {
 			return printResponse(ctx, "claimJob", resp.StatusCode(), resp.Body)
 		})
 
+	jobsGrp.Command("complete-code-job").
+		Description("Report a code-handler return for a claimed code-invoke job").
+		Args("id").
+		Flags(
+			cli.Int("attempt", "").Help("[required] Must match the `attempt` from the original claim."),
+			cli.String("completions", "").Help("Sub-step records the handler executed during this invocation that have not yet been durably checkpo… Accepts JSON, @file, or @-."),
+			cli.String("error-message", "").Help("Human-readable error detail."),
+			cli.String("error-type", "").Help("Short error class identifier when the handler threw a terminal error. Run is marked failed regardle…"),
+			cli.String("result-b64", "").Help("Base64-encoded JSON bytes of the handler's return value. Persisted as the run output."),
+			cli.String("worker-instance-id", "").Help("[required] Worker process identifier from the claim. Required at the HTTP boundary so empty values fail schema…"),
+			cli.String("worker-session-token", "").Help("[required] Per-boot token from the claim. Compared against the job's `claimed_by_session_token`; mismatch retu…"),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			p1 := ctx.Arg(0)
+			var body api.CompleteCodeJobJSONRequestBody
+			if err := readJSONBody(ctx, &body); err != nil {
+				return err
+			}
+			if ctx.IsSet("attempt") {
+				body.Attempt = ctx.Int("attempt")
+			}
+			if ctx.IsSet("completions") {
+				if err := decodeFlagJSON(ctx, "completions", ctx.String("completions"), &body.Completions); err != nil {
+					return err
+				}
+			}
+			if ctx.IsSet("error-message") {
+				v := ctx.String("error-message")
+				body.ErrorMessage = &v
+			}
+			if ctx.IsSet("error-type") {
+				v := ctx.String("error-type")
+				body.ErrorType = &v
+			}
+			if ctx.IsSet("result-b64") {
+				v := ctx.String("result-b64")
+				body.ResultB64 = &v
+			}
+			if ctx.IsSet("worker-instance-id") {
+				body.WorkerInstanceId = ctx.String("worker-instance-id")
+			}
+			if ctx.IsSet("worker-session-token") {
+				body.WorkerSessionToken = ctx.String("worker-session-token")
+			}
+			if body.Attempt == 0 {
+				return fmt.Errorf("--attempt is required (or supply it via --file)")
+			}
+			if body.WorkerInstanceId == "" {
+				return fmt.Errorf("--worker-instance-id is required (or supply it via --file)")
+			}
+			if body.WorkerSessionToken == "" {
+				return fmt.Errorf("--worker-session-token is required (or supply it via --file)")
+			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
+			}
+			resp, err := client.CompleteCodeJobWithResponse(ctx.Context(), p0, p1, body)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "completeCodeJob", resp.StatusCode(), resp.Body)
+		})
+
 	jobsGrp.Command("complete-job").
 		Description("Report terminal status for a claimed workflow job").
 		Args("id").
@@ -170,15 +242,18 @@ func registerJobsCommands(app *cli.App) {
 		Flags(
 			cli.String("context", "").Help("Additional key-value context surfaced in the UI alongside the message. Accepts JSON, @file, or @-."),
 			cli.String("expires-at", "").Help("Timestamp after which this interaction expires. Accepts JSON, @file, or @-."),
+			cli.String("kind", "").Help("[required] Protocol kind of the interaction (PRD 077). Each value names a distinct multi-party coordination pr…"),
 			cli.String("message", "").Help("[required] Message shown to the responder."),
+			cli.String("references", "").Help("Supporting links and related entities. Accepts JSON, @file, or @-."),
 			cli.Bool("require-all", "").Help("When target.type is \"group\", setting require_all=true means all snapshotted group members must resp…"),
 			cli.String("resolution-policy", "").Help("Declarative resolution rule attached to an Interaction. Determines how participant responses become… Accepts JSON, @file, or @-."),
 			cli.String("signal-name", "").Help("Optional signal name override. When omitted, the server derives the signal name from step_name or f…"),
 			cli.String("spec", "").Help("Declarative dialog contract for rendering and validating an interaction. Used at both authoring tim… Accepts JSON, @file, or @-."),
 			cli.String("step-name", "").Help("Optional workflow step label for UI/debugging context"),
+			cli.String("subject", "").Help("Pointer to the work item, artifact, external ticket, or Mobius entity this interaction is about. Accepts JSON, @file, or @-."),
+			cli.String("submission-review-policy", "").Help("Reviewability policy for an interaction artifact (PRD 077 §3.5). Carried as a template on `Interac… Accepts JSON, @file, or @-."),
 			cli.String("target", "").Help("[required] Identifies who should receive an interaction request. Note: distinct from the caller/audit `Actor` … Accepts JSON, @file, or @-."),
 			cli.String("timeout", "").Help("Optional duration string (e.g. \"24h\", \"30m\") specifying how long the interaction should remain open…"),
-			cli.String("type", "").Help("[required] Interaction kind: `approval` captures a decision, `review` captures acknowledgement or notes, and `…"),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -205,8 +280,16 @@ func registerJobsCommands(app *cli.App) {
 					return err
 				}
 			}
+			if ctx.IsSet("kind") {
+				body.Kind = api.InteractionKind(ctx.String("kind"))
+			}
 			if ctx.IsSet("message") {
 				body.Message = ctx.String("message")
+			}
+			if ctx.IsSet("references") {
+				if err := decodeFlagJSON(ctx, "references", ctx.String("references"), &body.References); err != nil {
+					return err
+				}
 			}
 			if ctx.IsSet("require-all") {
 				v := ctx.Bool("require-all")
@@ -230,6 +313,16 @@ func registerJobsCommands(app *cli.App) {
 				v := ctx.String("step-name")
 				body.StepName = &v
 			}
+			if ctx.IsSet("subject") {
+				if err := decodeFlagJSON(ctx, "subject", ctx.String("subject"), &body.Subject); err != nil {
+					return err
+				}
+			}
+			if ctx.IsSet("submission-review-policy") {
+				if err := decodeFlagJSON(ctx, "submission-review-policy", ctx.String("submission-review-policy"), &body.SubmissionReviewPolicy); err != nil {
+					return err
+				}
+			}
 			if ctx.IsSet("target") {
 				if err := decodeFlagJSON(ctx, "target", ctx.String("target"), &body.Target); err != nil {
 					return err
@@ -239,17 +332,14 @@ func registerJobsCommands(app *cli.App) {
 				v := ctx.String("timeout")
 				body.Timeout = &v
 			}
-			if ctx.IsSet("type") {
-				body.Type = api.InteractionType(ctx.String("type"))
+			if body.Kind == "" {
+				return fmt.Errorf("--kind is required (or supply it via --file)")
 			}
 			if body.Message == "" {
 				return fmt.Errorf("--message is required (or supply it via --file)")
 			}
 			if ctx.String("file") == "" && !ctx.IsSet("target") {
 				return fmt.Errorf("--target is required (or supply it via --file)")
-			}
-			if body.Type == "" {
-				return fmt.Errorf("--type is required (or supply it via --file)")
 			}
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
@@ -430,6 +520,72 @@ func registerJobsCommands(app *cli.App) {
 				return err
 			}
 			return printResponse(ctx, "runJobAction", resp.StatusCode(), resp.Body)
+		})
+
+	jobsGrp.Command("yield-code-job").
+		Description("Yield from a code-invoke handler when it hits a wait").
+		Args("id").
+		Flags(
+			cli.Int("attempt", "").Help("[required] Must match the `attempt` from the original claim."),
+			cli.String("completions", "").Help("Sub-step records since the last yield. May be empty if the very first thing the handler did was hit… Accepts JSON, @file, or @-."),
+			cli.String("suspension", "").Help("[required] Wait descriptor a code handler yielded. Discriminated by `kind`: each kind has its own variant requ… Accepts JSON, @file, or @-."),
+			cli.String("worker-instance-id", "").Help("[required] Worker process identifier from the claim. Required at the HTTP boundary so empty values fail schema…"),
+			cli.String("worker-session-token", "").Help("[required] Per-boot token from the claim. Mismatch returns 409."),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			p1 := ctx.Arg(0)
+			var body api.YieldCodeJobJSONRequestBody
+			if err := readJSONBody(ctx, &body); err != nil {
+				return err
+			}
+			if ctx.IsSet("attempt") {
+				body.Attempt = ctx.Int("attempt")
+			}
+			if ctx.IsSet("completions") {
+				if err := decodeFlagJSON(ctx, "completions", ctx.String("completions"), &body.Completions); err != nil {
+					return err
+				}
+			}
+			if ctx.IsSet("suspension") {
+				if err := decodeFlagJSON(ctx, "suspension", ctx.String("suspension"), &body.Suspension); err != nil {
+					return err
+				}
+			}
+			if ctx.IsSet("worker-instance-id") {
+				body.WorkerInstanceId = ctx.String("worker-instance-id")
+			}
+			if ctx.IsSet("worker-session-token") {
+				body.WorkerSessionToken = ctx.String("worker-session-token")
+			}
+			if body.Attempt == 0 {
+				return fmt.Errorf("--attempt is required (or supply it via --file)")
+			}
+			if ctx.String("file") == "" && !ctx.IsSet("suspension") {
+				return fmt.Errorf("--suspension is required (or supply it via --file)")
+			}
+			if body.WorkerInstanceId == "" {
+				return fmt.Errorf("--worker-instance-id is required (or supply it via --file)")
+			}
+			if body.WorkerSessionToken == "" {
+				return fmt.Errorf("--worker-session-token is required (or supply it via --file)")
+			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
+			}
+			resp, err := client.YieldCodeJobWithResponse(ctx.Context(), p0, p1, body)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "yieldCodeJob", resp.StatusCode(), resp.Body)
 		})
 
 }

@@ -19,6 +19,44 @@ import (
 func registerInteractionsCommands(app *cli.App) {
 	interactionsGrp := app.Group("interactions").Description("Approval, review, and input prompts")
 	interactionsGrp.Alias("interaction")
+	interactionsGrp.Command("accept-interaction-handoff").
+		Description("Accept a submitted handoff").
+		Args("id").
+		Flags(
+			cli.String("comment", "").Help("Optional review note for acceptance."),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			p1 := ctx.Arg(0)
+			var body api.AcceptInteractionHandoffJSONRequestBody
+			if err := readJSONBody(ctx, &body); err != nil {
+				return err
+			}
+			if ctx.IsSet("comment") {
+				v := ctx.String("comment")
+				body.Comment = &v
+			}
+			if ctx.String("file") == "" && !ctx.IsSet("comment") {
+				return fmt.Errorf("at least one flag or --file is required")
+			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
+			}
+			resp, err := client.AcceptInteractionHandoffWithResponse(ctx.Context(), p0, p1, body)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "acceptInteractionHandoff", resp.StatusCode(), resp.Body)
+		})
+
 	interactionsGrp.Command("cancel").
 		Description("Cancel an open interaction").
 		Args("id").
@@ -57,6 +95,48 @@ func registerInteractionsCommands(app *cli.App) {
 			return printResponse(ctx, "cancelInteraction", resp.StatusCode(), resp.Body)
 		})
 
+	interactionsGrp.Command("cast-interaction-ballot").
+		Description("Cast or change a ballot on a vote-kind interaction").
+		Args("id").
+		Flags(
+			cli.Strings("choices", "").Help("[required] Option values the voter selects. `select`-mode votes accept exactly one entry; `multi_select` accep…"),
+			cli.String("comment", "").Help("Optional free-text comment alongside the vote."),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			p1 := ctx.Arg(0)
+			var body api.CastInteractionBallotJSONRequestBody
+			if err := readJSONBody(ctx, &body); err != nil {
+				return err
+			}
+			if ctx.IsSet("choices") {
+				body.Choices = ctx.Strings("choices")
+			}
+			if ctx.IsSet("comment") {
+				v := ctx.String("comment")
+				body.Comment = &v
+			}
+			if len(body.Choices) == 0 {
+				return fmt.Errorf("--choices is required (or supply it via --file)")
+			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
+			}
+			resp, err := client.CastInteractionBallotWithResponse(ctx.Context(), p0, p1, body)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "castInteractionBallot", resp.StatusCode(), resp.Body)
+		})
+
 	interactionsGrp.Command("claim").
 		Description("Claim a pending first-responder group interaction").
 		Args("id").
@@ -74,6 +154,44 @@ func registerInteractionsCommands(app *cli.App) {
 				return err
 			}
 			return printResponse(ctx, "claimInteraction", resp.StatusCode(), resp.Body)
+		})
+
+	interactionsGrp.Command("close-interaction-vote").
+		Description("Manually close a vote-kind interaction").
+		Args("id").
+		Flags(
+			cli.String("comment", "").Help("Free-text reason recorded with the close event."),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			p1 := ctx.Arg(0)
+			var body api.CloseInteractionVoteJSONRequestBody
+			if err := readJSONBody(ctx, &body); err != nil {
+				return err
+			}
+			if ctx.IsSet("comment") {
+				v := ctx.String("comment")
+				body.Comment = &v
+			}
+			if ctx.String("file") == "" && !ctx.IsSet("comment") {
+				return fmt.Errorf("at least one flag or --file is required")
+			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
+			}
+			resp, err := client.CloseInteractionVoteWithResponse(ctx.Context(), p0, p1, body)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "closeInteractionVote", resp.StatusCode(), resp.Body)
 		})
 
 	interactionsGrp.Command("create").
@@ -134,6 +252,8 @@ func registerInteractionsCommands(app *cli.App) {
 			cli.String("target-type", "").Help("Filter by target type"),
 			cli.String("target-id", "").Help("Filter by target ID"),
 			cli.Bool("inbox", "").Help("When true, returns only interactions visible to the authenticated user (direct + group membership)"),
+			cli.String("reviewer-type", "").Help("Filter handoffs by reviewer type. Defaults to user when reviewer_id is provided."),
+			cli.String("reviewer-id", "").Help("Filter handoffs awaiting review by the specified reviewer."),
 			cli.String("cursor", "").Help("cursor"),
 			cli.Int("limit", "").Help("limit"),
 		).
@@ -166,6 +286,14 @@ func registerInteractionsCommands(app *cli.App) {
 				v := ctx.Bool("inbox")
 				params.Inbox = &v
 			}
+			if ctx.IsSet("reviewer-type") {
+				v := api.ListInteractionsParamsReviewerType(ctx.String("reviewer-type"))
+				params.ReviewerType = &v
+			}
+			if ctx.IsSet("reviewer-id") {
+				v := ctx.String("reviewer-id")
+				params.ReviewerId = &v
+			}
 			if ctx.IsSet("cursor") {
 				v := api.CursorParam(ctx.String("cursor"))
 				params.Cursor = &v
@@ -179,6 +307,25 @@ func registerInteractionsCommands(app *cli.App) {
 				return err
 			}
 			return printResponse(ctx, "listInteractions", resp.StatusCode(), resp.Body)
+		})
+
+	interactionsGrp.Command("list-ballots").
+		Description("List ballots on a vote-kind interaction").
+		Args("id").
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			p1 := ctx.Arg(0)
+			resp, err := client.ListInteractionBallotsWithResponse(ctx.Context(), p0, p1)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "listInteractionBallots", resp.StatusCode(), resp.Body)
 		})
 
 	interactionsGrp.Command("release-interaction").
@@ -248,6 +395,106 @@ func registerInteractionsCommands(app *cli.App) {
 				return err
 			}
 			return printResponse(ctx, "respondToInteraction", resp.StatusCode(), resp.Body)
+		})
+
+	interactionsGrp.Command("send-interaction-handoff").
+		Description("Send a submitted handoff back").
+		Args("id").
+		Flags(
+			cli.String("comment", "").Help("[required] Feedback explaining what needs to change before resubmission."),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			p1 := ctx.Arg(0)
+			var body api.SendBackInteractionHandoffJSONRequestBody
+			if err := readJSONBody(ctx, &body); err != nil {
+				return err
+			}
+			if ctx.IsSet("comment") {
+				body.Comment = ctx.String("comment")
+			}
+			if body.Comment == "" {
+				return fmt.Errorf("--comment is required (or supply it via --file)")
+			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
+			}
+			resp, err := client.SendBackInteractionHandoffWithResponse(ctx.Context(), p0, p1, body)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "sendBackInteractionHandoff", resp.StatusCode(), resp.Body)
+		})
+
+	interactionsGrp.Command("submit-interaction-handoff").
+		Description("Submit a handoff for review or completion").
+		Args("id").
+		Flags(
+			cli.String("comment", "").Help("Optional note from the assignee."),
+			cli.String("value", "").Help("[required] Free-form JSON payload. Used both for responder-supplied values and for policy-derived values (e.g.… Accepts JSON, @file, or @-."),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			p1 := ctx.Arg(0)
+			var body api.SubmitInteractionHandoffJSONRequestBody
+			if err := readJSONBody(ctx, &body); err != nil {
+				return err
+			}
+			if ctx.IsSet("comment") {
+				v := ctx.String("comment")
+				body.Comment = &v
+			}
+			if ctx.IsSet("value") {
+				if err := decodeFlagJSON(ctx, "value", ctx.String("value"), &body.Value); err != nil {
+					return err
+				}
+			}
+			if ctx.String("file") == "" && !ctx.IsSet("value") {
+				return fmt.Errorf("--value is required (or supply it via --file)")
+			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
+			}
+			resp, err := client.SubmitInteractionHandoffWithResponse(ctx.Context(), p0, p1, body)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "submitInteractionHandoff", resp.StatusCode(), resp.Body)
+		})
+
+	interactionsGrp.Command("withdraw-interaction-ballot").
+		Description("Withdraw the caller's ballot before close").
+		Args("id").
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			p1 := ctx.Arg(0)
+			resp, err := client.WithdrawInteractionBallotWithResponse(ctx.Context(), p0, p1)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "withdrawInteractionBallot", resp.StatusCode(), resp.Body)
 		})
 
 }

@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/oapi-codegen/runtime"
+	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
 const (
@@ -58,6 +59,7 @@ func (e ActionEndpointKind) Valid() bool {
 
 // Defines values for ActionCatalogEntryEndpointKind.
 const (
+	ActionCatalogEntryEndpointKindBuiltin  ActionCatalogEntryEndpointKind = "builtin"
 	ActionCatalogEntryEndpointKindHttp     ActionCatalogEntryEndpointKind = "http"
 	ActionCatalogEntryEndpointKindWorkflow ActionCatalogEntryEndpointKind = "workflow"
 )
@@ -65,9 +67,35 @@ const (
 // Valid indicates whether the value is a known member of the ActionCatalogEntryEndpointKind enum.
 func (e ActionCatalogEntryEndpointKind) Valid() bool {
 	switch e {
+	case ActionCatalogEntryEndpointKindBuiltin:
+		return true
 	case ActionCatalogEntryEndpointKindHttp:
 		return true
 	case ActionCatalogEntryEndpointKindWorkflow:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ActionCatalogEntryRisk.
+const (
+	ActionCatalogEntryRiskCritical ActionCatalogEntryRisk = "critical"
+	ActionCatalogEntryRiskHigh     ActionCatalogEntryRisk = "high"
+	ActionCatalogEntryRiskLow      ActionCatalogEntryRisk = "low"
+	ActionCatalogEntryRiskMedium   ActionCatalogEntryRisk = "medium"
+)
+
+// Valid indicates whether the value is a known member of the ActionCatalogEntryRisk enum.
+func (e ActionCatalogEntryRisk) Valid() bool {
+	switch e {
+	case ActionCatalogEntryRiskCritical:
+		return true
+	case ActionCatalogEntryRiskHigh:
+		return true
+	case ActionCatalogEntryRiskLow:
+		return true
+	case ActionCatalogEntryRiskMedium:
 		return true
 	default:
 		return false
@@ -263,30 +291,6 @@ func (e AddChannelMemberRequestRole) Valid() bool {
 	case AddChannelMemberRequestRoleAdmin:
 		return true
 	case AddChannelMemberRequestRoleMember:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for AgentNativeToolRisk.
-const (
-	AgentNativeToolRiskCritical AgentNativeToolRisk = "critical"
-	AgentNativeToolRiskHigh     AgentNativeToolRisk = "high"
-	AgentNativeToolRiskLow      AgentNativeToolRisk = "low"
-	AgentNativeToolRiskMedium   AgentNativeToolRisk = "medium"
-)
-
-// Valid indicates whether the value is a known member of the AgentNativeToolRisk enum.
-func (e AgentNativeToolRisk) Valid() bool {
-	switch e {
-	case AgentNativeToolRiskCritical:
-		return true
-	case AgentNativeToolRiskHigh:
-		return true
-	case AgentNativeToolRiskLow:
-		return true
-	case AgentNativeToolRiskMedium:
 		return true
 	default:
 		return false
@@ -605,6 +609,132 @@ func (e ChannelMessageSenderType) Valid() bool {
 	}
 }
 
+// Defines values for CodeStepCompletionKind.
+const (
+	CodeStepCompletionKindInteraction CodeStepCompletionKind = "interaction"
+	CodeStepCompletionKindPause       CodeStepCompletionKind = "pause"
+	CodeStepCompletionKindRun         CodeStepCompletionKind = "run"
+	CodeStepCompletionKindSleep       CodeStepCompletionKind = "sleep"
+	CodeStepCompletionKindWaitEvent   CodeStepCompletionKind = "wait_event"
+	CodeStepCompletionKindWaitSignal  CodeStepCompletionKind = "wait_signal"
+)
+
+// Valid indicates whether the value is a known member of the CodeStepCompletionKind enum.
+func (e CodeStepCompletionKind) Valid() bool {
+	switch e {
+	case CodeStepCompletionKindInteraction:
+		return true
+	case CodeStepCompletionKindPause:
+		return true
+	case CodeStepCompletionKindRun:
+		return true
+	case CodeStepCompletionKindSleep:
+		return true
+	case CodeStepCompletionKindWaitEvent:
+		return true
+	case CodeStepCompletionKindWaitSignal:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CodeStepCompletionStatus.
+const (
+	CodeStepCompletionStatusCompleted CodeStepCompletionStatus = "completed"
+	CodeStepCompletionStatusFailed    CodeStepCompletionStatus = "failed"
+	CodeStepCompletionStatusSkipped   CodeStepCompletionStatus = "skipped"
+)
+
+// Valid indicates whether the value is a known member of the CodeStepCompletionStatus enum.
+func (e CodeStepCompletionStatus) Valid() bool {
+	switch e {
+	case CodeStepCompletionStatusCompleted:
+		return true
+	case CodeStepCompletionStatusFailed:
+		return true
+	case CodeStepCompletionStatusSkipped:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CodeYieldInteractionSuspensionKind.
+const (
+	CodeYieldInteractionSuspensionKindInteraction CodeYieldInteractionSuspensionKind = "interaction"
+)
+
+// Valid indicates whether the value is a known member of the CodeYieldInteractionSuspensionKind enum.
+func (e CodeYieldInteractionSuspensionKind) Valid() bool {
+	switch e {
+	case CodeYieldInteractionSuspensionKindInteraction:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CodeYieldPauseSuspensionKind.
+const (
+	CodeYieldPauseSuspensionKindPause CodeYieldPauseSuspensionKind = "pause"
+)
+
+// Valid indicates whether the value is a known member of the CodeYieldPauseSuspensionKind enum.
+func (e CodeYieldPauseSuspensionKind) Valid() bool {
+	switch e {
+	case CodeYieldPauseSuspensionKindPause:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CodeYieldSleepSuspensionKind.
+const (
+	CodeYieldSleepSuspensionKindSleep CodeYieldSleepSuspensionKind = "sleep"
+)
+
+// Valid indicates whether the value is a known member of the CodeYieldSleepSuspensionKind enum.
+func (e CodeYieldSleepSuspensionKind) Valid() bool {
+	switch e {
+	case CodeYieldSleepSuspensionKindSleep:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CodeYieldWaitEventSuspensionKind.
+const (
+	CodeYieldWaitEventSuspensionKindWaitEvent CodeYieldWaitEventSuspensionKind = "wait_event"
+)
+
+// Valid indicates whether the value is a known member of the CodeYieldWaitEventSuspensionKind enum.
+func (e CodeYieldWaitEventSuspensionKind) Valid() bool {
+	switch e {
+	case CodeYieldWaitEventSuspensionKindWaitEvent:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CodeYieldWaitSignalSuspensionKind.
+const (
+	CodeYieldWaitSignalSuspensionKindWaitSignal CodeYieldWaitSignalSuspensionKind = "wait_signal"
+)
+
+// Valid indicates whether the value is a known member of the CodeYieldWaitSignalSuspensionKind enum.
+func (e CodeYieldWaitSignalSuspensionKind) Valid() bool {
+	switch e {
+	case CodeYieldWaitSignalSuspensionKindWaitSignal:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ColumnType.
 const (
 	ColumnTypeAny     ColumnType = "any"
@@ -653,6 +783,30 @@ func (e ConcurrencyPolicy) Valid() bool {
 	case ConcurrencyPolicyForbid:
 		return true
 	case ConcurrencyPolicyReplace:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ConsumerKind.
+const (
+	ConsumerKindAgentTool      ConsumerKind = "agent_tool"
+	ConsumerKindHttpSubscriber ConsumerKind = "http_subscriber"
+	ConsumerKindNone           ConsumerKind = "none"
+	ConsumerKindRun            ConsumerKind = "run"
+)
+
+// Valid indicates whether the value is a known member of the ConsumerKind enum.
+func (e ConsumerKind) Valid() bool {
+	switch e {
+	case ConsumerKindAgentTool:
+		return true
+	case ConsumerKindHttpSubscriber:
+		return true
+	case ConsumerKindNone:
+		return true
+	case ConsumerKindRun:
 		return true
 	default:
 		return false
@@ -851,6 +1005,33 @@ const (
 func (e CreateWebhookTriggerRequestKind) Valid() bool {
 	switch e {
 	case CreateWebhookTriggerRequestKindWebhook:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DeliveryChannelKind.
+const (
+	DeliveryChannelKindAgentQueue    DeliveryChannelKind = "agent_queue"
+	DeliveryChannelKindChannelThread DeliveryChannelKind = "channel_thread"
+	DeliveryChannelKindEmail         DeliveryChannelKind = "email"
+	DeliveryChannelKindInboxOnly     DeliveryChannelKind = "inbox_only"
+	DeliveryChannelKindPage          DeliveryChannelKind = "page"
+)
+
+// Valid indicates whether the value is a known member of the DeliveryChannelKind enum.
+func (e DeliveryChannelKind) Valid() bool {
+	switch e {
+	case DeliveryChannelKindAgentQueue:
+		return true
+	case DeliveryChannelKindChannelThread:
+		return true
+	case DeliveryChannelKindEmail:
+		return true
+	case DeliveryChannelKindInboxOnly:
+		return true
+	case DeliveryChannelKindPage:
 		return true
 	default:
 		return false
@@ -1336,6 +1517,7 @@ const (
 	InteractionStatusCancelled InteractionStatus = "cancelled"
 	InteractionStatusCompleted InteractionStatus = "completed"
 	InteractionStatusExpired   InteractionStatus = "expired"
+	InteractionStatusInReview  InteractionStatus = "in_review"
 	InteractionStatusPending   InteractionStatus = "pending"
 )
 
@@ -1348,7 +1530,96 @@ func (e InteractionStatus) Valid() bool {
 		return true
 	case InteractionStatusExpired:
 		return true
+	case InteractionStatusInReview:
+		return true
 	case InteractionStatusPending:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for InteractionBallotVoterType.
+const (
+	InteractionBallotVoterTypeAgent InteractionBallotVoterType = "agent"
+	InteractionBallotVoterTypeUser  InteractionBallotVoterType = "user"
+)
+
+// Valid indicates whether the value is a known member of the InteractionBallotVoterType enum.
+func (e InteractionBallotVoterType) Valid() bool {
+	switch e {
+	case InteractionBallotVoterTypeAgent:
+		return true
+	case InteractionBallotVoterTypeUser:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for InteractionEventType.
+const (
+	InteractionEventTypeAccepted  InteractionEventType = "accepted"
+	InteractionEventTypeCancelled InteractionEventType = "cancelled"
+	InteractionEventTypeClaimed   InteractionEventType = "claimed"
+	InteractionEventTypeCreated   InteractionEventType = "created"
+	InteractionEventTypeExpired   InteractionEventType = "expired"
+	InteractionEventTypeReleased  InteractionEventType = "released"
+	InteractionEventTypeResponded InteractionEventType = "responded"
+	InteractionEventTypeSentBack  InteractionEventType = "sent_back"
+	InteractionEventTypeSubmitted InteractionEventType = "submitted"
+)
+
+// Valid indicates whether the value is a known member of the InteractionEventType enum.
+func (e InteractionEventType) Valid() bool {
+	switch e {
+	case InteractionEventTypeAccepted:
+		return true
+	case InteractionEventTypeCancelled:
+		return true
+	case InteractionEventTypeClaimed:
+		return true
+	case InteractionEventTypeCreated:
+		return true
+	case InteractionEventTypeExpired:
+		return true
+	case InteractionEventTypeReleased:
+		return true
+	case InteractionEventTypeResponded:
+		return true
+	case InteractionEventTypeSentBack:
+		return true
+	case InteractionEventTypeSubmitted:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for InteractionKind.
+const (
+	InteractionKindApproval InteractionKind = "approval"
+	InteractionKindHandoff  InteractionKind = "handoff"
+	InteractionKindInput    InteractionKind = "input"
+	InteractionKindRequest  InteractionKind = "request"
+	InteractionKindReview   InteractionKind = "review"
+	InteractionKindVote     InteractionKind = "vote"
+)
+
+// Valid indicates whether the value is a known member of the InteractionKind enum.
+func (e InteractionKind) Valid() bool {
+	switch e {
+	case InteractionKindApproval:
+		return true
+	case InteractionKindHandoff:
+		return true
+	case InteractionKindInput:
+		return true
+	case InteractionKindRequest:
+		return true
+	case InteractionKindReview:
+		return true
+	case InteractionKindVote:
 		return true
 	default:
 		return false
@@ -1397,6 +1668,24 @@ func (e InteractionOrigin) Valid() bool {
 	case InteractionOriginSystem:
 		return true
 	case InteractionOriginWorkflowStep:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for InteractionReferenceKind.
+const (
+	InteractionReferenceKindExternalUrl  InteractionReferenceKind = "external_url"
+	InteractionReferenceKindMobiusEntity InteractionReferenceKind = "mobius_entity"
+)
+
+// Valid indicates whether the value is a known member of the InteractionReferenceKind enum.
+func (e InteractionReferenceKind) Valid() bool {
+	switch e {
+	case InteractionReferenceKindExternalUrl:
+		return true
+	case InteractionReferenceKindMobiusEntity:
 		return true
 	default:
 		return false
@@ -1466,6 +1755,27 @@ func (e InteractionSourceType) Valid() bool {
 	}
 }
 
+// Defines values for InteractionSubmissionStatus.
+const (
+	InteractionSubmissionStatusAccepted      InteractionSubmissionStatus = "accepted"
+	InteractionSubmissionStatusPendingReview InteractionSubmissionStatus = "pending_review"
+	InteractionSubmissionStatusSentBack      InteractionSubmissionStatus = "sent_back"
+)
+
+// Valid indicates whether the value is a known member of the InteractionSubmissionStatus enum.
+func (e InteractionSubmissionStatus) Valid() bool {
+	switch e {
+	case InteractionSubmissionStatusAccepted:
+		return true
+	case InteractionSubmissionStatusPendingReview:
+		return true
+	case InteractionSubmissionStatusSentBack:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for InteractionTargetType.
 const (
 	InteractionTargetTypeAgent InteractionTargetType = "agent"
@@ -1481,27 +1791,6 @@ func (e InteractionTargetType) Valid() bool {
 	case InteractionTargetTypeGroup:
 		return true
 	case InteractionTargetTypeUser:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for InteractionType.
-const (
-	InteractionTypeApproval InteractionType = "approval"
-	InteractionTypeInput    InteractionType = "input"
-	InteractionTypeReview   InteractionType = "review"
-)
-
-// Valid indicates whether the value is a known member of the InteractionType enum.
-func (e InteractionType) Valid() bool {
-	switch e {
-	case InteractionTypeApproval:
-		return true
-	case InteractionTypeInput:
-		return true
-	case InteractionTypeReview:
 		return true
 	default:
 		return false
@@ -1574,6 +1863,24 @@ const (
 func (e LLMGenerateResponseType) Valid() bool {
 	switch e {
 	case LLMGenerateResponseTypeMessage:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for NotificationPreferencesActorType.
+const (
+	NotificationPreferencesActorTypeAgent NotificationPreferencesActorType = "agent"
+	NotificationPreferencesActorTypeUser  NotificationPreferencesActorType = "user"
+)
+
+// Valid indicates whether the value is a known member of the NotificationPreferencesActorType enum.
+func (e NotificationPreferencesActorType) Valid() bool {
+	switch e {
+	case NotificationPreferencesActorTypeAgent:
+		return true
+	case NotificationPreferencesActorTypeUser:
 		return true
 	default:
 		return false
@@ -1862,6 +2169,24 @@ func (e ResolvedConfigEntrySource) Valid() bool {
 	case ResolvedConfigEntrySourceStep:
 		return true
 	case ResolvedConfigEntrySourceWorkflow:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ReviewPolicyType.
+const (
+	ReviewPolicyTypeNone                        ReviewPolicyType = "none"
+	ReviewPolicyTypeRequesterAcceptanceRequired ReviewPolicyType = "requester_acceptance_required"
+)
+
+// Valid indicates whether the value is a known member of the ReviewPolicyType enum.
+func (e ReviewPolicyType) Valid() bool {
+	switch e {
+	case ReviewPolicyTypeNone:
+		return true
+	case ReviewPolicyTypeRequesterAcceptanceRequired:
 		return true
 	default:
 		return false
@@ -2543,6 +2868,45 @@ func (e UserPresenceMode) Valid() bool {
 	}
 }
 
+// Defines values for VoteEligibilityKind.
+const (
+	VoteEligibilityKindExplicit      VoteEligibilityKind = "explicit"
+	VoteEligibilityKindGroupSnapshot VoteEligibilityKind = "group_snapshot"
+)
+
+// Valid indicates whether the value is a known member of the VoteEligibilityKind enum.
+func (e VoteEligibilityKind) Valid() bool {
+	switch e {
+	case VoteEligibilityKindExplicit:
+		return true
+	case VoteEligibilityKindGroupSnapshot:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for VoteRulesTieBreak.
+const (
+	VoteRulesTieBreakFirstCast VoteRulesTieBreak = "first_cast"
+	VoteRulesTieBreakNone      VoteRulesTieBreak = "none"
+	VoteRulesTieBreakOwner     VoteRulesTieBreak = "owner"
+)
+
+// Valid indicates whether the value is a known member of the VoteRulesTieBreak enum.
+func (e VoteRulesTieBreak) Valid() bool {
+	switch e {
+	case VoteRulesTieBreakFirstCast:
+		return true
+	case VoteRulesTieBreakNone:
+		return true
+	case VoteRulesTieBreakOwner:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for WebhookDeliveryStatus.
 const (
 	WebhookDeliveryStatusDelivered  WebhookDeliveryStatus = "delivered"
@@ -2663,6 +3027,27 @@ func (e WorkflowInteractionConfigType) Valid() bool {
 	case WorkflowInteractionConfigTypeInput:
 		return true
 	case WorkflowInteractionConfigTypeReview:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for WorkflowInteractionDiscussionConfigCompletionBehavior.
+const (
+	WorkflowInteractionDiscussionConfigCompletionBehaviorArchive      WorkflowInteractionDiscussionConfigCompletionBehavior = "archive"
+	WorkflowInteractionDiscussionConfigCompletionBehaviorMarkInactive WorkflowInteractionDiscussionConfigCompletionBehavior = "mark_inactive"
+	WorkflowInteractionDiscussionConfigCompletionBehaviorNone         WorkflowInteractionDiscussionConfigCompletionBehavior = "none"
+)
+
+// Valid indicates whether the value is a known member of the WorkflowInteractionDiscussionConfigCompletionBehavior enum.
+func (e WorkflowInteractionDiscussionConfigCompletionBehavior) Valid() bool {
+	switch e {
+	case WorkflowInteractionDiscussionConfigCompletionBehaviorArchive:
+		return true
+	case WorkflowInteractionDiscussionConfigCompletionBehaviorMarkInactive:
+		return true
+	case WorkflowInteractionDiscussionConfigCompletionBehaviorNone:
 		return true
 	default:
 		return false
@@ -2861,6 +3246,42 @@ func (e WorkflowWaitEventConfigMatchMode) Valid() bool {
 	}
 }
 
+// Defines values for GetNotificationPreferencesParamsActorType.
+const (
+	GetNotificationPreferencesParamsActorTypeAgent GetNotificationPreferencesParamsActorType = "agent"
+	GetNotificationPreferencesParamsActorTypeUser  GetNotificationPreferencesParamsActorType = "user"
+)
+
+// Valid indicates whether the value is a known member of the GetNotificationPreferencesParamsActorType enum.
+func (e GetNotificationPreferencesParamsActorType) Valid() bool {
+	switch e {
+	case GetNotificationPreferencesParamsActorTypeAgent:
+		return true
+	case GetNotificationPreferencesParamsActorTypeUser:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for UpdateNotificationPreferencesParamsActorType.
+const (
+	UpdateNotificationPreferencesParamsActorTypeAgent UpdateNotificationPreferencesParamsActorType = "agent"
+	UpdateNotificationPreferencesParamsActorTypeUser  UpdateNotificationPreferencesParamsActorType = "user"
+)
+
+// Valid indicates whether the value is a known member of the UpdateNotificationPreferencesParamsActorType enum.
+func (e UpdateNotificationPreferencesParamsActorType) Valid() bool {
+	switch e {
+	case UpdateNotificationPreferencesParamsActorTypeAgent:
+		return true
+	case UpdateNotificationPreferencesParamsActorTypeUser:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ListProjectsParamsStatus.
 const (
 	ListProjectsParamsStatusActive   ListProjectsParamsStatus = "active"
@@ -2947,6 +3368,7 @@ const (
 	ListInteractionsParamsStatusCancelled ListInteractionsParamsStatus = "cancelled"
 	ListInteractionsParamsStatusCompleted ListInteractionsParamsStatus = "completed"
 	ListInteractionsParamsStatusExpired   ListInteractionsParamsStatus = "expired"
+	ListInteractionsParamsStatusInReview  ListInteractionsParamsStatus = "in_review"
 	ListInteractionsParamsStatusPending   ListInteractionsParamsStatus = "pending"
 )
 
@@ -2958,6 +3380,8 @@ func (e ListInteractionsParamsStatus) Valid() bool {
 	case ListInteractionsParamsStatusCompleted:
 		return true
 	case ListInteractionsParamsStatusExpired:
+		return true
+	case ListInteractionsParamsStatusInReview:
 		return true
 	case ListInteractionsParamsStatusPending:
 		return true
@@ -2981,6 +3405,27 @@ func (e ListInteractionsParamsTargetType) Valid() bool {
 	case ListInteractionsParamsTargetTypeGroup:
 		return true
 	case ListInteractionsParamsTargetTypeUser:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ListInteractionsParamsReviewerType.
+const (
+	ListInteractionsParamsReviewerTypeAgent ListInteractionsParamsReviewerType = "agent"
+	ListInteractionsParamsReviewerTypeGroup ListInteractionsParamsReviewerType = "group"
+	ListInteractionsParamsReviewerTypeUser  ListInteractionsParamsReviewerType = "user"
+)
+
+// Valid indicates whether the value is a known member of the ListInteractionsParamsReviewerType enum.
+func (e ListInteractionsParamsReviewerType) Valid() bool {
+	switch e {
+	case ListInteractionsParamsReviewerTypeAgent:
+		return true
+	case ListInteractionsParamsReviewerTypeGroup:
+		return true
+	case ListInteractionsParamsReviewerTypeUser:
 		return true
 	default:
 		return false
@@ -3115,18 +3560,18 @@ type ActionAnnotationsResponse struct {
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
-// ActionCatalogEntry One project, platform, or workflow-backed action available to workflow authors.
+// ActionCatalogEntry One built-in, integration, workflow-, or custom-backed action available to agents and workflow authors.
 type ActionCatalogEntry struct {
 	// Annotations Response hints that describe the safe-use properties of the action. Response annotations are forward-compatible so the server can add response-only hints without breaking strict clients.
-	Annotations *ActionAnnotationsResponse `json:"annotations,omitempty"`
+	Annotations ActionAnnotationsResponse `json:"annotations"`
 
-	// Available Whether this action can currently be invoked. False if the required integration is not connected or the caller lacks permission.
+	// Available Whether this action can currently be invoked. False if the required integration is not connected, the action is a placeholder for a not-yet-implemented capability, or the caller lacks permission.
 	Available bool `json:"available"`
 
 	// Description Markdown description of what the action does.
 	Description *string `json:"description,omitempty"`
 
-	// EndpointKind Backing kind. "http" for HTTP endpoints (project-owned or platform-integration). "workflow" for actions backed by a workflow definition published as a tool.
+	// EndpointKind Backing kind. "builtin" for Mobius platform actions implemented in Go (no DB row), "http" for project-owned or integration HTTP endpoints, "workflow" for actions backed by a workflow definition published as a tool.
 	EndpointKind ActionCatalogEntryEndpointKind `json:"endpoint_kind"`
 
 	// EndpointUrl Endpoint URL (populated for endpoint_kind: http actions only).
@@ -3138,11 +3583,14 @@ type ActionCatalogEntry struct {
 	// Integration Integration slug this action belongs to (e.g. "slack"), if platform-provided.
 	Integration *string `json:"integration,omitempty"`
 
-	// Name Action name as used in workflow step definitions.
+	// Name Canonical dotted action name (e.g. `mobius.channel.send_message`). Translated to the provider-safe form (`mobius_channel_send_message`) only at the LLM boundary.
 	Name string `json:"name"`
 
 	// OutputSchema JSON Schema describing the expected output shape.
 	OutputSchema *map[string]interface{} `json:"output_schema,omitempty"`
+
+	// Risk Author-declared risk classification. Used by toolkit-author UIs to surface warnings and by audit views to prioritize attention.
+	Risk ActionCatalogEntryRisk `json:"risk"`
 
 	// Source Origin of this action: "platform" for built-in or integration-backed actions provided by Mobius, "custom" for project-owned HTTP endpoints registered as actions. The `integration` field carries the provider slug for integration-backed platform actions.
 	Source ActionCatalogEntrySource `json:"source"`
@@ -3150,12 +3598,15 @@ type ActionCatalogEntry struct {
 	// Title Human-readable display title for the action.
 	Title *string `json:"title,omitempty"`
 
-	// WorkflowHandle Workflow handle for endpoint_kind=workflow entries. Absent for http-backed actions.
+	// WorkflowHandle Workflow handle for endpoint_kind=workflow entries. Absent otherwise.
 	WorkflowHandle *string `json:"workflow_handle,omitempty"`
 }
 
-// ActionCatalogEntryEndpointKind Backing kind. "http" for HTTP endpoints (project-owned or platform-integration). "workflow" for actions backed by a workflow definition published as a tool.
+// ActionCatalogEntryEndpointKind Backing kind. "builtin" for Mobius platform actions implemented in Go (no DB row), "http" for project-owned or integration HTTP endpoints, "workflow" for actions backed by a workflow definition published as a tool.
 type ActionCatalogEntryEndpointKind string
+
+// ActionCatalogEntryRisk Author-declared risk classification. Used by toolkit-author UIs to surface warnings and by audit views to prioritize attention.
+type ActionCatalogEntryRisk string
 
 // ActionCatalogEntrySource Origin of this action: "platform" for built-in or integration-backed actions provided by Mobius, "custom" for project-owned HTTP endpoints registered as actions. The `integration` field carries the provider slug for integration-backed platform actions.
 type ActionCatalogEntrySource string
@@ -3415,38 +3866,14 @@ type Agent struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-// AgentBlockedActionGrant defines model for AgentBlockedActionGrant.
-type AgentBlockedActionGrant struct {
-	Reason       string `json:"reason"`
-	Selector     string `json:"selector"`
-	SelectorType string `json:"selector_type"`
-}
-
-// AgentCapabilityManifest defines model for AgentCapabilityManifest.
-type AgentCapabilityManifest struct {
-	// Actions Action catalog entries visible and executable under the manifest.
-	Actions             []ActionCatalogEntry      `json:"actions"`
-	AgentId             string                    `json:"agent_id"`
-	BlockedActionGrants []AgentBlockedActionGrant `json:"blocked_action_grants"`
-
-	// ConcreteTools Dotted model-facing tool names available to the agent.
-	ConcreteTools []string                 `json:"concrete_tools"`
-	NativeTools   []AgentNativeTool        `json:"native_tools"`
-	PolicyHash    string                   `json:"policy_hash"`
-	ProjectId     string                   `json:"project_id"`
-	Skills        []SkillManifestEntry     `json:"skills"`
-	ToolkitIds    []string                 `json:"toolkit_ids"`
-	Warnings      []AgentCapabilityWarning `json:"warnings"`
-}
-
-// AgentCapabilityWarning defines model for AgentCapabilityWarning.
-type AgentCapabilityWarning struct {
-	Action    *string `json:"action,omitempty"`
-	Code      string  `json:"code"`
-	Message   string  `json:"message"`
-	SkillId   *string `json:"skill_id,omitempty"`
-	Tool      *string `json:"tool,omitempty"`
-	ToolkitId *string `json:"toolkit_id,omitempty"`
+// AgentBlockedGrant defines model for AgentBlockedGrant.
+type AgentBlockedGrant struct {
+	// ActionName Canonical action name the selector resolved to, when the grant matched a real catalog entry that the service account is not permitted to invoke.
+	ActionName   *string `json:"action_name,omitempty"`
+	PermissionId *string `json:"permission_id,omitempty"`
+	Reason       string  `json:"reason"`
+	Selector     string  `json:"selector"`
+	SelectorType string  `json:"selector_type"`
 }
 
 // AgentListResponse defines model for AgentListResponse.
@@ -3455,27 +3882,23 @@ type AgentListResponse struct {
 	Items []Agent `json:"items"`
 }
 
-// AgentNativeTool defines model for AgentNativeTool.
-type AgentNativeTool struct {
-	// ConcreteTools Model-facing concrete tools exposed by this native grant.
-	ConcreteTools []string `json:"concrete_tools"`
-
-	// Description What this native tool allows.
-	Description string `json:"description"`
-
-	// Id Stable native-tool grant ID, such as `mobius_table_read`.
-	Id string `json:"id"`
-
-	// Label Human-readable tool label for toolkit editors.
-	Label string              `json:"label"`
-	Risk  AgentNativeToolRisk `json:"risk"`
+// AgentManifestWarning defines model for AgentManifestWarning.
+type AgentManifestWarning struct {
+	Action    *string `json:"action,omitempty"`
+	Code      string  `json:"code"`
+	Message   string  `json:"message"`
+	SkillId   *string `json:"skill_id,omitempty"`
+	Tool      *string `json:"tool,omitempty"`
+	ToolkitId *string `json:"toolkit_id,omitempty"`
 }
-
-// AgentNativeToolRisk defines model for AgentNativeTool.Risk.
-type AgentNativeToolRisk string
 
 // AgentPresence Computed from the most recent 20 sessions. `online` means a connected session with a fresh heartbeat; `stale` means heartbeats are overdue; `offline` means no connected sessions.
 type AgentPresence string
+
+// AgentQueueDelivery defines model for AgentQueueDelivery.
+type AgentQueueDelivery struct {
+	Queue string `json:"queue"`
+}
 
 // AgentSession Live or historical connection from an agent process. Use sessions to monitor availability, transport, metadata, and heartbeat freshness for automated workers.
 type AgentSession struct {
@@ -3521,6 +3944,31 @@ type AgentSessionStatus string
 
 // AgentStatus Administrative status. Inactive agents cannot claim new jobs.
 type AgentStatus string
+
+// AgentToolConsumer defines model for AgentToolConsumer.
+type AgentToolConsumer struct {
+	InvocationId string `json:"invocation_id"`
+	ToolCallId   string `json:"tool_call_id"`
+}
+
+// AgentToolManifest The flat, resolved tool set visible to one agent. Replaces the prior Capability/Action split: every entry in `tools` is an action catalog entry the agent can invoke as its own named tool.
+type AgentToolManifest struct {
+	AgentId       string              `json:"agent_id"`
+	BlockedGrants []AgentBlockedGrant `json:"blocked_grants"`
+
+	// GroupsResolved Audit trail of group selectors that contributed to the resolved tool set. Operators see groups; the LLM only sees the flat `tools` list.
+	GroupsResolved *[]ResolvedActionGroup `json:"groups_resolved,omitempty"`
+
+	// PolicyHash Stable hash over the resolved tool + skill set; bumps when grants or permissions change.
+	PolicyHash string               `json:"policy_hash"`
+	ProjectId  string               `json:"project_id"`
+	Skills     []SkillManifestEntry `json:"skills"`
+	ToolkitIds []string             `json:"toolkit_ids"`
+
+	// Tools Catalog entries the agent can invoke. Each entry surfaces to the LLM as its own named tool. Built-in, integration, workflow, and custom-HTTP actions are intermingled here.
+	Tools    []ActionCatalogEntry   `json:"tools"`
+	Warnings []AgentManifestWarning `json:"warnings"`
+}
 
 // Artifact defines model for Artifact.
 type Artifact struct {
@@ -3703,6 +4151,15 @@ type BulkInsertRowsResponse struct {
 type CancelInteractionRequest struct {
 	// Reason Free-text reason recorded on the interaction.
 	Reason *string `json:"reason,omitempty"`
+}
+
+// CastBallotRequest defines model for CastBallotRequest.
+type CastBallotRequest struct {
+	// Choices Option values the voter selects. `select`-mode votes accept exactly one entry; `multi_select` accepts one or more.
+	Choices []string `json:"choices"`
+
+	// Comment Optional free-text comment alongside the vote.
+	Comment *string `json:"comment,omitempty"`
 }
 
 // Channel Project-scoped messaging room or direct-message thread.
@@ -3964,6 +4421,152 @@ type ChannelMetrics struct {
 	MessageRate float64 `json:"message_rate"`
 }
 
+// ChannelThreadDelivery defines model for ChannelThreadDelivery.
+type ChannelThreadDelivery struct {
+	ChannelId       string  `json:"channel_id"`
+	ParentMessageId *string `json:"parent_message_id,omitempty"`
+}
+
+// CloseVoteRequest Optional payload accompanying a close-vote call.
+type CloseVoteRequest struct {
+	// Comment Free-text reason recorded with the close event.
+	Comment *string `json:"comment,omitempty"`
+}
+
+// CodeJobCompleteRequest Final report for a code-invoke job. The handler returned (or threw a terminal error). `completions` carries the durable sub-step rows the handler accumulated during this invocation; the server appends them to the run-step ledger before marking the run completed.
+type CodeJobCompleteRequest struct {
+	// Attempt Must match the `attempt` from the original claim.
+	Attempt int `json:"attempt"`
+
+	// Completions Sub-step records the handler executed during this invocation that have not yet been durably checkpointed.
+	Completions *[]CodeStepCompletion `json:"completions,omitempty"`
+
+	// ErrorMessage Human-readable error detail.
+	ErrorMessage *string `json:"error_message,omitempty"`
+
+	// ErrorType Short error class identifier when the handler threw a terminal error. Run is marked failed regardless of `result_b64`.
+	ErrorType *string `json:"error_type,omitempty"`
+
+	// ResultB64 Base64-encoded JSON bytes of the handler's return value. Persisted as the run output.
+	ResultB64 *string `json:"result_b64,omitempty"`
+
+	// WorkerInstanceId Worker process identifier from the claim. Required at the HTTP boundary so empty values fail schema validation in lockstep with the handler's runtime guard.
+	WorkerInstanceId string `json:"worker_instance_id"`
+
+	// WorkerSessionToken Per-boot token from the claim. Compared against the job's `claimed_by_session_token`; mismatch returns 409 lease-lost.
+	WorkerSessionToken string `json:"worker_session_token"`
+}
+
+// CodeJobYieldRequest Yield notification for a code-invoke job. Commits the accumulated sub-step completions and parks the run on the supplied wait. A fresh code-invoke job is emitted on wake.
+type CodeJobYieldRequest struct {
+	// Attempt Must match the `attempt` from the original claim.
+	Attempt int `json:"attempt"`
+
+	// Completions Sub-step records since the last yield. May be empty if the very first thing the handler did was hit a wait.
+	Completions *[]CodeStepCompletion `json:"completions,omitempty"`
+
+	// Suspension Wait descriptor a code handler yielded. Discriminated by `kind`: each kind has its own variant requiring the matching config block (sleep, wait_signal, wait_event, interaction). The `pause` variant does not require a config — pause just suspends the run until an operator unpauses it; the optional `pause` block carries a human-readable reason for display. Reuses the declarative wait config schemas — code workflows ignore the `on_timeout` fields on those configs because the SDK handles timeout flows directly in the handler (try/catch around the await), but accepting the shape verbatim avoids forking schemas just for code mode.
+	Suspension CodeYieldSuspension `json:"suspension"`
+
+	// WorkerInstanceId Worker process identifier from the claim. Required at the HTTP boundary so empty values fail schema validation in lockstep with the handler's runtime guard.
+	WorkerInstanceId string `json:"worker_instance_id"`
+
+	// WorkerSessionToken Per-boot token from the claim. Mismatch returns 409.
+	WorkerSessionToken string `json:"worker_session_token"`
+}
+
+// CodeStepCompletion One durable sub-step the handler executed (or a wait it observed completing). Replayed back to the handler on the next invocation so step.run() / step.waitFor*() calls fast-forward without re-executing the user-supplied function.
+type CodeStepCompletion struct {
+	// Attempt Worker-side per-step retry counter. 0 for first try.
+	Attempt *int `json:"attempt,omitempty"`
+
+	// ErrorMessage Human-readable error detail.
+	ErrorMessage *string `json:"error_message,omitempty"`
+
+	// ErrorType Error class for a failed sub-step.
+	ErrorType *string `json:"error_type,omitempty"`
+
+	// Kind Sub-step kind. Only `run` carries a meaningful `result`; wait kinds capture "wait completed" markers.
+	Kind CodeStepCompletionKind `json:"kind"`
+
+	// Result Value the handler should observe on replay. JSON-shape; kind-specific (handler return value for `run`, signal payload for `wait_signal`, etc.).
+	Result interface{}              `json:"result,omitempty"`
+	Status CodeStepCompletionStatus `json:"status"`
+
+	// StepId Deterministic identifier the handler passed to step.run() (or step.sleep, step.waitForSignal, etc.). Replay key.
+	StepId string `json:"step_id"`
+}
+
+// CodeStepCompletionKind Sub-step kind. Only `run` carries a meaningful `result`; wait kinds capture "wait completed" markers.
+type CodeStepCompletionKind string
+
+// CodeStepCompletionStatus defines model for CodeStepCompletion.Status.
+type CodeStepCompletionStatus string
+
+// CodeYieldInteractionSuspension defines model for CodeYieldInteractionSuspension.
+type CodeYieldInteractionSuspension struct {
+	// Interaction Configuration for an interaction step that waits on a response.
+	Interaction WorkflowInteractionConfig          `json:"interaction"`
+	Kind        CodeYieldInteractionSuspensionKind `json:"kind"`
+	StepId      string                             `json:"step_id"`
+}
+
+// CodeYieldInteractionSuspensionKind defines model for CodeYieldInteractionSuspension.Kind.
+type CodeYieldInteractionSuspensionKind string
+
+// CodeYieldPauseSuspension defines model for CodeYieldPauseSuspension.
+type CodeYieldPauseSuspension struct {
+	Kind CodeYieldPauseSuspensionKind `json:"kind"`
+
+	// Pause Configuration for a manual pause step.
+	Pause  *WorkflowPauseConfig `json:"pause,omitempty"`
+	StepId string               `json:"step_id"`
+}
+
+// CodeYieldPauseSuspensionKind defines model for CodeYieldPauseSuspension.Kind.
+type CodeYieldPauseSuspensionKind string
+
+// CodeYieldSleepSuspension defines model for CodeYieldSleepSuspension.
+type CodeYieldSleepSuspension struct {
+	Kind CodeYieldSleepSuspensionKind `json:"kind"`
+
+	// Sleep Configuration for a sleep step.
+	Sleep  WorkflowSleepConfig `json:"sleep"`
+	StepId string              `json:"step_id"`
+}
+
+// CodeYieldSleepSuspensionKind defines model for CodeYieldSleepSuspension.Kind.
+type CodeYieldSleepSuspensionKind string
+
+// CodeYieldSuspension Wait descriptor a code handler yielded. Discriminated by `kind`: each kind has its own variant requiring the matching config block (sleep, wait_signal, wait_event, interaction). The `pause` variant does not require a config — pause just suspends the run until an operator unpauses it; the optional `pause` block carries a human-readable reason for display. Reuses the declarative wait config schemas — code workflows ignore the `on_timeout` fields on those configs because the SDK handles timeout flows directly in the handler (try/catch around the await), but accepting the shape verbatim avoids forking schemas just for code mode.
+type CodeYieldSuspension struct {
+	union json.RawMessage
+}
+
+// CodeYieldWaitEventSuspension defines model for CodeYieldWaitEventSuspension.
+type CodeYieldWaitEventSuspension struct {
+	Kind   CodeYieldWaitEventSuspensionKind `json:"kind"`
+	StepId string                           `json:"step_id"`
+
+	// WaitEvent Suspends the run until an integration event matching `event_type` (and `condition`, when provided) is delivered to the project. `event_type` is exact-matched by default. Set `match_mode: prefix` for descendant matching such as `github.pull_request` matching `.opened`, `.closed`, etc.
+	WaitEvent WorkflowWaitEventConfig `json:"wait_event"`
+}
+
+// CodeYieldWaitEventSuspensionKind defines model for CodeYieldWaitEventSuspension.Kind.
+type CodeYieldWaitEventSuspensionKind string
+
+// CodeYieldWaitSignalSuspension defines model for CodeYieldWaitSignalSuspension.
+type CodeYieldWaitSignalSuspension struct {
+	Kind   CodeYieldWaitSignalSuspensionKind `json:"kind"`
+	StepId string                            `json:"step_id"`
+
+	// WaitSignal Suspends the run until a signal with the matching topic arrives.
+	WaitSignal WorkflowWaitSignalConfig `json:"wait_signal"`
+}
+
+// CodeYieldWaitSignalSuspensionKind defines model for CodeYieldWaitSignalSuspension.Kind.
+type CodeYieldWaitSignalSuspensionKind string
+
 // ColumnDef defines model for ColumnDef.
 type ColumnDef struct {
 	// Default Default value applied when column is absent on insert
@@ -4005,6 +4608,17 @@ type ConfigEntry struct {
 	// Value Raw string value interpreted by the key parser.
 	Value string `json:"value"`
 }
+
+// Consumer Polymorphic identifier of what is waiting on this interaction's resolution (PRD 077 §3.7). Replaces the previously special-cased `run_id` + `signal_name` pair. When `kind=run`, the legacy fields are also populated for compatibility. `http_subscriber` triggers a best-effort POST to `callback_url` when the interaction resolves; HMAC signing of the payload via the `secret_ref` is a follow-up — current callers should pin the `callback_url` to an authenticated endpoint until that lands.
+type Consumer struct {
+	AgentTool      *AgentToolConsumer      `json:"agent_tool,omitempty"`
+	HttpSubscriber *HttpSubscriberConsumer `json:"http_subscriber,omitempty"`
+	Kind           ConsumerKind            `json:"kind"`
+	Run            *RunConsumer            `json:"run,omitempty"`
+}
+
+// ConsumerKind defines model for Consumer.Kind.
+type ConsumerKind string
 
 // ContentBlock defines model for ContentBlock.
 type ContentBlock struct {
@@ -4279,8 +4893,28 @@ type CreateJobInteractionRequest struct {
 	// ExpiresAt Timestamp after which this interaction expires.
 	ExpiresAt *time.Time `json:"expires_at,omitempty"`
 
+	// Kind Protocol kind of the interaction (PRD 077). Each value names a
+	// distinct multi-party coordination protocol:
+	// * `approval` — a decision protocol (yes/no, optionally yes/no/defer)
+	// * `review` — a judgment protocol that evaluates supplied material
+	// * `request` — a data-collection protocol with structured or
+	// free-form input
+	// * `vote` — a collective-choice protocol with ballot semantics
+	// (changeable until close, eligibility, quorum, anonymity,
+	// tie-break). Vote ballots use the dedicated `/vote` endpoint.
+	// * `handoff` — a work-completion protocol where ownership moves to
+	// another actor who submits completed output
+	// * `input` — *deprecated* alias of `request`; existing rows keep
+	// this value but new interactions should be created with
+	// `request`. The server normalises `input` to `request` on
+	// create.
+	Kind InteractionKind `json:"kind"`
+
 	// Message Message shown to the responder.
 	Message string `json:"message"`
+
+	// References Supporting links and related entities.
+	References *[]InteractionReference `json:"references,omitempty"`
 
 	// RequireAll When target.type is "group", setting require_all=true means all snapshotted group members must respond before the interaction is considered complete. Ignored for non-group targets. Defaults to false when omitted. Mutually exclusive with `resolution_policy`; prefer the policy form for new code.
 	RequireAll *bool `json:"require_all,omitempty"`
@@ -4291,24 +4925,30 @@ type CreateJobInteractionRequest struct {
 	// SignalName Optional signal name override. When omitted, the server derives the signal name from step_name or falls back to a default interaction signal name.
 	SignalName *string `json:"signal_name,omitempty"`
 
-	// Spec Declarative dialog contract for rendering and validating an interaction. Used at both authoring time (inside a workflow definition) and runtime (persisted on an interaction). Compatibility rules are enforced server-side:
+	// Spec Declarative dialog contract for rendering and validating an interaction. Used at both authoring time (inside a workflow definition) and runtime (persisted on an interaction). PRD 077 decouples protocol kind from input shape: each kind declares which spec modes are *allowed*, not which is *implied*. An approval may now legitimately use `select` mode (approve/deny/defer), for example.
 	//
-	// - `approval` requires `mode = confirm`
-	// - `review` requires `mode = select`
-	// - `input` supports `input`, `select`, or `multi_select`
+	// Allowed combinations:
+	// * `approval` → `confirm`, `select`
+	// * `review` → `select`, `input`
+	// * `request` → `select`, `multi_select`, `input`
+	// * `vote` → `select`, `multi_select` (requires `vote_rules`)
+	// * `handoff` → `input`
 	Spec *InteractionSpec `json:"spec,omitempty"`
 
 	// StepName Optional workflow step label for UI/debugging context
 	StepName *string `json:"step_name,omitempty"`
+
+	// Subject Pointer to the work item, artifact, external ticket, or Mobius entity this interaction is about.
+	Subject *InteractionReference `json:"subject,omitempty"`
+
+	// SubmissionReviewPolicy Reviewability policy for an interaction artifact (PRD 077 §3.5). Carried as a template on `Interaction.submission_review_policy` (so new submissions inherit a snapshot) and as the per-submission snapshot on `InteractionSubmission.review_policy`.
+	SubmissionReviewPolicy *ReviewPolicy `json:"submission_review_policy,omitempty"`
 
 	// Target Identifies who should receive an interaction request. Note: distinct from the caller/audit `Actor` vocabulary — a target is a *recipient*, not someone who has acted yet.
 	Target InteractionTarget `json:"target"`
 
 	// Timeout Optional duration string (e.g. "24h", "30m") specifying how long the interaction should remain open before expiring. When absent the caller is responsible for setting expires_at directly.
 	Timeout *string `json:"timeout,omitempty"`
-
-	// Type Interaction kind: `approval` captures a decision, `review` captures acknowledgement or notes, and `input` collects free-form data.
-	Type InteractionType `json:"type"`
 }
 
 // CreateObservableRequest defines model for CreateObservableRequest.
@@ -4343,14 +4983,40 @@ type CreateProjectRequest struct {
 
 // CreateRunBackedInteractionRequest Creates a run-backed interaction. Completion delivers `signal_name` to `run_id` so a waiting run path can resume.
 type CreateRunBackedInteractionRequest struct {
+	// Consumer Polymorphic identifier of what is waiting on this interaction's resolution (PRD 077 §3.7). Replaces the previously special-cased `run_id` + `signal_name` pair. When `kind=run`, the legacy fields are also populated for compatibility. `http_subscriber` triggers a best-effort POST to `callback_url` when the interaction resolves; HMAC signing of the payload via the `secret_ref` is a follow-up — current callers should pin the `callback_url` to an authenticated endpoint until that lands.
+	Consumer *Consumer `json:"consumer,omitempty"`
+
 	// Context Additional key-value context surfaced in the UI alongside the message.
 	Context *map[string]interface{} `json:"context,omitempty"`
+
+	// Delivery Optional per-interaction delivery override (PRD 077 §3.8). When absent, each participant is notified per their own `NotificationPreferences`. When set, channels are added to the participant's preferences (additive default) or replace them (exclusive — `override_participant_preferences=true`).
+	Delivery *Delivery `json:"delivery,omitempty"`
 
 	// ExpiresAt Timestamp after which this interaction expires if not responded to.
 	ExpiresAt *time.Time `json:"expires_at,omitempty"`
 
+	// Kind Protocol kind of the interaction (PRD 077). Each value names a
+	// distinct multi-party coordination protocol:
+	// * `approval` — a decision protocol (yes/no, optionally yes/no/defer)
+	// * `review` — a judgment protocol that evaluates supplied material
+	// * `request` — a data-collection protocol with structured or
+	// free-form input
+	// * `vote` — a collective-choice protocol with ballot semantics
+	// (changeable until close, eligibility, quorum, anonymity,
+	// tie-break). Vote ballots use the dedicated `/vote` endpoint.
+	// * `handoff` — a work-completion protocol where ownership moves to
+	// another actor who submits completed output
+	// * `input` — *deprecated* alias of `request`; existing rows keep
+	// this value but new interactions should be created with
+	// `request`. The server normalises `input` to `request` on
+	// create.
+	Kind InteractionKind `json:"kind"`
+
 	// Message Message shown to the responder describing what response is needed.
 	Message string `json:"message"`
+
+	// References Supporting links and related entities.
+	References *[]InteractionReference `json:"references,omitempty"`
 
 	// RequireAll When target.type is "group", setting require_all=true means all snapshotted group members must respond before the interaction is considered complete. Ignored for non-group targets. Defaults to false when omitted. Mutually exclusive with `resolution_policy`; prefer the policy form for new code.
 	RequireAll *bool `json:"require_all,omitempty"`
@@ -4364,18 +5030,24 @@ type CreateRunBackedInteractionRequest struct {
 	// SignalName Signal name the interaction will complete against when run-backed.
 	SignalName string `json:"signal_name"`
 
-	// Spec Declarative dialog contract for rendering and validating an interaction. Used at both authoring time (inside a workflow definition) and runtime (persisted on an interaction). Compatibility rules are enforced server-side:
+	// Spec Declarative dialog contract for rendering and validating an interaction. Used at both authoring time (inside a workflow definition) and runtime (persisted on an interaction). PRD 077 decouples protocol kind from input shape: each kind declares which spec modes are *allowed*, not which is *implied*. An approval may now legitimately use `select` mode (approve/deny/defer), for example.
 	//
-	// - `approval` requires `mode = confirm`
-	// - `review` requires `mode = select`
-	// - `input` supports `input`, `select`, or `multi_select`
+	// Allowed combinations:
+	// * `approval` → `confirm`, `select`
+	// * `review` → `select`, `input`
+	// * `request` → `select`, `multi_select`, `input`
+	// * `vote` → `select`, `multi_select` (requires `vote_rules`)
+	// * `handoff` → `input`
 	Spec *InteractionSpec `json:"spec,omitempty"`
+
+	// Subject Pointer to the work item, artifact, external ticket, or Mobius entity this interaction is about.
+	Subject *InteractionReference `json:"subject,omitempty"`
+
+	// SubmissionReviewPolicy Reviewability policy for an interaction artifact (PRD 077 §3.5). Carried as a template on `Interaction.submission_review_policy` (so new submissions inherit a snapshot) and as the per-submission snapshot on `InteractionSubmission.review_policy`.
+	SubmissionReviewPolicy *ReviewPolicy `json:"submission_review_policy,omitempty"`
 
 	// Target Identifies who should receive an interaction request. Note: distinct from the caller/audit `Actor` vocabulary — a target is a *recipient*, not someone who has acted yet.
 	Target InteractionTarget `json:"target"`
-
-	// Type Interaction kind: `approval` captures a decision, `review` captures acknowledgement or notes, and `input` collects free-form data.
-	Type InteractionType `json:"type"`
 }
 
 // CreateScheduleTriggerRequest Creates a schedule trigger from a cron expression or fixed interval.
@@ -4422,14 +5094,40 @@ type CreateSecretRequest struct {
 
 // CreateStandaloneInteractionRequest Creates a standalone interaction. Completion records the response but does not deliver a workflow signal.
 type CreateStandaloneInteractionRequest struct {
+	// Consumer Polymorphic identifier of what is waiting on this interaction's resolution (PRD 077 §3.7). Replaces the previously special-cased `run_id` + `signal_name` pair. When `kind=run`, the legacy fields are also populated for compatibility. `http_subscriber` triggers a best-effort POST to `callback_url` when the interaction resolves; HMAC signing of the payload via the `secret_ref` is a follow-up — current callers should pin the `callback_url` to an authenticated endpoint until that lands.
+	Consumer *Consumer `json:"consumer,omitempty"`
+
 	// Context Additional key-value context surfaced in the UI alongside the message.
 	Context *map[string]interface{} `json:"context,omitempty"`
+
+	// Delivery Optional per-interaction delivery override (PRD 077 §3.8). When absent, each participant is notified per their own `NotificationPreferences`. When set, channels are added to the participant's preferences (additive default) or replace them (exclusive — `override_participant_preferences=true`).
+	Delivery *Delivery `json:"delivery,omitempty"`
 
 	// ExpiresAt Timestamp after which this interaction expires if not responded to.
 	ExpiresAt *time.Time `json:"expires_at,omitempty"`
 
+	// Kind Protocol kind of the interaction (PRD 077). Each value names a
+	// distinct multi-party coordination protocol:
+	// * `approval` — a decision protocol (yes/no, optionally yes/no/defer)
+	// * `review` — a judgment protocol that evaluates supplied material
+	// * `request` — a data-collection protocol with structured or
+	// free-form input
+	// * `vote` — a collective-choice protocol with ballot semantics
+	// (changeable until close, eligibility, quorum, anonymity,
+	// tie-break). Vote ballots use the dedicated `/vote` endpoint.
+	// * `handoff` — a work-completion protocol where ownership moves to
+	// another actor who submits completed output
+	// * `input` — *deprecated* alias of `request`; existing rows keep
+	// this value but new interactions should be created with
+	// `request`. The server normalises `input` to `request` on
+	// create.
+	Kind InteractionKind `json:"kind"`
+
 	// Message Message shown to the responder describing what response is needed.
 	Message string `json:"message"`
+
+	// References Supporting links and related entities.
+	References *[]InteractionReference `json:"references,omitempty"`
 
 	// RequireAll When target.type is "group", setting require_all=true means all snapshotted group members must respond before the interaction is considered complete. Ignored for non-group targets. Defaults to false when omitted. Mutually exclusive with `resolution_policy`; prefer the policy form for new code.
 	RequireAll *bool `json:"require_all,omitempty"`
@@ -4437,18 +5135,24 @@ type CreateStandaloneInteractionRequest struct {
 	// ResolutionPolicy Declarative resolution rule attached to an Interaction. Determines how participant responses become a final outcome.
 	ResolutionPolicy *ResolutionPolicy `json:"resolution_policy,omitempty"`
 
-	// Spec Declarative dialog contract for rendering and validating an interaction. Used at both authoring time (inside a workflow definition) and runtime (persisted on an interaction). Compatibility rules are enforced server-side:
+	// Spec Declarative dialog contract for rendering and validating an interaction. Used at both authoring time (inside a workflow definition) and runtime (persisted on an interaction). PRD 077 decouples protocol kind from input shape: each kind declares which spec modes are *allowed*, not which is *implied*. An approval may now legitimately use `select` mode (approve/deny/defer), for example.
 	//
-	// - `approval` requires `mode = confirm`
-	// - `review` requires `mode = select`
-	// - `input` supports `input`, `select`, or `multi_select`
+	// Allowed combinations:
+	// * `approval` → `confirm`, `select`
+	// * `review` → `select`, `input`
+	// * `request` → `select`, `multi_select`, `input`
+	// * `vote` → `select`, `multi_select` (requires `vote_rules`)
+	// * `handoff` → `input`
 	Spec *InteractionSpec `json:"spec,omitempty"`
+
+	// Subject Pointer to the work item, artifact, external ticket, or Mobius entity this interaction is about.
+	Subject *InteractionReference `json:"subject,omitempty"`
+
+	// SubmissionReviewPolicy Reviewability policy for an interaction artifact (PRD 077 §3.5). Carried as a template on `Interaction.submission_review_policy` (so new submissions inherit a snapshot) and as the per-submission snapshot on `InteractionSubmission.review_policy`.
+	SubmissionReviewPolicy *ReviewPolicy `json:"submission_review_policy,omitempty"`
 
 	// Target Identifies who should receive an interaction request. Note: distinct from the caller/audit `Actor` vocabulary — a target is a *recipient*, not someone who has acted yet.
 	Target InteractionTarget `json:"target"`
-
-	// Type Interaction kind: `approval` captures a decision, `review` captures acknowledgement or notes, and `input` collects free-form data.
-	Type InteractionType `json:"type"`
 }
 
 // CreateTableRequest defines model for CreateTableRequest.
@@ -4596,6 +5300,31 @@ type CreateWorkflowRequest struct {
 
 	// Tags Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints.
 	Tags *TagMap `json:"tags,omitempty"`
+}
+
+// Delivery Optional per-interaction delivery override (PRD 077 §3.8). When absent, each participant is notified per their own `NotificationPreferences`. When set, channels are added to the participant's preferences (additive default) or replace them (exclusive — `override_participant_preferences=true`).
+type Delivery struct {
+	Channels []DeliveryChannel `json:"channels"`
+
+	// OverrideParticipantPreferences When false (default), additive: deliver via the listed channels in addition to participant preferences. When true, exclusive: deliver *only* via the listed channels.
+	OverrideParticipantPreferences *bool `json:"override_participant_preferences,omitempty"`
+}
+
+// DeliveryChannel A single delivery destination. `inbox_only` carries no payload; each other kind owns its variant. `page` is schema-only in v1 — the server rejects it at create until paging is implemented.
+type DeliveryChannel struct {
+	AgentQueue    *AgentQueueDelivery    `json:"agent_queue,omitempty"`
+	ChannelThread *ChannelThreadDelivery `json:"channel_thread,omitempty"`
+	Email         *EmailDelivery         `json:"email,omitempty"`
+	Kind          DeliveryChannelKind    `json:"kind"`
+	Page          *PageDelivery          `json:"page,omitempty"`
+}
+
+// DeliveryChannelKind defines model for DeliveryChannel.Kind.
+type DeliveryChannelKind string
+
+// EmailDelivery defines model for EmailDelivery.
+type EmailDelivery struct {
+	To []openapi_types.Email `json:"to"`
 }
 
 // EmailSourceConfig Source configuration for `email` triggers.
@@ -4969,6 +5698,15 @@ type GroupWithCountListResponse struct {
 	NextCursor *string `json:"next_cursor,omitempty"`
 }
 
+// HttpSubscriberConsumer defines model for HttpSubscriberConsumer.
+type HttpSubscriberConsumer struct {
+	// CallbackUrl Absolute http(s) URL the server POSTs to when the interaction resolves. The body is a JSON object with the interaction id, kind, status, outcome value, comment, responder, and `resolved_by`. Delivery is best-effort in v1 (no durable outbox or retries).
+	CallbackUrl string `json:"callback_url"`
+
+	// SecretRef Reference to a project secret intended to sign deliveries. Forwarded to the deliverer as `X-Mobius-Secret-Ref` for forward compatibility; HMAC-SHA256 signing of the payload against the resolved plaintext is a follow-up.
+	SecretRef *string `json:"secret_ref,omitempty"`
+}
+
 // ImageContentBlock defines model for ImageContentBlock.
 type ImageContentBlock struct {
 	CacheControl *map[string]interface{} `json:"cache_control,omitempty"`
@@ -5212,6 +5950,9 @@ type IntegrationStatus string
 
 // Interaction Human or agent interaction request and its current response state.
 type Interaction struct {
+	// AcceptedSubmissionId Handoff submission accepted as the final outcome.
+	AcceptedSubmissionId *string `json:"accepted_submission_id,omitempty"`
+
 	// CancelReason Reason recorded when the interaction was cancelled.
 	CancelReason *string `json:"cancel_reason,omitempty"`
 
@@ -5224,17 +5965,46 @@ type Interaction struct {
 	// CompletedAt Timestamp when the interaction received a terminal response.
 	CompletedAt *time.Time `json:"completed_at,omitempty"`
 
+	// Consumer Polymorphic identifier of what is waiting on this interaction's resolution (PRD 077 §3.7). Replaces the previously special-cased `run_id` + `signal_name` pair. When `kind=run`, the legacy fields are also populated for compatibility. `http_subscriber` triggers a best-effort POST to `callback_url` when the interaction resolves; HMAC signing of the payload via the `secret_ref` is a follow-up — current callers should pin the `callback_url` to an authenticated endpoint until that lands.
+	Consumer *Consumer `json:"consumer,omitempty"`
+
 	// Context Additional key-value context surfaced in the UI alongside the message when supplied.
 	Context *map[string]interface{} `json:"context,omitempty"`
 
 	// CreatedAt Timestamp when this interaction was created.
 	CreatedAt time.Time `json:"created_at"`
 
+	// CurrentSubmissionId Current handoff submission awaiting review.
+	CurrentSubmissionId *string `json:"current_submission_id,omitempty"`
+
+	// Delivery Optional per-interaction delivery override (PRD 077 §3.8). When absent, each participant is notified per their own `NotificationPreferences`. When set, channels are added to the participant's preferences (additive default) or replace them (exclusive — `override_participant_preferences=true`).
+	Delivery *Delivery `json:"delivery,omitempty"`
+
+	// Events Interaction lifecycle timeline, in arrival order.
+	Events *[]InteractionEvent `json:"events,omitempty"`
+
 	// ExpiresAt Timestamp when this interaction expires if not responded to.
 	ExpiresAt *time.Time `json:"expires_at,omitempty"`
 
 	// Id Unique identifier for this interaction.
 	Id string `json:"id"`
+
+	// Kind Protocol kind of the interaction (PRD 077). Each value names a
+	// distinct multi-party coordination protocol:
+	// * `approval` — a decision protocol (yes/no, optionally yes/no/defer)
+	// * `review` — a judgment protocol that evaluates supplied material
+	// * `request` — a data-collection protocol with structured or
+	// free-form input
+	// * `vote` — a collective-choice protocol with ballot semantics
+	// (changeable until close, eligibility, quorum, anonymity,
+	// tie-break). Vote ballots use the dedicated `/vote` endpoint.
+	// * `handoff` — a work-completion protocol where ownership moves to
+	// another actor who submits completed output
+	// * `input` — *deprecated* alias of `request`; existing rows keep
+	// this value but new interactions should be created with
+	// `request`. The server normalises `input` to `request` on
+	// create.
+	Kind InteractionKind `json:"kind"`
 
 	// Message Human-readable message shown to the responder when supplied.
 	Message *string `json:"message,omitempty"`
@@ -5244,6 +6014,9 @@ type Interaction struct {
 
 	// Outcome Free-form JSON payload. Used both for responder-supplied values and for policy-derived values (e.g. `Interaction.outcome`, `ResolutionPolicy.proposal`); each consumer documents which.
 	Outcome *InteractionValue `json:"outcome,omitempty"`
+
+	// References Supporting links and related entities.
+	References *[]InteractionReference `json:"references,omitempty"`
 
 	// RequireAll When true, all snapshotted members must respond before completion
 	RequireAll *bool `json:"require_all,omitempty"`
@@ -5275,15 +6048,27 @@ type Interaction struct {
 	// Source Server-derived actor or system context that requested the interaction. Public create requests do not supply this field.
 	Source *InteractionSource `json:"source,omitempty"`
 
-	// Spec Declarative dialog contract for rendering and validating an interaction. Used at both authoring time (inside a workflow definition) and runtime (persisted on an interaction). Compatibility rules are enforced server-side:
+	// Spec Declarative dialog contract for rendering and validating an interaction. Used at both authoring time (inside a workflow definition) and runtime (persisted on an interaction). PRD 077 decouples protocol kind from input shape: each kind declares which spec modes are *allowed*, not which is *implied*. An approval may now legitimately use `select` mode (approve/deny/defer), for example.
 	//
-	// - `approval` requires `mode = confirm`
-	// - `review` requires `mode = select`
-	// - `input` supports `input`, `select`, or `multi_select`
+	// Allowed combinations:
+	// * `approval` → `confirm`, `select`
+	// * `review` → `select`, `input`
+	// * `request` → `select`, `multi_select`, `input`
+	// * `vote` → `select`, `multi_select` (requires `vote_rules`)
+	// * `handoff` → `input`
 	Spec *InteractionSpec `json:"spec,omitempty"`
 
-	// Status Current status of the interaction: pending, completed, expired, or cancelled.
+	// Status Current status of the interaction: pending, in_review, completed, expired, or cancelled.
 	Status InteractionStatus `json:"status"`
+
+	// Subject Pointer to the work item, artifact, external ticket, or Mobius entity this interaction is about.
+	Subject *InteractionReference `json:"subject,omitempty"`
+
+	// SubmissionReviewPolicy Reviewability policy for an interaction artifact (PRD 077 §3.5). Carried as a template on `Interaction.submission_review_policy` (so new submissions inherit a snapshot) and as the per-submission snapshot on `InteractionSubmission.review_policy`.
+	SubmissionReviewPolicy *ReviewPolicy `json:"submission_review_policy,omitempty"`
+
+	// Submissions Handoff submission attempts, in arrival order.
+	Submissions *[]InteractionSubmission `json:"submissions,omitempty"`
 
 	// Target Identifies who should receive an interaction request. Note: distinct from the caller/audit `Actor` vocabulary — a target is a *recipient*, not someone who has acted yet.
 	Target InteractionTarget `json:"target"`
@@ -5294,9 +6079,6 @@ type Interaction struct {
 	// TargetMemberSnapshot User IDs of group members at the time of creation; null for non-group targets.
 	TargetMemberSnapshot *[]string `json:"target_member_snapshot,omitempty"`
 
-	// Type Interaction kind: `approval` captures a decision, `review` captures acknowledgement or notes, and `input` collects free-form data.
-	Type InteractionType `json:"type"`
-
 	// UpdatedAt Timestamp when this interaction was last updated.
 	UpdatedAt time.Time `json:"updated_at"`
 }
@@ -5304,8 +6086,71 @@ type Interaction struct {
 // InteractionRoutingPolicySnapshot Group routing policy captured at creation time: first_responder or all_members. Null for non-group targets.
 type InteractionRoutingPolicySnapshot string
 
-// InteractionStatus Current status of the interaction: pending, completed, expired, or cancelled.
+// InteractionStatus Current status of the interaction: pending, in_review, completed, expired, or cancelled.
 type InteractionStatus string
+
+// InteractionBallot One voter's ballot on a vote-kind interaction. Distinct from `InteractionResponse` because ballots carry changeable, withdrawable, and optionally anonymous semantics (PRD 077).
+type InteractionBallot struct {
+	CastAt time.Time `json:"cast_at"`
+
+	// Choices Option values selected by this voter.
+	Choices       *[]string  `json:"choices,omitempty"`
+	Comment       *string    `json:"comment,omitempty"`
+	Id            string     `json:"id"`
+	InteractionId string     `json:"interaction_id"`
+	UpdatedAt     *time.Time `json:"updated_at,omitempty"`
+
+	// VoterId Voter identity. Anonymised (omitted) when the vote's `anonymous` rule is true and the caller is not the interaction owner.
+	VoterId *string `json:"voter_id,omitempty"`
+
+	// VoterType Voter actor class.
+	VoterType InteractionBallotVoterType `json:"voter_type"`
+
+	// Withdrawn True when the voter withdrew before close.
+	Withdrawn   *bool      `json:"withdrawn,omitempty"`
+	WithdrawnAt *time.Time `json:"withdrawn_at,omitempty"`
+}
+
+// InteractionBallotVoterType Voter actor class.
+type InteractionBallotVoterType string
+
+// InteractionBallotListResponse defines model for InteractionBallotListResponse.
+type InteractionBallotListResponse struct {
+	Items []InteractionBallot `json:"items"`
+}
+
+// InteractionEvent Lifecycle timeline entry for an interaction.
+type InteractionEvent struct {
+	// Actor Identifies who answered an interaction. Groups cannot themselves respond — only a user within a group — so `group` is not a valid responder type.
+	Actor         *InteractionResponder   `json:"actor,omitempty"`
+	CreatedAt     time.Time               `json:"created_at"`
+	Data          *map[string]interface{} `json:"data,omitempty"`
+	Id            string                  `json:"id"`
+	InteractionId string                  `json:"interaction_id"`
+	Message       *string                 `json:"message,omitempty"`
+	SubmissionId  *string                 `json:"submission_id,omitempty"`
+	Type          InteractionEventType    `json:"type"`
+}
+
+// InteractionEventType defines model for InteractionEvent.Type.
+type InteractionEventType string
+
+// InteractionKind Protocol kind of the interaction (PRD 077). Each value names a
+// distinct multi-party coordination protocol:
+// * `approval` — a decision protocol (yes/no, optionally yes/no/defer)
+// * `review` — a judgment protocol that evaluates supplied material
+// * `request` — a data-collection protocol with structured or
+// free-form input
+// * `vote` — a collective-choice protocol with ballot semantics
+// (changeable until close, eligibility, quorum, anonymity,
+// tie-break). Vote ballots use the dedicated `/vote` endpoint.
+// * `handoff` — a work-completion protocol where ownership moves to
+// another actor who submits completed output
+// * `input` — *deprecated* alias of `request`; existing rows keep
+// this value but new interactions should be created with
+// `request`. The server normalises `input` to `request` on
+// create.
+type InteractionKind string
 
 // InteractionListResponse defines model for InteractionListResponse.
 type InteractionListResponse struct {
@@ -5351,6 +6196,31 @@ type InteractionOption struct {
 
 // InteractionOrigin Server-derived origin of the interaction.
 type InteractionOrigin string
+
+// InteractionReference Pointer to the work item, artifact, external ticket, or Mobius entity this interaction is about.
+type InteractionReference struct {
+	// EntityId Required when kind is `mobius_entity`.
+	EntityId *string `json:"entity_id,omitempty"`
+
+	// EntityType Required when kind is `mobius_entity`.
+	EntityType *string                  `json:"entity_type,omitempty"`
+	Kind       InteractionReferenceKind `json:"kind"`
+
+	// Label User-facing label for display.
+	Label *string `json:"label,omitempty"`
+
+	// ProjectId Optional project scope for Mobius entity references.
+	ProjectId *string `json:"project_id,omitempty"`
+
+	// Relation Relationship such as `subject`, `evidence`, or `related`.
+	Relation *string `json:"relation,omitempty"`
+
+	// Url Required when kind is `external_url`.
+	Url *string `json:"url,omitempty"`
+}
+
+// InteractionReferenceKind defines model for InteractionReference.Kind.
+type InteractionReferenceKind string
 
 // InteractionResponder Identifies who answered an interaction. Groups cannot themselves respond — only a user within a group — so `group` is not a valid responder type.
 type InteractionResponder struct {
@@ -5404,11 +6274,14 @@ type InteractionSource struct {
 // InteractionSourceType defines model for InteractionSource.Type.
 type InteractionSourceType string
 
-// InteractionSpec Declarative dialog contract for rendering and validating an interaction. Used at both authoring time (inside a workflow definition) and runtime (persisted on an interaction). Compatibility rules are enforced server-side:
+// InteractionSpec Declarative dialog contract for rendering and validating an interaction. Used at both authoring time (inside a workflow definition) and runtime (persisted on an interaction). PRD 077 decouples protocol kind from input shape: each kind declares which spec modes are *allowed*, not which is *implied*. An approval may now legitimately use `select` mode (approve/deny/defer), for example.
 //
-// - `approval` requires `mode = confirm`
-// - `review` requires `mode = select`
-// - `input` supports `input`, `select`, or `multi_select`
+// Allowed combinations:
+// * `approval` → `confirm`, `select`
+// * `review` → `select`, `input`
+// * `request` → `select`, `multi_select`, `input`
+// * `vote` → `select`, `multi_select` (requires `vote_rules`)
+// * `handoff` → `input`
 type InteractionSpec struct {
 	// DefaultConfirmed Initial yes/no value for `confirm` mode.
 	DefaultConfirmed *bool `json:"default_confirmed,omitempty"`
@@ -5433,7 +6306,34 @@ type InteractionSpec struct {
 
 	// Placeholder Hint text shown for `input` mode.
 	Placeholder *string `json:"placeholder,omitempty"`
+
+	// VoteRules Parameters of a vote-kind interaction (PRD 077). Carries the electorate, ballot changeability, anonymity, quorum, close time, and tie-break behaviour.
+	VoteRules *VoteRules `json:"vote_rules,omitempty"`
 }
+
+// InteractionSubmission One handoff submission attempt.
+type InteractionSubmission struct {
+	Attempt       int        `json:"attempt"`
+	Comment       *string    `json:"comment,omitempty"`
+	Id            string     `json:"id"`
+	InteractionId string     `json:"interaction_id"`
+	ReviewComment *string    `json:"review_comment,omitempty"`
+	ReviewedAt    *time.Time `json:"reviewed_at,omitempty"`
+
+	// ReviewedBy Identifies who answered an interaction. Groups cannot themselves respond — only a user within a group — so `group` is not a valid responder type.
+	ReviewedBy  *InteractionResponder       `json:"reviewed_by,omitempty"`
+	Status      InteractionSubmissionStatus `json:"status"`
+	SubmittedAt time.Time                   `json:"submitted_at"`
+
+	// Submitter Identifies who answered an interaction. Groups cannot themselves respond — only a user within a group — so `group` is not a valid responder type.
+	Submitter InteractionResponder `json:"submitter"`
+
+	// Value Free-form JSON payload. Used both for responder-supplied values and for policy-derived values (e.g. `Interaction.outcome`, `ResolutionPolicy.proposal`); each consumer documents which.
+	Value InteractionValue `json:"value"`
+}
+
+// InteractionSubmissionStatus defines model for InteractionSubmission.Status.
+type InteractionSubmissionStatus string
 
 // InteractionTarget Identifies who should receive an interaction request. Note: distinct from the caller/audit `Actor` vocabulary — a target is a *recipient*, not someone who has acted yet.
 type InteractionTarget struct {
@@ -5446,9 +6346,6 @@ type InteractionTarget struct {
 
 // InteractionTargetType Target kind: a specific user, an agent queue, or a group.
 type InteractionTargetType string
-
-// InteractionType Interaction kind: `approval` captures a decision, `review` captures acknowledgement or notes, and `input` collects free-form data.
-type InteractionType string
 
 // InteractionValue Free-form JSON payload. Used both for responder-supplied values and for policy-derived values (e.g. `Interaction.outcome`, `ResolutionPolicy.proposal`); each consumer documents which.
 type InteractionValue struct {
@@ -5558,6 +6455,8 @@ type Job struct {
 // JobClaim Lease handed to a worker after a successful claim. It contains the action to run, resolved parameters, and fencing values the worker must echo on heartbeat, event, and complete calls.
 type JobClaim struct {
 	// Action Action name the worker must execute for this step.
+	//
+	// The reserved value `mobius.code.invoke` identifies a code-mode workflow invocation: the worker dispatches to the registered code handler named by `parameters._mobius_code_handler` and completes via `code-completion` / `code-yield` instead of `complete`. See `CodeInvokeJobParameters` for the parameter shape.
 	Action string `json:"action"`
 
 	// AgentId Agent that should execute this job, when the step is agent-targeted.
@@ -5576,6 +6475,8 @@ type JobClaim struct {
 	JobId string `json:"job_id"`
 
 	// Parameters Input parameters for this step, resolved from the workflow spec and prior step outputs.
+	//
+	// When `action == "mobius.code.invoke"`, parameters follow the `CodeInvokeJobParameters` shape — they carry the registered handler id, the run inputs, and the replay history rather than spec-authored values.
 	Parameters map[string]interface{} `json:"parameters"`
 
 	// Queue Queue name the job was claimed from.
@@ -5803,6 +6704,20 @@ type MarkChannelMessagesReadRequest struct {
 // Metadata Free-form JSON object for caller-defined metadata.
 type Metadata map[string]interface{}
 
+// NotificationPreferences Per-actor delivery defaults applied when an interaction does not specify a `delivery` override (PRD 077 §3.8). One row per (org, actor_type, actor_id) in v1.
+type NotificationPreferences struct {
+	ActorId   string                           `json:"actor_id"`
+	ActorType NotificationPreferencesActorType `json:"actor_type"`
+	Channels  *[]DeliveryChannel               `json:"channels,omitempty"`
+	CreatedAt *time.Time                       `json:"created_at,omitempty"`
+	Id        *string                          `json:"id,omitempty"`
+	OrgId     string                           `json:"org_id"`
+	UpdatedAt *time.Time                       `json:"updated_at,omitempty"`
+}
+
+// NotificationPreferencesActorType defines model for NotificationPreferences.ActorType.
+type NotificationPreferencesActorType string
+
 // Observable defines model for Observable.
 type Observable struct {
 	CreatedAt        time.Time                 `json:"created_at"`
@@ -5945,6 +6860,11 @@ type ObservableWaiterRunStatus string
 // ObservableWaiterListResponse defines model for ObservableWaiterListResponse.
 type ObservableWaiterListResponse struct {
 	Items []ObservableWaiter `json:"items"`
+}
+
+// PageDelivery defines model for PageDelivery.
+type PageDelivery struct {
+	PolicyId string `json:"policy_id"`
 }
 
 // PingWebhookRequest defines model for PingWebhookRequest.
@@ -6263,6 +7183,15 @@ type ResolutionPolicyType string
 // ResolutionPolicyWeightBy Where `weighted_vote` reads weights from.
 type ResolutionPolicyWeightBy string
 
+// ResolvedActionGroup defines model for ResolvedActionGroup.
+type ResolvedActionGroup struct {
+	// Members Action names the group expanded to during this resolution.
+	Members []string `json:"members"`
+
+	// Name Canonical group name (e.g. `mobius.table.read`).
+	Name string `json:"name"`
+}
+
 // ResolvedConfig Frozen config resolution in flat entry form. Keys unset at every layer are omitted. See PRD 035.
 type ResolvedConfig = []ResolvedConfigEntry
 
@@ -6292,6 +7221,24 @@ type RespondToInteractionRequest struct {
 	// Value Free-form JSON payload. Used both for responder-supplied values and for policy-derived values (e.g. `Interaction.outcome`, `ResolutionPolicy.proposal`); each consumer documents which.
 	Value InteractionValue `json:"value"`
 }
+
+// ReviewHandoffRequest defines model for ReviewHandoffRequest.
+type ReviewHandoffRequest struct {
+	// Comment Optional review note for acceptance.
+	Comment *string `json:"comment,omitempty"`
+}
+
+// ReviewPolicy Reviewability policy for an interaction artifact (PRD 077 §3.5). Carried as a template on `Interaction.submission_review_policy` (so new submissions inherit a snapshot) and as the per-submission snapshot on `InteractionSubmission.review_policy`.
+type ReviewPolicy struct {
+	// Reviewers Optional explicit reviewers. When omitted for `requester_acceptance_required`, the requester/source actor is the reviewer. Workflow, system, or integration-created handoffs should provide explicit user, agent, or group reviewers.
+	Reviewers *[]InteractionTarget `json:"reviewers,omitempty"`
+
+	// Type `none` completes a handoff when submitted. `requester_acceptance_required` moves submitted handoffs to `in_review` until an authorized reviewer accepts or sends back.
+	Type ReviewPolicyType `json:"type"`
+}
+
+// ReviewPolicyType `none` completes a handoff when submitted. `requester_acceptance_required` moves submitted handoffs to `in_review` until an authorized reviewer accepts or sends back.
+type ReviewPolicyType string
 
 // RotateSecretResult New signing secret returned after rotating an action secret.
 type RotateSecretResult struct {
@@ -6338,6 +7285,12 @@ type RunActionResultOutput5 = bool
 // RunActionResult_Output Free-form output returned by the action handler.
 type RunActionResult_Output struct {
 	union json.RawMessage
+}
+
+// RunConsumer defines model for RunConsumer.
+type RunConsumer struct {
+	RunId      string `json:"run_id"`
+	SignalName string `json:"signal_name"`
 }
 
 // RunForkLineage defines model for RunForkLineage.
@@ -6588,6 +7541,12 @@ type SecretVersionListResponse struct {
 // SecretVersionState Secret version lifecycle state.
 type SecretVersionState string
 
+// SendBackHandoffRequest defines model for SendBackHandoffRequest.
+type SendBackHandoffRequest struct {
+	// Comment Feedback explaining what needs to change before resubmission.
+	Comment string `json:"comment"`
+}
+
 // SendChannelMessageRequest Fields used to post a new channel message. Sender attribution is determined entirely by the authenticated credential and cannot be overridden via this request body.
 type SendChannelMessageRequest struct {
 	// Content Message body in Markdown.
@@ -6644,10 +7603,7 @@ type ShareChannelEntityRequestDisplay string
 
 // Skill defines model for Skill.
 type Skill struct {
-	// AllowedActions Requested action names/selectors.
-	AllowedActions []string `json:"allowed_actions"`
-
-	// AllowedTools Requested native-tool IDs, concrete tool names, or known aliases.
+	// AllowedTools Canonical action names, wildcard selectors, or group references that narrow the agent's effective tool set while this skill is active. Uses the same selector vocabulary as toolkit grants.
 	AllowedTools []string  `json:"allowed_tools"`
 	CreatedAt    time.Time `json:"created_at"`
 	Description  *string   `json:"description,omitempty"`
@@ -6703,27 +7659,26 @@ type SkillListResponse struct {
 
 // SkillManifestEntry defines model for SkillManifestEntry.
 type SkillManifestEntry struct {
-	Active         bool     `json:"active"`
-	AllowedActions []string `json:"allowed_actions"`
-	AllowedTools   []string `json:"allowed_tools"`
-	Id             string   `json:"id"`
-	Instructions   string   `json:"instructions"`
-	ModelHint      *string  `json:"model_hint,omitempty"`
-	Name           string   `json:"name"`
-	UserInvocable  *bool    `json:"user_invocable,omitempty"`
+	Active             bool      `json:"active"`
+	Id                 string    `json:"id"`
+	Instructions       string    `json:"instructions"`
+	MissingRecommended *[]string `json:"missing_recommended,omitempty"`
+	MissingRequired    *[]string `json:"missing_required,omitempty"`
+	ModelHint          *string   `json:"model_hint,omitempty"`
+	Name               string    `json:"name"`
+	UserInvocable      *bool     `json:"user_invocable,omitempty"`
 }
 
 // SkillRequest defines model for SkillRequest.
 type SkillRequest struct {
-	AllowedActions *[]string               `json:"allowed_actions,omitempty"`
-	AllowedTools   *[]string               `json:"allowed_tools,omitempty"`
-	Description    *string                 `json:"description,omitempty"`
-	Frontmatter    *map[string]interface{} `json:"frontmatter,omitempty"`
-	Instructions   string                  `json:"instructions"`
-	ModelHint      *string                 `json:"model_hint,omitempty"`
-	Name           string                  `json:"name"`
-	Slug           *string                 `json:"slug,omitempty"`
-	UserInvocable  *bool                   `json:"user_invocable,omitempty"`
+	AllowedTools  *[]string               `json:"allowed_tools,omitempty"`
+	Description   *string                 `json:"description,omitempty"`
+	Frontmatter   *map[string]interface{} `json:"frontmatter,omitempty"`
+	Instructions  string                  `json:"instructions"`
+	ModelHint     *string                 `json:"model_hint,omitempty"`
+	Name          string                  `json:"name"`
+	Slug          *string                 `json:"slug,omitempty"`
+	UserInvocable *bool                   `json:"user_invocable,omitempty"`
 }
 
 // Span Domain projection of one persisted OTLP span. Linkage fields (`run_id`, `step_id`, `job_id`, `agent_id`, `service_account_id`) are resolved at ingest time from semantic-convention attributes and may be absent when no Mobius entity could be matched.
@@ -6923,6 +7878,15 @@ type StartSavedRunRequestMode string
 type StepSpanCountsResponse struct {
 	// Counts Keys are run step IDs.
 	Counts map[string]SpanCounts `json:"counts"`
+}
+
+// SubmitHandoffRequest defines model for SubmitHandoffRequest.
+type SubmitHandoffRequest struct {
+	// Comment Optional note from the assignee.
+	Comment *string `json:"comment,omitempty"`
+
+	// Value Free-form JSON payload. Used both for responder-supplied values and for policy-derived values (e.g. `Interaction.outcome`, `ResolutionPolicy.proposal`); each consumer documents which.
+	Value InteractionValue `json:"value"`
 }
 
 // SubmitObservableObservationRequest defines model for SubmitObservableObservationRequest.
@@ -7140,25 +8104,20 @@ type ToolUseContentBlockType string
 
 // Toolkit defines model for Toolkit.
 type Toolkit struct {
+	// ActionGrants Action selectors granted by this toolkit. Each entry is matched against the unified action catalog at manifest-resolution time.
 	ActionGrants []ToolkitActionGrant `json:"action_grants"`
 	CreatedAt    time.Time            `json:"created_at"`
 	Description  *string              `json:"description,omitempty"`
 
 	// Id Toolkit ID (TypeID `tk_...`).
-	Id   string `json:"id"`
-	Name string `json:"name"`
-
-	// NativeToolIds Native-tool grant IDs owned by this toolkit.
-	NativeToolIds []string `json:"native_tool_ids"`
-
-	// NativeTools Expanded native-tool metadata for the toolkit's tool grants.
-	NativeTools *[]AgentNativeTool `json:"native_tools,omitempty"`
-	OrgId       string             `json:"org_id"`
-	ProjectId   string             `json:"project_id"`
-	Slug        *string            `json:"slug,omitempty"`
-	Source      ToolkitSource      `json:"source"`
-	Status      ToolkitStatus      `json:"status"`
-	UpdatedAt   time.Time          `json:"updated_at"`
+	Id        string        `json:"id"`
+	Name      string        `json:"name"`
+	OrgId     string        `json:"org_id"`
+	ProjectId string        `json:"project_id"`
+	Slug      *string       `json:"slug,omitempty"`
+	Source    ToolkitSource `json:"source"`
+	Status    ToolkitStatus `json:"status"`
+	UpdatedAt time.Time     `json:"updated_at"`
 }
 
 // ToolkitSource defines model for Toolkit.Source.
@@ -7203,9 +8162,6 @@ type ToolkitRequest struct {
 	ActionGrants *[]ToolkitActionGrant `json:"action_grants,omitempty"`
 	Description  *string               `json:"description,omitempty"`
 	Name         string                `json:"name"`
-
-	// NativeToolIds Native-tool grant IDs to allow.
-	NativeToolIds *[]string `json:"native_tool_ids,omitempty"`
 
 	// Slug Optional stable slug. When omitted, the server derives one from `name`.
 	Slug *string `json:"slug,omitempty"`
@@ -7596,6 +8552,11 @@ type UpdateGroupRequest struct {
 // UpdateGroupRequestRoutingPolicy Replacement routing policy, either `first_responder` or `all_members`. Affects future interactions only; in-flight interactions retain the snapshotted policy.
 type UpdateGroupRequestRoutingPolicy string
 
+// UpdateNotificationPreferencesRequest defines model for UpdateNotificationPreferencesRequest.
+type UpdateNotificationPreferencesRequest struct {
+	Channels []DeliveryChannel `json:"channels"`
+}
+
 // UpdateObservableRequest defines model for UpdateObservableRequest.
 type UpdateObservableRequest struct {
 	FreshnessConfig *ObservableFreshnessConfig `json:"freshness_config,omitempty"`
@@ -7813,6 +8774,62 @@ type UserPresencePreferences struct {
 	Mode      UserPresenceMode `json:"mode"`
 	UpdatedAt time.Time        `json:"updated_at"`
 }
+
+// VoteEligibility Who is eligible to vote on this interaction. `explicit` lists voters directly; `group_snapshot` uses the interaction's target group snapshot.
+type VoteEligibility struct {
+	Kind VoteEligibilityKind `json:"kind"`
+
+	// Voters Required when `kind=explicit`.
+	Voters *[]InteractionTarget `json:"voters,omitempty"`
+}
+
+// VoteEligibilityKind defines model for VoteEligibility.Kind.
+type VoteEligibilityKind string
+
+// VoteOption A choice on a vote ballot.
+type VoteOption struct {
+	// Description Optional extra context.
+	Description *string `json:"description,omitempty"`
+
+	// Label Display label.
+	Label string `json:"label"`
+
+	// Value Machine-readable choice value.
+	Value string `json:"value"`
+}
+
+// VoteRules Parameters of a vote-kind interaction (PRD 077). Carries the electorate, ballot changeability, anonymity, quorum, close time, and tie-break behaviour.
+type VoteRules struct {
+	// Anonymous When true, the list-ballots endpoint omits voter IDs for non-owner callers. Anonymity is a UX property — the audit log retains real IDs.
+	Anonymous *bool `json:"anonymous,omitempty"`
+
+	// Changeable When true, voters may re-cast before close.
+	Changeable *bool `json:"changeable,omitempty"`
+
+	// CloseAt Time after which new ballots are rejected.
+	CloseAt *time.Time `json:"close_at,omitempty"`
+
+	// Eligibility Who is eligible to vote on this interaction. `explicit` lists voters directly; `group_snapshot` uses the interaction's target group snapshot.
+	Eligibility *VoteEligibility `json:"eligibility,omitempty"`
+
+	// Options Choices voters can select. Values must be unique.
+	Options []VoteOption `json:"options"`
+
+	// QuorumCount Minimum number of active ballots before the vote can resolve.
+	QuorumCount *int `json:"quorum_count,omitempty"`
+
+	// QuorumFraction Minimum fraction of eligible voters that must vote before the vote can resolve.
+	QuorumFraction *float64 `json:"quorum_fraction,omitempty"`
+
+	// RevealLiveTally Opt-in display of running counts before close.
+	RevealLiveTally *bool `json:"reveal_live_tally,omitempty"`
+
+	// TieBreak How to resolve a tied top vote count on close.
+	TieBreak *VoteRulesTieBreak `json:"tie_break,omitempty"`
+}
+
+// VoteRulesTieBreak How to resolve a tied top vote count on close.
+type VoteRulesTieBreak string
 
 // WebPresenceHeartbeatRequest defines model for WebPresenceHeartbeatRequest.
 type WebPresenceHeartbeatRequest struct {
@@ -8068,6 +9085,35 @@ type WorkflowCatch struct {
 	Next string `json:"next"`
 }
 
+// WorkflowCodeStep Delegates the entire workflow's control flow to a user-authored handler running on a worker (TypeScript today, with other runtimes to follow). The handler invokes step.run(), step.sleep(), step.waitForSignal() etc. via the SDK; each call is durably checkpointed against the run ledger so the handler replays deterministically across yield/resume cycles.
+//
+// A code workflow contains exactly one step (this one) — the handler's runtime control flow is the graph. Authors cannot mix code steps with the declarative step shapes: `next`, `each`, `retry`, `catch`, `parameters`, etc. are rejected by validation.
+type WorkflowCodeStep struct {
+	// Code Configuration for a code-handler step.
+	Code WorkflowCodeStepConfig `json:"code"`
+
+	// Description Optional human-readable description of what this handler does.
+	Description *string `json:"description,omitempty"`
+
+	// Layout Optional presentation hint for the visual editor. Ignored by the execution engine; when absent, editors auto-lay out the step.
+	Layout *WorkflowStepLayout `json:"layout,omitempty"`
+
+	// Name Unique step name within the workflow, used for routing and logging.
+	Name string `json:"name"`
+}
+
+// WorkflowCodeStepConfig Configuration for a code-handler step.
+type WorkflowCodeStepConfig struct {
+	// Handler Stable identifier the worker SDK registered the handler under (typically equal to the workflow definition name). The server emits jobs whose handler parameter equals this value; the worker dispatches the job to the matching handler.
+	Handler string `json:"handler"`
+
+	// Queue Optional worker queue the code-invoke job is dispatched to. When empty, the run-level queue is used.
+	Queue *string `json:"queue,omitempty"`
+
+	// Runtime Opaque hint identifying the language/runtime that owns this handler ("typescript", "python", etc.). Used by the UI for display only; the engine does not interpret it.
+	Runtime *string `json:"runtime,omitempty"`
+}
+
 // WorkflowDefinition defines model for WorkflowDefinition.
 type WorkflowDefinition struct {
 	// CreatedAt Timestamp when this workflow definition was created.
@@ -8236,17 +9282,23 @@ type WorkflowInteractionConfig struct {
 	// Context Arbitrary key-value context passed alongside the interaction for rendering.
 	Context *map[string]interface{} `json:"context,omitempty"`
 
+	// Discussion Creates or reuses a project channel for the surrounding discussion while the interaction remains the typed outcome that resumes the workflow.
+	Discussion *WorkflowInteractionDiscussionConfig `json:"discussion,omitempty"`
+
 	// Message Prompt message shown to the interaction recipient.
 	Message string `json:"message"`
 
 	// RequireAll When true, all group members must respond before the interaction completes. Only meaningful when type is `group`.
 	RequireAll *bool `json:"require_all,omitempty"`
 
-	// Spec Declarative dialog contract for rendering and validating an interaction. Used at both authoring time (inside a workflow definition) and runtime (persisted on an interaction). Compatibility rules are enforced server-side:
+	// Spec Declarative dialog contract for rendering and validating an interaction. Used at both authoring time (inside a workflow definition) and runtime (persisted on an interaction). PRD 077 decouples protocol kind from input shape: each kind declares which spec modes are *allowed*, not which is *implied*. An approval may now legitimately use `select` mode (approve/deny/defer), for example.
 	//
-	// - `approval` requires `mode = confirm`
-	// - `review` requires `mode = select`
-	// - `input` supports `input`, `select`, or `multi_select`
+	// Allowed combinations:
+	// * `approval` → `confirm`, `select`
+	// * `review` → `select`, `input`
+	// * `request` → `select`, `multi_select`, `input`
+	// * `vote` → `select`, `multi_select` (requires `vote_rules`)
+	// * `handoff` → `input`
 	Spec *InteractionSpec `json:"spec,omitempty"`
 
 	// Target Identifies who should receive an interaction request. Note: distinct from the caller/audit `Actor` vocabulary — a target is a *recipient*, not someone who has acted yet.
@@ -8261,6 +9313,36 @@ type WorkflowInteractionConfig struct {
 
 // WorkflowInteractionConfigType Interaction kind: approval requires a yes/no decision, review requests acknowledgement, input collects free-form data.
 type WorkflowInteractionConfigType string
+
+// WorkflowInteractionDiscussionConfig Creates or reuses a project channel for the surrounding discussion while the interaction remains the typed outcome that resumes the workflow.
+type WorkflowInteractionDiscussionConfig struct {
+	// ChannelId Existing channel ID to reuse. If omitted, channel_name is used.
+	ChannelId *string `json:"channel_id,omitempty"`
+
+	// ChannelName Existing or new project channel name to use for the discussion.
+	ChannelName *string `json:"channel_name,omitempty"`
+
+	// CompletionBehavior Behavior to apply when all purpose-linked interactions are terminal.
+	CompletionBehavior *WorkflowInteractionDiscussionConfigCompletionBehavior `json:"completion_behavior,omitempty"`
+
+	// DisplayName Display name for a newly-created channel.
+	DisplayName *string `json:"display_name,omitempty"`
+
+	// MemberIds Additional user or agent IDs to invite to the channel.
+	MemberIds *[]string `json:"member_ids,omitempty"`
+
+	// OpeningMessage Opening brief posted into the channel before the workflow parks.
+	OpeningMessage string `json:"opening_message"`
+
+	// Private Whether a newly-created channel is private.
+	Private *bool `json:"private,omitempty"`
+
+	// Topic Topic for a newly-created channel.
+	Topic *string `json:"topic,omitempty"`
+}
+
+// WorkflowInteractionDiscussionConfigCompletionBehavior Behavior to apply when all purpose-linked interactions are terminal.
+type WorkflowInteractionDiscussionConfigCompletionBehavior string
 
 // WorkflowInteractionStep Creates a human or agent interaction and resumes when the interaction completes.
 type WorkflowInteractionStep struct {
@@ -8870,7 +9952,7 @@ type WorkflowSpec struct {
 	Steps []WorkflowStep `json:"steps"`
 }
 
-// WorkflowStep A workflow step. Exactly one step shape should be used. Step variants are identified by their distinctive required property (`action`, `type: set`, `join`, `wait_signal`, `wait_event`, `wait_until`, `sleep`, `pause`, or `interaction`). The current authored shape intentionally does not add a separate discriminator field, so existing workflow YAML stays compact.
+// WorkflowStep A workflow step. Exactly one step shape should be used. Step variants are identified by their distinctive required property (`action`, `type: set`, `join`, `wait_signal`, `wait_event`, `wait_until`, `sleep`, `pause`, `interaction`, or `code`). The current authored shape intentionally does not add a separate discriminator field, so existing workflow YAML stays compact.
 type WorkflowStep struct {
 	union json.RawMessage
 }
@@ -9199,6 +10281,12 @@ type ListAuditLogsParams struct {
 	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
+// GetNotificationPreferencesParamsActorType defines parameters for GetNotificationPreferences.
+type GetNotificationPreferencesParamsActorType string
+
+// UpdateNotificationPreferencesParamsActorType defines parameters for UpdateNotificationPreferences.
+type UpdateNotificationPreferencesParamsActorType string
+
 // ListProjectsParams defines parameters for ListProjects.
 type ListProjectsParams struct {
 	// Search Prefix-match filter applied to project name and handle.
@@ -9298,21 +10386,6 @@ type ListAgentsParams struct {
 	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
-// GetAgentCapabilityManifestParams defines parameters for GetAgentCapabilityManifest.
-type GetAgentCapabilityManifestParams struct {
-	// ToolkitIds Optional comma-separated toolkit subset to apply.
-	ToolkitIds *string `form:"toolkit_ids,omitempty" json:"toolkit_ids,omitempty"`
-
-	// SkillName Optional assigned skill name to preselect as active.
-	SkillName *string `form:"skill_name,omitempty" json:"skill_name,omitempty"`
-
-	// AllowedTools Optional comma-separated concrete tool names or known aliases.
-	AllowedTools *string `form:"allowed_tools,omitempty" json:"allowed_tools,omitempty"`
-
-	// AllowedActions Optional comma-separated action names to apply as a per-invocation filter.
-	AllowedActions *string `form:"allowed_actions,omitempty" json:"allowed_actions,omitempty"`
-}
-
 // ListAgentSessionsParams defines parameters for ListAgentSessions.
 type ListAgentSessionsParams struct {
 	// Status Filter by session status.
@@ -9320,6 +10393,34 @@ type ListAgentSessionsParams struct {
 
 	// Transport Filter by transport type (e.g. "sse", "polling").
 	Transport *string `form:"transport,omitempty" json:"transport,omitempty"`
+
+	// Limit Maximum number of items to return
+	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// GetAgentToolManifestParams defines parameters for GetAgentToolManifest.
+type GetAgentToolManifestParams struct {
+	// ToolkitIds Optional comma-separated toolkit subset to apply.
+	ToolkitIds *string `form:"toolkit_ids,omitempty" json:"toolkit_ids,omitempty"`
+
+	// SkillName Optional assigned skill name to preselect as active.
+	SkillName *string `form:"skill_name,omitempty" json:"skill_name,omitempty"`
+
+	// AllowedTools Optional comma-separated canonical action names, wildcard selectors, or group references to apply as a per-invocation filter against the resolved tool set.
+	AllowedTools *string `form:"allowed_tools,omitempty" json:"allowed_tools,omitempty"`
+}
+
+// ListArtifactsParams defines parameters for ListArtifacts.
+type ListArtifactsParams struct {
+	RunId  *string `form:"run_id,omitempty" json:"run_id,omitempty"`
+	StepId *string `form:"step_id,omitempty" json:"step_id,omitempty"`
+
+	// Mime Mime prefix filter (e.g. `image/`)
+	Mime  *string        `form:"mime,omitempty" json:"mime,omitempty"`
+	State *ArtifactState `form:"state,omitempty" json:"state,omitempty"`
+
+	// Cursor Cursor for pagination (opaque string from previous response)
+	Cursor *CursorParam `form:"cursor,omitempty" json:"cursor,omitempty"`
 
 	// Limit Maximum number of items to return
 	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
@@ -9436,8 +10537,11 @@ type ListEnvironmentsParams struct {
 	OwnerType *EnvironmentOwnerType `form:"owner_type,omitempty" json:"owner_type,omitempty"`
 	OwnerId   *string               `form:"owner_id,omitempty" json:"owner_id,omitempty"`
 
-	// IncludeDestroyed Include all destroyed environments in the inventory. Recently destroyed environments may remain visible briefly by default; older destroyed environments are hidden unless this is true or status=destroyed is requested.
+	// IncludeDestroyed Include destroyed environments in the result. By default destroyed rows are excluded; set this to true (or pass status=destroyed) to see them.
 	IncludeDestroyed *bool `form:"include_destroyed,omitempty" json:"include_destroyed,omitempty"`
+
+	// DestroyedSince Narrow destroyed rows to those torn down at or after this timestamp. Composes with `status=destroyed` to fetch a "recently destroyed" tombstone window (e.g. last hour). Non-destroyed rows are unaffected when this is combined with the default (no-status) view.
+	DestroyedSince *time.Time `form:"destroyed_since,omitempty" json:"destroyed_since,omitempty"`
 }
 
 // StreamProjectEventsParams defines parameters for StreamProjectEvents.
@@ -9499,6 +10603,12 @@ type ListInteractionsParams struct {
 	// Inbox When true, returns only interactions visible to the authenticated user (direct + group membership)
 	Inbox *bool `form:"inbox,omitempty" json:"inbox,omitempty"`
 
+	// ReviewerType Filter handoffs by reviewer type. Defaults to user when reviewer_id is provided.
+	ReviewerType *ListInteractionsParamsReviewerType `form:"reviewer_type,omitempty" json:"reviewer_type,omitempty"`
+
+	// ReviewerId Filter handoffs awaiting review by the specified reviewer.
+	ReviewerId *string `form:"reviewer_id,omitempty" json:"reviewer_id,omitempty"`
+
 	// Cursor Cursor for pagination (opaque string from previous response)
 	Cursor *CursorParam `form:"cursor,omitempty" json:"cursor,omitempty"`
 
@@ -9518,6 +10628,9 @@ type ListInteractionsParamsStatus string
 
 // ListInteractionsParamsTargetType defines parameters for ListInteractions.
 type ListInteractionsParamsTargetType string
+
+// ListInteractionsParamsReviewerType defines parameters for ListInteractions.
+type ListInteractionsParamsReviewerType string
 
 // ListProjectLogsParams defines parameters for ListProjectLogs.
 type ListProjectLogsParams struct {
@@ -9855,6 +10968,9 @@ type ListWorkflowsParams struct {
 // CreateMessageJSONRequestBody defines body for CreateMessage for application/json ContentType.
 type CreateMessageJSONRequestBody = GenerateRequest
 
+// UpdateNotificationPreferencesJSONRequestBody defines body for UpdateNotificationPreferences for application/json ContentType.
+type UpdateNotificationPreferencesJSONRequestBody = UpdateNotificationPreferencesRequest
+
 // HeartbeatWebPresenceJSONRequestBody defines body for HeartbeatWebPresence for application/json ContentType.
 type HeartbeatWebPresenceJSONRequestBody = WebPresenceHeartbeatRequest
 
@@ -9963,17 +11079,38 @@ type CreateIntegrationEventTestFireJSONRequestBody = IntegrationEventFireRequest
 // CreateInteractionJSONRequestBody defines body for CreateInteraction for application/json ContentType.
 type CreateInteractionJSONRequestBody = CreateInteractionRequest
 
+// AcceptInteractionHandoffJSONRequestBody defines body for AcceptInteractionHandoff for application/json ContentType.
+type AcceptInteractionHandoffJSONRequestBody = ReviewHandoffRequest
+
 // CancelInteractionJSONRequestBody defines body for CancelInteraction for application/json ContentType.
 type CancelInteractionJSONRequestBody = CancelInteractionRequest
 
+// CloseInteractionVoteJSONRequestBody defines body for CloseInteractionVote for application/json ContentType.
+type CloseInteractionVoteJSONRequestBody = CloseVoteRequest
+
 // RespondToInteractionJSONRequestBody defines body for RespondToInteraction for application/json ContentType.
 type RespondToInteractionJSONRequestBody = RespondToInteractionRequest
+
+// SendBackInteractionHandoffJSONRequestBody defines body for SendBackInteractionHandoff for application/json ContentType.
+type SendBackInteractionHandoffJSONRequestBody = SendBackHandoffRequest
+
+// SubmitInteractionHandoffJSONRequestBody defines body for SubmitInteractionHandoff for application/json ContentType.
+type SubmitInteractionHandoffJSONRequestBody = SubmitHandoffRequest
+
+// CastInteractionBallotJSONRequestBody defines body for CastInteractionBallot for application/json ContentType.
+type CastInteractionBallotJSONRequestBody = CastBallotRequest
 
 // ClaimJobJSONRequestBody defines body for ClaimJob for application/json ContentType.
 type ClaimJobJSONRequestBody = JobClaimRequest
 
 // RunJobActionJSONRequestBody defines body for RunJobAction for application/json ContentType.
 type RunJobActionJSONRequestBody = RunActionRequest
+
+// CompleteCodeJobJSONRequestBody defines body for CompleteCodeJob for application/json ContentType.
+type CompleteCodeJobJSONRequestBody = CodeJobCompleteRequest
+
+// YieldCodeJobJSONRequestBody defines body for YieldCodeJob for application/json ContentType.
+type YieldCodeJobJSONRequestBody = CodeJobYieldRequest
 
 // CompleteJobJSONRequestBody defines body for CompleteJob for application/json ContentType.
 type CompleteJobJSONRequestBody = JobCompleteRequest
@@ -12582,6 +13719,185 @@ func (a WorkflowVersionSummary) MarshalJSON() ([]byte, error) {
 	return json.Marshal(object)
 }
 
+// AsCodeYieldSleepSuspension returns the union data inside the CodeYieldSuspension as a CodeYieldSleepSuspension
+func (t CodeYieldSuspension) AsCodeYieldSleepSuspension() (CodeYieldSleepSuspension, error) {
+	var body CodeYieldSleepSuspension
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromCodeYieldSleepSuspension overwrites any union data inside the CodeYieldSuspension as the provided CodeYieldSleepSuspension
+func (t *CodeYieldSuspension) FromCodeYieldSleepSuspension(v CodeYieldSleepSuspension) error {
+	v.Kind = "sleep"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeCodeYieldSleepSuspension performs a merge with any union data inside the CodeYieldSuspension, using the provided CodeYieldSleepSuspension
+func (t *CodeYieldSuspension) MergeCodeYieldSleepSuspension(v CodeYieldSleepSuspension) error {
+	v.Kind = "sleep"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsCodeYieldWaitSignalSuspension returns the union data inside the CodeYieldSuspension as a CodeYieldWaitSignalSuspension
+func (t CodeYieldSuspension) AsCodeYieldWaitSignalSuspension() (CodeYieldWaitSignalSuspension, error) {
+	var body CodeYieldWaitSignalSuspension
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromCodeYieldWaitSignalSuspension overwrites any union data inside the CodeYieldSuspension as the provided CodeYieldWaitSignalSuspension
+func (t *CodeYieldSuspension) FromCodeYieldWaitSignalSuspension(v CodeYieldWaitSignalSuspension) error {
+	v.Kind = "wait_signal"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeCodeYieldWaitSignalSuspension performs a merge with any union data inside the CodeYieldSuspension, using the provided CodeYieldWaitSignalSuspension
+func (t *CodeYieldSuspension) MergeCodeYieldWaitSignalSuspension(v CodeYieldWaitSignalSuspension) error {
+	v.Kind = "wait_signal"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsCodeYieldWaitEventSuspension returns the union data inside the CodeYieldSuspension as a CodeYieldWaitEventSuspension
+func (t CodeYieldSuspension) AsCodeYieldWaitEventSuspension() (CodeYieldWaitEventSuspension, error) {
+	var body CodeYieldWaitEventSuspension
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromCodeYieldWaitEventSuspension overwrites any union data inside the CodeYieldSuspension as the provided CodeYieldWaitEventSuspension
+func (t *CodeYieldSuspension) FromCodeYieldWaitEventSuspension(v CodeYieldWaitEventSuspension) error {
+	v.Kind = "wait_event"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeCodeYieldWaitEventSuspension performs a merge with any union data inside the CodeYieldSuspension, using the provided CodeYieldWaitEventSuspension
+func (t *CodeYieldSuspension) MergeCodeYieldWaitEventSuspension(v CodeYieldWaitEventSuspension) error {
+	v.Kind = "wait_event"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsCodeYieldInteractionSuspension returns the union data inside the CodeYieldSuspension as a CodeYieldInteractionSuspension
+func (t CodeYieldSuspension) AsCodeYieldInteractionSuspension() (CodeYieldInteractionSuspension, error) {
+	var body CodeYieldInteractionSuspension
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromCodeYieldInteractionSuspension overwrites any union data inside the CodeYieldSuspension as the provided CodeYieldInteractionSuspension
+func (t *CodeYieldSuspension) FromCodeYieldInteractionSuspension(v CodeYieldInteractionSuspension) error {
+	v.Kind = "interaction"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeCodeYieldInteractionSuspension performs a merge with any union data inside the CodeYieldSuspension, using the provided CodeYieldInteractionSuspension
+func (t *CodeYieldSuspension) MergeCodeYieldInteractionSuspension(v CodeYieldInteractionSuspension) error {
+	v.Kind = "interaction"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsCodeYieldPauseSuspension returns the union data inside the CodeYieldSuspension as a CodeYieldPauseSuspension
+func (t CodeYieldSuspension) AsCodeYieldPauseSuspension() (CodeYieldPauseSuspension, error) {
+	var body CodeYieldPauseSuspension
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromCodeYieldPauseSuspension overwrites any union data inside the CodeYieldSuspension as the provided CodeYieldPauseSuspension
+func (t *CodeYieldSuspension) FromCodeYieldPauseSuspension(v CodeYieldPauseSuspension) error {
+	v.Kind = "pause"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeCodeYieldPauseSuspension performs a merge with any union data inside the CodeYieldSuspension, using the provided CodeYieldPauseSuspension
+func (t *CodeYieldSuspension) MergeCodeYieldPauseSuspension(v CodeYieldPauseSuspension) error {
+	v.Kind = "pause"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t CodeYieldSuspension) Discriminator() (string, error) {
+	var discriminator struct {
+		Discriminator string `json:"kind"`
+	}
+	err := json.Unmarshal(t.union, &discriminator)
+	return discriminator.Discriminator, err
+}
+
+func (t CodeYieldSuspension) ValueByDiscriminator() (interface{}, error) {
+	discriminator, err := t.Discriminator()
+	if err != nil {
+		return nil, err
+	}
+	switch discriminator {
+	case "interaction":
+		return t.AsCodeYieldInteractionSuspension()
+	case "pause":
+		return t.AsCodeYieldPauseSuspension()
+	case "sleep":
+		return t.AsCodeYieldSleepSuspension()
+	case "wait_event":
+		return t.AsCodeYieldWaitEventSuspension()
+	case "wait_signal":
+		return t.AsCodeYieldWaitSignalSuspension()
+	default:
+		return nil, errors.New("unknown discriminator value: " + discriminator)
+	}
+}
+
+func (t CodeYieldSuspension) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *CodeYieldSuspension) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
 // AsTextContentBlock returns the union data inside the ContentBlock as a TextContentBlock
 func (t ContentBlock) AsTextContentBlock() (TextContentBlock, error) {
 	var body TextContentBlock
@@ -14119,6 +15435,32 @@ func (t *WorkflowStep) MergeWorkflowInteractionStep(v WorkflowInteractionStep) e
 	return err
 }
 
+// AsWorkflowCodeStep returns the union data inside the WorkflowStep as a WorkflowCodeStep
+func (t WorkflowStep) AsWorkflowCodeStep() (WorkflowCodeStep, error) {
+	var body WorkflowCodeStep
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromWorkflowCodeStep overwrites any union data inside the WorkflowStep as the provided WorkflowCodeStep
+func (t *WorkflowStep) FromWorkflowCodeStep(v WorkflowCodeStep) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeWorkflowCodeStep performs a merge with any union data inside the WorkflowStep, using the provided WorkflowCodeStep
+func (t *WorkflowStep) MergeWorkflowCodeStep(v WorkflowCodeStep) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
 func (t WorkflowStep) MarshalJSON() ([]byte, error) {
 	b, err := t.union.MarshalJSON()
 	return b, err
@@ -14209,6 +15551,14 @@ type ClientInterface interface {
 	CreateMessageWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	CreateMessage(ctx context.Context, body CreateMessageJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetNotificationPreferences request
+	GetNotificationPreferences(ctx context.Context, actorType GetNotificationPreferencesParamsActorType, actorId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateNotificationPreferencesWithBody request with any body
+	UpdateNotificationPreferencesWithBody(ctx context.Context, actorType UpdateNotificationPreferencesParamsActorType, actorId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	UpdateNotificationPreferences(ctx context.Context, actorType UpdateNotificationPreferencesParamsActorType, actorId string, body UpdateNotificationPreferencesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// HeartbeatWebPresenceWithBody request with any body
 	HeartbeatWebPresenceWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -14331,9 +15681,6 @@ type ClientInterface interface {
 
 	UpdateAgent(ctx context.Context, project ProjectHandleParam, id IDParam, body UpdateAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetAgentCapabilityManifest request
-	GetAgentCapabilityManifest(ctx context.Context, project ProjectHandleParam, id IDParam, params *GetAgentCapabilityManifestParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
 	// ProvisionAgentInbox request
 	ProvisionAgentInbox(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -14362,6 +15709,9 @@ type ClientInterface interface {
 
 	ReplaceSkills(ctx context.Context, project ProjectHandleParam, id IDParam, body ReplaceSkillsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetAgentToolManifest request
+	GetAgentToolManifest(ctx context.Context, project ProjectHandleParam, id IDParam, params *GetAgentToolManifestParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListToolkitAssignments request
 	ListToolkitAssignments(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -14369,6 +15719,9 @@ type ClientInterface interface {
 	ReplaceToolkitsWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	ReplaceToolkits(ctx context.Context, project ProjectHandleParam, id IDParam, body ReplaceToolkitsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListArtifacts request
+	ListArtifacts(ctx context.Context, project ProjectHandleParam, params *ListArtifactsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// DeleteArtifact request
 	DeleteArtifact(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, params *DeleteArtifactParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -14573,6 +15926,14 @@ type ClientInterface interface {
 	// GetInteraction request
 	GetInteraction(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// AcceptInteractionHandoffWithBody request with any body
+	AcceptInteractionHandoffWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	AcceptInteractionHandoff(ctx context.Context, project ProjectHandleParam, id IDParam, body AcceptInteractionHandoffJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListInteractionBallots request
+	ListInteractionBallots(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// CancelInteractionWithBody request with any body
 	CancelInteractionWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -14581,6 +15942,11 @@ type ClientInterface interface {
 	// ClaimInteraction request
 	ClaimInteraction(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// CloseInteractionVoteWithBody request with any body
+	CloseInteractionVoteWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	CloseInteractionVote(ctx context.Context, project ProjectHandleParam, id IDParam, body CloseInteractionVoteJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ReleaseInteraction request
 	ReleaseInteraction(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -14588,6 +15954,24 @@ type ClientInterface interface {
 	RespondToInteractionWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	RespondToInteraction(ctx context.Context, project ProjectHandleParam, id IDParam, body RespondToInteractionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// SendBackInteractionHandoffWithBody request with any body
+	SendBackInteractionHandoffWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	SendBackInteractionHandoff(ctx context.Context, project ProjectHandleParam, id IDParam, body SendBackInteractionHandoffJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// SubmitInteractionHandoffWithBody request with any body
+	SubmitInteractionHandoffWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	SubmitInteractionHandoff(ctx context.Context, project ProjectHandleParam, id IDParam, body SubmitInteractionHandoffJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CastInteractionBallotWithBody request with any body
+	CastInteractionBallotWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	CastInteractionBallot(ctx context.Context, project ProjectHandleParam, id IDParam, body CastInteractionBallotJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// WithdrawInteractionBallot request
+	WithdrawInteractionBallot(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ClaimJobWithBody request with any body
 	ClaimJobWithBody(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -14601,6 +15985,16 @@ type ClientInterface interface {
 	RunJobActionWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, actionName ActionNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	RunJobAction(ctx context.Context, project ProjectHandleParam, id IDParam, actionName ActionNameParam, body RunJobActionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CompleteCodeJobWithBody request with any body
+	CompleteCodeJobWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	CompleteCodeJob(ctx context.Context, project ProjectHandleParam, id IDParam, body CompleteCodeJobJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// YieldCodeJobWithBody request with any body
+	YieldCodeJobWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	YieldCodeJob(ctx context.Context, project ProjectHandleParam, id IDParam, body YieldCodeJobJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// CompleteJobWithBody request with any body
 	CompleteJobWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -15026,6 +16420,42 @@ func (c *Client) CreateMessageWithBody(ctx context.Context, contentType string, 
 
 func (c *Client) CreateMessage(ctx context.Context, body CreateMessageJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewCreateMessageRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetNotificationPreferences(ctx context.Context, actorType GetNotificationPreferencesParamsActorType, actorId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetNotificationPreferencesRequest(c.Server, actorType, actorId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateNotificationPreferencesWithBody(ctx context.Context, actorType UpdateNotificationPreferencesParamsActorType, actorId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateNotificationPreferencesRequestWithBody(c.Server, actorType, actorId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateNotificationPreferences(ctx context.Context, actorType UpdateNotificationPreferencesParamsActorType, actorId string, body UpdateNotificationPreferencesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateNotificationPreferencesRequest(c.Server, actorType, actorId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -15564,18 +16994,6 @@ func (c *Client) UpdateAgent(ctx context.Context, project ProjectHandleParam, id
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetAgentCapabilityManifest(ctx context.Context, project ProjectHandleParam, id IDParam, params *GetAgentCapabilityManifestParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetAgentCapabilityManifestRequest(c.Server, project, id, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
 func (c *Client) ProvisionAgentInbox(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewProvisionAgentInboxRequest(c.Server, project, id)
 	if err != nil {
@@ -15696,6 +17114,18 @@ func (c *Client) ReplaceSkills(ctx context.Context, project ProjectHandleParam, 
 	return c.Client.Do(req)
 }
 
+func (c *Client) GetAgentToolManifest(ctx context.Context, project ProjectHandleParam, id IDParam, params *GetAgentToolManifestParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetAgentToolManifestRequest(c.Server, project, id, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) ListToolkitAssignments(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListToolkitAssignmentsRequest(c.Server, project, id)
 	if err != nil {
@@ -15722,6 +17152,18 @@ func (c *Client) ReplaceToolkitsWithBody(ctx context.Context, project ProjectHan
 
 func (c *Client) ReplaceToolkits(ctx context.Context, project ProjectHandleParam, id IDParam, body ReplaceToolkitsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewReplaceToolkitsRequest(c.Server, project, id, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListArtifacts(ctx context.Context, project ProjectHandleParam, params *ListArtifactsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListArtifactsRequest(c.Server, project, params)
 	if err != nil {
 		return nil, err
 	}
@@ -16632,6 +18074,42 @@ func (c *Client) GetInteraction(ctx context.Context, project ProjectHandleParam,
 	return c.Client.Do(req)
 }
 
+func (c *Client) AcceptInteractionHandoffWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAcceptInteractionHandoffRequestWithBody(c.Server, project, id, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) AcceptInteractionHandoff(ctx context.Context, project ProjectHandleParam, id IDParam, body AcceptInteractionHandoffJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAcceptInteractionHandoffRequest(c.Server, project, id, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListInteractionBallots(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListInteractionBallotsRequest(c.Server, project, id)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) CancelInteractionWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewCancelInteractionRequestWithBody(c.Server, project, id, contentType, body)
 	if err != nil {
@@ -16668,6 +18146,30 @@ func (c *Client) ClaimInteraction(ctx context.Context, project ProjectHandlePara
 	return c.Client.Do(req)
 }
 
+func (c *Client) CloseInteractionVoteWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCloseInteractionVoteRequestWithBody(c.Server, project, id, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CloseInteractionVote(ctx context.Context, project ProjectHandleParam, id IDParam, body CloseInteractionVoteJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCloseInteractionVoteRequest(c.Server, project, id, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) ReleaseInteraction(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewReleaseInteractionRequest(c.Server, project, id)
 	if err != nil {
@@ -16694,6 +18196,90 @@ func (c *Client) RespondToInteractionWithBody(ctx context.Context, project Proje
 
 func (c *Client) RespondToInteraction(ctx context.Context, project ProjectHandleParam, id IDParam, body RespondToInteractionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewRespondToInteractionRequest(c.Server, project, id, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) SendBackInteractionHandoffWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSendBackInteractionHandoffRequestWithBody(c.Server, project, id, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) SendBackInteractionHandoff(ctx context.Context, project ProjectHandleParam, id IDParam, body SendBackInteractionHandoffJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSendBackInteractionHandoffRequest(c.Server, project, id, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) SubmitInteractionHandoffWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSubmitInteractionHandoffRequestWithBody(c.Server, project, id, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) SubmitInteractionHandoff(ctx context.Context, project ProjectHandleParam, id IDParam, body SubmitInteractionHandoffJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSubmitInteractionHandoffRequest(c.Server, project, id, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CastInteractionBallotWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCastInteractionBallotRequestWithBody(c.Server, project, id, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CastInteractionBallot(ctx context.Context, project ProjectHandleParam, id IDParam, body CastInteractionBallotJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCastInteractionBallotRequest(c.Server, project, id, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) WithdrawInteractionBallot(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewWithdrawInteractionBallotRequest(c.Server, project, id)
 	if err != nil {
 		return nil, err
 	}
@@ -16754,6 +18340,54 @@ func (c *Client) RunJobActionWithBody(ctx context.Context, project ProjectHandle
 
 func (c *Client) RunJobAction(ctx context.Context, project ProjectHandleParam, id IDParam, actionName ActionNameParam, body RunJobActionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewRunJobActionRequest(c.Server, project, id, actionName, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CompleteCodeJobWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCompleteCodeJobRequestWithBody(c.Server, project, id, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CompleteCodeJob(ctx context.Context, project ProjectHandleParam, id IDParam, body CompleteCodeJobJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCompleteCodeJobRequest(c.Server, project, id, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) YieldCodeJobWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewYieldCodeJobRequestWithBody(c.Server, project, id, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) YieldCodeJob(ctx context.Context, project ProjectHandleParam, id IDParam, body YieldCodeJobJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewYieldCodeJobRequest(c.Server, project, id, body)
 	if err != nil {
 		return nil, err
 	}
@@ -18765,6 +20399,101 @@ func NewCreateMessageRequestWithBody(server string, contentType string, body io.
 	return req, nil
 }
 
+// NewGetNotificationPreferencesRequest generates requests for GetNotificationPreferences
+func NewGetNotificationPreferencesRequest(server string, actorType GetNotificationPreferencesParamsActorType, actorId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "actor_type", actorType, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "actor_id", actorId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/notification-preferences/%s/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewUpdateNotificationPreferencesRequest calls the generic UpdateNotificationPreferences builder with application/json body
+func NewUpdateNotificationPreferencesRequest(server string, actorType UpdateNotificationPreferencesParamsActorType, actorId string, body UpdateNotificationPreferencesJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpdateNotificationPreferencesRequestWithBody(server, actorType, actorId, "application/json", bodyReader)
+}
+
+// NewUpdateNotificationPreferencesRequestWithBody generates requests for UpdateNotificationPreferences with any type of body
+func NewUpdateNotificationPreferencesRequestWithBody(server string, actorType UpdateNotificationPreferencesParamsActorType, actorId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "actor_type", actorType, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "actor_id", actorId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/notification-preferences/%s/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PUT", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewHeartbeatWebPresenceRequest calls the generic HeartbeatWebPresence builder with application/json body
 func NewHeartbeatWebPresenceRequest(server string, body HeartbeatWebPresenceJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
@@ -20503,117 +22232,6 @@ func NewUpdateAgentRequestWithBody(server string, project ProjectHandleParam, id
 	return req, nil
 }
 
-// NewGetAgentCapabilityManifestRequest generates requests for GetAgentCapabilityManifest
-func NewGetAgentCapabilityManifestRequest(server string, project ProjectHandleParam, id IDParam, params *GetAgentCapabilityManifestParams) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/projects/%s/agents/%s/capability-manifest", pathParam0, pathParam1)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		queryValues := queryURL.Query()
-
-		if params.ToolkitIds != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "toolkit_ids", *params.ToolkitIds, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-				return nil, err
-			} else {
-				for k, v := range parsed {
-					for _, v2 := range v {
-						queryValues.Add(k, v2)
-					}
-				}
-			}
-
-		}
-
-		if params.SkillName != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "skill_name", *params.SkillName, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-				return nil, err
-			} else {
-				for k, v := range parsed {
-					for _, v2 := range v {
-						queryValues.Add(k, v2)
-					}
-				}
-			}
-
-		}
-
-		if params.AllowedTools != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "allowed_tools", *params.AllowedTools, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-				return nil, err
-			} else {
-				for k, v := range parsed {
-					for _, v2 := range v {
-						queryValues.Add(k, v2)
-					}
-				}
-			}
-
-		}
-
-		if params.AllowedActions != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "allowed_actions", *params.AllowedActions, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-				return nil, err
-			} else {
-				for k, v := range parsed {
-					for _, v2 := range v {
-						queryValues.Add(k, v2)
-					}
-				}
-			}
-
-		}
-
-		queryURL.RawQuery = queryValues.Encode()
-	}
-
-	req, err := http.NewRequest("GET", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
 // NewProvisionAgentInboxRequest generates requests for ProvisionAgentInbox
 func NewProvisionAgentInboxRequest(server string, project ProjectHandleParam, id IDParam) (*http.Request, error) {
 	var err error
@@ -21043,6 +22661,101 @@ func NewReplaceSkillsRequestWithBody(server string, project ProjectHandleParam, 
 	return req, nil
 }
 
+// NewGetAgentToolManifestRequest generates requests for GetAgentToolManifest
+func NewGetAgentToolManifestRequest(server string, project ProjectHandleParam, id IDParam, params *GetAgentToolManifestParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/agents/%s/tool-manifest", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.ToolkitIds != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "toolkit_ids", *params.ToolkitIds, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.SkillName != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "skill_name", *params.SkillName, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.AllowedTools != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "allowed_tools", *params.AllowedTools, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewListToolkitAssignmentsRequest generates requests for ListToolkitAssignments
 func NewListToolkitAssignmentsRequest(server string, project ProjectHandleParam, id IDParam) (*http.Request, error) {
 	var err error
@@ -21134,6 +22847,142 @@ func NewReplaceToolkitsRequestWithBody(server string, project ProjectHandleParam
 	}
 
 	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewListArtifactsRequest generates requests for ListArtifacts
+func NewListArtifactsRequest(server string, project ProjectHandleParam, params *ListArtifactsParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/artifacts", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.RunId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "run_id", *params.RunId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.StepId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "step_id", *params.StepId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Mime != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "mime", *params.Mime, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.State != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "state", *params.State, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Cursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "cursor", *params.Cursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
 
 	return req, nil
 }
@@ -22935,6 +24784,22 @@ func NewListEnvironmentsRequest(server string, project ProjectHandleParam, param
 
 		}
 
+		if params.DestroyedSince != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "destroyed_since", *params.DestroyedSince, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
 		queryURL.RawQuery = queryValues.Encode()
 	}
 
@@ -24222,6 +26087,38 @@ func NewListInteractionsRequest(server string, project ProjectHandleParam, param
 
 		}
 
+		if params.ReviewerType != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "reviewer_type", *params.ReviewerType, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.ReviewerId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "reviewer_id", *params.ReviewerId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
 		if params.Cursor != nil {
 
 			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "cursor", *params.Cursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
@@ -24369,6 +26266,101 @@ func NewGetInteractionRequest(server string, project ProjectHandleParam, id IDPa
 	return req, nil
 }
 
+// NewAcceptInteractionHandoffRequest calls the generic AcceptInteractionHandoff builder with application/json body
+func NewAcceptInteractionHandoffRequest(server string, project ProjectHandleParam, id IDParam, body AcceptInteractionHandoffJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewAcceptInteractionHandoffRequestWithBody(server, project, id, "application/json", bodyReader)
+}
+
+// NewAcceptInteractionHandoffRequestWithBody generates requests for AcceptInteractionHandoff with any type of body
+func NewAcceptInteractionHandoffRequestWithBody(server string, project ProjectHandleParam, id IDParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/interactions/%s/accept", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewListInteractionBallotsRequest generates requests for ListInteractionBallots
+func NewListInteractionBallotsRequest(server string, project ProjectHandleParam, id IDParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/interactions/%s/ballots", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewCancelInteractionRequest calls the generic CancelInteraction builder with application/json body
 func NewCancelInteractionRequest(server string, project ProjectHandleParam, id IDParam, body CancelInteractionJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
@@ -24464,6 +26456,60 @@ func NewClaimInteractionRequest(server string, project ProjectHandleParam, id ID
 	return req, nil
 }
 
+// NewCloseInteractionVoteRequest calls the generic CloseInteractionVote builder with application/json body
+func NewCloseInteractionVoteRequest(server string, project ProjectHandleParam, id IDParam, body CloseInteractionVoteJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCloseInteractionVoteRequestWithBody(server, project, id, "application/json", bodyReader)
+}
+
+// NewCloseInteractionVoteRequestWithBody generates requests for CloseInteractionVote with any type of body
+func NewCloseInteractionVoteRequestWithBody(server string, project ProjectHandleParam, id IDParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/interactions/%s/close-vote", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewReleaseInteractionRequest generates requests for ReleaseInteraction
 func NewReleaseInteractionRequest(server string, project ProjectHandleParam, id IDParam) (*http.Request, error) {
 	var err error
@@ -24555,6 +26601,209 @@ func NewRespondToInteractionRequestWithBody(server string, project ProjectHandle
 	}
 
 	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewSendBackInteractionHandoffRequest calls the generic SendBackInteractionHandoff builder with application/json body
+func NewSendBackInteractionHandoffRequest(server string, project ProjectHandleParam, id IDParam, body SendBackInteractionHandoffJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewSendBackInteractionHandoffRequestWithBody(server, project, id, "application/json", bodyReader)
+}
+
+// NewSendBackInteractionHandoffRequestWithBody generates requests for SendBackInteractionHandoff with any type of body
+func NewSendBackInteractionHandoffRequestWithBody(server string, project ProjectHandleParam, id IDParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/interactions/%s/send-back", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewSubmitInteractionHandoffRequest calls the generic SubmitInteractionHandoff builder with application/json body
+func NewSubmitInteractionHandoffRequest(server string, project ProjectHandleParam, id IDParam, body SubmitInteractionHandoffJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewSubmitInteractionHandoffRequestWithBody(server, project, id, "application/json", bodyReader)
+}
+
+// NewSubmitInteractionHandoffRequestWithBody generates requests for SubmitInteractionHandoff with any type of body
+func NewSubmitInteractionHandoffRequestWithBody(server string, project ProjectHandleParam, id IDParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/interactions/%s/submit", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewCastInteractionBallotRequest calls the generic CastInteractionBallot builder with application/json body
+func NewCastInteractionBallotRequest(server string, project ProjectHandleParam, id IDParam, body CastInteractionBallotJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCastInteractionBallotRequestWithBody(server, project, id, "application/json", bodyReader)
+}
+
+// NewCastInteractionBallotRequestWithBody generates requests for CastInteractionBallot with any type of body
+func NewCastInteractionBallotRequestWithBody(server string, project ProjectHandleParam, id IDParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/interactions/%s/vote", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewWithdrawInteractionBallotRequest generates requests for WithdrawInteractionBallot
+func NewWithdrawInteractionBallotRequest(server string, project ProjectHandleParam, id IDParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/interactions/%s/withdraw-vote", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
 
 	return req, nil
 }
@@ -24689,6 +26938,114 @@ func NewRunJobActionRequestWithBody(server string, project ProjectHandleParam, i
 	}
 
 	operationPath := fmt.Sprintf("/v1/projects/%s/jobs/%s/actions/%s", pathParam0, pathParam1, pathParam2)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewCompleteCodeJobRequest calls the generic CompleteCodeJob builder with application/json body
+func NewCompleteCodeJobRequest(server string, project ProjectHandleParam, id IDParam, body CompleteCodeJobJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCompleteCodeJobRequestWithBody(server, project, id, "application/json", bodyReader)
+}
+
+// NewCompleteCodeJobRequestWithBody generates requests for CompleteCodeJob with any type of body
+func NewCompleteCodeJobRequestWithBody(server string, project ProjectHandleParam, id IDParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/jobs/%s/code-completion", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewYieldCodeJobRequest calls the generic YieldCodeJob builder with application/json body
+func NewYieldCodeJobRequest(server string, project ProjectHandleParam, id IDParam, body YieldCodeJobJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewYieldCodeJobRequestWithBody(server, project, id, "application/json", bodyReader)
+}
+
+// NewYieldCodeJobRequestWithBody generates requests for YieldCodeJob with any type of body
+func NewYieldCodeJobRequestWithBody(server string, project ProjectHandleParam, id IDParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/jobs/%s/code-yield", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -30937,6 +33294,14 @@ type ClientWithResponsesInterface interface {
 
 	CreateMessageWithResponse(ctx context.Context, body CreateMessageJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateMessageResponse, error)
 
+	// GetNotificationPreferencesWithResponse request
+	GetNotificationPreferencesWithResponse(ctx context.Context, actorType GetNotificationPreferencesParamsActorType, actorId string, reqEditors ...RequestEditorFn) (*GetNotificationPreferencesResponse, error)
+
+	// UpdateNotificationPreferencesWithBodyWithResponse request with any body
+	UpdateNotificationPreferencesWithBodyWithResponse(ctx context.Context, actorType UpdateNotificationPreferencesParamsActorType, actorId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateNotificationPreferencesResponse, error)
+
+	UpdateNotificationPreferencesWithResponse(ctx context.Context, actorType UpdateNotificationPreferencesParamsActorType, actorId string, body UpdateNotificationPreferencesJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateNotificationPreferencesResponse, error)
+
 	// HeartbeatWebPresenceWithBodyWithResponse request with any body
 	HeartbeatWebPresenceWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*HeartbeatWebPresenceResponse, error)
 
@@ -31058,9 +33423,6 @@ type ClientWithResponsesInterface interface {
 
 	UpdateAgentWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body UpdateAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateAgentResponse, error)
 
-	// GetAgentCapabilityManifestWithResponse request
-	GetAgentCapabilityManifestWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, params *GetAgentCapabilityManifestParams, reqEditors ...RequestEditorFn) (*GetAgentCapabilityManifestResponse, error)
-
 	// ProvisionAgentInboxWithResponse request
 	ProvisionAgentInboxWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*ProvisionAgentInboxResponse, error)
 
@@ -31089,6 +33451,9 @@ type ClientWithResponsesInterface interface {
 
 	ReplaceSkillsWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body ReplaceSkillsJSONRequestBody, reqEditors ...RequestEditorFn) (*ReplaceSkillsResponse, error)
 
+	// GetAgentToolManifestWithResponse request
+	GetAgentToolManifestWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, params *GetAgentToolManifestParams, reqEditors ...RequestEditorFn) (*GetAgentToolManifestResponse, error)
+
 	// ListToolkitAssignmentsWithResponse request
 	ListToolkitAssignmentsWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*ListToolkitAssignmentsResponse, error)
 
@@ -31096,6 +33461,9 @@ type ClientWithResponsesInterface interface {
 	ReplaceToolkitsWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ReplaceToolkitsResponse, error)
 
 	ReplaceToolkitsWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body ReplaceToolkitsJSONRequestBody, reqEditors ...RequestEditorFn) (*ReplaceToolkitsResponse, error)
+
+	// ListArtifactsWithResponse request
+	ListArtifactsWithResponse(ctx context.Context, project ProjectHandleParam, params *ListArtifactsParams, reqEditors ...RequestEditorFn) (*ListArtifactsResponse, error)
 
 	// DeleteArtifactWithResponse request
 	DeleteArtifactWithResponse(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, params *DeleteArtifactParams, reqEditors ...RequestEditorFn) (*DeleteArtifactResponse, error)
@@ -31300,6 +33668,14 @@ type ClientWithResponsesInterface interface {
 	// GetInteractionWithResponse request
 	GetInteractionWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*GetInteractionResponse, error)
 
+	// AcceptInteractionHandoffWithBodyWithResponse request with any body
+	AcceptInteractionHandoffWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AcceptInteractionHandoffResponse, error)
+
+	AcceptInteractionHandoffWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body AcceptInteractionHandoffJSONRequestBody, reqEditors ...RequestEditorFn) (*AcceptInteractionHandoffResponse, error)
+
+	// ListInteractionBallotsWithResponse request
+	ListInteractionBallotsWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*ListInteractionBallotsResponse, error)
+
 	// CancelInteractionWithBodyWithResponse request with any body
 	CancelInteractionWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CancelInteractionResponse, error)
 
@@ -31308,6 +33684,11 @@ type ClientWithResponsesInterface interface {
 	// ClaimInteractionWithResponse request
 	ClaimInteractionWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*ClaimInteractionResponse, error)
 
+	// CloseInteractionVoteWithBodyWithResponse request with any body
+	CloseInteractionVoteWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CloseInteractionVoteResponse, error)
+
+	CloseInteractionVoteWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body CloseInteractionVoteJSONRequestBody, reqEditors ...RequestEditorFn) (*CloseInteractionVoteResponse, error)
+
 	// ReleaseInteractionWithResponse request
 	ReleaseInteractionWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*ReleaseInteractionResponse, error)
 
@@ -31315,6 +33696,24 @@ type ClientWithResponsesInterface interface {
 	RespondToInteractionWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RespondToInteractionResponse, error)
 
 	RespondToInteractionWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body RespondToInteractionJSONRequestBody, reqEditors ...RequestEditorFn) (*RespondToInteractionResponse, error)
+
+	// SendBackInteractionHandoffWithBodyWithResponse request with any body
+	SendBackInteractionHandoffWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SendBackInteractionHandoffResponse, error)
+
+	SendBackInteractionHandoffWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body SendBackInteractionHandoffJSONRequestBody, reqEditors ...RequestEditorFn) (*SendBackInteractionHandoffResponse, error)
+
+	// SubmitInteractionHandoffWithBodyWithResponse request with any body
+	SubmitInteractionHandoffWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SubmitInteractionHandoffResponse, error)
+
+	SubmitInteractionHandoffWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body SubmitInteractionHandoffJSONRequestBody, reqEditors ...RequestEditorFn) (*SubmitInteractionHandoffResponse, error)
+
+	// CastInteractionBallotWithBodyWithResponse request with any body
+	CastInteractionBallotWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CastInteractionBallotResponse, error)
+
+	CastInteractionBallotWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body CastInteractionBallotJSONRequestBody, reqEditors ...RequestEditorFn) (*CastInteractionBallotResponse, error)
+
+	// WithdrawInteractionBallotWithResponse request
+	WithdrawInteractionBallotWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*WithdrawInteractionBallotResponse, error)
 
 	// ClaimJobWithBodyWithResponse request with any body
 	ClaimJobWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ClaimJobResponse, error)
@@ -31328,6 +33727,16 @@ type ClientWithResponsesInterface interface {
 	RunJobActionWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, actionName ActionNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RunJobActionResponse, error)
 
 	RunJobActionWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, actionName ActionNameParam, body RunJobActionJSONRequestBody, reqEditors ...RequestEditorFn) (*RunJobActionResponse, error)
+
+	// CompleteCodeJobWithBodyWithResponse request with any body
+	CompleteCodeJobWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CompleteCodeJobResponse, error)
+
+	CompleteCodeJobWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body CompleteCodeJobJSONRequestBody, reqEditors ...RequestEditorFn) (*CompleteCodeJobResponse, error)
+
+	// YieldCodeJobWithBodyWithResponse request with any body
+	YieldCodeJobWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*YieldCodeJobResponse, error)
+
+	YieldCodeJobWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body YieldCodeJobJSONRequestBody, reqEditors ...RequestEditorFn) (*YieldCodeJobResponse, error)
 
 	// CompleteJobWithBodyWithResponse request with any body
 	CompleteJobWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CompleteJobResponse, error)
@@ -31770,6 +34179,55 @@ func (r CreateMessageResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r CreateMessageResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetNotificationPreferencesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *NotificationPreferences
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r GetNotificationPreferencesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetNotificationPreferencesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type UpdateNotificationPreferencesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *NotificationPreferences
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+}
+
+// Status returns HTTPResponse.Status
+func (r UpdateNotificationPreferencesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpdateNotificationPreferencesResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -32585,31 +35043,6 @@ func (r UpdateAgentResponse) StatusCode() int {
 	return 0
 }
 
-type GetAgentCapabilityManifestResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *AgentCapabilityManifest
-	JSON400      *BadRequest
-	JSON401      *Unauthorized
-	JSON404      *NotFound
-}
-
-// Status returns HTTPResponse.Status
-func (r GetAgentCapabilityManifestResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetAgentCapabilityManifestResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
 type ProvisionAgentInboxResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -32805,6 +35238,31 @@ func (r ReplaceSkillsResponse) StatusCode() int {
 	return 0
 }
 
+type GetAgentToolManifestResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *AgentToolManifest
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r GetAgentToolManifestResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetAgentToolManifestResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type ListToolkitAssignmentsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -32848,6 +35306,29 @@ func (r ReplaceToolkitsResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r ReplaceToolkitsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ListArtifactsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ArtifactListResponse
+	JSON401      *Unauthorized
+}
+
+// Status returns HTTPResponse.Status
+func (r ListArtifactsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListArtifactsResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -34155,6 +36636,55 @@ func (r GetInteractionResponse) StatusCode() int {
 	return 0
 }
 
+type AcceptInteractionHandoffResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Interaction
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r AcceptInteractionHandoffResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r AcceptInteractionHandoffResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ListInteractionBallotsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *InteractionBallotListResponse
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r ListInteractionBallotsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListInteractionBallotsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type CancelInteractionResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -34206,6 +36736,32 @@ func (r ClaimInteractionResponse) StatusCode() int {
 	return 0
 }
 
+type CloseInteractionVoteResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Interaction
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r CloseInteractionVoteResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CloseInteractionVoteResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type ReleaseInteractionResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -34251,6 +36807,108 @@ func (r RespondToInteractionResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r RespondToInteractionResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type SendBackInteractionHandoffResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Interaction
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r SendBackInteractionHandoffResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r SendBackInteractionHandoffResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type SubmitInteractionHandoffResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Interaction
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+	JSON409      *Conflict
+}
+
+// Status returns HTTPResponse.Status
+func (r SubmitInteractionHandoffResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r SubmitInteractionHandoffResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type CastInteractionBallotResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *InteractionBallot
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+	JSON409      *Conflict
+}
+
+// Status returns HTTPResponse.Status
+func (r CastInteractionBallotResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CastInteractionBallotResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type WithdrawInteractionBallotResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *InteractionBallot
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r WithdrawInteractionBallotResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r WithdrawInteractionBallotResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -34326,6 +36984,56 @@ func (r RunJobActionResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r RunJobActionResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type CompleteCodeJobResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+	JSON409      *Conflict
+}
+
+// Status returns HTTPResponse.Status
+func (r CompleteCodeJobResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CompleteCodeJobResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type YieldCodeJobResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+	JSON409      *Conflict
+}
+
+// Status returns HTTPResponse.Status
+func (r YieldCodeJobResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r YieldCodeJobResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -36936,6 +39644,32 @@ func (c *ClientWithResponses) CreateMessageWithResponse(ctx context.Context, bod
 	return ParseCreateMessageResponse(rsp)
 }
 
+// GetNotificationPreferencesWithResponse request returning *GetNotificationPreferencesResponse
+func (c *ClientWithResponses) GetNotificationPreferencesWithResponse(ctx context.Context, actorType GetNotificationPreferencesParamsActorType, actorId string, reqEditors ...RequestEditorFn) (*GetNotificationPreferencesResponse, error) {
+	rsp, err := c.GetNotificationPreferences(ctx, actorType, actorId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetNotificationPreferencesResponse(rsp)
+}
+
+// UpdateNotificationPreferencesWithBodyWithResponse request with arbitrary body returning *UpdateNotificationPreferencesResponse
+func (c *ClientWithResponses) UpdateNotificationPreferencesWithBodyWithResponse(ctx context.Context, actorType UpdateNotificationPreferencesParamsActorType, actorId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateNotificationPreferencesResponse, error) {
+	rsp, err := c.UpdateNotificationPreferencesWithBody(ctx, actorType, actorId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateNotificationPreferencesResponse(rsp)
+}
+
+func (c *ClientWithResponses) UpdateNotificationPreferencesWithResponse(ctx context.Context, actorType UpdateNotificationPreferencesParamsActorType, actorId string, body UpdateNotificationPreferencesJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateNotificationPreferencesResponse, error) {
+	rsp, err := c.UpdateNotificationPreferences(ctx, actorType, actorId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateNotificationPreferencesResponse(rsp)
+}
+
 // HeartbeatWebPresenceWithBodyWithResponse request with arbitrary body returning *HeartbeatWebPresenceResponse
 func (c *ClientWithResponses) HeartbeatWebPresenceWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*HeartbeatWebPresenceResponse, error) {
 	rsp, err := c.HeartbeatWebPresenceWithBody(ctx, contentType, body, reqEditors...)
@@ -37321,15 +40055,6 @@ func (c *ClientWithResponses) UpdateAgentWithResponse(ctx context.Context, proje
 	return ParseUpdateAgentResponse(rsp)
 }
 
-// GetAgentCapabilityManifestWithResponse request returning *GetAgentCapabilityManifestResponse
-func (c *ClientWithResponses) GetAgentCapabilityManifestWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, params *GetAgentCapabilityManifestParams, reqEditors ...RequestEditorFn) (*GetAgentCapabilityManifestResponse, error) {
-	rsp, err := c.GetAgentCapabilityManifest(ctx, project, id, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetAgentCapabilityManifestResponse(rsp)
-}
-
 // ProvisionAgentInboxWithResponse request returning *ProvisionAgentInboxResponse
 func (c *ClientWithResponses) ProvisionAgentInboxWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*ProvisionAgentInboxResponse, error) {
 	rsp, err := c.ProvisionAgentInbox(ctx, project, id, reqEditors...)
@@ -37418,6 +40143,15 @@ func (c *ClientWithResponses) ReplaceSkillsWithResponse(ctx context.Context, pro
 	return ParseReplaceSkillsResponse(rsp)
 }
 
+// GetAgentToolManifestWithResponse request returning *GetAgentToolManifestResponse
+func (c *ClientWithResponses) GetAgentToolManifestWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, params *GetAgentToolManifestParams, reqEditors ...RequestEditorFn) (*GetAgentToolManifestResponse, error) {
+	rsp, err := c.GetAgentToolManifest(ctx, project, id, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetAgentToolManifestResponse(rsp)
+}
+
 // ListToolkitAssignmentsWithResponse request returning *ListToolkitAssignmentsResponse
 func (c *ClientWithResponses) ListToolkitAssignmentsWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*ListToolkitAssignmentsResponse, error) {
 	rsp, err := c.ListToolkitAssignments(ctx, project, id, reqEditors...)
@@ -37442,6 +40176,15 @@ func (c *ClientWithResponses) ReplaceToolkitsWithResponse(ctx context.Context, p
 		return nil, err
 	}
 	return ParseReplaceToolkitsResponse(rsp)
+}
+
+// ListArtifactsWithResponse request returning *ListArtifactsResponse
+func (c *ClientWithResponses) ListArtifactsWithResponse(ctx context.Context, project ProjectHandleParam, params *ListArtifactsParams, reqEditors ...RequestEditorFn) (*ListArtifactsResponse, error) {
+	rsp, err := c.ListArtifacts(ctx, project, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListArtifactsResponse(rsp)
 }
 
 // DeleteArtifactWithResponse request returning *DeleteArtifactResponse
@@ -38097,6 +40840,32 @@ func (c *ClientWithResponses) GetInteractionWithResponse(ctx context.Context, pr
 	return ParseGetInteractionResponse(rsp)
 }
 
+// AcceptInteractionHandoffWithBodyWithResponse request with arbitrary body returning *AcceptInteractionHandoffResponse
+func (c *ClientWithResponses) AcceptInteractionHandoffWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AcceptInteractionHandoffResponse, error) {
+	rsp, err := c.AcceptInteractionHandoffWithBody(ctx, project, id, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAcceptInteractionHandoffResponse(rsp)
+}
+
+func (c *ClientWithResponses) AcceptInteractionHandoffWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body AcceptInteractionHandoffJSONRequestBody, reqEditors ...RequestEditorFn) (*AcceptInteractionHandoffResponse, error) {
+	rsp, err := c.AcceptInteractionHandoff(ctx, project, id, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAcceptInteractionHandoffResponse(rsp)
+}
+
+// ListInteractionBallotsWithResponse request returning *ListInteractionBallotsResponse
+func (c *ClientWithResponses) ListInteractionBallotsWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*ListInteractionBallotsResponse, error) {
+	rsp, err := c.ListInteractionBallots(ctx, project, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListInteractionBallotsResponse(rsp)
+}
+
 // CancelInteractionWithBodyWithResponse request with arbitrary body returning *CancelInteractionResponse
 func (c *ClientWithResponses) CancelInteractionWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CancelInteractionResponse, error) {
 	rsp, err := c.CancelInteractionWithBody(ctx, project, id, contentType, body, reqEditors...)
@@ -38123,6 +40892,23 @@ func (c *ClientWithResponses) ClaimInteractionWithResponse(ctx context.Context, 
 	return ParseClaimInteractionResponse(rsp)
 }
 
+// CloseInteractionVoteWithBodyWithResponse request with arbitrary body returning *CloseInteractionVoteResponse
+func (c *ClientWithResponses) CloseInteractionVoteWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CloseInteractionVoteResponse, error) {
+	rsp, err := c.CloseInteractionVoteWithBody(ctx, project, id, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCloseInteractionVoteResponse(rsp)
+}
+
+func (c *ClientWithResponses) CloseInteractionVoteWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body CloseInteractionVoteJSONRequestBody, reqEditors ...RequestEditorFn) (*CloseInteractionVoteResponse, error) {
+	rsp, err := c.CloseInteractionVote(ctx, project, id, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCloseInteractionVoteResponse(rsp)
+}
+
 // ReleaseInteractionWithResponse request returning *ReleaseInteractionResponse
 func (c *ClientWithResponses) ReleaseInteractionWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*ReleaseInteractionResponse, error) {
 	rsp, err := c.ReleaseInteraction(ctx, project, id, reqEditors...)
@@ -38147,6 +40933,66 @@ func (c *ClientWithResponses) RespondToInteractionWithResponse(ctx context.Conte
 		return nil, err
 	}
 	return ParseRespondToInteractionResponse(rsp)
+}
+
+// SendBackInteractionHandoffWithBodyWithResponse request with arbitrary body returning *SendBackInteractionHandoffResponse
+func (c *ClientWithResponses) SendBackInteractionHandoffWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SendBackInteractionHandoffResponse, error) {
+	rsp, err := c.SendBackInteractionHandoffWithBody(ctx, project, id, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSendBackInteractionHandoffResponse(rsp)
+}
+
+func (c *ClientWithResponses) SendBackInteractionHandoffWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body SendBackInteractionHandoffJSONRequestBody, reqEditors ...RequestEditorFn) (*SendBackInteractionHandoffResponse, error) {
+	rsp, err := c.SendBackInteractionHandoff(ctx, project, id, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSendBackInteractionHandoffResponse(rsp)
+}
+
+// SubmitInteractionHandoffWithBodyWithResponse request with arbitrary body returning *SubmitInteractionHandoffResponse
+func (c *ClientWithResponses) SubmitInteractionHandoffWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SubmitInteractionHandoffResponse, error) {
+	rsp, err := c.SubmitInteractionHandoffWithBody(ctx, project, id, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSubmitInteractionHandoffResponse(rsp)
+}
+
+func (c *ClientWithResponses) SubmitInteractionHandoffWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body SubmitInteractionHandoffJSONRequestBody, reqEditors ...RequestEditorFn) (*SubmitInteractionHandoffResponse, error) {
+	rsp, err := c.SubmitInteractionHandoff(ctx, project, id, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSubmitInteractionHandoffResponse(rsp)
+}
+
+// CastInteractionBallotWithBodyWithResponse request with arbitrary body returning *CastInteractionBallotResponse
+func (c *ClientWithResponses) CastInteractionBallotWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CastInteractionBallotResponse, error) {
+	rsp, err := c.CastInteractionBallotWithBody(ctx, project, id, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCastInteractionBallotResponse(rsp)
+}
+
+func (c *ClientWithResponses) CastInteractionBallotWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body CastInteractionBallotJSONRequestBody, reqEditors ...RequestEditorFn) (*CastInteractionBallotResponse, error) {
+	rsp, err := c.CastInteractionBallot(ctx, project, id, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCastInteractionBallotResponse(rsp)
+}
+
+// WithdrawInteractionBallotWithResponse request returning *WithdrawInteractionBallotResponse
+func (c *ClientWithResponses) WithdrawInteractionBallotWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*WithdrawInteractionBallotResponse, error) {
+	rsp, err := c.WithdrawInteractionBallot(ctx, project, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseWithdrawInteractionBallotResponse(rsp)
 }
 
 // ClaimJobWithBodyWithResponse request with arbitrary body returning *ClaimJobResponse
@@ -38190,6 +41036,40 @@ func (c *ClientWithResponses) RunJobActionWithResponse(ctx context.Context, proj
 		return nil, err
 	}
 	return ParseRunJobActionResponse(rsp)
+}
+
+// CompleteCodeJobWithBodyWithResponse request with arbitrary body returning *CompleteCodeJobResponse
+func (c *ClientWithResponses) CompleteCodeJobWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CompleteCodeJobResponse, error) {
+	rsp, err := c.CompleteCodeJobWithBody(ctx, project, id, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCompleteCodeJobResponse(rsp)
+}
+
+func (c *ClientWithResponses) CompleteCodeJobWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body CompleteCodeJobJSONRequestBody, reqEditors ...RequestEditorFn) (*CompleteCodeJobResponse, error) {
+	rsp, err := c.CompleteCodeJob(ctx, project, id, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCompleteCodeJobResponse(rsp)
+}
+
+// YieldCodeJobWithBodyWithResponse request with arbitrary body returning *YieldCodeJobResponse
+func (c *ClientWithResponses) YieldCodeJobWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*YieldCodeJobResponse, error) {
+	rsp, err := c.YieldCodeJobWithBody(ctx, project, id, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseYieldCodeJobResponse(rsp)
+}
+
+func (c *ClientWithResponses) YieldCodeJobWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body YieldCodeJobJSONRequestBody, reqEditors ...RequestEditorFn) (*YieldCodeJobResponse, error) {
+	rsp, err := c.YieldCodeJob(ctx, project, id, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseYieldCodeJobResponse(rsp)
 }
 
 // CompleteJobWithBodyWithResponse request with arbitrary body returning *CompleteJobResponse
@@ -39549,6 +42429,93 @@ func ParseCreateMessageResponse(rsp *http.Response) (*CreateMessageResponse, err
 
 	case rsp.StatusCode == 200:
 		// Content-type (text/event-stream) unsupported
+
+	}
+
+	return response, nil
+}
+
+// ParseGetNotificationPreferencesResponse parses an HTTP response from a GetNotificationPreferencesWithResponse call
+func ParseGetNotificationPreferencesResponse(rsp *http.Response) (*GetNotificationPreferencesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetNotificationPreferencesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest NotificationPreferences
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUpdateNotificationPreferencesResponse parses an HTTP response from a UpdateNotificationPreferencesWithResponse call
+func ParseUpdateNotificationPreferencesResponse(rsp *http.Response) (*UpdateNotificationPreferencesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpdateNotificationPreferencesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest NotificationPreferences
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	}
 
@@ -40994,53 +43961,6 @@ func ParseUpdateAgentResponse(rsp *http.Response) (*UpdateAgentResponse, error) 
 	return response, nil
 }
 
-// ParseGetAgentCapabilityManifestResponse parses an HTTP response from a GetAgentCapabilityManifestWithResponse call
-func ParseGetAgentCapabilityManifestResponse(rsp *http.Response) (*GetAgentCapabilityManifestResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetAgentCapabilityManifestResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest AgentCapabilityManifest
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest BadRequest
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
 // ParseProvisionAgentInboxResponse parses an HTTP response from a ProvisionAgentInboxWithResponse call
 func ParseProvisionAgentInboxResponse(rsp *http.Response) (*ProvisionAgentInboxResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -41382,6 +44302,53 @@ func ParseReplaceSkillsResponse(rsp *http.Response) (*ReplaceSkillsResponse, err
 	return response, nil
 }
 
+// ParseGetAgentToolManifestResponse parses an HTTP response from a GetAgentToolManifestWithResponse call
+func ParseGetAgentToolManifestResponse(rsp *http.Response) (*GetAgentToolManifestResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetAgentToolManifestResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest AgentToolManifest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseListToolkitAssignmentsResponse parses an HTTP response from a ListToolkitAssignmentsWithResponse call
 func ParseListToolkitAssignmentsResponse(rsp *http.Response) (*ListToolkitAssignmentsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -41463,6 +44430,39 @@ func ParseReplaceToolkitsResponse(rsp *http.Response) (*ReplaceToolkitsResponse,
 			return nil, err
 		}
 		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListArtifactsResponse parses an HTTP response from a ListArtifactsWithResponse call
+func ParseListArtifactsResponse(rsp *http.Response) (*ListArtifactsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListArtifactsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ArtifactListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
 
 	}
 
@@ -43792,6 +46792,93 @@ func ParseGetInteractionResponse(rsp *http.Response) (*GetInteractionResponse, e
 	return response, nil
 }
 
+// ParseAcceptInteractionHandoffResponse parses an HTTP response from a AcceptInteractionHandoffWithResponse call
+func ParseAcceptInteractionHandoffResponse(rsp *http.Response) (*AcceptInteractionHandoffResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &AcceptInteractionHandoffResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Interaction
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListInteractionBallotsResponse parses an HTTP response from a ListInteractionBallotsWithResponse call
+func ParseListInteractionBallotsResponse(rsp *http.Response) (*ListInteractionBallotsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListInteractionBallotsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest InteractionBallotListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseCancelInteractionResponse parses an HTTP response from a CancelInteractionWithResponse call
 func ParseCancelInteractionResponse(rsp *http.Response) (*CancelInteractionResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -43880,6 +46967,60 @@ func ParseClaimInteractionResponse(rsp *http.Response) (*ClaimInteractionRespons
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCloseInteractionVoteResponse parses an HTTP response from a CloseInteractionVoteWithResponse call
+func ParseCloseInteractionVoteResponse(rsp *http.Response) (*CloseInteractionVoteResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CloseInteractionVoteResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Interaction
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
@@ -43988,6 +47129,208 @@ func ParseRespondToInteractionResponse(rsp *http.Response) (*RespondToInteractio
 			return nil, err
 		}
 		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseSendBackInteractionHandoffResponse parses an HTTP response from a SendBackInteractionHandoffWithResponse call
+func ParseSendBackInteractionHandoffResponse(rsp *http.Response) (*SendBackInteractionHandoffResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &SendBackInteractionHandoffResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Interaction
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseSubmitInteractionHandoffResponse parses an HTTP response from a SubmitInteractionHandoffWithResponse call
+func ParseSubmitInteractionHandoffResponse(rsp *http.Response) (*SubmitInteractionHandoffResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &SubmitInteractionHandoffResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Interaction
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCastInteractionBallotResponse parses an HTTP response from a CastInteractionBallotWithResponse call
+func ParseCastInteractionBallotResponse(rsp *http.Response) (*CastInteractionBallotResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CastInteractionBallotResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest InteractionBallot
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseWithdrawInteractionBallotResponse parses an HTTP response from a WithdrawInteractionBallotWithResponse call
+func ParseWithdrawInteractionBallotResponse(rsp *http.Response) (*WithdrawInteractionBallotResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &WithdrawInteractionBallotResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest InteractionBallot
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
 
 	}
 
@@ -44129,6 +47472,100 @@ func ParseRunJobActionResponse(rsp *http.Response) (*RunJobActionResponse, error
 			return nil, err
 		}
 		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCompleteCodeJobResponse parses an HTTP response from a CompleteCodeJobWithResponse call
+func ParseCompleteCodeJobResponse(rsp *http.Response) (*CompleteCodeJobResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CompleteCodeJobResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseYieldCodeJobResponse parses an HTTP response from a YieldCodeJobWithResponse call
+func ParseYieldCodeJobResponse(rsp *http.Response) (*YieldCodeJobResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &YieldCodeJobResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	}
 

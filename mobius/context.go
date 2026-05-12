@@ -210,7 +210,7 @@ func (c *executionContext) RequestInteraction(req InteractionRequest) (*api.Inte
 			Type: api.InteractionTargetType(req.Target.Type),
 			Id:   req.Target.ID,
 		},
-		Type:    api.InteractionType(req.Kind),
+		Kind:    api.InteractionKind(req.Kind),
 		Message: req.Message,
 	}
 	if req.SignalName != "" {
