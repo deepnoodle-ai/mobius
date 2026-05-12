@@ -1785,24 +1785,6 @@ func (e LLMGenerateResponseType) Valid() bool {
 	}
 }
 
-// Defines values for NotificationPreferencesActorType.
-const (
-	NotificationPreferencesActorTypeAgent NotificationPreferencesActorType = "agent"
-	NotificationPreferencesActorTypeUser  NotificationPreferencesActorType = "user"
-)
-
-// Valid indicates whether the value is a known member of the NotificationPreferencesActorType enum.
-func (e NotificationPreferencesActorType) Valid() bool {
-	switch e {
-	case NotificationPreferencesActorTypeAgent:
-		return true
-	case NotificationPreferencesActorTypeUser:
-		return true
-	default:
-		return false
-	}
-}
-
 // Defines values for ObservableEventType.
 const (
 	ObservableEventTypeObservableChanged          ObservableEventType = "observable.changed"
@@ -2889,24 +2871,6 @@ func (e UpdateTriggerTargetRequestKind) Valid() bool {
 	}
 }
 
-// Defines values for UserPresenceMode.
-const (
-	UserPresenceModeAppearOffline UserPresenceMode = "appear_offline"
-	UserPresenceModeAutomatic     UserPresenceMode = "automatic"
-)
-
-// Valid indicates whether the value is a known member of the UserPresenceMode enum.
-func (e UserPresenceMode) Valid() bool {
-	switch e {
-	case UserPresenceModeAppearOffline:
-		return true
-	case UserPresenceModeAutomatic:
-		return true
-	default:
-		return false
-	}
-}
-
 // Defines values for VoteEligibilityKind.
 const (
 	VoteEligibilityKindExplicit      VoteEligibilityKind = "explicit"
@@ -3354,42 +3318,6 @@ func (e WorkflowWaitEventConfigMatchMode) Valid() bool {
 	case WorkflowWaitEventConfigMatchModeExact:
 		return true
 	case WorkflowWaitEventConfigMatchModePrefix:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for GetNotificationPreferencesParamsActorType.
-const (
-	GetNotificationPreferencesParamsActorTypeAgent GetNotificationPreferencesParamsActorType = "agent"
-	GetNotificationPreferencesParamsActorTypeUser  GetNotificationPreferencesParamsActorType = "user"
-)
-
-// Valid indicates whether the value is a known member of the GetNotificationPreferencesParamsActorType enum.
-func (e GetNotificationPreferencesParamsActorType) Valid() bool {
-	switch e {
-	case GetNotificationPreferencesParamsActorTypeAgent:
-		return true
-	case GetNotificationPreferencesParamsActorTypeUser:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for UpdateNotificationPreferencesParamsActorType.
-const (
-	UpdateNotificationPreferencesParamsActorTypeAgent UpdateNotificationPreferencesParamsActorType = "agent"
-	UpdateNotificationPreferencesParamsActorTypeUser  UpdateNotificationPreferencesParamsActorType = "user"
-)
-
-// Valid indicates whether the value is a known member of the UpdateNotificationPreferencesParamsActorType enum.
-func (e UpdateNotificationPreferencesParamsActorType) Valid() bool {
-	switch e {
-	case UpdateNotificationPreferencesParamsActorTypeAgent:
-		return true
-	case UpdateNotificationPreferencesParamsActorTypeUser:
 		return true
 	default:
 		return false
@@ -6746,20 +6674,6 @@ type MarkChannelMessagesReadRequest struct {
 // Metadata Free-form JSON object for caller-defined metadata.
 type Metadata map[string]interface{}
 
-// NotificationPreferences Per-actor delivery defaults applied when an interaction does not specify a `delivery` override (PRD 077 §3.8). One row per (org, actor_type, actor_id) in v1.
-type NotificationPreferences struct {
-	ActorId   string                           `json:"actor_id"`
-	ActorType NotificationPreferencesActorType `json:"actor_type"`
-	Channels  *[]DeliveryChannel               `json:"channels,omitempty"`
-	CreatedAt *time.Time                       `json:"created_at,omitempty"`
-	Id        *string                          `json:"id,omitempty"`
-	OrgId     string                           `json:"org_id"`
-	UpdatedAt *time.Time                       `json:"updated_at,omitempty"`
-}
-
-// NotificationPreferencesActorType defines model for NotificationPreferences.ActorType.
-type NotificationPreferencesActorType string
-
 // Observable defines model for Observable.
 type Observable struct {
 	CreatedAt        time.Time                 `json:"created_at"`
@@ -7749,7 +7663,7 @@ type Skill struct {
 	// Frontmatter Original imported frontmatter preserved for round-tripping.
 	Frontmatter *map[string]interface{} `json:"frontmatter,omitempty"`
 
-	// Id Skill ID (TypeID `skl_...`).
+	// Id Skill ID (TypeID `skill_...`).
 	Id string `json:"id"`
 
 	// Instructions Markdown instructions loaded when the skill is active.
@@ -8260,7 +8174,7 @@ type Toolkit struct {
 	CreatedAt    time.Time            `json:"created_at"`
 	Description  *string              `json:"description,omitempty"`
 
-	// Id Toolkit ID (TypeID `tk_...`).
+	// Id Toolkit ID (TypeID `kit_...`).
 	Id        string        `json:"id"`
 	Name      string        `json:"name"`
 	OrgId     string        `json:"org_id"`
@@ -8700,11 +8614,6 @@ type UpdateGroupRequest struct {
 // UpdateGroupRequestRoutingPolicy Replacement routing policy, either `first_responder` or `all_members`. Affects future interactions only; in-flight interactions retain the snapshotted policy.
 type UpdateGroupRequestRoutingPolicy string
 
-// UpdateNotificationPreferencesRequest defines model for UpdateNotificationPreferencesRequest.
-type UpdateNotificationPreferencesRequest struct {
-	Channels []DeliveryChannel `json:"channels"`
-}
-
 // UpdateObservableRequest defines model for UpdateObservableRequest.
 type UpdateObservableRequest struct {
 	FreshnessConfig *ObservableFreshnessConfig `json:"freshness_config,omitempty"`
@@ -8818,11 +8727,6 @@ type UpdateTriggerTargetRequest struct {
 // UpdateTriggerTargetRequestKind Replacement kind. Changing kind requires the corresponding kind-specific fields to be updated in the same request.
 type UpdateTriggerTargetRequestKind string
 
-// UpdateUserPresencePreferencesRequest defines model for UpdateUserPresencePreferencesRequest.
-type UpdateUserPresencePreferencesRequest struct {
-	Mode UserPresenceMode `json:"mode"`
-}
-
 // UpdateWebhookRequest defines model for UpdateWebhookRequest.
 type UpdateWebhookRequest struct {
 	// Enabled Set to false to disable delivery without deleting the webhook.
@@ -8925,15 +8829,6 @@ type User struct {
 
 	// UpdatedAt Timestamp when this user record was last synced from Clerk.
 	UpdatedAt time.Time `json:"updated_at"`
-}
-
-// UserPresenceMode defines model for UserPresenceMode.
-type UserPresenceMode string
-
-// UserPresencePreferences defines model for UserPresencePreferences.
-type UserPresencePreferences struct {
-	Mode      UserPresenceMode `json:"mode"`
-	UpdatedAt time.Time        `json:"updated_at"`
 }
 
 // VoteEligibility Who is eligible to vote on this interaction. `explicit` lists voters directly; `group_snapshot` uses the interaction's target group snapshot.
@@ -9050,14 +8945,6 @@ type WaitDescriptorWaitSignal struct {
 
 // WaitDescriptorWaitSignalKind defines model for WaitDescriptorWaitSignal.Kind.
 type WaitDescriptorWaitSignalKind string
-
-// WebPresenceHeartbeatRequest defines model for WebPresenceHeartbeatRequest.
-type WebPresenceHeartbeatRequest struct {
-	LastActiveAt *time.Time `json:"last_active_at,omitempty"`
-	ProjectId    *string    `json:"project_id,omitempty"`
-	SessionId    string     `json:"session_id"`
-	Visible      *bool      `json:"visible,omitempty"`
-}
 
 // Webhook A project-level outgoing webhook subscription. When a subscribed event fires, Mobius POSTs the event payload to `url`.
 type Webhook struct {
@@ -10550,12 +10437,6 @@ type ListAuditLogsParams struct {
 	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
-// GetNotificationPreferencesParamsActorType defines parameters for GetNotificationPreferences.
-type GetNotificationPreferencesParamsActorType string
-
-// UpdateNotificationPreferencesParamsActorType defines parameters for UpdateNotificationPreferences.
-type UpdateNotificationPreferencesParamsActorType string
-
 // ListProjectsParams defines parameters for ListProjects.
 type ListProjectsParams struct {
 	// Search Prefix-match filter applied to project name and handle.
@@ -11246,12 +11127,6 @@ type ListWorkflowsParams struct {
 // CreateMessageJSONRequestBody defines body for CreateMessage for application/json ContentType.
 type CreateMessageJSONRequestBody = GenerateRequest
 
-// UpdateNotificationPreferencesJSONRequestBody defines body for UpdateNotificationPreferences for application/json ContentType.
-type UpdateNotificationPreferencesJSONRequestBody = UpdateNotificationPreferencesRequest
-
-// HeartbeatWebPresenceJSONRequestBody defines body for HeartbeatWebPresence for application/json ContentType.
-type HeartbeatWebPresenceJSONRequestBody = WebPresenceHeartbeatRequest
-
 // CreateProjectJSONRequestBody defines body for CreateProject for application/json ContentType.
 type CreateProjectJSONRequestBody = CreateProjectRequest
 
@@ -11503,9 +11378,6 @@ type UpdateWorkflowJSONRequestBody = UpdateWorkflowRequest
 
 // StartWorkflowRunJSONRequestBody defines body for StartWorkflowRun for application/json ContentType.
 type StartWorkflowRunJSONRequestBody = StartBoundRunRequest
-
-// UpdateCurrentUserPresencePreferencesJSONRequestBody defines body for UpdateCurrentUserPresencePreferences for application/json ContentType.
-type UpdateCurrentUserPresencePreferencesJSONRequestBody = UpdateUserPresencePreferencesRequest
 
 // Getter for additional properties for ActionAnnotationsResponse. Returns the specified
 // element and whether it was found
@@ -16244,19 +16116,6 @@ type ClientInterface interface {
 
 	CreateMessage(ctx context.Context, body CreateMessageJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetNotificationPreferences request
-	GetNotificationPreferences(ctx context.Context, actorType GetNotificationPreferencesParamsActorType, actorId string, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// UpdateNotificationPreferencesWithBody request with any body
-	UpdateNotificationPreferencesWithBody(ctx context.Context, actorType UpdateNotificationPreferencesParamsActorType, actorId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	UpdateNotificationPreferences(ctx context.Context, actorType UpdateNotificationPreferencesParamsActorType, actorId string, body UpdateNotificationPreferencesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// HeartbeatWebPresenceWithBody request with any body
-	HeartbeatWebPresenceWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	HeartbeatWebPresence(ctx context.Context, body HeartbeatWebPresenceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
 	// ListProjects request
 	ListProjects(ctx context.Context, params *ListProjectsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -17069,14 +16928,6 @@ type ClientInterface interface {
 
 	// GetWorkflowVersion request
 	GetWorkflowVersion(ctx context.Context, project ProjectHandleParam, id IDParam, version int, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// GetCurrentUserPresencePreferences request
-	GetCurrentUserPresencePreferences(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// UpdateCurrentUserPresencePreferencesWithBody request with any body
-	UpdateCurrentUserPresencePreferencesWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	UpdateCurrentUserPresencePreferences(ctx context.Context, body UpdateCurrentUserPresencePreferencesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
 func (c *Client) ListAuditLogs(ctx context.Context, params *ListAuditLogsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -17105,66 +16956,6 @@ func (c *Client) CreateMessageWithBody(ctx context.Context, contentType string, 
 
 func (c *Client) CreateMessage(ctx context.Context, body CreateMessageJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewCreateMessageRequest(c.Server, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) GetNotificationPreferences(ctx context.Context, actorType GetNotificationPreferencesParamsActorType, actorId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetNotificationPreferencesRequest(c.Server, actorType, actorId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) UpdateNotificationPreferencesWithBody(ctx context.Context, actorType UpdateNotificationPreferencesParamsActorType, actorId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateNotificationPreferencesRequestWithBody(c.Server, actorType, actorId, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) UpdateNotificationPreferences(ctx context.Context, actorType UpdateNotificationPreferencesParamsActorType, actorId string, body UpdateNotificationPreferencesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateNotificationPreferencesRequest(c.Server, actorType, actorId, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) HeartbeatWebPresenceWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewHeartbeatWebPresenceRequestWithBody(c.Server, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) HeartbeatWebPresence(ctx context.Context, body HeartbeatWebPresenceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewHeartbeatWebPresenceRequest(c.Server, body)
 	if err != nil {
 		return nil, err
 	}
@@ -20763,42 +20554,6 @@ func (c *Client) GetWorkflowVersion(ctx context.Context, project ProjectHandlePa
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetCurrentUserPresencePreferences(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetCurrentUserPresencePreferencesRequest(c.Server)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) UpdateCurrentUserPresencePreferencesWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateCurrentUserPresencePreferencesRequestWithBody(c.Server, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) UpdateCurrentUserPresencePreferences(ctx context.Context, body UpdateCurrentUserPresencePreferencesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateCurrentUserPresencePreferencesRequest(c.Server, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
 // NewListAuditLogsRequest generates requests for ListAuditLogs
 func NewListAuditLogsRequest(server string, params *ListAuditLogsParams) (*http.Request, error) {
 	var err error
@@ -21029,141 +20784,6 @@ func NewCreateMessageRequestWithBody(server string, contentType string, body io.
 	}
 
 	operationPath := fmt.Sprintf("/v1/messages")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("POST", queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewGetNotificationPreferencesRequest generates requests for GetNotificationPreferences
-func NewGetNotificationPreferencesRequest(server string, actorType GetNotificationPreferencesParamsActorType, actorId string) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "actor_type", actorType, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "actor_id", actorId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/notification-preferences/%s/%s", pathParam0, pathParam1)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("GET", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewUpdateNotificationPreferencesRequest calls the generic UpdateNotificationPreferences builder with application/json body
-func NewUpdateNotificationPreferencesRequest(server string, actorType UpdateNotificationPreferencesParamsActorType, actorId string, body UpdateNotificationPreferencesJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewUpdateNotificationPreferencesRequestWithBody(server, actorType, actorId, "application/json", bodyReader)
-}
-
-// NewUpdateNotificationPreferencesRequestWithBody generates requests for UpdateNotificationPreferences with any type of body
-func NewUpdateNotificationPreferencesRequestWithBody(server string, actorType UpdateNotificationPreferencesParamsActorType, actorId string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "actor_type", actorType, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "actor_id", actorId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/notification-preferences/%s/%s", pathParam0, pathParam1)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("PUT", queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewHeartbeatWebPresenceRequest calls the generic HeartbeatWebPresence builder with application/json body
-func NewHeartbeatWebPresenceRequest(server string, body HeartbeatWebPresenceJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewHeartbeatWebPresenceRequestWithBody(server, "application/json", bodyReader)
-}
-
-// NewHeartbeatWebPresenceRequestWithBody generates requests for HeartbeatWebPresence with any type of body
-func NewHeartbeatWebPresenceRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/presence/web/heartbeat")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -33796,73 +33416,6 @@ func NewGetWorkflowVersionRequest(server string, project ProjectHandleParam, id 
 	return req, nil
 }
 
-// NewGetCurrentUserPresencePreferencesRequest generates requests for GetCurrentUserPresencePreferences
-func NewGetCurrentUserPresencePreferencesRequest(server string) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/users/me/presence-preferences")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("GET", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewUpdateCurrentUserPresencePreferencesRequest calls the generic UpdateCurrentUserPresencePreferences builder with application/json body
-func NewUpdateCurrentUserPresencePreferencesRequest(server string, body UpdateCurrentUserPresencePreferencesJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewUpdateCurrentUserPresencePreferencesRequestWithBody(server, "application/json", bodyReader)
-}
-
-// NewUpdateCurrentUserPresencePreferencesRequestWithBody generates requests for UpdateCurrentUserPresencePreferences with any type of body
-func NewUpdateCurrentUserPresencePreferencesRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/users/me/presence-preferences")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("PUT", queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
 func (c *Client) applyEditors(ctx context.Context, req *http.Request, additionalEditors []RequestEditorFn) error {
 	for _, r := range c.RequestEditors {
 		if err := r(ctx, req); err != nil {
@@ -33913,19 +33466,6 @@ type ClientWithResponsesInterface interface {
 	CreateMessageWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateMessageResponse, error)
 
 	CreateMessageWithResponse(ctx context.Context, body CreateMessageJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateMessageResponse, error)
-
-	// GetNotificationPreferencesWithResponse request
-	GetNotificationPreferencesWithResponse(ctx context.Context, actorType GetNotificationPreferencesParamsActorType, actorId string, reqEditors ...RequestEditorFn) (*GetNotificationPreferencesResponse, error)
-
-	// UpdateNotificationPreferencesWithBodyWithResponse request with any body
-	UpdateNotificationPreferencesWithBodyWithResponse(ctx context.Context, actorType UpdateNotificationPreferencesParamsActorType, actorId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateNotificationPreferencesResponse, error)
-
-	UpdateNotificationPreferencesWithResponse(ctx context.Context, actorType UpdateNotificationPreferencesParamsActorType, actorId string, body UpdateNotificationPreferencesJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateNotificationPreferencesResponse, error)
-
-	// HeartbeatWebPresenceWithBodyWithResponse request with any body
-	HeartbeatWebPresenceWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*HeartbeatWebPresenceResponse, error)
-
-	HeartbeatWebPresenceWithResponse(ctx context.Context, body HeartbeatWebPresenceJSONRequestBody, reqEditors ...RequestEditorFn) (*HeartbeatWebPresenceResponse, error)
 
 	// ListProjectsWithResponse request
 	ListProjectsWithResponse(ctx context.Context, params *ListProjectsParams, reqEditors ...RequestEditorFn) (*ListProjectsResponse, error)
@@ -34739,14 +34279,6 @@ type ClientWithResponsesInterface interface {
 
 	// GetWorkflowVersionWithResponse request
 	GetWorkflowVersionWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, version int, reqEditors ...RequestEditorFn) (*GetWorkflowVersionResponse, error)
-
-	// GetCurrentUserPresencePreferencesWithResponse request
-	GetCurrentUserPresencePreferencesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetCurrentUserPresencePreferencesResponse, error)
-
-	// UpdateCurrentUserPresencePreferencesWithBodyWithResponse request with any body
-	UpdateCurrentUserPresencePreferencesWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateCurrentUserPresencePreferencesResponse, error)
-
-	UpdateCurrentUserPresencePreferencesWithResponse(ctx context.Context, body UpdateCurrentUserPresencePreferencesJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateCurrentUserPresencePreferencesResponse, error)
 }
 
 type ListAuditLogsResponse struct {
@@ -34792,79 +34324,6 @@ func (r CreateMessageResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r CreateMessageResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type GetNotificationPreferencesResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *NotificationPreferences
-	JSON401      *Unauthorized
-	JSON404      *NotFound
-}
-
-// Status returns HTTPResponse.Status
-func (r GetNotificationPreferencesResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetNotificationPreferencesResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type UpdateNotificationPreferencesResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *NotificationPreferences
-	JSON400      *BadRequest
-	JSON401      *Unauthorized
-	JSON403      *Forbidden
-}
-
-// Status returns HTTPResponse.Status
-func (r UpdateNotificationPreferencesResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r UpdateNotificationPreferencesResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type HeartbeatWebPresenceResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON400      *BadRequest
-	JSON401      *Unauthorized
-	JSON403      *Forbidden
-}
-
-// Status returns HTTPResponse.Status
-func (r HeartbeatWebPresenceResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r HeartbeatWebPresenceResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -40158,53 +39617,6 @@ func (r GetWorkflowVersionResponse) StatusCode() int {
 	return 0
 }
 
-type GetCurrentUserPresencePreferencesResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *UserPresencePreferences
-	JSON401      *Unauthorized
-}
-
-// Status returns HTTPResponse.Status
-func (r GetCurrentUserPresencePreferencesResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetCurrentUserPresencePreferencesResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type UpdateCurrentUserPresencePreferencesResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *UserPresencePreferences
-	JSON400      *BadRequest
-	JSON401      *Unauthorized
-}
-
-// Status returns HTTPResponse.Status
-func (r UpdateCurrentUserPresencePreferencesResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r UpdateCurrentUserPresencePreferencesResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
 // ListAuditLogsWithResponse request returning *ListAuditLogsResponse
 func (c *ClientWithResponses) ListAuditLogsWithResponse(ctx context.Context, params *ListAuditLogsParams, reqEditors ...RequestEditorFn) (*ListAuditLogsResponse, error) {
 	rsp, err := c.ListAuditLogs(ctx, params, reqEditors...)
@@ -40229,49 +39641,6 @@ func (c *ClientWithResponses) CreateMessageWithResponse(ctx context.Context, bod
 		return nil, err
 	}
 	return ParseCreateMessageResponse(rsp)
-}
-
-// GetNotificationPreferencesWithResponse request returning *GetNotificationPreferencesResponse
-func (c *ClientWithResponses) GetNotificationPreferencesWithResponse(ctx context.Context, actorType GetNotificationPreferencesParamsActorType, actorId string, reqEditors ...RequestEditorFn) (*GetNotificationPreferencesResponse, error) {
-	rsp, err := c.GetNotificationPreferences(ctx, actorType, actorId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetNotificationPreferencesResponse(rsp)
-}
-
-// UpdateNotificationPreferencesWithBodyWithResponse request with arbitrary body returning *UpdateNotificationPreferencesResponse
-func (c *ClientWithResponses) UpdateNotificationPreferencesWithBodyWithResponse(ctx context.Context, actorType UpdateNotificationPreferencesParamsActorType, actorId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateNotificationPreferencesResponse, error) {
-	rsp, err := c.UpdateNotificationPreferencesWithBody(ctx, actorType, actorId, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUpdateNotificationPreferencesResponse(rsp)
-}
-
-func (c *ClientWithResponses) UpdateNotificationPreferencesWithResponse(ctx context.Context, actorType UpdateNotificationPreferencesParamsActorType, actorId string, body UpdateNotificationPreferencesJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateNotificationPreferencesResponse, error) {
-	rsp, err := c.UpdateNotificationPreferences(ctx, actorType, actorId, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUpdateNotificationPreferencesResponse(rsp)
-}
-
-// HeartbeatWebPresenceWithBodyWithResponse request with arbitrary body returning *HeartbeatWebPresenceResponse
-func (c *ClientWithResponses) HeartbeatWebPresenceWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*HeartbeatWebPresenceResponse, error) {
-	rsp, err := c.HeartbeatWebPresenceWithBody(ctx, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseHeartbeatWebPresenceResponse(rsp)
-}
-
-func (c *ClientWithResponses) HeartbeatWebPresenceWithResponse(ctx context.Context, body HeartbeatWebPresenceJSONRequestBody, reqEditors ...RequestEditorFn) (*HeartbeatWebPresenceResponse, error) {
-	rsp, err := c.HeartbeatWebPresence(ctx, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseHeartbeatWebPresenceResponse(rsp)
 }
 
 // ListProjectsWithResponse request returning *ListProjectsResponse
@@ -42881,32 +42250,6 @@ func (c *ClientWithResponses) GetWorkflowVersionWithResponse(ctx context.Context
 	return ParseGetWorkflowVersionResponse(rsp)
 }
 
-// GetCurrentUserPresencePreferencesWithResponse request returning *GetCurrentUserPresencePreferencesResponse
-func (c *ClientWithResponses) GetCurrentUserPresencePreferencesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetCurrentUserPresencePreferencesResponse, error) {
-	rsp, err := c.GetCurrentUserPresencePreferences(ctx, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetCurrentUserPresencePreferencesResponse(rsp)
-}
-
-// UpdateCurrentUserPresencePreferencesWithBodyWithResponse request with arbitrary body returning *UpdateCurrentUserPresencePreferencesResponse
-func (c *ClientWithResponses) UpdateCurrentUserPresencePreferencesWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateCurrentUserPresencePreferencesResponse, error) {
-	rsp, err := c.UpdateCurrentUserPresencePreferencesWithBody(ctx, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUpdateCurrentUserPresencePreferencesResponse(rsp)
-}
-
-func (c *ClientWithResponses) UpdateCurrentUserPresencePreferencesWithResponse(ctx context.Context, body UpdateCurrentUserPresencePreferencesJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateCurrentUserPresencePreferencesResponse, error) {
-	rsp, err := c.UpdateCurrentUserPresencePreferences(ctx, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUpdateCurrentUserPresencePreferencesResponse(rsp)
-}
-
 // ParseListAuditLogsResponse parses an HTTP response from a ListAuditLogsWithResponse call
 func ParseListAuditLogsResponse(rsp *http.Response) (*ListAuditLogsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -42991,133 +42334,6 @@ func ParseCreateMessageResponse(rsp *http.Response) (*CreateMessageResponse, err
 
 	case rsp.StatusCode == 200:
 		// Content-type (text/event-stream) unsupported
-
-	}
-
-	return response, nil
-}
-
-// ParseGetNotificationPreferencesResponse parses an HTTP response from a GetNotificationPreferencesWithResponse call
-func ParseGetNotificationPreferencesResponse(rsp *http.Response) (*GetNotificationPreferencesResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetNotificationPreferencesResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest NotificationPreferences
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseUpdateNotificationPreferencesResponse parses an HTTP response from a UpdateNotificationPreferencesWithResponse call
-func ParseUpdateNotificationPreferencesResponse(rsp *http.Response) (*UpdateNotificationPreferencesResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &UpdateNotificationPreferencesResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest NotificationPreferences
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest BadRequest
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseHeartbeatWebPresenceResponse parses an HTTP response from a HeartbeatWebPresenceWithResponse call
-func ParseHeartbeatWebPresenceResponse(rsp *http.Response) (*HeartbeatWebPresenceResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &HeartbeatWebPresenceResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest BadRequest
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
 
 	}
 
@@ -52607,79 +51823,6 @@ func ParseGetWorkflowVersionResponse(rsp *http.Response) (*GetWorkflowVersionRes
 			return nil, err
 		}
 		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseGetCurrentUserPresencePreferencesResponse parses an HTTP response from a GetCurrentUserPresencePreferencesWithResponse call
-func ParseGetCurrentUserPresencePreferencesResponse(rsp *http.Response) (*GetCurrentUserPresencePreferencesResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetCurrentUserPresencePreferencesResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest UserPresencePreferences
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseUpdateCurrentUserPresencePreferencesResponse parses an HTTP response from a UpdateCurrentUserPresencePreferencesWithResponse call
-func ParseUpdateCurrentUserPresencePreferencesResponse(rsp *http.Response) (*UpdateCurrentUserPresencePreferencesResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &UpdateCurrentUserPresencePreferencesResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest UserPresencePreferences
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest BadRequest
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
 
 	}
 
