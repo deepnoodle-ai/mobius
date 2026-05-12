@@ -1,5 +1,4 @@
 {
   "worker_instance_id": "worker-abc",
-  "worker_session_token": "tok-1",
-  "attempt": 1
+  "lease_token": "lease-token-opaque"
 }

@@ -7,9 +7,9 @@ import { fileURLToPath } from "node:url";
 import type {
   JobClaim,
   JobClaimRequest,
-  JobCompleteRequest,
   JobFenceRequest,
   JobHeartbeat,
+  JobReportRequest,
 } from "../src/api/index.js";
 import { Client } from "../src/client.js";
 
@@ -144,32 +144,32 @@ test("contract: heartbeat_job_request sent verbatim", async () => {
   assert.deepStrictEqual(captured.last?.body, fixture);
 });
 
-test("contract: complete_job_request_success sent verbatim", async () => {
-  const fixture = readFixture<JobCompleteRequest>(
-    "complete_job_request_success.json",
+test("contract: report_job_request_success sent verbatim", async () => {
+  const fixture = readFixture<JobReportRequest>(
+    "report_job_request_success.json",
   );
   const captured: { last?: Captured } = {};
   const restore = installFakeFetch({ status: 204 }, captured);
   try {
-    await newClient().completeJob("job_test", fixture);
+    await newClient().reportJob("job_test", fixture);
   } finally {
     restore();
   }
   assert.equal(
     captured.last?.path,
-    `/v1/projects/${PROJECT}/jobs/job_test/complete`,
+    `/v1/projects/${PROJECT}/jobs/job_test/report`,
   );
   assert.deepStrictEqual(captured.last?.body, fixture);
 });
 
-test("contract: complete_job_request_failed sent verbatim", async () => {
-  const fixture = readFixture<JobCompleteRequest>(
-    "complete_job_request_failed.json",
+test("contract: report_job_request_failed sent verbatim", async () => {
+  const fixture = readFixture<JobReportRequest>(
+    "report_job_request_failed.json",
   );
   const captured: { last?: Captured } = {};
   const restore = installFakeFetch({ status: 204 }, captured);
   try {
-    await newClient().completeJob("job_test", fixture);
+    await newClient().reportJob("job_test", fixture);
   } finally {
     restore();
   }
@@ -204,8 +204,7 @@ test("contract: heartbeat_job_response parsed losslessly", async () => {
   try {
     heartbeat = await newClient().heartbeatJob("job_test", {
       worker_instance_id: "worker-abc",
-      worker_session_token: "test-session-token",
-      attempt: 1,
+      lease_token: "test-lease-token",
     });
   } finally {
     restore();

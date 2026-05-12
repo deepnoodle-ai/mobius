@@ -54,7 +54,7 @@ func registerChannelsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.AddChannelMemberWithResponse(ctx.Context(), p0, p1, body)
+			resp, err := client.AddChannelMemberWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1), body)
 			if err != nil {
 				return err
 			}
@@ -96,7 +96,7 @@ func registerChannelsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.AssociateChannelInteractionWithResponse(ctx.Context(), p0, p1, body)
+			resp, err := client.AssociateChannelInteractionWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1), body)
 			if err != nil {
 				return err
 			}
@@ -116,7 +116,7 @@ func registerChannelsCommands(app *cli.App) {
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			p2 := ctx.Arg(1)
-			resp, err := client.ClaimChannelInteractionWithResponse(ctx.Context(), p0, p1, p2)
+			resp, err := client.ClaimChannelInteractionWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1), p2)
 			if err != nil {
 				return err
 			}
@@ -127,7 +127,7 @@ func registerChannelsCommands(app *cli.App) {
 		Description("Create a channel").
 		Flags(
 			cli.Strings("associated-interaction-ids", "").Help("Existing same-project interaction IDs to link as the channel's purpose at creation time. Required w…"),
-			cli.String("completion-behavior", "").Help("Behavior to apply when all purpose-linked interactions are terminal."),
+			cli.String("completion-behavior", "").Help("completion-behavior"),
 			cli.String("display-name", "").Help("[required] Human-facing display name shown in the UI."),
 			cli.String("kind", "").Help("[required] Channel kind, either `dm` or `channel`. Cannot be changed after creation."),
 			cli.Strings("member-ids", "").Help("Optional list of user or agent IDs to add as members at creation time. All receive the `member` rol…"),
@@ -156,7 +156,7 @@ func registerChannelsCommands(app *cli.App) {
 				body.AssociatedInteractionIds = &v
 			}
 			if ctx.IsSet("completion-behavior") {
-				v := api.CreateChannelRequestCompletionBehavior(ctx.String("completion-behavior"))
+				v := api.ChannelCompletionBehavior(ctx.String("completion-behavior"))
 				body.CompletionBehavior = &v
 			}
 			if ctx.IsSet("display-name") {
@@ -202,7 +202,7 @@ func registerChannelsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.CreateChannelWithResponse(ctx.Context(), p0, body)
+			resp, err := client.CreateChannelWithResponse(ctx.Context(), api.ProjectHandleParam(p0), body)
 			if err != nil {
 				return err
 			}
@@ -221,7 +221,7 @@ func registerChannelsCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			resp, err := client.DeleteChannelWithResponse(ctx.Context(), p0, p1)
+			resp, err := client.DeleteChannelWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1))
 			if err != nil {
 				return err
 			}
@@ -240,7 +240,7 @@ func registerChannelsCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			resp, err := client.GetChannelWithResponse(ctx.Context(), p0, p1)
+			resp, err := client.GetChannelWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1))
 			if err != nil {
 				return err
 			}
@@ -280,7 +280,7 @@ func registerChannelsCommands(app *cli.App) {
 				v := api.LimitParam(ctx.Int("limit"))
 				params.Limit = &v
 			}
-			resp, err := client.ListChannelsWithResponse(ctx.Context(), p0, params)
+			resp, err := client.ListChannelsWithResponse(ctx.Context(), api.ProjectHandleParam(p0), params)
 			if err != nil {
 				return err
 			}
@@ -307,7 +307,7 @@ func registerChannelsCommands(app *cli.App) {
 				v := api.ListChannelInteractionsParamsRelation(ctx.String("relation"))
 				params.Relation = &v
 			}
-			resp, err := client.ListChannelInteractionsWithResponse(ctx.Context(), p0, p1, params)
+			resp, err := client.ListChannelInteractionsWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1), params)
 			if err != nil {
 				return err
 			}
@@ -339,7 +339,7 @@ func registerChannelsCommands(app *cli.App) {
 				v := api.LimitParam(ctx.Int("limit"))
 				params.Limit = &v
 			}
-			resp, err := client.ListChannelMembersWithResponse(ctx.Context(), p0, p1, params)
+			resp, err := client.ListChannelMembersWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1), params)
 			if err != nil {
 				return err
 			}
@@ -359,7 +359,7 @@ func registerChannelsCommands(app *cli.App) {
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			p2 := ctx.Arg(1)
-			resp, err := client.ReleaseChannelInteractionWithResponse(ctx.Context(), p0, p1, p2)
+			resp, err := client.ReleaseChannelInteractionWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1), p2)
 			if err != nil {
 				return err
 			}
@@ -387,7 +387,7 @@ func registerChannelsCommands(app *cli.App) {
 				v := api.RemoveChannelInteractionParamsRelation(ctx.String("relation"))
 				params.Relation = &v
 			}
-			resp, err := client.RemoveChannelInteractionWithResponse(ctx.Context(), p0, p1, p2, params)
+			resp, err := client.RemoveChannelInteractionWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1), p2, params)
 			if err != nil {
 				return err
 			}
@@ -407,7 +407,7 @@ func registerChannelsCommands(app *cli.App) {
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			p2 := ctx.Arg(1)
-			resp, err := client.RemoveChannelMemberWithResponse(ctx.Context(), p0, p1, p2)
+			resp, err := client.RemoveChannelMemberWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1), api.MemberId(p2))
 			if err != nil {
 				return err
 			}
@@ -452,7 +452,7 @@ func registerChannelsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.RespondToChannelInteractionWithResponse(ctx.Context(), p0, p1, p2, body)
+			resp, err := client.RespondToChannelInteractionWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1), p2, body)
 			if err != nil {
 				return err
 			}
@@ -512,7 +512,7 @@ func registerChannelsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.ShareChannelEntityWithResponse(ctx.Context(), p0, p1, body)
+			resp, err := client.ShareChannelEntityWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1), body)
 			if err != nil {
 				return err
 			}
@@ -523,7 +523,7 @@ func registerChannelsCommands(app *cli.App) {
 		Description("Update a channel").
 		Args("id").
 		Flags(
-			cli.String("completion-behavior", "").Help("Behavior to apply when all purpose-linked interactions are terminal."),
+			cli.String("completion-behavior", "").Help("Behavior to apply when every purpose-linked interaction is terminal."),
 			cli.String("display-name", "").Help("Updated display name."),
 			cli.Bool("private", "").Help("Toggle invite-only visibility."),
 			cli.String("purpose", "").Help("Channel purpose. `resolve_interactions` requires at least one purpose-linked interaction."),
@@ -546,7 +546,7 @@ func registerChannelsCommands(app *cli.App) {
 				return err
 			}
 			if ctx.IsSet("completion-behavior") {
-				v := api.UpdateChannelRequestCompletionBehavior(ctx.String("completion-behavior"))
+				v := api.ChannelCompletionBehavior(ctx.String("completion-behavior"))
 				body.CompletionBehavior = &v
 			}
 			if ctx.IsSet("display-name") {
@@ -577,7 +577,7 @@ func registerChannelsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.UpdateChannelWithResponse(ctx.Context(), p0, p1, body)
+			resp, err := client.UpdateChannelWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1), body)
 			if err != nil {
 				return err
 			}

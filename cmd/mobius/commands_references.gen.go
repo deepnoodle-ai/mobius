@@ -59,7 +59,7 @@ func registerReferencesCommands(app *cli.App) {
 				v := ctx.String("depends-on")
 				params.DependsOn = &v
 			}
-			resp, err := client.LookupReferencesWithResponse(ctx.Context(), p0, p1, params)
+			resp, err := client.LookupReferencesWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.ReferenceTypeParam(p1), params)
 			if err != nil {
 				return err
 			}
@@ -107,7 +107,7 @@ func registerReferencesCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.ResolveReferencesWithResponse(ctx.Context(), p0, p1, body)
+			resp, err := client.ResolveReferencesWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.ReferenceTypeParam(p1), body)
 			if err != nil {
 				return err
 			}

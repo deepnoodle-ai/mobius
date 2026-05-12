@@ -151,6 +151,16 @@ class InteractionTarget(BaseModel):
     )
 
 
+class ChannelCompletionBehavior(StrEnum):
+    """
+    Behavior to apply when every purpose-linked interaction is terminal.
+    """
+
+    none = 'none'
+    mark_inactive = 'mark_inactive'
+    archive = 'archive'
+
+
 class ChannelMessageSenderType(StrEnum):
     """
     Authenticated principal that posted the message, derived from the
@@ -227,16 +237,6 @@ class Purpose(StrEnum):
     resolve_interactions = 'resolve_interactions'
 
 
-class CompletionBehavior(StrEnum):
-    """
-    Behavior to apply when every purpose-linked interaction is terminal.
-    """
-
-    none = 'none'
-    mark_inactive = 'mark_inactive'
-    archive = 'archive'
-
-
 class Channel(BaseModel):
     """
     Project-scoped messaging room or direct-message thread.
@@ -272,10 +272,7 @@ class Channel(BaseModel):
         ...,
         description='`general` channels are ordinary rooms. `resolve_interactions` channels exist to resolve one or more purpose-linked interactions.',
     )
-    completion_behavior: CompletionBehavior = Field(
-        ...,
-        description='Behavior to apply when every purpose-linked interaction is terminal.',
-    )
+    completion_behavior: ChannelCompletionBehavior
     completed_at: AwareDatetime | None = Field(
         None, description='Set when this purpose-scoped channel has completed.'
     )
@@ -519,16 +516,6 @@ class Purpose1(StrEnum):
     resolve_interactions = 'resolve_interactions'
 
 
-class CompletionBehavior1(StrEnum):
-    """
-    Behavior to apply when all purpose-linked interactions are terminal.
-    """
-
-    none = 'none'
-    mark_inactive = 'mark_inactive'
-    archive = 'archive'
-
-
 class CreateChannelRequest(BaseModel):
     """
     Fields used to create a project channel or direct-message thread.
@@ -563,10 +550,7 @@ class CreateChannelRequest(BaseModel):
         None,
         description="Existing same-project interaction IDs to link as the channel's purpose at creation time. Required when `purpose` is `resolve_interactions`.",
     )
-    completion_behavior: CompletionBehavior1 = Field(
-        'none',
-        description='Behavior to apply when all purpose-linked interactions are terminal.',
-    )
+    completion_behavior: ChannelCompletionBehavior = 'none'
     tags: TagMap | None = Field(None, description='Initial tag set.')
 
 
@@ -594,10 +578,7 @@ class UpdateChannelRequest(BaseModel):
         None,
         description='Channel purpose. `resolve_interactions` requires at least one purpose-linked interaction.',
     )
-    completion_behavior: CompletionBehavior1 | None = Field(
-        'none',
-        description='Behavior to apply when all purpose-linked interactions are terminal.',
-    )
+    completion_behavior: ChannelCompletionBehavior | None = None
     tags: TagMap | None = Field(
         None,
         description='When supplied, replaces the user tag set on the channel. System tags (`mobius:*`) are preserved.',
@@ -1085,7 +1066,7 @@ class HttpSubscriberConsumer(BaseModel):
     )
     secret_ref: str | None = Field(
         None,
-        description='Reference to a project secret intended to sign deliveries. Forwarded to the deliverer as `X-Mobius-Secret-Ref` for forward compatibility; HMAC-SHA256 signing of the payload against the resolved plaintext is a follow-up.',
+        description="Reference to a project secret used to sign deliveries with HMAC-SHA256 over the raw callback request body (the exact bytes of the HTTP request body). Accepts `<name>` for the latest enabled version or `<name>:<version>` to pin a specific positive-integer version. The plaintext signing bytes are taken from the secret's `signing_key`, `secret`, or `hmac_secret` key — or the only key if exactly one is set. The hex signature is forwarded as `X-Mobius-Signature: sha256=<hex>` alongside `X-Mobius-Secret-Ref`, `X-Mobius-Secret-Version`, and a unix `X-Mobius-Timestamp`. When `secret_ref` resolution fails the dispatch is skipped rather than sent unsigned.",
     )
 
 
@@ -1098,7 +1079,7 @@ class Kind4(StrEnum):
 
 class Consumer(BaseModel):
     """
-    Polymorphic identifier of what is waiting on this interaction's resolution (PRD 077 §3.7). Replaces the previously special-cased `run_id` + `signal_name` pair. When `kind=run`, the legacy fields are also populated for compatibility. `http_subscriber` triggers a best-effort POST to `callback_url` when the interaction resolves; HMAC signing of the payload via the `secret_ref` is a follow-up — current callers should pin the `callback_url` to an authenticated endpoint until that lands.
+    Polymorphic identifier of what is waiting on this interaction's resolution (PRD 077 §3.7). Replaces the previously special-cased `run_id` + `signal_name` pair. When `kind=run`, the legacy fields are also populated for compatibility. `http_subscriber` triggers a best-effort POST to `callback_url` when the interaction resolves; when `secret_ref` is set, the raw request body is signed with HMAC-SHA256 against the resolved project secret and the signed dispatch carries `X-Mobius-Signature`, `X-Mobius-Secret-Ref`, `X-Mobius-Secret-Version`, and `X-Mobius-Timestamp`. Verifiers should check all four headers.
     """
 
     model_config = ConfigDict(
@@ -1362,9 +1343,11 @@ class Type7(StrEnum):
     set = 'set'
 
 
-class WorkflowCodeStepConfig(BaseModel):
+class WorkflowCodeSpec(BaseModel):
     """
-    Configuration for a code-handler step.
+    Configuration for a code workflow. Sibling shape to `WorkflowSpec.steps`: a workflow with `code` set delegates its control flow to a user-authored handler running on a worker (TypeScript today, with other runtimes to follow). The handler invokes step.run(), step.sleep(), step.waitForSignal() etc. via the SDK; each call is durably checkpointed against the run ledger so the handler replays deterministically across yield/resume cycles.
+
+    Code workflows do not use `steps`; the handler's runtime control flow is the graph.
     """
 
     model_config = ConfigDict(
@@ -1372,7 +1355,7 @@ class WorkflowCodeStepConfig(BaseModel):
     )
     handler: str = Field(
         ...,
-        description='Stable identifier the worker SDK registered the handler under (typically equal to the workflow definition name). The server emits jobs whose handler parameter equals this value; the worker dispatches the job to the matching handler.',
+        description='Stable identifier the worker SDK registered the handler under (typically equal to the workflow definition name). The server emits jobs whose `spec.code.handler` equals this value; the worker dispatches the job to the matching handler.',
         min_length=1,
     )
     runtime: str | None = Field(
@@ -1631,6 +1614,16 @@ class Type8(StrEnum):
     input = 'input'
 
 
+class CompletionBehavior(StrEnum):
+    """
+    Behavior to apply when all purpose-linked interactions are terminal.
+    """
+
+    none = 'none'
+    mark_inactive = 'mark_inactive'
+    archive = 'archive'
+
+
 class WorkflowInteractionDiscussionConfig(BaseModel):
     """
     Creates or reuses a project channel for the surrounding discussion while the interaction remains the typed outcome that resumes the workflow.
@@ -1659,8 +1652,8 @@ class WorkflowInteractionDiscussionConfig(BaseModel):
         description='Opening brief posted into the channel before the workflow parks.',
         min_length=1,
     )
-    completion_behavior: CompletionBehavior1 | None = Field(
-        'none',
+    completion_behavior: CompletionBehavior | None = Field(
+        None,
         description='Behavior to apply when all purpose-linked interactions are terminal.',
     )
     private: bool | None = Field(
@@ -2199,6 +2192,9 @@ class IntegrationEventFireMode(StrEnum):
 
 
 class IntegrationEventFireRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
     mode: IntegrationEventFireMode | None = None
     sample_id: str | None = Field(
         None,
@@ -3147,7 +3143,7 @@ class ReferenceResolveResponse(BaseModel):
 
 class JobClaimRequest(BaseModel):
     """
-    Body for `POST /jobs/claim`. Workers identify themselves with `worker_instance_id` (the row key on the workers page) plus a per-boot `worker_session_token` (the fence value stamped onto each claimed job). `concurrency_limit` is the configured capacity used by the saturation bar.
+    Body for `POST /jobs/claim`. Workers identify themselves with `worker_instance_id` (the row key on the workers page) plus a per-boot `worker_session_token`. The server returns an opaque `lease_token` on the claim that folds the session token and the claim attempt together; subsequent fenced calls echo the `lease_token`, not the raw session token.
     """
 
     model_config = ConfigDict(
@@ -3159,7 +3155,7 @@ class JobClaimRequest(BaseModel):
     )
     worker_session_token: str = Field(
         ...,
-        description='Per-boot token generated by the SDK on Worker construction. Stamped onto the claimed job and re-presented as the lease fence on heartbeat / events / complete. Opaque to operators.',
+        description='Per-boot token generated by the SDK on Worker construction. Stamped onto the claimed job and folded into the `lease_token` returned in the `JobClaim`. Opaque to operators.',
     )
     concurrency_limit: int = Field(
         ...,
@@ -3178,7 +3174,11 @@ class JobClaimRequest(BaseModel):
     )
     actions: list[str] | None = Field(
         None,
-        description='Action names this worker can execute. When provided, only jobs whose `action` is in this list are returned. When empty, action filtering is skipped.',
+        description='Action names this worker can execute. When provided, only jobs whose `spec.kind == "action"` and whose `spec.name` is in this list are returned. When empty, action filtering is skipped.',
+    )
+    handlers: list[str] | None = Field(
+        None,
+        description='Code handler IDs this worker has registered. When provided, only jobs whose `spec.kind == "code"` and whose `spec.handler` is in this list are returned. When empty, no code jobs are claimed unless `actions` is also empty (in which case all matching queue/action criteria apply). Code-mode SDKs always populate this with the set of handlers they have registered.',
     )
     wait_seconds: int | None = Field(
         None,
@@ -3188,50 +3188,32 @@ class JobClaimRequest(BaseModel):
     )
 
 
-class JobClaim(BaseModel):
+class Kind7(StrEnum):
+    action = 'action'
+
+
+class JobActionSpec(BaseModel):
     """
-    Lease handed to a worker after a successful claim. It contains the action to run, resolved parameters, and fencing values the worker must echo on heartbeat, event, and complete calls.
+    Action-spec job description.
     """
 
     model_config = ConfigDict(
         extra='forbid',
     )
-    job_id: str = Field(
+    kind: Literal['action']
+    name: str = Field(
         ...,
-        description='Job ID — use as the `{id}` path parameter for heartbeat, complete, and events.',
+        description='Action name the worker must execute for this step.',
+        min_length=1,
     )
-    run_id: str = Field(..., description='Parent workflow run ID.')
-    workflow_name: str = Field(
-        ..., description='Handle of the workflow definition that owns this run.'
-    )
-    step_name: str = Field(
-        ...,
-        description='Step label from the workflow spec — used for UI and interaction signal name derivation.',
-    )
-    action: str = Field(
-        ...,
-        description='Action name the worker must execute for this step.\n\nThe reserved value `mobius.code.invoke` identifies a code-mode workflow invocation: the worker dispatches to the registered code handler named by `parameters._mobius_code_handler` and completes via `code-completion` / `code-yield` instead of `complete`. See `CodeInvokeJobParameters` for the parameter shape.',
-    )
-    agent_id: str | None = Field(
+    parameters: dict[str, Any] | None = Field(
         None,
-        description='Agent that should execute this job, when the step is agent-targeted.',
+        description='Input parameters for this step, resolved from the workflow spec and prior step outputs.',
     )
-    agent_session_id: str | None = Field(
-        None, description='Agent session the job was routed to, when applicable.'
-    )
-    parameters: dict[str, Any] = Field(
-        ...,
-        description='Input parameters for this step, resolved from the workflow spec and prior step outputs.\n\nWhen `action == "mobius.code.invoke"`, parameters follow the `CodeInvokeJobParameters` shape — they carry the registered handler id, the run inputs, and the replay history rather than spec-authored values.',
-    )
-    attempt: int = Field(
-        ...,
-        description='1-based attempt counter. Incremented on each automatic retry. Include in the fence for all subsequent heartbeat and complete calls.',
-    )
-    queue: str = Field(..., description='Queue name the job was claimed from.')
-    heartbeat_interval_seconds: int | None = Field(
-        None,
-        description='Recommended heartbeat interval in seconds. Workers should call `POST /v1/projects/{project}/jobs/{id}/heartbeat` at this cadence to keep the lease alive. Typically 30 seconds.',
-    )
+
+
+class Kind8(StrEnum):
+    code = 'code'
 
 
 class JobHeartbeatDirectives(BaseModel):
@@ -3244,7 +3226,7 @@ class JobHeartbeatDirectives(BaseModel):
     )
     should_cancel: bool = Field(
         False,
-        description='When true, the run has received a cancellation request. The worker must stop processing immediately and call complete with `status: failed`.',
+        description='When true, the run has received a cancellation request. The worker must stop processing immediately and post a `fail` outcome via the report endpoint.',
     )
 
 
@@ -3265,7 +3247,7 @@ class JobHeartbeat(BaseModel):
 
 class JobFenceRequest(BaseModel):
     """
-    Lease fence presented on heartbeat. The worker presents the per-boot `worker_session_token` from the original claim along with the same `attempt`; the server compares the token against the job's `claimed_by_session_token` and returns 409 lease-lost on mismatch.
+    Lease fence presented on heartbeat / events. The worker echoes the `lease_token` from the original claim; the server unfolds the embedded session token + attempt and rejects with 409 lease-lost on mismatch.
     """
 
     model_config = ConfigDict(
@@ -3275,63 +3257,192 @@ class JobFenceRequest(BaseModel):
         None,
         description='Echo of the `worker_instance_id` from the claim. Logged for audit; not the fence value.',
     )
-    worker_session_token: str = Field(
+    lease_token: str = Field(
         ...,
-        description="Per-boot token from the original claim. Compared against the job's `claimed_by_session_token`; mismatch returns 409 lease-lost.",
+        description='Opaque lease fence value from the original claim. Mismatch returns 409 lease-lost.',
     )
-    attempt: int = Field(
-        ..., description='Must match the `attempt` from the original claim.', ge=0
-    )
+
+
+class Kind9(StrEnum):
+    step_done = 'step_done'
 
 
 class Status3(StrEnum):
-    """
-    Terminal status for this job attempt: `completed` or `failed`. `failed` triggers the workflow engine's retry logic if `attempt < max_attempts`.
-    """
-
     completed = 'completed'
     failed = 'failed'
+    skipped = 'skipped'
 
 
-class JobCompleteRequest(BaseModel):
+class OutcomeStepDone(BaseModel):
     """
-    Terminal report for a claimed job. The worker presents the per-boot `worker_session_token` from the original claim along with the same `attempt`; mismatch returns 409 lease-lost.
+    A durable child step the handler executed. Code-spec jobs only. Each `step_done` becomes one row in the run-step ledger and is replayed back to the handler on the next invocation.
     """
 
     model_config = ConfigDict(
         extra='forbid',
     )
-    worker_instance_id: str | None = Field(
-        None, description="Echo of the claim's `worker_instance_id`. Audit only."
-    )
-    worker_session_token: str = Field(
+    kind: Literal['step_done']
+    step_id: str = Field(
         ...,
-        description="Per-boot token from the claim. Compared against the job's `claimed_by_session_token`; mismatch returns 409 lease-lost.",
+        description='Deterministic identifier the handler passed to step.run("id", fn). Replay key.',
+        min_length=1,
     )
-    attempt: int = Field(
-        ..., description='Must match the `attempt` from the original claim.', ge=0
-    )
-    status: Status3 = Field(
-        ...,
-        description="Terminal status for this job attempt: `completed` or `failed`. `failed` triggers the workflow engine's retry logic if `attempt < max_attempts`.",
-    )
-    result_b64: str | None = Field(
+    status: Status3
+    result: Any | None = Field(
         None,
-        description="Base64-encoded (standard encoding) bytes representing the job's output. The workflow engine decodes this and may pass it as input to downstream steps. Omit if the step produces no output.",
+        description='Value the handler should observe on replay. JSON-shape; freely structured by the handler. Omit for `failed` / `skipped`.',
     )
     error_type: str | None = Field(
-        None,
-        description='Short error class identifier (e.g. "TimeoutError"). Used for observability and retry classification. Only relevant when `status: failed`.',
+        None, description='Error class for a failed sub-step.'
     )
     error_message: str | None = Field(
-        None,
-        description='Human-readable error detail. Only relevant for failed status.',
+        None, description='Human-readable error detail for a failed sub-step.'
+    )
+    attempt: int | None = Field(
+        None, description='Worker-side per-step retry counter. 0 for first try.', ge=0
     )
 
 
-class Kind7(StrEnum):
+class Kind10(StrEnum):
+    wait_observed = 'wait_observed'
+
+
+class WaitKind(StrEnum):
     """
-    Sub-step kind. Only `run` carries a meaningful `result`; wait kinds capture "wait completed" markers.
+    Kind of the wait that completed.
+    """
+
+    sleep = 'sleep'
+    wait_signal = 'wait_signal'
+    wait_event = 'wait_event'
+    interaction = 'interaction'
+    pause = 'pause'
+
+
+class OutcomeWaitObserved(BaseModel):
+    """
+    A previously-parked wait the handler observed completing during replay. Code-spec jobs only. The status is typically `completed`; `failed` is used when the wait raised a timeout the handler is surfacing back through the ledger.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    kind: Literal['wait_observed']
+    step_id: str = Field(
+        ...,
+        description='Deterministic identifier the handler passed to the wait helper.',
+        min_length=1,
+    )
+    wait_kind: WaitKind = Field(..., description='Kind of the wait that completed.')
+    status: Status3
+    result: Any | None = Field(
+        None,
+        description='Payload delivered by the wait (e.g. signal payload, interaction response). Omit when not applicable (sleep, pause).',
+    )
+    error_type: str | None = None
+    error_message: str | None = None
+    attempt: int | None = Field(None, ge=0)
+
+
+class Kind11(StrEnum):
+    complete = 'complete'
+
+
+class OutcomeComplete(BaseModel):
+    """
+    Terminal: the attempt finished successfully. For action jobs, `result_b64` becomes the step output. For code jobs, `result_b64` becomes the run output.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    kind: Literal['complete']
+    result_b64: str | None = Field(
+        None,
+        description='Base64-encoded (standard encoding) bytes representing the handler/action result. Decoded by the engine and stored on the job (action) or the run (code).',
+    )
+
+
+class Kind12(StrEnum):
+    fail = 'fail'
+
+
+class OutcomeFail(BaseModel):
+    """
+    Terminal: the attempt failed. For action jobs this triggers retry if the spec allows; for code jobs the run terminally fails.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    kind: Literal['fail']
+    error_type: str = Field(
+        ...,
+        description='Short error class identifier (e.g. "TimeoutError").',
+        min_length=1,
+    )
+    error_message: str = Field(..., description='Human-readable error detail.')
+
+
+class Kind13(StrEnum):
+    suspend = 'suspend'
+
+
+class Kind14(StrEnum):
+    sleep = 'sleep'
+
+
+class WaitDescriptorSleep(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    kind: Literal['sleep']
+    sleep: WorkflowSleepConfig
+
+
+class Kind15(StrEnum):
+    wait_signal = 'wait_signal'
+
+
+class WaitDescriptorWaitSignal(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    kind: Literal['wait_signal']
+    wait_signal: WorkflowWaitSignalConfig
+
+
+class Kind16(StrEnum):
+    wait_event = 'wait_event'
+
+
+class WaitDescriptorWaitEvent(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    kind: Literal['wait_event']
+    wait_event: WorkflowWaitEventConfig
+
+
+class Kind17(StrEnum):
+    interaction = 'interaction'
+
+
+class Kind18(StrEnum):
+    pause = 'pause'
+
+
+class WaitDescriptorPause(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    kind: Literal['pause']
+    pause: WorkflowPauseConfig | None = None
+
+
+class Kind19(StrEnum):
+    """
+    Sub-step kind. `run` carries the value `step.run` returned; wait kinds capture the payload (signal, event, interaction response) the wait delivered, or are markers for kinds without a payload (sleep, pause).
     """
 
     run = 'run'
@@ -3342,15 +3453,9 @@ class Kind7(StrEnum):
     pause = 'pause'
 
 
-class Status4(StrEnum):
-    completed = 'completed'
-    failed = 'failed'
-    skipped = 'skipped'
-
-
 class CodeStepCompletion(BaseModel):
     """
-    One durable sub-step the handler executed (or a wait it observed completing). Replayed back to the handler on the next invocation so step.run() / step.waitFor*() calls fast-forward without re-executing the user-supplied function.
+    One entry in the replay history of a code-spec job. Mirrors what the worker reported via a previous `step_done` or `wait_observed` outcome — the SDK fast-forwards through these on replay so cached `step.run` / `step.waitFor*` calls return without re-executing the user-supplied function.
     """
 
     model_config = ConfigDict(
@@ -3361,78 +3466,20 @@ class CodeStepCompletion(BaseModel):
         description='Deterministic identifier the handler passed to step.run() (or step.sleep, step.waitForSignal, etc.). Replay key.',
         min_length=1,
     )
-    kind: Kind7 = Field(
+    kind: Kind19 = Field(
         ...,
-        description='Sub-step kind. Only `run` carries a meaningful `result`; wait kinds capture "wait completed" markers.',
+        description='Sub-step kind. `run` carries the value `step.run` returned; wait kinds capture the payload (signal, event, interaction response) the wait delivered, or are markers for kinds without a payload (sleep, pause).',
     )
-    status: Status4
+    status: Status3
     result: Any | None = Field(
         None,
-        description='Value the handler should observe on replay. JSON-shape; kind-specific (handler return value for `run`, signal payload for `wait_signal`, etc.).',
+        description='Value the handler should observe on replay. JSON-shape; kind-specific.',
     )
-    error_type: str | None = Field(
-        None, description='Error class for a failed sub-step.'
-    )
-    error_message: str | None = Field(None, description='Human-readable error detail.')
+    error_type: str | None = None
+    error_message: str | None = None
     attempt: int | None = Field(
         None, description='Worker-side per-step retry counter. 0 for first try.', ge=0
     )
-
-
-class Kind8(StrEnum):
-    sleep = 'sleep'
-
-
-class CodeYieldSleepSuspension(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    step_id: str = Field(..., min_length=1)
-    kind: Literal['sleep']
-    sleep: WorkflowSleepConfig
-
-
-class Kind9(StrEnum):
-    wait_signal = 'wait_signal'
-
-
-class CodeYieldWaitSignalSuspension(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    step_id: str = Field(..., min_length=1)
-    kind: Literal['wait_signal']
-    wait_signal: WorkflowWaitSignalConfig
-
-
-class Kind10(StrEnum):
-    wait_event = 'wait_event'
-
-
-class CodeYieldWaitEventSuspension(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    step_id: str = Field(..., min_length=1)
-    kind: Literal['wait_event']
-    wait_event: WorkflowWaitEventConfig
-
-
-class Kind11(StrEnum):
-    interaction = 'interaction'
-
-
-class Kind12(StrEnum):
-    pause = 'pause'
-
-
-class CodeYieldPauseSuspension(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    step_id: str = Field(..., min_length=1)
-    kind: Literal['pause']
-    pause: WorkflowPauseConfig | None = None
 
 
 class RunActionRequest(BaseModel):
@@ -3532,7 +3579,7 @@ class TriggerFireTargetStatus(StrEnum):
     skipped = 'skipped'
 
 
-class Kind13(StrEnum):
+class Kind20(StrEnum):
     """
     Discriminates the target's effect. `launch_run` starts a new workflow run; `signal_run` signals an existing run.
     """
@@ -3556,7 +3603,7 @@ class TriggerTargetRunSelector(BaseModel):
     )
 
 
-class Kind14(StrEnum):
+class Kind21(StrEnum):
     launch_run = 'launch_run'
     signal_run = 'signal_run'
 
@@ -3569,7 +3616,7 @@ class CreateTriggerTargetRequest(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    kind: Kind14 = 'launch_run'
+    kind: Kind21 = 'launch_run'
     workflow_id: str | None = Field(
         None,
         description='(launch_run only) ID of the workflow definition to run. Required when `kind=launch_run`.',
@@ -3598,7 +3645,7 @@ class CreateTriggerTargetRequest(BaseModel):
     )
 
 
-class Kind15(StrEnum):
+class Kind22(StrEnum):
     """
     Replacement kind. Changing kind requires the corresponding kind-specific fields to be updated in the same request.
     """
@@ -3615,7 +3662,7 @@ class UpdateTriggerTargetRequest(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    kind: Kind15 | None = Field(
+    kind: Kind22 | None = Field(
         None,
         description='Replacement kind. Changing kind requires the corresponding kind-specific fields to be updated in the same request.',
     )
@@ -3644,7 +3691,7 @@ class UpdateTriggerTargetRequest(BaseModel):
     )
 
 
-class Kind16(StrEnum):
+class Kind23(StrEnum):
     """
     Effect kind of the evaluated target. `launch_run` started (or attempted) a new workflow run; `signal_run` delivered (or attempted to deliver) a signal to an existing run. Lets clients reliably branch on `kind` instead of inspecting optional fields like `workflow_id` or `external_id_resolved`.
     """
@@ -3664,7 +3711,7 @@ class TriggerFireTargetResult(BaseModel):
     target_id: str = Field(
         ..., description='ID of the trigger target that was evaluated.'
     )
-    kind: Kind16 = Field(
+    kind: Kind23 = Field(
         ...,
         description='Effect kind of the evaluated target. `launch_run` started (or attempted) a new workflow run; `signal_run` delivered (or attempted to deliver) a signal to an existing run. Lets clients reliably branch on `kind` instead of inspecting optional fields like `workflow_id` or `external_id_resolved`.',
     )
@@ -3889,7 +3936,7 @@ class TriggerFireListResponse(BaseModel):
     has_more: bool = Field(..., description='Whether additional pages are available.')
 
 
-class Kind17(StrEnum):
+class Kind24(StrEnum):
     """
     Discriminator value — must be `schedule`.
     """
@@ -3928,7 +3975,7 @@ class CreateScheduleTriggerRequest(BaseModel):
     tags: TagMap | None = Field(None, description='Initial tag set.')
 
 
-class Kind18(StrEnum):
+class Kind25(StrEnum):
     """
     Discriminator value — must be `webhook`.
     """
@@ -3967,7 +4014,7 @@ class CreateWebhookTriggerRequest(BaseModel):
     tags: TagMap | None = Field(None, description='Initial tag set.')
 
 
-class Kind19(StrEnum):
+class Kind26(StrEnum):
     """
     Discriminator value — must be `event`.
     """
@@ -3975,7 +4022,7 @@ class Kind19(StrEnum):
     event = 'event'
 
 
-class Kind20(StrEnum):
+class Kind27(StrEnum):
     """
     Discriminator value — must be `channel_message`.
     """
@@ -4015,7 +4062,7 @@ class CreateChannelMessageTriggerRequest(BaseModel):
     tags: TagMap | None = Field(None, description='Initial tag set.')
 
 
-class Kind21(StrEnum):
+class Kind28(StrEnum):
     """
     Discriminator value — must be `table_row`.
     """
@@ -4054,7 +4101,7 @@ class CreateTableRowTriggerRequest(BaseModel):
     tags: TagMap | None = Field(None, description='Initial tag set.')
 
 
-class Kind22(StrEnum):
+class Kind29(StrEnum):
     """
     Discriminator value — must be `email`.
     """
@@ -4120,7 +4167,7 @@ class InstanceStatus(StrEnum):
     draining = 'draining'
 
 
-class Status5(StrEnum):
+class Status6(StrEnum):
     """
     Current job lifecycle state.
     """
@@ -4139,7 +4186,7 @@ class WorkerSessionJobRef(BaseModel):
     run_id: str = Field(..., description='Workflow run that owns the job.')
     step_name: str = Field(..., description='Workflow step name.')
     action: str = Field(..., description='Action executed by the worker.')
-    status: Status5 = Field(..., description='Current job lifecycle state.')
+    status: Status6 = Field(..., description='Current job lifecycle state.')
     claimed_at: AwareDatetime | None = Field(
         None, description='Timestamp when the worker claimed the job.'
     )
@@ -5349,7 +5396,7 @@ class Source3(StrEnum):
     project = 'project'
 
 
-class Status6(StrEnum):
+class Status7(StrEnum):
     active = 'active'
     archived = 'archived'
 
@@ -5365,7 +5412,7 @@ class Toolkit(BaseModel):
     slug: str | None = None
     description: str | None = None
     source: Source3
-    status: Status6
+    status: Status7
     action_grants: list[ToolkitActionGrant] = Field(
         ...,
         description='Action selectors granted by this toolkit. Each entry is matched against the unified action catalog at manifest-resolution time.',
@@ -5436,7 +5483,7 @@ class Skill(BaseModel):
     slug: str | None = None
     description: str | None = None
     source: Source4
-    status: Status6
+    status: Status7
     instructions: str = Field(
         ..., description='Markdown instructions loaded when the skill is active.'
     )
@@ -5668,7 +5715,7 @@ class UpdateAgentRequest(BaseModel):
         None, description='Replacement configuration blob.'
     )
     status: AgentStatus | None = Field(
-        None, description='Replacement agent status: `active` or `disabled`.'
+        None, description='Replacement agent status: `active` or `inactive`.'
     )
     tags: TagMap | None = Field(
         None,
@@ -6990,33 +7037,6 @@ class WorkflowPauseStep(BaseModel):
     )
 
 
-class WorkflowCodeStep(BaseModel):
-    """
-    Delegates the entire workflow's control flow to a user-authored handler running on a worker (TypeScript today, with other runtimes to follow). The handler invokes step.run(), step.sleep(), step.waitForSignal() etc. via the SDK; each call is durably checkpointed against the run ledger so the handler replays deterministically across yield/resume cycles.
-
-    A code workflow contains exactly one step (this one) — the handler's runtime control flow is the graph. Authors cannot mix code steps with the declarative step shapes: `next`, `each`, `retry`, `catch`, `parameters`, etc. are rejected by validation.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    name: str = Field(
-        ...,
-        description='Unique step name within the workflow, used for routing and logging.',
-    )
-    description: str | None = Field(
-        None,
-        description='Optional human-readable description of what this handler does.',
-    )
-    layout: WorkflowStepLayout | None = Field(
-        None,
-        description='Optional visual-editor position hint; ignored by the execution engine.',
-    )
-    code: WorkflowCodeStepConfig = Field(
-        ..., description='Identifies the registered handler the worker should invoke.'
-    )
-
-
 class WorkflowWaitUntilPollConfig(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
@@ -7319,44 +7339,56 @@ class IntegrationEventFireResponse(BaseModel):
     )
 
 
-class CodeJobCompleteRequest(BaseModel):
+class JobCodeSpec(BaseModel):
     """
-    Final report for a code-invoke job. The handler returned (or threw a terminal error). `completions` carries the durable sub-step rows the handler accumulated during this invocation; the server appends them to the run-step ledger before marking the run completed.
+    Code-spec job description.
     """
 
     model_config = ConfigDict(
         extra='forbid',
     )
-    worker_instance_id: str = Field(
+    kind: Literal['code']
+    handler: str = Field(
         ...,
-        description="Worker process identifier from the claim. Required at the HTTP boundary so empty values fail schema validation in lockstep with the handler's runtime guard.",
+        description='Stable handler id the worker SDK registered. The worker dispatches the job to the function registered under this id.',
         min_length=1,
     )
-    worker_session_token: str = Field(
-        ...,
-        description="Per-boot token from the claim. Compared against the job's `claimed_by_session_token`; mismatch returns 409 lease-lost.",
-    )
-    attempt: int = Field(
-        ..., description='Must match the `attempt` from the original claim.', ge=0
-    )
-    completions: list[CodeStepCompletion] | None = Field(
+    runtime: str | None = Field(
         None,
-        description='Sub-step records the handler executed during this invocation that have not yet been durably checkpointed.',
+        description='Opaque hint identifying the language/runtime that owns the handler ("typescript", "python", etc.). Informational only.',
     )
-    result_b64: str | None = Field(
+    inputs: dict[str, Any] | None = Field(
         None,
-        description="Base64-encoded JSON bytes of the handler's return value. Persisted as the run output.",
+        description='Inputs the run was started with. The SDK passes these to the handler as its first argument.',
     )
-    error_type: str | None = Field(
+    history_cursor: str | None = Field(
         None,
-        description='Short error class identifier when the handler threw a terminal error. Run is marked failed regardless of `result_b64`.',
+        description='Opaque cursor the SDK passes to `GET /jobs/{id}/history?after=…` to stream replay history. The empty string is the "from the beginning" sentinel; the SDK should also treat an absent / empty value as "no further pages." Each resume advances the cursor past the previously fetched batch.',
     )
-    error_message: str | None = Field(None, description='Human-readable error detail.')
+    history: list[CodeStepCompletion] | None = Field(
+        None,
+        description='Optional inline history. The server may include a short history here when it knows the payload will fit; otherwise the SDK fetches it via `GET /jobs/{id}/history`. When set, the SDK should consume this batch as the prefix and only paginate via `history_cursor` for subsequent batches.',
+    )
+
+
+class JobHistoryResponse(BaseModel):
+    """
+    Paginated page of replay-history entries for a code-spec job. `entries` are in commit order. `next_cursor`, when non-empty, is the cursor to pass on the next request to fetch the next page; an empty / absent value means no further pages.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    entries: list[CodeStepCompletion]
+    next_cursor: str | None = Field(
+        None,
+        description='Cursor for the next page. Empty / absent when this is the last page.',
+    )
 
 
 class JobEventsRequest(BaseModel):
     """
-    Fenced batch of custom run events published by the worker holding a job's lease. Every event in `events` is published under the same `worker_session_token` + `attempt` fence; mismatch against the job's `claimed_by_session_token` returns 409 lease-lost.
+    Fenced batch of custom run events published by the worker holding a job's lease. Every event in `events` is published under the same `lease_token`; mismatch returns 409 lease-lost.
     """
 
     model_config = ConfigDict(
@@ -7365,12 +7397,9 @@ class JobEventsRequest(BaseModel):
     worker_instance_id: str | None = Field(
         None, description="Echo of the claim's `worker_instance_id`. Audit only."
     )
-    worker_session_token: str = Field(
+    lease_token: str = Field(
         ...,
-        description="Per-boot token from the claim. The lease fence value; mismatch against the job's `claimed_by_session_token` returns 409 lease-lost.",
-    )
-    attempt: int = Field(
-        ..., description='Must match the `attempt` from the original claim.', ge=0
+        description='Opaque lease fence value from the claim; mismatch returns 409 lease-lost.',
     )
     events: list[JobEventEntry] = Field(
         ...,
@@ -7400,7 +7429,7 @@ class TriggerTarget(BaseModel):
     trigger_id: str = Field(
         ..., description='ID of the trigger this target belongs to.'
     )
-    kind: Kind13 = Field(
+    kind: Kind20 = Field(
         ...,
         description="Discriminates the target's effect. `launch_run` starts a new workflow run; `signal_run` signals an existing run.",
     )
@@ -7654,7 +7683,7 @@ class Agent(BaseModel):
         description='Agent-specific configuration blob stored and returned opaquely.',
     )
     status: AgentStatus = Field(
-        ..., description='Current agent status: `active` or `disabled`.'
+        ..., description='Current agent status: `active` or `inactive`.'
     )
     presence: AgentPresence = Field(
         ...,
@@ -7894,6 +7923,14 @@ class WorkflowRunListResponse(BaseModel):
     next_cursor: str | None = Field(
         None,
         description='Opaque cursor for fetching the next page. Present only when has_more is true.',
+    )
+
+
+class JobSpec(RootModel[JobActionSpec | JobCodeSpec]):
+    root: JobActionSpec | JobCodeSpec = Field(
+        ...,
+        description='Discriminated description of the work attached to a job. `kind: "action"` carries an action name and parameter map; the worker dispatches to the registered action handler. `kind: "code"` carries a registered handler id, the runtime hint, run inputs, and a cursor over the durable replay history; the worker dispatches to the user-authored code handler.',
+        discriminator='kind',
     )
 
 
@@ -8189,11 +8226,56 @@ class WorkflowInteractionConfig(BaseModel):
     )
 
 
-class CodeYieldInteractionSuspension(BaseModel):
+class JobClaim(BaseModel):
+    """
+    Lease handed to a worker after a successful claim. Carries the `spec` of the work to do, an opaque `lease_token` the worker echoes on subsequent fenced calls, and a recommended heartbeat cadence.
+    """
+
     model_config = ConfigDict(
         extra='forbid',
     )
-    step_id: str = Field(..., min_length=1)
+    job_id: str = Field(
+        ...,
+        description='Job ID — use as the `{id}` path parameter for heartbeat, report, history, events.',
+    )
+    run_id: str = Field(..., description='Parent workflow run ID.')
+    workflow_name: str = Field(
+        ..., description='Handle of the workflow definition that owns this run.'
+    )
+    step_name: str = Field(
+        ...,
+        description='Step label from the workflow spec — used for UI and interaction signal name derivation. For code workflows this is the synthesised "run" step name.',
+    )
+    spec: JobSpec = Field(
+        ...,
+        description='Discriminated description of the work to do. `kind: "action"` for spec-step worker jobs; `kind: "code"` for code-handler invocations.',
+    )
+    agent_id: str | None = Field(
+        None,
+        description='Agent that should execute this job, when the step is agent-targeted.',
+    )
+    agent_session_id: str | None = Field(
+        None, description='Agent session the job was routed to, when applicable.'
+    )
+    lease_token: str = Field(
+        ...,
+        description='Opaque fence value the worker must echo on heartbeat / report / events calls. Combines the `worker_session_token` with the claim attempt; mismatch on echo returns 409 lease-lost.',
+    )
+    attempt_number: int | None = Field(
+        None,
+        description='Workflow-level attempt counter, informational only. Action jobs increment this on automatic retry; code jobs always report 1 (the SDK manages its own per-step retry policy internally). Never the fence value — that role belongs to `lease_token`.',
+    )
+    queue: str = Field(..., description='Queue name the job was claimed from.')
+    heartbeat_interval_seconds: int | None = Field(
+        None,
+        description='Recommended heartbeat interval in seconds. Workers should call `POST /v1/projects/{project}/jobs/{id}/heartbeat` at this cadence to keep the lease alive. Typically 30 seconds.',
+    )
+
+
+class WaitDescriptorInteraction(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
     kind: Literal['interaction']
     interaction: WorkflowInteractionConfig
 
@@ -8258,24 +8340,24 @@ class WorkflowInteractionStep(BaseModel):
     )
 
 
-class CodeYieldSuspension(
+class WaitDescriptor(
     RootModel[
-        CodeYieldSleepSuspension
-        | CodeYieldWaitSignalSuspension
-        | CodeYieldWaitEventSuspension
-        | CodeYieldInteractionSuspension
-        | CodeYieldPauseSuspension
+        WaitDescriptorSleep
+        | WaitDescriptorWaitSignal
+        | WaitDescriptorWaitEvent
+        | WaitDescriptorInteraction
+        | WaitDescriptorPause
     ]
 ):
     root: (
-        CodeYieldSleepSuspension
-        | CodeYieldWaitSignalSuspension
-        | CodeYieldWaitEventSuspension
-        | CodeYieldInteractionSuspension
-        | CodeYieldPauseSuspension
+        WaitDescriptorSleep
+        | WaitDescriptorWaitSignal
+        | WaitDescriptorWaitEvent
+        | WaitDescriptorInteraction
+        | WaitDescriptorPause
     ) = Field(
         ...,
-        description='Wait descriptor a code handler yielded. Discriminated by `kind`: each kind has its own variant requiring the matching config block (sleep, wait_signal, wait_event, interaction). The `pause` variant does not require a config — pause just suspends the run until an operator unpauses it; the optional `pause` block carries a human-readable reason for display. Reuses the declarative wait config schemas — code workflows ignore the `on_timeout` fields on those configs because the SDK handles timeout flows directly in the handler (try/catch around the await), but accepting the shape verbatim avoids forking schemas just for code mode.',
+        description='Wait descriptor a code handler yielded. Discriminated by `kind`. Reuses the declarative wait config schemas from workflow.yaml — code workflows ignore the `on_timeout` fields on those configs because the SDK handles timeout flows directly in the handler (try/catch around the await), but accepting the shape verbatim avoids forking schemas just for code mode.',
         discriminator='kind',
     )
 
@@ -8291,7 +8373,6 @@ class WorkflowStep(
         | WorkflowSleepStep
         | WorkflowPauseStep
         | WorkflowInteractionStep
-        | WorkflowCodeStep
     ]
 ):
     root: (
@@ -8304,47 +8385,47 @@ class WorkflowStep(
         | WorkflowSleepStep
         | WorkflowPauseStep
         | WorkflowInteractionStep
-        | WorkflowCodeStep
     ) = Field(
         ...,
-        description='A workflow step. Exactly one step shape should be used. Step variants are identified by their distinctive required property (`action`, `type: set`, `join`, `wait_signal`, `wait_event`, `wait_until`, `sleep`, `pause`, `interaction`, or `code`). The current authored shape intentionally does not add a separate discriminator field, so existing workflow YAML stays compact.',
+        description='A workflow step. Exactly one step shape should be used. Step variants are identified by their distinctive required property (`action`, `type: set`, `join`, `wait_signal`, `wait_event`, `wait_until`, `sleep`, `pause`, or `interaction`). The current authored shape intentionally does not add a separate discriminator field, so existing workflow YAML stays compact. Code workflows do not use `WorkflowStep`; see `WorkflowSpec.code`.',
     )
 
 
-class CodeJobYieldRequest(BaseModel):
+class OutcomeSuspend(BaseModel):
     """
-    Yield notification for a code-invoke job. Commits the accumulated sub-step completions and parks the run on the supplied wait. A fresh code-invoke job is emitted on wake.
+    Terminal: the code handler hit a wait it could not satisfy locally and is yielding control. Code-spec jobs only. The server parks the run on `wait`; on resume a fresh code-invoke job is emitted.
     """
 
     model_config = ConfigDict(
         extra='forbid',
     )
-    worker_instance_id: str = Field(
+    kind: Literal['suspend']
+    step_id: str = Field(
         ...,
-        description="Worker process identifier from the claim. Required at the HTTP boundary so empty values fail schema validation in lockstep with the handler's runtime guard.",
+        description='Deterministic identifier the handler passed to the wait helper.',
         min_length=1,
     )
-    worker_session_token: str = Field(
-        ..., description='Per-boot token from the claim. Mismatch returns 409.'
-    )
-    attempt: int = Field(
-        ..., description='Must match the `attempt` from the original claim.', ge=0
-    )
-    completions: list[CodeStepCompletion] | None = Field(
-        None,
-        description='Sub-step records since the last yield. May be empty if the very first thing the handler did was hit a wait.',
-    )
-    suspension: CodeYieldSuspension = Field(
-        ...,
-        description='The wait the handler hit. Maps 1:1 to existing server suspension reasons (sleep, wait_signal, wait_event, interaction, pause).',
-    )
+    wait: WaitDescriptor = Field(..., description='The wait the handler hit.')
 
 
-class WorkflowSpec(BaseModel):
+class WorkflowSpec1(BaseModel):
     """
     Workflow definition shaped like `workflow.Options`.
 
-    Authoring rule: `action` is the canonical field for executable steps. When `action_kind` is omitted, `action` uses worker/job semantics. Use `action_kind: "server"` for Mobius-managed server actions such as platform integrations or custom HTTP-backed actions.
+    A workflow is **either** a spec-step DAG or a code workflow:
+
+    * Spec-step workflows declare `steps: [...]` (with optional
+    `start_at`). Each step is a worker-action, server-action,
+    wait, join, or other declarative construct.
+    * Code workflows declare `code: { handler, runtime?, queue? }`
+    and no `steps`. The handler's runtime control flow replaces
+    the step graph; durable sub-steps are executed via the SDK's
+    `step.run` / `step.waitFor*` helpers and recorded against the
+    run ledger.
+
+    Exactly one of `steps` or `code` must be set; setting both, or neither, is rejected by the schema's `oneOf` constraint.
+
+    Authoring rule for spec-step workflows: `action` is the canonical field for executable steps. When `action_kind` is omitted, `action` uses worker/job semantics. Use `action_kind: "server"` for Mobius-managed server actions such as platform integrations or custom HTTP-backed actions.
     """
 
     model_config = ConfigDict(
@@ -8356,7 +8437,7 @@ class WorkflowSpec(BaseModel):
     )
     start_at: str | None = Field(
         None,
-        description='Step name to start execution from. Defaults to the first step.',
+        description='Spec-step workflows: step name to start execution from. Defaults to the first step. Ignored for code workflows.',
     )
     inputs: list[WorkflowInput] | None = Field(
         None, description='Declared input parameters accepted by this workflow.'
@@ -8366,7 +8447,67 @@ class WorkflowSpec(BaseModel):
         description='Declared terminal contract. Compact values are expressions; long-form values may include value/schema/description.',
     )
     steps: list[WorkflowStep] = Field(
-        ..., description='Ordered list of steps that make up this workflow.'
+        ...,
+        description='Ordered list of steps that make up a spec-step workflow. Mutually exclusive with `code`.',
+    )
+    code: WorkflowCodeSpec | None = Field(
+        None,
+        description='Configuration for a code workflow. Mutually exclusive with `steps`. The worker invokes the registered handler whose runtime control flow drives the run.',
+    )
+
+
+class WorkflowSpec2(BaseModel):
+    """
+    Workflow definition shaped like `workflow.Options`.
+
+    A workflow is **either** a spec-step DAG or a code workflow:
+
+    * Spec-step workflows declare `steps: [...]` (with optional
+    `start_at`). Each step is a worker-action, server-action,
+    wait, join, or other declarative construct.
+    * Code workflows declare `code: { handler, runtime?, queue? }`
+    and no `steps`. The handler's runtime control flow replaces
+    the step graph; durable sub-steps are executed via the SDK's
+    `step.run` / `step.waitFor*` helpers and recorded against the
+    run ledger.
+
+    Exactly one of `steps` or `code` must be set; setting both, or neither, is rejected by the schema's `oneOf` constraint.
+
+    Authoring rule for spec-step workflows: `action` is the canonical field for executable steps. When `action_kind` is omitted, `action` uses worker/job semantics. Use `action_kind: "server"` for Mobius-managed server actions such as platform integrations or custom HTTP-backed actions.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    name: str = Field(..., description='Workflow name.')
+    description: str | None = Field(
+        None, description="Optional description of the workflow's purpose."
+    )
+    start_at: str | None = Field(
+        None,
+        description='Spec-step workflows: step name to start execution from. Defaults to the first step. Ignored for code workflows.',
+    )
+    inputs: list[WorkflowInput] | None = Field(
+        None, description='Declared input parameters accepted by this workflow.'
+    )
+    outputs: dict[str, WorkflowOutput] | None = Field(
+        None,
+        description='Declared terminal contract. Compact values are expressions; long-form values may include value/schema/description.',
+    )
+    steps: list[WorkflowStep] | None = Field(
+        None,
+        description='Ordered list of steps that make up a spec-step workflow. Mutually exclusive with `code`.',
+    )
+    code: WorkflowCodeSpec = Field(
+        ...,
+        description='Configuration for a code workflow. Mutually exclusive with `steps`. The worker invokes the registered handler whose runtime control flow drives the run.',
+    )
+
+
+class WorkflowSpec(RootModel[WorkflowSpec1 | WorkflowSpec2]):
+    root: WorkflowSpec1 | WorkflowSpec2 = Field(
+        ...,
+        description='Workflow definition shaped like `workflow.Options`.\n\nA workflow is **either** a spec-step DAG or a code workflow:\n\n* Spec-step workflows declare `steps: [...]` (with optional\n`start_at`). Each step is a worker-action, server-action,\nwait, join, or other declarative construct.\n* Code workflows declare `code: { handler, runtime?, queue? }`\nand no `steps`. The handler\'s runtime control flow replaces\nthe step graph; durable sub-steps are executed via the SDK\'s\n`step.run` / `step.waitFor*` helpers and recorded against the\nrun ledger.\n\nExactly one of `steps` or `code` must be set; setting both, or neither, is rejected by the schema\'s `oneOf` constraint.\n\nAuthoring rule for spec-step workflows: `action` is the canonical field for executable steps. When `action_kind` is omitted, `action` uses worker/job semantics. Use `action_kind: "server"` for Mobius-managed server actions such as platform integrations or custom HTTP-backed actions.',
     )
 
 
@@ -8513,6 +8654,51 @@ class StartRunRequest(RootModel[StartSavedRunRequest | StartInlineRunRequest]):
         ...,
         description='Request body for `POST /v1/projects/{project}/runs`. Discriminated by\n`mode`:\n- `saved` — body conforms to `StartSavedRunRequest`.\n- `inline` — body conforms to `StartInlineRunRequest`.',
         discriminator='mode',
+    )
+
+
+class Outcome(
+    RootModel[
+        OutcomeStepDone
+        | OutcomeWaitObserved
+        | OutcomeComplete
+        | OutcomeFail
+        | OutcomeSuspend
+    ]
+):
+    root: (
+        OutcomeStepDone
+        | OutcomeWaitObserved
+        | OutcomeComplete
+        | OutcomeFail
+        | OutcomeSuspend
+    ) = Field(
+        ...,
+        description='One thing that happened during a job attempt. Discriminated by `kind`. Durable kinds (`step_done`, `wait_observed`) describe sub-steps a code handler executed or observed during this invocation; terminal kinds (`complete`, `fail`, `suspend`) end the attempt.',
+        discriminator='kind',
+    )
+
+
+class JobReportRequest(BaseModel):
+    """
+    Single terminal report for a claimed job attempt. The worker echoes the `lease_token` from the claim and supplies an ordered list of `outcomes` ending in exactly one terminator (`complete` / `fail` / `suspend`).
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    worker_instance_id: str | None = Field(
+        None, description="Echo of the claim's `worker_instance_id`. Audit only."
+    )
+    lease_token: str = Field(
+        ...,
+        description='Opaque fence value from the original claim. Mismatch returns 409 lease-lost; a duplicate report with the same token and terminator is idempotent (204).',
+        min_length=1,
+    )
+    outcomes: list[Outcome] = Field(
+        ...,
+        description='Ordered list of outcomes. May contain zero or more durable progress entries (`step_done`, `wait_observed`) followed by exactly one terminator (`complete`, `fail`, `suspend`). The terminator must be the final entry; no entry may follow it. Action-spec jobs may not include `step_done` or `wait_observed`; code-spec jobs may.',
+        min_length=1,
     )
 
 

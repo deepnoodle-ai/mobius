@@ -31,16 +31,16 @@
       "endpoint": "POST /v1/projects/{project}/jobs/{id}/heartbeat"
     },
     {
-      "file": "complete_job_request_success.json",
-      "schema": "JobCompleteRequest",
+      "file": "report_job_request_success.json",
+      "schema": "JobReportRequest",
       "kind": "request",
-      "endpoint": "POST /v1/projects/{project}/jobs/{id}/complete"
+      "endpoint": "POST /v1/projects/{project}/jobs/{id}/report"
     },
     {
-      "file": "complete_job_request_failed.json",
-      "schema": "JobCompleteRequest",
+      "file": "report_job_request_failed.json",
+      "schema": "JobReportRequest",
       "kind": "request",
-      "endpoint": "POST /v1/projects/{project}/jobs/{id}/complete"
+      "endpoint": "POST /v1/projects/{project}/jobs/{id}/report"
     }
   ]
 }

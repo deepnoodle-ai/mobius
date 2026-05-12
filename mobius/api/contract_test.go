@@ -63,8 +63,8 @@ func newForSchema(schema string) (any, bool) {
 		return &api.JobFenceRequest{}, true
 	case "JobHeartbeat":
 		return &api.JobHeartbeat{}, true
-	case "JobCompleteRequest":
-		return &api.JobCompleteRequest{}, true
+	case "JobReportRequest":
+		return &api.JobReportRequest{}, true
 	}
 	return nil, false
 }

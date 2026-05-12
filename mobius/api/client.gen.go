@@ -471,27 +471,6 @@ func (e AuditLogEntryAction) Valid() bool {
 	}
 }
 
-// Defines values for ChannelCompletionBehavior.
-const (
-	ChannelCompletionBehaviorArchive      ChannelCompletionBehavior = "archive"
-	ChannelCompletionBehaviorMarkInactive ChannelCompletionBehavior = "mark_inactive"
-	ChannelCompletionBehaviorNone         ChannelCompletionBehavior = "none"
-)
-
-// Valid indicates whether the value is a known member of the ChannelCompletionBehavior enum.
-func (e ChannelCompletionBehavior) Valid() bool {
-	switch e {
-	case ChannelCompletionBehaviorArchive:
-		return true
-	case ChannelCompletionBehaviorMarkInactive:
-		return true
-	case ChannelCompletionBehaviorNone:
-		return true
-	default:
-		return false
-	}
-}
-
 // Defines values for ChannelKind.
 const (
 	ChannelKindChannel ChannelKind = "channel"
@@ -522,6 +501,27 @@ func (e ChannelPurpose) Valid() bool {
 	case ChannelPurposeGeneral:
 		return true
 	case ChannelPurposeResolveInteractions:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ChannelCompletionBehavior.
+const (
+	ChannelCompletionBehaviorArchive      ChannelCompletionBehavior = "archive"
+	ChannelCompletionBehaviorMarkInactive ChannelCompletionBehavior = "mark_inactive"
+	ChannelCompletionBehaviorNone         ChannelCompletionBehavior = "none"
+)
+
+// Valid indicates whether the value is a known member of the ChannelCompletionBehavior enum.
+func (e ChannelCompletionBehavior) Valid() bool {
+	switch e {
+	case ChannelCompletionBehaviorArchive:
+		return true
+	case ChannelCompletionBehaviorMarkInactive:
+		return true
+	case ChannelCompletionBehaviorNone:
 		return true
 	default:
 		return false
@@ -660,81 +660,6 @@ func (e CodeStepCompletionStatus) Valid() bool {
 	}
 }
 
-// Defines values for CodeYieldInteractionSuspensionKind.
-const (
-	CodeYieldInteractionSuspensionKindInteraction CodeYieldInteractionSuspensionKind = "interaction"
-)
-
-// Valid indicates whether the value is a known member of the CodeYieldInteractionSuspensionKind enum.
-func (e CodeYieldInteractionSuspensionKind) Valid() bool {
-	switch e {
-	case CodeYieldInteractionSuspensionKindInteraction:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for CodeYieldPauseSuspensionKind.
-const (
-	CodeYieldPauseSuspensionKindPause CodeYieldPauseSuspensionKind = "pause"
-)
-
-// Valid indicates whether the value is a known member of the CodeYieldPauseSuspensionKind enum.
-func (e CodeYieldPauseSuspensionKind) Valid() bool {
-	switch e {
-	case CodeYieldPauseSuspensionKindPause:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for CodeYieldSleepSuspensionKind.
-const (
-	CodeYieldSleepSuspensionKindSleep CodeYieldSleepSuspensionKind = "sleep"
-)
-
-// Valid indicates whether the value is a known member of the CodeYieldSleepSuspensionKind enum.
-func (e CodeYieldSleepSuspensionKind) Valid() bool {
-	switch e {
-	case CodeYieldSleepSuspensionKindSleep:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for CodeYieldWaitEventSuspensionKind.
-const (
-	CodeYieldWaitEventSuspensionKindWaitEvent CodeYieldWaitEventSuspensionKind = "wait_event"
-)
-
-// Valid indicates whether the value is a known member of the CodeYieldWaitEventSuspensionKind enum.
-func (e CodeYieldWaitEventSuspensionKind) Valid() bool {
-	switch e {
-	case CodeYieldWaitEventSuspensionKindWaitEvent:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for CodeYieldWaitSignalSuspensionKind.
-const (
-	CodeYieldWaitSignalSuspensionKindWaitSignal CodeYieldWaitSignalSuspensionKind = "wait_signal"
-)
-
-// Valid indicates whether the value is a known member of the CodeYieldWaitSignalSuspensionKind enum.
-func (e CodeYieldWaitSignalSuspensionKind) Valid() bool {
-	switch e {
-	case CodeYieldWaitSignalSuspensionKindWaitSignal:
-		return true
-	default:
-		return false
-	}
-}
-
 // Defines values for ColumnType.
 const (
 	ColumnTypeAny     ColumnType = "any"
@@ -822,27 +747,6 @@ const (
 func (e CreateChannelMessageTriggerRequestKind) Valid() bool {
 	switch e {
 	case CreateChannelMessageTriggerRequestKindChannelMessage:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for CreateChannelRequestCompletionBehavior.
-const (
-	CreateChannelRequestCompletionBehaviorArchive      CreateChannelRequestCompletionBehavior = "archive"
-	CreateChannelRequestCompletionBehaviorMarkInactive CreateChannelRequestCompletionBehavior = "mark_inactive"
-	CreateChannelRequestCompletionBehaviorNone         CreateChannelRequestCompletionBehavior = "none"
-)
-
-// Valid indicates whether the value is a known member of the CreateChannelRequestCompletionBehavior enum.
-func (e CreateChannelRequestCompletionBehavior) Valid() bool {
-	switch e {
-	case CreateChannelRequestCompletionBehaviorArchive:
-		return true
-	case CreateChannelRequestCompletionBehaviorMarkInactive:
-		return true
-	case CreateChannelRequestCompletionBehaviorNone:
 		return true
 	default:
 		return false
@@ -1797,18 +1701,30 @@ func (e InteractionTargetType) Valid() bool {
 	}
 }
 
-// Defines values for JobCompleteRequestStatus.
+// Defines values for JobActionSpecKind.
 const (
-	JobCompleteRequestStatusCompleted JobCompleteRequestStatus = "completed"
-	JobCompleteRequestStatusFailed    JobCompleteRequestStatus = "failed"
+	JobActionSpecKindAction JobActionSpecKind = "action"
 )
 
-// Valid indicates whether the value is a known member of the JobCompleteRequestStatus enum.
-func (e JobCompleteRequestStatus) Valid() bool {
+// Valid indicates whether the value is a known member of the JobActionSpecKind enum.
+func (e JobActionSpecKind) Valid() bool {
 	switch e {
-	case JobCompleteRequestStatusCompleted:
+	case JobActionSpecKindAction:
 		return true
-	case JobCompleteRequestStatusFailed:
+	default:
+		return false
+	}
+}
+
+// Defines values for JobCodeSpecKind.
+const (
+	JobCodeSpecKindCode JobCodeSpecKind = "code"
+)
+
+// Valid indicates whether the value is a known member of the JobCodeSpecKind enum.
+func (e JobCodeSpecKind) Valid() bool {
+	switch e {
+	case JobCodeSpecKindCode:
 		return true
 	default:
 		return false
@@ -2004,6 +1920,150 @@ func (e ObservableWaiterRunStatus) Valid() bool {
 	case ObservableWaiterRunStatusCompleted:
 		return true
 	case ObservableWaiterRunStatusFailed:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for OutcomeCompleteKind.
+const (
+	OutcomeCompleteKindComplete OutcomeCompleteKind = "complete"
+)
+
+// Valid indicates whether the value is a known member of the OutcomeCompleteKind enum.
+func (e OutcomeCompleteKind) Valid() bool {
+	switch e {
+	case OutcomeCompleteKindComplete:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for OutcomeFailKind.
+const (
+	OutcomeFailKindFail OutcomeFailKind = "fail"
+)
+
+// Valid indicates whether the value is a known member of the OutcomeFailKind enum.
+func (e OutcomeFailKind) Valid() bool {
+	switch e {
+	case OutcomeFailKindFail:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for OutcomeStepDoneKind.
+const (
+	OutcomeStepDoneKindStepDone OutcomeStepDoneKind = "step_done"
+)
+
+// Valid indicates whether the value is a known member of the OutcomeStepDoneKind enum.
+func (e OutcomeStepDoneKind) Valid() bool {
+	switch e {
+	case OutcomeStepDoneKindStepDone:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for OutcomeStepDoneStatus.
+const (
+	OutcomeStepDoneStatusCompleted OutcomeStepDoneStatus = "completed"
+	OutcomeStepDoneStatusFailed    OutcomeStepDoneStatus = "failed"
+	OutcomeStepDoneStatusSkipped   OutcomeStepDoneStatus = "skipped"
+)
+
+// Valid indicates whether the value is a known member of the OutcomeStepDoneStatus enum.
+func (e OutcomeStepDoneStatus) Valid() bool {
+	switch e {
+	case OutcomeStepDoneStatusCompleted:
+		return true
+	case OutcomeStepDoneStatusFailed:
+		return true
+	case OutcomeStepDoneStatusSkipped:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for OutcomeSuspendKind.
+const (
+	OutcomeSuspendKindSuspend OutcomeSuspendKind = "suspend"
+)
+
+// Valid indicates whether the value is a known member of the OutcomeSuspendKind enum.
+func (e OutcomeSuspendKind) Valid() bool {
+	switch e {
+	case OutcomeSuspendKindSuspend:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for OutcomeWaitObservedKind.
+const (
+	OutcomeWaitObservedKindWaitObserved OutcomeWaitObservedKind = "wait_observed"
+)
+
+// Valid indicates whether the value is a known member of the OutcomeWaitObservedKind enum.
+func (e OutcomeWaitObservedKind) Valid() bool {
+	switch e {
+	case OutcomeWaitObservedKindWaitObserved:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for OutcomeWaitObservedStatus.
+const (
+	OutcomeWaitObservedStatusCompleted OutcomeWaitObservedStatus = "completed"
+	OutcomeWaitObservedStatusFailed    OutcomeWaitObservedStatus = "failed"
+	OutcomeWaitObservedStatusSkipped   OutcomeWaitObservedStatus = "skipped"
+)
+
+// Valid indicates whether the value is a known member of the OutcomeWaitObservedStatus enum.
+func (e OutcomeWaitObservedStatus) Valid() bool {
+	switch e {
+	case OutcomeWaitObservedStatusCompleted:
+		return true
+	case OutcomeWaitObservedStatusFailed:
+		return true
+	case OutcomeWaitObservedStatusSkipped:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for OutcomeWaitObservedWaitKind.
+const (
+	OutcomeWaitObservedWaitKindInteraction OutcomeWaitObservedWaitKind = "interaction"
+	OutcomeWaitObservedWaitKindPause       OutcomeWaitObservedWaitKind = "pause"
+	OutcomeWaitObservedWaitKindSleep       OutcomeWaitObservedWaitKind = "sleep"
+	OutcomeWaitObservedWaitKindWaitEvent   OutcomeWaitObservedWaitKind = "wait_event"
+	OutcomeWaitObservedWaitKindWaitSignal  OutcomeWaitObservedWaitKind = "wait_signal"
+)
+
+// Valid indicates whether the value is a known member of the OutcomeWaitObservedWaitKind enum.
+func (e OutcomeWaitObservedWaitKind) Valid() bool {
+	switch e {
+	case OutcomeWaitObservedWaitKindInteraction:
+		return true
+	case OutcomeWaitObservedWaitKindPause:
+		return true
+	case OutcomeWaitObservedWaitKindSleep:
+		return true
+	case OutcomeWaitObservedWaitKindWaitEvent:
+		return true
+	case OutcomeWaitObservedWaitKindWaitSignal:
 		return true
 	default:
 		return false
@@ -2775,27 +2835,6 @@ func (e TriggerTargetKind) Valid() bool {
 	}
 }
 
-// Defines values for UpdateChannelRequestCompletionBehavior.
-const (
-	UpdateChannelRequestCompletionBehaviorArchive      UpdateChannelRequestCompletionBehavior = "archive"
-	UpdateChannelRequestCompletionBehaviorMarkInactive UpdateChannelRequestCompletionBehavior = "mark_inactive"
-	UpdateChannelRequestCompletionBehaviorNone         UpdateChannelRequestCompletionBehavior = "none"
-)
-
-// Valid indicates whether the value is a known member of the UpdateChannelRequestCompletionBehavior enum.
-func (e UpdateChannelRequestCompletionBehavior) Valid() bool {
-	switch e {
-	case UpdateChannelRequestCompletionBehaviorArchive:
-		return true
-	case UpdateChannelRequestCompletionBehaviorMarkInactive:
-		return true
-	case UpdateChannelRequestCompletionBehaviorNone:
-		return true
-	default:
-		return false
-	}
-}
-
 // Defines values for UpdateChannelRequestPurpose.
 const (
 	UpdateChannelRequestPurposeGeneral             UpdateChannelRequestPurpose = "general"
@@ -2901,6 +2940,81 @@ func (e VoteRulesTieBreak) Valid() bool {
 	case VoteRulesTieBreakNone:
 		return true
 	case VoteRulesTieBreakOwner:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for WaitDescriptorInteractionKind.
+const (
+	WaitDescriptorInteractionKindInteraction WaitDescriptorInteractionKind = "interaction"
+)
+
+// Valid indicates whether the value is a known member of the WaitDescriptorInteractionKind enum.
+func (e WaitDescriptorInteractionKind) Valid() bool {
+	switch e {
+	case WaitDescriptorInteractionKindInteraction:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for WaitDescriptorPauseKind.
+const (
+	WaitDescriptorPauseKindPause WaitDescriptorPauseKind = "pause"
+)
+
+// Valid indicates whether the value is a known member of the WaitDescriptorPauseKind enum.
+func (e WaitDescriptorPauseKind) Valid() bool {
+	switch e {
+	case WaitDescriptorPauseKindPause:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for WaitDescriptorSleepKind.
+const (
+	WaitDescriptorSleepKindSleep WaitDescriptorSleepKind = "sleep"
+)
+
+// Valid indicates whether the value is a known member of the WaitDescriptorSleepKind enum.
+func (e WaitDescriptorSleepKind) Valid() bool {
+	switch e {
+	case WaitDescriptorSleepKindSleep:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for WaitDescriptorWaitEventKind.
+const (
+	WaitDescriptorWaitEventKindWaitEvent WaitDescriptorWaitEventKind = "wait_event"
+)
+
+// Valid indicates whether the value is a known member of the WaitDescriptorWaitEventKind enum.
+func (e WaitDescriptorWaitEventKind) Valid() bool {
+	switch e {
+	case WaitDescriptorWaitEventKindWaitEvent:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for WaitDescriptorWaitSignalKind.
+const (
+	WaitDescriptorWaitSignalKindWaitSignal WaitDescriptorWaitSignalKind = "wait_signal"
+)
+
+// Valid indicates whether the value is a known member of the WaitDescriptorWaitSignalKind enum.
+func (e WaitDescriptorWaitSignalKind) Valid() bool {
+	switch e {
+	case WaitDescriptorWaitSignalKindWaitSignal:
 		return true
 	default:
 		return false
@@ -4207,14 +4321,14 @@ type Channel struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-// ChannelCompletionBehavior Behavior to apply when every purpose-linked interaction is terminal.
-type ChannelCompletionBehavior string
-
 // ChannelKind `channel` — persistent named room. `dm` — direct-message thread, typically between a small fixed set of participants.
 type ChannelKind string
 
 // ChannelPurpose `general` channels are ordinary rooms. `resolve_interactions` channels exist to resolve one or more purpose-linked interactions.
 type ChannelPurpose string
+
+// ChannelCompletionBehavior Behavior to apply when every purpose-linked interaction is terminal.
+type ChannelCompletionBehavior string
 
 // ChannelInteractionActionResponse Result of a channel-scoped interaction operation.
 type ChannelInteractionActionResponse struct {
@@ -4433,63 +4547,17 @@ type CloseVoteRequest struct {
 	Comment *string `json:"comment,omitempty"`
 }
 
-// CodeJobCompleteRequest Final report for a code-invoke job. The handler returned (or threw a terminal error). `completions` carries the durable sub-step rows the handler accumulated during this invocation; the server appends them to the run-step ledger before marking the run completed.
-type CodeJobCompleteRequest struct {
-	// Attempt Must match the `attempt` from the original claim.
-	Attempt int `json:"attempt"`
-
-	// Completions Sub-step records the handler executed during this invocation that have not yet been durably checkpointed.
-	Completions *[]CodeStepCompletion `json:"completions,omitempty"`
-
-	// ErrorMessage Human-readable error detail.
-	ErrorMessage *string `json:"error_message,omitempty"`
-
-	// ErrorType Short error class identifier when the handler threw a terminal error. Run is marked failed regardless of `result_b64`.
-	ErrorType *string `json:"error_type,omitempty"`
-
-	// ResultB64 Base64-encoded JSON bytes of the handler's return value. Persisted as the run output.
-	ResultB64 *string `json:"result_b64,omitempty"`
-
-	// WorkerInstanceId Worker process identifier from the claim. Required at the HTTP boundary so empty values fail schema validation in lockstep with the handler's runtime guard.
-	WorkerInstanceId string `json:"worker_instance_id"`
-
-	// WorkerSessionToken Per-boot token from the claim. Compared against the job's `claimed_by_session_token`; mismatch returns 409 lease-lost.
-	WorkerSessionToken string `json:"worker_session_token"`
-}
-
-// CodeJobYieldRequest Yield notification for a code-invoke job. Commits the accumulated sub-step completions and parks the run on the supplied wait. A fresh code-invoke job is emitted on wake.
-type CodeJobYieldRequest struct {
-	// Attempt Must match the `attempt` from the original claim.
-	Attempt int `json:"attempt"`
-
-	// Completions Sub-step records since the last yield. May be empty if the very first thing the handler did was hit a wait.
-	Completions *[]CodeStepCompletion `json:"completions,omitempty"`
-
-	// Suspension Wait descriptor a code handler yielded. Discriminated by `kind`: each kind has its own variant requiring the matching config block (sleep, wait_signal, wait_event, interaction). The `pause` variant does not require a config — pause just suspends the run until an operator unpauses it; the optional `pause` block carries a human-readable reason for display. Reuses the declarative wait config schemas — code workflows ignore the `on_timeout` fields on those configs because the SDK handles timeout flows directly in the handler (try/catch around the await), but accepting the shape verbatim avoids forking schemas just for code mode.
-	Suspension CodeYieldSuspension `json:"suspension"`
-
-	// WorkerInstanceId Worker process identifier from the claim. Required at the HTTP boundary so empty values fail schema validation in lockstep with the handler's runtime guard.
-	WorkerInstanceId string `json:"worker_instance_id"`
-
-	// WorkerSessionToken Per-boot token from the claim. Mismatch returns 409.
-	WorkerSessionToken string `json:"worker_session_token"`
-}
-
-// CodeStepCompletion One durable sub-step the handler executed (or a wait it observed completing). Replayed back to the handler on the next invocation so step.run() / step.waitFor*() calls fast-forward without re-executing the user-supplied function.
+// CodeStepCompletion One entry in the replay history of a code-spec job. Mirrors what the worker reported via a previous `step_done` or `wait_observed` outcome — the SDK fast-forwards through these on replay so cached `step.run` / `step.waitFor*` calls return without re-executing the user-supplied function.
 type CodeStepCompletion struct {
 	// Attempt Worker-side per-step retry counter. 0 for first try.
-	Attempt *int `json:"attempt,omitempty"`
-
-	// ErrorMessage Human-readable error detail.
+	Attempt      *int    `json:"attempt,omitempty"`
 	ErrorMessage *string `json:"error_message,omitempty"`
+	ErrorType    *string `json:"error_type,omitempty"`
 
-	// ErrorType Error class for a failed sub-step.
-	ErrorType *string `json:"error_type,omitempty"`
-
-	// Kind Sub-step kind. Only `run` carries a meaningful `result`; wait kinds capture "wait completed" markers.
+	// Kind Sub-step kind. `run` carries the value `step.run` returned; wait kinds capture the payload (signal, event, interaction response) the wait delivered, or are markers for kinds without a payload (sleep, pause).
 	Kind CodeStepCompletionKind `json:"kind"`
 
-	// Result Value the handler should observe on replay. JSON-shape; kind-specific (handler return value for `run`, signal payload for `wait_signal`, etc.).
+	// Result Value the handler should observe on replay. JSON-shape; kind-specific.
 	Result interface{}              `json:"result,omitempty"`
 	Status CodeStepCompletionStatus `json:"status"`
 
@@ -4497,75 +4565,11 @@ type CodeStepCompletion struct {
 	StepId string `json:"step_id"`
 }
 
-// CodeStepCompletionKind Sub-step kind. Only `run` carries a meaningful `result`; wait kinds capture "wait completed" markers.
+// CodeStepCompletionKind Sub-step kind. `run` carries the value `step.run` returned; wait kinds capture the payload (signal, event, interaction response) the wait delivered, or are markers for kinds without a payload (sleep, pause).
 type CodeStepCompletionKind string
 
 // CodeStepCompletionStatus defines model for CodeStepCompletion.Status.
 type CodeStepCompletionStatus string
-
-// CodeYieldInteractionSuspension defines model for CodeYieldInteractionSuspension.
-type CodeYieldInteractionSuspension struct {
-	// Interaction Configuration for an interaction step that waits on a response.
-	Interaction WorkflowInteractionConfig          `json:"interaction"`
-	Kind        CodeYieldInteractionSuspensionKind `json:"kind"`
-	StepId      string                             `json:"step_id"`
-}
-
-// CodeYieldInteractionSuspensionKind defines model for CodeYieldInteractionSuspension.Kind.
-type CodeYieldInteractionSuspensionKind string
-
-// CodeYieldPauseSuspension defines model for CodeYieldPauseSuspension.
-type CodeYieldPauseSuspension struct {
-	Kind CodeYieldPauseSuspensionKind `json:"kind"`
-
-	// Pause Configuration for a manual pause step.
-	Pause  *WorkflowPauseConfig `json:"pause,omitempty"`
-	StepId string               `json:"step_id"`
-}
-
-// CodeYieldPauseSuspensionKind defines model for CodeYieldPauseSuspension.Kind.
-type CodeYieldPauseSuspensionKind string
-
-// CodeYieldSleepSuspension defines model for CodeYieldSleepSuspension.
-type CodeYieldSleepSuspension struct {
-	Kind CodeYieldSleepSuspensionKind `json:"kind"`
-
-	// Sleep Configuration for a sleep step.
-	Sleep  WorkflowSleepConfig `json:"sleep"`
-	StepId string              `json:"step_id"`
-}
-
-// CodeYieldSleepSuspensionKind defines model for CodeYieldSleepSuspension.Kind.
-type CodeYieldSleepSuspensionKind string
-
-// CodeYieldSuspension Wait descriptor a code handler yielded. Discriminated by `kind`: each kind has its own variant requiring the matching config block (sleep, wait_signal, wait_event, interaction). The `pause` variant does not require a config — pause just suspends the run until an operator unpauses it; the optional `pause` block carries a human-readable reason for display. Reuses the declarative wait config schemas — code workflows ignore the `on_timeout` fields on those configs because the SDK handles timeout flows directly in the handler (try/catch around the await), but accepting the shape verbatim avoids forking schemas just for code mode.
-type CodeYieldSuspension struct {
-	union json.RawMessage
-}
-
-// CodeYieldWaitEventSuspension defines model for CodeYieldWaitEventSuspension.
-type CodeYieldWaitEventSuspension struct {
-	Kind   CodeYieldWaitEventSuspensionKind `json:"kind"`
-	StepId string                           `json:"step_id"`
-
-	// WaitEvent Suspends the run until an integration event matching `event_type` (and `condition`, when provided) is delivered to the project. `event_type` is exact-matched by default. Set `match_mode: prefix` for descendant matching such as `github.pull_request` matching `.opened`, `.closed`, etc.
-	WaitEvent WorkflowWaitEventConfig `json:"wait_event"`
-}
-
-// CodeYieldWaitEventSuspensionKind defines model for CodeYieldWaitEventSuspension.Kind.
-type CodeYieldWaitEventSuspensionKind string
-
-// CodeYieldWaitSignalSuspension defines model for CodeYieldWaitSignalSuspension.
-type CodeYieldWaitSignalSuspension struct {
-	Kind   CodeYieldWaitSignalSuspensionKind `json:"kind"`
-	StepId string                            `json:"step_id"`
-
-	// WaitSignal Suspends the run until a signal with the matching topic arrives.
-	WaitSignal WorkflowWaitSignalConfig `json:"wait_signal"`
-}
-
-// CodeYieldWaitSignalSuspensionKind defines model for CodeYieldWaitSignalSuspension.Kind.
-type CodeYieldWaitSignalSuspensionKind string
 
 // ColumnDef defines model for ColumnDef.
 type ColumnDef struct {
@@ -4609,7 +4613,7 @@ type ConfigEntry struct {
 	Value string `json:"value"`
 }
 
-// Consumer Polymorphic identifier of what is waiting on this interaction's resolution (PRD 077 §3.7). Replaces the previously special-cased `run_id` + `signal_name` pair. When `kind=run`, the legacy fields are also populated for compatibility. `http_subscriber` triggers a best-effort POST to `callback_url` when the interaction resolves; HMAC signing of the payload via the `secret_ref` is a follow-up — current callers should pin the `callback_url` to an authenticated endpoint until that lands.
+// Consumer Polymorphic identifier of what is waiting on this interaction's resolution (PRD 077 §3.7). Replaces the previously special-cased `run_id` + `signal_name` pair. When `kind=run`, the legacy fields are also populated for compatibility. `http_subscriber` triggers a best-effort POST to `callback_url` when the interaction resolves; when `secret_ref` is set, the raw request body is signed with HMAC-SHA256 against the resolved project secret and the signed dispatch carries `X-Mobius-Signature`, `X-Mobius-Secret-Ref`, `X-Mobius-Secret-Version`, and `X-Mobius-Timestamp`. Verifiers should check all four headers.
 type Consumer struct {
 	AgentTool      *AgentToolConsumer      `json:"agent_tool,omitempty"`
 	HttpSubscriber *HttpSubscriberConsumer `json:"http_subscriber,omitempty"`
@@ -4743,10 +4747,8 @@ type CreateChannelMessageTriggerRequestKind string
 // CreateChannelRequest Fields used to create a project channel or direct-message thread.
 type CreateChannelRequest struct {
 	// AssociatedInteractionIds Existing same-project interaction IDs to link as the channel's purpose at creation time. Required when `purpose` is `resolve_interactions`.
-	AssociatedInteractionIds *[]string `json:"associated_interaction_ids,omitempty"`
-
-	// CompletionBehavior Behavior to apply when all purpose-linked interactions are terminal.
-	CompletionBehavior *CreateChannelRequestCompletionBehavior `json:"completion_behavior,omitempty"`
+	AssociatedInteractionIds *[]string                  `json:"associated_interaction_ids,omitempty"`
+	CompletionBehavior       *ChannelCompletionBehavior `json:"completion_behavior,omitempty"`
 
 	// DisplayName Human-facing display name shown in the UI.
 	DisplayName string `json:"display_name"`
@@ -4772,9 +4774,6 @@ type CreateChannelRequest struct {
 	// Topic Optional channel topic or description.
 	Topic *string `json:"topic,omitempty"`
 }
-
-// CreateChannelRequestCompletionBehavior Behavior to apply when all purpose-linked interactions are terminal.
-type CreateChannelRequestCompletionBehavior string
 
 // CreateChannelRequestKind Channel kind, either `dm` or `channel`. Cannot be changed after creation.
 type CreateChannelRequestKind string
@@ -4983,7 +4982,7 @@ type CreateProjectRequest struct {
 
 // CreateRunBackedInteractionRequest Creates a run-backed interaction. Completion delivers `signal_name` to `run_id` so a waiting run path can resume.
 type CreateRunBackedInteractionRequest struct {
-	// Consumer Polymorphic identifier of what is waiting on this interaction's resolution (PRD 077 §3.7). Replaces the previously special-cased `run_id` + `signal_name` pair. When `kind=run`, the legacy fields are also populated for compatibility. `http_subscriber` triggers a best-effort POST to `callback_url` when the interaction resolves; HMAC signing of the payload via the `secret_ref` is a follow-up — current callers should pin the `callback_url` to an authenticated endpoint until that lands.
+	// Consumer Polymorphic identifier of what is waiting on this interaction's resolution (PRD 077 §3.7). Replaces the previously special-cased `run_id` + `signal_name` pair. When `kind=run`, the legacy fields are also populated for compatibility. `http_subscriber` triggers a best-effort POST to `callback_url` when the interaction resolves; when `secret_ref` is set, the raw request body is signed with HMAC-SHA256 against the resolved project secret and the signed dispatch carries `X-Mobius-Signature`, `X-Mobius-Secret-Ref`, `X-Mobius-Secret-Version`, and `X-Mobius-Timestamp`. Verifiers should check all four headers.
 	Consumer *Consumer `json:"consumer,omitempty"`
 
 	// Context Additional key-value context surfaced in the UI alongside the message.
@@ -5094,7 +5093,7 @@ type CreateSecretRequest struct {
 
 // CreateStandaloneInteractionRequest Creates a standalone interaction. Completion records the response but does not deliver a workflow signal.
 type CreateStandaloneInteractionRequest struct {
-	// Consumer Polymorphic identifier of what is waiting on this interaction's resolution (PRD 077 §3.7). Replaces the previously special-cased `run_id` + `signal_name` pair. When `kind=run`, the legacy fields are also populated for compatibility. `http_subscriber` triggers a best-effort POST to `callback_url` when the interaction resolves; HMAC signing of the payload via the `secret_ref` is a follow-up — current callers should pin the `callback_url` to an authenticated endpoint until that lands.
+	// Consumer Polymorphic identifier of what is waiting on this interaction's resolution (PRD 077 §3.7). Replaces the previously special-cased `run_id` + `signal_name` pair. When `kind=run`, the legacy fields are also populated for compatibility. `http_subscriber` triggers a best-effort POST to `callback_url` when the interaction resolves; when `secret_ref` is set, the raw request body is signed with HMAC-SHA256 against the resolved project secret and the signed dispatch carries `X-Mobius-Signature`, `X-Mobius-Secret-Ref`, `X-Mobius-Secret-Version`, and `X-Mobius-Timestamp`. Verifiers should check all four headers.
 	Consumer *Consumer `json:"consumer,omitempty"`
 
 	// Context Additional key-value context surfaced in the UI alongside the message.
@@ -5295,7 +5294,20 @@ type CreateWorkflowRequest struct {
 
 	// Spec Workflow definition shaped like `workflow.Options`.
 	//
-	// Authoring rule: `action` is the canonical field for executable steps. When `action_kind` is omitted, `action` uses worker/job semantics. Use `action_kind: "server"` for Mobius-managed server actions such as platform integrations or custom HTTP-backed actions.
+	// A workflow is **either** a spec-step DAG or a code workflow:
+	//
+	// * Spec-step workflows declare `steps: [...]` (with optional
+	// `start_at`). Each step is a worker-action, server-action,
+	// wait, join, or other declarative construct.
+	// * Code workflows declare `code: { handler, runtime?, queue? }`
+	// and no `steps`. The handler's runtime control flow replaces
+	// the step graph; durable sub-steps are executed via the SDK's
+	// `step.run` / `step.waitFor*` helpers and recorded against the
+	// run ledger.
+	//
+	// Exactly one of `steps` or `code` must be set; setting both, or neither, is rejected by the schema's `oneOf` constraint.
+	//
+	// Authoring rule for spec-step workflows: `action` is the canonical field for executable steps. When `action_kind` is omitted, `action` uses worker/job semantics. Use `action_kind: "server"` for Mobius-managed server actions such as platform integrations or custom HTTP-backed actions.
 	Spec WorkflowSpec `json:"spec"`
 
 	// Tags Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints.
@@ -5703,7 +5715,7 @@ type HttpSubscriberConsumer struct {
 	// CallbackUrl Absolute http(s) URL the server POSTs to when the interaction resolves. The body is a JSON object with the interaction id, kind, status, outcome value, comment, responder, and `resolved_by`. Delivery is best-effort in v1 (no durable outbox or retries).
 	CallbackUrl string `json:"callback_url"`
 
-	// SecretRef Reference to a project secret intended to sign deliveries. Forwarded to the deliverer as `X-Mobius-Secret-Ref` for forward compatibility; HMAC-SHA256 signing of the payload against the resolved plaintext is a follow-up.
+	// SecretRef Reference to a project secret used to sign deliveries with HMAC-SHA256 over the raw callback request body (the exact bytes of the HTTP request body). Accepts `<name>` for the latest enabled version or `<name>:<version>` to pin a specific positive-integer version. The plaintext signing bytes are taken from the secret's `signing_key`, `secret`, or `hmac_secret` key — or the only key if exactly one is set. The hex signature is forwarded as `X-Mobius-Signature: sha256=<hex>` alongside `X-Mobius-Secret-Ref`, `X-Mobius-Secret-Version`, and a unix `X-Mobius-Timestamp`. When `secret_ref` resolution fails the dispatch is skipped rather than sent unsigned.
 	SecretRef *string `json:"secret_ref,omitempty"`
 }
 
@@ -5965,7 +5977,7 @@ type Interaction struct {
 	// CompletedAt Timestamp when the interaction received a terminal response.
 	CompletedAt *time.Time `json:"completed_at,omitempty"`
 
-	// Consumer Polymorphic identifier of what is waiting on this interaction's resolution (PRD 077 §3.7). Replaces the previously special-cased `run_id` + `signal_name` pair. When `kind=run`, the legacy fields are also populated for compatibility. `http_subscriber` triggers a best-effort POST to `callback_url` when the interaction resolves; HMAC signing of the payload via the `secret_ref` is a follow-up — current callers should pin the `callback_url` to an authenticated endpoint until that lands.
+	// Consumer Polymorphic identifier of what is waiting on this interaction's resolution (PRD 077 §3.7). Replaces the previously special-cased `run_id` + `signal_name` pair. When `kind=run`, the legacy fields are also populated for compatibility. `http_subscriber` triggers a best-effort POST to `callback_url` when the interaction resolves; when `secret_ref` is set, the raw request body is signed with HMAC-SHA256 against the resolved project secret and the signed dispatch carries `X-Mobius-Signature`, `X-Mobius-Secret-Ref`, `X-Mobius-Secret-Version`, and `X-Mobius-Timestamp`. Verifiers should check all four headers.
 	Consumer *Consumer `json:"consumer,omitempty"`
 
 	// Context Additional key-value context surfaced in the UI alongside the message when supplied.
@@ -6452,32 +6464,39 @@ type Job struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-// JobClaim Lease handed to a worker after a successful claim. It contains the action to run, resolved parameters, and fencing values the worker must echo on heartbeat, event, and complete calls.
-type JobClaim struct {
-	// Action Action name the worker must execute for this step.
-	//
-	// The reserved value `mobius.code.invoke` identifies a code-mode workflow invocation: the worker dispatches to the registered code handler named by `parameters._mobius_code_handler` and completes via `code-completion` / `code-yield` instead of `complete`. See `CodeInvokeJobParameters` for the parameter shape.
-	Action string `json:"action"`
+// JobActionSpec Action-spec job description.
+type JobActionSpec struct {
+	Kind JobActionSpecKind `json:"kind"`
 
+	// Name Action name the worker must execute for this step.
+	Name string `json:"name"`
+
+	// Parameters Input parameters for this step, resolved from the workflow spec and prior step outputs.
+	Parameters *map[string]interface{} `json:"parameters,omitempty"`
+}
+
+// JobActionSpecKind defines model for JobActionSpec.Kind.
+type JobActionSpecKind string
+
+// JobClaim Lease handed to a worker after a successful claim. Carries the `spec` of the work to do, an opaque `lease_token` the worker echoes on subsequent fenced calls, and a recommended heartbeat cadence.
+type JobClaim struct {
 	// AgentId Agent that should execute this job, when the step is agent-targeted.
 	AgentId *string `json:"agent_id,omitempty"`
 
 	// AgentSessionId Agent session the job was routed to, when applicable.
 	AgentSessionId *string `json:"agent_session_id,omitempty"`
 
-	// Attempt 1-based attempt counter. Incremented on each automatic retry. Include in the fence for all subsequent heartbeat and complete calls.
-	Attempt int `json:"attempt"`
+	// AttemptNumber Workflow-level attempt counter, informational only. Action jobs increment this on automatic retry; code jobs always report 1 (the SDK manages its own per-step retry policy internally). Never the fence value — that role belongs to `lease_token`.
+	AttemptNumber *int `json:"attempt_number,omitempty"`
 
 	// HeartbeatIntervalSeconds Recommended heartbeat interval in seconds. Workers should call `POST /v1/projects/{project}/jobs/{id}/heartbeat` at this cadence to keep the lease alive. Typically 30 seconds.
 	HeartbeatIntervalSeconds *int `json:"heartbeat_interval_seconds,omitempty"`
 
-	// JobId Job ID — use as the `{id}` path parameter for heartbeat, complete, and events.
+	// JobId Job ID — use as the `{id}` path parameter for heartbeat, report, history, events.
 	JobId string `json:"job_id"`
 
-	// Parameters Input parameters for this step, resolved from the workflow spec and prior step outputs.
-	//
-	// When `action == "mobius.code.invoke"`, parameters follow the `CodeInvokeJobParameters` shape — they carry the registered handler id, the run inputs, and the replay history rather than spec-authored values.
-	Parameters map[string]interface{} `json:"parameters"`
+	// LeaseToken Opaque fence value the worker must echo on heartbeat / report / events calls. Combines the `worker_session_token` with the claim attempt; mismatch on echo returns 409 lease-lost.
+	LeaseToken string `json:"lease_token"`
 
 	// Queue Queue name the job was claimed from.
 	Queue string `json:"queue"`
@@ -6485,20 +6504,26 @@ type JobClaim struct {
 	// RunId Parent workflow run ID.
 	RunId string `json:"run_id"`
 
-	// StepName Step label from the workflow spec — used for UI and interaction signal name derivation.
+	// Spec Discriminated description of the work attached to a job. `kind: "action"` carries an action name and parameter map; the worker dispatches to the registered action handler. `kind: "code"` carries a registered handler id, the runtime hint, run inputs, and a cursor over the durable replay history; the worker dispatches to the user-authored code handler.
+	Spec JobSpec `json:"spec"`
+
+	// StepName Step label from the workflow spec — used for UI and interaction signal name derivation. For code workflows this is the synthesised "run" step name.
 	StepName string `json:"step_name"`
 
 	// WorkflowName Handle of the workflow definition that owns this run.
 	WorkflowName string `json:"workflow_name"`
 }
 
-// JobClaimRequest Body for `POST /jobs/claim`. Workers identify themselves with `worker_instance_id` (the row key on the workers page) plus a per-boot `worker_session_token` (the fence value stamped onto each claimed job). `concurrency_limit` is the configured capacity used by the saturation bar.
+// JobClaimRequest Body for `POST /jobs/claim`. Workers identify themselves with `worker_instance_id` (the row key on the workers page) plus a per-boot `worker_session_token`. The server returns an opaque `lease_token` on the claim that folds the session token and the claim attempt together; subsequent fenced calls echo the `lease_token`, not the raw session token.
 type JobClaimRequest struct {
-	// Actions Action names this worker can execute. When provided, only jobs whose `action` is in this list are returned. When empty, action filtering is skipped.
+	// Actions Action names this worker can execute. When provided, only jobs whose `spec.kind == "action"` and whose `spec.name` is in this list are returned. When empty, action filtering is skipped.
 	Actions *[]string `json:"actions,omitempty"`
 
 	// ConcurrencyLimit Maximum number of concurrent in-flight jobs this worker process intends to hold. Recorded on the worker_session row; used for the saturation bar in the admin UI. The server does not enforce the limit — the worker is trusted to gate its own claim loop.
 	ConcurrencyLimit int `json:"concurrency_limit"`
+
+	// Handlers Code handler IDs this worker has registered. When provided, only jobs whose `spec.kind == "code"` and whose `spec.handler` is in this list are returned. When empty, no code jobs are claimed unless `actions` is also empty (in which case all matching queue/action criteria apply). Code-mode SDKs always populate this with the set of handlers they have registered.
+	Handlers *[]string `json:"handlers,omitempty"`
 
 	// Queues Queue names the worker subscribes to. When empty the worker claims from any queue in the project. Workflow runs default to the "default" queue when not otherwise specified.
 	Queues *[]string `json:"queues,omitempty"`
@@ -6512,39 +6537,34 @@ type JobClaimRequest struct {
 	// WorkerName Optional human-readable name shown in the worker list.
 	WorkerName *string `json:"worker_name,omitempty"`
 
-	// WorkerSessionToken Per-boot token generated by the SDK on Worker construction. Stamped onto the claimed job and re-presented as the lease fence on heartbeat / events / complete. Opaque to operators.
+	// WorkerSessionToken Per-boot token generated by the SDK on Worker construction. Stamped onto the claimed job and folded into the `lease_token` returned in the `JobClaim`. Opaque to operators.
 	WorkerSessionToken string `json:"worker_session_token"`
 
 	// WorkerVersion Optional version string shown in the worker list.
 	WorkerVersion *string `json:"worker_version,omitempty"`
 }
 
-// JobCompleteRequest Terminal report for a claimed job. The worker presents the per-boot `worker_session_token` from the original claim along with the same `attempt`; mismatch returns 409 lease-lost.
-type JobCompleteRequest struct {
-	// Attempt Must match the `attempt` from the original claim.
-	Attempt int `json:"attempt"`
+// JobCodeSpec Code-spec job description.
+type JobCodeSpec struct {
+	// Handler Stable handler id the worker SDK registered. The worker dispatches the job to the function registered under this id.
+	Handler string `json:"handler"`
 
-	// ErrorMessage Human-readable error detail. Only relevant for failed status.
-	ErrorMessage *string `json:"error_message,omitempty"`
+	// History Optional inline history. The server may include a short history here when it knows the payload will fit; otherwise the SDK fetches it via `GET /jobs/{id}/history`. When set, the SDK should consume this batch as the prefix and only paginate via `history_cursor` for subsequent batches.
+	History *[]CodeStepCompletion `json:"history,omitempty"`
 
-	// ErrorType Short error class identifier (e.g. "TimeoutError"). Used for observability and retry classification. Only relevant when `status: failed`.
-	ErrorType *string `json:"error_type,omitempty"`
+	// HistoryCursor Opaque cursor the SDK passes to `GET /jobs/{id}/history?after=…` to stream replay history. The empty string is the "from the beginning" sentinel; the SDK should also treat an absent / empty value as "no further pages." Each resume advances the cursor past the previously fetched batch.
+	HistoryCursor *string `json:"history_cursor,omitempty"`
 
-	// ResultB64 Base64-encoded (standard encoding) bytes representing the job's output. The workflow engine decodes this and may pass it as input to downstream steps. Omit if the step produces no output.
-	ResultB64 *string `json:"result_b64,omitempty"`
+	// Inputs Inputs the run was started with. The SDK passes these to the handler as its first argument.
+	Inputs *map[string]interface{} `json:"inputs,omitempty"`
+	Kind   JobCodeSpecKind         `json:"kind"`
 
-	// Status Terminal status for this job attempt: `completed` or `failed`. `failed` triggers the workflow engine's retry logic if `attempt < max_attempts`.
-	Status JobCompleteRequestStatus `json:"status"`
-
-	// WorkerInstanceId Echo of the claim's `worker_instance_id`. Audit only.
-	WorkerInstanceId *string `json:"worker_instance_id,omitempty"`
-
-	// WorkerSessionToken Per-boot token from the claim. Compared against the job's `claimed_by_session_token`; mismatch returns 409 lease-lost.
-	WorkerSessionToken string `json:"worker_session_token"`
+	// Runtime Opaque hint identifying the language/runtime that owns the handler ("typescript", "python", etc.). Informational only.
+	Runtime *string `json:"runtime,omitempty"`
 }
 
-// JobCompleteRequestStatus Terminal status for this job attempt: `completed` or `failed`. `failed` triggers the workflow engine's retry logic if `attempt < max_attempts`.
-type JobCompleteRequestStatus string
+// JobCodeSpecKind defines model for JobCodeSpec.Kind.
+type JobCodeSpecKind string
 
 // JobEventEntry Custom progress or telemetry event emitted while a worker owns a job. Use these events to stream domain-specific status into run timelines without changing the job completion payload.
 type JobEventEntry struct {
@@ -6555,31 +6575,25 @@ type JobEventEntry struct {
 	Type string `json:"type"`
 }
 
-// JobEventsRequest Fenced batch of custom run events published by the worker holding a job's lease. Every event in `events` is published under the same `worker_session_token` + `attempt` fence; mismatch against the job's `claimed_by_session_token` returns 409 lease-lost.
+// JobEventsRequest Fenced batch of custom run events published by the worker holding a job's lease. Every event in `events` is published under the same `lease_token`; mismatch returns 409 lease-lost.
 type JobEventsRequest struct {
-	// Attempt Must match the `attempt` from the original claim.
-	Attempt int `json:"attempt"`
-
 	// Events The batch of events to publish. All events are validated atomically.
 	Events []JobEventEntry `json:"events"`
 
+	// LeaseToken Opaque lease fence value from the claim; mismatch returns 409 lease-lost.
+	LeaseToken string `json:"lease_token"`
+
 	// WorkerInstanceId Echo of the claim's `worker_instance_id`. Audit only.
 	WorkerInstanceId *string `json:"worker_instance_id,omitempty"`
-
-	// WorkerSessionToken Per-boot token from the claim. The lease fence value; mismatch against the job's `claimed_by_session_token` returns 409 lease-lost.
-	WorkerSessionToken string `json:"worker_session_token"`
 }
 
-// JobFenceRequest Lease fence presented on heartbeat. The worker presents the per-boot `worker_session_token` from the original claim along with the same `attempt`; the server compares the token against the job's `claimed_by_session_token` and returns 409 lease-lost on mismatch.
+// JobFenceRequest Lease fence presented on heartbeat / events. The worker echoes the `lease_token` from the original claim; the server unfolds the embedded session token + attempt and rejects with 409 lease-lost on mismatch.
 type JobFenceRequest struct {
-	// Attempt Must match the `attempt` from the original claim.
-	Attempt int `json:"attempt"`
+	// LeaseToken Opaque lease fence value from the original claim. Mismatch returns 409 lease-lost.
+	LeaseToken string `json:"lease_token"`
 
 	// WorkerInstanceId Echo of the `worker_instance_id` from the claim. Logged for audit; not the fence value.
 	WorkerInstanceId *string `json:"worker_instance_id,omitempty"`
-
-	// WorkerSessionToken Per-boot token from the original claim. Compared against the job's `claimed_by_session_token`; mismatch returns 409 lease-lost.
-	WorkerSessionToken string `json:"worker_session_token"`
 }
 
 // JobHeartbeat Heartbeat acknowledgement for a claimed job. A successful response means the worker still owns the lease and should continue unless the directives say otherwise.
@@ -6593,8 +6607,16 @@ type JobHeartbeat struct {
 
 // JobHeartbeatDirectives Server instructions returned with a heartbeat. Workers should inspect this on every heartbeat so cancellation and future control signals can interrupt long-running work promptly.
 type JobHeartbeatDirectives struct {
-	// ShouldCancel When true, the run has received a cancellation request. The worker must stop processing immediately and call complete with `status: failed`.
+	// ShouldCancel When true, the run has received a cancellation request. The worker must stop processing immediately and post a `fail` outcome via the report endpoint.
 	ShouldCancel *bool `json:"should_cancel,omitempty"`
+}
+
+// JobHistoryResponse Paginated page of replay-history entries for a code-spec job. `entries` are in commit order. `next_cursor`, when non-empty, is the cursor to pass on the next request to fetch the next page; an empty / absent value means no further pages.
+type JobHistoryResponse struct {
+	Entries []CodeStepCompletion `json:"entries"`
+
+	// NextCursor Cursor for the next page. Empty / absent when this is the last page.
+	NextCursor *string `json:"next_cursor,omitempty"`
 }
 
 // JobListResponse Unpaginated list of jobs spawned by one workflow run. This is scoped to a single run for debugging and execution inspection rather than a project-wide search surface.
@@ -6616,6 +6638,23 @@ type JobMetrics struct {
 
 	// RetryRate Fraction of terminal jobs that required at least one retry within the window.
 	RetryRate float64 `json:"retry_rate"`
+}
+
+// JobReportRequest Single terminal report for a claimed job attempt. The worker echoes the `lease_token` from the claim and supplies an ordered list of `outcomes` ending in exactly one terminator (`complete` / `fail` / `suspend`).
+type JobReportRequest struct {
+	// LeaseToken Opaque fence value from the original claim. Mismatch returns 409 lease-lost; a duplicate report with the same token and terminator is idempotent (204).
+	LeaseToken string `json:"lease_token"`
+
+	// Outcomes Ordered list of outcomes. May contain zero or more durable progress entries (`step_done`, `wait_observed`) followed by exactly one terminator (`complete`, `fail`, `suspend`). The terminator must be the final entry; no entry may follow it. Action-spec jobs may not include `step_done` or `wait_observed`; code-spec jobs may.
+	Outcomes []Outcome `json:"outcomes"`
+
+	// WorkerInstanceId Echo of the claim's `worker_instance_id`. Audit only.
+	WorkerInstanceId *string `json:"worker_instance_id,omitempty"`
+}
+
+// JobSpec Discriminated description of the work attached to a job. `kind: "action"` carries an action name and parameter map; the worker dispatches to the registered action handler. `kind: "code"` carries a registered handler id, the runtime hint, run inputs, and a cursor over the durable replay history; the worker dispatches to the user-authored code handler.
+type JobSpec struct {
+	union json.RawMessage
 }
 
 // JobStatus Job lifecycle state:
@@ -6861,6 +6900,102 @@ type ObservableWaiterRunStatus string
 type ObservableWaiterListResponse struct {
 	Items []ObservableWaiter `json:"items"`
 }
+
+// Outcome One thing that happened during a job attempt. Discriminated by `kind`. Durable kinds (`step_done`, `wait_observed`) describe sub-steps a code handler executed or observed during this invocation; terminal kinds (`complete`, `fail`, `suspend`) end the attempt.
+type Outcome struct {
+	union json.RawMessage
+}
+
+// OutcomeComplete Terminal: the attempt finished successfully. For action jobs, `result_b64` becomes the step output. For code jobs, `result_b64` becomes the run output.
+type OutcomeComplete struct {
+	Kind OutcomeCompleteKind `json:"kind"`
+
+	// ResultB64 Base64-encoded (standard encoding) bytes representing the handler/action result. Decoded by the engine and stored on the job (action) or the run (code).
+	ResultB64 *string `json:"result_b64,omitempty"`
+}
+
+// OutcomeCompleteKind defines model for OutcomeComplete.Kind.
+type OutcomeCompleteKind string
+
+// OutcomeFail Terminal: the attempt failed. For action jobs this triggers retry if the spec allows; for code jobs the run terminally fails.
+type OutcomeFail struct {
+	// ErrorMessage Human-readable error detail.
+	ErrorMessage string `json:"error_message"`
+
+	// ErrorType Short error class identifier (e.g. "TimeoutError").
+	ErrorType string          `json:"error_type"`
+	Kind      OutcomeFailKind `json:"kind"`
+}
+
+// OutcomeFailKind defines model for OutcomeFail.Kind.
+type OutcomeFailKind string
+
+// OutcomeStepDone A durable child step the handler executed. Code-spec jobs only. Each `step_done` becomes one row in the run-step ledger and is replayed back to the handler on the next invocation.
+type OutcomeStepDone struct {
+	// Attempt Worker-side per-step retry counter. 0 for first try.
+	Attempt *int `json:"attempt,omitempty"`
+
+	// ErrorMessage Human-readable error detail for a failed sub-step.
+	ErrorMessage *string `json:"error_message,omitempty"`
+
+	// ErrorType Error class for a failed sub-step.
+	ErrorType *string             `json:"error_type,omitempty"`
+	Kind      OutcomeStepDoneKind `json:"kind"`
+
+	// Result Value the handler should observe on replay. JSON-shape; freely structured by the handler. Omit for `failed` / `skipped`.
+	Result interface{}           `json:"result,omitempty"`
+	Status OutcomeStepDoneStatus `json:"status"`
+
+	// StepId Deterministic identifier the handler passed to step.run("id", fn). Replay key.
+	StepId string `json:"step_id"`
+}
+
+// OutcomeStepDoneKind defines model for OutcomeStepDone.Kind.
+type OutcomeStepDoneKind string
+
+// OutcomeStepDoneStatus defines model for OutcomeStepDone.Status.
+type OutcomeStepDoneStatus string
+
+// OutcomeSuspend Terminal: the code handler hit a wait it could not satisfy locally and is yielding control. Code-spec jobs only. The server parks the run on `wait`; on resume a fresh code-invoke job is emitted.
+type OutcomeSuspend struct {
+	Kind OutcomeSuspendKind `json:"kind"`
+
+	// StepId Deterministic identifier the handler passed to the wait helper.
+	StepId string `json:"step_id"`
+
+	// Wait Wait descriptor a code handler yielded. Discriminated by `kind`. Reuses the declarative wait config schemas from workflow.yaml — code workflows ignore the `on_timeout` fields on those configs because the SDK handles timeout flows directly in the handler (try/catch around the await), but accepting the shape verbatim avoids forking schemas just for code mode.
+	Wait WaitDescriptor `json:"wait"`
+}
+
+// OutcomeSuspendKind defines model for OutcomeSuspend.Kind.
+type OutcomeSuspendKind string
+
+// OutcomeWaitObserved A previously-parked wait the handler observed completing during replay. Code-spec jobs only. The status is typically `completed`; `failed` is used when the wait raised a timeout the handler is surfacing back through the ledger.
+type OutcomeWaitObserved struct {
+	Attempt      *int                    `json:"attempt,omitempty"`
+	ErrorMessage *string                 `json:"error_message,omitempty"`
+	ErrorType    *string                 `json:"error_type,omitempty"`
+	Kind         OutcomeWaitObservedKind `json:"kind"`
+
+	// Result Payload delivered by the wait (e.g. signal payload, interaction response). Omit when not applicable (sleep, pause).
+	Result interface{}               `json:"result,omitempty"`
+	Status OutcomeWaitObservedStatus `json:"status"`
+
+	// StepId Deterministic identifier the handler passed to the wait helper.
+	StepId string `json:"step_id"`
+
+	// WaitKind Kind of the wait that completed.
+	WaitKind OutcomeWaitObservedWaitKind `json:"wait_kind"`
+}
+
+// OutcomeWaitObservedKind defines model for OutcomeWaitObserved.Kind.
+type OutcomeWaitObservedKind string
+
+// OutcomeWaitObservedStatus defines model for OutcomeWaitObserved.Status.
+type OutcomeWaitObservedStatus string
+
+// OutcomeWaitObservedWaitKind Kind of the wait that completed.
+type OutcomeWaitObservedWaitKind string
 
 // PageDelivery defines model for PageDelivery.
 type PageDelivery struct {
@@ -7826,7 +7961,20 @@ type StartInlineRunRequest struct {
 
 	// Spec Workflow definition shaped like `workflow.Options`.
 	//
-	// Authoring rule: `action` is the canonical field for executable steps. When `action_kind` is omitted, `action` uses worker/job semantics. Use `action_kind: "server"` for Mobius-managed server actions such as platform integrations or custom HTTP-backed actions.
+	// A workflow is **either** a spec-step DAG or a code workflow:
+	//
+	// * Spec-step workflows declare `steps: [...]` (with optional
+	// `start_at`). Each step is a worker-action, server-action,
+	// wait, join, or other declarative construct.
+	// * Code workflows declare `code: { handler, runtime?, queue? }`
+	// and no `steps`. The handler's runtime control flow replaces
+	// the step graph; durable sub-steps are executed via the SDK's
+	// `step.run` / `step.waitFor*` helpers and recorded against the
+	// run ledger.
+	//
+	// Exactly one of `steps` or `code` must be set; setting both, or neither, is rejected by the schema's `oneOf` constraint.
+	//
+	// Authoring rule for spec-step workflows: `action` is the canonical field for executable steps. When `action_kind` is omitted, `action` uses worker/job semantics. Use `action_kind: "server"` for Mobius-managed server actions such as platform integrations or custom HTTP-backed actions.
 	Spec WorkflowSpec `json:"spec"`
 
 	// Tags Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints.
@@ -8501,8 +8649,8 @@ type UpdateChannelMessageRequest struct {
 
 // UpdateChannelRequest Mutable channel fields.
 type UpdateChannelRequest struct {
-	// CompletionBehavior Behavior to apply when all purpose-linked interactions are terminal.
-	CompletionBehavior *UpdateChannelRequestCompletionBehavior `json:"completion_behavior,omitempty"`
+	// CompletionBehavior Behavior to apply when every purpose-linked interaction is terminal.
+	CompletionBehavior *ChannelCompletionBehavior `json:"completion_behavior,omitempty"`
 
 	// DisplayName Updated display name.
 	DisplayName *string `json:"display_name,omitempty"`
@@ -8519,9 +8667,6 @@ type UpdateChannelRequest struct {
 	// Topic Updated topic or description.
 	Topic *string `json:"topic,omitempty"`
 }
-
-// UpdateChannelRequestCompletionBehavior Behavior to apply when all purpose-linked interactions are terminal.
-type UpdateChannelRequestCompletionBehavior string
 
 // UpdateChannelRequestPurpose Channel purpose. `resolve_interactions` requires at least one purpose-linked interaction.
 type UpdateChannelRequestPurpose string
@@ -8709,7 +8854,20 @@ type UpdateWorkflowRequest struct {
 
 	// Spec Workflow definition shaped like `workflow.Options`.
 	//
-	// Authoring rule: `action` is the canonical field for executable steps. When `action_kind` is omitted, `action` uses worker/job semantics. Use `action_kind: "server"` for Mobius-managed server actions such as platform integrations or custom HTTP-backed actions.
+	// A workflow is **either** a spec-step DAG or a code workflow:
+	//
+	// * Spec-step workflows declare `steps: [...]` (with optional
+	// `start_at`). Each step is a worker-action, server-action,
+	// wait, join, or other declarative construct.
+	// * Code workflows declare `code: { handler, runtime?, queue? }`
+	// and no `steps`. The handler's runtime control flow replaces
+	// the step graph; durable sub-steps are executed via the SDK's
+	// `step.run` / `step.waitFor*` helpers and recorded against the
+	// run ledger.
+	//
+	// Exactly one of `steps` or `code` must be set; setting both, or neither, is rejected by the schema's `oneOf` constraint.
+	//
+	// Authoring rule for spec-step workflows: `action` is the canonical field for executable steps. When `action_kind` is omitted, `action` uses worker/job semantics. Use `action_kind: "server"` for Mobius-managed server actions such as platform integrations or custom HTTP-backed actions.
 	Spec *WorkflowSpec `json:"spec,omitempty"`
 
 	// Tags Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints.
@@ -8830,6 +8988,65 @@ type VoteRules struct {
 
 // VoteRulesTieBreak How to resolve a tied top vote count on close.
 type VoteRulesTieBreak string
+
+// WaitDescriptor Wait descriptor a code handler yielded. Discriminated by `kind`. Reuses the declarative wait config schemas from workflow.yaml — code workflows ignore the `on_timeout` fields on those configs because the SDK handles timeout flows directly in the handler (try/catch around the await), but accepting the shape verbatim avoids forking schemas just for code mode.
+type WaitDescriptor struct {
+	union json.RawMessage
+}
+
+// WaitDescriptorInteraction defines model for WaitDescriptorInteraction.
+type WaitDescriptorInteraction struct {
+	// Interaction Configuration for an interaction step that waits on a response.
+	Interaction WorkflowInteractionConfig     `json:"interaction"`
+	Kind        WaitDescriptorInteractionKind `json:"kind"`
+}
+
+// WaitDescriptorInteractionKind defines model for WaitDescriptorInteraction.Kind.
+type WaitDescriptorInteractionKind string
+
+// WaitDescriptorPause defines model for WaitDescriptorPause.
+type WaitDescriptorPause struct {
+	Kind WaitDescriptorPauseKind `json:"kind"`
+
+	// Pause Configuration for a manual pause step.
+	Pause *WorkflowPauseConfig `json:"pause,omitempty"`
+}
+
+// WaitDescriptorPauseKind defines model for WaitDescriptorPause.Kind.
+type WaitDescriptorPauseKind string
+
+// WaitDescriptorSleep defines model for WaitDescriptorSleep.
+type WaitDescriptorSleep struct {
+	Kind WaitDescriptorSleepKind `json:"kind"`
+
+	// Sleep Configuration for a sleep step.
+	Sleep WorkflowSleepConfig `json:"sleep"`
+}
+
+// WaitDescriptorSleepKind defines model for WaitDescriptorSleep.Kind.
+type WaitDescriptorSleepKind string
+
+// WaitDescriptorWaitEvent defines model for WaitDescriptorWaitEvent.
+type WaitDescriptorWaitEvent struct {
+	Kind WaitDescriptorWaitEventKind `json:"kind"`
+
+	// WaitEvent Suspends the run until an integration event matching `event_type` (and `condition`, when provided) is delivered to the project. `event_type` is exact-matched by default. Set `match_mode: prefix` for descendant matching such as `github.pull_request` matching `.opened`, `.closed`, etc.
+	WaitEvent WorkflowWaitEventConfig `json:"wait_event"`
+}
+
+// WaitDescriptorWaitEventKind defines model for WaitDescriptorWaitEvent.Kind.
+type WaitDescriptorWaitEventKind string
+
+// WaitDescriptorWaitSignal defines model for WaitDescriptorWaitSignal.
+type WaitDescriptorWaitSignal struct {
+	Kind WaitDescriptorWaitSignalKind `json:"kind"`
+
+	// WaitSignal Suspends the run until a signal with the matching topic arrives.
+	WaitSignal WorkflowWaitSignalConfig `json:"wait_signal"`
+}
+
+// WaitDescriptorWaitSignalKind defines model for WaitDescriptorWaitSignal.Kind.
+type WaitDescriptorWaitSignalKind string
 
 // WebPresenceHeartbeatRequest defines model for WebPresenceHeartbeatRequest.
 type WebPresenceHeartbeatRequest struct {
@@ -9085,26 +9302,11 @@ type WorkflowCatch struct {
 	Next string `json:"next"`
 }
 
-// WorkflowCodeStep Delegates the entire workflow's control flow to a user-authored handler running on a worker (TypeScript today, with other runtimes to follow). The handler invokes step.run(), step.sleep(), step.waitForSignal() etc. via the SDK; each call is durably checkpointed against the run ledger so the handler replays deterministically across yield/resume cycles.
+// WorkflowCodeSpec Configuration for a code workflow. Sibling shape to `WorkflowSpec.steps`: a workflow with `code` set delegates its control flow to a user-authored handler running on a worker (TypeScript today, with other runtimes to follow). The handler invokes step.run(), step.sleep(), step.waitForSignal() etc. via the SDK; each call is durably checkpointed against the run ledger so the handler replays deterministically across yield/resume cycles.
 //
-// A code workflow contains exactly one step (this one) — the handler's runtime control flow is the graph. Authors cannot mix code steps with the declarative step shapes: `next`, `each`, `retry`, `catch`, `parameters`, etc. are rejected by validation.
-type WorkflowCodeStep struct {
-	// Code Configuration for a code-handler step.
-	Code WorkflowCodeStepConfig `json:"code"`
-
-	// Description Optional human-readable description of what this handler does.
-	Description *string `json:"description,omitempty"`
-
-	// Layout Optional presentation hint for the visual editor. Ignored by the execution engine; when absent, editors auto-lay out the step.
-	Layout *WorkflowStepLayout `json:"layout,omitempty"`
-
-	// Name Unique step name within the workflow, used for routing and logging.
-	Name string `json:"name"`
-}
-
-// WorkflowCodeStepConfig Configuration for a code-handler step.
-type WorkflowCodeStepConfig struct {
-	// Handler Stable identifier the worker SDK registered the handler under (typically equal to the workflow definition name). The server emits jobs whose handler parameter equals this value; the worker dispatches the job to the matching handler.
+// Code workflows do not use `steps`; the handler's runtime control flow is the graph.
+type WorkflowCodeSpec struct {
+	// Handler Stable identifier the worker SDK registered the handler under (typically equal to the workflow definition name). The server emits jobs whose `spec.code.handler` equals this value; the worker dispatches the job to the matching handler.
 	Handler string `json:"handler"`
 
 	// Queue Optional worker queue the code-invoke job is dispatched to. When empty, the run-level queue is used.
@@ -9142,7 +9344,20 @@ type WorkflowDefinition struct {
 
 	// Spec Workflow definition shaped like `workflow.Options`.
 	//
-	// Authoring rule: `action` is the canonical field for executable steps. When `action_kind` is omitted, `action` uses worker/job semantics. Use `action_kind: "server"` for Mobius-managed server actions such as platform integrations or custom HTTP-backed actions.
+	// A workflow is **either** a spec-step DAG or a code workflow:
+	//
+	// * Spec-step workflows declare `steps: [...]` (with optional
+	// `start_at`). Each step is a worker-action, server-action,
+	// wait, join, or other declarative construct.
+	// * Code workflows declare `code: { handler, runtime?, queue? }`
+	// and no `steps`. The handler's runtime control flow replaces
+	// the step graph; durable sub-steps are executed via the SDK's
+	// `step.run` / `step.waitFor*` helpers and recorded against the
+	// run ledger.
+	//
+	// Exactly one of `steps` or `code` must be set; setting both, or neither, is rejected by the schema's `oneOf` constraint.
+	//
+	// Authoring rule for spec-step workflows: `action` is the canonical field for executable steps. When `action_kind` is omitted, `action` uses worker/job semantics. Use `action_kind: "server"` for Mobius-managed server actions such as platform integrations or custom HTTP-backed actions.
 	Spec WorkflowSpec `json:"spec"`
 
 	// Tags Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints.
@@ -9674,7 +9889,20 @@ type WorkflowRunDetail struct {
 
 	// Spec Workflow definition shaped like `workflow.Options`.
 	//
-	// Authoring rule: `action` is the canonical field for executable steps. When `action_kind` is omitted, `action` uses worker/job semantics. Use `action_kind: "server"` for Mobius-managed server actions such as platform integrations or custom HTTP-backed actions.
+	// A workflow is **either** a spec-step DAG or a code workflow:
+	//
+	// * Spec-step workflows declare `steps: [...]` (with optional
+	// `start_at`). Each step is a worker-action, server-action,
+	// wait, join, or other declarative construct.
+	// * Code workflows declare `code: { handler, runtime?, queue? }`
+	// and no `steps`. The handler's runtime control flow replaces
+	// the step graph; durable sub-steps are executed via the SDK's
+	// `step.run` / `step.waitFor*` helpers and recorded against the
+	// run ledger.
+	//
+	// Exactly one of `steps` or `code` must be set; setting both, or neither, is rejected by the schema's `oneOf` constraint.
+	//
+	// Authoring rule for spec-step workflows: `action` is the canonical field for executable steps. When `action_kind` is omitted, `action` uses worker/job semantics. Use `action_kind: "server"` for Mobius-managed server actions such as platform integrations or custom HTTP-backed actions.
 	Spec *WorkflowSpec `json:"spec,omitempty"`
 
 	// StartedAt Timestamp when a worker first claimed this run.
@@ -9931,8 +10159,26 @@ type WorkflowSleepStep struct {
 
 // WorkflowSpec Workflow definition shaped like `workflow.Options`.
 //
-// Authoring rule: `action` is the canonical field for executable steps. When `action_kind` is omitted, `action` uses worker/job semantics. Use `action_kind: "server"` for Mobius-managed server actions such as platform integrations or custom HTTP-backed actions.
+// A workflow is **either** a spec-step DAG or a code workflow:
+//
+// * Spec-step workflows declare `steps: [...]` (with optional
+// `start_at`). Each step is a worker-action, server-action,
+// wait, join, or other declarative construct.
+// * Code workflows declare `code: { handler, runtime?, queue? }`
+// and no `steps`. The handler's runtime control flow replaces
+// the step graph; durable sub-steps are executed via the SDK's
+// `step.run` / `step.waitFor*` helpers and recorded against the
+// run ledger.
+//
+// Exactly one of `steps` or `code` must be set; setting both, or neither, is rejected by the schema's `oneOf` constraint.
+//
+// Authoring rule for spec-step workflows: `action` is the canonical field for executable steps. When `action_kind` is omitted, `action` uses worker/job semantics. Use `action_kind: "server"` for Mobius-managed server actions such as platform integrations or custom HTTP-backed actions.
 type WorkflowSpec struct {
+	// Code Configuration for a code workflow. Sibling shape to `WorkflowSpec.steps`: a workflow with `code` set delegates its control flow to a user-authored handler running on a worker (TypeScript today, with other runtimes to follow). The handler invokes step.run(), step.sleep(), step.waitForSignal() etc. via the SDK; each call is durably checkpointed against the run ledger so the handler replays deterministically across yield/resume cycles.
+	//
+	// Code workflows do not use `steps`; the handler's runtime control flow is the graph.
+	Code *WorkflowCodeSpec `json:"code,omitempty"`
+
 	// Description Optional description of the workflow's purpose.
 	Description *string `json:"description,omitempty"`
 
@@ -9945,14 +10191,21 @@ type WorkflowSpec struct {
 	// Outputs Declared terminal contract. Compact values are expressions; long-form values may include value/schema/description.
 	Outputs *map[string]WorkflowOutput `json:"outputs,omitempty"`
 
-	// StartAt Step name to start execution from. Defaults to the first step.
+	// StartAt Spec-step workflows: step name to start execution from. Defaults to the first step. Ignored for code workflows.
 	StartAt *string `json:"start_at,omitempty"`
 
-	// Steps Ordered list of steps that make up this workflow.
-	Steps []WorkflowStep `json:"steps"`
+	// Steps Ordered list of steps that make up a spec-step workflow. Mutually exclusive with `code`.
+	Steps *[]WorkflowStep `json:"steps,omitempty"`
+	union json.RawMessage
 }
 
-// WorkflowStep A workflow step. Exactly one step shape should be used. Step variants are identified by their distinctive required property (`action`, `type: set`, `join`, `wait_signal`, `wait_event`, `wait_until`, `sleep`, `pause`, `interaction`, or `code`). The current authored shape intentionally does not add a separate discriminator field, so existing workflow YAML stays compact.
+// WorkflowSpec0 defines model for .
+type WorkflowSpec0 = interface{}
+
+// WorkflowSpec1 defines model for .
+type WorkflowSpec1 = interface{}
+
+// WorkflowStep A workflow step. Exactly one step shape should be used. Step variants are identified by their distinctive required property (`action`, `type: set`, `join`, `wait_signal`, `wait_event`, `wait_until`, `sleep`, `pause`, or `interaction`). The current authored shape intentionally does not add a separate discriminator field, so existing workflow YAML stays compact. Code workflows do not use `WorkflowStep`; see `WorkflowSpec.code`.
 type WorkflowStep struct {
 	union json.RawMessage
 }
@@ -9979,7 +10232,20 @@ type WorkflowVersion struct {
 
 	// Spec Workflow definition shaped like `workflow.Options`.
 	//
-	// Authoring rule: `action` is the canonical field for executable steps. When `action_kind` is omitted, `action` uses worker/job semantics. Use `action_kind: "server"` for Mobius-managed server actions such as platform integrations or custom HTTP-backed actions.
+	// A workflow is **either** a spec-step DAG or a code workflow:
+	//
+	// * Spec-step workflows declare `steps: [...]` (with optional
+	// `start_at`). Each step is a worker-action, server-action,
+	// wait, join, or other declarative construct.
+	// * Code workflows declare `code: { handler, runtime?, queue? }`
+	// and no `steps`. The handler's runtime control flow replaces
+	// the step graph; durable sub-steps are executed via the SDK's
+	// `step.run` / `step.waitFor*` helpers and recorded against the
+	// run ledger.
+	//
+	// Exactly one of `steps` or `code` must be set; setting both, or neither, is rejected by the schema's `oneOf` constraint.
+	//
+	// Authoring rule for spec-step workflows: `action` is the canonical field for executable steps. When `action_kind` is omitted, `action` uses worker/job semantics. Use `action_kind: "server"` for Mobius-managed server actions such as platform integrations or custom HTTP-backed actions.
 	Spec WorkflowSpec `json:"spec"`
 
 	// Version Monotonically increasing version number. Starts at 1.
@@ -10632,6 +10898,15 @@ type ListInteractionsParamsTargetType string
 // ListInteractionsParamsReviewerType defines parameters for ListInteractions.
 type ListInteractionsParamsReviewerType string
 
+// GetJobHistoryParams defines parameters for GetJobHistory.
+type GetJobHistoryParams struct {
+	// After Opaque cursor returned by a prior page (or `JobClaim.spec.code.history_cursor`). Omit to fetch from the beginning.
+	After *string `form:"after,omitempty" json:"after,omitempty"`
+
+	// Limit Maximum number of entries to return per page.
+	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
 // ListProjectLogsParams defines parameters for ListProjectLogs.
 type ListProjectLogsParams struct {
 	// Cursor Cursor for pagination (opaque string from previous response)
@@ -11106,15 +11381,6 @@ type ClaimJobJSONRequestBody = JobClaimRequest
 // RunJobActionJSONRequestBody defines body for RunJobAction for application/json ContentType.
 type RunJobActionJSONRequestBody = RunActionRequest
 
-// CompleteCodeJobJSONRequestBody defines body for CompleteCodeJob for application/json ContentType.
-type CompleteCodeJobJSONRequestBody = CodeJobCompleteRequest
-
-// YieldCodeJobJSONRequestBody defines body for YieldCodeJob for application/json ContentType.
-type YieldCodeJobJSONRequestBody = CodeJobYieldRequest
-
-// CompleteJobJSONRequestBody defines body for CompleteJob for application/json ContentType.
-type CompleteJobJSONRequestBody = JobCompleteRequest
-
 // EmitJobEventsJSONRequestBody defines body for EmitJobEvents for application/json ContentType.
 type EmitJobEventsJSONRequestBody = JobEventsRequest
 
@@ -11123,6 +11389,9 @@ type HeartbeatJobJSONRequestBody = JobFenceRequest
 
 // CreateJobInteractionJSONRequestBody defines body for CreateJobInteraction for application/json ContentType.
 type CreateJobInteractionJSONRequestBody = CreateJobInteractionRequest
+
+// ReportJobJSONRequestBody defines body for ReportJob for application/json ContentType.
+type ReportJobJSONRequestBody = JobReportRequest
 
 // IngestProjectLogsJSONRequestBody defines body for IngestProjectLogs for application/json ContentType.
 type IngestProjectLogsJSONRequestBody = IngestProjectLogsJSONBody
@@ -13719,185 +13988,6 @@ func (a WorkflowVersionSummary) MarshalJSON() ([]byte, error) {
 	return json.Marshal(object)
 }
 
-// AsCodeYieldSleepSuspension returns the union data inside the CodeYieldSuspension as a CodeYieldSleepSuspension
-func (t CodeYieldSuspension) AsCodeYieldSleepSuspension() (CodeYieldSleepSuspension, error) {
-	var body CodeYieldSleepSuspension
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromCodeYieldSleepSuspension overwrites any union data inside the CodeYieldSuspension as the provided CodeYieldSleepSuspension
-func (t *CodeYieldSuspension) FromCodeYieldSleepSuspension(v CodeYieldSleepSuspension) error {
-	v.Kind = "sleep"
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeCodeYieldSleepSuspension performs a merge with any union data inside the CodeYieldSuspension, using the provided CodeYieldSleepSuspension
-func (t *CodeYieldSuspension) MergeCodeYieldSleepSuspension(v CodeYieldSleepSuspension) error {
-	v.Kind = "sleep"
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsCodeYieldWaitSignalSuspension returns the union data inside the CodeYieldSuspension as a CodeYieldWaitSignalSuspension
-func (t CodeYieldSuspension) AsCodeYieldWaitSignalSuspension() (CodeYieldWaitSignalSuspension, error) {
-	var body CodeYieldWaitSignalSuspension
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromCodeYieldWaitSignalSuspension overwrites any union data inside the CodeYieldSuspension as the provided CodeYieldWaitSignalSuspension
-func (t *CodeYieldSuspension) FromCodeYieldWaitSignalSuspension(v CodeYieldWaitSignalSuspension) error {
-	v.Kind = "wait_signal"
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeCodeYieldWaitSignalSuspension performs a merge with any union data inside the CodeYieldSuspension, using the provided CodeYieldWaitSignalSuspension
-func (t *CodeYieldSuspension) MergeCodeYieldWaitSignalSuspension(v CodeYieldWaitSignalSuspension) error {
-	v.Kind = "wait_signal"
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsCodeYieldWaitEventSuspension returns the union data inside the CodeYieldSuspension as a CodeYieldWaitEventSuspension
-func (t CodeYieldSuspension) AsCodeYieldWaitEventSuspension() (CodeYieldWaitEventSuspension, error) {
-	var body CodeYieldWaitEventSuspension
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromCodeYieldWaitEventSuspension overwrites any union data inside the CodeYieldSuspension as the provided CodeYieldWaitEventSuspension
-func (t *CodeYieldSuspension) FromCodeYieldWaitEventSuspension(v CodeYieldWaitEventSuspension) error {
-	v.Kind = "wait_event"
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeCodeYieldWaitEventSuspension performs a merge with any union data inside the CodeYieldSuspension, using the provided CodeYieldWaitEventSuspension
-func (t *CodeYieldSuspension) MergeCodeYieldWaitEventSuspension(v CodeYieldWaitEventSuspension) error {
-	v.Kind = "wait_event"
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsCodeYieldInteractionSuspension returns the union data inside the CodeYieldSuspension as a CodeYieldInteractionSuspension
-func (t CodeYieldSuspension) AsCodeYieldInteractionSuspension() (CodeYieldInteractionSuspension, error) {
-	var body CodeYieldInteractionSuspension
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromCodeYieldInteractionSuspension overwrites any union data inside the CodeYieldSuspension as the provided CodeYieldInteractionSuspension
-func (t *CodeYieldSuspension) FromCodeYieldInteractionSuspension(v CodeYieldInteractionSuspension) error {
-	v.Kind = "interaction"
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeCodeYieldInteractionSuspension performs a merge with any union data inside the CodeYieldSuspension, using the provided CodeYieldInteractionSuspension
-func (t *CodeYieldSuspension) MergeCodeYieldInteractionSuspension(v CodeYieldInteractionSuspension) error {
-	v.Kind = "interaction"
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsCodeYieldPauseSuspension returns the union data inside the CodeYieldSuspension as a CodeYieldPauseSuspension
-func (t CodeYieldSuspension) AsCodeYieldPauseSuspension() (CodeYieldPauseSuspension, error) {
-	var body CodeYieldPauseSuspension
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromCodeYieldPauseSuspension overwrites any union data inside the CodeYieldSuspension as the provided CodeYieldPauseSuspension
-func (t *CodeYieldSuspension) FromCodeYieldPauseSuspension(v CodeYieldPauseSuspension) error {
-	v.Kind = "pause"
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeCodeYieldPauseSuspension performs a merge with any union data inside the CodeYieldSuspension, using the provided CodeYieldPauseSuspension
-func (t *CodeYieldSuspension) MergeCodeYieldPauseSuspension(v CodeYieldPauseSuspension) error {
-	v.Kind = "pause"
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-func (t CodeYieldSuspension) Discriminator() (string, error) {
-	var discriminator struct {
-		Discriminator string `json:"kind"`
-	}
-	err := json.Unmarshal(t.union, &discriminator)
-	return discriminator.Discriminator, err
-}
-
-func (t CodeYieldSuspension) ValueByDiscriminator() (interface{}, error) {
-	discriminator, err := t.Discriminator()
-	if err != nil {
-		return nil, err
-	}
-	switch discriminator {
-	case "interaction":
-		return t.AsCodeYieldInteractionSuspension()
-	case "pause":
-		return t.AsCodeYieldPauseSuspension()
-	case "sleep":
-		return t.AsCodeYieldSleepSuspension()
-	case "wait_event":
-		return t.AsCodeYieldWaitEventSuspension()
-	case "wait_signal":
-		return t.AsCodeYieldWaitSignalSuspension()
-	default:
-		return nil, errors.New("unknown discriminator value: " + discriminator)
-	}
-}
-
-func (t CodeYieldSuspension) MarshalJSON() ([]byte, error) {
-	b, err := t.union.MarshalJSON()
-	return b, err
-}
-
-func (t *CodeYieldSuspension) UnmarshalJSON(b []byte) error {
-	err := t.union.UnmarshalJSON(b)
-	return err
-}
-
 // AsTextContentBlock returns the union data inside the ContentBlock as a TextContentBlock
 func (t ContentBlock) AsTextContentBlock() (TextContentBlock, error) {
 	var body TextContentBlock
@@ -14656,6 +14746,274 @@ func (t *InteractionValue) UnmarshalJSON(b []byte) error {
 	return err
 }
 
+// AsJobActionSpec returns the union data inside the JobSpec as a JobActionSpec
+func (t JobSpec) AsJobActionSpec() (JobActionSpec, error) {
+	var body JobActionSpec
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromJobActionSpec overwrites any union data inside the JobSpec as the provided JobActionSpec
+func (t *JobSpec) FromJobActionSpec(v JobActionSpec) error {
+	v.Kind = "action"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeJobActionSpec performs a merge with any union data inside the JobSpec, using the provided JobActionSpec
+func (t *JobSpec) MergeJobActionSpec(v JobActionSpec) error {
+	v.Kind = "action"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsJobCodeSpec returns the union data inside the JobSpec as a JobCodeSpec
+func (t JobSpec) AsJobCodeSpec() (JobCodeSpec, error) {
+	var body JobCodeSpec
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromJobCodeSpec overwrites any union data inside the JobSpec as the provided JobCodeSpec
+func (t *JobSpec) FromJobCodeSpec(v JobCodeSpec) error {
+	v.Kind = "code"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeJobCodeSpec performs a merge with any union data inside the JobSpec, using the provided JobCodeSpec
+func (t *JobSpec) MergeJobCodeSpec(v JobCodeSpec) error {
+	v.Kind = "code"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t JobSpec) Discriminator() (string, error) {
+	var discriminator struct {
+		Discriminator string `json:"kind"`
+	}
+	err := json.Unmarshal(t.union, &discriminator)
+	return discriminator.Discriminator, err
+}
+
+func (t JobSpec) ValueByDiscriminator() (interface{}, error) {
+	discriminator, err := t.Discriminator()
+	if err != nil {
+		return nil, err
+	}
+	switch discriminator {
+	case "action":
+		return t.AsJobActionSpec()
+	case "code":
+		return t.AsJobCodeSpec()
+	default:
+		return nil, errors.New("unknown discriminator value: " + discriminator)
+	}
+}
+
+func (t JobSpec) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *JobSpec) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsOutcomeStepDone returns the union data inside the Outcome as a OutcomeStepDone
+func (t Outcome) AsOutcomeStepDone() (OutcomeStepDone, error) {
+	var body OutcomeStepDone
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromOutcomeStepDone overwrites any union data inside the Outcome as the provided OutcomeStepDone
+func (t *Outcome) FromOutcomeStepDone(v OutcomeStepDone) error {
+	v.Kind = "step_done"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeOutcomeStepDone performs a merge with any union data inside the Outcome, using the provided OutcomeStepDone
+func (t *Outcome) MergeOutcomeStepDone(v OutcomeStepDone) error {
+	v.Kind = "step_done"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsOutcomeWaitObserved returns the union data inside the Outcome as a OutcomeWaitObserved
+func (t Outcome) AsOutcomeWaitObserved() (OutcomeWaitObserved, error) {
+	var body OutcomeWaitObserved
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromOutcomeWaitObserved overwrites any union data inside the Outcome as the provided OutcomeWaitObserved
+func (t *Outcome) FromOutcomeWaitObserved(v OutcomeWaitObserved) error {
+	v.Kind = "wait_observed"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeOutcomeWaitObserved performs a merge with any union data inside the Outcome, using the provided OutcomeWaitObserved
+func (t *Outcome) MergeOutcomeWaitObserved(v OutcomeWaitObserved) error {
+	v.Kind = "wait_observed"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsOutcomeComplete returns the union data inside the Outcome as a OutcomeComplete
+func (t Outcome) AsOutcomeComplete() (OutcomeComplete, error) {
+	var body OutcomeComplete
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromOutcomeComplete overwrites any union data inside the Outcome as the provided OutcomeComplete
+func (t *Outcome) FromOutcomeComplete(v OutcomeComplete) error {
+	v.Kind = "complete"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeOutcomeComplete performs a merge with any union data inside the Outcome, using the provided OutcomeComplete
+func (t *Outcome) MergeOutcomeComplete(v OutcomeComplete) error {
+	v.Kind = "complete"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsOutcomeFail returns the union data inside the Outcome as a OutcomeFail
+func (t Outcome) AsOutcomeFail() (OutcomeFail, error) {
+	var body OutcomeFail
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromOutcomeFail overwrites any union data inside the Outcome as the provided OutcomeFail
+func (t *Outcome) FromOutcomeFail(v OutcomeFail) error {
+	v.Kind = "fail"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeOutcomeFail performs a merge with any union data inside the Outcome, using the provided OutcomeFail
+func (t *Outcome) MergeOutcomeFail(v OutcomeFail) error {
+	v.Kind = "fail"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsOutcomeSuspend returns the union data inside the Outcome as a OutcomeSuspend
+func (t Outcome) AsOutcomeSuspend() (OutcomeSuspend, error) {
+	var body OutcomeSuspend
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromOutcomeSuspend overwrites any union data inside the Outcome as the provided OutcomeSuspend
+func (t *Outcome) FromOutcomeSuspend(v OutcomeSuspend) error {
+	v.Kind = "suspend"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeOutcomeSuspend performs a merge with any union data inside the Outcome, using the provided OutcomeSuspend
+func (t *Outcome) MergeOutcomeSuspend(v OutcomeSuspend) error {
+	v.Kind = "suspend"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t Outcome) Discriminator() (string, error) {
+	var discriminator struct {
+		Discriminator string `json:"kind"`
+	}
+	err := json.Unmarshal(t.union, &discriminator)
+	return discriminator.Discriminator, err
+}
+
+func (t Outcome) ValueByDiscriminator() (interface{}, error) {
+	discriminator, err := t.Discriminator()
+	if err != nil {
+		return nil, err
+	}
+	switch discriminator {
+	case "complete":
+		return t.AsOutcomeComplete()
+	case "fail":
+		return t.AsOutcomeFail()
+	case "step_done":
+		return t.AsOutcomeStepDone()
+	case "suspend":
+		return t.AsOutcomeSuspend()
+	case "wait_observed":
+		return t.AsOutcomeWaitObserved()
+	default:
+		return nil, errors.New("unknown discriminator value: " + discriminator)
+	}
+}
+
+func (t Outcome) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *Outcome) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
 // AsRunActionResultOutput0 returns the union data inside the RunActionResult_Output as a RunActionResultOutput0
 func (t RunActionResult_Output) AsRunActionResultOutput0() (RunActionResultOutput0, error) {
 	var body RunActionResultOutput0
@@ -15139,6 +15497,185 @@ func (t *TriggerSourceConfig) UnmarshalJSON(b []byte) error {
 	return err
 }
 
+// AsWaitDescriptorSleep returns the union data inside the WaitDescriptor as a WaitDescriptorSleep
+func (t WaitDescriptor) AsWaitDescriptorSleep() (WaitDescriptorSleep, error) {
+	var body WaitDescriptorSleep
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromWaitDescriptorSleep overwrites any union data inside the WaitDescriptor as the provided WaitDescriptorSleep
+func (t *WaitDescriptor) FromWaitDescriptorSleep(v WaitDescriptorSleep) error {
+	v.Kind = "sleep"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeWaitDescriptorSleep performs a merge with any union data inside the WaitDescriptor, using the provided WaitDescriptorSleep
+func (t *WaitDescriptor) MergeWaitDescriptorSleep(v WaitDescriptorSleep) error {
+	v.Kind = "sleep"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsWaitDescriptorWaitSignal returns the union data inside the WaitDescriptor as a WaitDescriptorWaitSignal
+func (t WaitDescriptor) AsWaitDescriptorWaitSignal() (WaitDescriptorWaitSignal, error) {
+	var body WaitDescriptorWaitSignal
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromWaitDescriptorWaitSignal overwrites any union data inside the WaitDescriptor as the provided WaitDescriptorWaitSignal
+func (t *WaitDescriptor) FromWaitDescriptorWaitSignal(v WaitDescriptorWaitSignal) error {
+	v.Kind = "wait_signal"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeWaitDescriptorWaitSignal performs a merge with any union data inside the WaitDescriptor, using the provided WaitDescriptorWaitSignal
+func (t *WaitDescriptor) MergeWaitDescriptorWaitSignal(v WaitDescriptorWaitSignal) error {
+	v.Kind = "wait_signal"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsWaitDescriptorWaitEvent returns the union data inside the WaitDescriptor as a WaitDescriptorWaitEvent
+func (t WaitDescriptor) AsWaitDescriptorWaitEvent() (WaitDescriptorWaitEvent, error) {
+	var body WaitDescriptorWaitEvent
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromWaitDescriptorWaitEvent overwrites any union data inside the WaitDescriptor as the provided WaitDescriptorWaitEvent
+func (t *WaitDescriptor) FromWaitDescriptorWaitEvent(v WaitDescriptorWaitEvent) error {
+	v.Kind = "wait_event"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeWaitDescriptorWaitEvent performs a merge with any union data inside the WaitDescriptor, using the provided WaitDescriptorWaitEvent
+func (t *WaitDescriptor) MergeWaitDescriptorWaitEvent(v WaitDescriptorWaitEvent) error {
+	v.Kind = "wait_event"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsWaitDescriptorInteraction returns the union data inside the WaitDescriptor as a WaitDescriptorInteraction
+func (t WaitDescriptor) AsWaitDescriptorInteraction() (WaitDescriptorInteraction, error) {
+	var body WaitDescriptorInteraction
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromWaitDescriptorInteraction overwrites any union data inside the WaitDescriptor as the provided WaitDescriptorInteraction
+func (t *WaitDescriptor) FromWaitDescriptorInteraction(v WaitDescriptorInteraction) error {
+	v.Kind = "interaction"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeWaitDescriptorInteraction performs a merge with any union data inside the WaitDescriptor, using the provided WaitDescriptorInteraction
+func (t *WaitDescriptor) MergeWaitDescriptorInteraction(v WaitDescriptorInteraction) error {
+	v.Kind = "interaction"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsWaitDescriptorPause returns the union data inside the WaitDescriptor as a WaitDescriptorPause
+func (t WaitDescriptor) AsWaitDescriptorPause() (WaitDescriptorPause, error) {
+	var body WaitDescriptorPause
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromWaitDescriptorPause overwrites any union data inside the WaitDescriptor as the provided WaitDescriptorPause
+func (t *WaitDescriptor) FromWaitDescriptorPause(v WaitDescriptorPause) error {
+	v.Kind = "pause"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeWaitDescriptorPause performs a merge with any union data inside the WaitDescriptor, using the provided WaitDescriptorPause
+func (t *WaitDescriptor) MergeWaitDescriptorPause(v WaitDescriptorPause) error {
+	v.Kind = "pause"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t WaitDescriptor) Discriminator() (string, error) {
+	var discriminator struct {
+		Discriminator string `json:"kind"`
+	}
+	err := json.Unmarshal(t.union, &discriminator)
+	return discriminator.Discriminator, err
+}
+
+func (t WaitDescriptor) ValueByDiscriminator() (interface{}, error) {
+	discriminator, err := t.Discriminator()
+	if err != nil {
+		return nil, err
+	}
+	switch discriminator {
+	case "interaction":
+		return t.AsWaitDescriptorInteraction()
+	case "pause":
+		return t.AsWaitDescriptorPause()
+	case "sleep":
+		return t.AsWaitDescriptorSleep()
+	case "wait_event":
+		return t.AsWaitDescriptorWaitEvent()
+	case "wait_signal":
+		return t.AsWaitDescriptorWaitSignal()
+	default:
+		return nil, errors.New("unknown discriminator value: " + discriminator)
+	}
+}
+
+func (t WaitDescriptor) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *WaitDescriptor) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
 // AsWorkflowOutput0 returns the union data inside the WorkflowOutput as a WorkflowOutput0
 func (t WorkflowOutput) AsWorkflowOutput0() (WorkflowOutput0, error) {
 	var body WorkflowOutput0
@@ -15198,6 +15735,184 @@ func (t WorkflowOutput) MarshalJSON() ([]byte, error) {
 
 func (t *WorkflowOutput) UnmarshalJSON(b []byte) error {
 	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsWorkflowSpec0 returns the union data inside the WorkflowSpec as a WorkflowSpec0
+func (t WorkflowSpec) AsWorkflowSpec0() (WorkflowSpec0, error) {
+	var body WorkflowSpec0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromWorkflowSpec0 overwrites any union data inside the WorkflowSpec as the provided WorkflowSpec0
+func (t *WorkflowSpec) FromWorkflowSpec0(v WorkflowSpec0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeWorkflowSpec0 performs a merge with any union data inside the WorkflowSpec, using the provided WorkflowSpec0
+func (t *WorkflowSpec) MergeWorkflowSpec0(v WorkflowSpec0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsWorkflowSpec1 returns the union data inside the WorkflowSpec as a WorkflowSpec1
+func (t WorkflowSpec) AsWorkflowSpec1() (WorkflowSpec1, error) {
+	var body WorkflowSpec1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromWorkflowSpec1 overwrites any union data inside the WorkflowSpec as the provided WorkflowSpec1
+func (t *WorkflowSpec) FromWorkflowSpec1(v WorkflowSpec1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeWorkflowSpec1 performs a merge with any union data inside the WorkflowSpec, using the provided WorkflowSpec1
+func (t *WorkflowSpec) MergeWorkflowSpec1(v WorkflowSpec1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t WorkflowSpec) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	object := make(map[string]json.RawMessage)
+	if t.union != nil {
+		err = json.Unmarshal(b, &object)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if t.Code != nil {
+		object["code"], err = json.Marshal(t.Code)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'code': %w", err)
+		}
+	}
+
+	if t.Description != nil {
+		object["description"], err = json.Marshal(t.Description)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'description': %w", err)
+		}
+	}
+
+	if t.Inputs != nil {
+		object["inputs"], err = json.Marshal(t.Inputs)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'inputs': %w", err)
+		}
+	}
+
+	object["name"], err = json.Marshal(t.Name)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'name': %w", err)
+	}
+
+	if t.Outputs != nil {
+		object["outputs"], err = json.Marshal(t.Outputs)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'outputs': %w", err)
+		}
+	}
+
+	if t.StartAt != nil {
+		object["start_at"], err = json.Marshal(t.StartAt)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'start_at': %w", err)
+		}
+	}
+
+	if t.Steps != nil {
+		object["steps"], err = json.Marshal(t.Steps)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'steps': %w", err)
+		}
+	}
+	b, err = json.Marshal(object)
+	return b, err
+}
+
+func (t *WorkflowSpec) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	if err != nil {
+		return err
+	}
+	object := make(map[string]json.RawMessage)
+	err = json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["code"]; found {
+		err = json.Unmarshal(raw, &t.Code)
+		if err != nil {
+			return fmt.Errorf("error reading 'code': %w", err)
+		}
+	}
+
+	if raw, found := object["description"]; found {
+		err = json.Unmarshal(raw, &t.Description)
+		if err != nil {
+			return fmt.Errorf("error reading 'description': %w", err)
+		}
+	}
+
+	if raw, found := object["inputs"]; found {
+		err = json.Unmarshal(raw, &t.Inputs)
+		if err != nil {
+			return fmt.Errorf("error reading 'inputs': %w", err)
+		}
+	}
+
+	if raw, found := object["name"]; found {
+		err = json.Unmarshal(raw, &t.Name)
+		if err != nil {
+			return fmt.Errorf("error reading 'name': %w", err)
+		}
+	}
+
+	if raw, found := object["outputs"]; found {
+		err = json.Unmarshal(raw, &t.Outputs)
+		if err != nil {
+			return fmt.Errorf("error reading 'outputs': %w", err)
+		}
+	}
+
+	if raw, found := object["start_at"]; found {
+		err = json.Unmarshal(raw, &t.StartAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'start_at': %w", err)
+		}
+	}
+
+	if raw, found := object["steps"]; found {
+		err = json.Unmarshal(raw, &t.Steps)
+		if err != nil {
+			return fmt.Errorf("error reading 'steps': %w", err)
+		}
+	}
+
 	return err
 }
 
@@ -15425,32 +16140,6 @@ func (t *WorkflowStep) FromWorkflowInteractionStep(v WorkflowInteractionStep) er
 
 // MergeWorkflowInteractionStep performs a merge with any union data inside the WorkflowStep, using the provided WorkflowInteractionStep
 func (t *WorkflowStep) MergeWorkflowInteractionStep(v WorkflowInteractionStep) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsWorkflowCodeStep returns the union data inside the WorkflowStep as a WorkflowCodeStep
-func (t WorkflowStep) AsWorkflowCodeStep() (WorkflowCodeStep, error) {
-	var body WorkflowCodeStep
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromWorkflowCodeStep overwrites any union data inside the WorkflowStep as the provided WorkflowCodeStep
-func (t *WorkflowStep) FromWorkflowCodeStep(v WorkflowCodeStep) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeWorkflowCodeStep performs a merge with any union data inside the WorkflowStep, using the provided WorkflowCodeStep
-func (t *WorkflowStep) MergeWorkflowCodeStep(v WorkflowCodeStep) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -15986,21 +16675,6 @@ type ClientInterface interface {
 
 	RunJobAction(ctx context.Context, project ProjectHandleParam, id IDParam, actionName ActionNameParam, body RunJobActionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CompleteCodeJobWithBody request with any body
-	CompleteCodeJobWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	CompleteCodeJob(ctx context.Context, project ProjectHandleParam, id IDParam, body CompleteCodeJobJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// YieldCodeJobWithBody request with any body
-	YieldCodeJobWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	YieldCodeJob(ctx context.Context, project ProjectHandleParam, id IDParam, body YieldCodeJobJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// CompleteJobWithBody request with any body
-	CompleteJobWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	CompleteJob(ctx context.Context, project ProjectHandleParam, id IDParam, body CompleteJobJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
 	// EmitJobEventsWithBody request with any body
 	EmitJobEventsWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -16011,10 +16685,18 @@ type ClientInterface interface {
 
 	HeartbeatJob(ctx context.Context, project ProjectHandleParam, id IDParam, body HeartbeatJobJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetJobHistory request
+	GetJobHistory(ctx context.Context, project ProjectHandleParam, id IDParam, params *GetJobHistoryParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// CreateJobInteractionWithBody request with any body
 	CreateJobInteractionWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	CreateJobInteraction(ctx context.Context, project ProjectHandleParam, id IDParam, body CreateJobInteractionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ReportJobWithBody request with any body
+	ReportJobWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	ReportJob(ctx context.Context, project ProjectHandleParam, id IDParam, body ReportJobJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListProjectLogs request
 	ListProjectLogs(ctx context.Context, project ProjectHandleParam, params *ListProjectLogsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -18350,78 +19032,6 @@ func (c *Client) RunJobAction(ctx context.Context, project ProjectHandleParam, i
 	return c.Client.Do(req)
 }
 
-func (c *Client) CompleteCodeJobWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCompleteCodeJobRequestWithBody(c.Server, project, id, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) CompleteCodeJob(ctx context.Context, project ProjectHandleParam, id IDParam, body CompleteCodeJobJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCompleteCodeJobRequest(c.Server, project, id, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) YieldCodeJobWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewYieldCodeJobRequestWithBody(c.Server, project, id, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) YieldCodeJob(ctx context.Context, project ProjectHandleParam, id IDParam, body YieldCodeJobJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewYieldCodeJobRequest(c.Server, project, id, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) CompleteJobWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCompleteJobRequestWithBody(c.Server, project, id, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) CompleteJob(ctx context.Context, project ProjectHandleParam, id IDParam, body CompleteJobJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCompleteJobRequest(c.Server, project, id, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
 func (c *Client) EmitJobEventsWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewEmitJobEventsRequestWithBody(c.Server, project, id, contentType, body)
 	if err != nil {
@@ -18470,6 +19080,18 @@ func (c *Client) HeartbeatJob(ctx context.Context, project ProjectHandleParam, i
 	return c.Client.Do(req)
 }
 
+func (c *Client) GetJobHistory(ctx context.Context, project ProjectHandleParam, id IDParam, params *GetJobHistoryParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetJobHistoryRequest(c.Server, project, id, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) CreateJobInteractionWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewCreateJobInteractionRequestWithBody(c.Server, project, id, contentType, body)
 	if err != nil {
@@ -18484,6 +19106,30 @@ func (c *Client) CreateJobInteractionWithBody(ctx context.Context, project Proje
 
 func (c *Client) CreateJobInteraction(ctx context.Context, project ProjectHandleParam, id IDParam, body CreateJobInteractionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewCreateJobInteractionRequest(c.Server, project, id, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ReportJobWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewReportJobRequestWithBody(c.Server, project, id, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ReportJob(ctx context.Context, project ProjectHandleParam, id IDParam, body ReportJobJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewReportJobRequest(c.Server, project, id, body)
 	if err != nil {
 		return nil, err
 	}
@@ -26957,168 +27603,6 @@ func NewRunJobActionRequestWithBody(server string, project ProjectHandleParam, i
 	return req, nil
 }
 
-// NewCompleteCodeJobRequest calls the generic CompleteCodeJob builder with application/json body
-func NewCompleteCodeJobRequest(server string, project ProjectHandleParam, id IDParam, body CompleteCodeJobJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewCompleteCodeJobRequestWithBody(server, project, id, "application/json", bodyReader)
-}
-
-// NewCompleteCodeJobRequestWithBody generates requests for CompleteCodeJob with any type of body
-func NewCompleteCodeJobRequestWithBody(server string, project ProjectHandleParam, id IDParam, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/projects/%s/jobs/%s/code-completion", pathParam0, pathParam1)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("POST", queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewYieldCodeJobRequest calls the generic YieldCodeJob builder with application/json body
-func NewYieldCodeJobRequest(server string, project ProjectHandleParam, id IDParam, body YieldCodeJobJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewYieldCodeJobRequestWithBody(server, project, id, "application/json", bodyReader)
-}
-
-// NewYieldCodeJobRequestWithBody generates requests for YieldCodeJob with any type of body
-func NewYieldCodeJobRequestWithBody(server string, project ProjectHandleParam, id IDParam, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/projects/%s/jobs/%s/code-yield", pathParam0, pathParam1)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("POST", queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewCompleteJobRequest calls the generic CompleteJob builder with application/json body
-func NewCompleteJobRequest(server string, project ProjectHandleParam, id IDParam, body CompleteJobJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewCompleteJobRequestWithBody(server, project, id, "application/json", bodyReader)
-}
-
-// NewCompleteJobRequestWithBody generates requests for CompleteJob with any type of body
-func NewCompleteJobRequestWithBody(server string, project ProjectHandleParam, id IDParam, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/projects/%s/jobs/%s/complete", pathParam0, pathParam1)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("POST", queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
 // NewEmitJobEventsRequest calls the generic EmitJobEvents builder with application/json body
 func NewEmitJobEventsRequest(server string, project ProjectHandleParam, id IDParam, body EmitJobEventsJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
@@ -27227,6 +27711,85 @@ func NewHeartbeatJobRequestWithBody(server string, project ProjectHandleParam, i
 	return req, nil
 }
 
+// NewGetJobHistoryRequest generates requests for GetJobHistory
+func NewGetJobHistoryRequest(server string, project ProjectHandleParam, id IDParam, params *GetJobHistoryParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/jobs/%s/history", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.After != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "after", *params.After, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewCreateJobInteractionRequest calls the generic CreateJobInteraction builder with application/json body
 func NewCreateJobInteractionRequest(server string, project ProjectHandleParam, id IDParam, body CreateJobInteractionJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
@@ -27262,6 +27825,60 @@ func NewCreateJobInteractionRequestWithBody(server string, project ProjectHandle
 	}
 
 	operationPath := fmt.Sprintf("/v1/projects/%s/jobs/%s/interactions", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewReportJobRequest calls the generic ReportJob builder with application/json body
+func NewReportJobRequest(server string, project ProjectHandleParam, id IDParam, body ReportJobJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewReportJobRequestWithBody(server, project, id, "application/json", bodyReader)
+}
+
+// NewReportJobRequestWithBody generates requests for ReportJob with any type of body
+func NewReportJobRequestWithBody(server string, project ProjectHandleParam, id IDParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/jobs/%s/report", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -33728,21 +34345,6 @@ type ClientWithResponsesInterface interface {
 
 	RunJobActionWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, actionName ActionNameParam, body RunJobActionJSONRequestBody, reqEditors ...RequestEditorFn) (*RunJobActionResponse, error)
 
-	// CompleteCodeJobWithBodyWithResponse request with any body
-	CompleteCodeJobWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CompleteCodeJobResponse, error)
-
-	CompleteCodeJobWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body CompleteCodeJobJSONRequestBody, reqEditors ...RequestEditorFn) (*CompleteCodeJobResponse, error)
-
-	// YieldCodeJobWithBodyWithResponse request with any body
-	YieldCodeJobWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*YieldCodeJobResponse, error)
-
-	YieldCodeJobWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body YieldCodeJobJSONRequestBody, reqEditors ...RequestEditorFn) (*YieldCodeJobResponse, error)
-
-	// CompleteJobWithBodyWithResponse request with any body
-	CompleteJobWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CompleteJobResponse, error)
-
-	CompleteJobWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body CompleteJobJSONRequestBody, reqEditors ...RequestEditorFn) (*CompleteJobResponse, error)
-
 	// EmitJobEventsWithBodyWithResponse request with any body
 	EmitJobEventsWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*EmitJobEventsResponse, error)
 
@@ -33753,10 +34355,18 @@ type ClientWithResponsesInterface interface {
 
 	HeartbeatJobWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body HeartbeatJobJSONRequestBody, reqEditors ...RequestEditorFn) (*HeartbeatJobResponse, error)
 
+	// GetJobHistoryWithResponse request
+	GetJobHistoryWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, params *GetJobHistoryParams, reqEditors ...RequestEditorFn) (*GetJobHistoryResponse, error)
+
 	// CreateJobInteractionWithBodyWithResponse request with any body
 	CreateJobInteractionWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateJobInteractionResponse, error)
 
 	CreateJobInteractionWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body CreateJobInteractionJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateJobInteractionResponse, error)
+
+	// ReportJobWithBodyWithResponse request with any body
+	ReportJobWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ReportJobResponse, error)
+
+	ReportJobWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body ReportJobJSONRequestBody, reqEditors ...RequestEditorFn) (*ReportJobResponse, error)
 
 	// ListProjectLogsWithResponse request
 	ListProjectLogsWithResponse(ctx context.Context, project ProjectHandleParam, params *ListProjectLogsParams, reqEditors ...RequestEditorFn) (*ListProjectLogsResponse, error)
@@ -36990,81 +37600,6 @@ func (r RunJobActionResponse) StatusCode() int {
 	return 0
 }
 
-type CompleteCodeJobResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON400      *BadRequest
-	JSON401      *Unauthorized
-	JSON404      *NotFound
-	JSON409      *Conflict
-}
-
-// Status returns HTTPResponse.Status
-func (r CompleteCodeJobResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r CompleteCodeJobResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type YieldCodeJobResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON400      *BadRequest
-	JSON401      *Unauthorized
-	JSON404      *NotFound
-	JSON409      *Conflict
-}
-
-// Status returns HTTPResponse.Status
-func (r YieldCodeJobResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r YieldCodeJobResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type CompleteJobResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON400      *BadRequest
-	JSON401      *Unauthorized
-	JSON404      *NotFound
-	JSON409      *Conflict
-}
-
-// Status returns HTTPResponse.Status
-func (r CompleteJobResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r CompleteJobResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
 type EmitJobEventsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -37118,6 +37653,30 @@ func (r HeartbeatJobResponse) StatusCode() int {
 	return 0
 }
 
+type GetJobHistoryResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *JobHistoryResponse
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r GetJobHistoryResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetJobHistoryResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type CreateJobInteractionResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -37138,6 +37697,31 @@ func (r CreateJobInteractionResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r CreateJobInteractionResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ReportJobResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+	JSON409      *Conflict
+}
+
+// Status returns HTTPResponse.Status
+func (r ReportJobResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ReportJobResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -41038,57 +41622,6 @@ func (c *ClientWithResponses) RunJobActionWithResponse(ctx context.Context, proj
 	return ParseRunJobActionResponse(rsp)
 }
 
-// CompleteCodeJobWithBodyWithResponse request with arbitrary body returning *CompleteCodeJobResponse
-func (c *ClientWithResponses) CompleteCodeJobWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CompleteCodeJobResponse, error) {
-	rsp, err := c.CompleteCodeJobWithBody(ctx, project, id, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCompleteCodeJobResponse(rsp)
-}
-
-func (c *ClientWithResponses) CompleteCodeJobWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body CompleteCodeJobJSONRequestBody, reqEditors ...RequestEditorFn) (*CompleteCodeJobResponse, error) {
-	rsp, err := c.CompleteCodeJob(ctx, project, id, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCompleteCodeJobResponse(rsp)
-}
-
-// YieldCodeJobWithBodyWithResponse request with arbitrary body returning *YieldCodeJobResponse
-func (c *ClientWithResponses) YieldCodeJobWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*YieldCodeJobResponse, error) {
-	rsp, err := c.YieldCodeJobWithBody(ctx, project, id, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseYieldCodeJobResponse(rsp)
-}
-
-func (c *ClientWithResponses) YieldCodeJobWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body YieldCodeJobJSONRequestBody, reqEditors ...RequestEditorFn) (*YieldCodeJobResponse, error) {
-	rsp, err := c.YieldCodeJob(ctx, project, id, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseYieldCodeJobResponse(rsp)
-}
-
-// CompleteJobWithBodyWithResponse request with arbitrary body returning *CompleteJobResponse
-func (c *ClientWithResponses) CompleteJobWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CompleteJobResponse, error) {
-	rsp, err := c.CompleteJobWithBody(ctx, project, id, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCompleteJobResponse(rsp)
-}
-
-func (c *ClientWithResponses) CompleteJobWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body CompleteJobJSONRequestBody, reqEditors ...RequestEditorFn) (*CompleteJobResponse, error) {
-	rsp, err := c.CompleteJob(ctx, project, id, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCompleteJobResponse(rsp)
-}
-
 // EmitJobEventsWithBodyWithResponse request with arbitrary body returning *EmitJobEventsResponse
 func (c *ClientWithResponses) EmitJobEventsWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*EmitJobEventsResponse, error) {
 	rsp, err := c.EmitJobEventsWithBody(ctx, project, id, contentType, body, reqEditors...)
@@ -41123,6 +41656,15 @@ func (c *ClientWithResponses) HeartbeatJobWithResponse(ctx context.Context, proj
 	return ParseHeartbeatJobResponse(rsp)
 }
 
+// GetJobHistoryWithResponse request returning *GetJobHistoryResponse
+func (c *ClientWithResponses) GetJobHistoryWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, params *GetJobHistoryParams, reqEditors ...RequestEditorFn) (*GetJobHistoryResponse, error) {
+	rsp, err := c.GetJobHistory(ctx, project, id, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetJobHistoryResponse(rsp)
+}
+
 // CreateJobInteractionWithBodyWithResponse request with arbitrary body returning *CreateJobInteractionResponse
 func (c *ClientWithResponses) CreateJobInteractionWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateJobInteractionResponse, error) {
 	rsp, err := c.CreateJobInteractionWithBody(ctx, project, id, contentType, body, reqEditors...)
@@ -41138,6 +41680,23 @@ func (c *ClientWithResponses) CreateJobInteractionWithResponse(ctx context.Conte
 		return nil, err
 	}
 	return ParseCreateJobInteractionResponse(rsp)
+}
+
+// ReportJobWithBodyWithResponse request with arbitrary body returning *ReportJobResponse
+func (c *ClientWithResponses) ReportJobWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ReportJobResponse, error) {
+	rsp, err := c.ReportJobWithBody(ctx, project, id, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseReportJobResponse(rsp)
+}
+
+func (c *ClientWithResponses) ReportJobWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body ReportJobJSONRequestBody, reqEditors ...RequestEditorFn) (*ReportJobResponse, error) {
+	rsp, err := c.ReportJob(ctx, project, id, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseReportJobResponse(rsp)
 }
 
 // ListProjectLogsWithResponse request returning *ListProjectLogsResponse
@@ -47478,147 +48037,6 @@ func ParseRunJobActionResponse(rsp *http.Response) (*RunJobActionResponse, error
 	return response, nil
 }
 
-// ParseCompleteCodeJobResponse parses an HTTP response from a CompleteCodeJobWithResponse call
-func ParseCompleteCodeJobResponse(rsp *http.Response) (*CompleteCodeJobResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &CompleteCodeJobResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest BadRequest
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
-		var dest Conflict
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON409 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseYieldCodeJobResponse parses an HTTP response from a YieldCodeJobWithResponse call
-func ParseYieldCodeJobResponse(rsp *http.Response) (*YieldCodeJobResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &YieldCodeJobResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest BadRequest
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
-		var dest Conflict
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON409 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseCompleteJobResponse parses an HTTP response from a CompleteJobWithResponse call
-func ParseCompleteJobResponse(rsp *http.Response) (*CompleteJobResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &CompleteJobResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest BadRequest
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
-		var dest Conflict
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON409 = &dest
-
-	}
-
-	return response, nil
-}
-
 // ParseEmitJobEventsResponse parses an HTTP response from a EmitJobEventsWithResponse call
 func ParseEmitJobEventsResponse(rsp *http.Response) (*EmitJobEventsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -47734,6 +48152,46 @@ func ParseHeartbeatJobResponse(rsp *http.Response) (*HeartbeatJobResponse, error
 	return response, nil
 }
 
+// ParseGetJobHistoryResponse parses an HTTP response from a GetJobHistoryWithResponse call
+func ParseGetJobHistoryResponse(rsp *http.Response) (*GetJobHistoryResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetJobHistoryResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest JobHistoryResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseCreateJobInteractionResponse parses an HTTP response from a CreateJobInteractionWithResponse call
 func ParseCreateJobInteractionResponse(rsp *http.Response) (*CreateJobInteractionResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -47755,6 +48213,53 @@ func ParseCreateJobInteractionResponse(rsp *http.Response) (*CreateJobInteractio
 		}
 		response.JSON201 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseReportJobResponse parses an HTTP response from a ReportJobWithResponse call
+func ParseReportJobResponse(rsp *http.Response) (*ReportJobResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ReportJobResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
 		var dest BadRequest
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {

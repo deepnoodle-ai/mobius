@@ -91,7 +91,7 @@ func registerAgentsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.CreateAgentWithResponse(ctx.Context(), p0, body)
+			resp, err := client.CreateAgentWithResponse(ctx.Context(), api.ProjectHandleParam(p0), body)
 			if err != nil {
 				return err
 			}
@@ -134,7 +134,7 @@ func registerAgentsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.CreateAgentSessionWithResponse(ctx.Context(), p0, p1, body)
+			resp, err := client.CreateAgentSessionWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1), body)
 			if err != nil {
 				return err
 			}
@@ -153,7 +153,7 @@ func registerAgentsCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			resp, err := client.DeleteAgentWithResponse(ctx.Context(), p0, p1)
+			resp, err := client.DeleteAgentWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1))
 			if err != nil {
 				return err
 			}
@@ -173,7 +173,7 @@ func registerAgentsCommands(app *cli.App) {
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			p2 := ctx.Arg(1)
-			resp, err := client.DisconnectAgentSessionWithResponse(ctx.Context(), p0, p1, p2)
+			resp, err := client.DisconnectAgentSessionWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1), api.SessionId(p2))
 			if err != nil {
 				return err
 			}
@@ -192,7 +192,7 @@ func registerAgentsCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			resp, err := client.GetAgentWithResponse(ctx.Context(), p0, p1)
+			resp, err := client.GetAgentWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1))
 			if err != nil {
 				return err
 			}
@@ -212,7 +212,7 @@ func registerAgentsCommands(app *cli.App) {
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			p2 := ctx.Arg(1)
-			resp, err := client.GetAgentSessionWithResponse(ctx.Context(), p0, p1, p2)
+			resp, err := client.GetAgentSessionWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1), api.SessionId(p2))
 			if err != nil {
 				return err
 			}
@@ -232,7 +232,7 @@ func registerAgentsCommands(app *cli.App) {
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			p2 := ctx.Arg(1)
-			resp, err := client.HeartbeatAgentSessionWithResponse(ctx.Context(), p0, p1, p2)
+			resp, err := client.HeartbeatAgentSessionWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1), api.SessionId(p2))
 			if err != nil {
 				return err
 			}
@@ -267,7 +267,7 @@ func registerAgentsCommands(app *cli.App) {
 				v := api.LimitParam(ctx.Int("limit"))
 				params.Limit = &v
 			}
-			resp, err := client.ListAgentsWithResponse(ctx.Context(), p0, params)
+			resp, err := client.ListAgentsWithResponse(ctx.Context(), api.ProjectHandleParam(p0), params)
 			if err != nil {
 				return err
 			}
@@ -304,7 +304,7 @@ func registerAgentsCommands(app *cli.App) {
 				v := api.LimitParam(ctx.Int("limit"))
 				params.Limit = &v
 			}
-			resp, err := client.ListAgentSessionsWithResponse(ctx.Context(), p0, p1, params)
+			resp, err := client.ListAgentSessionsWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1), params)
 			if err != nil {
 				return err
 			}
@@ -323,7 +323,7 @@ func registerAgentsCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			resp, err := client.ProvisionAgentInboxWithResponse(ctx.Context(), p0, p1)
+			resp, err := client.ProvisionAgentInboxWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1))
 			if err != nil {
 				return err
 			}
@@ -400,7 +400,7 @@ func registerAgentsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.UpdateAgentWithResponse(ctx.Context(), p0, p1, body)
+			resp, err := client.UpdateAgentWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1), body)
 			if err != nil {
 				return err
 			}

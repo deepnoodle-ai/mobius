@@ -1,9 +1,11 @@
 import { randomUUID } from "node:crypto";
 import { hostname as systemHostname } from "node:os";
 import type {
+  JobActionSpec,
   JobClaim,
   JobClaimRequest,
-  JobCompleteRequest,
+  JobReportRequest,
+  Outcome,
 } from "./api/index.js";
 import {
   AuthRevokedError,
@@ -383,21 +385,33 @@ export class Worker {
   ): Promise<void> {
     const jobId = job.job_id;
     const workerInstanceId = this.config.workerInstanceId;
-    const sessionToken = this.sessionToken;
-    const attempt = job.attempt;
-    this.logger.info(
-      `[mobius] job ${jobId} claimed (workflow=${job.workflow_name}, step=${job.step_name}, action=${job.action}, attempt=${attempt})`,
-    );
-
-    const fn = this.actions.get(job.action);
-    if (!fn) {
-      const msg = `action ${JSON.stringify(job.action)} not registered on this worker`;
+    const leaseToken = job.lease_token;
+    if (job.spec.kind !== "action") {
+      const msg = `job ${jobId} carries spec.kind=${JSON.stringify(job.spec.kind)} — this worker only handles action jobs`;
       this.logger.error(`[mobius] ${msg}`);
       await this.failJob(
         jobId,
         workerInstanceId,
-        sessionToken,
-        attempt,
+        leaseToken,
+        "UnsupportedSpecKind",
+        msg,
+      );
+      return;
+    }
+    const spec = job.spec as JobActionSpec;
+    const attempt = job.attempt_number ?? 0;
+    this.logger.info(
+      `[mobius] job ${jobId} claimed (workflow=${job.workflow_name}, step=${job.step_name}, action=${spec.name}, attempt=${attempt})`,
+    );
+
+    const fn = this.actions.get(spec.name);
+    if (!fn) {
+      const msg = `action ${JSON.stringify(spec.name)} not registered on this worker`;
+      this.logger.error(`[mobius] ${msg}`);
+      await this.failJob(
+        jobId,
+        workerInstanceId,
+        leaseToken,
         "ActionNotRegistered",
         msg,
       );
@@ -411,7 +425,7 @@ export class Worker {
     signal?.addEventListener("abort", onAbort, { once: true });
     const eventer = new JobEventer(this.client, job, {
       workerInstanceId,
-      sessionToken,
+      leaseToken,
       queueSize: this.config.eventQueueSize,
       batchSize: this.config.eventBatchSize,
       logger: this.logger,
@@ -426,7 +440,7 @@ export class Worker {
       queue: job.queue,
       workflowName: job.workflow_name,
       stepName: job.step_name,
-      action: job.action,
+      action: spec.name,
       emitEvent: (type, payload) => eventer.emit(type, payload),
     };
 
@@ -436,8 +450,7 @@ export class Worker {
       try {
         const hb = await this.client.heartbeatJob(jobId, {
           worker_instance_id: workerInstanceId,
-          worker_session_token: sessionToken,
-          attempt,
+          lease_token: leaseToken,
         });
         if (hb.directives.should_cancel) {
           this.logger.warn(`[mobius] job ${jobId}: cancel directive received`);
@@ -464,7 +477,7 @@ export class Worker {
 
     try {
       const result = await fn(
-        job.parameters,
+        spec.parameters ?? {},
         actionController.signal,
         actionContext,
       );
@@ -473,18 +486,18 @@ export class Worker {
       eventer.stop();
       await eventerPromise;
       if (hbLost) return;
-      const completeReq: JobCompleteRequest = {
-        worker_instance_id: workerInstanceId,
-        worker_session_token: sessionToken,
-        attempt,
-        status: "completed",
-      };
+      const outcome: Outcome = { kind: "complete" };
       if (result != null) {
-        completeReq.result_b64 = Buffer.from(JSON.stringify(result)).toString(
+        outcome.result_b64 = Buffer.from(JSON.stringify(result)).toString(
           "base64",
         );
       }
-      await this.client.completeJob(jobId, completeReq);
+      const reportReq: JobReportRequest = {
+        worker_instance_id: workerInstanceId,
+        lease_token: leaseToken,
+        outcomes: [outcome],
+      };
+      await this.client.reportJob(jobId, reportReq);
       this.logger.info(`[mobius] job ${jobId} completed`);
     } catch (err) {
       clearInterval(heartbeatTimer);
@@ -507,8 +520,7 @@ export class Worker {
       await this.failJob(
         jobId,
         workerInstanceId,
-        sessionToken,
-        attempt,
+        leaseToken,
         errType,
         String(err),
       );
@@ -527,19 +539,21 @@ export class Worker {
   private async failJob(
     jobId: string,
     workerInstanceId: string,
-    sessionToken: string,
-    attempt: number,
+    leaseToken: string,
     errorType: string,
     msg: string,
   ): Promise<void> {
     try {
-      await this.client.completeJob(jobId, {
+      await this.client.reportJob(jobId, {
         worker_instance_id: workerInstanceId,
-        worker_session_token: sessionToken,
-        attempt,
-        status: "failed",
-        error_type: errorType,
-        error_message: msg,
+        lease_token: leaseToken,
+        outcomes: [
+          {
+            kind: "fail",
+            error_type: errorType,
+            error_message: msg,
+          },
+        ],
       });
     } catch (err) {
       this.logger.error(
@@ -742,7 +756,7 @@ class JobEventer {
     private readonly job: JobClaim,
     private readonly options: {
       workerInstanceId: string;
-      sessionToken: string;
+      leaseToken: string;
       queueSize: number;
       batchSize: number;
       logger: Logger;
@@ -781,8 +795,7 @@ class JobEventer {
       try {
         await this.client.emitJobEvents(this.job.job_id, {
           worker_instance_id: this.options.workerInstanceId,
-          worker_session_token: this.options.sessionToken,
-          attempt: this.job.attempt,
+          lease_token: this.options.leaseToken,
           events: batch,
         });
       } catch (err) {

@@ -36,7 +36,15 @@ from deepnoodle.mobius import (
     sign_webhook_payload,
     verify_webhook_signature,
 )
-from deepnoodle.mobius._api.models import JobClaimRequest, JobCompleteRequest, JobFenceRequest, Status as JobStatus, WorkflowRunStatus, WorkflowSpec
+from deepnoodle.mobius._api.models import (
+    JobClaimRequest,
+    JobFenceRequest,
+    JobReportRequest,
+    Outcome,
+    OutcomeComplete,
+    WorkflowRunStatus,
+    WorkflowSpec,
+)
 
 
 def _client_with(handler) -> Client:
@@ -84,9 +92,13 @@ def test_claim_job_returns_job_on_200() -> None:
                 "run_id": "run_1",
                 "workflow_name": "hello",
                 "step_name": "greet",
-                "action": "print",
-                "parameters": {"msg": "hi"},
-                "attempt": 1,
+                "spec": {
+                    "kind": "action",
+                    "name": "print",
+                    "parameters": {"msg": "hi"},
+                },
+                "lease_token": "lease-1",
+                "attempt_number": 1,
                 "queue": "default",
             },
         )
@@ -101,8 +113,10 @@ def test_claim_job_returns_job_on_200() -> None:
     )
     assert job is not None
     assert job.job_id == "job_1"
-    assert job.action == "print"
-    assert job.parameters == {"msg": "hi"}
+    spec = job.spec.root
+    assert spec.kind == "action"
+    assert spec.name == "print"
+    assert spec.parameters == {"msg": "hi"}
 
 
 def test_claim_job_409_with_worker_instance_conflict_envelope_raises_typed_error() -> None:
@@ -137,36 +151,31 @@ def test_heartbeat_409_raises_lease_lost() -> None:
     with pytest.raises(LeaseLostError):
         client.heartbeat_job(
             "task_1",
-            JobFenceRequest(
-                worker_instance_id="w",
-                worker_session_token="test-session-token",
-                attempt=1,
-            ),
+            JobFenceRequest(worker_instance_id="w", lease_token="lease-1"),
         )
 
 
-def test_complete_job_409_raises_lease_lost() -> None:
+def test_report_job_409_raises_lease_lost() -> None:
     def handler(_: httpx.Request) -> httpx.Response:
         return httpx.Response(409)
 
     client = _client_with(handler)
     with pytest.raises(LeaseLostError):
-        client.complete_job(
+        client.report_job(
             "task_1",
-            JobCompleteRequest(
+            JobReportRequest(
                 worker_instance_id="w",
-                worker_session_token="test-session-token",
-                attempt=1,
-                status=JobStatus.completed,
+                lease_token="lease-1",
+                outcomes=[Outcome(root=OutcomeComplete(kind="complete"))],
             ),
         )
 
 
-# Session-token is the canonical fence value (the SDK stamps it on
-# every claim and presents it on heartbeat / complete / events).
-# The tests below mirror the worker_instance_id paths above so any
-# drift in the token-bearing wire shape fails the suite.
-def test_heartbeat_with_session_token_serializes_token() -> None:
+# lease_token is the fence value (returned by claim, echoed on
+# heartbeat / report / events). The tests below mirror the
+# worker_instance_id paths above so any drift in the token-bearing
+# wire shape fails the suite.
+def test_heartbeat_serializes_lease_token() -> None:
     seen: dict[str, object] = {}
 
     def handler(request: httpx.Request) -> httpx.Response:
@@ -177,12 +186,12 @@ def test_heartbeat_with_session_token_serializes_token() -> None:
     with pytest.raises(LeaseLostError):
         client.heartbeat_job(
             "task_1",
-            JobFenceRequest(worker_session_token="tok-abc", attempt=1),
+            JobFenceRequest(lease_token="lease-abc"),
         )
-    assert '"worker_session_token":"tok-abc"' in str(seen["body"])
+    assert '"lease_token":"lease-abc"' in str(seen["body"])
 
 
-def test_complete_job_with_session_token_serializes_token() -> None:
+def test_report_job_serializes_lease_token() -> None:
     seen: dict[str, object] = {}
 
     def handler(request: httpx.Request) -> httpx.Response:
@@ -190,15 +199,14 @@ def test_complete_job_with_session_token_serializes_token() -> None:
         return httpx.Response(204)
 
     client = _client_with(handler)
-    client.complete_job(
+    client.report_job(
         "task_1",
-        JobCompleteRequest(
-            worker_session_token="tok-abc",
-            attempt=1,
-            status=JobStatus.completed,
+        JobReportRequest(
+            lease_token="lease-abc",
+            outcomes=[Outcome(root=OutcomeComplete(kind="complete"))],
         ),
     )
-    assert '"worker_session_token":"tok-abc"' in str(seen["body"])
+    assert '"lease_token":"lease-abc"' in str(seen["body"])
 
 
 def test_emit_job_event_posts_to_project_events_endpoint() -> None:
@@ -213,14 +221,14 @@ def test_emit_job_event_posts_to_project_events_endpoint() -> None:
     client.emit_job_event(
         "task_1",
         worker_instance_id="worker-1",
-        attempt=2,
+        lease_token="lease-1",
         type="scrape.page_done",
         payload={"url": "https://example.com"},
     )
 
     assert seen["path"] == "/v1/projects/test-project/jobs/task_1/events"
     assert '"type":"scrape.page_done"' in str(seen["body"])
-    assert '"attempt":2' in str(seen["body"])
+    assert '"lease_token":"lease-1"' in str(seen["body"])
 
 
 def test_emit_job_events_413_raises_payload_too_large() -> None:
@@ -232,7 +240,7 @@ def test_emit_job_events_413_raises_payload_too_large() -> None:
         client.emit_job_event(
             "task_1",
             worker_instance_id="worker-1",
-            attempt=1,
+            lease_token="lease-1",
             type="too.big",
             payload={"size": "x"},
         )
@@ -247,7 +255,7 @@ def test_emit_job_events_429_raises_rate_limited() -> None:
         client.emit_job_event(
             "task_1",
             worker_instance_id="worker-1",
-            attempt=1,
+            lease_token="lease-1",
             type="progress",
             payload={"pct": 5},
         )
@@ -264,7 +272,7 @@ def test_start_run_posts_correlated_request() -> None:
 
     client = _client_with(handler)
     run = client.start_run(
-        WorkflowSpec(name="demo", steps=[]),
+        WorkflowSpec.model_validate({"name": "demo", "steps": []}),
         StartRunOptions(
             queue="research",
             external_id="external-1",
@@ -473,7 +481,7 @@ def test_workflow_helpers_create_update_and_ensure_definitions() -> None:
     client = _client_with(handler)
     assert (
         client.create_workflow(
-            WorkflowSpec(name="research", steps=[]),
+            WorkflowSpec.model_validate({"name": "research", "steps": []}),
             WorkflowOptions(handle="research"),
         ).id
         == "wf_1"
@@ -483,14 +491,14 @@ def test_workflow_helpers_create_update_and_ensure_definitions() -> None:
             "wf_1",
             UpdateWorkflowOptions(
                 name="research v2",
-                spec=WorkflowSpec(name="research v2", steps=[]),
+                spec=WorkflowSpec.model_validate({"name": "research v2", "steps": []}),
             ),
         ).name
         == "research v2"
     )
     assert len(client.list_workflows(ListWorkflowsOptions(limit=10)).items) == 1
     result = client.ensure_workflow(
-        WorkflowSpec(name="research", steps=[]),
+        WorkflowSpec.model_validate({"name": "research", "steps": []}),
         WorkflowOptions(handle="research"),
     )
 

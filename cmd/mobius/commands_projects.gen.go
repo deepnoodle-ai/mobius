@@ -48,7 +48,7 @@ func registerProjectsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.AddProjectMemberWithResponse(ctx.Context(), p0, body)
+			resp, err := client.AddProjectMemberWithResponse(ctx.Context(), api.IDParam(p0), body)
 			if err != nil {
 				return err
 			}
@@ -66,7 +66,7 @@ func registerProjectsCommands(app *cli.App) {
 			}
 			client := mc.RawClient()
 			p0 := ctx.Arg(0)
-			resp, err := client.ArchiveProjectWithResponse(ctx.Context(), p0)
+			resp, err := client.ArchiveProjectWithResponse(ctx.Context(), api.IDParam(p0))
 			if err != nil {
 				return err
 			}
@@ -140,7 +140,7 @@ func registerProjectsCommands(app *cli.App) {
 			}
 			client := mc.RawClient()
 			p0 := ctx.Arg(0)
-			resp, err := client.DeleteProjectWithResponse(ctx.Context(), p0)
+			resp, err := client.DeleteProjectWithResponse(ctx.Context(), api.IDParam(p0))
 			if err != nil {
 				return err
 			}
@@ -158,7 +158,7 @@ func registerProjectsCommands(app *cli.App) {
 			}
 			client := mc.RawClient()
 			p0 := ctx.Arg(0)
-			resp, err := client.DeleteProjectConfigWithResponse(ctx.Context(), p0)
+			resp, err := client.DeleteProjectConfigWithResponse(ctx.Context(), api.IDParam(p0))
 			if err != nil {
 				return err
 			}
@@ -176,7 +176,7 @@ func registerProjectsCommands(app *cli.App) {
 			}
 			client := mc.RawClient()
 			p0 := ctx.Arg(0)
-			resp, err := client.GetProjectWithResponse(ctx.Context(), p0)
+			resp, err := client.GetProjectWithResponse(ctx.Context(), api.IDParam(p0))
 			if err != nil {
 				return err
 			}
@@ -194,7 +194,7 @@ func registerProjectsCommands(app *cli.App) {
 			}
 			client := mc.RawClient()
 			p0 := ctx.Arg(0)
-			resp, err := client.GetProjectConfigWithResponse(ctx.Context(), p0)
+			resp, err := client.GetProjectConfigWithResponse(ctx.Context(), api.IDParam(p0))
 			if err != nil {
 				return err
 			}
@@ -254,7 +254,7 @@ func registerProjectsCommands(app *cli.App) {
 				v := api.LimitParam(ctx.Int("limit"))
 				params.Limit = &v
 			}
-			resp, err := client.ListProjectMembersWithResponse(ctx.Context(), p0, params)
+			resp, err := client.ListProjectMembersWithResponse(ctx.Context(), api.IDParam(p0), params)
 			if err != nil {
 				return err
 			}
@@ -273,7 +273,7 @@ func registerProjectsCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := ctx.Arg(0)
 			p1 := ctx.Arg(1)
-			resp, err := client.RemoveProjectMemberWithResponse(ctx.Context(), p0, p1)
+			resp, err := client.RemoveProjectMemberWithResponse(ctx.Context(), api.IDParam(p0), api.UserId(p1))
 			if err != nil {
 				return err
 			}
@@ -291,7 +291,7 @@ func registerProjectsCommands(app *cli.App) {
 			}
 			client := mc.RawClient()
 			p0 := ctx.Arg(0)
-			resp, err := client.RestoreProjectWithResponse(ctx.Context(), p0)
+			resp, err := client.RestoreProjectWithResponse(ctx.Context(), api.IDParam(p0))
 			if err != nil {
 				return err
 			}
@@ -355,7 +355,7 @@ func registerProjectsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.UpdateProjectWithResponse(ctx.Context(), p0, body)
+			resp, err := client.UpdateProjectWithResponse(ctx.Context(), api.IDParam(p0), body)
 			if err != nil {
 				return err
 			}
@@ -387,7 +387,7 @@ func registerProjectsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.UpdateProjectConfigWithResponse(ctx.Context(), p0, body)
+			resp, err := client.UpdateProjectConfigWithResponse(ctx.Context(), api.IDParam(p0), body)
 			if err != nil {
 				return err
 			}

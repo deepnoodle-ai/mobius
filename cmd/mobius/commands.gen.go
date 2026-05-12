@@ -43,6 +43,7 @@ func registerGeneratedCommands(app *cli.App) {
 	registerLogsCommands(app)
 	registerMessagesCommands(app)
 	registerMetricsCommands(app)
+	registerNotificationPreferencesCommands(app)
 	registerObservablesCommands(app)
 	registerPresenceCommands(app)
 	registerProjectsCommands(app)

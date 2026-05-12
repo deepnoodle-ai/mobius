@@ -15,9 +15,11 @@ from typing import Any, Callable
 from ._api.models import (
     JobClaim,
     JobClaimRequest,
-    JobCompleteRequest,
     JobFenceRequest,
-    Status as JobStatus,
+    JobReportRequest,
+    Outcome,
+    OutcomeComplete,
+    OutcomeFail,
 )
 from ._instance import resolve_instance_id
 from .client import (
@@ -225,21 +227,33 @@ class Worker:
             self._slots.release()
 
     def _execute_job(self, job: JobClaim) -> None:
+        spec_inner = job.spec.root
+        if getattr(spec_inner, "kind", None) != "action":
+            msg = (
+                f"job {job.job_id} carries spec.kind={getattr(spec_inner, 'kind', None)!r} — "
+                "this worker only handles action jobs"
+            )
+            logger.error(msg)
+            self._fail_job(job, "UnsupportedSpecKind", msg)
+            return
+        action_name = spec_inner.name
+        parameters = dict(spec_inner.parameters or {})
+        attempt = job.attempt_number or 0
         log: logging.LoggerAdapter[logging.Logger] = logging.LoggerAdapter(
             logger,
             {
                 "job_id": job.job_id,
                 "run_id": job.run_id,
                 "step": job.step_name,
-                "action": job.action,
-                "attempt": job.attempt,
+                "action": action_name,
+                "attempt": attempt,
             },
         )
         log.info("job claimed (workflow=%s)", job.workflow_name)
 
-        fn = self._actions.get(job.action)
+        fn = self._actions.get(action_name)
         if fn is None:
-            msg = f"action {job.action!r} not registered on this worker"
+            msg = f"action {action_name!r} not registered on this worker"
             log.error(msg)
             self._fail_job(job, "ActionNotRegistered", msg)
             return
@@ -254,11 +268,11 @@ class Worker:
             run_id=job.run_id,
             project_id=self._client.project,
             worker_instance_id=self._config.worker_instance_id,
-            attempt=job.attempt,
+            attempt=attempt,
             queue=job.queue,
             workflow_name=job.workflow_name,
             step_name=job.step_name,
-            action=job.action,
+            action=action_name,
             _event_queue=event_queue,
         )
         hb_thread = threading.Thread(
@@ -275,7 +289,7 @@ class Worker:
         event_thread.start()
 
         try:
-            result = self._invoke_action(fn, ctx, dict(job.parameters or {}))
+            result = self._invoke_action(fn, ctx, parameters)
         except Exception as exc:
             stop_hb.set()
             stop_events.set()
@@ -296,14 +310,19 @@ class Worker:
             else None
         )
         try:
-            self._client.complete_job(
+            self._client.report_job(
                 job.job_id,
-                JobCompleteRequest(
+                JobReportRequest(
                     worker_instance_id=self._config.worker_instance_id,
-                    worker_session_token=self._session_token,
-                    attempt=job.attempt,
-                    status=JobStatus.completed,
-                    result_b64=result_b64,
+                    lease_token=job.lease_token,
+                    outcomes=[
+                        Outcome(
+                            root=OutcomeComplete(
+                                kind="complete",
+                                result_b64=result_b64,
+                            )
+                        )
+                    ],
                 ),
             )
             log.info("job completed")
@@ -328,8 +347,7 @@ class Worker:
         )
         fence = JobFenceRequest(
             worker_instance_id=self._config.worker_instance_id,
-            worker_session_token=self._session_token,
-            attempt=job.attempt,
+            lease_token=job.lease_token,
         )
         while not stop.wait(timeout=float(interval)):
             try:
@@ -364,15 +382,20 @@ class Worker:
         self, job: JobClaim, error_type: str, message: str
     ) -> None:
         try:
-            self._client.complete_job(
+            self._client.report_job(
                 job.job_id,
-                JobCompleteRequest(
+                JobReportRequest(
                     worker_instance_id=self._config.worker_instance_id,
-                    worker_session_token=self._session_token,
-                    attempt=job.attempt,
-                    status=JobStatus.failed,
-                    error_type=error_type,
-                    error_message=message,
+                    lease_token=job.lease_token,
+                    outcomes=[
+                        Outcome(
+                            root=OutcomeFail(
+                                kind="fail",
+                                error_type=error_type,
+                                error_message=message,
+                            )
+                        )
+                    ],
                 ),
             )
         except AuthRevokedError:
@@ -410,8 +433,7 @@ class Worker:
                     job.job_id,
                     JobEventsRequest(
                         worker_instance_id=self._config.worker_instance_id,
-                        worker_session_token=self._session_token,
-                        attempt=job.attempt,
+                        lease_token=job.lease_token,
                         events=batch,
                     ),
                 )

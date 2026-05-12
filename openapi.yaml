@@ -2660,13 +2660,11 @@ paths:
       - jobs
       summary: Long-poll for the next claimable workflow job
       description: |-
-        Atomically claims the next pending workflow job whose queue name is in the worker's `queues` subscription and whose action is in the worker's `actions` filter when provided. If no job is immediately available and `wait_seconds > 0`, the server holds the request open for up to `wait_seconds` (capped at 30). Returns 204 when the poll window closes empty.
+        Atomically claims the next pending workflow job whose queue name is in the worker's `queues` subscription, whose action is in the worker's `actions` filter (when provided), and — for code jobs — whose handler id is in the worker's `handlers` filter (when provided). If no job is immediately available and `wait_seconds > 0`, the server holds the request open for up to `wait_seconds` (capped at 30). Returns 204 when the poll window closes empty.
 
         Each successful call also registers or refreshes the caller's worker session (used by `GET /v1/projects/{project}/worker-sessions`), so no separate registration step is needed.
 
-        The returned `JobClaim` includes the `heartbeat_interval_seconds` the worker should use for subsequent heartbeat calls.
-
-        Code-mode workers subscribe to the reserved action `mobius.code.invoke` by including it in `actions`. The resulting `JobClaim.parameters` follows the `CodeInvokeJobParameters` shape, and the worker must complete the job via `code-completion` or `code-yield` rather than `complete`.
+        The returned `JobClaim` carries an opaque `lease_token` the worker echoes on subsequent heartbeat / report calls, plus a `heartbeat_interval_seconds` cadence. The body's `spec` field is a discriminated union: `{kind: "action", ...}` for spec-step worker jobs, `{kind: "code", ...}` for code workflows.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       requestBody:
@@ -2685,6 +2683,8 @@ paths:
               - default
               actions:
               - summarize-document
+              handlers:
+              - onboard-customer
               wait_seconds: 20
       responses:
         '200':
@@ -2693,19 +2693,42 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/JobClaim'
-              example:
-                job_id: job_01hw1n2p3q4r5s6t7u8v9w0x1y
-                run_id: run_01hw1n1a2b3c4d5e6f7g8h9j0k
-                workflow_name: document-review
-                step_name: summarize
-                action: summarize-document
-                agent_id: agt_01hw1m5q9x7r2p4n6s8t0v3y5z
-                agent_session_id: ags_01hw1m7c8d9e0f1g2h3j4k5m6n
-                parameters:
-                  document_id: doc_01hw1m9z8y7x6w5v4u3t2s1r0q
-                attempt: 1
-                queue: default
-                heartbeat_interval_seconds: 30
+              examples:
+                action:
+                  summary: Action-spec claim
+                  value:
+                    job_id: job_01hw1n2p3q4r5s6t7u8v9w0x1y
+                    run_id: run_01hw1n1a2b3c4d5e6f7g8h9j0k
+                    workflow_name: document-review
+                    step_name: summarize
+                    spec:
+                      kind: action
+                      name: summarize-document
+                      parameters:
+                        document_id: doc_01hw1m9z8y7x6w5v4u3t2s1r0q
+                    lease_token: bGVhc2UtdG9rZW4tb3BhcXVl
+                    attempt_number: 1
+                    queue: default
+                    heartbeat_interval_seconds: 30
+                code:
+                  summary: Code-spec claim
+                  value:
+                    job_id: job_01hw1n2p3q4r5s6t7u8v9w0x1y
+                    run_id: run_01hw1n1a2b3c4d5e6f7g8h9j0k
+                    workflow_name: onboard-customer
+                    step_name: run
+                    spec:
+                      kind: code
+                      handler: onboard-customer
+                      runtime: typescript
+                      inputs:
+                        customer_id: cust_42
+                      history_cursor: ''
+                      history: []
+                    lease_token: bGVhc2UtdG9rZW4tb3BhcXVl
+                    attempt_number: 1
+                    queue: default
+                    heartbeat_interval_seconds: 30
         '204':
           description: No jobs available within the poll window
         '400':
@@ -2730,11 +2753,11 @@ paths:
       - jobs
       summary: Refresh the lease on a claimed workflow job
       description: |-
-        Extends the worker's lease on the job and returns server directives. Must include the `worker_session_token` + `attempt` fence from the original claim — a stale fence (e.g., from a previous attempt or from a process that has since been taken over) is rejected with 409.
+        Extends the worker's lease on the job and returns server directives. Must include the `lease_token` returned in the original `JobClaim` — a stale token (e.g., from a previous attempt or from a process that has since been taken over) is rejected with 409.
 
         Returns a small JSON envelope rather than 204 so the server can attach directives (e.g., `should_cancel`) without an additional round trip. Workers should call this at the interval specified in `JobClaim.heartbeat_interval_seconds` (recommended: 30s).
 
-        When `directives.should_cancel` is true, the run has received a cancellation request; the worker must stop processing and call `POST /v1/projects/{project}/jobs/{id}/complete` with `status: failed`.
+        When `directives.should_cancel` is true, the run has received a cancellation request; the worker must stop processing and post a `fail` outcome via `POST /v1/projects/{project}/jobs/{id}/report`.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/IDParam'
@@ -2746,8 +2769,7 @@ paths:
               $ref: '#/components/schemas/JobFenceRequest'
             example:
               worker_instance_id: inv-abc123
-              worker_session_token: <worker-session-token>
-              attempt: 1
+              lease_token: bGVhc2UtdG9rZW4tb3BhcXVl
       responses:
         '200':
           description: OK
@@ -2767,18 +2789,36 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
-  /v1/projects/{project}/jobs/{id}/complete:
+  /v1/projects/{project}/jobs/{id}/report:
     post:
-      operationId: completeJob
+      operationId: reportJob
       tags:
       - jobs
-      summary: Report terminal status for a claimed workflow job
+      summary: Report the outcome of a workflow job attempt
       description: |-
-        Marks the job as completed or failed and advances workflow progression. Must include the `worker_session_token` + `attempt` fence from the claim — a stale fence is rejected with 409.
+        The single terminal endpoint for a workflow job attempt. The body carries the active `lease_token` plus an ordered `outcomes` list:
 
-        On `status: completed`, `result_b64` (if provided) is base64- decoded and stored as the job's output bytes, which the workflow engine may pass as input to downstream steps.
+        * Zero or more durable progress outcomes (`step_done`,
+        `wait_observed`) — only valid for `kind: "code"` jobs.
+        * Exactly one terminator outcome (`complete`, `fail`, or
+        `suspend`) at the end.
 
-        On `status: failed`, the workflow engine checks the step's retry configuration. If `attempt < max_attempts`, a new job is created with `attempt + 1`; otherwise the run is transitioned to `failed`. Use `error_type` and `error_message` to distinguish retryable failures from permanent ones in observability tooling.
+        The server validates the sequence (terminator exists, terminator is last, durable kinds match the spec kind, code-only outcomes rejected on action jobs), persists the durable rows, and acts on the terminator:
+
+        * `complete` — job is marked completed; for action jobs the
+        `result_b64` becomes the step output and the workflow engine
+        advances. For code jobs the `result_b64` is persisted as the
+        run output and the run completes.
+        * `fail` — job is marked failed. For action jobs this triggers
+        the workflow engine's retry logic if `attempt < max_attempts`;
+        for code jobs it terminally fails the run.
+        * `suspend` — code jobs only. The run is parked on the supplied
+        wait. On wake the server emits a fresh code-invoke job whose
+        history is reachable via the history endpoint.
+
+        Lease fencing: the `lease_token` must match the value the server returned for the active claim attempt. Mismatch returns 409 lease-lost. A duplicate report (same lease_token + same terminator) returns 204 idempotently.
+
+        Validation errors (missing terminator, terminator not last, unsupported outcome kind for the job spec, malformed wait descriptor) return 400 with a precise error type.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/IDParam'
@@ -2787,25 +2827,56 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/JobCompleteRequest'
+              $ref: '#/components/schemas/JobReportRequest'
             examples:
-              completed:
-                summary: Successful completion
+              actionCompleted:
+                summary: Action job — successful completion
                 value:
                   worker_instance_id: inv-abc123
-                  worker_session_token: <worker-session-token>
-                  attempt: 1
-                  status: completed
-                  result_b64: eyJzdW1tYXJ5IjoiUmVhZHkgZm9yIHJldmlldy4ifQ==
-              failed:
-                summary: Failed attempt
+                  lease_token: bGVhc2UtdG9rZW4tb3BhcXVl
+                  outcomes:
+                  - kind: complete
+                    result_b64: eyJzdW1tYXJ5IjoiUmVhZHkifQ==
+              actionFailed:
+                summary: Action job — terminal failure
                 value:
                   worker_instance_id: inv-abc123
-                  worker_session_token: <worker-session-token>
-                  attempt: 1
-                  status: failed
-                  error_type: TimeoutError
-                  error_message: The upstream summarizer timed out.
+                  lease_token: bGVhc2UtdG9rZW4tb3BhcXVl
+                  outcomes:
+                  - kind: fail
+                    error_type: TimeoutError
+                    error_message: The upstream summarizer timed out.
+              codeYielded:
+                summary: Code job — yielded on a wait_signal
+                value:
+                  worker_instance_id: inv-abc123
+                  lease_token: bGVhc2UtdG9rZW4tb3BhcXVl
+                  outcomes:
+                  - kind: step_done
+                    step_id: fetch
+                    status: completed
+                    result:
+                      ok: true
+                  - kind: suspend
+                    step_id: wait-approval
+                    wait:
+                      kind: wait_signal
+                      wait_signal:
+                        topic: approval-requested
+                        timeout: 24h
+              codeCompleted:
+                summary: Code job — handler returned
+                value:
+                  worker_instance_id: inv-abc123
+                  lease_token: bGVhc2UtdG9rZW4tb3BhcXVl
+                  outcomes:
+                  - kind: step_done
+                    step_id: finalize
+                    status: completed
+                    result:
+                      receipt: rcpt_42
+                  - kind: complete
+                    result_b64: eyJvayI6dHJ1ZX0=
       responses:
         '204':
           description: No Content
@@ -2817,6 +2888,45 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
+  /v1/projects/{project}/jobs/{id}/history:
+    get:
+      operationId: getJobHistory
+      tags:
+      - jobs
+      summary: Fetch durable replay history for a code-spec job
+      description: |-
+        Returns the durable child-step ledger for a code-spec job in commit order. The SDK uses this to fast-forward through cached `step.run` / `step.waitFor*` results on resume after a yield.
+
+        The ledger is paginated by an opaque `after` cursor; the server decides the page size up to `limit` (default 1000, max 5000). A response carrying a non-empty `next_cursor` indicates more pages are available.
+
+        Action-spec jobs have no replay history; calling this for an action job returns 200 with an empty `entries` list.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/IDParam'
+      - name: after
+        in: query
+        description: Opaque cursor returned by a prior page (or `JobClaim.spec.code.history_cursor`).
+          Omit to fetch from the beginning.
+        schema:
+          type: string
+      - name: limit
+        in: query
+        description: Maximum number of entries to return per page.
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 5000
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobHistoryResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /v1/projects/{project}/jobs/{id}/events:
     post:
       operationId: emitJobEvents
@@ -2826,7 +2936,7 @@ paths:
       description: |-
         Publishes a batch of custom run events on behalf of the worker holding the job's current lease. Events are appended to the durable run event store (so they replay via `?since=<seq>`) and fanned out to any live SSE subscribers on the run.
 
-        Authorization requires `mobius.work.execute`. Each event must present the active lease fence (`worker_session_token` + `attempt`); stale fences are rejected with 409.
+        Authorization requires `mobius.work.execute`. Each event must present the active `lease_token`; stale tokens are rejected with 409.
 
         `type` is a caller-chosen identifier. The `mobius.` prefix is reserved for future server-emitted well-known kinds and is rejected with 400.
 
@@ -2842,8 +2952,7 @@ paths:
               $ref: '#/components/schemas/JobEventsRequest'
             example:
               worker_instance_id: inv-abc123
-              worker_session_token: <worker-session-token>
-              attempt: 1
+              lease_token: bGVhc2UtdG9rZW4tb3BhcXVl
               events:
               - type: progress
                 payload:
@@ -2937,68 +3046,6 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /v1/projects/{project}/jobs/{id}/code-completion:
-    post:
-      operationId: completeCodeJob
-      tags:
-      - jobs
-      summary: Report a code-handler return for a claimed code-invoke job
-      description: |-
-        Code-mode counterpart to `completeJob`. Used by language-runtime workers (e.g. the Mobius TypeScript SDK) when the user-authored handler returned. The body carries the batch of durable sub-step completions the handler accumulated during this invocation, plus the handler's return value (or a terminal error). The server records each completion in the run-step ledger, persists the return value as the run output, and marks the run completed (or failed when error fields are set).
-
-        `worker_session_token` + `attempt` enforce the lease fence as with `completeJob`; mismatch returns 409. The job's action must be the synthetic `mobius.code.invoke` — submitting a non-code job returns 400.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      - $ref: '#/components/parameters/IDParam'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CodeJobCompleteRequest'
-      responses:
-        '204':
-          description: No Content
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
-  /v1/projects/{project}/jobs/{id}/code-yield:
-    post:
-      operationId: yieldCodeJob
-      tags:
-      - jobs
-      summary: Yield from a code-invoke handler when it hits a wait
-      description: |-
-        Code-mode counterpart to suspending a run on a wait. The handler hit one of the SDK's wait primitives (`step.sleep`, `step.waitForSignal`, `step.waitForEvent`, `step.waitForApproval`, `step.pause`) and could not satisfy it locally; the worker commits the batch of completions accumulated since the last yield and asks the server to park the run.
-
-        On wake (signal delivery, timer fire, interaction response, operator unpause), the server emits a fresh `mobius.code.invoke` job whose history parameter contains every previously committed sub-step. The handler replays deterministically through that history before reaching the new wait or returning.
-
-        Lease fencing is identical to `completeJob` / `completeCodeJob`. Submitting a non-code job returns 400.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      - $ref: '#/components/parameters/IDParam'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CodeJobYieldRequest'
-      responses:
-        '204':
-          description: No Content
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
   /v1/projects/{project}/triggers:
     get:
       operationId: listTriggers
@@ -7649,6 +7696,13 @@ components:
         id:
           type: string
           description: User ID for user; queue name for agent; group ID or handle for group.
+    ChannelCompletionBehavior:
+      type: string
+      enum:
+      - none
+      - mark_inactive
+      - archive
+      description: Behavior to apply when every purpose-linked interaction is terminal.
     ChannelMessageSenderType:
       type: string
       enum:
@@ -7751,12 +7805,7 @@ components:
           description: '`general` channels are ordinary rooms. `resolve_interactions` channels
             exist to resolve one or more purpose-linked interactions.'
         completion_behavior:
-          type: string
-          enum:
-          - none
-          - mark_inactive
-          - archive
-          description: Behavior to apply when every purpose-linked interaction is terminal.
+          $ref: '#/components/schemas/ChannelCompletionBehavior'
         completed_at:
           type: string
           format: date-time
@@ -8060,13 +8109,9 @@ components:
           description: Existing same-project interaction IDs to link as the channel's purpose
             at creation time. Required when `purpose` is `resolve_interactions`.
         completion_behavior:
-          type: string
-          enum:
-          - none
-          - mark_inactive
-          - archive
+          allOf:
+          - $ref: '#/components/schemas/ChannelCompletionBehavior'
           default: none
-          description: Behavior to apply when all purpose-linked interactions are terminal.
         tags:
           $ref: '#/components/schemas/TagMap'
           description: Initial tag set.
@@ -8092,12 +8137,7 @@ components:
           description: Channel purpose. `resolve_interactions` requires at least one purpose-linked
             interaction.
         completion_behavior:
-          type: string
-          enum:
-          - none
-          - mark_inactive
-          - archive
-          description: Behavior to apply when all purpose-linked interactions are terminal.
+          $ref: '#/components/schemas/ChannelCompletionBehavior'
         tags:
           $ref: '#/components/schemas/TagMap'
           description: When supplied, replaces the user tag set on the channel. System tags
@@ -8662,9 +8702,15 @@ components:
             outbox or retries).
         secret_ref:
           type: string
-          description: Reference to a project secret intended to sign deliveries. Forwarded
-            to the deliverer as `X-Mobius-Secret-Ref` for forward compatibility; HMAC-SHA256
-            signing of the payload against the resolved plaintext is a follow-up.
+          description: 'Reference to a project secret used to sign deliveries with HMAC-SHA256
+            over the raw callback request body (the exact bytes of the HTTP request body).
+            Accepts `<name>` for the latest enabled version or `<name>:<version>` to pin a
+            specific positive-integer version. The plaintext signing bytes are taken from
+            the secret''s `signing_key`, `secret`, or `hmac_secret` key — or the only key
+            if exactly one is set. The hex signature is forwarded as `X-Mobius-Signature:
+            sha256=<hex>` alongside `X-Mobius-Secret-Ref`, `X-Mobius-Secret-Version`, and
+            a unix `X-Mobius-Timestamp`. When `secret_ref` resolution fails the dispatch is
+            skipped rather than sent unsigned.'
     Consumer:
       type: object
       additionalProperties: false
@@ -8673,9 +8719,11 @@ components:
       description: Polymorphic identifier of what is waiting on this interaction's resolution
         (PRD 077 §3.7). Replaces the previously special-cased `run_id` + `signal_name` pair.
         When `kind=run`, the legacy fields are also populated for compatibility. `http_subscriber`
-        triggers a best-effort POST to `callback_url` when the interaction resolves; HMAC
-        signing of the payload via the `secret_ref` is a follow-up — current callers should
-        pin the `callback_url` to an authenticated endpoint until that lands.
+        triggers a best-effort POST to `callback_url` when the interaction resolves; when
+        `secret_ref` is set, the raw request body is signed with HMAC-SHA256 against the resolved
+        project secret and the signed dispatch carries `X-Mobius-Signature`, `X-Mobius-Secret-Ref`,
+        `X-Mobius-Secret-Version`, and `X-Mobius-Timestamp`. Verifiers should check all four
+        headers.
       properties:
         kind:
           type: string
@@ -9072,11 +9120,28 @@ components:
       type: object
       required:
       - name
-      - steps
+      oneOf:
+      - required:
+        - steps
+      - required:
+        - code
       description: |-
         Workflow definition shaped like `workflow.Options`.
 
-        Authoring rule: `action` is the canonical field for executable steps. When `action_kind` is omitted, `action` uses worker/job semantics. Use `action_kind: "server"` for Mobius-managed server actions such as platform integrations or custom HTTP-backed actions.
+        A workflow is **either** a spec-step DAG or a code workflow:
+
+        * Spec-step workflows declare `steps: [...]` (with optional
+        `start_at`). Each step is a worker-action, server-action,
+        wait, join, or other declarative construct.
+        * Code workflows declare `code: { handler, runtime?, queue? }`
+        and no `steps`. The handler's runtime control flow replaces
+        the step graph; durable sub-steps are executed via the SDK's
+        `step.run` / `step.waitFor*` helpers and recorded against the
+        run ledger.
+
+        Exactly one of `steps` or `code` must be set; setting both, or neither, is rejected by the schema's `oneOf` constraint.
+
+        Authoring rule for spec-step workflows: `action` is the canonical field for executable steps. When `action_kind` is omitted, `action` uses worker/job semantics. Use `action_kind: "server"` for Mobius-managed server actions such as platform integrations or custom HTTP-backed actions.
       additionalProperties: false
       properties:
         name:
@@ -9087,7 +9152,8 @@ components:
           description: Optional description of the workflow's purpose.
         start_at:
           type: string
-          description: Step name to start execution from. Defaults to the first step.
+          description: 'Spec-step workflows: step name to start execution from. Defaults to
+            the first step. Ignored for code workflows.'
         inputs:
           type: array
           description: Declared input parameters accepted by this workflow.
@@ -9101,9 +9167,15 @@ components:
             $ref: '#/components/schemas/WorkflowOutput'
         steps:
           type: array
-          description: Ordered list of steps that make up this workflow.
+          description: Ordered list of steps that make up a spec-step workflow. Mutually exclusive
+            with `code`.
           items:
             $ref: '#/components/schemas/WorkflowStep'
+        code:
+          $ref: '#/components/schemas/WorkflowCodeSpec'
+          description: Configuration for a code workflow. Mutually exclusive with `steps`.
+            The worker invokes the registered handler whose runtime control flow drives the
+            run.
     WorkflowInput:
       type: object
       description: Declares one named input accepted by a workflow spec.
@@ -9145,9 +9217,10 @@ components:
     WorkflowStep:
       description: 'A workflow step. Exactly one step shape should be used. Step variants
         are identified by their distinctive required property (`action`, `type: set`, `join`,
-        `wait_signal`, `wait_event`, `wait_until`, `sleep`, `pause`, `interaction`, or `code`).
-        The current authored shape intentionally does not add a separate discriminator field,
-        so existing workflow YAML stays compact.'
+        `wait_signal`, `wait_event`, `wait_until`, `sleep`, `pause`, or `interaction`). The
+        current authored shape intentionally does not add a separate discriminator field,
+        so existing workflow YAML stays compact. Code workflows do not use `WorkflowStep`;
+        see `WorkflowSpec.code`.'
       oneOf:
       - $ref: '#/components/schemas/WorkflowExecutableStep'
       - $ref: '#/components/schemas/WorkflowSetStep'
@@ -9158,7 +9231,6 @@ components:
       - $ref: '#/components/schemas/WorkflowSleepStep'
       - $ref: '#/components/schemas/WorkflowPauseStep'
       - $ref: '#/components/schemas/WorkflowInteractionStep'
-      - $ref: '#/components/schemas/WorkflowCodeStep'
     WorkflowStepLayout:
       type: object
       additionalProperties: false
@@ -9491,32 +9563,12 @@ components:
         interaction:
           $ref: '#/components/schemas/WorkflowInteractionConfig'
           description: Interaction prompt, recipient, response schema, and timeout behavior.
-    WorkflowCodeStep:
+    WorkflowCodeSpec:
       type: object
       description: |-
-        Delegates the entire workflow's control flow to a user-authored handler running on a worker (TypeScript today, with other runtimes to follow). The handler invokes step.run(), step.sleep(), step.waitForSignal() etc. via the SDK; each call is durably checkpointed against the run ledger so the handler replays deterministically across yield/resume cycles.
+        Configuration for a code workflow. Sibling shape to `WorkflowSpec.steps`: a workflow with `code` set delegates its control flow to a user-authored handler running on a worker (TypeScript today, with other runtimes to follow). The handler invokes step.run(), step.sleep(), step.waitForSignal() etc. via the SDK; each call is durably checkpointed against the run ledger so the handler replays deterministically across yield/resume cycles.
 
-        A code workflow contains exactly one step (this one) — the handler's runtime control flow is the graph. Authors cannot mix code steps with the declarative step shapes: `next`, `each`, `retry`, `catch`, `parameters`, etc. are rejected by validation.
-      additionalProperties: false
-      required:
-      - name
-      - code
-      properties:
-        name:
-          type: string
-          description: Unique step name within the workflow, used for routing and logging.
-        description:
-          type: string
-          description: Optional human-readable description of what this handler does.
-        layout:
-          $ref: '#/components/schemas/WorkflowStepLayout'
-          description: Optional visual-editor position hint; ignored by the execution engine.
-        code:
-          $ref: '#/components/schemas/WorkflowCodeStepConfig'
-          description: Identifies the registered handler the worker should invoke.
-    WorkflowCodeStepConfig:
-      type: object
-      description: Configuration for a code-handler step.
+        Code workflows do not use `steps`; the handler's runtime control flow is the graph.
       additionalProperties: false
       required:
       - handler
@@ -9525,7 +9577,7 @@ components:
           type: string
           minLength: 1
           description: Stable identifier the worker SDK registered the handler under (typically
-            equal to the workflow definition name). The server emits jobs whose handler parameter
+            equal to the workflow definition name). The server emits jobs whose `spec.code.handler`
             equals this value; the worker dispatches the job to the matching handler.
         runtime:
           type: string
@@ -11136,6 +11188,7 @@ components:
         synthetic integration event and publishes it through normal delivery.'
     IntegrationEventFireRequest:
       type: object
+      additionalProperties: false
       properties:
         mode:
           $ref: '#/components/schemas/IntegrationEventFireMode'
@@ -12345,9 +12398,10 @@ components:
       - worker_session_token
       - concurrency_limit
       description: Body for `POST /jobs/claim`. Workers identify themselves with `worker_instance_id`
-        (the row key on the workers page) plus a per-boot `worker_session_token` (the fence
-        value stamped onto each claimed job). `concurrency_limit` is the configured capacity
-        used by the saturation bar.
+        (the row key on the workers page) plus a per-boot `worker_session_token`. The server
+        returns an opaque `lease_token` on the claim that folds the session token and the
+        claim attempt together; subsequent fenced calls echo the `lease_token`, not the raw
+        session token.
       properties:
         worker_instance_id:
           type: string
@@ -12358,8 +12412,8 @@ components:
         worker_session_token:
           type: string
           description: Per-boot token generated by the SDK on Worker construction. Stamped
-            onto the claimed job and re-presented as the lease fence on heartbeat / events
-            / complete. Opaque to operators.
+            onto the claimed job and folded into the `lease_token` returned in the `JobClaim`.
+            Opaque to operators.
         concurrency_limit:
           type: integer
           minimum: 1
@@ -12384,7 +12438,17 @@ components:
         actions:
           type: array
           description: Action names this worker can execute. When provided, only jobs whose
-            `action` is in this list are returned. When empty, action filtering is skipped.
+            `spec.kind == "action"` and whose `spec.name` is in this list are returned. When
+            empty, action filtering is skipped.
+          items:
+            type: string
+        handlers:
+          type: array
+          description: Code handler IDs this worker has registered. When provided, only jobs
+            whose `spec.kind == "code"` and whose `spec.handler` is in this list are returned.
+            When empty, no code jobs are claimed unless `actions` is also empty (in which
+            case all matching queue/action criteria apply). Code-mode SDKs always populate
+            this with the set of handlers they have registered.
           items:
             type: string
         wait_seconds:
@@ -12396,23 +12460,22 @@ components:
     JobClaim:
       type: object
       additionalProperties: false
-      description: Lease handed to a worker after a successful claim. It contains the action
-        to run, resolved parameters, and fencing values the worker must echo on heartbeat,
-        event, and complete calls.
+      description: Lease handed to a worker after a successful claim. Carries the `spec` of
+        the work to do, an opaque `lease_token` the worker echoes on subsequent fenced calls,
+        and a recommended heartbeat cadence.
       required:
       - job_id
       - run_id
       - workflow_name
       - step_name
-      - action
-      - attempt
+      - spec
+      - lease_token
       - queue
-      - parameters
       properties:
         job_id:
           type: string
-          description: Job ID — use as the `{id}` path parameter for heartbeat, complete,
-            and events.
+          description: Job ID — use as the `{id}` path parameter for heartbeat, report, history,
+            events.
         run_id:
           type: string
           description: Parent workflow run ID.
@@ -12422,30 +12485,27 @@ components:
         step_name:
           type: string
           description: Step label from the workflow spec — used for UI and interaction signal
-            name derivation.
-        action:
-          type: string
-          description: |-
-            Action name the worker must execute for this step.
-
-            The reserved value `mobius.code.invoke` identifies a code-mode workflow invocation: the worker dispatches to the registered code handler named by `parameters._mobius_code_handler` and completes via `code-completion` / `code-yield` instead of `complete`. See `CodeInvokeJobParameters` for the parameter shape.
+            name derivation. For code workflows this is the synthesised "run" step name.
+        spec:
+          $ref: '#/components/schemas/JobSpec'
+          description: 'Discriminated description of the work to do. `kind: "action"` for
+            spec-step worker jobs; `kind: "code"` for code-handler invocations.'
         agent_id:
           type: string
           description: Agent that should execute this job, when the step is agent-targeted.
         agent_session_id:
           type: string
           description: Agent session the job was routed to, when applicable.
-        parameters:
-          type: object
-          additionalProperties: true
-          description: |-
-            Input parameters for this step, resolved from the workflow spec and prior step outputs.
-
-            When `action == "mobius.code.invoke"`, parameters follow the `CodeInvokeJobParameters` shape — they carry the registered handler id, the run inputs, and the replay history rather than spec-authored values.
-        attempt:
+        lease_token:
+          type: string
+          description: Opaque fence value the worker must echo on heartbeat / report / events
+            calls. Combines the `worker_session_token` with the claim attempt; mismatch on
+            echo returns 409 lease-lost.
+        attempt_number:
           type: integer
-          description: 1-based attempt counter. Incremented on each automatic retry. Include
-            in the fence for all subsequent heartbeat and complete calls.
+          description: Workflow-level attempt counter, informational only. Action jobs increment
+            this on automatic retry; code jobs always report 1 (the SDK manages its own per-step
+            retry policy internally). Never the fence value — that role belongs to `lease_token`.
         queue:
           type: string
           description: Queue name the job was claimed from.
@@ -12454,6 +12514,81 @@ components:
           description: Recommended heartbeat interval in seconds. Workers should call `POST
             /v1/projects/{project}/jobs/{id}/heartbeat` at this cadence to keep the lease
             alive. Typically 30 seconds.
+    JobSpec:
+      description: 'Discriminated description of the work attached to a job. `kind: "action"`
+        carries an action name and parameter map; the worker dispatches to the registered
+        action handler. `kind: "code"` carries a registered handler id, the runtime hint,
+        run inputs, and a cursor over the durable replay history; the worker dispatches to
+        the user-authored code handler.'
+      oneOf:
+      - $ref: '#/components/schemas/JobActionSpec'
+      - $ref: '#/components/schemas/JobCodeSpec'
+      discriminator:
+        propertyName: kind
+        mapping:
+          action: '#/components/schemas/JobActionSpec'
+          code: '#/components/schemas/JobCodeSpec'
+    JobActionSpec:
+      type: object
+      additionalProperties: false
+      required:
+      - kind
+      - name
+      description: Action-spec job description.
+      properties:
+        kind:
+          type: string
+          enum:
+          - action
+        name:
+          type: string
+          minLength: 1
+          description: Action name the worker must execute for this step.
+        parameters:
+          type: object
+          additionalProperties: true
+          description: Input parameters for this step, resolved from the workflow spec and
+            prior step outputs.
+    JobCodeSpec:
+      type: object
+      additionalProperties: false
+      required:
+      - kind
+      - handler
+      description: Code-spec job description.
+      properties:
+        kind:
+          type: string
+          enum:
+          - code
+        handler:
+          type: string
+          minLength: 1
+          description: Stable handler id the worker SDK registered. The worker dispatches
+            the job to the function registered under this id.
+        runtime:
+          type: string
+          description: Opaque hint identifying the language/runtime that owns the handler
+            ("typescript", "python", etc.). Informational only.
+        inputs:
+          type: object
+          additionalProperties: true
+          description: Inputs the run was started with. The SDK passes these to the handler
+            as its first argument.
+        history_cursor:
+          type: string
+          description: Opaque cursor the SDK passes to `GET /jobs/{id}/history?after=…` to
+            stream replay history. The empty string is the "from the beginning" sentinel;
+            the SDK should also treat an absent / empty value as "no further pages." Each
+            resume advances the cursor past the previously fetched batch.
+        history:
+          type: array
+          description: Optional inline history. The server may include a short history here
+            when it knows the payload will fit; otherwise the SDK fetches it via `GET /jobs/{id}/history`.
+            When set, the SDK should consume this batch as the prefix and only paginate via
+            `history_cursor` for subsequent batches.
+          items:
+            $ref: '#/components/schemas/CodeStepCompletion'
     JobHeartbeatDirectives:
       type: object
       additionalProperties: false
@@ -12464,8 +12599,8 @@ components:
         should_cancel:
           type: boolean
           default: false
-          description: 'When true, the run has received a cancellation request. The worker
-            must stop processing immediately and call complete with `status: failed`.'
+          description: When true, the run has received a cancellation request. The worker
+            must stop processing immediately and post a `fail` outcome via the report endpoint.
     JobHeartbeat:
       type: object
       additionalProperties: false
@@ -12484,149 +12619,317 @@ components:
     JobFenceRequest:
       type: object
       additionalProperties: false
-      description: Lease fence presented on heartbeat. The worker presents the per-boot `worker_session_token`
-        from the original claim along with the same `attempt`; the server compares the token
-        against the job's `claimed_by_session_token` and returns 409 lease-lost on mismatch.
+      description: Lease fence presented on heartbeat / events. The worker echoes the `lease_token`
+        from the original claim; the server unfolds the embedded session token + attempt and
+        rejects with 409 lease-lost on mismatch.
       required:
-      - worker_session_token
-      - attempt
+      - lease_token
       properties:
         worker_instance_id:
           type: string
           description: Echo of the `worker_instance_id` from the claim. Logged for audit;
             not the fence value.
-        worker_session_token:
+        lease_token:
           type: string
-          description: Per-boot token from the original claim. Compared against the job's
-            `claimed_by_session_token`; mismatch returns 409 lease-lost.
-        attempt:
-          type: integer
-          minimum: 0
-          description: Must match the `attempt` from the original claim.
-    JobCompleteRequest:
+          description: Opaque lease fence value from the original claim. Mismatch returns
+            409 lease-lost.
+    JobReportRequest:
       type: object
       additionalProperties: false
-      description: Terminal report for a claimed job. The worker presents the per-boot `worker_session_token`
-        from the original claim along with the same `attempt`; mismatch returns 409 lease-lost.
       required:
-      - worker_session_token
-      - attempt
-      - status
+      - lease_token
+      - outcomes
+      description: Single terminal report for a claimed job attempt. The worker echoes the
+        `lease_token` from the claim and supplies an ordered list of `outcomes` ending in
+        exactly one terminator (`complete` / `fail` / `suspend`).
       properties:
         worker_instance_id:
           type: string
           description: Echo of the claim's `worker_instance_id`. Audit only.
-        worker_session_token:
+        lease_token:
           type: string
-          description: Per-boot token from the claim. Compared against the job's `claimed_by_session_token`;
-            mismatch returns 409 lease-lost.
-        attempt:
-          type: integer
-          minimum: 0
-          description: Must match the `attempt` from the original claim.
+          minLength: 1
+          description: Opaque fence value from the original claim. Mismatch returns 409 lease-lost;
+            a duplicate report with the same token and terminator is idempotent (204).
+        outcomes:
+          type: array
+          description: Ordered list of outcomes. May contain zero or more durable progress
+            entries (`step_done`, `wait_observed`) followed by exactly one terminator (`complete`,
+            `fail`, `suspend`). The terminator must be the final entry; no entry may follow
+            it. Action-spec jobs may not include `step_done` or `wait_observed`; code-spec
+            jobs may.
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/Outcome'
+    Outcome:
+      description: One thing that happened during a job attempt. Discriminated by `kind`.
+        Durable kinds (`step_done`, `wait_observed`) describe sub-steps a code handler executed
+        or observed during this invocation; terminal kinds (`complete`, `fail`, `suspend`)
+        end the attempt.
+      oneOf:
+      - $ref: '#/components/schemas/OutcomeStepDone'
+      - $ref: '#/components/schemas/OutcomeWaitObserved'
+      - $ref: '#/components/schemas/OutcomeComplete'
+      - $ref: '#/components/schemas/OutcomeFail'
+      - $ref: '#/components/schemas/OutcomeSuspend'
+      discriminator:
+        propertyName: kind
+        mapping:
+          step_done: '#/components/schemas/OutcomeStepDone'
+          wait_observed: '#/components/schemas/OutcomeWaitObserved'
+          complete: '#/components/schemas/OutcomeComplete'
+          fail: '#/components/schemas/OutcomeFail'
+          suspend: '#/components/schemas/OutcomeSuspend'
+    OutcomeStepDone:
+      type: object
+      additionalProperties: false
+      required:
+      - kind
+      - step_id
+      - status
+      description: A durable child step the handler executed. Code-spec jobs only. Each `step_done`
+        becomes one row in the run-step ledger and is replayed back to the handler on the
+        next invocation.
+      properties:
+        kind:
+          type: string
+          enum:
+          - step_done
+        step_id:
+          type: string
+          minLength: 1
+          description: Deterministic identifier the handler passed to step.run("id", fn).
+            Replay key.
         status:
           type: string
           enum:
           - completed
           - failed
-          description: 'Terminal status for this job attempt: `completed` or `failed`. `failed`
-            triggers the workflow engine''s retry logic if `attempt < max_attempts`.'
-        result_b64:
-          type: string
-          description: Base64-encoded (standard encoding) bytes representing the job's output.
-            The workflow engine decodes this and may pass it as input to downstream steps.
-            Omit if the step produces no output.
+          - skipped
+        result:
+          description: Value the handler should observe on replay. JSON-shape; freely structured
+            by the handler. Omit for `failed` / `skipped`.
         error_type:
           type: string
-          description: 'Short error class identifier (e.g. "TimeoutError"). Used for observability
-            and retry classification. Only relevant when `status: failed`.'
+          description: Error class for a failed sub-step.
         error_message:
           type: string
-          description: Human-readable error detail. Only relevant for failed status.
-    CodeJobCompleteRequest:
-      type: object
-      additionalProperties: false
-      description: Final report for a code-invoke job. The handler returned (or threw a terminal
-        error). `completions` carries the durable sub-step rows the handler accumulated during
-        this invocation; the server appends them to the run-step ledger before marking the
-        run completed.
-      required:
-      - worker_instance_id
-      - worker_session_token
-      - attempt
-      properties:
-        worker_instance_id:
-          type: string
-          minLength: 1
-          description: Worker process identifier from the claim. Required at the HTTP boundary
-            so empty values fail schema validation in lockstep with the handler's runtime
-            guard.
-        worker_session_token:
-          type: string
-          description: Per-boot token from the claim. Compared against the job's `claimed_by_session_token`;
-            mismatch returns 409 lease-lost.
+          description: Human-readable error detail for a failed sub-step.
         attempt:
           type: integer
           minimum: 0
-          description: Must match the `attempt` from the original claim.
-        completions:
-          type: array
-          description: Sub-step records the handler executed during this invocation that have
-            not yet been durably checkpointed.
-          items:
-            $ref: '#/components/schemas/CodeStepCompletion'
-        result_b64:
+          description: Worker-side per-step retry counter. 0 for first try.
+    OutcomeWaitObserved:
+      type: object
+      additionalProperties: false
+      required:
+      - kind
+      - step_id
+      - wait_kind
+      - status
+      description: A previously-parked wait the handler observed completing during replay.
+        Code-spec jobs only. The status is typically `completed`; `failed` is used when the
+        wait raised a timeout the handler is surfacing back through the ledger.
+      properties:
+        kind:
           type: string
-          description: Base64-encoded JSON bytes of the handler's return value. Persisted
-            as the run output.
+          enum:
+          - wait_observed
+        step_id:
+          type: string
+          minLength: 1
+          description: Deterministic identifier the handler passed to the wait helper.
+        wait_kind:
+          type: string
+          enum:
+          - sleep
+          - wait_signal
+          - wait_event
+          - interaction
+          - pause
+          description: Kind of the wait that completed.
+        status:
+          type: string
+          enum:
+          - completed
+          - failed
+          - skipped
+        result:
+          description: Payload delivered by the wait (e.g. signal payload, interaction response).
+            Omit when not applicable (sleep, pause).
         error_type:
           type: string
-          description: Short error class identifier when the handler threw a terminal error.
-            Run is marked failed regardless of `result_b64`.
+        error_message:
+          type: string
+        attempt:
+          type: integer
+          minimum: 0
+    OutcomeComplete:
+      type: object
+      additionalProperties: false
+      required:
+      - kind
+      description: 'Terminal: the attempt finished successfully. For action jobs, `result_b64`
+        becomes the step output. For code jobs, `result_b64` becomes the run output.'
+      properties:
+        kind:
+          type: string
+          enum:
+          - complete
+        result_b64:
+          type: string
+          description: Base64-encoded (standard encoding) bytes representing the handler/action
+            result. Decoded by the engine and stored on the job (action) or the run (code).
+    OutcomeFail:
+      type: object
+      additionalProperties: false
+      required:
+      - kind
+      - error_type
+      - error_message
+      description: 'Terminal: the attempt failed. For action jobs this triggers retry if the
+        spec allows; for code jobs the run terminally fails.'
+      properties:
+        kind:
+          type: string
+          enum:
+          - fail
+        error_type:
+          type: string
+          minLength: 1
+          description: Short error class identifier (e.g. "TimeoutError").
         error_message:
           type: string
           description: Human-readable error detail.
-    CodeJobYieldRequest:
+    OutcomeSuspend:
       type: object
       additionalProperties: false
-      description: Yield notification for a code-invoke job. Commits the accumulated sub-step
-        completions and parks the run on the supplied wait. A fresh code-invoke job is emitted
-        on wake.
       required:
-      - worker_instance_id
-      - worker_session_token
-      - attempt
-      - suspension
+      - kind
+      - step_id
+      - wait
+      description: 'Terminal: the code handler hit a wait it could not satisfy locally and
+        is yielding control. Code-spec jobs only. The server parks the run on `wait`; on resume
+        a fresh code-invoke job is emitted.'
       properties:
-        worker_instance_id:
+        kind:
+          type: string
+          enum:
+          - suspend
+        step_id:
           type: string
           minLength: 1
-          description: Worker process identifier from the claim. Required at the HTTP boundary
-            so empty values fail schema validation in lockstep with the handler's runtime
-            guard.
-        worker_session_token:
+          description: Deterministic identifier the handler passed to the wait helper.
+        wait:
+          $ref: '#/components/schemas/WaitDescriptor'
+          description: The wait the handler hit.
+    WaitDescriptor:
+      description: Wait descriptor a code handler yielded. Discriminated by `kind`. Reuses
+        the declarative wait config schemas from workflow.yaml — code workflows ignore the
+        `on_timeout` fields on those configs because the SDK handles timeout flows directly
+        in the handler (try/catch around the await), but accepting the shape verbatim avoids
+        forking schemas just for code mode.
+      oneOf:
+      - $ref: '#/components/schemas/WaitDescriptorSleep'
+      - $ref: '#/components/schemas/WaitDescriptorWaitSignal'
+      - $ref: '#/components/schemas/WaitDescriptorWaitEvent'
+      - $ref: '#/components/schemas/WaitDescriptorInteraction'
+      - $ref: '#/components/schemas/WaitDescriptorPause'
+      discriminator:
+        propertyName: kind
+        mapping:
+          sleep: '#/components/schemas/WaitDescriptorSleep'
+          wait_signal: '#/components/schemas/WaitDescriptorWaitSignal'
+          wait_event: '#/components/schemas/WaitDescriptorWaitEvent'
+          interaction: '#/components/schemas/WaitDescriptorInteraction'
+          pause: '#/components/schemas/WaitDescriptorPause'
+    WaitDescriptorSleep:
+      type: object
+      additionalProperties: false
+      required:
+      - kind
+      - sleep
+      properties:
+        kind:
           type: string
-          description: Per-boot token from the claim. Mismatch returns 409.
-        attempt:
-          type: integer
-          minimum: 0
-          description: Must match the `attempt` from the original claim.
-        completions:
+          enum:
+          - sleep
+        sleep:
+          $ref: '#/components/schemas/WorkflowSleepConfig'
+    WaitDescriptorWaitSignal:
+      type: object
+      additionalProperties: false
+      required:
+      - kind
+      - wait_signal
+      properties:
+        kind:
+          type: string
+          enum:
+          - wait_signal
+        wait_signal:
+          $ref: '#/components/schemas/WorkflowWaitSignalConfig'
+    WaitDescriptorWaitEvent:
+      type: object
+      additionalProperties: false
+      required:
+      - kind
+      - wait_event
+      properties:
+        kind:
+          type: string
+          enum:
+          - wait_event
+        wait_event:
+          $ref: '#/components/schemas/WorkflowWaitEventConfig'
+    WaitDescriptorInteraction:
+      type: object
+      additionalProperties: false
+      required:
+      - kind
+      - interaction
+      properties:
+        kind:
+          type: string
+          enum:
+          - interaction
+        interaction:
+          $ref: '#/components/schemas/WorkflowInteractionConfig'
+    WaitDescriptorPause:
+      type: object
+      additionalProperties: false
+      required:
+      - kind
+      properties:
+        kind:
+          type: string
+          enum:
+          - pause
+        pause:
+          $ref: '#/components/schemas/WorkflowPauseConfig'
+    JobHistoryResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - entries
+      description: Paginated page of replay-history entries for a code-spec job. `entries`
+        are in commit order. `next_cursor`, when non-empty, is the cursor to pass on the next
+        request to fetch the next page; an empty / absent value means no further pages.
+      properties:
+        entries:
           type: array
-          description: Sub-step records since the last yield. May be empty if the very first
-            thing the handler did was hit a wait.
           items:
             $ref: '#/components/schemas/CodeStepCompletion'
-        suspension:
-          $ref: '#/components/schemas/CodeYieldSuspension'
-          description: The wait the handler hit. Maps 1:1 to existing server suspension reasons
-            (sleep, wait_signal, wait_event, interaction, pause).
+        next_cursor:
+          type: string
+          description: Cursor for the next page. Empty / absent when this is the last page.
     CodeStepCompletion:
       type: object
       additionalProperties: false
-      description: One durable sub-step the handler executed (or a wait it observed completing).
-        Replayed back to the handler on the next invocation so step.run() / step.waitFor*()
-        calls fast-forward without re-executing the user-supplied function.
+      description: One entry in the replay history of a code-spec job. Mirrors what the worker
+        reported via a previous `step_done` or `wait_observed` outcome — the SDK fast-forwards
+        through these on replay so cached `step.run` / `step.waitFor*` calls return without
+        re-executing the user-supplied function.
       required:
       - step_id
       - kind
@@ -12646,8 +12949,9 @@ components:
           - wait_event
           - interaction
           - pause
-          description: Sub-step kind. Only `run` carries a meaningful `result`; wait kinds
-            capture "wait completed" markers.
+          description: Sub-step kind. `run` carries the value `step.run` returned; wait kinds
+            capture the payload (signal, event, interaction response) the wait delivered,
+            or are markers for kinds without a payload (sleep, pause).
         status:
           type: string
           enum:
@@ -12655,125 +12959,15 @@ components:
           - failed
           - skipped
         result:
-          description: Value the handler should observe on replay. JSON-shape; kind-specific
-            (handler return value for `run`, signal payload for `wait_signal`, etc.).
+          description: Value the handler should observe on replay. JSON-shape; kind-specific.
         error_type:
           type: string
-          description: Error class for a failed sub-step.
         error_message:
           type: string
-          description: Human-readable error detail.
         attempt:
           type: integer
           minimum: 0
           description: Worker-side per-step retry counter. 0 for first try.
-    CodeYieldSuspension:
-      description: 'Wait descriptor a code handler yielded. Discriminated by `kind`: each
-        kind has its own variant requiring the matching config block (sleep, wait_signal,
-        wait_event, interaction). The `pause` variant does not require a config — pause just
-        suspends the run until an operator unpauses it; the optional `pause` block carries
-        a human-readable reason for display. Reuses the declarative wait config schemas —
-        code workflows ignore the `on_timeout` fields on those configs because the SDK handles
-        timeout flows directly in the handler (try/catch around the await), but accepting
-        the shape verbatim avoids forking schemas just for code mode.'
-      oneOf:
-      - $ref: '#/components/schemas/CodeYieldSleepSuspension'
-      - $ref: '#/components/schemas/CodeYieldWaitSignalSuspension'
-      - $ref: '#/components/schemas/CodeYieldWaitEventSuspension'
-      - $ref: '#/components/schemas/CodeYieldInteractionSuspension'
-      - $ref: '#/components/schemas/CodeYieldPauseSuspension'
-      discriminator:
-        propertyName: kind
-        mapping:
-          sleep: '#/components/schemas/CodeYieldSleepSuspension'
-          wait_signal: '#/components/schemas/CodeYieldWaitSignalSuspension'
-          wait_event: '#/components/schemas/CodeYieldWaitEventSuspension'
-          interaction: '#/components/schemas/CodeYieldInteractionSuspension'
-          pause: '#/components/schemas/CodeYieldPauseSuspension'
-    CodeYieldSleepSuspension:
-      type: object
-      additionalProperties: false
-      required:
-      - step_id
-      - kind
-      - sleep
-      properties:
-        step_id:
-          type: string
-          minLength: 1
-        kind:
-          type: string
-          enum:
-          - sleep
-        sleep:
-          $ref: '#/components/schemas/WorkflowSleepConfig'
-    CodeYieldWaitSignalSuspension:
-      type: object
-      additionalProperties: false
-      required:
-      - step_id
-      - kind
-      - wait_signal
-      properties:
-        step_id:
-          type: string
-          minLength: 1
-        kind:
-          type: string
-          enum:
-          - wait_signal
-        wait_signal:
-          $ref: '#/components/schemas/WorkflowWaitSignalConfig'
-    CodeYieldWaitEventSuspension:
-      type: object
-      additionalProperties: false
-      required:
-      - step_id
-      - kind
-      - wait_event
-      properties:
-        step_id:
-          type: string
-          minLength: 1
-        kind:
-          type: string
-          enum:
-          - wait_event
-        wait_event:
-          $ref: '#/components/schemas/WorkflowWaitEventConfig'
-    CodeYieldInteractionSuspension:
-      type: object
-      additionalProperties: false
-      required:
-      - step_id
-      - kind
-      - interaction
-      properties:
-        step_id:
-          type: string
-          minLength: 1
-        kind:
-          type: string
-          enum:
-          - interaction
-        interaction:
-          $ref: '#/components/schemas/WorkflowInteractionConfig'
-    CodeYieldPauseSuspension:
-      type: object
-      additionalProperties: false
-      required:
-      - step_id
-      - kind
-      properties:
-        step_id:
-          type: string
-          minLength: 1
-        kind:
-          type: string
-          enum:
-          - pause
-        pause:
-          $ref: '#/components/schemas/WorkflowPauseConfig'
     RunActionRequest:
       type: object
       additionalProperties: false
@@ -12811,25 +13005,18 @@ components:
       type: object
       additionalProperties: false
       required:
-      - worker_session_token
-      - attempt
+      - lease_token
       - events
       description: Fenced batch of custom run events published by the worker holding a job's
-        lease. Every event in `events` is published under the same `worker_session_token`
-        + `attempt` fence; mismatch against the job's `claimed_by_session_token` returns 409
-        lease-lost.
+        lease. Every event in `events` is published under the same `lease_token`; mismatch
+        returns 409 lease-lost.
       properties:
         worker_instance_id:
           type: string
           description: Echo of the claim's `worker_instance_id`. Audit only.
-        worker_session_token:
+        lease_token:
           type: string
-          description: Per-boot token from the claim. The lease fence value; mismatch against
-            the job's `claimed_by_session_token` returns 409 lease-lost.
-        attempt:
-          type: integer
-          minimum: 0
-          description: Must match the `attempt` from the original claim.
+          description: Opaque lease fence value from the claim; mismatch returns 409 lease-lost.
         events:
           type: array
           description: The batch of events to publish. All events are validated atomically.
@@ -15699,7 +15886,7 @@ components:
           description: Agent-specific configuration blob stored and returned opaquely.
         status:
           $ref: '#/components/schemas/AgentStatus'
-          description: 'Current agent status: `active` or `disabled`.'
+          description: 'Current agent status: `active` or `inactive`.'
         presence:
           $ref: '#/components/schemas/AgentPresence'
           description: Deprecated alias of connection_status for first rollout compatibility.
@@ -16324,7 +16511,7 @@ components:
           description: Replacement configuration blob.
         status:
           $ref: '#/components/schemas/AgentStatus'
-          description: 'Replacement agent status: `active` or `disabled`.'
+          description: 'Replacement agent status: `active` or `inactive`.'
         tags:
           $ref: '#/components/schemas/TagMap'
           description: When supplied, replaces the user tag set on the agent. System tags

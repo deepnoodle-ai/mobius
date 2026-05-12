@@ -17,9 +17,9 @@ from ._api.models import (
     CreateWorkflowRequest,
     JobClaim,
     JobClaimRequest,
-    JobCompleteRequest,
     JobFenceRequest,
     JobHeartbeat,
+    JobReportRequest,
     RunSignal,
     SendRunSignalRequest,
     StartBoundRunRequest,
@@ -178,8 +178,7 @@ class JobEventEntry(BaseModel):
 
 class JobEventsRequest(BaseModel):
     worker_instance_id: str | None = None
-    worker_session_token: str | None = None
-    attempt: int
+    lease_token: str
     events: list[JobEventEntry]
 
 
@@ -313,11 +312,11 @@ class Client:
         resp.raise_for_status()
         return JobHeartbeat.model_validate(resp.json())
 
-    def complete_job(self, job_id: str, req: JobCompleteRequest) -> None:
+    def report_job(self, job_id: str, req: JobReportRequest) -> None:
         project = quote(self.namespace, safe="")
         job = quote(job_id, safe="")
         resp = self._http.post(
-            f"/v1/projects/{project}/jobs/{job}/complete",
+            f"/v1/projects/{project}/jobs/{job}/report",
             json=_dump(req),
         )
         if resp.status_code == 401:
@@ -352,8 +351,7 @@ class Client:
         job_id: str,
         *,
         worker_instance_id: str | None = None,
-        worker_session_token: str | None = None,
-        attempt: int,
+        lease_token: str,
         type: str,
         payload: dict[str, Any],
     ) -> None:
@@ -361,8 +359,7 @@ class Client:
             job_id,
             JobEventsRequest(
                 worker_instance_id=worker_instance_id,
-                worker_session_token=worker_session_token,
-                attempt=attempt,
+                lease_token=lease_token,
                 events=[JobEventEntry(type=type, payload=payload)],
             ),
         )
@@ -634,7 +631,7 @@ def _create_workflow_request(
 ) -> CreateWorkflowRequest:
     normalized = _normalize_workflow_options(spec, opts)
     return CreateWorkflowRequest(
-        name=normalized.name or spec.name,
+        name=normalized.name or spec.root.name,
         handle=normalized.handle,
         description=normalized.description,
         published_as_tool=normalized.published_as_tool,
@@ -676,9 +673,9 @@ def _normalize_workflow_options(
     opts: WorkflowOptions | None,
 ) -> WorkflowOptions:
     if opts is None:
-        return WorkflowOptions(name=spec.name)
+        return WorkflowOptions(name=spec.root.name)
     return WorkflowOptions(
-        name=opts.name or spec.name,
+        name=opts.name or spec.root.name,
         handle=opts.handle,
         description=opts.description,
         published_as_tool=opts.published_as_tool,

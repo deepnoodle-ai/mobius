@@ -50,7 +50,7 @@ func registerInteractionsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.AcceptInteractionHandoffWithResponse(ctx.Context(), p0, p1, body)
+			resp, err := client.AcceptInteractionHandoffWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1), body)
 			if err != nil {
 				return err
 			}
@@ -88,7 +88,7 @@ func registerInteractionsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.CancelInteractionWithResponse(ctx.Context(), p0, p1, body)
+			resp, err := client.CancelInteractionWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1), body)
 			if err != nil {
 				return err
 			}
@@ -130,7 +130,7 @@ func registerInteractionsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.CastInteractionBallotWithResponse(ctx.Context(), p0, p1, body)
+			resp, err := client.CastInteractionBallotWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1), body)
 			if err != nil {
 				return err
 			}
@@ -149,7 +149,7 @@ func registerInteractionsCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			resp, err := client.ClaimInteractionWithResponse(ctx.Context(), p0, p1)
+			resp, err := client.ClaimInteractionWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1))
 			if err != nil {
 				return err
 			}
@@ -187,7 +187,7 @@ func registerInteractionsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.CloseInteractionVoteWithResponse(ctx.Context(), p0, p1, body)
+			resp, err := client.CloseInteractionVoteWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1), body)
 			if err != nil {
 				return err
 			}
@@ -218,7 +218,7 @@ func registerInteractionsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.CreateInteractionWithResponse(ctx.Context(), p0, body)
+			resp, err := client.CreateInteractionWithResponse(ctx.Context(), api.ProjectHandleParam(p0), body)
 			if err != nil {
 				return err
 			}
@@ -237,7 +237,7 @@ func registerInteractionsCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			resp, err := client.GetInteractionWithResponse(ctx.Context(), p0, p1)
+			resp, err := client.GetInteractionWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1))
 			if err != nil {
 				return err
 			}
@@ -302,7 +302,7 @@ func registerInteractionsCommands(app *cli.App) {
 				v := api.LimitParam(ctx.Int("limit"))
 				params.Limit = &v
 			}
-			resp, err := client.ListInteractionsWithResponse(ctx.Context(), p0, params)
+			resp, err := client.ListInteractionsWithResponse(ctx.Context(), api.ProjectHandleParam(p0), params)
 			if err != nil {
 				return err
 			}
@@ -321,7 +321,7 @@ func registerInteractionsCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			resp, err := client.ListInteractionBallotsWithResponse(ctx.Context(), p0, p1)
+			resp, err := client.ListInteractionBallotsWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1))
 			if err != nil {
 				return err
 			}
@@ -340,7 +340,7 @@ func registerInteractionsCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			resp, err := client.ReleaseInteractionWithResponse(ctx.Context(), p0, p1)
+			resp, err := client.ReleaseInteractionWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1))
 			if err != nil {
 				return err
 			}
@@ -390,7 +390,7 @@ func registerInteractionsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.RespondToInteractionWithResponse(ctx.Context(), p0, p1, body)
+			resp, err := client.RespondToInteractionWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1), body)
 			if err != nil {
 				return err
 			}
@@ -427,7 +427,7 @@ func registerInteractionsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.SendBackInteractionHandoffWithResponse(ctx.Context(), p0, p1, body)
+			resp, err := client.SendBackInteractionHandoffWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1), body)
 			if err != nil {
 				return err
 			}
@@ -471,7 +471,7 @@ func registerInteractionsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.SubmitInteractionHandoffWithResponse(ctx.Context(), p0, p1, body)
+			resp, err := client.SubmitInteractionHandoffWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1), body)
 			if err != nil {
 				return err
 			}
@@ -490,7 +490,7 @@ func registerInteractionsCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			resp, err := client.WithdrawInteractionBallotWithResponse(ctx.Context(), p0, p1)
+			resp, err := client.WithdrawInteractionBallotWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1))
 			if err != nil {
 				return err
 			}

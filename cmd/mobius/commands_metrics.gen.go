@@ -9,6 +9,8 @@ package main
 
 import (
 	"github.com/deepnoodle-ai/wonton/cli"
+
+	"github.com/deepnoodle-ai/mobius/mobius/api"
 )
 
 // registerMetricsCommands registers every generated subcommand in the "metrics" group.
@@ -25,7 +27,7 @@ func registerMetricsCommands(app *cli.App) {
 			}
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
-			resp, err := client.GetProjectMetricsWithResponse(ctx.Context(), p0)
+			resp, err := client.GetProjectMetricsWithResponse(ctx.Context(), api.ProjectHandleParam(p0))
 			if err != nil {
 				return err
 			}

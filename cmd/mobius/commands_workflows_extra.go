@@ -86,7 +86,11 @@ func workflowsApplyHandler(ctx *cli.Context) error {
 		return cli.Errorf("--name is required (or supply it via --file)")
 	}
 	// Spec required; an empty WorkflowSpec has Name == "" and no Steps.
-	if body.Spec.Name == "" && len(body.Spec.Steps) == 0 {
+	stepsLen := 0
+	if body.Spec.Steps != nil {
+		stepsLen = len(*body.Spec.Steps)
+	}
+	if body.Spec.Name == "" && stepsLen == 0 {
 		return cli.Errorf("--spec is required (or supply it via --file)")
 	}
 
