@@ -183,7 +183,7 @@ class EntityReferenceType(StrEnum):
     Mobius entity kind that can be attached to a channel message.
     """
 
-    workflow_run = 'workflow_run'
+    run = 'run'
     run_step = 'run_step'
     job = 'job'
     interaction = 'interaction'
@@ -1372,15 +1372,6 @@ class WorkflowCodeSpec(BaseModel):
     )
 
 
-class WorkflowActionKind(StrEnum):
-    """
-    Execution mode for `action` steps: `worker` creates claimable jobs for external workers, while `server` executes Mobius-managed actions such as integrations inside the service. Omit for the current default of `worker`.
-    """
-
-    worker = 'worker'
-    server = 'server'
-
-
 class WorkflowEdgeMatchingStrategy(StrEnum):
     """
     Controls matching when multiple outbound edge conditions are true: `all` follows every matching edge in parallel, while `first` follows only the first matching edge in declaration order.
@@ -1653,7 +1644,7 @@ class WorkflowInteractionDiscussionConfig(BaseModel):
     )
     opening_message: str = Field(
         ...,
-        description='Opening brief posted into the channel before the workflow parks.',
+        description='Opening brief posted into the channel before the workflow suspends.',
         min_length=1,
     )
     completion_behavior: CompletionBehavior | None = Field(
@@ -1696,7 +1687,7 @@ class WorkflowDefinitionSummary(BaseModel):
     )
     tags: TagMap | None = Field(
         None,
-        description='Resource tags applied to this workflow. Inherited by runs at start time; see `WorkflowRun.tags`.',
+        description='Resource tags applied to this workflow. Inherited by runs at start time; see `Run.tags`.',
     )
     created_at: AwareDatetime = Field(
         ..., description='Timestamp when this workflow definition was created.'
@@ -1757,7 +1748,7 @@ class WorkflowVersionListResponse(BaseModel):
     )
 
 
-class WorkflowRunStatus(StrEnum):
+class RunStatus(StrEnum):
     """
     Public run lifecycle. Path-level fields explain why an active run is working, waiting, sleeping, retrying, paused, or blocked at a join.
     """
@@ -1767,7 +1758,7 @@ class WorkflowRunStatus(StrEnum):
     failed = 'failed'
 
 
-class WorkflowRunPathState(StrEnum):
+class RunPathState(StrEnum):
     """
     Current state of one execution path.
     """
@@ -1778,7 +1769,7 @@ class WorkflowRunPathState(StrEnum):
     failed = 'failed'
 
 
-class WorkflowRunWaitKind(StrEnum):
+class RunWaitKind(StrEnum):
     """
     What a waiting path is blocked on.
     """
@@ -1793,11 +1784,11 @@ class WorkflowRunWaitKind(StrEnum):
     wait_until = 'wait_until'
 
 
-class WorkflowRunWaitDetail(BaseModel):
+class RunWaitDetail(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    kind: WorkflowRunWaitKind
+    kind: RunWaitKind
     wake_at: AwareDatetime | None = Field(
         None,
         description='Earliest time the runtime should inspect or resume this path.',
@@ -1845,7 +1836,7 @@ class WorkflowRunWaitDetail(BaseModel):
         None, description='Observable name for `wait_until.observable` waits.'
     )
     observed_version: int | None = Field(
-        None, description='Observable version observed before the path parked.'
+        None, description='Observable version observed before the path suspended.'
     )
     poll_action: str | None = Field(
         None, description='Poll action name for `wait_until` waits.'
@@ -1873,7 +1864,7 @@ class WorkflowRunWaitDetail(BaseModel):
     )
 
 
-class WorkflowRunPath(BaseModel):
+class RunPath(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
@@ -1881,8 +1872,8 @@ class WorkflowRunPath(BaseModel):
         ...,
         description='Stable execution path identifier, e.g. `main` or `main/each/0`.',
     )
-    state: WorkflowRunPathState
-    waiting_on: WorkflowRunWaitDetail | None = Field(
+    state: RunPathState
+    waiting_on: RunWaitDetail | None = Field(
         None, description='Present when `state` is `waiting`.'
     )
     error_type: str | None = Field(
@@ -1893,7 +1884,7 @@ class WorkflowRunPath(BaseModel):
     )
 
 
-class WorkflowRunPathCounts(BaseModel):
+class RunPathCounts(BaseModel):
     """
     Current path counts. Invariants: `total = working + waiting + completed + failed`; `active = working + waiting`.
     """
@@ -1909,7 +1900,7 @@ class WorkflowRunPathCounts(BaseModel):
     failed: int
 
 
-class WorkflowRunWaitSummary(BaseModel):
+class RunWaitSummary(BaseModel):
     """
     Always-present aggregate of waiting paths.
     """
@@ -1928,7 +1919,7 @@ class WorkflowRunWaitSummary(BaseModel):
     interaction_ids: list[str]
 
 
-class WorkflowRunJobCounts(BaseModel):
+class RunJobCounts(BaseModel):
     """
     Live work-pool summary for this run. Reflects the transient state of the worker job queue, not durable step progress — terminal jobs are swept on a TTL and stop contributing to these counts. Use `step_counts` for run-progress UI; use this field to answer "is anything claimable right now and is a worker holding it?". `ready` counts pending jobs whose `scheduled_at` has arrived and can be claimed now; `scheduled` counts pending jobs intentionally waiting for a future retry/backoff; `claimed` counts jobs currently held by workers.
     """
@@ -1941,7 +1932,7 @@ class WorkflowRunJobCounts(BaseModel):
     claimed: int
 
 
-class WorkflowRunStepCounts(BaseModel):
+class RunStepCounts(BaseModel):
     """
     Aggregate count of run-step rows for this run grouped by status. Counts every attempt of every step (one row per step x attempt x path), so it reflects durable progress rather than the live worker pool. Use this for run-progress UI; use `job_counts` for live claimability.
     """
@@ -1957,7 +1948,7 @@ class WorkflowRunStepCounts(BaseModel):
     cancelled: int
 
 
-class WorkflowRunError(BaseModel):
+class RunError(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
@@ -2792,7 +2783,7 @@ class EnvironmentOwnerType(StrEnum):
     none = 'none'
     user = 'user'
     agent = 'agent'
-    workflow_run = 'workflow_run'
+    run = 'run'
     worker_session = 'worker_session'
     service = 'service'
 
@@ -3325,7 +3316,7 @@ class WaitKind(StrEnum):
 
 class OutcomeWaitObserved(BaseModel):
     """
-    A previously-parked wait the handler observed completing during replay. Code-spec jobs only. The status is typically `completed`; `failed` is used when the wait raised a timeout the handler is surfacing back through the ledger.
+    A previously-suspended wait the handler observed completing during replay. Code-spec jobs only. The status is typically `completed`; `failed` is used when the wait raised a timeout the handler is surfacing back through the ledger.
     """
 
     model_config = ConfigDict(
@@ -4803,7 +4794,8 @@ class IntegrationProviderAction(BaseModel):
         extra='forbid',
     )
     name: str = Field(
-        ..., description='Workflow-callable action name (`github.create-comment`).'
+        ...,
+        description='Workflow-callable action name (`github.issue.create_comment`).',
     )
     title: str | None = None
     description: str | None = None
@@ -5651,8 +5643,13 @@ class CreateAgentRequest(BaseModel):
         None,
         description='Arbitrary capability map used by orchestrators to select suitable agents.',
     )
-    config: dict[str, Any] | None = Field(
-        None, description='Agent-specific configuration stored and returned opaquely.'
+    model: str | None = Field(
+        None,
+        description='Anthropic model identifier for platform agents (e.g. `claude-sonnet-4-6`). Empty falls back to the platform default.',
+    )
+    system_prompt: str | None = Field(
+        None,
+        description='Custom system prompt for platform agents. Empty uses the generated default.',
     )
     tags: TagMap | None = Field(None, description='Initial tag set.')
 
@@ -5686,8 +5683,11 @@ class UpdateAgentRequest(BaseModel):
     capabilities: dict[str, Any] | None = Field(
         None, description='Replacement capability map.'
     )
-    config: dict[str, Any] | None = Field(
-        None, description='Replacement configuration blob.'
+    model: str | None = Field(
+        None, description='Replacement Anthropic model identifier for platform agents.'
+    )
+    system_prompt: str | None = Field(
+        None, description='Replacement system prompt for platform agents.'
     )
     status: AgentStatus | None = Field(
         None, description='Replacement agent status: `active` or `inactive`.'
@@ -6605,7 +6605,7 @@ class ObservableEvent(BaseModel):
     created_at: AwareDatetime
 
 
-class RunStatus(StrEnum):
+class RunStatus1(StrEnum):
     active = 'active'
     completed = 'completed'
     failed = 'failed'
@@ -6617,14 +6617,14 @@ class ObservableWaiter(BaseModel):
     )
     run_id: str
     workflow_name: str
-    run_status: RunStatus
+    run_status: RunStatus1
     path_id: str
     step_name: str
     condition: str | None = Field(
         None, description='Bare `expr` condition the Observable state must satisfy.'
     )
     observed_version: int = Field(
-        ..., description='Observable version observed when this path parked.'
+        ..., description='Observable version observed when this path suspended.'
     )
     deadline_at: AwareDatetime | None = Field(
         None, description='Fixed timeout deadline for the wait, when configured.'
@@ -6758,11 +6758,7 @@ class WorkflowExecutableStep(BaseModel):
     )
     action: str = Field(
         ...,
-        description='Canonical executable-step field. When `action_kind` is omitted, the engine treats this as a worker action. Use `action_kind: server` for Mobius-managed server actions.',
-    )
-    action_kind: WorkflowActionKind | None = Field(
-        None,
-        description='Whether `action` is handled by a worker or by a Mobius-managed server action.',
+        description="Canonical executable-step field. The engine resolves the execution domain (platform pool vs. customer worker) from the action's registered `runs_on` metadata, not from any step field.",
     )
     bind: dict[str, str] | None = Field(
         None,
@@ -7056,7 +7052,9 @@ class RunStep(BaseModel):
     )
     error_type: str | None = None
     error_message: str | None = None
-    started_at: AwareDatetime | None = None
+    started_at: AwareDatetime | None = Field(
+        None, description='Timestamp when execution of this step attempt began.'
+    )
     completed_at: AwareDatetime | None = None
     source_run_id: str | None = Field(
         None,
@@ -7623,9 +7621,13 @@ class Agent(BaseModel):
         None,
         description='Arbitrary capability map used by orchestrators to select suitable agents.',
     )
-    config: dict[str, Any] | None = Field(
+    model: str | None = Field(
         None,
-        description='Agent-specific configuration blob stored and returned opaquely.',
+        description='Anthropic model identifier for platform agents (e.g. `claude-sonnet-4-6`). Empty string falls back to the platform default.',
+    )
+    system_prompt: str | None = Field(
+        None,
+        description='Custom system prompt for platform agents. Empty string uses the generated default based on the agent name.',
     )
     status: AgentStatus = Field(
         ..., description='Current agent status: `active` or `inactive`.'
@@ -7708,7 +7710,7 @@ class VoteRules(BaseModel):
 
 class WorkflowWaitUntilConfig(BaseModel):
     """
-    Durable condition wait. Exactly one of `poll` or `observable` must be set. Poll waits evaluate direct checks; Observable waits read reusable project-scoped Observable state and park on change events.
+    Durable condition wait. Exactly one of `poll` or `observable` must be set. Poll waits evaluate direct checks; Observable waits read reusable project-scoped Observable state and suspend on change events.
     """
 
     model_config = ConfigDict(
@@ -7732,7 +7734,7 @@ class WorkflowWaitUntilConfig(BaseModel):
     )
 
 
-class WorkflowRun(BaseModel):
+class Run(BaseModel):
     """
     Runtime record for one workflow execution.
     """
@@ -7761,22 +7763,22 @@ class WorkflowRun(BaseModel):
     workflow_name: str = Field(
         ..., description='Name of the workflow as recorded at run creation time.'
     )
-    status: WorkflowRunStatus = Field(..., description='Public lifecycle for this run.')
-    path_counts: WorkflowRunPathCounts = Field(
+    status: RunStatus = Field(..., description='Public lifecycle for this run.')
+    path_counts: RunPathCounts = Field(
         ..., description='Current path counts derived from the run projection.'
     )
-    job_counts: WorkflowRunJobCounts = Field(
+    job_counts: RunJobCounts = Field(
         ...,
-        description='Live work-pool summary derived from the run projection. See `WorkflowRunJobCounts`.',
+        description='Live work-pool summary derived from the run projection. See `RunJobCounts`.',
     )
-    step_counts: WorkflowRunStepCounts = Field(
+    step_counts: RunStepCounts = Field(
         ...,
-        description='Durable run-step counts grouped by status. See `WorkflowRunStepCounts`.',
+        description='Durable run-step counts grouped by status. See `RunStepCounts`.',
     )
-    wait_summary: WorkflowRunWaitSummary = Field(
+    wait_summary: RunWaitSummary = Field(
         ..., description='Always-present aggregate of waiting paths.'
     )
-    errors: list[WorkflowRunError] = Field(
+    errors: list[RunError] = Field(
         ..., description='Run-level errors that caused a failed lifecycle.'
     )
     attempt: int = Field(
@@ -7825,7 +7827,8 @@ class WorkflowRun(BaseModel):
         ..., description='Timestamp when this run was created.'
     )
     started_at: AwareDatetime | None = Field(
-        None, description='Timestamp when a worker first claimed this run.'
+        None,
+        description='Timestamp when this run transitioned out of initial progression and began executing steps.',
     )
     completed_at: AwareDatetime | None = Field(
         None, description='Timestamp when this run reached a terminal state.'
@@ -7853,7 +7856,7 @@ class WorkflowRun(BaseModel):
     )
 
 
-class WorkflowRunListResponse(BaseModel):
+class RunListResponse(BaseModel):
     """
     Paginated list of workflow runs.
     """
@@ -7861,9 +7864,7 @@ class WorkflowRunListResponse(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    items: list[WorkflowRun] = Field(
-        ..., description='The list of results for this page.'
-    )
+    items: list[Run] = Field(..., description='The list of results for this page.')
     has_more: bool = Field(..., description='True when more pages are available.')
     next_cursor: str | None = Field(
         None,
@@ -7891,7 +7892,7 @@ class EventSourceConfig(BaseModel):
         None, description='Platform event type to match, e.g. `run.completed`.'
     )
     actor_state: ActorStateTriggerSourceConfig | None = Field(
-        None, description='Transition filter for `actor_state.changed` event triggers.'
+        None, description='Transition filter for `actor.state.changed` event triggers.'
     )
 
 
@@ -8100,7 +8101,7 @@ class InteractionSpec(BaseModel):
 
 class WorkflowWaitUntilStep(BaseModel):
     """
-    Polls project or external state until a strict boolean condition evaluates true, parking the run durably between checks.
+    Polls project or external state until a strict boolean condition evaluates true, suspending the run durably between checks.
     """
 
     model_config = ConfigDict(
@@ -8338,7 +8339,7 @@ class WorkflowStep(
 
 class OutcomeSuspend(BaseModel):
     """
-    Terminal: the code handler hit a wait it could not satisfy locally and is yielding control. Code-spec jobs only. The server parks the run on `wait`; on resume a fresh code-invoke job is emitted.
+    Terminal: the code handler hit a wait it could not satisfy locally and is yielding control. Code-spec jobs only. The server suspends the run on `wait`; on resume a fresh code-invoke job is emitted.
     """
 
     model_config = ConfigDict(
@@ -8370,7 +8371,7 @@ class WorkflowSpec1(BaseModel):
 
     Exactly one of `steps` or `code` must be set; setting both, or neither, is rejected by the schema's `oneOf` constraint.
 
-    Authoring rule for spec-step workflows: `action` is the canonical field for executable steps. When `action_kind` is omitted, `action` uses worker/job semantics. Use `action_kind: "server"` for Mobius-managed server actions such as platform integrations or custom HTTP-backed actions.
+    Authoring rule for spec-step workflows: `action` is the canonical field for executable steps. The engine routes each action step to the right executor based on the action's registered `runs_on` metadata — there is no author-side kind hint. Platform-owned actions are claimed by the in-daemon worker pool; customer- registered actions are claimed by the customer's deployed workers over the standard `/v1/.../jobs/claim` surface.
     """
 
     model_config = ConfigDict(
@@ -8418,7 +8419,7 @@ class WorkflowSpec2(BaseModel):
 
     Exactly one of `steps` or `code` must be set; setting both, or neither, is rejected by the schema's `oneOf` constraint.
 
-    Authoring rule for spec-step workflows: `action` is the canonical field for executable steps. When `action_kind` is omitted, `action` uses worker/job semantics. Use `action_kind: "server"` for Mobius-managed server actions such as platform integrations or custom HTTP-backed actions.
+    Authoring rule for spec-step workflows: `action` is the canonical field for executable steps. The engine routes each action step to the right executor based on the action's registered `runs_on` metadata — there is no author-side kind hint. Platform-owned actions are claimed by the in-daemon worker pool; customer- registered actions are claimed by the customer's deployed workers over the standard `/v1/.../jobs/claim` surface.
     """
 
     model_config = ConfigDict(
@@ -8452,7 +8453,7 @@ class WorkflowSpec2(BaseModel):
 class WorkflowSpec(RootModel[WorkflowSpec1 | WorkflowSpec2]):
     root: WorkflowSpec1 | WorkflowSpec2 = Field(
         ...,
-        description='Workflow definition shaped like `workflow.Options`.\n\nA workflow is **either** a spec-step DAG or a code workflow:\n\n* Spec-step workflows declare `steps: [...]` (with optional\n`start_at`). Each step is a worker-action, server-action,\nwait, join, or other declarative construct.\n* Code workflows declare `code: { handler, runtime?, queue? }`\nand no `steps`. The handler\'s runtime control flow replaces\nthe step graph; durable sub-steps are executed via the SDK\'s\n`step.run` / `step.waitFor*` helpers and recorded against the\nrun ledger.\n\nExactly one of `steps` or `code` must be set; setting both, or neither, is rejected by the schema\'s `oneOf` constraint.\n\nAuthoring rule for spec-step workflows: `action` is the canonical field for executable steps. When `action_kind` is omitted, `action` uses worker/job semantics. Use `action_kind: "server"` for Mobius-managed server actions such as platform integrations or custom HTTP-backed actions.',
+        description="Workflow definition shaped like `workflow.Options`.\n\nA workflow is **either** a spec-step DAG or a code workflow:\n\n* Spec-step workflows declare `steps: [...]` (with optional\n`start_at`). Each step is a worker-action, server-action,\nwait, join, or other declarative construct.\n* Code workflows declare `code: { handler, runtime?, queue? }`\nand no `steps`. The handler's runtime control flow replaces\nthe step graph; durable sub-steps are executed via the SDK's\n`step.run` / `step.waitFor*` helpers and recorded against the\nrun ledger.\n\nExactly one of `steps` or `code` must be set; setting both, or neither, is rejected by the schema's `oneOf` constraint.\n\nAuthoring rule for spec-step workflows: `action` is the canonical field for executable steps. The engine routes each action step to the right executor based on the action's registered `runs_on` metadata — there is no author-side kind hint. Platform-owned actions are claimed by the in-daemon worker pool; customer- registered actions are claimed by the customer's deployed workers over the standard `/v1/.../jobs/claim` surface.",
     )
 
 
@@ -8532,12 +8533,12 @@ class WorkflowVersion(WorkflowVersionSummary):
     )
 
 
-class WorkflowRunDetail(WorkflowRun):
+class RunDetail(Run):
     """
     Detailed workflow run including its spec snapshot, terminal result, and the first page of run steps.
     """
 
-    paths: list[WorkflowRunPath] = Field(
+    paths: list[RunPath] = Field(
         ..., description='Current path-level execution projection for this run.'
     )
     spec: WorkflowSpec | None = Field(

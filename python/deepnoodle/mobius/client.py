@@ -17,9 +17,9 @@ from ._api.models import (
     CreateWorkflowRequest,
     JobClaim,
     JobClaimRequest,
+    JobReportRequest,
     JobFenceRequest,
     JobHeartbeat,
-    JobReportRequest,
     RunSignal,
     SendRunSignalRequest,
     StartBoundRunRequest,
@@ -29,10 +29,10 @@ from ._api.models import (
     WorkflowDefinition,
     WorkflowDefinitionListResponse,
     WorkflowDefinitionSummary,
-    WorkflowRun,
-    WorkflowRunDetail,
-    WorkflowRunListResponse,
-    WorkflowRunStatus,
+    Run,
+    RunDetail,
+    RunListResponse,
+    RunStatus,
     WorkflowSpec,
 )
 from .errors import AuthRevokedError, RateLimitError, WorkerInstanceConflictError
@@ -76,7 +76,7 @@ class StartRunOptions:
 
 @dataclass
 class ListRunsOptions:
-    status: WorkflowRunStatus | None = None
+    status: RunStatus | None = None
     workflow_type: str | None = None
     queue: str | None = None
     parent_run_id: str | None = None
@@ -350,8 +350,8 @@ class Client:
         self,
         job_id: str,
         *,
-        worker_instance_id: str | None = None,
         lease_token: str,
+        worker_instance_id: str | None = None,
         type: str,
         payload: dict[str, Any],
     ) -> None:
@@ -368,18 +368,18 @@ class Client:
         self,
         spec: WorkflowSpec,
         opts: StartRunOptions | None = None,
-    ) -> WorkflowRun:
+    ) -> Run:
         req = StartInlineRunRequest(mode="inline", spec=spec, **_start_opts(opts))
         project = quote(self.namespace, safe="")
         resp = self._http.post(f"/v1/projects/{project}/runs", json=_dump(req))
         resp.raise_for_status()
-        return WorkflowRun.model_validate(resp.json())
+        return Run.model_validate(resp.json())
 
     def start_workflow_run(
         self,
         workflow_id: str,
         opts: StartRunOptions | None = None,
-    ) -> WorkflowRun:
+    ) -> Run:
         project = quote(self.namespace, safe="")
         workflow = quote(workflow_id, safe="")
         req = StartBoundRunRequest(**_start_opts(opts))
@@ -388,26 +388,26 @@ class Client:
             json=_dump(req),
         )
         resp.raise_for_status()
-        return WorkflowRun.model_validate(resp.json())
+        return Run.model_validate(resp.json())
 
     def list_runs(
         self,
         opts: ListRunsOptions | None = None,
-    ) -> WorkflowRunListResponse:
+    ) -> RunListResponse:
         project = quote(self.namespace, safe="")
         resp = self._http.get(
             f"/v1/projects/{project}/runs",
             params=_list_runs_params(opts),
         )
         resp.raise_for_status()
-        return WorkflowRunListResponse.model_validate(resp.json())
+        return RunListResponse.model_validate(resp.json())
 
-    def get_run(self, run_id: str) -> WorkflowRunDetail:
+    def get_run(self, run_id: str) -> RunDetail:
         project = quote(self.namespace, safe="")
         run = quote(run_id, safe="")
         resp = self._http.get(f"/v1/projects/{project}/runs/{run}")
         resp.raise_for_status()
-        return WorkflowRunDetail.model_validate(resp.json())
+        return RunDetail.model_validate(resp.json())
 
     def cancel_run(self, run_id: str) -> None:
         project = quote(self.namespace, safe="")
@@ -453,7 +453,7 @@ class Client:
         self,
         run_id: str,
         opts: WaitRunOptions | None = None,
-    ) -> WorkflowRunDetail:
+    ) -> RunDetail:
         opts = opts or WaitRunOptions()
         since = opts.since
         deadline = time.monotonic() + opts.timeout if opts.timeout is not None else None
@@ -608,7 +608,7 @@ def _list_runs_params(opts: ListRunsOptions | None) -> dict[str, Any]:
     if opts is None:
         return {}
     return {
-        k: v.value if isinstance(v, WorkflowRunStatus) else v
+        k: v.value if isinstance(v, RunStatus) else v
         for k, v in {
             "status": opts.status,
             "workflow_type": opts.workflow_type,
@@ -631,13 +631,18 @@ def _create_workflow_request(
 ) -> CreateWorkflowRequest:
     normalized = _normalize_workflow_options(spec, opts)
     return CreateWorkflowRequest(
-        name=normalized.name or spec.root.name,
+        name=normalized.name or _spec_name(spec),
         handle=normalized.handle,
         description=normalized.description,
         published_as_tool=normalized.published_as_tool,
         spec=spec,
         tags=normalized.tags,
     )
+
+
+def _spec_name(spec: WorkflowSpec) -> str:
+    inner = spec.root if hasattr(spec, "root") else spec
+    return getattr(inner, "name", "") or ""
 
 
 def _update_workflow_request(
@@ -673,9 +678,9 @@ def _normalize_workflow_options(
     opts: WorkflowOptions | None,
 ) -> WorkflowOptions:
     if opts is None:
-        return WorkflowOptions(name=spec.root.name)
+        return WorkflowOptions(name=_spec_name(spec))
     return WorkflowOptions(
-        name=opts.name or spec.root.name,
+        name=opts.name or _spec_name(spec),
         handle=opts.handle,
         description=opts.description,
         published_as_tool=opts.published_as_tool,
@@ -765,8 +770,8 @@ def _parse_sse(lines: Iterator[str]) -> Iterator[RunEvent]:
         yield evt
 
 
-def is_terminal_run_status(status: WorkflowRunStatus | str) -> bool:
-    value = status.value if isinstance(status, WorkflowRunStatus) else status
+def is_terminal_run_status(status: RunStatus | str) -> bool:
+    value = status.value if isinstance(status, RunStatus) else status
     return value == "completed" or value == "failed"
 
 

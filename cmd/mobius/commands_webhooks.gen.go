@@ -76,7 +76,7 @@ func registerWebhooksCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.CreateWebhookWithResponse(ctx.Context(), api.ProjectHandleParam(p0), body)
+			resp, err := client.CreateWebhookWithResponse(ctx.Context(), p0, body)
 			if err != nil {
 				return err
 			}
@@ -95,7 +95,7 @@ func registerWebhooksCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			resp, err := client.DeleteWebhookWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1))
+			resp, err := client.DeleteWebhookWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}
@@ -114,7 +114,7 @@ func registerWebhooksCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			resp, err := client.GetWebhookWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1))
+			resp, err := client.GetWebhookWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}
@@ -149,7 +149,7 @@ func registerWebhooksCommands(app *cli.App) {
 				v := ctx.Int("limit")
 				params.Limit = &v
 			}
-			resp, err := client.ListWebhooksWithResponse(ctx.Context(), api.ProjectHandleParam(p0), params)
+			resp, err := client.ListWebhooksWithResponse(ctx.Context(), p0, params)
 			if err != nil {
 				return err
 			}
@@ -181,7 +181,7 @@ func registerWebhooksCommands(app *cli.App) {
 				v := ctx.Int("limit")
 				params.Limit = &v
 			}
-			resp, err := client.ListWebhookDeliveriesWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1), params)
+			resp, err := client.ListWebhookDeliveriesWithResponse(ctx.Context(), p0, p1, params)
 			if err != nil {
 				return err
 			}
@@ -219,7 +219,7 @@ func registerWebhooksCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.PingWebhookWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1), body)
+			resp, err := client.PingWebhookWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}
@@ -284,7 +284,7 @@ func registerWebhooksCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.UpdateWebhookWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1), body)
+			resp, err := client.UpdateWebhookWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}

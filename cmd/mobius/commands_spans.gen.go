@@ -29,7 +29,7 @@ func registerSpansCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			resp, err := client.GetTraceWithResponse(ctx.Context(), api.ProjectHandleParam(p0), p1)
+			resp, err := client.GetTraceWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}
@@ -47,7 +47,7 @@ func registerSpansCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			params := &api.GetProjectStepSpanCountsParams{}
-			resp, err := client.GetProjectStepSpanCountsWithResponse(ctx.Context(), api.ProjectHandleParam(p0), params)
+			resp, err := client.GetProjectStepSpanCountsWithResponse(ctx.Context(), p0, params)
 			if err != nil {
 				return err
 			}
@@ -92,7 +92,7 @@ func registerSpansCommands(app *cli.App) {
 				v := ctx.String("step-id")
 				params.StepId = &v
 			}
-			resp, err := client.ListProjectSpansWithResponse(ctx.Context(), api.ProjectHandleParam(p0), params)
+			resp, err := client.ListProjectSpansWithResponse(ctx.Context(), p0, params)
 			if err != nil {
 				return err
 			}
@@ -132,7 +132,7 @@ func registerSpansCommands(app *cli.App) {
 				v := ctx.String("agent-id")
 				params.AgentId = &v
 			}
-			resp, err := client.ListProjectTracesWithResponse(ctx.Context(), api.ProjectHandleParam(p0), params)
+			resp, err := client.ListProjectTracesWithResponse(ctx.Context(), p0, params)
 			if err != nil {
 				return err
 			}

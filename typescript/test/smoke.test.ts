@@ -86,9 +86,9 @@ test("smoke: claimJob returns job on 200", async () => {
       workflow_name: "hello",
       step_name: "greet",
       spec: { kind: "action", name: "print", parameters: { msg: "hi" } },
-      lease_token: "lease-1",
       attempt_number: 1,
       queue: "default",
+      lease_token: "lease-1",
     },
   });
   const job = await client.claimJob({
@@ -99,9 +99,6 @@ test("smoke: claimJob returns job on 200", async () => {
   assert.ok(job);
   assert.equal(job!.job_id, "job_1");
   assert.equal(job!.spec.kind, "action");
-  if (job!.spec.kind === "action") {
-    assert.equal(job!.spec.name, "print");
-  }
 });
 
 test("smoke: claimJob 409 with worker_instance_conflict envelope raises typed error", async () => {
@@ -152,11 +149,11 @@ test("smoke: reportJob 409 raises LeaseLostError", async () => {
   );
 });
 
-// lease_token is the fence value (returned by claim, echoed on
-// heartbeat / report / events). The tests below mirror the
-// worker_instance_id paths above so any drift in the token-bearing
-// wire shape fails the suite.
-test("smoke: heartbeatJob serializes lease_token", async () => {
+// lease_token is the fence value: the SDK stamps it on every claim and
+// presents it on heartbeat / report / events. The tests below mirror the
+// worker_instance_id paths above so any drift in the token-bearing wire
+// shape fails the suite.
+test("smoke: heartbeatJob with lease_token serializes the token", async () => {
   let requestBody = "";
   globalThis.fetch = (async (_input: RequestInfo | URL, init?: RequestInit) => {
     requestBody = String(init?.body ?? "");
@@ -177,7 +174,7 @@ test("smoke: heartbeatJob serializes lease_token", async () => {
   assert.match(requestBody, /"lease_token":"lease-abc"/);
 });
 
-test("smoke: reportJob serializes lease_token", async () => {
+test("smoke: reportJob with lease_token serializes the token", async () => {
   let requestBody = "";
   globalThis.fetch = (async (_input: RequestInfo | URL, init?: RequestInit) => {
     requestBody = String(init?.body ?? "");

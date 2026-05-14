@@ -29,7 +29,8 @@ func TestStartRun_HighLevelClient(t *testing.T) {
 	c, srv := newTestClient(t, h)
 	defer srv.Close()
 
-	spec := api.WorkflowSpec{Name: "demo"}
+	steps := []api.WorkflowStep{}
+	spec := api.WorkflowSpec{Name: "demo", Steps: &steps}
 	run, err := c.StartRun(context.Background(), spec, &StartRunOptions{
 		Queue:      "research",
 		ExternalID: "external-1",
@@ -96,10 +97,10 @@ func TestRunControl_HighLevelClient(t *testing.T) {
 
 	run, err := c.GetRun(context.Background(), "run_1")
 	assert.NoError(t, err)
-	assert.Equal(t, run.Status, api.WorkflowRunStatusCompleted)
+	assert.Equal(t, run.Status, api.RunStatusCompleted)
 
 	list, err := c.ListRuns(context.Background(), &ListRunsOptions{
-		Status:     api.WorkflowRunStatusCompleted,
+		Status:     api.RunStatusCompleted,
 		ExternalID: "external-1",
 		Limit:      10,
 	})
@@ -143,7 +144,7 @@ data: {"type":"run_updated","run_id":"run_1","seq":7,"timestamp":"2026-04-27T00:
 
 	run, err := c.WaitRun(context.Background(), "run_1", &WaitRunOptions{ReconnectDelay: time.Millisecond})
 	assert.NoError(t, err)
-	assert.Equal(t, run.Status, api.WorkflowRunStatusCompleted)
+	assert.Equal(t, run.Status, api.RunStatusCompleted)
 	assert.Equal(t, int(getCalls.Load()), 2)
 }
 

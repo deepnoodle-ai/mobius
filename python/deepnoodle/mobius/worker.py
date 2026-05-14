@@ -13,6 +13,7 @@ from dataclasses import dataclass, field
 from typing import Any, Callable
 
 from ._api.models import (
+    JobActionSpec,
     JobClaim,
     JobClaimRequest,
     JobFenceRequest,
@@ -227,18 +228,18 @@ class Worker:
             self._slots.release()
 
     def _execute_job(self, job: JobClaim) -> None:
-        spec_inner = job.spec.root
-        if getattr(spec_inner, "kind", None) != "action":
+        spec_root = job.spec.root if hasattr(job.spec, "root") else job.spec
+        if not isinstance(spec_root, JobActionSpec):
             msg = (
-                f"job {job.job_id} carries spec.kind={getattr(spec_inner, 'kind', None)!r} — "
-                "this worker only handles action jobs"
+                f"unsupported job spec kind {getattr(spec_root, 'kind', '?')!r} "
+                "(this SDK only handles action jobs)"
             )
             logger.error(msg)
-            self._fail_job(job, "UnsupportedSpecKind", msg)
+            self._fail_job(job, "UnsupportedSpec", msg)
             return
-        action_name = spec_inner.name
-        parameters = dict(spec_inner.parameters or {})
-        attempt = job.attempt_number or 0
+        action_name = spec_root.name
+        parameters = dict(spec_root.parameters or {})
+        attempt = job.attempt_number or 1
         log: logging.LoggerAdapter[logging.Logger] = logging.LoggerAdapter(
             logger,
             {
@@ -317,10 +318,7 @@ class Worker:
                     lease_token=job.lease_token,
                     outcomes=[
                         Outcome(
-                            root=OutcomeComplete(
-                                kind="complete",
-                                result_b64=result_b64,
-                            )
+                            root=OutcomeComplete(kind="complete", result_b64=result_b64)
                         )
                     ],
                 ),

@@ -6,5 +6,6 @@
   "worker_version": "1.2.3",
   "queues": ["billing", "reports"],
   "actions": ["stripe_charge", "send_receipt"],
+  "handlers": ["onboard-customer"],
   "wait_seconds": 20
 }

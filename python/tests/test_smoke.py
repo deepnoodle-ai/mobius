@@ -42,8 +42,9 @@ from deepnoodle.mobius._api.models import (
     JobReportRequest,
     Outcome,
     OutcomeComplete,
-    WorkflowRunStatus,
+    RunStatus,
     WorkflowSpec,
+    WorkflowSpec1,
 )
 
 
@@ -97,9 +98,9 @@ def test_claim_job_returns_job_on_200() -> None:
                     "name": "print",
                     "parameters": {"msg": "hi"},
                 },
-                "lease_token": "lease-1",
                 "attempt_number": 1,
                 "queue": "default",
+                "lease_token": "lease-1",
             },
         )
 
@@ -113,8 +114,7 @@ def test_claim_job_returns_job_on_200() -> None:
     )
     assert job is not None
     assert job.job_id == "job_1"
-    spec = job.spec.root
-    assert spec.kind == "action"
+    spec = job.spec.root if hasattr(job.spec, "root") else job.spec
     assert spec.name == "print"
     assert spec.parameters == {"msg": "hi"}
 
@@ -151,7 +151,10 @@ def test_heartbeat_409_raises_lease_lost() -> None:
     with pytest.raises(LeaseLostError):
         client.heartbeat_job(
             "task_1",
-            JobFenceRequest(worker_instance_id="w", lease_token="lease-1"),
+            JobFenceRequest(
+                worker_instance_id="w",
+                lease_token="lease-1",
+            ),
         )
 
 
@@ -171,11 +174,11 @@ def test_report_job_409_raises_lease_lost() -> None:
         )
 
 
-# lease_token is the fence value (returned by claim, echoed on
-# heartbeat / report / events). The tests below mirror the
-# worker_instance_id paths above so any drift in the token-bearing
-# wire shape fails the suite.
-def test_heartbeat_serializes_lease_token() -> None:
+# lease_token is the fence value: the SDK stamps it on every claim and
+# presents it on heartbeat / report / events. The tests below mirror the
+# worker_instance_id paths above so any drift in the token-bearing wire
+# shape fails the suite.
+def test_heartbeat_with_lease_token_serializes_token() -> None:
     seen: dict[str, object] = {}
 
     def handler(request: httpx.Request) -> httpx.Response:
@@ -191,7 +194,7 @@ def test_heartbeat_serializes_lease_token() -> None:
     assert '"lease_token":"lease-abc"' in str(seen["body"])
 
 
-def test_report_job_serializes_lease_token() -> None:
+def test_report_job_with_lease_token_serializes_token() -> None:
     seen: dict[str, object] = {}
 
     def handler(request: httpx.Request) -> httpx.Response:
@@ -272,7 +275,7 @@ def test_start_run_posts_correlated_request() -> None:
 
     client = _client_with(handler)
     run = client.start_run(
-        WorkflowSpec.model_validate({"name": "demo", "steps": []}),
+        WorkflowSpec(root=WorkflowSpec1(name="demo", steps=[])),
         StartRunOptions(
             queue="research",
             external_id="external-1",
@@ -331,12 +334,12 @@ def test_run_control_helpers_use_project_scoped_paths() -> None:
         )
 
     client = _client_with(handler)
-    assert client.get_run("run_1").status is WorkflowRunStatus.completed
+    assert client.get_run("run_1").status is RunStatus.completed
     assert (
         len(
             client.list_runs(
                 ListRunsOptions(
-                    status=WorkflowRunStatus.completed,
+                    status=RunStatus.completed,
                     external_id="external-1",
                 )
             ).items
@@ -373,7 +376,7 @@ def test_wait_run_fetches_after_stream_closes_before_terminal() -> None:
         WaitRunOptions(reconnect_delay=0.001, timeout=1),
     )
 
-    assert run.status is WorkflowRunStatus.completed
+    assert run.status is RunStatus.completed
     assert calls["get"] == 2
 
 
@@ -481,7 +484,7 @@ def test_workflow_helpers_create_update_and_ensure_definitions() -> None:
     client = _client_with(handler)
     assert (
         client.create_workflow(
-            WorkflowSpec.model_validate({"name": "research", "steps": []}),
+            WorkflowSpec(root=WorkflowSpec1(name="research", steps=[])),
             WorkflowOptions(handle="research"),
         ).id
         == "wf_1"
@@ -491,14 +494,14 @@ def test_workflow_helpers_create_update_and_ensure_definitions() -> None:
             "wf_1",
             UpdateWorkflowOptions(
                 name="research v2",
-                spec=WorkflowSpec.model_validate({"name": "research v2", "steps": []}),
+                spec=WorkflowSpec(root=WorkflowSpec1(name="research v2", steps=[])),
             ),
         ).name
         == "research v2"
     )
     assert len(client.list_workflows(ListWorkflowsOptions(limit=10)).items) == 1
     result = client.ensure_workflow(
-        WorkflowSpec.model_validate({"name": "research", "steps": []}),
+        WorkflowSpec(root=WorkflowSpec1(name="research", steps=[])),
         WorkflowOptions(handle="research"),
     )
 

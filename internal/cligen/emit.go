@@ -896,11 +896,7 @@ func renderCommand(b *bytes.Buffer, group string, c PlannedCommand) error {
 		case strings.HasSuffix(p.Type, "JSONRequestBody"):
 			args = append(args, "body")
 		default:
-			expr := fmt.Sprintf("p%d", pathIdx)
-			if !isBuiltin(p.Type) {
-				expr = fmt.Sprintf("api.%s(%s)", p.Type, expr)
-			}
-			args = append(args, expr)
+			args = append(args, fmt.Sprintf("p%d", pathIdx))
 			pathIdx++
 		}
 	}

@@ -91,7 +91,7 @@ func registerJobsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.ClaimJobWithResponse(ctx.Context(), api.ProjectHandleParam(p0), body)
+			resp, err := client.ClaimJobWithResponse(ctx.Context(), p0, body)
 			if err != nil {
 				return err
 			}
@@ -206,7 +206,7 @@ func registerJobsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.CreateJobInteractionWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1), body)
+			resp, err := client.CreateJobInteractionWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}
@@ -257,7 +257,7 @@ func registerJobsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.EmitJobEventsWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1), body)
+			resp, err := client.EmitJobEventsWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}
@@ -276,7 +276,7 @@ func registerJobsCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			resp, err := client.GetJobWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1))
+			resp, err := client.GetJobWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}
@@ -308,7 +308,7 @@ func registerJobsCommands(app *cli.App) {
 				v := ctx.Int("limit")
 				params.Limit = &v
 			}
-			resp, err := client.GetJobHistoryWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1), params)
+			resp, err := client.GetJobHistoryWithResponse(ctx.Context(), p0, p1, params)
 			if err != nil {
 				return err
 			}
@@ -350,7 +350,7 @@ func registerJobsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.HeartbeatJobWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1), body)
+			resp, err := client.HeartbeatJobWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}
@@ -401,7 +401,7 @@ func registerJobsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.ReportJobWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1), body)
+			resp, err := client.ReportJobWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}
@@ -446,7 +446,7 @@ func registerJobsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.RunJobActionWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1), api.ActionNameParam(p2), body)
+			resp, err := client.RunJobActionWithResponse(ctx.Context(), p0, p1, p2, body)
 			if err != nil {
 				return err
 			}

@@ -24,12 +24,13 @@ func registerAgentsCommands(app *cli.App) {
 		Flags(
 			cli.String("capabilities", "").Help("Arbitrary capability map used by orchestrators to select suitable agents. Accepts JSON, @file, or @-."),
 			cli.String("color", "").Help("Display color for this agent (Mantine palette key, e.g. `indigo`). Optional; empty falls back to a …"),
-			cli.String("config", "").Help("Agent-specific configuration stored and returned opaquely. Accepts JSON, @file, or @-."),
 			cli.String("description", "").Help("Optional human-readable description."),
 			cli.String("kind", "").Help("Freeform classification (e.g. \"llm\", \"rpa\", \"integration\")."),
+			cli.String("model", "").Help("Anthropic model identifier for platform agents (e.g. `claude-sonnet-4-6`). Empty falls back to the …"),
 			cli.String("name", "").Help("[required] Project-scoped unique name for this agent. Free-form human-readable label, 1-63 characters."),
 			cli.Strings("role-ids", "").Help("Roles to assign to the auto-created service account. Mutually exclusive with `service_account_id` (…"),
 			cli.String("service-account-id", "").Help("Service account that backs this agent. Must be active, belong to the same project, and currently ba…"),
+			cli.String("system-prompt", "").Help("Custom system prompt for platform agents. Empty uses the generated default."),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
@@ -55,11 +56,6 @@ func registerAgentsCommands(app *cli.App) {
 				v := ctx.String("color")
 				body.Color = &v
 			}
-			if ctx.IsSet("config") {
-				if err := decodeFlagJSON(ctx, "config", ctx.String("config"), &body.Config); err != nil {
-					return err
-				}
-			}
 			if ctx.IsSet("description") {
 				v := ctx.String("description")
 				body.Description = &v
@@ -67,6 +63,10 @@ func registerAgentsCommands(app *cli.App) {
 			if ctx.IsSet("kind") {
 				v := ctx.String("kind")
 				body.Kind = &v
+			}
+			if ctx.IsSet("model") {
+				v := ctx.String("model")
+				body.Model = &v
 			}
 			if ctx.IsSet("name") {
 				body.Name = ctx.String("name")
@@ -78,6 +78,10 @@ func registerAgentsCommands(app *cli.App) {
 			if ctx.IsSet("service-account-id") {
 				v := ctx.String("service-account-id")
 				body.ServiceAccountId = &v
+			}
+			if ctx.IsSet("system-prompt") {
+				v := ctx.String("system-prompt")
+				body.SystemPrompt = &v
 			}
 			if tags, err := parseTagFlags(ctx); err != nil {
 				return err
@@ -91,7 +95,7 @@ func registerAgentsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.CreateAgentWithResponse(ctx.Context(), api.ProjectHandleParam(p0), body)
+			resp, err := client.CreateAgentWithResponse(ctx.Context(), p0, body)
 			if err != nil {
 				return err
 			}
@@ -134,7 +138,7 @@ func registerAgentsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.CreateAgentSessionWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1), body)
+			resp, err := client.CreateAgentSessionWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}
@@ -153,7 +157,7 @@ func registerAgentsCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			resp, err := client.DeleteAgentWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1))
+			resp, err := client.DeleteAgentWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}
@@ -173,7 +177,7 @@ func registerAgentsCommands(app *cli.App) {
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			p2 := ctx.Arg(1)
-			resp, err := client.DisconnectAgentSessionWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1), api.SessionId(p2))
+			resp, err := client.DisconnectAgentSessionWithResponse(ctx.Context(), p0, p1, p2)
 			if err != nil {
 				return err
 			}
@@ -192,7 +196,7 @@ func registerAgentsCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			resp, err := client.GetAgentWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1))
+			resp, err := client.GetAgentWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}
@@ -212,7 +216,7 @@ func registerAgentsCommands(app *cli.App) {
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			p2 := ctx.Arg(1)
-			resp, err := client.GetAgentSessionWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1), api.SessionId(p2))
+			resp, err := client.GetAgentSessionWithResponse(ctx.Context(), p0, p1, p2)
 			if err != nil {
 				return err
 			}
@@ -232,7 +236,7 @@ func registerAgentsCommands(app *cli.App) {
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			p2 := ctx.Arg(1)
-			resp, err := client.HeartbeatAgentSessionWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1), api.SessionId(p2))
+			resp, err := client.HeartbeatAgentSessionWithResponse(ctx.Context(), p0, p1, p2)
 			if err != nil {
 				return err
 			}
@@ -267,7 +271,7 @@ func registerAgentsCommands(app *cli.App) {
 				v := api.LimitParam(ctx.Int("limit"))
 				params.Limit = &v
 			}
-			resp, err := client.ListAgentsWithResponse(ctx.Context(), api.ProjectHandleParam(p0), params)
+			resp, err := client.ListAgentsWithResponse(ctx.Context(), p0, params)
 			if err != nil {
 				return err
 			}
@@ -304,7 +308,7 @@ func registerAgentsCommands(app *cli.App) {
 				v := api.LimitParam(ctx.Int("limit"))
 				params.Limit = &v
 			}
-			resp, err := client.ListAgentSessionsWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1), params)
+			resp, err := client.ListAgentSessionsWithResponse(ctx.Context(), p0, p1, params)
 			if err != nil {
 				return err
 			}
@@ -323,7 +327,7 @@ func registerAgentsCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			resp, err := client.ProvisionAgentInboxWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1))
+			resp, err := client.ProvisionAgentInboxWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}
@@ -336,11 +340,12 @@ func registerAgentsCommands(app *cli.App) {
 		Flags(
 			cli.String("capabilities", "").Help("Replacement capability map. Accepts JSON, @file, or @-."),
 			cli.String("color", "").Help("Replacement display color (Mantine palette key, e.g. `indigo`). Pass empty string to clear and fall…"),
-			cli.String("config", "").Help("Replacement configuration blob. Accepts JSON, @file, or @-."),
 			cli.String("description", "").Help("Replacement description."),
 			cli.String("kind", "").Help("Replacement freeform agent classification (e.g. `llm`, `rpa`)."),
+			cli.String("model", "").Help("Replacement Anthropic model identifier for platform agents."),
 			cli.String("name", "").Help("Free-form human-readable label, 1-63 characters; must be unique within the project."),
 			cli.String("status", "").Help("Administrative status. Inactive agents cannot claim new jobs."),
+			cli.String("system-prompt", "").Help("Replacement system prompt for platform agents."),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
@@ -367,11 +372,6 @@ func registerAgentsCommands(app *cli.App) {
 				v := ctx.String("color")
 				body.Color = &v
 			}
-			if ctx.IsSet("config") {
-				if err := decodeFlagJSON(ctx, "config", ctx.String("config"), &body.Config); err != nil {
-					return err
-				}
-			}
 			if ctx.IsSet("description") {
 				v := ctx.String("description")
 				body.Description = &v
@@ -379,6 +379,10 @@ func registerAgentsCommands(app *cli.App) {
 			if ctx.IsSet("kind") {
 				v := ctx.String("kind")
 				body.Kind = &v
+			}
+			if ctx.IsSet("model") {
+				v := ctx.String("model")
+				body.Model = &v
 			}
 			if ctx.IsSet("name") {
 				v := ctx.String("name")
@@ -388,19 +392,23 @@ func registerAgentsCommands(app *cli.App) {
 				v := api.AgentStatus(ctx.String("status"))
 				body.Status = &v
 			}
+			if ctx.IsSet("system-prompt") {
+				v := ctx.String("system-prompt")
+				body.SystemPrompt = &v
+			}
 			if tags, err := parseTagFlags(ctx); err != nil {
 				return err
 			} else if tags != nil {
 				v := api.TagMap(tags)
 				body.Tags = &v
 			}
-			if ctx.String("file") == "" && !ctx.IsSet("capabilities") && !ctx.IsSet("color") && !ctx.IsSet("config") && !ctx.IsSet("description") && !ctx.IsSet("kind") && !ctx.IsSet("name") && !ctx.IsSet("status") && !ctx.IsSet("tag") {
+			if ctx.String("file") == "" && !ctx.IsSet("capabilities") && !ctx.IsSet("color") && !ctx.IsSet("description") && !ctx.IsSet("kind") && !ctx.IsSet("model") && !ctx.IsSet("name") && !ctx.IsSet("status") && !ctx.IsSet("system-prompt") && !ctx.IsSet("tag") {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.UpdateAgentWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1), body)
+			resp, err := client.UpdateAgentWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}

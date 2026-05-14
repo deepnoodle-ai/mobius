@@ -61,7 +61,7 @@ func registerSecretsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body, "values")
 			}
-			resp, err := client.CreateSecretWithResponse(ctx.Context(), api.ProjectHandleParam(p0), body)
+			resp, err := client.CreateSecretWithResponse(ctx.Context(), p0, body)
 			if err != nil {
 				return err
 			}
@@ -80,7 +80,7 @@ func registerSecretsCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			resp, err := client.DeleteSecretWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.SecretParam(p1))
+			resp, err := client.DeleteSecretWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}
@@ -99,7 +99,7 @@ func registerSecretsCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			resp, err := client.GetSecretWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.SecretParam(p1))
+			resp, err := client.GetSecretWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}
@@ -119,7 +119,7 @@ func registerSecretsCommands(app *cli.App) {
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			p2 := ctx.Arg(1)
-			resp, err := client.GetSecretVersionWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.SecretParam(p1), api.SecretVersionParam(p2))
+			resp, err := client.GetSecretVersionWithResponse(ctx.Context(), p0, p1, p2)
 			if err != nil {
 				return err
 			}
@@ -149,7 +149,7 @@ func registerSecretsCommands(app *cli.App) {
 				v := api.LimitParam(ctx.Int("limit"))
 				params.Limit = &v
 			}
-			resp, err := client.ListSecretsWithResponse(ctx.Context(), api.ProjectHandleParam(p0), params)
+			resp, err := client.ListSecretsWithResponse(ctx.Context(), p0, params)
 			if err != nil {
 				return err
 			}
@@ -168,7 +168,7 @@ func registerSecretsCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			resp, err := client.ListSecretVersionsWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.SecretParam(p1))
+			resp, err := client.ListSecretVersionsWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}
@@ -212,7 +212,7 @@ func registerSecretsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body, "values")
 			}
-			resp, err := client.UpdateSecretWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.SecretParam(p1), body)
+			resp, err := client.UpdateSecretWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}

@@ -49,7 +49,7 @@ func registerTeamCommands(app *cli.App) {
 				v := ctx.String("q")
 				params.Q = &v
 			}
-			resp, err := client.ListProjectTeamWithResponse(ctx.Context(), api.ProjectHandleParam(p0), params)
+			resp, err := client.ListProjectTeamWithResponse(ctx.Context(), p0, params)
 			if err != nil {
 				return err
 			}

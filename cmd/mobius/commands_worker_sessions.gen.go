@@ -9,8 +9,6 @@ package main
 
 import (
 	"github.com/deepnoodle-ai/wonton/cli"
-
-	"github.com/deepnoodle-ai/mobius/mobius/api"
 )
 
 // registerWorkerSessionsCommands registers every generated subcommand in the "worker-sessions" group.
@@ -27,7 +25,7 @@ func registerWorkerSessionsCommands(app *cli.App) {
 			}
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
-			resp, err := client.ListWorkerSessionsWithResponse(ctx.Context(), api.ProjectHandleParam(p0))
+			resp, err := client.ListWorkerSessionsWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
 			}

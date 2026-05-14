@@ -43,7 +43,7 @@ func init() {
 	RegisterResponseRenderer("getRun", renderRunDetail)
 }
 
-// renderRunDetail renders a WorkflowRunDetail as a status header followed by
+// renderRunDetail renders a RunDetail as a status header followed by
 // a per-path execution table. Falls through to the generic renderer when
 // the response shape doesn't match (e.g. an unexpected error envelope or a
 // schema we no longer recognize), so adding fields to the spec doesn't

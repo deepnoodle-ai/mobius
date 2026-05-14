@@ -88,7 +88,7 @@ func registerActionsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.CreateActionWithResponse(ctx.Context(), api.ProjectHandleParam(p0), body)
+			resp, err := client.CreateActionWithResponse(ctx.Context(), p0, body)
 			if err != nil {
 				return err
 			}
@@ -107,7 +107,7 @@ func registerActionsCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			resp, err := client.DeleteActionWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.ActionNameParam(p1))
+			resp, err := client.DeleteActionWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}
@@ -126,7 +126,7 @@ func registerActionsCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			resp, err := client.GetActionWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.ActionNameParam(p1))
+			resp, err := client.GetActionWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}
@@ -145,7 +145,7 @@ func registerActionsCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			resp, err := client.GetCatalogActionWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.ActionNameParam(p1))
+			resp, err := client.GetCatalogActionWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}
@@ -189,7 +189,7 @@ func registerActionsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.InvokeActionWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.ActionNameParam(p1), body)
+			resp, err := client.InvokeActionWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}
@@ -219,7 +219,7 @@ func registerActionsCommands(app *cli.App) {
 				v := api.LimitParam(ctx.Int("limit"))
 				params.Limit = &v
 			}
-			resp, err := client.ListActionsWithResponse(ctx.Context(), api.ProjectHandleParam(p0), params)
+			resp, err := client.ListActionsWithResponse(ctx.Context(), p0, params)
 			if err != nil {
 				return err
 			}
@@ -236,7 +236,7 @@ func registerActionsCommands(app *cli.App) {
 			}
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
-			resp, err := client.ListCatalogActionsWithResponse(ctx.Context(), api.ProjectHandleParam(p0))
+			resp, err := client.ListCatalogActionsWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
 			}
@@ -286,7 +286,7 @@ func registerActionsCommands(app *cli.App) {
 				v := ctx.String("status")
 				params.Status = &v
 			}
-			resp, err := client.ListActionInvocationsWithResponse(ctx.Context(), api.ProjectHandleParam(p0), params)
+			resp, err := client.ListActionInvocationsWithResponse(ctx.Context(), p0, params)
 			if err != nil {
 				return err
 			}
@@ -305,7 +305,7 @@ func registerActionsCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			resp, err := client.RotateActionSecretWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.ActionNameParam(p1))
+			resp, err := client.RotateActionSecretWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}
@@ -377,7 +377,7 @@ func registerActionsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.UpdateActionWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.ActionNameParam(p1), body)
+			resp, err := client.UpdateActionWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}

@@ -47,12 +47,6 @@ type jobEventEntry struct {
 	Payload map[string]any `json:"payload"`
 }
 
-type jobEventsRequest struct {
-	WorkerInstanceID string          `json:"worker_instance_id,omitempty"`
-	LeaseToken       string          `json:"lease_token"`
-	Events           []jobEventEntry `json:"events"`
-}
-
 // runtimeClaim long-polls for the next available job matching the
 // worker's queue and action filters. Returns nil when the poll
 // window closes empty. Returns [ErrWorkerInstanceConflict] when the
@@ -110,24 +104,24 @@ func (c *Client) runtimeClaim(ctx context.Context, cfg WorkerConfig, sessionToke
 	if err := json.NewDecoder(resp.Body).Decode(&claim); err != nil {
 		return nil, fmt.Errorf("mobius: claim decode: %w", err)
 	}
+	hb := time.Duration(0)
+	if claim.HeartbeatIntervalSeconds != nil {
+		hb = time.Duration(*claim.HeartbeatIntervalSeconds) * time.Second
+	}
 	action, err := claim.Spec.AsJobActionSpec()
 	if err != nil {
-		return nil, fmt.Errorf("mobius: claim: unsupported job spec: %w", err)
+		return nil, fmt.Errorf("mobius: claim: decode action spec: %w", err)
 	}
 	if action.Kind != api.JobActionSpecKindAction {
 		return nil, fmt.Errorf("mobius: claim: unsupported job spec kind %q (this SDK only handles action jobs)", action.Kind)
 	}
-	var params map[string]any
+	var parameters map[string]any
 	if action.Parameters != nil {
-		params = *action.Parameters
+		parameters = *action.Parameters
 	}
-	attempt := 0
+	attempt := 1
 	if claim.AttemptNumber != nil {
 		attempt = *claim.AttemptNumber
-	}
-	hb := time.Duration(0)
-	if claim.HeartbeatIntervalSeconds != nil {
-		hb = time.Duration(*claim.HeartbeatIntervalSeconds) * time.Second
 	}
 	return &runtimeJob{
 		JobID:             claim.JobId,
@@ -136,7 +130,7 @@ func (c *Client) runtimeClaim(ctx context.Context, cfg WorkerConfig, sessionToke
 		WorkflowName:      claim.WorkflowName,
 		StepName:          claim.StepName,
 		Action:            action.Name,
-		Parameters:        params,
+		Parameters:        parameters,
 		Attempt:           attempt,
 		Queue:             claim.Queue,
 		WorkerInstanceID:  cfg.WorkerInstanceID,
@@ -200,47 +194,45 @@ func (c *Client) runtimeHeartbeat(ctx context.Context, job *runtimeJob) (*api.Jo
 
 // runtimeCompleteSuccess reports a successful job completion along
 // with its action result. The result is JSON-encoded and delivered
-// as a base64-encoded blob.
+// as a base64-encoded blob inside the terminal `complete` outcome.
 func (c *Client) runtimeCompleteSuccess(ctx context.Context, job *runtimeJob, result any) error {
-	outcome := api.OutcomeComplete{Kind: api.OutcomeCompleteKindComplete}
+	complete := api.OutcomeComplete{Kind: api.OutcomeCompleteKindComplete}
 	if result != nil {
 		b, err := json.Marshal(result)
 		if err != nil {
 			return fmt.Errorf("mobius: marshal action result: %w", err)
 		}
 		enc := base64.StdEncoding.EncodeToString(b)
-		outcome.ResultB64 = &enc
+		complete.ResultB64 = &enc
 	}
-	var entry api.Outcome
-	if err := entry.FromOutcomeComplete(outcome); err != nil {
+	var outcome api.Outcome
+	if err := outcome.FromOutcomeComplete(complete); err != nil {
 		return fmt.Errorf("mobius: encode complete outcome: %w", err)
 	}
-	return c.runtimeReport(ctx, job, []api.Outcome{entry})
+	return c.runtimeReport(ctx, job, []api.Outcome{outcome})
 }
 
 // runtimeCompleteFailure reports a failed job with an error message
 // and optional error type. The server uses the error type to decide
 // whether the job is retryable.
 func (c *Client) runtimeCompleteFailure(ctx context.Context, job *runtimeJob, errorType, message string) error {
-	if errorType == "" {
-		errorType = "Error"
-	}
-	var entry api.Outcome
-	if err := entry.FromOutcomeFail(api.OutcomeFail{
+	fail := api.OutcomeFail{
 		Kind:         api.OutcomeFailKindFail,
-		ErrorType:    errorType,
 		ErrorMessage: message,
-	}); err != nil {
+		ErrorType:    errorType,
+	}
+	var outcome api.Outcome
+	if err := outcome.FromOutcomeFail(fail); err != nil {
 		return fmt.Errorf("mobius: encode fail outcome: %w", err)
 	}
-	return c.runtimeReport(ctx, job, []api.Outcome{entry})
+	return c.runtimeReport(ctx, job, []api.Outcome{outcome})
 }
 
 func (c *Client) runtimeReport(ctx context.Context, job *runtimeJob, outcomes []api.Outcome) error {
 	instanceID := job.WorkerInstanceID
 	req := api.JobReportRequest{
-		WorkerInstanceId: &instanceID,
 		LeaseToken:       job.LeaseToken,
+		WorkerInstanceId: &instanceID,
 		Outcomes:         outcomes,
 	}
 	resp, err := c.runtimeRequest(ctx, http.MethodPost, fmt.Sprintf("/v1/projects/%s/jobs/%s/report", url.PathEscape(c.projectHandle), url.PathEscape(job.JobID)), req)
@@ -264,10 +256,15 @@ func (c *Client) runtimeEmitEvents(ctx context.Context, job *runtimeJob, events 
 	if len(events) == 0 {
 		return nil
 	}
-	resp, err := c.runtimeRequest(ctx, http.MethodPost, fmt.Sprintf("/v1/projects/%s/jobs/%s/events", url.PathEscape(c.projectHandle), url.PathEscape(job.JobID)), jobEventsRequest{
-		WorkerInstanceID: job.WorkerInstanceID,
+	apiEvents := make([]api.JobEventEntry, len(events))
+	for i, ev := range events {
+		apiEvents[i] = api.JobEventEntry{Type: ev.Type, Payload: ev.Payload}
+	}
+	instanceID := job.WorkerInstanceID
+	resp, err := c.runtimeRequest(ctx, http.MethodPost, fmt.Sprintf("/v1/projects/%s/jobs/%s/events", url.PathEscape(c.projectHandle), url.PathEscape(job.JobID)), api.JobEventsRequest{
 		LeaseToken:       job.LeaseToken,
-		Events:           events,
+		WorkerInstanceId: &instanceID,
+		Events:           apiEvents,
 	})
 	if err != nil {
 		return fmt.Errorf("mobius: emit events: %w", err)
@@ -305,4 +302,11 @@ func (c *Client) runtimeRequest(ctx context.Context, method, path string, body a
 		req.Header.Set("Authorization", "Bearer "+c.apiKey)
 	}
 	return c.httpClient.Do(req)
+}
+
+func strPtr(s string) *string {
+	if s == "" {
+		return nil
+	}
+	return &s
 }

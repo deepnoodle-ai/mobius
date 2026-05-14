@@ -106,7 +106,7 @@ func registerEnvironmentsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.AcquireEnvironmentWithResponse(ctx.Context(), api.ProjectHandleParam(p0), body)
+			resp, err := client.AcquireEnvironmentWithResponse(ctx.Context(), p0, body)
 			if err != nil {
 				return err
 			}
@@ -185,7 +185,7 @@ func registerEnvironmentsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.CreateEnvironmentWithResponse(ctx.Context(), api.ProjectHandleParam(p0), body)
+			resp, err := client.CreateEnvironmentWithResponse(ctx.Context(), p0, body)
 			if err != nil {
 				return err
 			}
@@ -204,7 +204,7 @@ func registerEnvironmentsCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			resp, err := client.DestroyEnvironmentWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.EnvironmentIDParam(p1))
+			resp, err := client.DestroyEnvironmentWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}
@@ -256,7 +256,7 @@ func registerEnvironmentsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.ExecEnvironmentWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.EnvironmentIDParam(p1), body)
+			resp, err := client.ExecEnvironmentWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}
@@ -275,7 +275,7 @@ func registerEnvironmentsCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			resp, err := client.GetEnvironmentWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.EnvironmentIDParam(p1))
+			resp, err := client.GetEnvironmentWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}
@@ -335,7 +335,7 @@ func registerEnvironmentsCommands(app *cli.App) {
 				v := ctx.Bool("include-destroyed")
 				params.IncludeDestroyed = &v
 			}
-			resp, err := client.ListEnvironmentsWithResponse(ctx.Context(), api.ProjectHandleParam(p0), params)
+			resp, err := client.ListEnvironmentsWithResponse(ctx.Context(), p0, params)
 			if err != nil {
 				return err
 			}
@@ -354,7 +354,7 @@ func registerEnvironmentsCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			resp, err := client.ReconcileEnvironmentWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.EnvironmentIDParam(p1))
+			resp, err := client.ReconcileEnvironmentWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}
@@ -373,7 +373,7 @@ func registerEnvironmentsCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			resp, err := client.ReleaseEnvironmentLeaseWithResponse(ctx.Context(), api.ProjectHandleParam(p0), p1)
+			resp, err := client.ReleaseEnvironmentLeaseWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}
@@ -416,7 +416,7 @@ func registerEnvironmentsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.StartEnvironmentWorkerWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.EnvironmentIDParam(p1), body)
+			resp, err := client.StartEnvironmentWorkerWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}
@@ -476,7 +476,7 @@ func registerEnvironmentsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.UpdateEnvironmentWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.EnvironmentIDParam(p1), body)
+			resp, err := client.UpdateEnvironmentWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}
@@ -520,7 +520,7 @@ func registerEnvironmentsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.WriteEnvironmentFileWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.EnvironmentIDParam(p1), body)
+			resp, err := client.WriteEnvironmentFileWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}

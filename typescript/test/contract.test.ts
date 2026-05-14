@@ -144,9 +144,9 @@ test("contract: heartbeat_job_request sent verbatim", async () => {
   assert.deepStrictEqual(captured.last?.body, fixture);
 });
 
-test("contract: report_job_request_success sent verbatim", async () => {
+test("contract: report_job_request_action_completed sent verbatim", async () => {
   const fixture = readFixture<JobReportRequest>(
-    "report_job_request_success.json",
+    "report_job_request_action_completed.json",
   );
   const captured: { last?: Captured } = {};
   const restore = installFakeFetch({ status: 204 }, captured);
@@ -162,9 +162,9 @@ test("contract: report_job_request_success sent verbatim", async () => {
   assert.deepStrictEqual(captured.last?.body, fixture);
 });
 
-test("contract: report_job_request_failed sent verbatim", async () => {
+test("contract: report_job_request_action_failed sent verbatim", async () => {
   const fixture = readFixture<JobReportRequest>(
-    "report_job_request_failed.json",
+    "report_job_request_action_failed.json",
   );
   const captured: { last?: Captured } = {};
   const restore = installFakeFetch({ status: 204 }, captured);

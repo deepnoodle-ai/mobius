@@ -85,7 +85,7 @@ func registerEventsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.CreateIntegrationEventTestFireWithResponse(ctx.Context(), api.ProjectHandleParam(p0), body)
+			resp, err := client.CreateIntegrationEventTestFireWithResponse(ctx.Context(), p0, body)
 			if err != nil {
 				return err
 			}
@@ -115,7 +115,7 @@ func registerEventsCommands(app *cli.App) {
 				v := ctx.String("event-type")
 				params.EventType = &v
 			}
-			resp, err := client.ListIntegrationEventTestSamplesWithResponse(ctx.Context(), api.ProjectHandleParam(p0), params)
+			resp, err := client.ListIntegrationEventTestSamplesWithResponse(ctx.Context(), p0, params)
 			if err != nil {
 				return err
 			}
@@ -155,7 +155,7 @@ func registerEventsCommands(app *cli.App) {
 				v := ctx.String("interaction")
 				params.Interaction = &v
 			}
-			resp, err := client.StreamProjectEventsWithResponse(ctx.Context(), api.ProjectHandleParam(p0), params)
+			resp, err := client.StreamProjectEventsWithResponse(ctx.Context(), p0, params)
 			if err != nil {
 				return err
 			}
@@ -182,7 +182,7 @@ func registerEventsCommands(app *cli.App) {
 				v := int64(ctx.Int("since"))
 				params.Since = &v
 			}
-			resp, err := client.StreamRunEventsWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1), params)
+			resp, err := client.StreamRunEventsWithResponse(ctx.Context(), p0, p1, params)
 			if err != nil {
 				return err
 			}
