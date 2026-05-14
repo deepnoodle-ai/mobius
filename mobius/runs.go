@@ -23,7 +23,7 @@ type StartRunOptions struct {
 
 // ListRunsOptions filters and paginates project workflow runs.
 type ListRunsOptions struct {
-	Status       api.WorkflowRunStatus
+	Status       api.RunStatus
 	WorkflowType string
 	Queue        string
 	ParentRunID  string
@@ -46,7 +46,7 @@ type WaitRunOptions struct {
 
 // StartRun starts an ephemeral workflow run from a workflow spec supplied by
 // the caller. No workflow definition is persisted.
-func (c *Client) StartRun(ctx context.Context, spec api.WorkflowSpec, opts *StartRunOptions) (*api.WorkflowRun, error) {
+func (c *Client) StartRun(ctx context.Context, spec api.WorkflowSpec, opts *StartRunOptions) (*api.Run, error) {
 	req := api.StartInlineRunRequest{
 		Mode: api.StartInlineRunRequestModeInline,
 		Spec: spec,
@@ -68,7 +68,7 @@ func (c *Client) StartRun(ctx context.Context, spec api.WorkflowSpec, opts *Star
 }
 
 // StartWorkflowRun starts a run from an existing workflow definition.
-func (c *Client) StartWorkflowRun(ctx context.Context, workflowID string, opts *StartRunOptions) (*api.WorkflowRun, error) {
+func (c *Client) StartWorkflowRun(ctx context.Context, workflowID string, opts *StartRunOptions) (*api.Run, error) {
 	req := api.StartBoundRunRequest{}
 	applyStartRunOptions(&req.Queue, &req.Inputs, &req.Metadata, &req.Tags, &req.ExternalId, &req.Config, opts)
 	resp, err := c.ac.StartWorkflowRunWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.IDParam(workflowID), req)
@@ -82,7 +82,7 @@ func (c *Client) StartWorkflowRun(ctx context.Context, workflowID string, opts *
 }
 
 // ListRuns returns project workflow runs matching opts.
-func (c *Client) ListRuns(ctx context.Context, opts *ListRunsOptions) (*api.WorkflowRunListResponse, error) {
+func (c *Client) ListRuns(ctx context.Context, opts *ListRunsOptions) (*api.RunListResponse, error) {
 	params := listRunsParams(opts)
 	resp, err := c.ac.ListRunsWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), params)
 	if err != nil {
@@ -96,7 +96,7 @@ func (c *Client) ListRuns(ctx context.Context, opts *ListRunsOptions) (*api.Work
 
 // GetRun returns the current run detail, including terminal result/error fields
 // and spawned jobs when available.
-func (c *Client) GetRun(ctx context.Context, runID string) (*api.WorkflowRunDetail, error) {
+func (c *Client) GetRun(ctx context.Context, runID string) (*api.RunDetail, error) {
 	resp, err := c.ac.GetRunWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.IDParam(runID))
 	if err != nil {
 		return nil, fmt.Errorf("mobius: get run: %w", err)
@@ -150,7 +150,7 @@ func (c *Client) SendRunSignal(ctx context.Context, runID, name string, payload 
 // WaitRun waits until runID reaches a terminal state and returns a fresh run
 // detail. It combines the run SSE stream with GetRun fallback so callers can
 // recover when a stream closes before the terminal event is observed.
-func (c *Client) WaitRun(ctx context.Context, runID string, opts *WaitRunOptions) (*api.WorkflowRunDetail, error) {
+func (c *Client) WaitRun(ctx context.Context, runID string, opts *WaitRunOptions) (*api.RunDetail, error) {
 	since := int64(0)
 	reconnectDelay := defaultWaitRunReconnectDelay
 	if opts != nil {
@@ -197,8 +197,8 @@ func (c *Client) WaitRun(ctx context.Context, runID string, opts *WaitRunOptions
 }
 
 // IsTerminalRunStatus reports whether status is completed or failed.
-func IsTerminalRunStatus(status api.WorkflowRunStatus) bool {
-	return status == api.WorkflowRunStatusCompleted || status == api.WorkflowRunStatusFailed
+func IsTerminalRunStatus(status api.RunStatus) bool {
+	return status == api.RunStatusCompleted || status == api.RunStatusFailed
 }
 
 func applyStartRunOptions(queue **string, inputs **map[string]interface{}, metadata **map[string]string, tags **api.TagMap, externalID **string, config **api.ConfigEntries, opts *StartRunOptions) {
@@ -271,7 +271,7 @@ func unexpectedRunStatus(op, status string, body []byte) error {
 }
 
 func isTerminalStatusString(status string) bool {
-	return status == string(api.WorkflowRunStatusCompleted) || status == string(api.WorkflowRunStatusFailed)
+	return status == string(api.RunStatusCompleted) || status == string(api.RunStatusFailed)
 }
 
 func sleepContext(ctx context.Context, d time.Duration) error {

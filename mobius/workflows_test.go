@@ -27,7 +27,7 @@ func TestCreateWorkflow_HighLevelClient(t *testing.T) {
 	c, srv := newTestClient(t, h)
 	defer srv.Close()
 
-	def, err := c.CreateWorkflow(context.Background(), api.WorkflowSpec{Name: "research"}, &WorkflowOptions{
+	def, err := c.CreateWorkflow(context.Background(), api.WorkflowSpec{Name: "research", Steps: &[]api.WorkflowStep{}}, &WorkflowOptions{
 		Handle: "research",
 		Tags:   map[string]string{"env": "test"},
 	})
@@ -52,7 +52,7 @@ func TestUpdateWorkflow_HighLevelClient(t *testing.T) {
 	c, srv := newTestClient(t, h)
 	defer srv.Close()
 
-	spec := api.WorkflowSpec{Name: "research v2"}
+	spec := api.WorkflowSpec{Name: "research v2", Steps: &[]api.WorkflowStep{}}
 	def, err := c.UpdateWorkflow(context.Background(), "wf_1", &UpdateWorkflowOptions{
 		Name: "research v2",
 		Spec: &spec,
@@ -80,7 +80,7 @@ func TestEnsureWorkflow_CreatesMissingDefinition(t *testing.T) {
 	c, srv := newTestClient(t, h)
 	defer srv.Close()
 
-	result, err := c.EnsureWorkflow(context.Background(), api.WorkflowSpec{Name: "research"}, &WorkflowOptions{Handle: "research"})
+	result, err := c.EnsureWorkflow(context.Background(), api.WorkflowSpec{Name: "research", Steps: &[]api.WorkflowStep{}}, &WorkflowOptions{Handle: "research"})
 
 	assert.NoError(t, err)
 	assert.Equal(t, result.Created, true)
@@ -108,7 +108,7 @@ func TestEnsureWorkflow_UpdatesChangedDefinition(t *testing.T) {
 	c, srv := newTestClient(t, h)
 	defer srv.Close()
 
-	result, err := c.EnsureWorkflow(context.Background(), api.WorkflowSpec{Name: "research"}, &WorkflowOptions{Handle: "research"})
+	result, err := c.EnsureWorkflow(context.Background(), api.WorkflowSpec{Name: "research", Steps: &[]api.WorkflowStep{}}, &WorkflowOptions{Handle: "research"})
 
 	assert.NoError(t, err)
 	assert.Equal(t, result.Created, false)
@@ -135,7 +135,7 @@ func TestEnsureWorkflow_NoopsUnchangedDefinition(t *testing.T) {
 	c, srv := newTestClient(t, h)
 	defer srv.Close()
 
-	result, err := c.EnsureWorkflow(context.Background(), api.WorkflowSpec{Name: "research"}, &WorkflowOptions{Handle: "research"})
+	result, err := c.EnsureWorkflow(context.Background(), api.WorkflowSpec{Name: "research", Steps: &[]api.WorkflowStep{}}, &WorkflowOptions{Handle: "research"})
 
 	assert.NoError(t, err)
 	assert.Equal(t, result.Created, false)
@@ -152,5 +152,5 @@ func workflowDefinitionSummaryJSON(id, name, handle string) string {
 }
 
 func workflowSpecJSON(name string) string {
-	return fmt.Sprintf(`{"name":%q}`, name)
+	return fmt.Sprintf(`{"name":%q,"steps":[]}`, name)
 }

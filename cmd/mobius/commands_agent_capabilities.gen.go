@@ -85,7 +85,7 @@ func registerAgentCapabilitiesCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.CreateSkillWithResponse(ctx.Context(), api.ProjectHandleParam(p0), body)
+			resp, err := client.CreateSkillWithResponse(ctx.Context(), p0, body)
 			if err != nil {
 				return err
 			}
@@ -136,7 +136,7 @@ func registerAgentCapabilitiesCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.CreateToolkitWithResponse(ctx.Context(), api.ProjectHandleParam(p0), body)
+			resp, err := client.CreateToolkitWithResponse(ctx.Context(), p0, body)
 			if err != nil {
 				return err
 			}
@@ -155,7 +155,7 @@ func registerAgentCapabilitiesCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			resp, err := client.DeleteSkillWithResponse(ctx.Context(), api.ProjectHandleParam(p0), p1)
+			resp, err := client.DeleteSkillWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}
@@ -174,7 +174,7 @@ func registerAgentCapabilitiesCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			resp, err := client.DeleteToolkitWithResponse(ctx.Context(), api.ProjectHandleParam(p0), p1)
+			resp, err := client.DeleteToolkitWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}
@@ -193,7 +193,7 @@ func registerAgentCapabilitiesCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			resp, err := client.GetSkillWithResponse(ctx.Context(), api.ProjectHandleParam(p0), p1)
+			resp, err := client.GetSkillWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}
@@ -212,7 +212,7 @@ func registerAgentCapabilitiesCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			resp, err := client.GetToolkitWithResponse(ctx.Context(), api.ProjectHandleParam(p0), p1)
+			resp, err := client.GetToolkitWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}
@@ -249,7 +249,7 @@ func registerAgentCapabilitiesCommands(app *cli.App) {
 				v := ctx.String("allowed-tools")
 				params.AllowedTools = &v
 			}
-			resp, err := client.GetAgentToolManifestWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1), params)
+			resp, err := client.GetAgentToolManifestWithResponse(ctx.Context(), p0, p1, params)
 			if err != nil {
 				return err
 			}
@@ -289,7 +289,7 @@ func registerAgentCapabilitiesCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.ImportSkillWithResponse(ctx.Context(), api.ProjectHandleParam(p0), body)
+			resp, err := client.ImportSkillWithResponse(ctx.Context(), p0, body)
 			if err != nil {
 				return err
 			}
@@ -314,7 +314,7 @@ func registerAgentCapabilitiesCommands(app *cli.App) {
 				v := ctx.Bool("include-system")
 				params.IncludeSystem = &v
 			}
-			resp, err := client.ListSkillsWithResponse(ctx.Context(), api.ProjectHandleParam(p0), params)
+			resp, err := client.ListSkillsWithResponse(ctx.Context(), p0, params)
 			if err != nil {
 				return err
 			}
@@ -339,7 +339,7 @@ func registerAgentCapabilitiesCommands(app *cli.App) {
 				v := ctx.Bool("include-system")
 				params.IncludeSystem = &v
 			}
-			resp, err := client.ListToolkitsWithResponse(ctx.Context(), api.ProjectHandleParam(p0), params)
+			resp, err := client.ListToolkitsWithResponse(ctx.Context(), p0, params)
 			if err != nil {
 				return err
 			}
@@ -358,7 +358,7 @@ func registerAgentCapabilitiesCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			resp, err := client.ListSkillAssignmentsWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1))
+			resp, err := client.ListSkillAssignmentsWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}
@@ -377,7 +377,7 @@ func registerAgentCapabilitiesCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			resp, err := client.ListToolkitAssignmentsWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1))
+			resp, err := client.ListToolkitAssignmentsWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}
@@ -414,7 +414,7 @@ func registerAgentCapabilitiesCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.ReplaceSkillsWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1), body)
+			resp, err := client.ReplaceSkillsWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}
@@ -451,7 +451,7 @@ func registerAgentCapabilitiesCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.ReplaceToolkitsWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1), body)
+			resp, err := client.ReplaceToolkitsWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}
@@ -526,7 +526,7 @@ func registerAgentCapabilitiesCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.UpdateSkillWithResponse(ctx.Context(), api.ProjectHandleParam(p0), p1, body)
+			resp, err := client.UpdateSkillWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}
@@ -579,7 +579,7 @@ func registerAgentCapabilitiesCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.UpdateToolkitWithResponse(ctx.Context(), api.ProjectHandleParam(p0), p1, body)
+			resp, err := client.UpdateToolkitWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}

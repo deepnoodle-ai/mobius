@@ -6,6 +6,8 @@ import type {
   JobClaimRequest,
   JobReportRequest,
   Outcome,
+  OutcomeComplete,
+  OutcomeFail,
 } from "./api/index.js";
 import {
   AuthRevokedError,
@@ -386,27 +388,23 @@ export class Worker {
     const jobId = job.job_id;
     const workerInstanceId = this.config.workerInstanceId;
     const leaseToken = job.lease_token;
+    const attempt = job.attempt_number ?? 1;
     if (job.spec.kind !== "action") {
-      const msg = `job ${jobId} carries spec.kind=${JSON.stringify(job.spec.kind)} — this worker only handles action jobs`;
+      const msg = `unsupported job spec kind ${JSON.stringify(job.spec.kind)} (this SDK only handles action jobs)`;
       this.logger.error(`[mobius] ${msg}`);
-      await this.failJob(
-        jobId,
-        workerInstanceId,
-        leaseToken,
-        "UnsupportedSpecKind",
-        msg,
-      );
+      await this.failJob(jobId, workerInstanceId, leaseToken, "UnsupportedSpec", msg);
       return;
     }
-    const spec = job.spec as JobActionSpec;
-    const attempt = job.attempt_number ?? 0;
+    const actionSpec = job.spec as JobActionSpec;
+    const actionName = actionSpec.name;
+    const parameters = actionSpec.parameters ?? {};
     this.logger.info(
-      `[mobius] job ${jobId} claimed (workflow=${job.workflow_name}, step=${job.step_name}, action=${spec.name}, attempt=${attempt})`,
+      `[mobius] job ${jobId} claimed (workflow=${job.workflow_name}, step=${job.step_name}, action=${actionName}, attempt=${attempt})`,
     );
 
-    const fn = this.actions.get(spec.name);
+    const fn = this.actions.get(actionName);
     if (!fn) {
-      const msg = `action ${JSON.stringify(spec.name)} not registered on this worker`;
+      const msg = `action ${JSON.stringify(actionName)} not registered on this worker`;
       this.logger.error(`[mobius] ${msg}`);
       await this.failJob(
         jobId,
@@ -440,7 +438,7 @@ export class Worker {
       queue: job.queue,
       workflowName: job.workflow_name,
       stepName: job.step_name,
-      action: spec.name,
+      action: actionName,
       emitEvent: (type, payload) => eventer.emit(type, payload),
     };
 
@@ -476,26 +474,22 @@ export class Worker {
     }, interval);
 
     try {
-      const result = await fn(
-        spec.parameters ?? {},
-        actionController.signal,
-        actionContext,
-      );
+      const result = await fn(parameters, actionController.signal, actionContext);
       clearInterval(heartbeatTimer);
       signal?.removeEventListener("abort", onAbort);
       eventer.stop();
       await eventerPromise;
       if (hbLost) return;
-      const outcome: Outcome = { kind: "complete" };
+      const complete: OutcomeComplete = { kind: "complete" };
       if (result != null) {
-        outcome.result_b64 = Buffer.from(JSON.stringify(result)).toString(
+        complete.result_b64 = Buffer.from(JSON.stringify(result)).toString(
           "base64",
         );
       }
       const reportReq: JobReportRequest = {
         worker_instance_id: workerInstanceId,
         lease_token: leaseToken,
-        outcomes: [outcome],
+        outcomes: [complete as Outcome],
       };
       await this.client.reportJob(jobId, reportReq);
       this.logger.info(`[mobius] job ${jobId} completed`);
@@ -544,16 +538,15 @@ export class Worker {
     msg: string,
   ): Promise<void> {
     try {
+      const fail: OutcomeFail = {
+        kind: "fail",
+        error_type: errorType,
+        error_message: msg,
+      };
       await this.client.reportJob(jobId, {
         worker_instance_id: workerInstanceId,
         lease_token: leaseToken,
-        outcomes: [
-          {
-            kind: "fail",
-            error_type: errorType,
-            error_message: msg,
-          },
-        ],
+        outcomes: [fail as Outcome],
       });
     } catch (err) {
       this.logger.error(

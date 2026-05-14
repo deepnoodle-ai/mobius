@@ -6,16 +6,16 @@ import type {
   JobFenceRequest,
   JobHeartbeat,
   JobReportRequest,
+  Run,
+  RunListResponse,
   RunSignal,
+  RunStatus,
   SendRunSignalRequest,
   StartBoundRunRequest,
   TagMap,
   UpdateWorkflowRequest,
   WorkflowDefinitionListResponse,
   WorkflowDefinitionSummary,
-  WorkflowRun,
-  WorkflowRunListResponse,
-  WorkflowRunStatus,
   WorkflowSpec,
   components,
 } from "./api/index.js";
@@ -169,7 +169,7 @@ export interface JobEventsRequest {
   events: JobEventEntry[];
 }
 
-export type WorkflowRunDetail = components["schemas"]["WorkflowRunDetail"];
+export type RunDetail = components["schemas"]["RunDetail"];
 export type WorkflowDefinition = components["schemas"]["WorkflowDefinition"];
 
 export interface StartRunOptions {
@@ -182,7 +182,7 @@ export interface StartRunOptions {
 }
 
 export interface ListRunsOptions {
-  status?: WorkflowRunStatus;
+  status?: RunStatus;
   workflow_type?: string;
   queue?: string;
   parent_run_id?: string;
@@ -387,40 +387,40 @@ export class Client {
   async startRun(
     spec: WorkflowSpec,
     opts: StartRunOptions = {},
-  ): Promise<WorkflowRun> {
+  ): Promise<Run> {
     const resp = await this.request(
       `/v1/projects/${encodeURIComponent(this.project)}/runs`,
       { method: "POST", body: { mode: "inline", spec, ...opts } },
     );
-    return (await resp.json()) as WorkflowRun;
+    return (await resp.json()) as Run;
   }
 
   async startWorkflowRun(
     workflowId: string,
     opts: StartRunOptions = {},
-  ): Promise<WorkflowRun> {
+  ): Promise<Run> {
     const resp = await this.request(
       `/v1/projects/${encodeURIComponent(this.project)}/workflows/${encodeURIComponent(workflowId)}/runs`,
       { method: "POST", body: opts satisfies StartBoundRunRequest },
     );
-    return (await resp.json()) as WorkflowRun;
+    return (await resp.json()) as Run;
   }
 
-  async listRuns(opts: ListRunsOptions = {}): Promise<WorkflowRunListResponse> {
+  async listRuns(opts: ListRunsOptions = {}): Promise<RunListResponse> {
     const path = withQuery(
       `/v1/projects/${encodeURIComponent(this.project)}/runs`,
       opts,
     );
     const resp = await this.request(path, { method: "GET" });
-    return (await resp.json()) as WorkflowRunListResponse;
+    return (await resp.json()) as RunListResponse;
   }
 
-  async getRun(runId: string): Promise<WorkflowRunDetail> {
+  async getRun(runId: string): Promise<RunDetail> {
     const resp = await this.request(
       `/v1/projects/${encodeURIComponent(this.project)}/runs/${encodeURIComponent(runId)}`,
       { method: "GET" },
     );
-    return (await resp.json()) as WorkflowRunDetail;
+    return (await resp.json()) as RunDetail;
   }
 
   async cancelRun(runId: string): Promise<void> {
@@ -477,7 +477,7 @@ export class Client {
   async waitRun(
     runId: string,
     opts: WaitRunOptions = {},
-  ): Promise<WorkflowRunDetail> {
+  ): Promise<RunDetail> {
     let since = opts.since ?? 0;
     const reconnectDelayMs = opts.reconnectDelayMs ?? 1000;
     for (;;) {
@@ -642,13 +642,13 @@ export class Client {
 export type { JobClaim, JobHeartbeat };
 
 export type {
+  Run,
+  RunListResponse,
   RunSignal,
+  RunStatus,
   SendRunSignalRequest,
   WorkflowDefinitionListResponse,
   WorkflowDefinitionSummary,
-  WorkflowRun,
-  WorkflowRunListResponse,
-  WorkflowRunStatus,
   WorkflowSpec,
 };
 
@@ -666,7 +666,7 @@ function anySignal(...signals: AbortSignal[]): AbortSignal {
   return controller.signal;
 }
 
-export function isTerminalRunStatus(status: WorkflowRunStatus): boolean {
+export function isTerminalRunStatus(status: RunStatus): boolean {
   return status === "completed" || status === "failed";
 }
 

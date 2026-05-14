@@ -674,7 +674,7 @@ export interface paths {
         put?: never;
         /**
          * Preview or deliver a synthetic integration event
-         * @description Builds a synthetic integration event from an explicit payload or a sample fixture. In `preview` mode the server evaluates currently matching event triggers and parked `wait_event` branches without persisting or delivering the event. In `deliver` mode it persists an integration event row with `source: synthetic` and publishes it through the same event bus consumed by event triggers and `wait_event` delivery.
+         * @description Builds a synthetic integration event from an explicit payload or a sample fixture. In `preview` mode the server evaluates currently matching event triggers and suspended `wait_event` branches without persisting or delivering the event. In `deliver` mode it persists an integration event row with `source: synthetic` and publishes it through the same event bus consumed by event triggers and `wait_event` delivery.
          *
          *     Synthetic fires are for local testing and authoring diagnostics. They never verify upstream signatures and should not be treated as provider-originated webhooks.
          */
@@ -697,7 +697,7 @@ export interface paths {
          * @description Opens a Server-Sent Events connection delivering every live event in the project. Each frame carries a JSON envelope `{type, run_id?, channel_id?, interaction_id?, seq?, timestamp, data}` where `type` is one of:
          *
          *     - `run_updated` — the run row's status, heartbeat, or
-         *     timestamps changed; `data` is a full WorkflowRun.
+         *     timestamps changed; `data` is a full Run.
          *     - `job_updated` — a single job's status or attempt
          *     advanced; `data` is a full Job. The job's id is on
          *     `data.id`.
@@ -1290,7 +1290,7 @@ export interface paths {
          *     * `fail` — job is marked failed. For action jobs this triggers
          *     the workflow engine's retry logic if `attempt < max_attempts`;
          *     for code jobs it terminally fails the run.
-         *     * `suspend` — code jobs only. The run is parked on the supplied
+         *     * `suspend` — code jobs only. The run is suspended on the supplied
          *     wait. On wake the server emits a fresh code-invoke job whose
          *     history is reachable via the history endpoint.
          *
@@ -3288,7 +3288,7 @@ export interface paths {
         };
         /**
          * List workflow paths waiting on an Observable
-         * @description Returns active workflow paths currently parked on this Observable via `wait_until.observable`. The list is intended for operator visibility; terminal runs are omitted.
+         * @description Returns active workflow paths currently suspended on this Observable via `wait_until.observable`. The list is intended for operator visibility; terminal runs are omitted.
          */
         get: operations["listObservableWaiters"];
         put?: never;
@@ -3455,7 +3455,7 @@ export interface components {
          * @description Mobius entity kind that can be attached to a channel message.
          * @enum {string}
          */
-        EntityReferenceType: "workflow_run" | "run_step" | "job" | "interaction" | "workflow_definition" | "channel_message" | "agent" | "user" | "group";
+        EntityReferenceType: "run" | "run_step" | "job" | "interaction" | "workflow_definition" | "channel_message" | "agent" | "user" | "group";
         /** @description Experimental typed link from a channel message to another Mobius entity. Clients use references to render cards and chips without parsing Markdown. */
         EntityReference: {
             /** @description Referenced Mobius entity kind. */
@@ -4183,7 +4183,7 @@ export interface components {
          *
          *     Exactly one of `steps` or `code` must be set; setting both, or neither, is rejected by the schema's `oneOf` constraint.
          *
-         *     Authoring rule for spec-step workflows: `action` is the canonical field for executable steps. When `action_kind` is omitted, `action` uses worker/job semantics. Use `action_kind: "server"` for Mobius-managed server actions such as platform integrations or custom HTTP-backed actions.
+         *     Authoring rule for spec-step workflows: `action` is the canonical field for executable steps. The engine routes each action step to the right executor based on the action's registered `runs_on` metadata — there is no author-side kind hint. Platform-owned actions are claimed by the in-daemon worker pool; customer- registered actions are claimed by the customer's deployed workers over the standard `/v1/.../jobs/claim` surface.
          */
         WorkflowSpec: {
             /** @description Workflow name. */
@@ -4257,10 +4257,8 @@ export interface components {
             each?: components["schemas"]["WorkflowEach"];
             /** @description Optional visual-editor position hint; ignored by the execution engine. */
             layout?: components["schemas"]["WorkflowStepLayout"];
-            /** @description Canonical executable-step field. When `action_kind` is omitted, the engine treats this as a worker action. Use `action_kind: server` for Mobius-managed server actions. */
+            /** @description Canonical executable-step field. The engine resolves the execution domain (platform pool vs. customer worker) from the action's registered `runs_on` metadata, not from any step field. */
             action: string;
-            /** @description Whether `action` is handled by a worker or by a Mobius-managed server action. */
-            action_kind?: components["schemas"]["WorkflowActionKind"];
             /** @description Optional writes to top-level `vars.*` keys, evaluated after the step completes. Targets must look like `vars.foo`. */
             bind?: {
                 [key: string]: string;
@@ -4341,7 +4339,7 @@ export interface components {
             /** @description Event type, condition, timeout, and storage behavior for this suspension. */
             wait_event: components["schemas"]["WorkflowWaitEventConfig"];
         };
-        /** @description Polls project or external state until a strict boolean condition evaluates true, parking the run durably between checks. */
+        /** @description Polls project or external state until a strict boolean condition evaluates true, suspending the run durably between checks. */
         WorkflowWaitUntilStep: {
             /** @description Unique step name within the workflow, used for routing and logging. */
             name: string;
@@ -4422,11 +4420,6 @@ export interface components {
             /** @description Optional worker queue the code-invoke job is dispatched to. When empty, the run-level queue is used. */
             queue?: string;
         };
-        /**
-         * @description Execution mode for `action` steps: `worker` creates claimable jobs for external workers, while `server` executes Mobius-managed actions such as integrations inside the service. Omit for the current default of `worker`.
-         * @enum {string}
-         */
-        WorkflowActionKind: "worker" | "server";
         /**
          * @description Controls matching when multiple outbound edge conditions are true: `all` follows every matching edge in parallel, while `first` follows only the first matching edge in declaration order.
          * @enum {string}
@@ -4511,7 +4504,7 @@ export interface components {
             /** @description Step name to transition to if the timeout elapses without a matching event. Fails the run if omitted. */
             on_timeout?: string;
         };
-        /** @description Durable condition wait. Exactly one of `poll` or `observable` must be set. Poll waits evaluate direct checks; Observable waits read reusable project-scoped Observable state and park on change events. */
+        /** @description Durable condition wait. Exactly one of `poll` or `observable` must be set. Poll waits evaluate direct checks; Observable waits read reusable project-scoped Observable state and suspend on change events. */
         WorkflowWaitUntilConfig: {
             poll?: components["schemas"]["WorkflowWaitUntilPollConfig"];
             /** @description Identifier-safe Observable name or ID. */
@@ -4591,7 +4584,7 @@ export interface components {
             topic?: string;
             /** @description Additional user or agent IDs to invite to the channel. */
             member_ids?: string[];
-            /** @description Opening brief posted into the channel before the workflow parks. */
+            /** @description Opening brief posted into the channel before the workflow suspends. */
             opening_message: string;
             /**
              * @description Behavior to apply when all purpose-linked interactions are terminal.
@@ -4617,7 +4610,7 @@ export interface components {
             published_as_tool?: boolean;
             /** @description User ID of the org member who created this workflow definition. */
             created_by: string;
-            /** @description Resource tags applied to this workflow. Inherited by runs at start time; see `WorkflowRun.tags`. */
+            /** @description Resource tags applied to this workflow. Inherited by runs at start time; see `Run.tags`. */
             tags?: components["schemas"]["TagMap"];
             /**
              * Format: date-time
@@ -4704,19 +4697,19 @@ export interface components {
          * @description Public run lifecycle. Path-level fields explain why an active run is working, waiting, sleeping, retrying, paused, or blocked at a join.
          * @enum {string}
          */
-        WorkflowRunStatus: "active" | "completed" | "failed";
+        RunStatus: "active" | "completed" | "failed";
         /**
          * @description Current state of one execution path.
          * @enum {string}
          */
-        WorkflowRunPathState: "working" | "waiting" | "completed" | "failed";
+        RunPathState: "working" | "waiting" | "completed" | "failed";
         /**
          * @description What a waiting path is blocked on.
          * @enum {string}
          */
-        WorkflowRunWaitKind: "sleep" | "signal" | "interaction" | "pause" | "join" | "retry" | "wait_event" | "wait_until";
-        WorkflowRunWaitDetail: {
-            kind: components["schemas"]["WorkflowRunWaitKind"];
+        RunWaitKind: "sleep" | "signal" | "interaction" | "pause" | "join" | "retry" | "wait_event" | "wait_until";
+        RunWaitDetail: {
+            kind: components["schemas"]["RunWaitKind"];
             /**
              * Format: date-time
              * @description Earliest time the runtime should inspect or resume this path.
@@ -4752,7 +4745,7 @@ export interface components {
             observable?: string;
             /**
              * Format: int64
-             * @description Observable version observed before the path parked.
+             * @description Observable version observed before the path suspended.
              */
             observed_version?: number;
             /** @description Poll action name for `wait_until` waits. */
@@ -4777,19 +4770,19 @@ export interface components {
             /** @description Latest poll error message for `wait_until`. */
             last_error_message?: string;
         };
-        WorkflowRunPath: {
+        RunPath: {
             /** @description Stable execution path identifier, e.g. `main` or `main/each/0`. */
             path_id: string;
-            state: components["schemas"]["WorkflowRunPathState"];
+            state: components["schemas"]["RunPathState"];
             /** @description Present when `state` is `waiting`. */
-            waiting_on?: components["schemas"]["WorkflowRunWaitDetail"];
+            waiting_on?: components["schemas"]["RunWaitDetail"];
             /** @description Path-local failure type when state is `failed`. */
             error_type?: string;
             /** @description Path-local failure message when state is `failed`. */
             error_message?: string;
         };
         /** @description Current path counts. Invariants: `total = working + waiting + completed + failed`; `active = working + waiting`. */
-        WorkflowRunPathCounts: {
+        RunPathCounts: {
             total: number;
             active: number;
             working: number;
@@ -4798,7 +4791,7 @@ export interface components {
             failed: number;
         };
         /** @description Always-present aggregate of waiting paths. */
-        WorkflowRunWaitSummary: {
+        RunWaitSummary: {
             waiting_paths: number;
             /** @description Count of waiting paths by `waiting_on.kind`. */
             kind_counts: {
@@ -4813,13 +4806,13 @@ export interface components {
             interaction_ids: string[];
         };
         /** @description Live work-pool summary for this run. Reflects the transient state of the worker job queue, not durable step progress — terminal jobs are swept on a TTL and stop contributing to these counts. Use `step_counts` for run-progress UI; use this field to answer "is anything claimable right now and is a worker holding it?". `ready` counts pending jobs whose `scheduled_at` has arrived and can be claimed now; `scheduled` counts pending jobs intentionally waiting for a future retry/backoff; `claimed` counts jobs currently held by workers. */
-        WorkflowRunJobCounts: {
+        RunJobCounts: {
             ready: number;
             scheduled: number;
             claimed: number;
         };
         /** @description Aggregate count of run-step rows for this run grouped by status. Counts every attempt of every step (one row per step x attempt x path), so it reflects durable progress rather than the live worker pool. Use this for run-progress UI; use `job_counts` for live claimability. */
-        WorkflowRunStepCounts: {
+        RunStepCounts: {
             pending: number;
             running: number;
             completed: number;
@@ -4827,13 +4820,13 @@ export interface components {
             skipped: number;
             cancelled: number;
         };
-        WorkflowRunError: {
+        RunError: {
             path_id?: string;
             error_type: string;
             error_message: string;
         };
         /** @description Runtime record for one workflow execution. */
-        WorkflowRun: {
+        Run: {
             /** @description Unique identifier for this run. */
             id: string;
             /** @description Queue this run was enqueued on. */
@@ -4849,17 +4842,17 @@ export interface components {
             /** @description Name of the workflow as recorded at run creation time. */
             workflow_name: string;
             /** @description Public lifecycle for this run. */
-            status: components["schemas"]["WorkflowRunStatus"];
+            status: components["schemas"]["RunStatus"];
             /** @description Current path counts derived from the run projection. */
-            path_counts: components["schemas"]["WorkflowRunPathCounts"];
-            /** @description Live work-pool summary derived from the run projection. See `WorkflowRunJobCounts`. */
-            job_counts: components["schemas"]["WorkflowRunJobCounts"];
-            /** @description Durable run-step counts grouped by status. See `WorkflowRunStepCounts`. */
-            step_counts: components["schemas"]["WorkflowRunStepCounts"];
+            path_counts: components["schemas"]["RunPathCounts"];
+            /** @description Live work-pool summary derived from the run projection. See `RunJobCounts`. */
+            job_counts: components["schemas"]["RunJobCounts"];
+            /** @description Durable run-step counts grouped by status. See `RunStepCounts`. */
+            step_counts: components["schemas"]["RunStepCounts"];
             /** @description Always-present aggregate of waiting paths. */
-            wait_summary: components["schemas"]["WorkflowRunWaitSummary"];
+            wait_summary: components["schemas"]["RunWaitSummary"];
             /** @description Run-level errors that caused a failed lifecycle. */
-            errors: components["schemas"]["WorkflowRunError"][];
+            errors: components["schemas"]["RunError"][];
             /** @description Retry attempt number (1-based). Increments each time the run is retried. */
             attempt: number;
             /** @description Input values provided when the run was started. */
@@ -4898,7 +4891,7 @@ export interface components {
             created_at: string;
             /**
              * Format: date-time
-             * @description Timestamp when a worker first claimed this run.
+             * @description Timestamp when this run transitioned out of initial progression and began executing steps.
              */
             started_at?: string;
             /**
@@ -4993,7 +4986,10 @@ export interface components {
             run_state_after_b64?: string;
             error_type?: string;
             error_message?: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Timestamp when execution of this step attempt began.
+             */
             started_at?: string;
             /** Format: date-time */
             completed_at?: string;
@@ -5019,18 +5015,18 @@ export interface components {
             next_cursor?: string;
         };
         /** @description Paginated list of workflow runs. */
-        WorkflowRunListResponse: {
+        RunListResponse: {
             /** @description The list of results for this page. */
-            items: components["schemas"]["WorkflowRun"][];
+            items: components["schemas"]["Run"][];
             /** @description True when more pages are available. */
             has_more: boolean;
             /** @description Opaque cursor for fetching the next page. Present only when has_more is true. */
             next_cursor?: string;
         };
         /** @description Detailed workflow run including its spec snapshot, terminal result, and the first page of run steps. */
-        WorkflowRunDetail: components["schemas"]["WorkflowRun"] & {
+        RunDetail: components["schemas"]["Run"] & {
             /** @description Current path-level execution projection for this run. */
-            paths: components["schemas"]["WorkflowRunPath"][];
+            paths: components["schemas"]["RunPath"][];
             /** @description Spec snapshot used to execute this run. */
             spec?: components["schemas"]["WorkflowSpec"];
             /** @description Base64-encoded terminal result blob */
@@ -5655,7 +5651,7 @@ export interface components {
         /** @enum {string} */
         EnvironmentPurpose: "implementation" | "review" | "verification" | "preview" | "debug" | "worker" | "custom";
         /** @enum {string} */
-        EnvironmentOwnerType: "none" | "user" | "agent" | "workflow_run" | "worker_session" | "service";
+        EnvironmentOwnerType: "none" | "user" | "agent" | "run" | "worker_session" | "service";
         /** @enum {string} */
         EnvironmentRetentionPolicy: "manual" | "destroy_on_success" | "retain_on_failure" | "retain_always";
         /** @enum {string} */
@@ -6043,7 +6039,7 @@ export interface components {
             /** @description Worker-side per-step retry counter. 0 for first try. */
             attempt?: number;
         };
-        /** @description A previously-parked wait the handler observed completing during replay. Code-spec jobs only. The status is typically `completed`; `failed` is used when the wait raised a timeout the handler is surfacing back through the ledger. */
+        /** @description A previously-suspended wait the handler observed completing during replay. Code-spec jobs only. The status is typically `completed`; `failed` is used when the wait raised a timeout the handler is surfacing back through the ledger. */
         OutcomeWaitObserved: {
             /**
              * @description discriminator enum property added by openapi-typescript
@@ -6087,7 +6083,7 @@ export interface components {
             /** @description Human-readable error detail. */
             error_message: string;
         };
-        /** @description Terminal: the code handler hit a wait it could not satisfy locally and is yielding control. Code-spec jobs only. The server parks the run on `wait`; on resume a fresh code-invoke job is emitted. */
+        /** @description Terminal: the code handler hit a wait it could not satisfy locally and is yielding control. Code-spec jobs only. The server suspends the run on `wait`; on resume a fresh code-invoke job is emitted. */
         OutcomeSuspend: {
             /**
              * @description discriminator enum property added by openapi-typescript
@@ -6425,7 +6421,7 @@ export interface components {
         EventSourceConfig: {
             /** @description Platform event type to match, e.g. `run.completed`. */
             event_type?: string;
-            /** @description Transition filter for `actor_state.changed` event triggers. */
+            /** @description Transition filter for `actor.state.changed` event triggers. */
             actor_state?: components["schemas"]["ActorStateTriggerSourceConfig"];
         };
         /** @description Narrow transition filter for Actor State event triggers. */
@@ -7245,7 +7241,7 @@ export interface components {
             };
         };
         IntegrationProviderAction: {
-            /** @description Workflow-callable action name (`github.create-comment`). */
+            /** @description Workflow-callable action name (`github.issue.create_comment`). */
             name: string;
             title?: string;
             description?: string;
@@ -7667,10 +7663,10 @@ export interface components {
             capabilities?: {
                 [key: string]: unknown;
             };
-            /** @description Agent-specific configuration blob stored and returned opaquely. */
-            config?: {
-                [key: string]: unknown;
-            };
+            /** @description Anthropic model identifier for platform agents (e.g. `claude-sonnet-4-6`). Empty string falls back to the platform default. */
+            model?: string;
+            /** @description Custom system prompt for platform agents. Empty string uses the generated default based on the agent name. */
+            system_prompt?: string;
             /** @description Current agent status: `active` or `inactive`. */
             status: components["schemas"]["AgentStatus"];
             /** @description Deprecated alias of connection_status for first rollout compatibility. */
@@ -7923,10 +7919,10 @@ export interface components {
             capabilities?: {
                 [key: string]: unknown;
             };
-            /** @description Agent-specific configuration stored and returned opaquely. */
-            config?: {
-                [key: string]: unknown;
-            };
+            /** @description Anthropic model identifier for platform agents (e.g. `claude-sonnet-4-6`). Empty falls back to the platform default. */
+            model?: string;
+            /** @description Custom system prompt for platform agents. Empty uses the generated default. */
+            system_prompt?: string;
             /** @description Initial tag set. */
             tags?: components["schemas"]["TagMap"];
         };
@@ -7944,10 +7940,10 @@ export interface components {
             capabilities?: {
                 [key: string]: unknown;
             };
-            /** @description Replacement configuration blob. */
-            config?: {
-                [key: string]: unknown;
-            };
+            /** @description Replacement Anthropic model identifier for platform agents. */
+            model?: string;
+            /** @description Replacement system prompt for platform agents. */
+            system_prompt?: string;
             /** @description Replacement agent status: `active` or `inactive`. */
             status?: components["schemas"]["AgentStatus"];
             /** @description When supplied, replaces the user tag set on the agent. System tags (`mobius:*`) are preserved. */
@@ -8657,7 +8653,7 @@ export interface components {
             condition?: string;
             /**
              * Format: int64
-             * @description Observable version observed when this path parked.
+             * @description Observable version observed when this path suspended.
              */
             observed_version: number;
             /**
@@ -9834,7 +9830,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["WorkflowRunListResponse"];
+                    "application/json": components["schemas"]["RunListResponse"];
                 };
             };
             401: components["responses"]["Unauthorized"];
@@ -9865,7 +9861,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["WorkflowRun"];
+                    "application/json": components["schemas"]["Run"];
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -9898,7 +9894,7 @@ export interface operations {
         parameters: {
             query?: {
                 /** @description Filter by run status. */
-                status?: components["schemas"]["WorkflowRunStatus"];
+                status?: components["schemas"]["RunStatus"];
                 /** @description Convenience filter that selects runs by lifecycle stage: `in_flight` returns active (not-yet-terminal) runs, `terminal` returns completed and failed runs. Ignored when `status` is set. */
                 lifecycle?: "in_flight" | "terminal";
                 /** @description Inclusive lower bound for `created_at`, RFC3339. Combine with `created_at_before` to scope to a time window. */
@@ -9941,7 +9937,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["WorkflowRunListResponse"];
+                    "application/json": components["schemas"]["RunListResponse"];
                 };
             };
             401: components["responses"]["Unauthorized"];
@@ -10025,7 +10021,7 @@ export interface operations {
                      *       "updated_at": "2026-04-24T14:30:00Z"
                      *     }
                      */
-                    "application/json": components["schemas"]["WorkflowRun"];
+                    "application/json": components["schemas"]["Run"];
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -10074,7 +10070,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["WorkflowRunDetail"];
+                    "application/json": components["schemas"]["RunDetail"];
                 };
             };
             401: components["responses"]["Unauthorized"];
@@ -10105,7 +10101,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["WorkflowRun"];
+                    "application/json": components["schemas"]["Run"];
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -10238,7 +10234,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["WorkflowRun"];
+                    "application/json": components["schemas"]["Run"];
                 };
             };
             401: components["responses"]["Unauthorized"];
@@ -10265,7 +10261,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["WorkflowRun"];
+                    "application/json": components["schemas"]["Run"];
                 };
             };
             401: components["responses"]["Unauthorized"];
@@ -10409,8 +10405,8 @@ export interface operations {
                 content: {
                     /**
                      * @example event: run_updated
-                     *     id: 42
-                     *     data: {"type":"run_updated","run_id":"run_01hw1n1a2b3c4d5e6f7g8h9j0k","seq":42,"timestamp":"2026-04-24T14:45:00Z","data":{"...full WorkflowRun, truncated...":"...","status":"active"}}
+                     *     id: 1777041900000000000
+                     *     data: {"type":"run_updated","run_id":"run_01hw1n1a2b3c4d5e6f7g8h9j0k","seq":1777041900000000000,"timestamp":"2026-04-24T14:45:00Z","data":{"...full Run, truncated...":"...","status":"active"}}
                      *
                      *     :keepalive
                      */

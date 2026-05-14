@@ -45,14 +45,6 @@ var overrides = map[string]Override{
 	"searchTableRows":     {Command: "search-rows"},
 	"bulkInsertTableRows": {Command: "bulk-insert-rows"},
 
-	// `observables` group: the default derivation keeps too much of the
-	// nested resource name. Use nouns for history views and the product verb
-	// "observe" for submitting a new observation.
-	"listObservableEvents":        {Command: "events"},
-	"listObservableObservations":  {Command: "observations"},
-	"listObservableStateVersions": {Command: "versions"},
-	"submitObservableObservation": {Command: "observe"},
-
 	// --- Skipped: hand-written in cmd/mobius ---
 	// The browser-based CLI login flow is hand-written in auth.go because it
 	// needs to drive the device challenge, open the browser, poll for

@@ -49,7 +49,7 @@ func registerGroupsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.AddGroupMemberWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.GroupParam(p1), body)
+			resp, err := client.AddGroupMemberWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}
@@ -99,7 +99,7 @@ func registerGroupsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.CreateGroupWithResponse(ctx.Context(), api.ProjectHandleParam(p0), body)
+			resp, err := client.CreateGroupWithResponse(ctx.Context(), p0, body)
 			if err != nil {
 				return err
 			}
@@ -118,7 +118,7 @@ func registerGroupsCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			resp, err := client.DeleteGroupWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.GroupParam(p1))
+			resp, err := client.DeleteGroupWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}
@@ -137,7 +137,7 @@ func registerGroupsCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			resp, err := client.GetGroupWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.GroupParam(p1))
+			resp, err := client.GetGroupWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}
@@ -167,7 +167,7 @@ func registerGroupsCommands(app *cli.App) {
 				v := api.LimitParam(ctx.Int("limit"))
 				params.Limit = &v
 			}
-			resp, err := client.ListGroupsWithResponse(ctx.Context(), api.ProjectHandleParam(p0), params)
+			resp, err := client.ListGroupsWithResponse(ctx.Context(), p0, params)
 			if err != nil {
 				return err
 			}
@@ -186,7 +186,7 @@ func registerGroupsCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			resp, err := client.ListMemberGroupsWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.UserId(p1))
+			resp, err := client.ListMemberGroupsWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}
@@ -218,7 +218,7 @@ func registerGroupsCommands(app *cli.App) {
 				v := api.LimitParam(ctx.Int("limit"))
 				params.Limit = &v
 			}
-			resp, err := client.ListGroupMembersWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.GroupParam(p1), params)
+			resp, err := client.ListGroupMembersWithResponse(ctx.Context(), p0, p1, params)
 			if err != nil {
 				return err
 			}
@@ -238,7 +238,7 @@ func registerGroupsCommands(app *cli.App) {
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			p2 := ctx.Arg(1)
-			resp, err := client.RemoveGroupMemberWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.GroupParam(p1), api.UserId(p2))
+			resp, err := client.RemoveGroupMemberWithResponse(ctx.Context(), p0, p1, p2)
 			if err != nil {
 				return err
 			}
@@ -286,7 +286,7 @@ func registerGroupsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.UpdateGroupWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.GroupParam(p1), body)
+			resp, err := client.UpdateGroupWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}

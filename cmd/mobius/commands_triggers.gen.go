@@ -43,7 +43,7 @@ func registerTriggersCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.CreateTriggerWithResponse(ctx.Context(), api.ProjectHandleParam(p0), body)
+			resp, err := client.CreateTriggerWithResponse(ctx.Context(), p0, body)
 			if err != nil {
 				return err
 			}
@@ -124,7 +124,7 @@ func registerTriggersCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.CreateTriggerTargetWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1), body)
+			resp, err := client.CreateTriggerTargetWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}
@@ -143,7 +143,7 @@ func registerTriggersCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			resp, err := client.DeleteTriggerWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1))
+			resp, err := client.DeleteTriggerWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}
@@ -163,7 +163,7 @@ func registerTriggersCommands(app *cli.App) {
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			p2 := ctx.Arg(1)
-			resp, err := client.DeleteTriggerTargetWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1), api.TriggerTargetIDParam(p2))
+			resp, err := client.DeleteTriggerTargetWithResponse(ctx.Context(), p0, p1, p2)
 			if err != nil {
 				return err
 			}
@@ -182,7 +182,7 @@ func registerTriggersCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			resp, err := client.DeleteAllTriggerTargetsWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1))
+			resp, err := client.DeleteAllTriggerTargetsWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}
@@ -201,7 +201,7 @@ func registerTriggersCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			resp, err := client.GetTriggerWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1))
+			resp, err := client.GetTriggerWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}
@@ -221,7 +221,7 @@ func registerTriggersCommands(app *cli.App) {
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			p2 := ctx.Arg(1)
-			resp, err := client.GetTriggerTargetWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1), api.TriggerTargetIDParam(p2))
+			resp, err := client.GetTriggerTargetWithResponse(ctx.Context(), p0, p1, p2)
 			if err != nil {
 				return err
 			}
@@ -261,7 +261,7 @@ func registerTriggersCommands(app *cli.App) {
 				v := ctx.Int("limit")
 				params.Limit = &v
 			}
-			resp, err := client.ListTriggersWithResponse(ctx.Context(), api.ProjectHandleParam(p0), params)
+			resp, err := client.ListTriggersWithResponse(ctx.Context(), p0, params)
 			if err != nil {
 				return err
 			}
@@ -298,7 +298,7 @@ func registerTriggersCommands(app *cli.App) {
 				v := ctx.Int("limit")
 				params.Limit = &v
 			}
-			resp, err := client.ListTriggerFiresWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1), params)
+			resp, err := client.ListTriggerFiresWithResponse(ctx.Context(), p0, p1, params)
 			if err != nil {
 				return err
 			}
@@ -317,7 +317,7 @@ func registerTriggersCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			resp, err := client.ListTriggerTargetsWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1))
+			resp, err := client.ListTriggerTargetsWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}
@@ -367,7 +367,7 @@ func registerTriggersCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.TestFireTriggerWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1), body)
+			resp, err := client.TestFireTriggerWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}
@@ -434,7 +434,7 @@ func registerTriggersCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.UpdateTriggerWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1), body)
+			resp, err := client.UpdateTriggerWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}
@@ -516,7 +516,7 @@ func registerTriggersCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.UpdateTriggerTargetWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1), api.TriggerTargetIDParam(p2), body)
+			resp, err := client.UpdateTriggerTargetWithResponse(ctx.Context(), p0, p1, p2, body)
 			if err != nil {
 				return err
 			}

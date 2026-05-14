@@ -107,20 +107,8 @@ func TestNewClient_RejectsTrailingDotSuffix(t *testing.T) {
 	assert.True(t, err != nil)
 }
 
-// claimResponseJSON renders a JobClaim response body in the wire shape the
-// server emits today: a {kind:"action", name, parameters} spec plus the
-// opaque lease_token and the surrounding job/run metadata.
-func claimResponseJSON(jobID, runID, action string, params map[string]any, leaseToken string, heartbeatSecs int) string {
-	if params == nil {
-		params = map[string]any{}
-	}
-	paramsJSON, _ := json.Marshal(params)
-	return fmt.Sprintf(`{"job_id":%q,"run_id":%q,"workflow_name":"hello","step_name":"greet","spec":{"kind":"action","name":%q,"parameters":%s},"lease_token":%q,"attempt_number":1,"queue":"default","heartbeat_interval_seconds":%d}`,
-		jobID, runID, action, paramsJSON, leaseToken, heartbeatSecs)
-}
-
 func TestRuntimeClaim_Job(t *testing.T) {
-	claimBody := claimResponseJSON("job_1", "run_1", "print", map[string]any{"msg": "hi"}, "lease-1", 15)
+	claimBody := `{"job_id":"job_1","run_id":"run_1","workflow_name":"hello","step_name":"greet","spec":{"kind":"action","name":"print","parameters":{"msg":"hi"}},"attempt_number":1,"queue":"default","lease_token":"lease-1","heartbeat_interval_seconds":15}`
 	h := newRecorder(t, map[string]stubResponse{
 		"/v1/projects/test-project/jobs/claim": {status: 200, body: claimBody},
 	})
@@ -157,7 +145,7 @@ func TestRuntimeClaim_Job(t *testing.T) {
 func TestRuntimeClaim_EscapesProjectHandle(t *testing.T) {
 	const rawProject = "team a/b"
 	wantEscaped := "/v1/projects/" + url.PathEscape(rawProject) + "/jobs/claim"
-	claimBody := claimResponseJSON("job_1", "run_1", "print", nil, "lease-1", 15)
+	claimBody := `{"job_id":"job_1","run_id":"run_1","workflow_name":"hello","step_name":"greet","spec":{"kind":"action","name":"print","parameters":{}},"attempt_number":1,"queue":"default","lease_token":"lease-1","heartbeat_interval_seconds":15}`
 
 	var gotEscaped string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -187,13 +175,13 @@ func TestRuntimeHeartbeat_EscapesJobID(t *testing.T) {
 		gotEscaped = r.URL.EscapedPath()
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		_, _ = io.WriteString(w, `{"ok":true,"directives":{}}`)
+		_, _ = io.WriteString(w, `{"lease_expires_at":"2026-01-01T00:00:00Z"}`)
 	}))
 	t.Cleanup(srv.Close)
 	c, err := NewClient(WithBaseURL(srv.URL), WithAPIKey("mbx_test"), WithProjectHandle("test-project"))
 	assert.NoError(t, err)
 
-	job := &runtimeJob{JobID: rawJob, WorkerInstanceID: "w1", LeaseToken: "lease-1"}
+	job := &runtimeJob{JobID: rawJob, WorkerInstanceID: "w1", Attempt: 1}
 	_, err = c.runtimeHeartbeat(context.Background(), job)
 	assert.NoError(t, err)
 	assert.Equal(t, gotEscaped, wantEscaped)
@@ -214,7 +202,7 @@ func TestRuntimeHeartbeat_Directives(t *testing.T) {
 		"/v1/projects/test-project/jobs/": {status: 200, body: `{"ok":true,"directives":{"should_cancel":true}}`},
 	})
 	c, _ := newTestClient(t, h)
-	job := &runtimeJob{JobID: "job_1", LeaseToken: "lease-1", WorkerInstanceID: "w1"}
+	job := &runtimeJob{JobID: "job_1", Attempt: 1, WorkerInstanceID: "w1"}
 	dirs, err := c.runtimeHeartbeat(context.Background(), job)
 	assert.NoError(t, err)
 	assert.NotNil(t, dirs)
@@ -227,7 +215,7 @@ func TestRuntimeHeartbeat_LeaseLost(t *testing.T) {
 		"/v1/projects/test-project/jobs/": {status: 409, body: ""},
 	})
 	c, _ := newTestClient(t, h)
-	_, err := c.runtimeHeartbeat(context.Background(), &runtimeJob{JobID: "job_1", LeaseToken: "lease-1", WorkerInstanceID: "w1"})
+	_, err := c.runtimeHeartbeat(context.Background(), &runtimeJob{JobID: "job_1", Attempt: 1, WorkerInstanceID: "w1"})
 	assert.ErrorIs(t, err, ErrLeaseLost)
 }
 
@@ -241,7 +229,7 @@ func TestRuntimeHeartbeat_AuthRevoked(t *testing.T) {
 		"/v1/projects/test-project/jobs/": {status: 401, body: ""},
 	})
 	c, _ := newTestClient(t, h)
-	_, err := c.runtimeHeartbeat(context.Background(), &runtimeJob{JobID: "job_1", LeaseToken: "lease-1", WorkerInstanceID: "w1"})
+	_, err := c.runtimeHeartbeat(context.Background(), &runtimeJob{JobID: "job_1", Attempt: 1, WorkerInstanceID: "w1"})
 	assert.ErrorIs(t, err, ErrAuthRevoked)
 }
 
@@ -250,7 +238,7 @@ func TestRuntimeComplete_AuthRevoked(t *testing.T) {
 		"/v1/projects/test-project/jobs/": {status: 401, body: ""},
 	})
 	c, _ := newTestClient(t, h)
-	err := c.runtimeCompleteSuccess(context.Background(), &runtimeJob{JobID: "job_1", LeaseToken: "lease-1", WorkerInstanceID: "w1"}, nil)
+	err := c.runtimeCompleteSuccess(context.Background(), &runtimeJob{JobID: "job_1", Attempt: 1, WorkerInstanceID: "w1"}, nil)
 	assert.ErrorIs(t, err, ErrAuthRevoked)
 }
 
@@ -269,7 +257,7 @@ func TestRuntimeCompleteSuccess(t *testing.T) {
 		"/v1/projects/test-project/jobs/": {status: 204, body: ""},
 	})
 	c, _ := newTestClient(t, h)
-	job := &runtimeJob{JobID: "job_1", LeaseToken: "lease-1", WorkerInstanceID: "w1"}
+	job := &runtimeJob{JobID: "job_1", Attempt: 1, WorkerInstanceID: "w1", LeaseToken: "lease-1"}
 	err := c.runtimeCompleteSuccess(context.Background(), job, map[string]any{"ok": true})
 	assert.NoError(t, err)
 
@@ -277,7 +265,7 @@ func TestRuntimeCompleteSuccess(t *testing.T) {
 	_ = json.Unmarshal(h.lastBody["/v1/projects/test-project/jobs/"], &sent)
 	assert.Equal(t, sent["lease_token"], "lease-1")
 	outcomes, _ := sent["outcomes"].([]any)
-	assert.Equal(t, len(outcomes), 1)
+	assert.Len(t, outcomes, 1)
 	first, _ := outcomes[0].(map[string]any)
 	assert.Equal(t, first["kind"], "complete")
 	assert.NotNil(t, first["result_b64"])
@@ -288,7 +276,7 @@ func TestRuntimeCompleteFailure_LeaseLost(t *testing.T) {
 		"/v1/projects/test-project/jobs/": {status: 409, body: ""},
 	})
 	c, _ := newTestClient(t, h)
-	err := c.runtimeCompleteFailure(context.Background(), &runtimeJob{JobID: "job_1", LeaseToken: "lease-1", WorkerInstanceID: "w1"}, "Error", "boom")
+	err := c.runtimeCompleteFailure(context.Background(), &runtimeJob{JobID: "job_1", Attempt: 1, WorkerInstanceID: "w1", LeaseToken: "lease-1"}, "Error", "boom")
 	assert.ErrorIs(t, err, ErrLeaseLost)
 }
 
@@ -297,14 +285,14 @@ func TestRuntimeCompleteFailure_Body(t *testing.T) {
 		"/v1/projects/test-project/jobs/": {status: 204, body: ""},
 	})
 	c, _ := newTestClient(t, h)
-	err := c.runtimeCompleteFailure(context.Background(), &runtimeJob{JobID: "job_1", LeaseToken: "lease-2", WorkerInstanceID: "w1"}, "Timeout", "deadline exceeded")
+	err := c.runtimeCompleteFailure(context.Background(), &runtimeJob{JobID: "job_1", Attempt: 2, WorkerInstanceID: "w1", LeaseToken: "lease-1"}, "Timeout", "deadline exceeded")
 	assert.NoError(t, err)
 
 	var sent map[string]any
 	_ = json.Unmarshal(h.lastBody["/v1/projects/test-project/jobs/"], &sent)
-	assert.Equal(t, sent["lease_token"], "lease-2")
+	assert.Equal(t, sent["lease_token"], "lease-1")
 	outcomes, _ := sent["outcomes"].([]any)
-	assert.Equal(t, len(outcomes), 1)
+	assert.Len(t, outcomes, 1)
 	first, _ := outcomes[0].(map[string]any)
 	assert.Equal(t, first["kind"], "fail")
 	assert.Equal(t, first["error_type"], "Timeout")
@@ -316,7 +304,7 @@ func TestRuntimeEmitEvents(t *testing.T) {
 		"/v1/projects/test-project/jobs/job_1/events": {status: 204, body: ""},
 	})
 	c, _ := newTestClient(t, h)
-	job := &runtimeJob{JobID: "job_1", LeaseToken: "lease-1", WorkerInstanceID: "w1"}
+	job := &runtimeJob{JobID: "job_1", Attempt: 1, WorkerInstanceID: "w1", LeaseToken: "lease-1"}
 	err := c.runtimeEmitEvents(context.Background(), job, []jobEventEntry{
 		{Type: "scrape.page_done", Payload: map[string]any{"url": "https://example.com"}},
 	})
@@ -376,7 +364,7 @@ func TestWorkerRun_ClaimsNextJobOnlyAfterCurrentCompletes(t *testing.T) {
 			n := claims.Add(1)
 			if n == 1 {
 				w.Header().Set("Content-Type", "application/json")
-				_, _ = io.WriteString(w, claimResponseJSON("job_1", "run_1", "block", nil, "lease-1", 3600))
+				_, _ = io.WriteString(w, `{"job_id":"job_1","run_id":"run_1","workflow_name":"hello","step_name":"greet","spec":{"kind":"action","name":"block","parameters":{}},"attempt_number":1,"queue":"default","lease_token":"lease-1","heartbeat_interval_seconds":3600}`)
 				return
 			}
 			select {
@@ -446,7 +434,7 @@ func TestWorkerPool_RunUsesDistinctSingleJobWorkers(t *testing.T) {
 			mu.Unlock()
 			if n <= 3 {
 				w.Header().Set("Content-Type", "application/json")
-				_, _ = io.WriteString(w, claimResponseJSON(fmt.Sprintf("job_%d", n), "run_1", "block", nil, fmt.Sprintf("lease-%d", n), 3600))
+				_, _ = io.WriteString(w, fmt.Sprintf(`{"job_id":"job_%d","run_id":"run_1","workflow_name":"hello","step_name":"greet","spec":{"kind":"action","name":"block","parameters":{}},"attempt_number":1,"queue":"default","lease_token":"lease-%d","heartbeat_interval_seconds":3600}`, n, n))
 				return
 			}
 			w.WriteHeader(http.StatusNoContent)
@@ -514,7 +502,7 @@ func TestWorkerPool_RunReturnsAuthRevokedAndCancelsSiblings(t *testing.T) {
 			switch sent["worker_instance_id"] {
 			case "pool-worker-1":
 				w.Header().Set("Content-Type", "application/json")
-				_, _ = io.WriteString(w, claimResponseJSON("job_1", "run_1", "block", nil, "lease-1", 3600))
+				_, _ = io.WriteString(w, `{"job_id":"job_1","run_id":"run_1","workflow_name":"hello","step_name":"greet","spec":{"kind":"action","name":"block","parameters":{}},"attempt_number":1,"queue":"default","lease_token":"lease-1","heartbeat_interval_seconds":3600}`)
 			case "pool-worker-2":
 				<-started
 				w.WriteHeader(http.StatusUnauthorized)
@@ -599,7 +587,7 @@ func TestWorkerRun_ConcurrencyClaimsMultipleJobs(t *testing.T) {
 			mu.Unlock()
 			if n <= 3 {
 				w.Header().Set("Content-Type", "application/json")
-				_, _ = io.WriteString(w, claimResponseJSON(fmt.Sprintf("job_%d", n), "run_1", "block", nil, fmt.Sprintf("lease-%d", n), 3600))
+				_, _ = io.WriteString(w, fmt.Sprintf(`{"job_id":"job_%d","run_id":"run_1","workflow_name":"hello","step_name":"greet","spec":{"kind":"action","name":"block","parameters":{}},"attempt_number":1,"queue":"default","lease_token":"lease-%d","heartbeat_interval_seconds":3600}`, n, n))
 				return
 			}
 			w.WriteHeader(http.StatusNoContent)

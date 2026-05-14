@@ -30,7 +30,7 @@ func registerActorStateCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			resp, err := client.GetActorStateWithResponse(ctx.Context(), api.ProjectHandleParam(p0), p1)
+			resp, err := client.GetActorStateWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}
@@ -55,7 +55,7 @@ func registerActorStateCommands(app *cli.App) {
 				v := api.ActorAssignmentStatus(ctx.String("status"))
 				params.Status = &v
 			}
-			resp, err := client.ListActorAssignmentsWithResponse(ctx.Context(), api.ProjectHandleParam(p0), params)
+			resp, err := client.ListActorAssignmentsWithResponse(ctx.Context(), p0, params)
 			if err != nil {
 				return err
 			}
@@ -95,7 +95,7 @@ func registerActorStateCommands(app *cli.App) {
 				v := api.LimitParam(ctx.Int("limit"))
 				params.Limit = &v
 			}
-			resp, err := client.ListActorStatesWithResponse(ctx.Context(), api.ProjectHandleParam(p0), params)
+			resp, err := client.ListActorStatesWithResponse(ctx.Context(), p0, params)
 			if err != nil {
 				return err
 			}
@@ -161,7 +161,7 @@ func registerActorStateCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.UpsertActorStateWithResponse(ctx.Context(), api.ProjectHandleParam(p0), p1, body)
+			resp, err := client.UpsertActorStateWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}

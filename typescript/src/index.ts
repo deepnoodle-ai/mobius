@@ -25,7 +25,7 @@ export {
   type WatchRunOptions,
   type WorkflowDefinition,
   type WorkflowDefinitionConfig,
-  type WorkflowRunDetail,
+  type RunDetail,
   type WorkflowOptions,
   type WorkflowSyncResult,
 } from "./client.js";
@@ -65,24 +65,18 @@ export type {
 } from "./worker.js";
 
 export type {
-  JobActionSpec,
   JobClaim,
   JobClaimRequest,
-  JobCodeSpec,
   JobFenceRequest,
   JobHeartbeat,
   JobHeartbeatDirectives,
   JobReportRequest,
-  JobSpec,
-  Outcome,
-  OutcomeComplete,
-  OutcomeFail,
+  Run,
+  RunListResponse,
   RunSignal,
+  RunStatus,
   SendRunSignalRequest,
   WorkflowDefinitionListResponse,
   WorkflowDefinitionSummary,
-  WorkflowRun,
-  WorkflowRunListResponse,
-  WorkflowRunStatus,
   WorkflowSpec,
 } from "./api/index.js";

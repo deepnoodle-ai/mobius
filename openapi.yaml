@@ -1047,7 +1047,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/WorkflowRunListResponse'
+                $ref: '#/components/schemas/RunListResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
@@ -1077,7 +1077,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/WorkflowRun'
+                $ref: '#/components/schemas/Run'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -1159,7 +1159,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/WorkflowRun'
+                $ref: '#/components/schemas/Run'
               example:
                 id: run_01hw1n1a2b3c4d5e6f7g8h9j0k
                 queue: default
@@ -1245,7 +1245,7 @@ paths:
         in: query
         description: Filter by run status.
         schema:
-          $ref: '#/components/schemas/WorkflowRunStatus'
+          $ref: '#/components/schemas/RunStatus'
       - name: lifecycle
         in: query
         description: 'Convenience filter that selects runs by lifecycle stage: `in_flight`
@@ -1318,7 +1318,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/WorkflowRunListResponse'
+                $ref: '#/components/schemas/RunListResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
   /v1/projects/{project}/runs/{id}:
@@ -1339,7 +1339,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/WorkflowRunDetail'
+                $ref: '#/components/schemas/RunDetail'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
@@ -1375,7 +1375,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/WorkflowRun'
+                $ref: '#/components/schemas/Run'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -1507,7 +1507,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/WorkflowRun'
+                $ref: '#/components/schemas/Run'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
@@ -1529,7 +1529,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/WorkflowRun'
+                $ref: '#/components/schemas/Run'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
@@ -1612,7 +1612,7 @@ paths:
       - events
       summary: Preview or deliver a synthetic integration event
       description: |-
-        Builds a synthetic integration event from an explicit payload or a sample fixture. In `preview` mode the server evaluates currently matching event triggers and parked `wait_event` branches without persisting or delivering the event. In `deliver` mode it persists an integration event row with `source: synthetic` and publishes it through the same event bus consumed by event triggers and `wait_event` delivery.
+        Builds a synthetic integration event from an explicit payload or a sample fixture. In `preview` mode the server evaluates currently matching event triggers and suspended `wait_event` branches without persisting or delivering the event. In `deliver` mode it persists an integration event row with `source: synthetic` and publishes it through the same event bus consumed by event triggers and `wait_event` delivery.
 
         Synthetic fires are for local testing and authoring diagnostics. They never verify upstream signatures and should not be treated as provider-originated webhooks.
       parameters:
@@ -1648,7 +1648,7 @@ paths:
         Opens a Server-Sent Events connection delivering every live event in the project. Each frame carries a JSON envelope `{type, run_id?, channel_id?, interaction_id?, seq?, timestamp, data}` where `type` is one of:
 
         - `run_updated` — the run row's status, heartbeat, or
-        timestamps changed; `data` is a full WorkflowRun.
+        timestamps changed; `data` is a full Run.
         - `job_updated` — a single job's status or attempt
         advanced; `data` is a full Job. The job's id is on
         `data.id`.
@@ -1714,8 +1714,8 @@ paths:
                 type: string
               example: |
                 event: run_updated
-                id: 42
-                data: {"type":"run_updated","run_id":"run_01hw1n1a2b3c4d5e6f7g8h9j0k","seq":42,"timestamp":"2026-04-24T14:45:00Z","data":{"...full WorkflowRun, truncated...":"...","status":"active"}}
+                id: 1777041900000000000
+                data: {"type":"run_updated","run_id":"run_01hw1n1a2b3c4d5e6f7g8h9j0k","seq":1777041900000000000,"timestamp":"2026-04-24T14:45:00Z","data":{"...full Run, truncated...":"...","status":"active"}}
 
                 :keepalive
         '400':
@@ -2805,7 +2805,7 @@ paths:
         * `fail` — job is marked failed. For action jobs this triggers
         the workflow engine's retry logic if `attempt < max_attempts`;
         for code jobs it terminally fails the run.
-        * `suspend` — code jobs only. The run is parked on the supplied
+        * `suspend` — code jobs only. The run is suspended on the supplied
         wait. On wake the server emits a fresh code-invoke job whose
         history is reachable via the history endpoint.
 
@@ -7019,8 +7019,9 @@ paths:
       tags:
       - observables
       summary: List workflow paths waiting on an Observable
-      description: Returns active workflow paths currently parked on this Observable via `wait_until.observable`.
-        The list is intended for operator visibility; terminal runs are omitted.
+      description: Returns active workflow paths currently suspended on this Observable via
+        `wait_until.observable`. The list is intended for operator visibility; terminal runs
+        are omitted.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/ObservableIdParam'
@@ -7579,7 +7580,7 @@ components:
     EntityReferenceType:
       type: string
       enum:
-      - workflow_run
+      - run
       - run_step
       - job
       - interaction
@@ -9005,7 +9006,7 @@ components:
 
         Exactly one of `steps` or `code` must be set; setting both, or neither, is rejected by the schema's `oneOf` constraint.
 
-        Authoring rule for spec-step workflows: `action` is the canonical field for executable steps. When `action_kind` is omitted, `action` uses worker/job semantics. Use `action_kind: "server"` for Mobius-managed server actions such as platform integrations or custom HTTP-backed actions.
+        Authoring rule for spec-step workflows: `action` is the canonical field for executable steps. The engine routes each action step to the right executor based on the action's registered `runs_on` metadata — there is no author-side kind hint. Platform-owned actions are claimed by the in-daemon worker pool; customer- registered actions are claimed by the customer's deployed workers over the standard `/v1/.../jobs/claim` surface.
       additionalProperties: false
       properties:
         name:
@@ -9138,13 +9139,9 @@ components:
           description: Optional visual-editor position hint; ignored by the execution engine.
         action:
           type: string
-          description: 'Canonical executable-step field. When `action_kind` is omitted, the
-            engine treats this as a worker action. Use `action_kind: server` for Mobius-managed
-            server actions.'
-        action_kind:
-          $ref: '#/components/schemas/WorkflowActionKind'
-          description: Whether `action` is handled by a worker or by a Mobius-managed server
-            action.
+          description: Canonical executable-step field. The engine resolves the execution
+            domain (platform pool vs. customer worker) from the action's registered `runs_on`
+            metadata, not from any step field.
         bind:
           type: object
           additionalProperties:
@@ -9304,7 +9301,7 @@ components:
     WorkflowWaitUntilStep:
       type: object
       description: Polls project or external state until a strict boolean condition evaluates
-        true, parking the run durably between checks.
+        true, suspending the run durably between checks.
       additionalProperties: false
       required:
       - name
@@ -9452,14 +9449,6 @@ components:
           type: string
           description: Optional worker queue the code-invoke job is dispatched to. When empty,
             the run-level queue is used.
-    WorkflowActionKind:
-      type: string
-      enum:
-      - worker
-      - server
-      description: 'Execution mode for `action` steps: `worker` creates claimable jobs for
-        external workers, while `server` executes Mobius-managed actions such as integrations
-        inside the service. Omit for the current default of `worker`.'
     WorkflowEdgeMatchingStrategy:
       type: string
       enum:
@@ -9626,7 +9615,7 @@ components:
       additionalProperties: false
       description: Durable condition wait. Exactly one of `poll` or `observable` must be set.
         Poll waits evaluate direct checks; Observable waits read reusable project-scoped Observable
-        state and park on change events.
+        state and suspend on change events.
       properties:
         poll:
           $ref: '#/components/schemas/WorkflowWaitUntilPollConfig'
@@ -9769,7 +9758,7 @@ components:
         opening_message:
           type: string
           minLength: 1
-          description: Opening brief posted into the channel before the workflow parks.
+          description: Opening brief posted into the channel before the workflow suspends.
         completion_behavior:
           type: string
           enum:
@@ -9820,7 +9809,7 @@ components:
         tags:
           $ref: '#/components/schemas/TagMap'
           description: Resource tags applied to this workflow. Inherited by runs at start
-            time; see `WorkflowRun.tags`.
+            time; see `Run.tags`.
         created_at:
           type: string
           format: date-time
@@ -9959,7 +9948,7 @@ components:
           description: The list of workflow versions, newest first.
           items:
             $ref: '#/components/schemas/WorkflowVersionSummary'
-    WorkflowRunStatus:
+    RunStatus:
       type: string
       enum:
       - active
@@ -9967,7 +9956,7 @@ components:
       - failed
       description: Public run lifecycle. Path-level fields explain why an active run is working,
         waiting, sleeping, retrying, paused, or blocked at a join.
-    WorkflowRunPathState:
+    RunPathState:
       type: string
       enum:
       - working
@@ -9975,7 +9964,7 @@ components:
       - completed
       - failed
       description: Current state of one execution path.
-    WorkflowRunWaitKind:
+    RunWaitKind:
       type: string
       enum:
       - sleep
@@ -9987,14 +9976,14 @@ components:
       - wait_event
       - wait_until
       description: What a waiting path is blocked on.
-    WorkflowRunWaitDetail:
+    RunWaitDetail:
       type: object
       additionalProperties: false
       required:
       - kind
       properties:
         kind:
-          $ref: '#/components/schemas/WorkflowRunWaitKind'
+          $ref: '#/components/schemas/RunWaitKind'
         wake_at:
           type: string
           format: date-time
@@ -10047,7 +10036,7 @@ components:
         observed_version:
           type: integer
           format: int64
-          description: Observable version observed before the path parked.
+          description: Observable version observed before the path suspended.
         poll_action:
           type: string
           description: Poll action name for `wait_until` waits.
@@ -10073,7 +10062,7 @@ components:
         last_error_message:
           type: string
           description: Latest poll error message for `wait_until`.
-    WorkflowRunPath:
+    RunPath:
       type: object
       additionalProperties: false
       required:
@@ -10084,9 +10073,9 @@ components:
           type: string
           description: Stable execution path identifier, e.g. `main` or `main/each/0`.
         state:
-          $ref: '#/components/schemas/WorkflowRunPathState'
+          $ref: '#/components/schemas/RunPathState'
         waiting_on:
-          $ref: '#/components/schemas/WorkflowRunWaitDetail'
+          $ref: '#/components/schemas/RunWaitDetail'
           description: Present when `state` is `waiting`.
         error_type:
           type: string
@@ -10094,7 +10083,7 @@ components:
         error_message:
           type: string
           description: Path-local failure message when state is `failed`.
-    WorkflowRunPathCounts:
+    RunPathCounts:
       type: object
       additionalProperties: false
       required:
@@ -10119,7 +10108,7 @@ components:
           type: integer
         failed:
           type: integer
-    WorkflowRunWaitSummary:
+    RunWaitSummary:
       type: object
       additionalProperties: false
       required:
@@ -10150,7 +10139,7 @@ components:
           type: array
           items:
             type: string
-    WorkflowRunJobCounts:
+    RunJobCounts:
       type: object
       additionalProperties: false
       required:
@@ -10171,7 +10160,7 @@ components:
           type: integer
         claimed:
           type: integer
-    WorkflowRunStepCounts:
+    RunStepCounts:
       type: object
       additionalProperties: false
       required:
@@ -10198,7 +10187,7 @@ components:
           type: integer
         cancelled:
           type: integer
-    WorkflowRunError:
+    RunError:
       type: object
       additionalProperties: false
       required:
@@ -10211,7 +10200,7 @@ components:
           type: string
         error_message:
           type: string
-    WorkflowRun:
+    Run:
       type: object
       description: Runtime record for one workflow execution.
       additionalProperties: true
@@ -10256,25 +10245,25 @@ components:
           type: string
           description: Name of the workflow as recorded at run creation time.
         status:
-          $ref: '#/components/schemas/WorkflowRunStatus'
+          $ref: '#/components/schemas/RunStatus'
           description: Public lifecycle for this run.
         path_counts:
-          $ref: '#/components/schemas/WorkflowRunPathCounts'
+          $ref: '#/components/schemas/RunPathCounts'
           description: Current path counts derived from the run projection.
         job_counts:
-          $ref: '#/components/schemas/WorkflowRunJobCounts'
-          description: Live work-pool summary derived from the run projection. See `WorkflowRunJobCounts`.
+          $ref: '#/components/schemas/RunJobCounts'
+          description: Live work-pool summary derived from the run projection. See `RunJobCounts`.
         step_counts:
-          $ref: '#/components/schemas/WorkflowRunStepCounts'
-          description: Durable run-step counts grouped by status. See `WorkflowRunStepCounts`.
+          $ref: '#/components/schemas/RunStepCounts'
+          description: Durable run-step counts grouped by status. See `RunStepCounts`.
         wait_summary:
-          $ref: '#/components/schemas/WorkflowRunWaitSummary'
+          $ref: '#/components/schemas/RunWaitSummary'
           description: Always-present aggregate of waiting paths.
         errors:
           type: array
           description: Run-level errors that caused a failed lifecycle.
           items:
-            $ref: '#/components/schemas/WorkflowRunError'
+            $ref: '#/components/schemas/RunError'
         attempt:
           type: integer
           description: Retry attempt number (1-based). Increments each time the run is retried.
@@ -10328,7 +10317,8 @@ components:
         started_at:
           type: string
           format: date-time
-          description: Timestamp when a worker first claimed this run.
+          description: Timestamp when this run transitioned out of initial progression and
+            began executing steps.
         completed_at:
           type: string
           format: date-time
@@ -10522,6 +10512,7 @@ components:
         started_at:
           type: string
           format: date-time
+          description: Timestamp when execution of this step attempt began.
         completed_at:
           type: string
           format: date-time
@@ -10569,7 +10560,7 @@ components:
           type: boolean
         next_cursor:
           type: string
-    WorkflowRunListResponse:
+    RunListResponse:
       type: object
       description: Paginated list of workflow runs.
       additionalProperties: false
@@ -10581,7 +10572,7 @@ components:
           type: array
           description: The list of results for this page.
           items:
-            $ref: '#/components/schemas/WorkflowRun'
+            $ref: '#/components/schemas/Run'
         has_more:
           type: boolean
           description: True when more pages are available.
@@ -10589,11 +10580,11 @@ components:
           type: string
           description: Opaque cursor for fetching the next page. Present only when has_more
             is true.
-    WorkflowRunDetail:
+    RunDetail:
       description: Detailed workflow run including its spec snapshot, terminal result, and
         the first page of run steps.
       allOf:
-      - $ref: '#/components/schemas/WorkflowRun'
+      - $ref: '#/components/schemas/Run'
       - type: object
         required:
         - paths
@@ -10603,7 +10594,7 @@ components:
             type: array
             description: Current path-level execution projection for this run.
             items:
-              $ref: '#/components/schemas/WorkflowRunPath'
+              $ref: '#/components/schemas/RunPath'
           spec:
             $ref: '#/components/schemas/WorkflowSpec'
             description: Spec snapshot used to execute this run.
@@ -11720,7 +11711,7 @@ components:
       - none
       - user
       - agent
-      - workflow_run
+      - run
       - worker_session
       - service
     EnvironmentRetentionPolicy:
@@ -12591,7 +12582,7 @@ components:
       - step_id
       - wait_kind
       - status
-      description: A previously-parked wait the handler observed completing during replay.
+      description: A previously-suspended wait the handler observed completing during replay.
         Code-spec jobs only. The status is typically `completed`; `failed` is used when the
         wait raised a timeout the handler is surfacing back through the ledger.
       properties:
@@ -12673,8 +12664,8 @@ components:
       - step_id
       - wait
       description: 'Terminal: the code handler hit a wait it could not satisfy locally and
-        is yielding control. Code-spec jobs only. The server parks the run on `wait`; on resume
-        a fresh code-invoke job is emitted.'
+        is yielding control. Code-spec jobs only. The server suspends the run on `wait`; on
+        resume a fresh code-invoke job is emitted.'
       properties:
         kind:
           type: string
@@ -13322,7 +13313,7 @@ components:
           description: Platform event type to match, e.g. `run.completed`.
         actor_state:
           $ref: '#/components/schemas/ActorStateTriggerSourceConfig'
-          description: Transition filter for `actor_state.changed` event triggers.
+          description: Transition filter for `actor.state.changed` event triggers.
     ActorStateTriggerSourceConfig:
       type: object
       additionalProperties: false
@@ -14924,7 +14915,7 @@ components:
       properties:
         name:
           type: string
-          description: Workflow-callable action name (`github.create-comment`).
+          description: Workflow-callable action name (`github.issue.create_comment`).
         title:
           type: string
         description:
@@ -15703,10 +15694,14 @@ components:
           type: object
           additionalProperties: true
           description: Arbitrary capability map used by orchestrators to select suitable agents.
-        config:
-          type: object
-          additionalProperties: true
-          description: Agent-specific configuration blob stored and returned opaquely.
+        model:
+          type: string
+          description: Anthropic model identifier for platform agents (e.g. `claude-sonnet-4-6`).
+            Empty string falls back to the platform default.
+        system_prompt:
+          type: string
+          description: Custom system prompt for platform agents. Empty string uses the generated
+            default based on the agent name.
         status:
           $ref: '#/components/schemas/AgentStatus'
           description: 'Current agent status: `active` or `inactive`.'
@@ -16293,10 +16288,14 @@ components:
           type: object
           additionalProperties: true
           description: Arbitrary capability map used by orchestrators to select suitable agents.
-        config:
-          type: object
-          additionalProperties: true
-          description: Agent-specific configuration stored and returned opaquely.
+        model:
+          type: string
+          description: Anthropic model identifier for platform agents (e.g. `claude-sonnet-4-6`).
+            Empty falls back to the platform default.
+        system_prompt:
+          type: string
+          description: Custom system prompt for platform agents. Empty uses the generated
+            default.
         tags:
           $ref: '#/components/schemas/TagMap'
           description: Initial tag set.
@@ -16328,10 +16327,12 @@ components:
           type: object
           additionalProperties: true
           description: Replacement capability map.
-        config:
-          type: object
-          additionalProperties: true
-          description: Replacement configuration blob.
+        model:
+          type: string
+          description: Replacement Anthropic model identifier for platform agents.
+        system_prompt:
+          type: string
+          description: Replacement system prompt for platform agents.
         status:
           $ref: '#/components/schemas/AgentStatus'
           description: 'Replacement agent status: `active` or `inactive`.'
@@ -17902,7 +17903,7 @@ components:
         observed_version:
           type: integer
           format: int64
-          description: Observable version observed when this path parked.
+          description: Observable version observed when this path suspended.
         deadline_at:
           type: string
           format: date-time

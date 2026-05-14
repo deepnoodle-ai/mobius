@@ -949,10 +949,10 @@ const (
 	EntityReferenceTypeGroup              EntityReferenceType = "group"
 	EntityReferenceTypeInteraction        EntityReferenceType = "interaction"
 	EntityReferenceTypeJob                EntityReferenceType = "job"
+	EntityReferenceTypeRun                EntityReferenceType = "run"
 	EntityReferenceTypeRunStep            EntityReferenceType = "run_step"
 	EntityReferenceTypeUser               EntityReferenceType = "user"
 	EntityReferenceTypeWorkflowDefinition EntityReferenceType = "workflow_definition"
-	EntityReferenceTypeWorkflowRun        EntityReferenceType = "workflow_run"
 )
 
 // Valid indicates whether the value is a known member of the EntityReferenceType enum.
@@ -968,13 +968,13 @@ func (e EntityReferenceType) Valid() bool {
 		return true
 	case EntityReferenceTypeJob:
 		return true
+	case EntityReferenceTypeRun:
+		return true
 	case EntityReferenceTypeRunStep:
 		return true
 	case EntityReferenceTypeUser:
 		return true
 	case EntityReferenceTypeWorkflowDefinition:
-		return true
-	case EntityReferenceTypeWorkflowRun:
 		return true
 	default:
 		return false
@@ -1051,10 +1051,10 @@ func (e EnvironmentLeaseStatus) Valid() bool {
 const (
 	EnvironmentOwnerTypeAgent         EnvironmentOwnerType = "agent"
 	EnvironmentOwnerTypeNone          EnvironmentOwnerType = "none"
+	EnvironmentOwnerTypeRun           EnvironmentOwnerType = "run"
 	EnvironmentOwnerTypeService       EnvironmentOwnerType = "service"
 	EnvironmentOwnerTypeUser          EnvironmentOwnerType = "user"
 	EnvironmentOwnerTypeWorkerSession EnvironmentOwnerType = "worker_session"
-	EnvironmentOwnerTypeWorkflowRun   EnvironmentOwnerType = "workflow_run"
 )
 
 // Valid indicates whether the value is a known member of the EnvironmentOwnerType enum.
@@ -1064,13 +1064,13 @@ func (e EnvironmentOwnerType) Valid() bool {
 		return true
 	case EnvironmentOwnerTypeNone:
 		return true
+	case EnvironmentOwnerTypeRun:
+		return true
 	case EnvironmentOwnerTypeService:
 		return true
 	case EnvironmentOwnerTypeUser:
 		return true
 	case EnvironmentOwnerTypeWorkerSession:
-		return true
-	case EnvironmentOwnerTypeWorkflowRun:
 		return true
 	default:
 		return false
@@ -2235,6 +2235,111 @@ func (e ReviewPolicyType) Valid() bool {
 	}
 }
 
+// Defines values for RunErrorType.
+const (
+	RunErrorTypeOutputExtractionFailed RunErrorType = "output_extraction_failed"
+	RunErrorTypeOutputValidationFailed RunErrorType = "output_validation_failed"
+	RunErrorTypeRunCancelled           RunErrorType = "run_cancelled"
+	RunErrorTypeRunFailed              RunErrorType = "run_failed"
+	RunErrorTypeRunTimeout             RunErrorType = "run_timeout"
+	RunErrorTypeStepFailed             RunErrorType = "step_failed"
+)
+
+// Valid indicates whether the value is a known member of the RunErrorType enum.
+func (e RunErrorType) Valid() bool {
+	switch e {
+	case RunErrorTypeOutputExtractionFailed:
+		return true
+	case RunErrorTypeOutputValidationFailed:
+		return true
+	case RunErrorTypeRunCancelled:
+		return true
+	case RunErrorTypeRunFailed:
+		return true
+	case RunErrorTypeRunTimeout:
+		return true
+	case RunErrorTypeStepFailed:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RunDetailErrorType.
+const (
+	RunDetailErrorTypeOutputExtractionFailed RunDetailErrorType = "output_extraction_failed"
+	RunDetailErrorTypeOutputValidationFailed RunDetailErrorType = "output_validation_failed"
+	RunDetailErrorTypeRunCancelled           RunDetailErrorType = "run_cancelled"
+	RunDetailErrorTypeRunFailed              RunDetailErrorType = "run_failed"
+	RunDetailErrorTypeRunTimeout             RunDetailErrorType = "run_timeout"
+	RunDetailErrorTypeStepFailed             RunDetailErrorType = "step_failed"
+)
+
+// Valid indicates whether the value is a known member of the RunDetailErrorType enum.
+func (e RunDetailErrorType) Valid() bool {
+	switch e {
+	case RunDetailErrorTypeOutputExtractionFailed:
+		return true
+	case RunDetailErrorTypeOutputValidationFailed:
+		return true
+	case RunDetailErrorTypeRunCancelled:
+		return true
+	case RunDetailErrorTypeRunFailed:
+		return true
+	case RunDetailErrorTypeRunTimeout:
+		return true
+	case RunDetailErrorTypeStepFailed:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RunPathState.
+const (
+	RunPathStateCompleted RunPathState = "completed"
+	RunPathStateFailed    RunPathState = "failed"
+	RunPathStateWaiting   RunPathState = "waiting"
+	RunPathStateWorking   RunPathState = "working"
+)
+
+// Valid indicates whether the value is a known member of the RunPathState enum.
+func (e RunPathState) Valid() bool {
+	switch e {
+	case RunPathStateCompleted:
+		return true
+	case RunPathStateFailed:
+		return true
+	case RunPathStateWaiting:
+		return true
+	case RunPathStateWorking:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RunStatus.
+const (
+	RunStatusActive    RunStatus = "active"
+	RunStatusCompleted RunStatus = "completed"
+	RunStatusFailed    RunStatus = "failed"
+)
+
+// Valid indicates whether the value is a known member of the RunStatus enum.
+func (e RunStatus) Valid() bool {
+	switch e {
+	case RunStatusActive:
+		return true
+	case RunStatusCompleted:
+		return true
+	case RunStatusFailed:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for RunStepKind.
 const (
 	RunStepKindControl      RunStepKind = "control"
@@ -2298,6 +2403,42 @@ func (e RunStepStatus) Valid() bool {
 	case RunStepStatusRunning:
 		return true
 	case RunStepStatusSkipped:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RunWaitKind.
+const (
+	RunWaitKindInteraction RunWaitKind = "interaction"
+	RunWaitKindJoin        RunWaitKind = "join"
+	RunWaitKindPause       RunWaitKind = "pause"
+	RunWaitKindRetry       RunWaitKind = "retry"
+	RunWaitKindSignal      RunWaitKind = "signal"
+	RunWaitKindSleep       RunWaitKind = "sleep"
+	RunWaitKindWaitEvent   RunWaitKind = "wait_event"
+	RunWaitKindWaitUntil   RunWaitKind = "wait_until"
+)
+
+// Valid indicates whether the value is a known member of the RunWaitKind enum.
+func (e RunWaitKind) Valid() bool {
+	switch e {
+	case RunWaitKindInteraction:
+		return true
+	case RunWaitKindJoin:
+		return true
+	case RunWaitKindPause:
+		return true
+	case RunWaitKindRetry:
+		return true
+	case RunWaitKindSignal:
+		return true
+	case RunWaitKindSleep:
+		return true
+	case RunWaitKindWaitEvent:
+		return true
+	case RunWaitKindWaitUntil:
 		return true
 	default:
 		return false
@@ -3054,24 +3195,6 @@ func (e WorkerSessionJobRefStatus) Valid() bool {
 	}
 }
 
-// Defines values for WorkflowActionKind.
-const (
-	WorkflowActionKindServer WorkflowActionKind = "server"
-	WorkflowActionKindWorker WorkflowActionKind = "worker"
-)
-
-// Valid indicates whether the value is a known member of the WorkflowActionKind enum.
-func (e WorkflowActionKind) Valid() bool {
-	switch e {
-	case WorkflowActionKindServer:
-		return true
-	case WorkflowActionKindWorker:
-		return true
-	default:
-		return false
-	}
-}
-
 // Defines values for WorkflowEdgeMatchingStrategy.
 const (
 	WorkflowEdgeMatchingStrategyAll   WorkflowEdgeMatchingStrategy = "all"
@@ -3144,147 +3267,6 @@ func (e WorkflowRetryJitterStrategy) Valid() bool {
 	case WorkflowRetryJitterStrategyFULL:
 		return true
 	case WorkflowRetryJitterStrategyNONE:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for WorkflowRunErrorType.
-const (
-	WorkflowRunErrorTypeOutputExtractionFailed WorkflowRunErrorType = "output_extraction_failed"
-	WorkflowRunErrorTypeOutputValidationFailed WorkflowRunErrorType = "output_validation_failed"
-	WorkflowRunErrorTypeRunCancelled           WorkflowRunErrorType = "run_cancelled"
-	WorkflowRunErrorTypeRunFailed              WorkflowRunErrorType = "run_failed"
-	WorkflowRunErrorTypeRunTimeout             WorkflowRunErrorType = "run_timeout"
-	WorkflowRunErrorTypeStepFailed             WorkflowRunErrorType = "step_failed"
-)
-
-// Valid indicates whether the value is a known member of the WorkflowRunErrorType enum.
-func (e WorkflowRunErrorType) Valid() bool {
-	switch e {
-	case WorkflowRunErrorTypeOutputExtractionFailed:
-		return true
-	case WorkflowRunErrorTypeOutputValidationFailed:
-		return true
-	case WorkflowRunErrorTypeRunCancelled:
-		return true
-	case WorkflowRunErrorTypeRunFailed:
-		return true
-	case WorkflowRunErrorTypeRunTimeout:
-		return true
-	case WorkflowRunErrorTypeStepFailed:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for WorkflowRunDetailErrorType.
-const (
-	WorkflowRunDetailErrorTypeOutputExtractionFailed WorkflowRunDetailErrorType = "output_extraction_failed"
-	WorkflowRunDetailErrorTypeOutputValidationFailed WorkflowRunDetailErrorType = "output_validation_failed"
-	WorkflowRunDetailErrorTypeRunCancelled           WorkflowRunDetailErrorType = "run_cancelled"
-	WorkflowRunDetailErrorTypeRunFailed              WorkflowRunDetailErrorType = "run_failed"
-	WorkflowRunDetailErrorTypeRunTimeout             WorkflowRunDetailErrorType = "run_timeout"
-	WorkflowRunDetailErrorTypeStepFailed             WorkflowRunDetailErrorType = "step_failed"
-)
-
-// Valid indicates whether the value is a known member of the WorkflowRunDetailErrorType enum.
-func (e WorkflowRunDetailErrorType) Valid() bool {
-	switch e {
-	case WorkflowRunDetailErrorTypeOutputExtractionFailed:
-		return true
-	case WorkflowRunDetailErrorTypeOutputValidationFailed:
-		return true
-	case WorkflowRunDetailErrorTypeRunCancelled:
-		return true
-	case WorkflowRunDetailErrorTypeRunFailed:
-		return true
-	case WorkflowRunDetailErrorTypeRunTimeout:
-		return true
-	case WorkflowRunDetailErrorTypeStepFailed:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for WorkflowRunPathState.
-const (
-	WorkflowRunPathStateCompleted WorkflowRunPathState = "completed"
-	WorkflowRunPathStateFailed    WorkflowRunPathState = "failed"
-	WorkflowRunPathStateWaiting   WorkflowRunPathState = "waiting"
-	WorkflowRunPathStateWorking   WorkflowRunPathState = "working"
-)
-
-// Valid indicates whether the value is a known member of the WorkflowRunPathState enum.
-func (e WorkflowRunPathState) Valid() bool {
-	switch e {
-	case WorkflowRunPathStateCompleted:
-		return true
-	case WorkflowRunPathStateFailed:
-		return true
-	case WorkflowRunPathStateWaiting:
-		return true
-	case WorkflowRunPathStateWorking:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for WorkflowRunStatus.
-const (
-	WorkflowRunStatusActive    WorkflowRunStatus = "active"
-	WorkflowRunStatusCompleted WorkflowRunStatus = "completed"
-	WorkflowRunStatusFailed    WorkflowRunStatus = "failed"
-)
-
-// Valid indicates whether the value is a known member of the WorkflowRunStatus enum.
-func (e WorkflowRunStatus) Valid() bool {
-	switch e {
-	case WorkflowRunStatusActive:
-		return true
-	case WorkflowRunStatusCompleted:
-		return true
-	case WorkflowRunStatusFailed:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for WorkflowRunWaitKind.
-const (
-	WorkflowRunWaitKindInteraction WorkflowRunWaitKind = "interaction"
-	WorkflowRunWaitKindJoin        WorkflowRunWaitKind = "join"
-	WorkflowRunWaitKindPause       WorkflowRunWaitKind = "pause"
-	WorkflowRunWaitKindRetry       WorkflowRunWaitKind = "retry"
-	WorkflowRunWaitKindSignal      WorkflowRunWaitKind = "signal"
-	WorkflowRunWaitKindSleep       WorkflowRunWaitKind = "sleep"
-	WorkflowRunWaitKindWaitEvent   WorkflowRunWaitKind = "wait_event"
-	WorkflowRunWaitKindWaitUntil   WorkflowRunWaitKind = "wait_until"
-)
-
-// Valid indicates whether the value is a known member of the WorkflowRunWaitKind enum.
-func (e WorkflowRunWaitKind) Valid() bool {
-	switch e {
-	case WorkflowRunWaitKindInteraction:
-		return true
-	case WorkflowRunWaitKindJoin:
-		return true
-	case WorkflowRunWaitKindPause:
-		return true
-	case WorkflowRunWaitKindRetry:
-		return true
-	case WorkflowRunWaitKindSignal:
-		return true
-	case WorkflowRunWaitKindSleep:
-		return true
-	case WorkflowRunWaitKindWaitEvent:
-		return true
-	case WorkflowRunWaitKindWaitUntil:
 		return true
 	default:
 		return false
@@ -3866,12 +3848,9 @@ type Agent struct {
 	Capabilities *map[string]interface{} `json:"capabilities,omitempty"`
 
 	// Color Display color for this agent in UI surfaces such as channel avatars and message rails. One of the Mantine color palette keys (e.g. `indigo`, `teal`, `grape`); empty string falls back to a hash-derived color.
-	Color *string `json:"color,omitempty"`
-
-	// Config Agent-specific configuration blob stored and returned opaquely.
-	Config               *map[string]interface{} `json:"config,omitempty"`
-	ConnectionLastSeenAt *time.Time              `json:"connection_last_seen_at,omitempty"`
-	ConnectionStatus     ActorConnectionStatus   `json:"connection_status"`
+	Color                *string               `json:"color,omitempty"`
+	ConnectionLastSeenAt *time.Time            `json:"connection_last_seen_at,omitempty"`
+	ConnectionStatus     ActorConnectionStatus `json:"connection_status"`
 
 	// CreatedAt Timestamp when this agent was created.
 	CreatedAt time.Time `json:"created_at"`
@@ -3888,6 +3867,9 @@ type Agent struct {
 	// Kind Freeform agent classification for tooling and filtering (e.g. "llm", "rpa").
 	Kind *string `json:"kind,omitempty"`
 
+	// Model Anthropic model identifier for platform agents (e.g. `claude-sonnet-4-6`). Empty string falls back to the platform default.
+	Model *string `json:"model,omitempty"`
+
 	// Name Mutable unique name within the project. Free-form human-readable label; use `id` for stable references and job targeting.
 	Name string `json:"name"`
 
@@ -3900,6 +3882,9 @@ type Agent struct {
 
 	// Status Administrative status. Inactive agents cannot claim new jobs.
 	Status AgentStatus `json:"status"`
+
+	// SystemPrompt Custom system prompt for platform agents. Empty string uses the generated default based on the agent name.
+	SystemPrompt *string `json:"system_prompt,omitempty"`
 
 	// Tags Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints.
 	Tags *TagMap `json:"tags,omitempty"`
@@ -4592,14 +4577,14 @@ type CreateAgentRequest struct {
 	// Color Display color for this agent (Mantine palette key, e.g. `indigo`). Optional; empty falls back to a hash-derived color.
 	Color *string `json:"color,omitempty"`
 
-	// Config Agent-specific configuration stored and returned opaquely.
-	Config *map[string]interface{} `json:"config,omitempty"`
-
 	// Description Optional human-readable description.
 	Description *string `json:"description,omitempty"`
 
 	// Kind Freeform classification (e.g. "llm", "rpa", "integration").
 	Kind *string `json:"kind,omitempty"`
+
+	// Model Anthropic model identifier for platform agents (e.g. `claude-sonnet-4-6`). Empty falls back to the platform default.
+	Model *string `json:"model,omitempty"`
 
 	// Name Project-scoped unique name for this agent. Free-form human-readable label, 1-63 characters.
 	Name string `json:"name"`
@@ -4609,6 +4594,9 @@ type CreateAgentRequest struct {
 
 	// ServiceAccountId Service account that backs this agent. Must be active, belong to the same project, and currently back zero other agents. If omitted, a new service account is auto-created with the same name as the agent.
 	ServiceAccountId *string `json:"service_account_id,omitempty"`
+
+	// SystemPrompt Custom system prompt for platform agents. Empty uses the generated default.
+	SystemPrompt *string `json:"system_prompt,omitempty"`
 
 	// Tags Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints.
 	Tags *TagMap `json:"tags,omitempty"`
@@ -5235,7 +5223,7 @@ type CreateWorkflowRequest struct {
 	//
 	// Exactly one of `steps` or `code` must be set; setting both, or neither, is rejected by the schema's `oneOf` constraint.
 	//
-	// Authoring rule for spec-step workflows: `action` is the canonical field for executable steps. When `action_kind` is omitted, `action` uses worker/job semantics. Use `action_kind: "server"` for Mobius-managed server actions such as platform integrations or custom HTTP-backed actions.
+	// Authoring rule for spec-step workflows: `action` is the canonical field for executable steps. The engine routes each action step to the right executor based on the action's registered `runs_on` metadata — there is no author-side kind hint. Platform-owned actions are claimed by the in-daemon worker pool; customer- registered actions are claimed by the customer's deployed workers over the standard `/v1/.../jobs/claim` surface.
 	Spec WorkflowSpec `json:"spec"`
 
 	// Tags Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints.
@@ -5831,7 +5819,7 @@ type IntegrationProviderAction struct {
 	// InputSchema JSON Schema for the action's parameters object.
 	InputSchema *map[string]interface{} `json:"input_schema,omitempty"`
 
-	// Name Workflow-callable action name (`github.create-comment`).
+	// Name Workflow-callable action name (`github.issue.create_comment`).
 	Name string `json:"name"`
 
 	// OutputSchema JSON Schema for the action's result object.
@@ -6799,7 +6787,7 @@ type ObservableWaiter struct {
 	// DeadlineAt Fixed timeout deadline for the wait, when configured.
 	DeadlineAt *time.Time `json:"deadline_at,omitempty"`
 
-	// ObservedVersion Observable version observed when this path parked.
+	// ObservedVersion Observable version observed when this path suspended.
 	ObservedVersion int64                     `json:"observed_version"`
 	PathId          string                    `json:"path_id"`
 	RunCreatedAt    time.Time                 `json:"run_created_at"`
@@ -6873,7 +6861,7 @@ type OutcomeStepDoneKind string
 // OutcomeStepDoneStatus defines model for OutcomeStepDone.Status.
 type OutcomeStepDoneStatus string
 
-// OutcomeSuspend Terminal: the code handler hit a wait it could not satisfy locally and is yielding control. Code-spec jobs only. The server parks the run on `wait`; on resume a fresh code-invoke job is emitted.
+// OutcomeSuspend Terminal: the code handler hit a wait it could not satisfy locally and is yielding control. Code-spec jobs only. The server suspends the run on `wait`; on resume a fresh code-invoke job is emitted.
 type OutcomeSuspend struct {
 	Kind OutcomeSuspendKind `json:"kind"`
 
@@ -6887,7 +6875,7 @@ type OutcomeSuspend struct {
 // OutcomeSuspendKind defines model for OutcomeSuspend.Kind.
 type OutcomeSuspendKind string
 
-// OutcomeWaitObserved A previously-parked wait the handler observed completing during replay. Code-spec jobs only. The status is typically `completed`; `failed` is used when the wait raised a timeout the handler is surfacing back through the ledger.
+// OutcomeWaitObserved A previously-suspended wait the handler observed completing during replay. Code-spec jobs only. The status is typically `completed`; `failed` is used when the wait raised a timeout the handler is surfacing back through the ledger.
 type OutcomeWaitObserved struct {
 	Attempt      *int                    `json:"attempt,omitempty"`
 	ErrorMessage *string                 `json:"error_message,omitempty"`
@@ -7298,6 +7286,113 @@ type RotateSecretResult struct {
 	SigningSecret string `json:"signing_secret"`
 }
 
+// Run Runtime record for one workflow execution.
+type Run struct {
+	// ActorId ID of the actor that started this run.
+	ActorId *string `json:"actor_id,omitempty"`
+
+	// ActorType Type of the actor that started this run (user, service_account, system).
+	ActorType *string `json:"actor_type,omitempty"`
+
+	// Attempt Retry attempt number (1-based). Increments each time the run is retried.
+	Attempt int `json:"attempt"`
+
+	// CancelRequestedAt Timestamp when cancellation was requested.
+	CancelRequestedAt *time.Time `json:"cancel_requested_at,omitempty"`
+
+	// CompletedAt Timestamp when this run reached a terminal state.
+	CompletedAt *time.Time `json:"completed_at,omitempty"`
+
+	// CreatedAt Timestamp when this run was created.
+	CreatedAt time.Time `json:"created_at"`
+
+	// DefaultStepConfig Frozen config resolution in flat entry form. Keys unset at every layer are omitted. See PRD 035.
+	DefaultStepConfig *ResolvedConfig `json:"default_step_config,omitempty"`
+
+	// DefinitionId ID of the workflow definition this run was started from. Present only when `ephemeral` is false; omitted for ephemeral runs started from an inline spec.
+	DefinitionId *string `json:"definition_id,omitempty"`
+
+	// DefinitionVersion Version number of the workflow definition this run was started from. Present only when `ephemeral` is false.
+	DefinitionVersion *int `json:"definition_version,omitempty"`
+
+	// Ephemeral True when the run was started from an inline spec rather than a saved workflow definition. Derived server-side; always present on the response. When true, `definition_id` and `definition_version` are omitted.
+	Ephemeral bool `json:"ephemeral"`
+
+	// ErrorMessage Error message from the most recent failure. Present when status is failed.
+	ErrorMessage *string `json:"error_message,omitempty"`
+
+	// ErrorType Typed run-level failure cause: `run_timeout`, `run_cancelled`, `step_failed`, `run_failed`, `output_extraction_failed`, or `output_validation_failed`. Its own vocabulary, not a superset of the job-level `error_type`. Present when `status=failed`.
+	ErrorType *RunErrorType `json:"error_type,omitempty"`
+
+	// Errors Run-level errors that caused a failed lifecycle.
+	Errors []RunError `json:"errors"`
+
+	// ExternalId Caller-supplied logical correlation key for this run. Unique within the project; identifies a logical job across attempts. See the `external_id` description on `POST /runs` for the conflict semantics that govern duplicate values.
+	ExternalId *string         `json:"external_id,omitempty"`
+	ForkedFrom *RunForkLineage `json:"forked_from,omitempty"`
+
+	// Id Unique identifier for this run.
+	Id string `json:"id"`
+
+	// Inputs Input values provided when the run was started.
+	Inputs *map[string]interface{} `json:"inputs,omitempty"`
+
+	// JobCounts Live work-pool summary for this run. Reflects the transient state of the worker job queue, not durable step progress — terminal jobs are swept on a TTL and stop contributing to these counts. Use `step_counts` for run-progress UI; use this field to answer "is anything claimable right now and is a worker holding it?". `ready` counts pending jobs whose `scheduled_at` has arrived and can be claimed now; `scheduled` counts pending jobs intentionally waiting for a future retry/backoff; `claimed` counts jobs currently held by workers.
+	JobCounts RunJobCounts `json:"job_counts"`
+
+	// Metadata Caller-supplied string metadata attached to the run.
+	Metadata *map[string]string `json:"metadata,omitempty"`
+
+	// ParentRunId ID of the parent run, when this is a child run spawned by a fan-out step.
+	ParentRunId *string `json:"parent_run_id,omitempty"`
+
+	// PathCounts Current path counts. Invariants: `total = working + waiting + completed + failed`; `active = working + waiting`.
+	PathCounts RunPathCounts `json:"path_counts"`
+
+	// Queue Queue this run was enqueued on.
+	Queue *string `json:"queue,omitempty"`
+
+	// ResolvedConfig Frozen config resolution in flat entry form. Keys unset at every layer are omitted. See PRD 035.
+	ResolvedConfig *ResolvedConfig `json:"resolved_config,omitempty"`
+
+	// SourceId Identifier for the run source within its source type.
+	SourceId *string `json:"source_id,omitempty"`
+
+	// SourceLabel Human-readable label for the run source.
+	SourceLabel *string `json:"source_label,omitempty"`
+
+	// SourceType Type of source that requested this run (api, trigger, slack, fork, tool).
+	SourceType *string `json:"source_type,omitempty"`
+
+	// StartedAt Timestamp when this run transitioned out of initial progression and began executing steps.
+	StartedAt *time.Time `json:"started_at,omitempty"`
+
+	// Status Public run lifecycle. Path-level fields explain why an active run is working, waiting, sleeping, retrying, paused, or blocked at a join.
+	Status RunStatus `json:"status"`
+
+	// StepCounts Aggregate count of run-step rows for this run grouped by status. Counts every attempt of every step (one row per step x attempt x path), so it reflects durable progress rather than the live worker pool. Use this for run-progress UI; use `job_counts` for live claimability.
+	StepCounts RunStepCounts `json:"step_counts"`
+
+	// Tags Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints.
+	Tags *TagMap `json:"tags,omitempty"`
+
+	// UpdatedAt Timestamp when this run was last updated.
+	UpdatedAt time.Time `json:"updated_at"`
+
+	// WaitSummary Always-present aggregate of waiting paths.
+	WaitSummary RunWaitSummary `json:"wait_summary"`
+
+	// WallClockDeadlineAt Deadline at which the reaper will fail this run with `error_type=run_timeout` if it has not reached a terminal state. Present only when `resolved_config` contains a `key="runs.timeouts.execution"` entry whose value resolves to a finite duration. Anchored to `created_at`.
+	WallClockDeadlineAt *time.Time `json:"wall_clock_deadline_at,omitempty"`
+
+	// WorkflowName Name of the workflow as recorded at run creation time.
+	WorkflowName         string                 `json:"workflow_name"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// RunErrorType Typed run-level failure cause: `run_timeout`, `run_cancelled`, `step_failed`, `run_failed`, `output_extraction_failed`, or `output_validation_failed`. Its own vocabulary, not a superset of the job-level `error_type`. Present when `status=failed`.
+type RunErrorType string
+
 // RunActionRequest defines model for RunActionRequest.
 type RunActionRequest struct {
 	// DryRun When true, invokes the action without side effects. Only effective for actions that support dry-run mode.
@@ -7345,6 +7440,150 @@ type RunConsumer struct {
 	SignalName string `json:"signal_name"`
 }
 
+// RunDetail defines model for RunDetail.
+type RunDetail struct {
+	// ActorId ID of the actor that started this run.
+	ActorId *string `json:"actor_id,omitempty"`
+
+	// ActorType Type of the actor that started this run (user, service_account, system).
+	ActorType *string `json:"actor_type,omitempty"`
+
+	// Attempt Retry attempt number (1-based). Increments each time the run is retried.
+	Attempt int `json:"attempt"`
+
+	// CancelRequestedAt Timestamp when cancellation was requested.
+	CancelRequestedAt *time.Time `json:"cancel_requested_at,omitempty"`
+
+	// CompletedAt Timestamp when this run reached a terminal state.
+	CompletedAt *time.Time `json:"completed_at,omitempty"`
+
+	// CreatedAt Timestamp when this run was created.
+	CreatedAt time.Time `json:"created_at"`
+
+	// DefaultStepConfig Frozen config resolution in flat entry form. Keys unset at every layer are omitted. See PRD 035.
+	DefaultStepConfig *ResolvedConfig `json:"default_step_config,omitempty"`
+
+	// DefinitionId ID of the workflow definition this run was started from. Present only when `ephemeral` is false; omitted for ephemeral runs started from an inline spec.
+	DefinitionId *string `json:"definition_id,omitempty"`
+
+	// DefinitionVersion Version number of the workflow definition this run was started from. Present only when `ephemeral` is false.
+	DefinitionVersion *int `json:"definition_version,omitempty"`
+
+	// Ephemeral True when the run was started from an inline spec rather than a saved workflow definition. Derived server-side; always present on the response. When true, `definition_id` and `definition_version` are omitted.
+	Ephemeral bool `json:"ephemeral"`
+
+	// ErrorMessage Error message from the most recent failure. Present when status is failed.
+	ErrorMessage *string `json:"error_message,omitempty"`
+
+	// ErrorType Typed run-level failure cause: `run_timeout`, `run_cancelled`, `step_failed`, `run_failed`, `output_extraction_failed`, or `output_validation_failed`. Its own vocabulary, not a superset of the job-level `error_type`. Present when `status=failed`.
+	ErrorType *RunDetailErrorType `json:"error_type,omitempty"`
+
+	// Errors Run-level errors that caused a failed lifecycle.
+	Errors []RunError `json:"errors"`
+
+	// ExternalId Caller-supplied logical correlation key for this run. Unique within the project; identifies a logical job across attempts. See the `external_id` description on `POST /runs` for the conflict semantics that govern duplicate values.
+	ExternalId *string         `json:"external_id,omitempty"`
+	ForkedFrom *RunForkLineage `json:"forked_from,omitempty"`
+
+	// Id Unique identifier for this run.
+	Id string `json:"id"`
+
+	// Inputs Input values provided when the run was started.
+	Inputs *map[string]interface{} `json:"inputs,omitempty"`
+
+	// JobCounts Live work-pool summary for this run. Reflects the transient state of the worker job queue, not durable step progress — terminal jobs are swept on a TTL and stop contributing to these counts. Use `step_counts` for run-progress UI; use this field to answer "is anything claimable right now and is a worker holding it?". `ready` counts pending jobs whose `scheduled_at` has arrived and can be claimed now; `scheduled` counts pending jobs intentionally waiting for a future retry/backoff; `claimed` counts jobs currently held by workers.
+	JobCounts RunJobCounts `json:"job_counts"`
+
+	// Metadata Caller-supplied string metadata attached to the run.
+	Metadata *map[string]string `json:"metadata,omitempty"`
+
+	// ParentRunId ID of the parent run, when this is a child run spawned by a fan-out step.
+	ParentRunId *string `json:"parent_run_id,omitempty"`
+
+	// PathCounts Current path counts. Invariants: `total = working + waiting + completed + failed`; `active = working + waiting`.
+	PathCounts RunPathCounts `json:"path_counts"`
+
+	// Paths Current path-level execution projection for this run.
+	Paths []RunPath `json:"paths"`
+
+	// Queue Queue this run was enqueued on.
+	Queue *string `json:"queue,omitempty"`
+
+	// ResolvedConfig Frozen config resolution in flat entry form. Keys unset at every layer are omitted. See PRD 035.
+	ResolvedConfig *ResolvedConfig `json:"resolved_config,omitempty"`
+
+	// ResultB64 Base64-encoded terminal result blob
+	ResultB64 *string `json:"result_b64,omitempty"`
+
+	// SourceId Identifier for the run source within its source type.
+	SourceId *string `json:"source_id,omitempty"`
+
+	// SourceLabel Human-readable label for the run source.
+	SourceLabel *string `json:"source_label,omitempty"`
+
+	// SourceType Type of source that requested this run (api, trigger, slack, fork, tool).
+	SourceType *string `json:"source_type,omitempty"`
+
+	// Spec Workflow definition shaped like `workflow.Options`.
+	//
+	// A workflow is **either** a spec-step DAG or a code workflow:
+	//
+	// * Spec-step workflows declare `steps: [...]` (with optional
+	// `start_at`). Each step is a worker-action, server-action,
+	// wait, join, or other declarative construct.
+	// * Code workflows declare `code: { handler, runtime?, queue? }`
+	// and no `steps`. The handler's runtime control flow replaces
+	// the step graph; durable sub-steps are executed via the SDK's
+	// `step.run` / `step.waitFor*` helpers and recorded against the
+	// run ledger.
+	//
+	// Exactly one of `steps` or `code` must be set; setting both, or neither, is rejected by the schema's `oneOf` constraint.
+	//
+	// Authoring rule for spec-step workflows: `action` is the canonical field for executable steps. The engine routes each action step to the right executor based on the action's registered `runs_on` metadata — there is no author-side kind hint. Platform-owned actions are claimed by the in-daemon worker pool; customer- registered actions are claimed by the customer's deployed workers over the standard `/v1/.../jobs/claim` surface.
+	Spec *WorkflowSpec `json:"spec,omitempty"`
+
+	// StartedAt Timestamp when this run transitioned out of initial progression and began executing steps.
+	StartedAt *time.Time `json:"started_at,omitempty"`
+
+	// Status Public run lifecycle. Path-level fields explain why an active run is working, waiting, sleeping, retrying, paused, or blocked at a join.
+	Status RunStatus `json:"status"`
+
+	// StepCounts Aggregate count of run-step rows for this run grouped by status. Counts every attempt of every step (one row per step x attempt x path), so it reflects durable progress rather than the live worker pool. Use this for run-progress UI; use `job_counts` for live claimability.
+	StepCounts RunStepCounts `json:"step_counts"`
+
+	// Steps First page of durable run-step history, ordered by `transition_seq` ascending. Use this canonical history for execution inspection and fork planning, including after terminal job rows have been TTL-swept.
+	Steps []RunStep `json:"steps"`
+
+	// StepsNextCursor Cursor for the next page of durable run-step history.
+	StepsNextCursor *string `json:"steps_next_cursor,omitempty"`
+
+	// Tags Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints.
+	Tags *TagMap `json:"tags,omitempty"`
+
+	// UpdatedAt Timestamp when this run was last updated.
+	UpdatedAt time.Time `json:"updated_at"`
+
+	// WaitSummary Always-present aggregate of waiting paths.
+	WaitSummary RunWaitSummary `json:"wait_summary"`
+
+	// WallClockDeadlineAt Deadline at which the reaper will fail this run with `error_type=run_timeout` if it has not reached a terminal state. Present only when `resolved_config` contains a `key="runs.timeouts.execution"` entry whose value resolves to a finite duration. Anchored to `created_at`.
+	WallClockDeadlineAt *time.Time `json:"wall_clock_deadline_at,omitempty"`
+
+	// WorkflowName Name of the workflow as recorded at run creation time.
+	WorkflowName         string                 `json:"workflow_name"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// RunDetailErrorType Typed run-level failure cause: `run_timeout`, `run_cancelled`, `step_failed`, `run_failed`, `output_extraction_failed`, or `output_validation_failed`. Its own vocabulary, not a superset of the job-level `error_type`. Present when `status=failed`.
+type RunDetailErrorType string
+
+// RunError defines model for RunError.
+type RunError struct {
+	ErrorMessage string  `json:"error_message"`
+	ErrorType    string  `json:"error_type"`
+	PathId       *string `json:"path_id,omitempty"`
+}
+
 // RunForkLineage defines model for RunForkLineage.
 type RunForkLineage struct {
 	PathId   string `json:"path_id"`
@@ -7366,6 +7605,25 @@ type RunForkRequest struct {
 
 	// Tags Tags to overlay on the inherited source-run tags. Empty string values remove inherited keys.
 	Tags *TagMap `json:"tags,omitempty"`
+}
+
+// RunJobCounts Live work-pool summary for this run. Reflects the transient state of the worker job queue, not durable step progress — terminal jobs are swept on a TTL and stop contributing to these counts. Use `step_counts` for run-progress UI; use this field to answer "is anything claimable right now and is a worker holding it?". `ready` counts pending jobs whose `scheduled_at` has arrived and can be claimed now; `scheduled` counts pending jobs intentionally waiting for a future retry/backoff; `claimed` counts jobs currently held by workers.
+type RunJobCounts struct {
+	Claimed   int `json:"claimed"`
+	Ready     int `json:"ready"`
+	Scheduled int `json:"scheduled"`
+}
+
+// RunListResponse Paginated list of workflow runs.
+type RunListResponse struct {
+	// HasMore True when more pages are available.
+	HasMore bool `json:"has_more"`
+
+	// Items The list of results for this page.
+	Items []Run `json:"items"`
+
+	// NextCursor Opaque cursor for fetching the next page. Present only when has_more is true.
+	NextCursor *string `json:"next_cursor,omitempty"`
 }
 
 // RunMetrics Workflow run statistics for the rolling window.
@@ -7395,6 +7653,35 @@ type RunMetrics struct {
 	TotalWindow int `json:"total_window"`
 }
 
+// RunPath defines model for RunPath.
+type RunPath struct {
+	// ErrorMessage Path-local failure message when state is `failed`.
+	ErrorMessage *string `json:"error_message,omitempty"`
+
+	// ErrorType Path-local failure type when state is `failed`.
+	ErrorType *string `json:"error_type,omitempty"`
+
+	// PathId Stable execution path identifier, e.g. `main` or `main/each/0`.
+	PathId string `json:"path_id"`
+
+	// State Current state of one execution path.
+	State     RunPathState   `json:"state"`
+	WaitingOn *RunWaitDetail `json:"waiting_on,omitempty"`
+}
+
+// RunPathCounts Current path counts. Invariants: `total = working + waiting + completed + failed`; `active = working + waiting`.
+type RunPathCounts struct {
+	Active    int `json:"active"`
+	Completed int `json:"completed"`
+	Failed    int `json:"failed"`
+	Total     int `json:"total"`
+	Waiting   int `json:"waiting"`
+	Working   int `json:"working"`
+}
+
+// RunPathState Current state of one execution path.
+type RunPathState string
+
 // RunSignal Persisted external signal delivered to a workflow run.
 type RunSignal struct {
 	// Id Unique identifier for this signal.
@@ -7406,6 +7693,9 @@ type RunSignal struct {
 	// RunId ID of the run this signal was delivered to.
 	RunId string `json:"run_id"`
 }
+
+// RunStatus Public run lifecycle. Path-level fields explain why an active run is working, waiting, sleeping, retrying, paused, or blocked at a join.
+type RunStatus string
 
 // RunStep Durable execution-history row for one step attempt on one workflow path. RunStep is the canonical source for run history; linked Job rows are transient worker-claim records and may be TTL-swept after terminal retention.
 type RunStep struct {
@@ -7456,9 +7746,11 @@ type RunStep struct {
 	SourceRunId *string `json:"source_run_id,omitempty"`
 
 	// SourceStepId Originating step ID when this row was inherited or derived from another run.
-	SourceStepId *string       `json:"source_step_id,omitempty"`
-	StartedAt    *time.Time    `json:"started_at,omitempty"`
-	Status       RunStepStatus `json:"status"`
+	SourceStepId *string `json:"source_step_id,omitempty"`
+
+	// StartedAt Timestamp when execution of this step attempt began.
+	StartedAt *time.Time    `json:"started_at,omitempty"`
+	Status    RunStepStatus `json:"status"`
 
 	// StepName Step name from the workflow definition.
 	StepName string `json:"step_name"`
@@ -7477,6 +7769,16 @@ type RunStepBinding struct {
 	Var string `json:"var"`
 }
 
+// RunStepCounts Aggregate count of run-step rows for this run grouped by status. Counts every attempt of every step (one row per step x attempt x path), so it reflects durable progress rather than the live worker pool. Use this for run-progress UI; use `job_counts` for live claimability.
+type RunStepCounts struct {
+	Cancelled int `json:"cancelled"`
+	Completed int `json:"completed"`
+	Failed    int `json:"failed"`
+	Pending   int `json:"pending"`
+	Running   int `json:"running"`
+	Skipped   int `json:"skipped"`
+}
+
 // RunStepKind defines model for RunStepKind.
 type RunStepKind string
 
@@ -7492,6 +7794,100 @@ type RunStepSource string
 
 // RunStepStatus defines model for RunStepStatus.
 type RunStepStatus string
+
+// RunWaitDetail defines model for RunWaitDetail.
+type RunWaitDetail struct {
+	// Attempt Retry attempt number for `retry` waits.
+	Attempt *int `json:"attempt,omitempty"`
+
+	// AttemptCount Number of poll attempts recorded for a `wait_until` wait.
+	AttemptCount *int `json:"attempt_count,omitempty"`
+
+	// Condition Optional `expr` predicate the matching event or latest wait result must satisfy before resuming the path.
+	Condition *string `json:"condition,omitempty"`
+
+	// CurrentInterval Current poll interval for `wait_until`.
+	CurrentInterval *string `json:"current_interval,omitempty"`
+
+	// DeadlineAt Fixed timeout deadline for `wait_until`.
+	DeadlineAt *time.Time `json:"deadline_at,omitempty"`
+
+	// EventType Event type pattern this path is waiting for. Set when `kind` is `wait_event`.
+	EventType *string `json:"event_type,omitempty"`
+
+	// InteractionId Pending interaction linked to this wait.
+	InteractionId *string `json:"interaction_id,omitempty"`
+
+	// JoinStep Join step this path is waiting at.
+	JoinStep *string `json:"join_step,omitempty"`
+
+	// Kind What a waiting path is blocked on.
+	Kind RunWaitKind `json:"kind"`
+
+	// LastErrorMessage Latest poll error message for `wait_until`.
+	LastErrorMessage *string `json:"last_error_message,omitempty"`
+
+	// LastErrorType Latest poll error type for `wait_until`.
+	LastErrorType *string `json:"last_error_type,omitempty"`
+
+	// LastResult Latest poll result preview for `wait_until`.
+	LastResult interface{} `json:"last_result,omitempty"`
+
+	// MatchMode Event match mode for `wait_event`; empty means `exact`.
+	MatchMode *string `json:"match_mode,omitempty"`
+
+	// MaxAttempts Maximum attempts for `retry` waits.
+	MaxAttempts *int `json:"max_attempts,omitempty"`
+
+	// Observable Observable name for `wait_until.observable` waits.
+	Observable *string `json:"observable,omitempty"`
+
+	// ObservableId Observable ID for `wait_until.observable` waits.
+	ObservableId *string `json:"observable_id,omitempty"`
+
+	// ObservedVersion Observable version observed before the path suspended.
+	ObservedVersion *int64 `json:"observed_version,omitempty"`
+
+	// PollAction Poll action name for `wait_until` waits.
+	PollAction *string `json:"poll_action,omitempty"`
+
+	// PollParameters Frozen poll parameters for `wait_until` waits.
+	PollParameters *map[string]interface{} `json:"poll_parameters,omitempty"`
+
+	// Reason Human-readable pause or wait reason.
+	Reason *string `json:"reason,omitempty"`
+
+	// SignalName Signal name this path is waiting for.
+	SignalName *string `json:"signal_name,omitempty"`
+
+	// SourceKind Wait source kind for `wait_until` (`poll` or `observable`).
+	SourceKind *string `json:"source_kind,omitempty"`
+
+	// Target Identifies who should receive an interaction request. Note: distinct from the caller/audit `Actor` vocabulary — a target is a *recipient*, not someone who has acted yet.
+	Target *InteractionTarget `json:"target,omitempty"`
+
+	// WaitingForPaths Path IDs still required before a join can proceed.
+	WaitingForPaths *[]string `json:"waiting_for_paths,omitempty"`
+
+	// WakeAt Earliest time the runtime should inspect or resume this path.
+	WakeAt *time.Time `json:"wake_at,omitempty"`
+}
+
+// RunWaitKind What a waiting path is blocked on.
+type RunWaitKind string
+
+// RunWaitSummary Always-present aggregate of waiting paths.
+type RunWaitSummary struct {
+	InteractionIds []string `json:"interaction_ids"`
+
+	// KindCounts Count of waiting paths by `waiting_on.kind`.
+	KindCounts map[string]int `json:"kind_counts"`
+
+	// NextWakeAt Earliest wake time among waiting paths, or null.
+	NextWakeAt           *time.Time `json:"next_wake_at"`
+	WaitingOnSignalNames []string   `json:"waiting_on_signal_names"`
+	WaitingPaths         int        `json:"waiting_paths"`
+}
 
 // ScheduleSourceConfig Source configuration for `schedule` triggers. Provide exactly one of `cron` or `interval`.
 type ScheduleSourceConfig struct {
@@ -7891,7 +8287,7 @@ type StartInlineRunRequest struct {
 	//
 	// Exactly one of `steps` or `code` must be set; setting both, or neither, is rejected by the schema's `oneOf` constraint.
 	//
-	// Authoring rule for spec-step workflows: `action` is the canonical field for executable steps. When `action_kind` is omitted, `action` uses worker/job semantics. Use `action_kind: "server"` for Mobius-managed server actions such as platform integrations or custom HTTP-backed actions.
+	// Authoring rule for spec-step workflows: `action` is the canonical field for executable steps. The engine routes each action step to the right executor based on the action's registered `runs_on` metadata — there is no author-side kind hint. Platform-owned actions are claimed by the in-daemon worker pool; customer- registered actions are claimed by the customer's deployed workers over the standard `/v1/.../jobs/claim` surface.
 	Spec WorkflowSpec `json:"spec"`
 
 	// Tags Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints.
@@ -8530,20 +8926,23 @@ type UpdateAgentRequest struct {
 	// Color Replacement display color (Mantine palette key, e.g. `indigo`). Pass empty string to clear and fall back to a hash-derived color.
 	Color *string `json:"color,omitempty"`
 
-	// Config Replacement configuration blob.
-	Config *map[string]interface{} `json:"config,omitempty"`
-
 	// Description Replacement description.
 	Description *string `json:"description,omitempty"`
 
 	// Kind Replacement freeform agent classification (e.g. `llm`, `rpa`).
 	Kind *string `json:"kind,omitempty"`
 
+	// Model Replacement Anthropic model identifier for platform agents.
+	Model *string `json:"model,omitempty"`
+
 	// Name Free-form human-readable label, 1-63 characters; must be unique within the project.
 	Name *string `json:"name,omitempty"`
 
 	// Status Administrative status. Inactive agents cannot claim new jobs.
 	Status *AgentStatus `json:"status,omitempty"`
+
+	// SystemPrompt Replacement system prompt for platform agents.
+	SystemPrompt *string `json:"system_prompt,omitempty"`
 
 	// Tags Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints.
 	Tags *TagMap `json:"tags,omitempty"`
@@ -8774,7 +9173,7 @@ type UpdateWorkflowRequest struct {
 	//
 	// Exactly one of `steps` or `code` must be set; setting both, or neither, is rejected by the schema's `oneOf` constraint.
 	//
-	// Authoring rule for spec-step workflows: `action` is the canonical field for executable steps. When `action_kind` is omitted, `action` uses worker/job semantics. Use `action_kind: "server"` for Mobius-managed server actions such as platform integrations or custom HTTP-backed actions.
+	// Authoring rule for spec-step workflows: `action` is the canonical field for executable steps. The engine routes each action step to the right executor based on the action's registered `runs_on` metadata — there is no author-side kind hint. Platform-owned actions are claimed by the in-daemon worker pool; customer- registered actions are claimed by the customer's deployed workers over the standard `/v1/.../jobs/claim` surface.
 	Spec *WorkflowSpec `json:"spec,omitempty"`
 
 	// Tags Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints.
@@ -9180,9 +9579,6 @@ type WorkerSessionTotals struct {
 	Stale int `json:"stale"`
 }
 
-// WorkflowActionKind Execution mode for `action` steps: `worker` creates claimable jobs for external workers, while `server` executes Mobius-managed actions such as integrations inside the service. Omit for the current default of `worker`.
-type WorkflowActionKind string
-
 // WorkflowCatch Error routing rule that transfers execution to another step.
 type WorkflowCatch struct {
 	// ErrorEquals Error class names this catch clause handles. Use `all` or `*` for a wildcard.
@@ -9247,7 +9643,7 @@ type WorkflowDefinition struct {
 	//
 	// Exactly one of `steps` or `code` must be set; setting both, or neither, is rejected by the schema's `oneOf` constraint.
 	//
-	// Authoring rule for spec-step workflows: `action` is the canonical field for executable steps. When `action_kind` is omitted, `action` uses worker/job semantics. Use `action_kind: "server"` for Mobius-managed server actions such as platform integrations or custom HTTP-backed actions.
+	// Authoring rule for spec-step workflows: `action` is the canonical field for executable steps. The engine routes each action step to the right executor based on the action's registered `runs_on` metadata — there is no author-side kind hint. Platform-owned actions are claimed by the in-daemon worker pool; customer- registered actions are claimed by the customer's deployed workers over the standard `/v1/.../jobs/claim` surface.
 	Spec WorkflowSpec `json:"spec"`
 
 	// Tags Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints.
@@ -9330,11 +9726,8 @@ type WorkflowEdgeMatchingStrategy string
 
 // WorkflowExecutableStep Executes a worker or server action and exposes its result at `steps.<name>.result`.
 type WorkflowExecutableStep struct {
-	// Action Canonical executable-step field. When `action_kind` is omitted, the engine treats this as a worker action. Use `action_kind: server` for Mobius-managed server actions.
+	// Action Canonical executable-step field. The engine resolves the execution domain (platform pool vs. customer worker) from the action's registered `runs_on` metadata, not from any step field.
 	Action string `json:"action"`
-
-	// ActionKind Execution mode for `action` steps: `worker` creates claimable jobs for external workers, while `server` executes Mobius-managed actions such as integrations inside the service. Omit for the current default of `worker`.
-	ActionKind *WorkflowActionKind `json:"action_kind,omitempty"`
 
 	// Bind Optional writes to top-level `vars.*` keys, evaluated after the step completes. Targets must look like `vars.foo`.
 	Bind *map[string]string `json:"bind,omitempty"`
@@ -9436,7 +9829,7 @@ type WorkflowInteractionDiscussionConfig struct {
 	// MemberIds Additional user or agent IDs to invite to the channel.
 	MemberIds *[]string `json:"member_ids,omitempty"`
 
-	// OpeningMessage Opening brief posted into the channel before the workflow parks.
+	// OpeningMessage Opening brief posted into the channel before the workflow suspends.
 	OpeningMessage string `json:"opening_message"`
 
 	// Private Whether a newly-created channel is private.
@@ -9586,412 +9979,6 @@ type WorkflowRetry struct {
 // WorkflowRetryJitterStrategy Jitter strategy to apply to the computed delay: NONE or FULL.
 type WorkflowRetryJitterStrategy string
 
-// WorkflowRun Runtime record for one workflow execution.
-type WorkflowRun struct {
-	// ActorId ID of the actor that started this run.
-	ActorId *string `json:"actor_id,omitempty"`
-
-	// ActorType Type of the actor that started this run (user, service_account, system).
-	ActorType *string `json:"actor_type,omitempty"`
-
-	// Attempt Retry attempt number (1-based). Increments each time the run is retried.
-	Attempt int `json:"attempt"`
-
-	// CancelRequestedAt Timestamp when cancellation was requested.
-	CancelRequestedAt *time.Time `json:"cancel_requested_at,omitempty"`
-
-	// CompletedAt Timestamp when this run reached a terminal state.
-	CompletedAt *time.Time `json:"completed_at,omitempty"`
-
-	// CreatedAt Timestamp when this run was created.
-	CreatedAt time.Time `json:"created_at"`
-
-	// DefaultStepConfig Frozen config resolution in flat entry form. Keys unset at every layer are omitted. See PRD 035.
-	DefaultStepConfig *ResolvedConfig `json:"default_step_config,omitempty"`
-
-	// DefinitionId ID of the workflow definition this run was started from. Present only when `ephemeral` is false; omitted for ephemeral runs started from an inline spec.
-	DefinitionId *string `json:"definition_id,omitempty"`
-
-	// DefinitionVersion Version number of the workflow definition this run was started from. Present only when `ephemeral` is false.
-	DefinitionVersion *int `json:"definition_version,omitempty"`
-
-	// Ephemeral True when the run was started from an inline spec rather than a saved workflow definition. Derived server-side; always present on the response. When true, `definition_id` and `definition_version` are omitted.
-	Ephemeral bool `json:"ephemeral"`
-
-	// ErrorMessage Error message from the most recent failure. Present when status is failed.
-	ErrorMessage *string `json:"error_message,omitempty"`
-
-	// ErrorType Typed run-level failure cause: `run_timeout`, `run_cancelled`, `step_failed`, `run_failed`, `output_extraction_failed`, or `output_validation_failed`. Its own vocabulary, not a superset of the job-level `error_type`. Present when `status=failed`.
-	ErrorType *WorkflowRunErrorType `json:"error_type,omitempty"`
-
-	// Errors Run-level errors that caused a failed lifecycle.
-	Errors []WorkflowRunError `json:"errors"`
-
-	// ExternalId Caller-supplied logical correlation key for this run. Unique within the project; identifies a logical job across attempts. See the `external_id` description on `POST /runs` for the conflict semantics that govern duplicate values.
-	ExternalId *string         `json:"external_id,omitempty"`
-	ForkedFrom *RunForkLineage `json:"forked_from,omitempty"`
-
-	// Id Unique identifier for this run.
-	Id string `json:"id"`
-
-	// Inputs Input values provided when the run was started.
-	Inputs *map[string]interface{} `json:"inputs,omitempty"`
-
-	// JobCounts Live work-pool summary for this run. Reflects the transient state of the worker job queue, not durable step progress — terminal jobs are swept on a TTL and stop contributing to these counts. Use `step_counts` for run-progress UI; use this field to answer "is anything claimable right now and is a worker holding it?". `ready` counts pending jobs whose `scheduled_at` has arrived and can be claimed now; `scheduled` counts pending jobs intentionally waiting for a future retry/backoff; `claimed` counts jobs currently held by workers.
-	JobCounts WorkflowRunJobCounts `json:"job_counts"`
-
-	// Metadata Caller-supplied string metadata attached to the run.
-	Metadata *map[string]string `json:"metadata,omitempty"`
-
-	// ParentRunId ID of the parent run, when this is a child run spawned by a fan-out step.
-	ParentRunId *string `json:"parent_run_id,omitempty"`
-
-	// PathCounts Current path counts. Invariants: `total = working + waiting + completed + failed`; `active = working + waiting`.
-	PathCounts WorkflowRunPathCounts `json:"path_counts"`
-
-	// Queue Queue this run was enqueued on.
-	Queue *string `json:"queue,omitempty"`
-
-	// ResolvedConfig Frozen config resolution in flat entry form. Keys unset at every layer are omitted. See PRD 035.
-	ResolvedConfig *ResolvedConfig `json:"resolved_config,omitempty"`
-
-	// SourceId Identifier for the run source within its source type.
-	SourceId *string `json:"source_id,omitempty"`
-
-	// SourceLabel Human-readable label for the run source.
-	SourceLabel *string `json:"source_label,omitempty"`
-
-	// SourceType Type of source that requested this run (api, trigger, slack, fork, tool).
-	SourceType *string `json:"source_type,omitempty"`
-
-	// StartedAt Timestamp when a worker first claimed this run.
-	StartedAt *time.Time `json:"started_at,omitempty"`
-
-	// Status Public run lifecycle. Path-level fields explain why an active run is working, waiting, sleeping, retrying, paused, or blocked at a join.
-	Status WorkflowRunStatus `json:"status"`
-
-	// StepCounts Aggregate count of run-step rows for this run grouped by status. Counts every attempt of every step (one row per step x attempt x path), so it reflects durable progress rather than the live worker pool. Use this for run-progress UI; use `job_counts` for live claimability.
-	StepCounts WorkflowRunStepCounts `json:"step_counts"`
-
-	// Tags Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints.
-	Tags *TagMap `json:"tags,omitempty"`
-
-	// UpdatedAt Timestamp when this run was last updated.
-	UpdatedAt time.Time `json:"updated_at"`
-
-	// WaitSummary Always-present aggregate of waiting paths.
-	WaitSummary WorkflowRunWaitSummary `json:"wait_summary"`
-
-	// WallClockDeadlineAt Deadline at which the reaper will fail this run with `error_type=run_timeout` if it has not reached a terminal state. Present only when `resolved_config` contains a `key="runs.timeouts.execution"` entry whose value resolves to a finite duration. Anchored to `created_at`.
-	WallClockDeadlineAt *time.Time `json:"wall_clock_deadline_at,omitempty"`
-
-	// WorkflowName Name of the workflow as recorded at run creation time.
-	WorkflowName         string                 `json:"workflow_name"`
-	AdditionalProperties map[string]interface{} `json:"-"`
-}
-
-// WorkflowRunErrorType Typed run-level failure cause: `run_timeout`, `run_cancelled`, `step_failed`, `run_failed`, `output_extraction_failed`, or `output_validation_failed`. Its own vocabulary, not a superset of the job-level `error_type`. Present when `status=failed`.
-type WorkflowRunErrorType string
-
-// WorkflowRunDetail defines model for WorkflowRunDetail.
-type WorkflowRunDetail struct {
-	// ActorId ID of the actor that started this run.
-	ActorId *string `json:"actor_id,omitempty"`
-
-	// ActorType Type of the actor that started this run (user, service_account, system).
-	ActorType *string `json:"actor_type,omitempty"`
-
-	// Attempt Retry attempt number (1-based). Increments each time the run is retried.
-	Attempt int `json:"attempt"`
-
-	// CancelRequestedAt Timestamp when cancellation was requested.
-	CancelRequestedAt *time.Time `json:"cancel_requested_at,omitempty"`
-
-	// CompletedAt Timestamp when this run reached a terminal state.
-	CompletedAt *time.Time `json:"completed_at,omitempty"`
-
-	// CreatedAt Timestamp when this run was created.
-	CreatedAt time.Time `json:"created_at"`
-
-	// DefaultStepConfig Frozen config resolution in flat entry form. Keys unset at every layer are omitted. See PRD 035.
-	DefaultStepConfig *ResolvedConfig `json:"default_step_config,omitempty"`
-
-	// DefinitionId ID of the workflow definition this run was started from. Present only when `ephemeral` is false; omitted for ephemeral runs started from an inline spec.
-	DefinitionId *string `json:"definition_id,omitempty"`
-
-	// DefinitionVersion Version number of the workflow definition this run was started from. Present only when `ephemeral` is false.
-	DefinitionVersion *int `json:"definition_version,omitempty"`
-
-	// Ephemeral True when the run was started from an inline spec rather than a saved workflow definition. Derived server-side; always present on the response. When true, `definition_id` and `definition_version` are omitted.
-	Ephemeral bool `json:"ephemeral"`
-
-	// ErrorMessage Error message from the most recent failure. Present when status is failed.
-	ErrorMessage *string `json:"error_message,omitempty"`
-
-	// ErrorType Typed run-level failure cause: `run_timeout`, `run_cancelled`, `step_failed`, `run_failed`, `output_extraction_failed`, or `output_validation_failed`. Its own vocabulary, not a superset of the job-level `error_type`. Present when `status=failed`.
-	ErrorType *WorkflowRunDetailErrorType `json:"error_type,omitempty"`
-
-	// Errors Run-level errors that caused a failed lifecycle.
-	Errors []WorkflowRunError `json:"errors"`
-
-	// ExternalId Caller-supplied logical correlation key for this run. Unique within the project; identifies a logical job across attempts. See the `external_id` description on `POST /runs` for the conflict semantics that govern duplicate values.
-	ExternalId *string         `json:"external_id,omitempty"`
-	ForkedFrom *RunForkLineage `json:"forked_from,omitempty"`
-
-	// Id Unique identifier for this run.
-	Id string `json:"id"`
-
-	// Inputs Input values provided when the run was started.
-	Inputs *map[string]interface{} `json:"inputs,omitempty"`
-
-	// JobCounts Live work-pool summary for this run. Reflects the transient state of the worker job queue, not durable step progress — terminal jobs are swept on a TTL and stop contributing to these counts. Use `step_counts` for run-progress UI; use this field to answer "is anything claimable right now and is a worker holding it?". `ready` counts pending jobs whose `scheduled_at` has arrived and can be claimed now; `scheduled` counts pending jobs intentionally waiting for a future retry/backoff; `claimed` counts jobs currently held by workers.
-	JobCounts WorkflowRunJobCounts `json:"job_counts"`
-
-	// Metadata Caller-supplied string metadata attached to the run.
-	Metadata *map[string]string `json:"metadata,omitempty"`
-
-	// ParentRunId ID of the parent run, when this is a child run spawned by a fan-out step.
-	ParentRunId *string `json:"parent_run_id,omitempty"`
-
-	// PathCounts Current path counts. Invariants: `total = working + waiting + completed + failed`; `active = working + waiting`.
-	PathCounts WorkflowRunPathCounts `json:"path_counts"`
-
-	// Paths Current path-level execution projection for this run.
-	Paths []WorkflowRunPath `json:"paths"`
-
-	// Queue Queue this run was enqueued on.
-	Queue *string `json:"queue,omitempty"`
-
-	// ResolvedConfig Frozen config resolution in flat entry form. Keys unset at every layer are omitted. See PRD 035.
-	ResolvedConfig *ResolvedConfig `json:"resolved_config,omitempty"`
-
-	// ResultB64 Base64-encoded terminal result blob
-	ResultB64 *string `json:"result_b64,omitempty"`
-
-	// SourceId Identifier for the run source within its source type.
-	SourceId *string `json:"source_id,omitempty"`
-
-	// SourceLabel Human-readable label for the run source.
-	SourceLabel *string `json:"source_label,omitempty"`
-
-	// SourceType Type of source that requested this run (api, trigger, slack, fork, tool).
-	SourceType *string `json:"source_type,omitempty"`
-
-	// Spec Workflow definition shaped like `workflow.Options`.
-	//
-	// A workflow is **either** a spec-step DAG or a code workflow:
-	//
-	// * Spec-step workflows declare `steps: [...]` (with optional
-	// `start_at`). Each step is a worker-action, server-action,
-	// wait, join, or other declarative construct.
-	// * Code workflows declare `code: { handler, runtime?, queue? }`
-	// and no `steps`. The handler's runtime control flow replaces
-	// the step graph; durable sub-steps are executed via the SDK's
-	// `step.run` / `step.waitFor*` helpers and recorded against the
-	// run ledger.
-	//
-	// Exactly one of `steps` or `code` must be set; setting both, or neither, is rejected by the schema's `oneOf` constraint.
-	//
-	// Authoring rule for spec-step workflows: `action` is the canonical field for executable steps. When `action_kind` is omitted, `action` uses worker/job semantics. Use `action_kind: "server"` for Mobius-managed server actions such as platform integrations or custom HTTP-backed actions.
-	Spec *WorkflowSpec `json:"spec,omitempty"`
-
-	// StartedAt Timestamp when a worker first claimed this run.
-	StartedAt *time.Time `json:"started_at,omitempty"`
-
-	// Status Public run lifecycle. Path-level fields explain why an active run is working, waiting, sleeping, retrying, paused, or blocked at a join.
-	Status WorkflowRunStatus `json:"status"`
-
-	// StepCounts Aggregate count of run-step rows for this run grouped by status. Counts every attempt of every step (one row per step x attempt x path), so it reflects durable progress rather than the live worker pool. Use this for run-progress UI; use `job_counts` for live claimability.
-	StepCounts WorkflowRunStepCounts `json:"step_counts"`
-
-	// Steps First page of durable run-step history, ordered by `transition_seq` ascending. Use this canonical history for execution inspection and fork planning, including after terminal job rows have been TTL-swept.
-	Steps []RunStep `json:"steps"`
-
-	// StepsNextCursor Cursor for the next page of durable run-step history.
-	StepsNextCursor *string `json:"steps_next_cursor,omitempty"`
-
-	// Tags Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints.
-	Tags *TagMap `json:"tags,omitempty"`
-
-	// UpdatedAt Timestamp when this run was last updated.
-	UpdatedAt time.Time `json:"updated_at"`
-
-	// WaitSummary Always-present aggregate of waiting paths.
-	WaitSummary WorkflowRunWaitSummary `json:"wait_summary"`
-
-	// WallClockDeadlineAt Deadline at which the reaper will fail this run with `error_type=run_timeout` if it has not reached a terminal state. Present only when `resolved_config` contains a `key="runs.timeouts.execution"` entry whose value resolves to a finite duration. Anchored to `created_at`.
-	WallClockDeadlineAt *time.Time `json:"wall_clock_deadline_at,omitempty"`
-
-	// WorkflowName Name of the workflow as recorded at run creation time.
-	WorkflowName         string                 `json:"workflow_name"`
-	AdditionalProperties map[string]interface{} `json:"-"`
-}
-
-// WorkflowRunDetailErrorType Typed run-level failure cause: `run_timeout`, `run_cancelled`, `step_failed`, `run_failed`, `output_extraction_failed`, or `output_validation_failed`. Its own vocabulary, not a superset of the job-level `error_type`. Present when `status=failed`.
-type WorkflowRunDetailErrorType string
-
-// WorkflowRunError defines model for WorkflowRunError.
-type WorkflowRunError struct {
-	ErrorMessage string  `json:"error_message"`
-	ErrorType    string  `json:"error_type"`
-	PathId       *string `json:"path_id,omitempty"`
-}
-
-// WorkflowRunJobCounts Live work-pool summary for this run. Reflects the transient state of the worker job queue, not durable step progress — terminal jobs are swept on a TTL and stop contributing to these counts. Use `step_counts` for run-progress UI; use this field to answer "is anything claimable right now and is a worker holding it?". `ready` counts pending jobs whose `scheduled_at` has arrived and can be claimed now; `scheduled` counts pending jobs intentionally waiting for a future retry/backoff; `claimed` counts jobs currently held by workers.
-type WorkflowRunJobCounts struct {
-	Claimed   int `json:"claimed"`
-	Ready     int `json:"ready"`
-	Scheduled int `json:"scheduled"`
-}
-
-// WorkflowRunListResponse Paginated list of workflow runs.
-type WorkflowRunListResponse struct {
-	// HasMore True when more pages are available.
-	HasMore bool `json:"has_more"`
-
-	// Items The list of results for this page.
-	Items []WorkflowRun `json:"items"`
-
-	// NextCursor Opaque cursor for fetching the next page. Present only when has_more is true.
-	NextCursor *string `json:"next_cursor,omitempty"`
-}
-
-// WorkflowRunPath defines model for WorkflowRunPath.
-type WorkflowRunPath struct {
-	// ErrorMessage Path-local failure message when state is `failed`.
-	ErrorMessage *string `json:"error_message,omitempty"`
-
-	// ErrorType Path-local failure type when state is `failed`.
-	ErrorType *string `json:"error_type,omitempty"`
-
-	// PathId Stable execution path identifier, e.g. `main` or `main/each/0`.
-	PathId string `json:"path_id"`
-
-	// State Current state of one execution path.
-	State     WorkflowRunPathState   `json:"state"`
-	WaitingOn *WorkflowRunWaitDetail `json:"waiting_on,omitempty"`
-}
-
-// WorkflowRunPathCounts Current path counts. Invariants: `total = working + waiting + completed + failed`; `active = working + waiting`.
-type WorkflowRunPathCounts struct {
-	Active    int `json:"active"`
-	Completed int `json:"completed"`
-	Failed    int `json:"failed"`
-	Total     int `json:"total"`
-	Waiting   int `json:"waiting"`
-	Working   int `json:"working"`
-}
-
-// WorkflowRunPathState Current state of one execution path.
-type WorkflowRunPathState string
-
-// WorkflowRunStatus Public run lifecycle. Path-level fields explain why an active run is working, waiting, sleeping, retrying, paused, or blocked at a join.
-type WorkflowRunStatus string
-
-// WorkflowRunStepCounts Aggregate count of run-step rows for this run grouped by status. Counts every attempt of every step (one row per step x attempt x path), so it reflects durable progress rather than the live worker pool. Use this for run-progress UI; use `job_counts` for live claimability.
-type WorkflowRunStepCounts struct {
-	Cancelled int `json:"cancelled"`
-	Completed int `json:"completed"`
-	Failed    int `json:"failed"`
-	Pending   int `json:"pending"`
-	Running   int `json:"running"`
-	Skipped   int `json:"skipped"`
-}
-
-// WorkflowRunWaitDetail defines model for WorkflowRunWaitDetail.
-type WorkflowRunWaitDetail struct {
-	// Attempt Retry attempt number for `retry` waits.
-	Attempt *int `json:"attempt,omitempty"`
-
-	// AttemptCount Number of poll attempts recorded for a `wait_until` wait.
-	AttemptCount *int `json:"attempt_count,omitempty"`
-
-	// Condition Optional `expr` predicate the matching event or latest wait result must satisfy before resuming the path.
-	Condition *string `json:"condition,omitempty"`
-
-	// CurrentInterval Current poll interval for `wait_until`.
-	CurrentInterval *string `json:"current_interval,omitempty"`
-
-	// DeadlineAt Fixed timeout deadline for `wait_until`.
-	DeadlineAt *time.Time `json:"deadline_at,omitempty"`
-
-	// EventType Event type pattern this path is waiting for. Set when `kind` is `wait_event`.
-	EventType *string `json:"event_type,omitempty"`
-
-	// InteractionId Pending interaction linked to this wait.
-	InteractionId *string `json:"interaction_id,omitempty"`
-
-	// JoinStep Join step this path is waiting at.
-	JoinStep *string `json:"join_step,omitempty"`
-
-	// Kind What a waiting path is blocked on.
-	Kind WorkflowRunWaitKind `json:"kind"`
-
-	// LastErrorMessage Latest poll error message for `wait_until`.
-	LastErrorMessage *string `json:"last_error_message,omitempty"`
-
-	// LastErrorType Latest poll error type for `wait_until`.
-	LastErrorType *string `json:"last_error_type,omitempty"`
-
-	// LastResult Latest poll result preview for `wait_until`.
-	LastResult interface{} `json:"last_result,omitempty"`
-
-	// MatchMode Event match mode for `wait_event`; empty means `exact`.
-	MatchMode *string `json:"match_mode,omitempty"`
-
-	// MaxAttempts Maximum attempts for `retry` waits.
-	MaxAttempts *int `json:"max_attempts,omitempty"`
-
-	// Observable Observable name for `wait_until.observable` waits.
-	Observable *string `json:"observable,omitempty"`
-
-	// ObservableId Observable ID for `wait_until.observable` waits.
-	ObservableId *string `json:"observable_id,omitempty"`
-
-	// ObservedVersion Observable version observed before the path parked.
-	ObservedVersion *int64 `json:"observed_version,omitempty"`
-
-	// PollAction Poll action name for `wait_until` waits.
-	PollAction *string `json:"poll_action,omitempty"`
-
-	// PollParameters Frozen poll parameters for `wait_until` waits.
-	PollParameters *map[string]interface{} `json:"poll_parameters,omitempty"`
-
-	// Reason Human-readable pause or wait reason.
-	Reason *string `json:"reason,omitempty"`
-
-	// SignalName Signal name this path is waiting for.
-	SignalName *string `json:"signal_name,omitempty"`
-
-	// SourceKind Wait source kind for `wait_until` (`poll` or `observable`).
-	SourceKind *string `json:"source_kind,omitempty"`
-
-	// Target Identifies who should receive an interaction request. Note: distinct from the caller/audit `Actor` vocabulary — a target is a *recipient*, not someone who has acted yet.
-	Target *InteractionTarget `json:"target,omitempty"`
-
-	// WaitingForPaths Path IDs still required before a join can proceed.
-	WaitingForPaths *[]string `json:"waiting_for_paths,omitempty"`
-
-	// WakeAt Earliest time the runtime should inspect or resume this path.
-	WakeAt *time.Time `json:"wake_at,omitempty"`
-}
-
-// WorkflowRunWaitKind What a waiting path is blocked on.
-type WorkflowRunWaitKind string
-
-// WorkflowRunWaitSummary Always-present aggregate of waiting paths.
-type WorkflowRunWaitSummary struct {
-	InteractionIds []string `json:"interaction_ids"`
-
-	// KindCounts Count of waiting paths by `waiting_on.kind`.
-	KindCounts map[string]int `json:"kind_counts"`
-
-	// NextWakeAt Earliest wake time among waiting paths, or null.
-	NextWakeAt           *time.Time `json:"next_wake_at"`
-	WaitingOnSignalNames []string   `json:"waiting_on_signal_names"`
-	WaitingPaths         int        `json:"waiting_paths"`
-}
-
 // WorkflowSetStep Binds one or more top-level vars and produces the bound object as this step's result.
 type WorkflowSetStep struct {
 	Description *string `json:"description,omitempty"`
@@ -10062,7 +10049,7 @@ type WorkflowSleepStep struct {
 //
 // Exactly one of `steps` or `code` must be set; setting both, or neither, is rejected by the schema's `oneOf` constraint.
 //
-// Authoring rule for spec-step workflows: `action` is the canonical field for executable steps. When `action_kind` is omitted, `action` uses worker/job semantics. Use `action_kind: "server"` for Mobius-managed server actions such as platform integrations or custom HTTP-backed actions.
+// Authoring rule for spec-step workflows: `action` is the canonical field for executable steps. The engine routes each action step to the right executor based on the action's registered `runs_on` metadata — there is no author-side kind hint. Platform-owned actions are claimed by the in-daemon worker pool; customer- registered actions are claimed by the customer's deployed workers over the standard `/v1/.../jobs/claim` surface.
 type WorkflowSpec struct {
 	// Code Configuration for a code workflow. Sibling shape to `WorkflowSpec.steps`: a workflow with `code` set delegates its control flow to a user-authored handler running on a worker (TypeScript today, with other runtimes to follow). The handler invokes step.run(), step.sleep(), step.waitForSignal() etc. via the SDK; each call is durably checkpointed against the run ledger so the handler replays deterministically across yield/resume cycles.
 	//
@@ -10135,7 +10122,7 @@ type WorkflowVersion struct {
 	//
 	// Exactly one of `steps` or `code` must be set; setting both, or neither, is rejected by the schema's `oneOf` constraint.
 	//
-	// Authoring rule for spec-step workflows: `action` is the canonical field for executable steps. When `action_kind` is omitted, `action` uses worker/job semantics. Use `action_kind: "server"` for Mobius-managed server actions such as platform integrations or custom HTTP-backed actions.
+	// Authoring rule for spec-step workflows: `action` is the canonical field for executable steps. The engine routes each action step to the right executor based on the action's registered `runs_on` metadata — there is no author-side kind hint. Platform-owned actions are claimed by the in-daemon worker pool; customer- registered actions are claimed by the customer's deployed workers over the standard `/v1/.../jobs/claim` surface.
 	Spec WorkflowSpec `json:"spec"`
 
 	// Version Monotonically increasing version number. Starts at 1.
@@ -10258,7 +10245,7 @@ type WorkflowWaitUntilBackoffConfig struct {
 	Multiplier float64 `json:"multiplier"`
 }
 
-// WorkflowWaitUntilConfig Durable condition wait. Exactly one of `poll` or `observable` must be set. Poll waits evaluate direct checks; Observable waits read reusable project-scoped Observable state and park on change events.
+// WorkflowWaitUntilConfig Durable condition wait. Exactly one of `poll` or `observable` must be set. Poll waits evaluate direct checks; Observable waits read reusable project-scoped Observable state and suspend on change events.
 type WorkflowWaitUntilConfig struct {
 	// Condition Required bare-form `expr` predicate. Poll waits evaluate against `{ result, inputs, steps, vars, each, run }`; Observable waits evaluate against `{ state, observable, inputs, steps, vars, each, run }`. The expression must return bool true.
 	Condition string `json:"condition"`
@@ -10287,7 +10274,7 @@ type WorkflowWaitUntilPollConfig struct {
 	Parameters *map[string]interface{} `json:"parameters,omitempty"`
 }
 
-// WorkflowWaitUntilStep Polls project or external state until a strict boolean condition evaluates true, parking the run durably between checks.
+// WorkflowWaitUntilStep Polls project or external state until a strict boolean condition evaluates true, suspending the run durably between checks.
 type WorkflowWaitUntilStep struct {
 	// Description Optional human-readable description of what this step does.
 	Description *string `json:"description,omitempty"`
@@ -10307,7 +10294,7 @@ type WorkflowWaitUntilStep struct {
 	// Next Outbound edges controlling which step executes after the condition passes.
 	Next *[]WorkflowEdge `json:"next,omitempty"`
 
-	// WaitUntil Durable condition wait. Exactly one of `poll` or `observable` must be set. Poll waits evaluate direct checks; Observable waits read reusable project-scoped Observable state and park on change events.
+	// WaitUntil Durable condition wait. Exactly one of `poll` or `observable` must be set. Poll waits evaluate direct checks; Observable waits read reusable project-scoped Observable state and suspend on change events.
 	WaitUntil WorkflowWaitUntilConfig `json:"wait_until"`
 }
 
@@ -10876,7 +10863,7 @@ type LookupReferencesParams struct {
 // ListRunsParams defines parameters for ListRuns.
 type ListRunsParams struct {
 	// Status Filter by run status.
-	Status *WorkflowRunStatus `form:"status,omitempty" json:"status,omitempty"`
+	Status *RunStatus `form:"status,omitempty" json:"status,omitempty"`
 
 	// Lifecycle Convenience filter that selects runs by lifecycle stage: `in_flight` returns active (not-yet-terminal) runs, `terminal` returns completed and failed runs. Ignored when `status` is set.
 	Lifecycle *ListRunsParamsLifecycle `form:"lifecycle,omitempty" json:"lifecycle,omitempty"`
@@ -12092,6 +12079,1163 @@ func (a GroupWithCount) MarshalJSON() ([]byte, error) {
 	return json.Marshal(object)
 }
 
+// Getter for additional properties for Run. Returns the specified
+// element and whether it was found
+func (a Run) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for Run
+func (a *Run) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for Run to handle AdditionalProperties
+func (a *Run) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["actor_id"]; found {
+		err = json.Unmarshal(raw, &a.ActorId)
+		if err != nil {
+			return fmt.Errorf("error reading 'actor_id': %w", err)
+		}
+		delete(object, "actor_id")
+	}
+
+	if raw, found := object["actor_type"]; found {
+		err = json.Unmarshal(raw, &a.ActorType)
+		if err != nil {
+			return fmt.Errorf("error reading 'actor_type': %w", err)
+		}
+		delete(object, "actor_type")
+	}
+
+	if raw, found := object["attempt"]; found {
+		err = json.Unmarshal(raw, &a.Attempt)
+		if err != nil {
+			return fmt.Errorf("error reading 'attempt': %w", err)
+		}
+		delete(object, "attempt")
+	}
+
+	if raw, found := object["cancel_requested_at"]; found {
+		err = json.Unmarshal(raw, &a.CancelRequestedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'cancel_requested_at': %w", err)
+		}
+		delete(object, "cancel_requested_at")
+	}
+
+	if raw, found := object["completed_at"]; found {
+		err = json.Unmarshal(raw, &a.CompletedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'completed_at': %w", err)
+		}
+		delete(object, "completed_at")
+	}
+
+	if raw, found := object["created_at"]; found {
+		err = json.Unmarshal(raw, &a.CreatedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'created_at': %w", err)
+		}
+		delete(object, "created_at")
+	}
+
+	if raw, found := object["default_step_config"]; found {
+		err = json.Unmarshal(raw, &a.DefaultStepConfig)
+		if err != nil {
+			return fmt.Errorf("error reading 'default_step_config': %w", err)
+		}
+		delete(object, "default_step_config")
+	}
+
+	if raw, found := object["definition_id"]; found {
+		err = json.Unmarshal(raw, &a.DefinitionId)
+		if err != nil {
+			return fmt.Errorf("error reading 'definition_id': %w", err)
+		}
+		delete(object, "definition_id")
+	}
+
+	if raw, found := object["definition_version"]; found {
+		err = json.Unmarshal(raw, &a.DefinitionVersion)
+		if err != nil {
+			return fmt.Errorf("error reading 'definition_version': %w", err)
+		}
+		delete(object, "definition_version")
+	}
+
+	if raw, found := object["ephemeral"]; found {
+		err = json.Unmarshal(raw, &a.Ephemeral)
+		if err != nil {
+			return fmt.Errorf("error reading 'ephemeral': %w", err)
+		}
+		delete(object, "ephemeral")
+	}
+
+	if raw, found := object["error_message"]; found {
+		err = json.Unmarshal(raw, &a.ErrorMessage)
+		if err != nil {
+			return fmt.Errorf("error reading 'error_message': %w", err)
+		}
+		delete(object, "error_message")
+	}
+
+	if raw, found := object["error_type"]; found {
+		err = json.Unmarshal(raw, &a.ErrorType)
+		if err != nil {
+			return fmt.Errorf("error reading 'error_type': %w", err)
+		}
+		delete(object, "error_type")
+	}
+
+	if raw, found := object["errors"]; found {
+		err = json.Unmarshal(raw, &a.Errors)
+		if err != nil {
+			return fmt.Errorf("error reading 'errors': %w", err)
+		}
+		delete(object, "errors")
+	}
+
+	if raw, found := object["external_id"]; found {
+		err = json.Unmarshal(raw, &a.ExternalId)
+		if err != nil {
+			return fmt.Errorf("error reading 'external_id': %w", err)
+		}
+		delete(object, "external_id")
+	}
+
+	if raw, found := object["forked_from"]; found {
+		err = json.Unmarshal(raw, &a.ForkedFrom)
+		if err != nil {
+			return fmt.Errorf("error reading 'forked_from': %w", err)
+		}
+		delete(object, "forked_from")
+	}
+
+	if raw, found := object["id"]; found {
+		err = json.Unmarshal(raw, &a.Id)
+		if err != nil {
+			return fmt.Errorf("error reading 'id': %w", err)
+		}
+		delete(object, "id")
+	}
+
+	if raw, found := object["inputs"]; found {
+		err = json.Unmarshal(raw, &a.Inputs)
+		if err != nil {
+			return fmt.Errorf("error reading 'inputs': %w", err)
+		}
+		delete(object, "inputs")
+	}
+
+	if raw, found := object["job_counts"]; found {
+		err = json.Unmarshal(raw, &a.JobCounts)
+		if err != nil {
+			return fmt.Errorf("error reading 'job_counts': %w", err)
+		}
+		delete(object, "job_counts")
+	}
+
+	if raw, found := object["metadata"]; found {
+		err = json.Unmarshal(raw, &a.Metadata)
+		if err != nil {
+			return fmt.Errorf("error reading 'metadata': %w", err)
+		}
+		delete(object, "metadata")
+	}
+
+	if raw, found := object["parent_run_id"]; found {
+		err = json.Unmarshal(raw, &a.ParentRunId)
+		if err != nil {
+			return fmt.Errorf("error reading 'parent_run_id': %w", err)
+		}
+		delete(object, "parent_run_id")
+	}
+
+	if raw, found := object["path_counts"]; found {
+		err = json.Unmarshal(raw, &a.PathCounts)
+		if err != nil {
+			return fmt.Errorf("error reading 'path_counts': %w", err)
+		}
+		delete(object, "path_counts")
+	}
+
+	if raw, found := object["queue"]; found {
+		err = json.Unmarshal(raw, &a.Queue)
+		if err != nil {
+			return fmt.Errorf("error reading 'queue': %w", err)
+		}
+		delete(object, "queue")
+	}
+
+	if raw, found := object["resolved_config"]; found {
+		err = json.Unmarshal(raw, &a.ResolvedConfig)
+		if err != nil {
+			return fmt.Errorf("error reading 'resolved_config': %w", err)
+		}
+		delete(object, "resolved_config")
+	}
+
+	if raw, found := object["source_id"]; found {
+		err = json.Unmarshal(raw, &a.SourceId)
+		if err != nil {
+			return fmt.Errorf("error reading 'source_id': %w", err)
+		}
+		delete(object, "source_id")
+	}
+
+	if raw, found := object["source_label"]; found {
+		err = json.Unmarshal(raw, &a.SourceLabel)
+		if err != nil {
+			return fmt.Errorf("error reading 'source_label': %w", err)
+		}
+		delete(object, "source_label")
+	}
+
+	if raw, found := object["source_type"]; found {
+		err = json.Unmarshal(raw, &a.SourceType)
+		if err != nil {
+			return fmt.Errorf("error reading 'source_type': %w", err)
+		}
+		delete(object, "source_type")
+	}
+
+	if raw, found := object["started_at"]; found {
+		err = json.Unmarshal(raw, &a.StartedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'started_at': %w", err)
+		}
+		delete(object, "started_at")
+	}
+
+	if raw, found := object["status"]; found {
+		err = json.Unmarshal(raw, &a.Status)
+		if err != nil {
+			return fmt.Errorf("error reading 'status': %w", err)
+		}
+		delete(object, "status")
+	}
+
+	if raw, found := object["step_counts"]; found {
+		err = json.Unmarshal(raw, &a.StepCounts)
+		if err != nil {
+			return fmt.Errorf("error reading 'step_counts': %w", err)
+		}
+		delete(object, "step_counts")
+	}
+
+	if raw, found := object["tags"]; found {
+		err = json.Unmarshal(raw, &a.Tags)
+		if err != nil {
+			return fmt.Errorf("error reading 'tags': %w", err)
+		}
+		delete(object, "tags")
+	}
+
+	if raw, found := object["updated_at"]; found {
+		err = json.Unmarshal(raw, &a.UpdatedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'updated_at': %w", err)
+		}
+		delete(object, "updated_at")
+	}
+
+	if raw, found := object["wait_summary"]; found {
+		err = json.Unmarshal(raw, &a.WaitSummary)
+		if err != nil {
+			return fmt.Errorf("error reading 'wait_summary': %w", err)
+		}
+		delete(object, "wait_summary")
+	}
+
+	if raw, found := object["wall_clock_deadline_at"]; found {
+		err = json.Unmarshal(raw, &a.WallClockDeadlineAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'wall_clock_deadline_at': %w", err)
+		}
+		delete(object, "wall_clock_deadline_at")
+	}
+
+	if raw, found := object["workflow_name"]; found {
+		err = json.Unmarshal(raw, &a.WorkflowName)
+		if err != nil {
+			return fmt.Errorf("error reading 'workflow_name': %w", err)
+		}
+		delete(object, "workflow_name")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for Run to handle AdditionalProperties
+func (a Run) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.ActorId != nil {
+		object["actor_id"], err = json.Marshal(a.ActorId)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'actor_id': %w", err)
+		}
+	}
+
+	if a.ActorType != nil {
+		object["actor_type"], err = json.Marshal(a.ActorType)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'actor_type': %w", err)
+		}
+	}
+
+	object["attempt"], err = json.Marshal(a.Attempt)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'attempt': %w", err)
+	}
+
+	if a.CancelRequestedAt != nil {
+		object["cancel_requested_at"], err = json.Marshal(a.CancelRequestedAt)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'cancel_requested_at': %w", err)
+		}
+	}
+
+	if a.CompletedAt != nil {
+		object["completed_at"], err = json.Marshal(a.CompletedAt)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'completed_at': %w", err)
+		}
+	}
+
+	object["created_at"], err = json.Marshal(a.CreatedAt)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'created_at': %w", err)
+	}
+
+	if a.DefaultStepConfig != nil {
+		object["default_step_config"], err = json.Marshal(a.DefaultStepConfig)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'default_step_config': %w", err)
+		}
+	}
+
+	if a.DefinitionId != nil {
+		object["definition_id"], err = json.Marshal(a.DefinitionId)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'definition_id': %w", err)
+		}
+	}
+
+	if a.DefinitionVersion != nil {
+		object["definition_version"], err = json.Marshal(a.DefinitionVersion)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'definition_version': %w", err)
+		}
+	}
+
+	object["ephemeral"], err = json.Marshal(a.Ephemeral)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'ephemeral': %w", err)
+	}
+
+	if a.ErrorMessage != nil {
+		object["error_message"], err = json.Marshal(a.ErrorMessage)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'error_message': %w", err)
+		}
+	}
+
+	if a.ErrorType != nil {
+		object["error_type"], err = json.Marshal(a.ErrorType)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'error_type': %w", err)
+		}
+	}
+
+	if a.Errors != nil {
+		object["errors"], err = json.Marshal(a.Errors)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'errors': %w", err)
+		}
+	}
+
+	if a.ExternalId != nil {
+		object["external_id"], err = json.Marshal(a.ExternalId)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'external_id': %w", err)
+		}
+	}
+
+	if a.ForkedFrom != nil {
+		object["forked_from"], err = json.Marshal(a.ForkedFrom)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'forked_from': %w", err)
+		}
+	}
+
+	object["id"], err = json.Marshal(a.Id)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'id': %w", err)
+	}
+
+	if a.Inputs != nil {
+		object["inputs"], err = json.Marshal(a.Inputs)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'inputs': %w", err)
+		}
+	}
+
+	object["job_counts"], err = json.Marshal(a.JobCounts)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'job_counts': %w", err)
+	}
+
+	if a.Metadata != nil {
+		object["metadata"], err = json.Marshal(a.Metadata)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'metadata': %w", err)
+		}
+	}
+
+	if a.ParentRunId != nil {
+		object["parent_run_id"], err = json.Marshal(a.ParentRunId)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'parent_run_id': %w", err)
+		}
+	}
+
+	object["path_counts"], err = json.Marshal(a.PathCounts)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'path_counts': %w", err)
+	}
+
+	if a.Queue != nil {
+		object["queue"], err = json.Marshal(a.Queue)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'queue': %w", err)
+		}
+	}
+
+	if a.ResolvedConfig != nil {
+		object["resolved_config"], err = json.Marshal(a.ResolvedConfig)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'resolved_config': %w", err)
+		}
+	}
+
+	if a.SourceId != nil {
+		object["source_id"], err = json.Marshal(a.SourceId)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'source_id': %w", err)
+		}
+	}
+
+	if a.SourceLabel != nil {
+		object["source_label"], err = json.Marshal(a.SourceLabel)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'source_label': %w", err)
+		}
+	}
+
+	if a.SourceType != nil {
+		object["source_type"], err = json.Marshal(a.SourceType)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'source_type': %w", err)
+		}
+	}
+
+	if a.StartedAt != nil {
+		object["started_at"], err = json.Marshal(a.StartedAt)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'started_at': %w", err)
+		}
+	}
+
+	object["status"], err = json.Marshal(a.Status)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'status': %w", err)
+	}
+
+	object["step_counts"], err = json.Marshal(a.StepCounts)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'step_counts': %w", err)
+	}
+
+	if a.Tags != nil {
+		object["tags"], err = json.Marshal(a.Tags)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'tags': %w", err)
+		}
+	}
+
+	object["updated_at"], err = json.Marshal(a.UpdatedAt)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'updated_at': %w", err)
+	}
+
+	object["wait_summary"], err = json.Marshal(a.WaitSummary)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'wait_summary': %w", err)
+	}
+
+	if a.WallClockDeadlineAt != nil {
+		object["wall_clock_deadline_at"], err = json.Marshal(a.WallClockDeadlineAt)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'wall_clock_deadline_at': %w", err)
+		}
+	}
+
+	object["workflow_name"], err = json.Marshal(a.WorkflowName)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'workflow_name': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for RunDetail. Returns the specified
+// element and whether it was found
+func (a RunDetail) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for RunDetail
+func (a *RunDetail) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for RunDetail to handle AdditionalProperties
+func (a *RunDetail) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["actor_id"]; found {
+		err = json.Unmarshal(raw, &a.ActorId)
+		if err != nil {
+			return fmt.Errorf("error reading 'actor_id': %w", err)
+		}
+		delete(object, "actor_id")
+	}
+
+	if raw, found := object["actor_type"]; found {
+		err = json.Unmarshal(raw, &a.ActorType)
+		if err != nil {
+			return fmt.Errorf("error reading 'actor_type': %w", err)
+		}
+		delete(object, "actor_type")
+	}
+
+	if raw, found := object["attempt"]; found {
+		err = json.Unmarshal(raw, &a.Attempt)
+		if err != nil {
+			return fmt.Errorf("error reading 'attempt': %w", err)
+		}
+		delete(object, "attempt")
+	}
+
+	if raw, found := object["cancel_requested_at"]; found {
+		err = json.Unmarshal(raw, &a.CancelRequestedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'cancel_requested_at': %w", err)
+		}
+		delete(object, "cancel_requested_at")
+	}
+
+	if raw, found := object["completed_at"]; found {
+		err = json.Unmarshal(raw, &a.CompletedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'completed_at': %w", err)
+		}
+		delete(object, "completed_at")
+	}
+
+	if raw, found := object["created_at"]; found {
+		err = json.Unmarshal(raw, &a.CreatedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'created_at': %w", err)
+		}
+		delete(object, "created_at")
+	}
+
+	if raw, found := object["default_step_config"]; found {
+		err = json.Unmarshal(raw, &a.DefaultStepConfig)
+		if err != nil {
+			return fmt.Errorf("error reading 'default_step_config': %w", err)
+		}
+		delete(object, "default_step_config")
+	}
+
+	if raw, found := object["definition_id"]; found {
+		err = json.Unmarshal(raw, &a.DefinitionId)
+		if err != nil {
+			return fmt.Errorf("error reading 'definition_id': %w", err)
+		}
+		delete(object, "definition_id")
+	}
+
+	if raw, found := object["definition_version"]; found {
+		err = json.Unmarshal(raw, &a.DefinitionVersion)
+		if err != nil {
+			return fmt.Errorf("error reading 'definition_version': %w", err)
+		}
+		delete(object, "definition_version")
+	}
+
+	if raw, found := object["ephemeral"]; found {
+		err = json.Unmarshal(raw, &a.Ephemeral)
+		if err != nil {
+			return fmt.Errorf("error reading 'ephemeral': %w", err)
+		}
+		delete(object, "ephemeral")
+	}
+
+	if raw, found := object["error_message"]; found {
+		err = json.Unmarshal(raw, &a.ErrorMessage)
+		if err != nil {
+			return fmt.Errorf("error reading 'error_message': %w", err)
+		}
+		delete(object, "error_message")
+	}
+
+	if raw, found := object["error_type"]; found {
+		err = json.Unmarshal(raw, &a.ErrorType)
+		if err != nil {
+			return fmt.Errorf("error reading 'error_type': %w", err)
+		}
+		delete(object, "error_type")
+	}
+
+	if raw, found := object["errors"]; found {
+		err = json.Unmarshal(raw, &a.Errors)
+		if err != nil {
+			return fmt.Errorf("error reading 'errors': %w", err)
+		}
+		delete(object, "errors")
+	}
+
+	if raw, found := object["external_id"]; found {
+		err = json.Unmarshal(raw, &a.ExternalId)
+		if err != nil {
+			return fmt.Errorf("error reading 'external_id': %w", err)
+		}
+		delete(object, "external_id")
+	}
+
+	if raw, found := object["forked_from"]; found {
+		err = json.Unmarshal(raw, &a.ForkedFrom)
+		if err != nil {
+			return fmt.Errorf("error reading 'forked_from': %w", err)
+		}
+		delete(object, "forked_from")
+	}
+
+	if raw, found := object["id"]; found {
+		err = json.Unmarshal(raw, &a.Id)
+		if err != nil {
+			return fmt.Errorf("error reading 'id': %w", err)
+		}
+		delete(object, "id")
+	}
+
+	if raw, found := object["inputs"]; found {
+		err = json.Unmarshal(raw, &a.Inputs)
+		if err != nil {
+			return fmt.Errorf("error reading 'inputs': %w", err)
+		}
+		delete(object, "inputs")
+	}
+
+	if raw, found := object["job_counts"]; found {
+		err = json.Unmarshal(raw, &a.JobCounts)
+		if err != nil {
+			return fmt.Errorf("error reading 'job_counts': %w", err)
+		}
+		delete(object, "job_counts")
+	}
+
+	if raw, found := object["metadata"]; found {
+		err = json.Unmarshal(raw, &a.Metadata)
+		if err != nil {
+			return fmt.Errorf("error reading 'metadata': %w", err)
+		}
+		delete(object, "metadata")
+	}
+
+	if raw, found := object["parent_run_id"]; found {
+		err = json.Unmarshal(raw, &a.ParentRunId)
+		if err != nil {
+			return fmt.Errorf("error reading 'parent_run_id': %w", err)
+		}
+		delete(object, "parent_run_id")
+	}
+
+	if raw, found := object["path_counts"]; found {
+		err = json.Unmarshal(raw, &a.PathCounts)
+		if err != nil {
+			return fmt.Errorf("error reading 'path_counts': %w", err)
+		}
+		delete(object, "path_counts")
+	}
+
+	if raw, found := object["paths"]; found {
+		err = json.Unmarshal(raw, &a.Paths)
+		if err != nil {
+			return fmt.Errorf("error reading 'paths': %w", err)
+		}
+		delete(object, "paths")
+	}
+
+	if raw, found := object["queue"]; found {
+		err = json.Unmarshal(raw, &a.Queue)
+		if err != nil {
+			return fmt.Errorf("error reading 'queue': %w", err)
+		}
+		delete(object, "queue")
+	}
+
+	if raw, found := object["resolved_config"]; found {
+		err = json.Unmarshal(raw, &a.ResolvedConfig)
+		if err != nil {
+			return fmt.Errorf("error reading 'resolved_config': %w", err)
+		}
+		delete(object, "resolved_config")
+	}
+
+	if raw, found := object["result_b64"]; found {
+		err = json.Unmarshal(raw, &a.ResultB64)
+		if err != nil {
+			return fmt.Errorf("error reading 'result_b64': %w", err)
+		}
+		delete(object, "result_b64")
+	}
+
+	if raw, found := object["source_id"]; found {
+		err = json.Unmarshal(raw, &a.SourceId)
+		if err != nil {
+			return fmt.Errorf("error reading 'source_id': %w", err)
+		}
+		delete(object, "source_id")
+	}
+
+	if raw, found := object["source_label"]; found {
+		err = json.Unmarshal(raw, &a.SourceLabel)
+		if err != nil {
+			return fmt.Errorf("error reading 'source_label': %w", err)
+		}
+		delete(object, "source_label")
+	}
+
+	if raw, found := object["source_type"]; found {
+		err = json.Unmarshal(raw, &a.SourceType)
+		if err != nil {
+			return fmt.Errorf("error reading 'source_type': %w", err)
+		}
+		delete(object, "source_type")
+	}
+
+	if raw, found := object["spec"]; found {
+		err = json.Unmarshal(raw, &a.Spec)
+		if err != nil {
+			return fmt.Errorf("error reading 'spec': %w", err)
+		}
+		delete(object, "spec")
+	}
+
+	if raw, found := object["started_at"]; found {
+		err = json.Unmarshal(raw, &a.StartedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'started_at': %w", err)
+		}
+		delete(object, "started_at")
+	}
+
+	if raw, found := object["status"]; found {
+		err = json.Unmarshal(raw, &a.Status)
+		if err != nil {
+			return fmt.Errorf("error reading 'status': %w", err)
+		}
+		delete(object, "status")
+	}
+
+	if raw, found := object["step_counts"]; found {
+		err = json.Unmarshal(raw, &a.StepCounts)
+		if err != nil {
+			return fmt.Errorf("error reading 'step_counts': %w", err)
+		}
+		delete(object, "step_counts")
+	}
+
+	if raw, found := object["steps"]; found {
+		err = json.Unmarshal(raw, &a.Steps)
+		if err != nil {
+			return fmt.Errorf("error reading 'steps': %w", err)
+		}
+		delete(object, "steps")
+	}
+
+	if raw, found := object["steps_next_cursor"]; found {
+		err = json.Unmarshal(raw, &a.StepsNextCursor)
+		if err != nil {
+			return fmt.Errorf("error reading 'steps_next_cursor': %w", err)
+		}
+		delete(object, "steps_next_cursor")
+	}
+
+	if raw, found := object["tags"]; found {
+		err = json.Unmarshal(raw, &a.Tags)
+		if err != nil {
+			return fmt.Errorf("error reading 'tags': %w", err)
+		}
+		delete(object, "tags")
+	}
+
+	if raw, found := object["updated_at"]; found {
+		err = json.Unmarshal(raw, &a.UpdatedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'updated_at': %w", err)
+		}
+		delete(object, "updated_at")
+	}
+
+	if raw, found := object["wait_summary"]; found {
+		err = json.Unmarshal(raw, &a.WaitSummary)
+		if err != nil {
+			return fmt.Errorf("error reading 'wait_summary': %w", err)
+		}
+		delete(object, "wait_summary")
+	}
+
+	if raw, found := object["wall_clock_deadline_at"]; found {
+		err = json.Unmarshal(raw, &a.WallClockDeadlineAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'wall_clock_deadline_at': %w", err)
+		}
+		delete(object, "wall_clock_deadline_at")
+	}
+
+	if raw, found := object["workflow_name"]; found {
+		err = json.Unmarshal(raw, &a.WorkflowName)
+		if err != nil {
+			return fmt.Errorf("error reading 'workflow_name': %w", err)
+		}
+		delete(object, "workflow_name")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for RunDetail to handle AdditionalProperties
+func (a RunDetail) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.ActorId != nil {
+		object["actor_id"], err = json.Marshal(a.ActorId)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'actor_id': %w", err)
+		}
+	}
+
+	if a.ActorType != nil {
+		object["actor_type"], err = json.Marshal(a.ActorType)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'actor_type': %w", err)
+		}
+	}
+
+	object["attempt"], err = json.Marshal(a.Attempt)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'attempt': %w", err)
+	}
+
+	if a.CancelRequestedAt != nil {
+		object["cancel_requested_at"], err = json.Marshal(a.CancelRequestedAt)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'cancel_requested_at': %w", err)
+		}
+	}
+
+	if a.CompletedAt != nil {
+		object["completed_at"], err = json.Marshal(a.CompletedAt)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'completed_at': %w", err)
+		}
+	}
+
+	object["created_at"], err = json.Marshal(a.CreatedAt)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'created_at': %w", err)
+	}
+
+	if a.DefaultStepConfig != nil {
+		object["default_step_config"], err = json.Marshal(a.DefaultStepConfig)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'default_step_config': %w", err)
+		}
+	}
+
+	if a.DefinitionId != nil {
+		object["definition_id"], err = json.Marshal(a.DefinitionId)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'definition_id': %w", err)
+		}
+	}
+
+	if a.DefinitionVersion != nil {
+		object["definition_version"], err = json.Marshal(a.DefinitionVersion)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'definition_version': %w", err)
+		}
+	}
+
+	object["ephemeral"], err = json.Marshal(a.Ephemeral)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'ephemeral': %w", err)
+	}
+
+	if a.ErrorMessage != nil {
+		object["error_message"], err = json.Marshal(a.ErrorMessage)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'error_message': %w", err)
+		}
+	}
+
+	if a.ErrorType != nil {
+		object["error_type"], err = json.Marshal(a.ErrorType)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'error_type': %w", err)
+		}
+	}
+
+	if a.Errors != nil {
+		object["errors"], err = json.Marshal(a.Errors)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'errors': %w", err)
+		}
+	}
+
+	if a.ExternalId != nil {
+		object["external_id"], err = json.Marshal(a.ExternalId)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'external_id': %w", err)
+		}
+	}
+
+	if a.ForkedFrom != nil {
+		object["forked_from"], err = json.Marshal(a.ForkedFrom)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'forked_from': %w", err)
+		}
+	}
+
+	object["id"], err = json.Marshal(a.Id)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'id': %w", err)
+	}
+
+	if a.Inputs != nil {
+		object["inputs"], err = json.Marshal(a.Inputs)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'inputs': %w", err)
+		}
+	}
+
+	object["job_counts"], err = json.Marshal(a.JobCounts)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'job_counts': %w", err)
+	}
+
+	if a.Metadata != nil {
+		object["metadata"], err = json.Marshal(a.Metadata)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'metadata': %w", err)
+		}
+	}
+
+	if a.ParentRunId != nil {
+		object["parent_run_id"], err = json.Marshal(a.ParentRunId)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'parent_run_id': %w", err)
+		}
+	}
+
+	object["path_counts"], err = json.Marshal(a.PathCounts)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'path_counts': %w", err)
+	}
+
+	if a.Paths != nil {
+		object["paths"], err = json.Marshal(a.Paths)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'paths': %w", err)
+		}
+	}
+
+	if a.Queue != nil {
+		object["queue"], err = json.Marshal(a.Queue)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'queue': %w", err)
+		}
+	}
+
+	if a.ResolvedConfig != nil {
+		object["resolved_config"], err = json.Marshal(a.ResolvedConfig)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'resolved_config': %w", err)
+		}
+	}
+
+	if a.ResultB64 != nil {
+		object["result_b64"], err = json.Marshal(a.ResultB64)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'result_b64': %w", err)
+		}
+	}
+
+	if a.SourceId != nil {
+		object["source_id"], err = json.Marshal(a.SourceId)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'source_id': %w", err)
+		}
+	}
+
+	if a.SourceLabel != nil {
+		object["source_label"], err = json.Marshal(a.SourceLabel)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'source_label': %w", err)
+		}
+	}
+
+	if a.SourceType != nil {
+		object["source_type"], err = json.Marshal(a.SourceType)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'source_type': %w", err)
+		}
+	}
+
+	if a.Spec != nil {
+		object["spec"], err = json.Marshal(a.Spec)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'spec': %w", err)
+		}
+	}
+
+	if a.StartedAt != nil {
+		object["started_at"], err = json.Marshal(a.StartedAt)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'started_at': %w", err)
+		}
+	}
+
+	object["status"], err = json.Marshal(a.Status)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'status': %w", err)
+	}
+
+	object["step_counts"], err = json.Marshal(a.StepCounts)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'step_counts': %w", err)
+	}
+
+	if a.Steps != nil {
+		object["steps"], err = json.Marshal(a.Steps)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'steps': %w", err)
+		}
+	}
+
+	if a.StepsNextCursor != nil {
+		object["steps_next_cursor"], err = json.Marshal(a.StepsNextCursor)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'steps_next_cursor': %w", err)
+		}
+	}
+
+	if a.Tags != nil {
+		object["tags"], err = json.Marshal(a.Tags)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'tags': %w", err)
+		}
+	}
+
+	object["updated_at"], err = json.Marshal(a.UpdatedAt)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'updated_at': %w", err)
+	}
+
+	object["wait_summary"], err = json.Marshal(a.WaitSummary)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'wait_summary': %w", err)
+	}
+
+	if a.WallClockDeadlineAt != nil {
+		object["wall_clock_deadline_at"], err = json.Marshal(a.WallClockDeadlineAt)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'wall_clock_deadline_at': %w", err)
+		}
+	}
+
+	object["workflow_name"], err = json.Marshal(a.WorkflowName)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'workflow_name': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
 // Getter for additional properties for WorkflowDefinition. Returns the specified
 // element and whether it was found
 func (a WorkflowDefinition) Get(fieldName string) (value interface{}, found bool) {
@@ -12472,1163 +13616,6 @@ func (a WorkflowDefinitionSummary) MarshalJSON() ([]byte, error) {
 	object["updated_at"], err = json.Marshal(a.UpdatedAt)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling 'updated_at': %w", err)
-	}
-
-	for fieldName, field := range a.AdditionalProperties {
-		object[fieldName], err = json.Marshal(field)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
-		}
-	}
-	return json.Marshal(object)
-}
-
-// Getter for additional properties for WorkflowRun. Returns the specified
-// element and whether it was found
-func (a WorkflowRun) Get(fieldName string) (value interface{}, found bool) {
-	if a.AdditionalProperties != nil {
-		value, found = a.AdditionalProperties[fieldName]
-	}
-	return
-}
-
-// Setter for additional properties for WorkflowRun
-func (a *WorkflowRun) Set(fieldName string, value interface{}) {
-	if a.AdditionalProperties == nil {
-		a.AdditionalProperties = make(map[string]interface{})
-	}
-	a.AdditionalProperties[fieldName] = value
-}
-
-// Override default JSON handling for WorkflowRun to handle AdditionalProperties
-func (a *WorkflowRun) UnmarshalJSON(b []byte) error {
-	object := make(map[string]json.RawMessage)
-	err := json.Unmarshal(b, &object)
-	if err != nil {
-		return err
-	}
-
-	if raw, found := object["actor_id"]; found {
-		err = json.Unmarshal(raw, &a.ActorId)
-		if err != nil {
-			return fmt.Errorf("error reading 'actor_id': %w", err)
-		}
-		delete(object, "actor_id")
-	}
-
-	if raw, found := object["actor_type"]; found {
-		err = json.Unmarshal(raw, &a.ActorType)
-		if err != nil {
-			return fmt.Errorf("error reading 'actor_type': %w", err)
-		}
-		delete(object, "actor_type")
-	}
-
-	if raw, found := object["attempt"]; found {
-		err = json.Unmarshal(raw, &a.Attempt)
-		if err != nil {
-			return fmt.Errorf("error reading 'attempt': %w", err)
-		}
-		delete(object, "attempt")
-	}
-
-	if raw, found := object["cancel_requested_at"]; found {
-		err = json.Unmarshal(raw, &a.CancelRequestedAt)
-		if err != nil {
-			return fmt.Errorf("error reading 'cancel_requested_at': %w", err)
-		}
-		delete(object, "cancel_requested_at")
-	}
-
-	if raw, found := object["completed_at"]; found {
-		err = json.Unmarshal(raw, &a.CompletedAt)
-		if err != nil {
-			return fmt.Errorf("error reading 'completed_at': %w", err)
-		}
-		delete(object, "completed_at")
-	}
-
-	if raw, found := object["created_at"]; found {
-		err = json.Unmarshal(raw, &a.CreatedAt)
-		if err != nil {
-			return fmt.Errorf("error reading 'created_at': %w", err)
-		}
-		delete(object, "created_at")
-	}
-
-	if raw, found := object["default_step_config"]; found {
-		err = json.Unmarshal(raw, &a.DefaultStepConfig)
-		if err != nil {
-			return fmt.Errorf("error reading 'default_step_config': %w", err)
-		}
-		delete(object, "default_step_config")
-	}
-
-	if raw, found := object["definition_id"]; found {
-		err = json.Unmarshal(raw, &a.DefinitionId)
-		if err != nil {
-			return fmt.Errorf("error reading 'definition_id': %w", err)
-		}
-		delete(object, "definition_id")
-	}
-
-	if raw, found := object["definition_version"]; found {
-		err = json.Unmarshal(raw, &a.DefinitionVersion)
-		if err != nil {
-			return fmt.Errorf("error reading 'definition_version': %w", err)
-		}
-		delete(object, "definition_version")
-	}
-
-	if raw, found := object["ephemeral"]; found {
-		err = json.Unmarshal(raw, &a.Ephemeral)
-		if err != nil {
-			return fmt.Errorf("error reading 'ephemeral': %w", err)
-		}
-		delete(object, "ephemeral")
-	}
-
-	if raw, found := object["error_message"]; found {
-		err = json.Unmarshal(raw, &a.ErrorMessage)
-		if err != nil {
-			return fmt.Errorf("error reading 'error_message': %w", err)
-		}
-		delete(object, "error_message")
-	}
-
-	if raw, found := object["error_type"]; found {
-		err = json.Unmarshal(raw, &a.ErrorType)
-		if err != nil {
-			return fmt.Errorf("error reading 'error_type': %w", err)
-		}
-		delete(object, "error_type")
-	}
-
-	if raw, found := object["errors"]; found {
-		err = json.Unmarshal(raw, &a.Errors)
-		if err != nil {
-			return fmt.Errorf("error reading 'errors': %w", err)
-		}
-		delete(object, "errors")
-	}
-
-	if raw, found := object["external_id"]; found {
-		err = json.Unmarshal(raw, &a.ExternalId)
-		if err != nil {
-			return fmt.Errorf("error reading 'external_id': %w", err)
-		}
-		delete(object, "external_id")
-	}
-
-	if raw, found := object["forked_from"]; found {
-		err = json.Unmarshal(raw, &a.ForkedFrom)
-		if err != nil {
-			return fmt.Errorf("error reading 'forked_from': %w", err)
-		}
-		delete(object, "forked_from")
-	}
-
-	if raw, found := object["id"]; found {
-		err = json.Unmarshal(raw, &a.Id)
-		if err != nil {
-			return fmt.Errorf("error reading 'id': %w", err)
-		}
-		delete(object, "id")
-	}
-
-	if raw, found := object["inputs"]; found {
-		err = json.Unmarshal(raw, &a.Inputs)
-		if err != nil {
-			return fmt.Errorf("error reading 'inputs': %w", err)
-		}
-		delete(object, "inputs")
-	}
-
-	if raw, found := object["job_counts"]; found {
-		err = json.Unmarshal(raw, &a.JobCounts)
-		if err != nil {
-			return fmt.Errorf("error reading 'job_counts': %w", err)
-		}
-		delete(object, "job_counts")
-	}
-
-	if raw, found := object["metadata"]; found {
-		err = json.Unmarshal(raw, &a.Metadata)
-		if err != nil {
-			return fmt.Errorf("error reading 'metadata': %w", err)
-		}
-		delete(object, "metadata")
-	}
-
-	if raw, found := object["parent_run_id"]; found {
-		err = json.Unmarshal(raw, &a.ParentRunId)
-		if err != nil {
-			return fmt.Errorf("error reading 'parent_run_id': %w", err)
-		}
-		delete(object, "parent_run_id")
-	}
-
-	if raw, found := object["path_counts"]; found {
-		err = json.Unmarshal(raw, &a.PathCounts)
-		if err != nil {
-			return fmt.Errorf("error reading 'path_counts': %w", err)
-		}
-		delete(object, "path_counts")
-	}
-
-	if raw, found := object["queue"]; found {
-		err = json.Unmarshal(raw, &a.Queue)
-		if err != nil {
-			return fmt.Errorf("error reading 'queue': %w", err)
-		}
-		delete(object, "queue")
-	}
-
-	if raw, found := object["resolved_config"]; found {
-		err = json.Unmarshal(raw, &a.ResolvedConfig)
-		if err != nil {
-			return fmt.Errorf("error reading 'resolved_config': %w", err)
-		}
-		delete(object, "resolved_config")
-	}
-
-	if raw, found := object["source_id"]; found {
-		err = json.Unmarshal(raw, &a.SourceId)
-		if err != nil {
-			return fmt.Errorf("error reading 'source_id': %w", err)
-		}
-		delete(object, "source_id")
-	}
-
-	if raw, found := object["source_label"]; found {
-		err = json.Unmarshal(raw, &a.SourceLabel)
-		if err != nil {
-			return fmt.Errorf("error reading 'source_label': %w", err)
-		}
-		delete(object, "source_label")
-	}
-
-	if raw, found := object["source_type"]; found {
-		err = json.Unmarshal(raw, &a.SourceType)
-		if err != nil {
-			return fmt.Errorf("error reading 'source_type': %w", err)
-		}
-		delete(object, "source_type")
-	}
-
-	if raw, found := object["started_at"]; found {
-		err = json.Unmarshal(raw, &a.StartedAt)
-		if err != nil {
-			return fmt.Errorf("error reading 'started_at': %w", err)
-		}
-		delete(object, "started_at")
-	}
-
-	if raw, found := object["status"]; found {
-		err = json.Unmarshal(raw, &a.Status)
-		if err != nil {
-			return fmt.Errorf("error reading 'status': %w", err)
-		}
-		delete(object, "status")
-	}
-
-	if raw, found := object["step_counts"]; found {
-		err = json.Unmarshal(raw, &a.StepCounts)
-		if err != nil {
-			return fmt.Errorf("error reading 'step_counts': %w", err)
-		}
-		delete(object, "step_counts")
-	}
-
-	if raw, found := object["tags"]; found {
-		err = json.Unmarshal(raw, &a.Tags)
-		if err != nil {
-			return fmt.Errorf("error reading 'tags': %w", err)
-		}
-		delete(object, "tags")
-	}
-
-	if raw, found := object["updated_at"]; found {
-		err = json.Unmarshal(raw, &a.UpdatedAt)
-		if err != nil {
-			return fmt.Errorf("error reading 'updated_at': %w", err)
-		}
-		delete(object, "updated_at")
-	}
-
-	if raw, found := object["wait_summary"]; found {
-		err = json.Unmarshal(raw, &a.WaitSummary)
-		if err != nil {
-			return fmt.Errorf("error reading 'wait_summary': %w", err)
-		}
-		delete(object, "wait_summary")
-	}
-
-	if raw, found := object["wall_clock_deadline_at"]; found {
-		err = json.Unmarshal(raw, &a.WallClockDeadlineAt)
-		if err != nil {
-			return fmt.Errorf("error reading 'wall_clock_deadline_at': %w", err)
-		}
-		delete(object, "wall_clock_deadline_at")
-	}
-
-	if raw, found := object["workflow_name"]; found {
-		err = json.Unmarshal(raw, &a.WorkflowName)
-		if err != nil {
-			return fmt.Errorf("error reading 'workflow_name': %w", err)
-		}
-		delete(object, "workflow_name")
-	}
-
-	if len(object) != 0 {
-		a.AdditionalProperties = make(map[string]interface{})
-		for fieldName, fieldBuf := range object {
-			var fieldVal interface{}
-			err := json.Unmarshal(fieldBuf, &fieldVal)
-			if err != nil {
-				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
-			}
-			a.AdditionalProperties[fieldName] = fieldVal
-		}
-	}
-	return nil
-}
-
-// Override default JSON handling for WorkflowRun to handle AdditionalProperties
-func (a WorkflowRun) MarshalJSON() ([]byte, error) {
-	var err error
-	object := make(map[string]json.RawMessage)
-
-	if a.ActorId != nil {
-		object["actor_id"], err = json.Marshal(a.ActorId)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'actor_id': %w", err)
-		}
-	}
-
-	if a.ActorType != nil {
-		object["actor_type"], err = json.Marshal(a.ActorType)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'actor_type': %w", err)
-		}
-	}
-
-	object["attempt"], err = json.Marshal(a.Attempt)
-	if err != nil {
-		return nil, fmt.Errorf("error marshaling 'attempt': %w", err)
-	}
-
-	if a.CancelRequestedAt != nil {
-		object["cancel_requested_at"], err = json.Marshal(a.CancelRequestedAt)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'cancel_requested_at': %w", err)
-		}
-	}
-
-	if a.CompletedAt != nil {
-		object["completed_at"], err = json.Marshal(a.CompletedAt)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'completed_at': %w", err)
-		}
-	}
-
-	object["created_at"], err = json.Marshal(a.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("error marshaling 'created_at': %w", err)
-	}
-
-	if a.DefaultStepConfig != nil {
-		object["default_step_config"], err = json.Marshal(a.DefaultStepConfig)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'default_step_config': %w", err)
-		}
-	}
-
-	if a.DefinitionId != nil {
-		object["definition_id"], err = json.Marshal(a.DefinitionId)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'definition_id': %w", err)
-		}
-	}
-
-	if a.DefinitionVersion != nil {
-		object["definition_version"], err = json.Marshal(a.DefinitionVersion)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'definition_version': %w", err)
-		}
-	}
-
-	object["ephemeral"], err = json.Marshal(a.Ephemeral)
-	if err != nil {
-		return nil, fmt.Errorf("error marshaling 'ephemeral': %w", err)
-	}
-
-	if a.ErrorMessage != nil {
-		object["error_message"], err = json.Marshal(a.ErrorMessage)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'error_message': %w", err)
-		}
-	}
-
-	if a.ErrorType != nil {
-		object["error_type"], err = json.Marshal(a.ErrorType)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'error_type': %w", err)
-		}
-	}
-
-	if a.Errors != nil {
-		object["errors"], err = json.Marshal(a.Errors)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'errors': %w", err)
-		}
-	}
-
-	if a.ExternalId != nil {
-		object["external_id"], err = json.Marshal(a.ExternalId)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'external_id': %w", err)
-		}
-	}
-
-	if a.ForkedFrom != nil {
-		object["forked_from"], err = json.Marshal(a.ForkedFrom)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'forked_from': %w", err)
-		}
-	}
-
-	object["id"], err = json.Marshal(a.Id)
-	if err != nil {
-		return nil, fmt.Errorf("error marshaling 'id': %w", err)
-	}
-
-	if a.Inputs != nil {
-		object["inputs"], err = json.Marshal(a.Inputs)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'inputs': %w", err)
-		}
-	}
-
-	object["job_counts"], err = json.Marshal(a.JobCounts)
-	if err != nil {
-		return nil, fmt.Errorf("error marshaling 'job_counts': %w", err)
-	}
-
-	if a.Metadata != nil {
-		object["metadata"], err = json.Marshal(a.Metadata)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'metadata': %w", err)
-		}
-	}
-
-	if a.ParentRunId != nil {
-		object["parent_run_id"], err = json.Marshal(a.ParentRunId)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'parent_run_id': %w", err)
-		}
-	}
-
-	object["path_counts"], err = json.Marshal(a.PathCounts)
-	if err != nil {
-		return nil, fmt.Errorf("error marshaling 'path_counts': %w", err)
-	}
-
-	if a.Queue != nil {
-		object["queue"], err = json.Marshal(a.Queue)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'queue': %w", err)
-		}
-	}
-
-	if a.ResolvedConfig != nil {
-		object["resolved_config"], err = json.Marshal(a.ResolvedConfig)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'resolved_config': %w", err)
-		}
-	}
-
-	if a.SourceId != nil {
-		object["source_id"], err = json.Marshal(a.SourceId)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'source_id': %w", err)
-		}
-	}
-
-	if a.SourceLabel != nil {
-		object["source_label"], err = json.Marshal(a.SourceLabel)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'source_label': %w", err)
-		}
-	}
-
-	if a.SourceType != nil {
-		object["source_type"], err = json.Marshal(a.SourceType)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'source_type': %w", err)
-		}
-	}
-
-	if a.StartedAt != nil {
-		object["started_at"], err = json.Marshal(a.StartedAt)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'started_at': %w", err)
-		}
-	}
-
-	object["status"], err = json.Marshal(a.Status)
-	if err != nil {
-		return nil, fmt.Errorf("error marshaling 'status': %w", err)
-	}
-
-	object["step_counts"], err = json.Marshal(a.StepCounts)
-	if err != nil {
-		return nil, fmt.Errorf("error marshaling 'step_counts': %w", err)
-	}
-
-	if a.Tags != nil {
-		object["tags"], err = json.Marshal(a.Tags)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'tags': %w", err)
-		}
-	}
-
-	object["updated_at"], err = json.Marshal(a.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("error marshaling 'updated_at': %w", err)
-	}
-
-	object["wait_summary"], err = json.Marshal(a.WaitSummary)
-	if err != nil {
-		return nil, fmt.Errorf("error marshaling 'wait_summary': %w", err)
-	}
-
-	if a.WallClockDeadlineAt != nil {
-		object["wall_clock_deadline_at"], err = json.Marshal(a.WallClockDeadlineAt)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'wall_clock_deadline_at': %w", err)
-		}
-	}
-
-	object["workflow_name"], err = json.Marshal(a.WorkflowName)
-	if err != nil {
-		return nil, fmt.Errorf("error marshaling 'workflow_name': %w", err)
-	}
-
-	for fieldName, field := range a.AdditionalProperties {
-		object[fieldName], err = json.Marshal(field)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
-		}
-	}
-	return json.Marshal(object)
-}
-
-// Getter for additional properties for WorkflowRunDetail. Returns the specified
-// element and whether it was found
-func (a WorkflowRunDetail) Get(fieldName string) (value interface{}, found bool) {
-	if a.AdditionalProperties != nil {
-		value, found = a.AdditionalProperties[fieldName]
-	}
-	return
-}
-
-// Setter for additional properties for WorkflowRunDetail
-func (a *WorkflowRunDetail) Set(fieldName string, value interface{}) {
-	if a.AdditionalProperties == nil {
-		a.AdditionalProperties = make(map[string]interface{})
-	}
-	a.AdditionalProperties[fieldName] = value
-}
-
-// Override default JSON handling for WorkflowRunDetail to handle AdditionalProperties
-func (a *WorkflowRunDetail) UnmarshalJSON(b []byte) error {
-	object := make(map[string]json.RawMessage)
-	err := json.Unmarshal(b, &object)
-	if err != nil {
-		return err
-	}
-
-	if raw, found := object["actor_id"]; found {
-		err = json.Unmarshal(raw, &a.ActorId)
-		if err != nil {
-			return fmt.Errorf("error reading 'actor_id': %w", err)
-		}
-		delete(object, "actor_id")
-	}
-
-	if raw, found := object["actor_type"]; found {
-		err = json.Unmarshal(raw, &a.ActorType)
-		if err != nil {
-			return fmt.Errorf("error reading 'actor_type': %w", err)
-		}
-		delete(object, "actor_type")
-	}
-
-	if raw, found := object["attempt"]; found {
-		err = json.Unmarshal(raw, &a.Attempt)
-		if err != nil {
-			return fmt.Errorf("error reading 'attempt': %w", err)
-		}
-		delete(object, "attempt")
-	}
-
-	if raw, found := object["cancel_requested_at"]; found {
-		err = json.Unmarshal(raw, &a.CancelRequestedAt)
-		if err != nil {
-			return fmt.Errorf("error reading 'cancel_requested_at': %w", err)
-		}
-		delete(object, "cancel_requested_at")
-	}
-
-	if raw, found := object["completed_at"]; found {
-		err = json.Unmarshal(raw, &a.CompletedAt)
-		if err != nil {
-			return fmt.Errorf("error reading 'completed_at': %w", err)
-		}
-		delete(object, "completed_at")
-	}
-
-	if raw, found := object["created_at"]; found {
-		err = json.Unmarshal(raw, &a.CreatedAt)
-		if err != nil {
-			return fmt.Errorf("error reading 'created_at': %w", err)
-		}
-		delete(object, "created_at")
-	}
-
-	if raw, found := object["default_step_config"]; found {
-		err = json.Unmarshal(raw, &a.DefaultStepConfig)
-		if err != nil {
-			return fmt.Errorf("error reading 'default_step_config': %w", err)
-		}
-		delete(object, "default_step_config")
-	}
-
-	if raw, found := object["definition_id"]; found {
-		err = json.Unmarshal(raw, &a.DefinitionId)
-		if err != nil {
-			return fmt.Errorf("error reading 'definition_id': %w", err)
-		}
-		delete(object, "definition_id")
-	}
-
-	if raw, found := object["definition_version"]; found {
-		err = json.Unmarshal(raw, &a.DefinitionVersion)
-		if err != nil {
-			return fmt.Errorf("error reading 'definition_version': %w", err)
-		}
-		delete(object, "definition_version")
-	}
-
-	if raw, found := object["ephemeral"]; found {
-		err = json.Unmarshal(raw, &a.Ephemeral)
-		if err != nil {
-			return fmt.Errorf("error reading 'ephemeral': %w", err)
-		}
-		delete(object, "ephemeral")
-	}
-
-	if raw, found := object["error_message"]; found {
-		err = json.Unmarshal(raw, &a.ErrorMessage)
-		if err != nil {
-			return fmt.Errorf("error reading 'error_message': %w", err)
-		}
-		delete(object, "error_message")
-	}
-
-	if raw, found := object["error_type"]; found {
-		err = json.Unmarshal(raw, &a.ErrorType)
-		if err != nil {
-			return fmt.Errorf("error reading 'error_type': %w", err)
-		}
-		delete(object, "error_type")
-	}
-
-	if raw, found := object["errors"]; found {
-		err = json.Unmarshal(raw, &a.Errors)
-		if err != nil {
-			return fmt.Errorf("error reading 'errors': %w", err)
-		}
-		delete(object, "errors")
-	}
-
-	if raw, found := object["external_id"]; found {
-		err = json.Unmarshal(raw, &a.ExternalId)
-		if err != nil {
-			return fmt.Errorf("error reading 'external_id': %w", err)
-		}
-		delete(object, "external_id")
-	}
-
-	if raw, found := object["forked_from"]; found {
-		err = json.Unmarshal(raw, &a.ForkedFrom)
-		if err != nil {
-			return fmt.Errorf("error reading 'forked_from': %w", err)
-		}
-		delete(object, "forked_from")
-	}
-
-	if raw, found := object["id"]; found {
-		err = json.Unmarshal(raw, &a.Id)
-		if err != nil {
-			return fmt.Errorf("error reading 'id': %w", err)
-		}
-		delete(object, "id")
-	}
-
-	if raw, found := object["inputs"]; found {
-		err = json.Unmarshal(raw, &a.Inputs)
-		if err != nil {
-			return fmt.Errorf("error reading 'inputs': %w", err)
-		}
-		delete(object, "inputs")
-	}
-
-	if raw, found := object["job_counts"]; found {
-		err = json.Unmarshal(raw, &a.JobCounts)
-		if err != nil {
-			return fmt.Errorf("error reading 'job_counts': %w", err)
-		}
-		delete(object, "job_counts")
-	}
-
-	if raw, found := object["metadata"]; found {
-		err = json.Unmarshal(raw, &a.Metadata)
-		if err != nil {
-			return fmt.Errorf("error reading 'metadata': %w", err)
-		}
-		delete(object, "metadata")
-	}
-
-	if raw, found := object["parent_run_id"]; found {
-		err = json.Unmarshal(raw, &a.ParentRunId)
-		if err != nil {
-			return fmt.Errorf("error reading 'parent_run_id': %w", err)
-		}
-		delete(object, "parent_run_id")
-	}
-
-	if raw, found := object["path_counts"]; found {
-		err = json.Unmarshal(raw, &a.PathCounts)
-		if err != nil {
-			return fmt.Errorf("error reading 'path_counts': %w", err)
-		}
-		delete(object, "path_counts")
-	}
-
-	if raw, found := object["paths"]; found {
-		err = json.Unmarshal(raw, &a.Paths)
-		if err != nil {
-			return fmt.Errorf("error reading 'paths': %w", err)
-		}
-		delete(object, "paths")
-	}
-
-	if raw, found := object["queue"]; found {
-		err = json.Unmarshal(raw, &a.Queue)
-		if err != nil {
-			return fmt.Errorf("error reading 'queue': %w", err)
-		}
-		delete(object, "queue")
-	}
-
-	if raw, found := object["resolved_config"]; found {
-		err = json.Unmarshal(raw, &a.ResolvedConfig)
-		if err != nil {
-			return fmt.Errorf("error reading 'resolved_config': %w", err)
-		}
-		delete(object, "resolved_config")
-	}
-
-	if raw, found := object["result_b64"]; found {
-		err = json.Unmarshal(raw, &a.ResultB64)
-		if err != nil {
-			return fmt.Errorf("error reading 'result_b64': %w", err)
-		}
-		delete(object, "result_b64")
-	}
-
-	if raw, found := object["source_id"]; found {
-		err = json.Unmarshal(raw, &a.SourceId)
-		if err != nil {
-			return fmt.Errorf("error reading 'source_id': %w", err)
-		}
-		delete(object, "source_id")
-	}
-
-	if raw, found := object["source_label"]; found {
-		err = json.Unmarshal(raw, &a.SourceLabel)
-		if err != nil {
-			return fmt.Errorf("error reading 'source_label': %w", err)
-		}
-		delete(object, "source_label")
-	}
-
-	if raw, found := object["source_type"]; found {
-		err = json.Unmarshal(raw, &a.SourceType)
-		if err != nil {
-			return fmt.Errorf("error reading 'source_type': %w", err)
-		}
-		delete(object, "source_type")
-	}
-
-	if raw, found := object["spec"]; found {
-		err = json.Unmarshal(raw, &a.Spec)
-		if err != nil {
-			return fmt.Errorf("error reading 'spec': %w", err)
-		}
-		delete(object, "spec")
-	}
-
-	if raw, found := object["started_at"]; found {
-		err = json.Unmarshal(raw, &a.StartedAt)
-		if err != nil {
-			return fmt.Errorf("error reading 'started_at': %w", err)
-		}
-		delete(object, "started_at")
-	}
-
-	if raw, found := object["status"]; found {
-		err = json.Unmarshal(raw, &a.Status)
-		if err != nil {
-			return fmt.Errorf("error reading 'status': %w", err)
-		}
-		delete(object, "status")
-	}
-
-	if raw, found := object["step_counts"]; found {
-		err = json.Unmarshal(raw, &a.StepCounts)
-		if err != nil {
-			return fmt.Errorf("error reading 'step_counts': %w", err)
-		}
-		delete(object, "step_counts")
-	}
-
-	if raw, found := object["steps"]; found {
-		err = json.Unmarshal(raw, &a.Steps)
-		if err != nil {
-			return fmt.Errorf("error reading 'steps': %w", err)
-		}
-		delete(object, "steps")
-	}
-
-	if raw, found := object["steps_next_cursor"]; found {
-		err = json.Unmarshal(raw, &a.StepsNextCursor)
-		if err != nil {
-			return fmt.Errorf("error reading 'steps_next_cursor': %w", err)
-		}
-		delete(object, "steps_next_cursor")
-	}
-
-	if raw, found := object["tags"]; found {
-		err = json.Unmarshal(raw, &a.Tags)
-		if err != nil {
-			return fmt.Errorf("error reading 'tags': %w", err)
-		}
-		delete(object, "tags")
-	}
-
-	if raw, found := object["updated_at"]; found {
-		err = json.Unmarshal(raw, &a.UpdatedAt)
-		if err != nil {
-			return fmt.Errorf("error reading 'updated_at': %w", err)
-		}
-		delete(object, "updated_at")
-	}
-
-	if raw, found := object["wait_summary"]; found {
-		err = json.Unmarshal(raw, &a.WaitSummary)
-		if err != nil {
-			return fmt.Errorf("error reading 'wait_summary': %w", err)
-		}
-		delete(object, "wait_summary")
-	}
-
-	if raw, found := object["wall_clock_deadline_at"]; found {
-		err = json.Unmarshal(raw, &a.WallClockDeadlineAt)
-		if err != nil {
-			return fmt.Errorf("error reading 'wall_clock_deadline_at': %w", err)
-		}
-		delete(object, "wall_clock_deadline_at")
-	}
-
-	if raw, found := object["workflow_name"]; found {
-		err = json.Unmarshal(raw, &a.WorkflowName)
-		if err != nil {
-			return fmt.Errorf("error reading 'workflow_name': %w", err)
-		}
-		delete(object, "workflow_name")
-	}
-
-	if len(object) != 0 {
-		a.AdditionalProperties = make(map[string]interface{})
-		for fieldName, fieldBuf := range object {
-			var fieldVal interface{}
-			err := json.Unmarshal(fieldBuf, &fieldVal)
-			if err != nil {
-				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
-			}
-			a.AdditionalProperties[fieldName] = fieldVal
-		}
-	}
-	return nil
-}
-
-// Override default JSON handling for WorkflowRunDetail to handle AdditionalProperties
-func (a WorkflowRunDetail) MarshalJSON() ([]byte, error) {
-	var err error
-	object := make(map[string]json.RawMessage)
-
-	if a.ActorId != nil {
-		object["actor_id"], err = json.Marshal(a.ActorId)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'actor_id': %w", err)
-		}
-	}
-
-	if a.ActorType != nil {
-		object["actor_type"], err = json.Marshal(a.ActorType)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'actor_type': %w", err)
-		}
-	}
-
-	object["attempt"], err = json.Marshal(a.Attempt)
-	if err != nil {
-		return nil, fmt.Errorf("error marshaling 'attempt': %w", err)
-	}
-
-	if a.CancelRequestedAt != nil {
-		object["cancel_requested_at"], err = json.Marshal(a.CancelRequestedAt)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'cancel_requested_at': %w", err)
-		}
-	}
-
-	if a.CompletedAt != nil {
-		object["completed_at"], err = json.Marshal(a.CompletedAt)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'completed_at': %w", err)
-		}
-	}
-
-	object["created_at"], err = json.Marshal(a.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("error marshaling 'created_at': %w", err)
-	}
-
-	if a.DefaultStepConfig != nil {
-		object["default_step_config"], err = json.Marshal(a.DefaultStepConfig)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'default_step_config': %w", err)
-		}
-	}
-
-	if a.DefinitionId != nil {
-		object["definition_id"], err = json.Marshal(a.DefinitionId)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'definition_id': %w", err)
-		}
-	}
-
-	if a.DefinitionVersion != nil {
-		object["definition_version"], err = json.Marshal(a.DefinitionVersion)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'definition_version': %w", err)
-		}
-	}
-
-	object["ephemeral"], err = json.Marshal(a.Ephemeral)
-	if err != nil {
-		return nil, fmt.Errorf("error marshaling 'ephemeral': %w", err)
-	}
-
-	if a.ErrorMessage != nil {
-		object["error_message"], err = json.Marshal(a.ErrorMessage)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'error_message': %w", err)
-		}
-	}
-
-	if a.ErrorType != nil {
-		object["error_type"], err = json.Marshal(a.ErrorType)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'error_type': %w", err)
-		}
-	}
-
-	if a.Errors != nil {
-		object["errors"], err = json.Marshal(a.Errors)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'errors': %w", err)
-		}
-	}
-
-	if a.ExternalId != nil {
-		object["external_id"], err = json.Marshal(a.ExternalId)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'external_id': %w", err)
-		}
-	}
-
-	if a.ForkedFrom != nil {
-		object["forked_from"], err = json.Marshal(a.ForkedFrom)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'forked_from': %w", err)
-		}
-	}
-
-	object["id"], err = json.Marshal(a.Id)
-	if err != nil {
-		return nil, fmt.Errorf("error marshaling 'id': %w", err)
-	}
-
-	if a.Inputs != nil {
-		object["inputs"], err = json.Marshal(a.Inputs)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'inputs': %w", err)
-		}
-	}
-
-	object["job_counts"], err = json.Marshal(a.JobCounts)
-	if err != nil {
-		return nil, fmt.Errorf("error marshaling 'job_counts': %w", err)
-	}
-
-	if a.Metadata != nil {
-		object["metadata"], err = json.Marshal(a.Metadata)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'metadata': %w", err)
-		}
-	}
-
-	if a.ParentRunId != nil {
-		object["parent_run_id"], err = json.Marshal(a.ParentRunId)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'parent_run_id': %w", err)
-		}
-	}
-
-	object["path_counts"], err = json.Marshal(a.PathCounts)
-	if err != nil {
-		return nil, fmt.Errorf("error marshaling 'path_counts': %w", err)
-	}
-
-	if a.Paths != nil {
-		object["paths"], err = json.Marshal(a.Paths)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'paths': %w", err)
-		}
-	}
-
-	if a.Queue != nil {
-		object["queue"], err = json.Marshal(a.Queue)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'queue': %w", err)
-		}
-	}
-
-	if a.ResolvedConfig != nil {
-		object["resolved_config"], err = json.Marshal(a.ResolvedConfig)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'resolved_config': %w", err)
-		}
-	}
-
-	if a.ResultB64 != nil {
-		object["result_b64"], err = json.Marshal(a.ResultB64)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'result_b64': %w", err)
-		}
-	}
-
-	if a.SourceId != nil {
-		object["source_id"], err = json.Marshal(a.SourceId)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'source_id': %w", err)
-		}
-	}
-
-	if a.SourceLabel != nil {
-		object["source_label"], err = json.Marshal(a.SourceLabel)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'source_label': %w", err)
-		}
-	}
-
-	if a.SourceType != nil {
-		object["source_type"], err = json.Marshal(a.SourceType)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'source_type': %w", err)
-		}
-	}
-
-	if a.Spec != nil {
-		object["spec"], err = json.Marshal(a.Spec)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'spec': %w", err)
-		}
-	}
-
-	if a.StartedAt != nil {
-		object["started_at"], err = json.Marshal(a.StartedAt)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'started_at': %w", err)
-		}
-	}
-
-	object["status"], err = json.Marshal(a.Status)
-	if err != nil {
-		return nil, fmt.Errorf("error marshaling 'status': %w", err)
-	}
-
-	object["step_counts"], err = json.Marshal(a.StepCounts)
-	if err != nil {
-		return nil, fmt.Errorf("error marshaling 'step_counts': %w", err)
-	}
-
-	if a.Steps != nil {
-		object["steps"], err = json.Marshal(a.Steps)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'steps': %w", err)
-		}
-	}
-
-	if a.StepsNextCursor != nil {
-		object["steps_next_cursor"], err = json.Marshal(a.StepsNextCursor)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'steps_next_cursor': %w", err)
-		}
-	}
-
-	if a.Tags != nil {
-		object["tags"], err = json.Marshal(a.Tags)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'tags': %w", err)
-		}
-	}
-
-	object["updated_at"], err = json.Marshal(a.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("error marshaling 'updated_at': %w", err)
-	}
-
-	object["wait_summary"], err = json.Marshal(a.WaitSummary)
-	if err != nil {
-		return nil, fmt.Errorf("error marshaling 'wait_summary': %w", err)
-	}
-
-	if a.WallClockDeadlineAt != nil {
-		object["wall_clock_deadline_at"], err = json.Marshal(a.WallClockDeadlineAt)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'wall_clock_deadline_at': %w", err)
-		}
-	}
-
-	object["workflow_name"], err = json.Marshal(a.WorkflowName)
-	if err != nil {
-		return nil, fmt.Errorf("error marshaling 'workflow_name': %w", err)
 	}
 
 	for fieldName, field := range a.AdditionalProperties {
@@ -37614,7 +37601,7 @@ func (r ResolveReferencesResponse) StatusCode() int {
 type ListRunsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *WorkflowRunListResponse
+	JSON200      *RunListResponse
 	JSON401      *Unauthorized
 }
 
@@ -37637,7 +37624,7 @@ func (r ListRunsResponse) StatusCode() int {
 type StartRunResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON202      *WorkflowRun
+	JSON202      *Run
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
 	JSON404      *NotFound
@@ -37664,7 +37651,7 @@ func (r StartRunResponse) StatusCode() int {
 type GetRunResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *WorkflowRunDetail
+	JSON200      *RunDetail
 	JSON401      *Unauthorized
 	JSON404      *NotFound
 }
@@ -37688,7 +37675,7 @@ func (r GetRunResponse) StatusCode() int {
 type CancelRunResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *WorkflowRun
+	JSON200      *Run
 	JSON401      *Unauthorized
 	JSON404      *NotFound
 }
@@ -37735,7 +37722,7 @@ func (r StreamRunEventsResponse) StatusCode() int {
 type ForkRunResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON202      *WorkflowRun
+	JSON202      *Run
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
 	JSON404      *NotFound
@@ -37785,7 +37772,7 @@ func (r ListRunJobsResponse) StatusCode() int {
 type ResumeRunResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *WorkflowRun
+	JSON200      *Run
 	JSON401      *Unauthorized
 	JSON404      *NotFound
 }
@@ -39521,7 +39508,7 @@ func (r UpdateWorkflowResponse) StatusCode() int {
 type ListWorkflowRunsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *WorkflowRunListResponse
+	JSON200      *RunListResponse
 	JSON401      *Unauthorized
 	JSON404      *NotFound
 }
@@ -39545,7 +39532,7 @@ func (r ListWorkflowRunsResponse) StatusCode() int {
 type StartWorkflowRunResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON202      *WorkflowRun
+	JSON202      *Run
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
 	JSON404      *NotFound
@@ -48298,7 +48285,7 @@ func ParseListRunsResponse(rsp *http.Response) (*ListRunsResponse, error) {
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest WorkflowRunListResponse
+		var dest RunListResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -48331,7 +48318,7 @@ func ParseStartRunResponse(rsp *http.Response) (*StartRunResponse, error) {
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
-		var dest WorkflowRun
+		var dest Run
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -48392,7 +48379,7 @@ func ParseGetRunResponse(rsp *http.Response) (*GetRunResponse, error) {
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest WorkflowRunDetail
+		var dest RunDetail
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -48432,7 +48419,7 @@ func ParseCancelRunResponse(rsp *http.Response) (*CancelRunResponse, error) {
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest WorkflowRun
+		var dest Run
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -48505,7 +48492,7 @@ func ParseForkRunResponse(rsp *http.Response) (*ForkRunResponse, error) {
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
-		var dest WorkflowRun
+		var dest Run
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -48599,7 +48586,7 @@ func ParseResumeRunResponse(rsp *http.Response) (*ResumeRunResponse, error) {
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest WorkflowRun
+		var dest Run
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -51663,7 +51650,7 @@ func ParseListWorkflowRunsResponse(rsp *http.Response) (*ListWorkflowRunsRespons
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest WorkflowRunListResponse
+		var dest RunListResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -51703,7 +51690,7 @@ func ParseStartWorkflowRunResponse(rsp *http.Response) (*StartWorkflowRunRespons
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
-		var dest WorkflowRun
+		var dest Run
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

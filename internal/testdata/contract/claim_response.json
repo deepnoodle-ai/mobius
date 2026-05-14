@@ -11,7 +11,7 @@
       "currency": "usd"
     }
   },
-  "lease_token": "lease-token-opaque",
+  "lease_token": "bGVhc2UtdG9rZW4tb3BhcXVl",
   "attempt_number": 1,
   "queue": "billing",
   "heartbeat_interval_seconds": 20

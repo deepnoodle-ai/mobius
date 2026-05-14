@@ -1,6 +1,6 @@
 {
   "worker_instance_id": "worker-abc",
-  "lease_token": "lease-token-opaque",
+  "lease_token": "bGVhc2UtdG9rZW4tb3BhcXVl",
   "outcomes": [
     {
       "kind": "complete",

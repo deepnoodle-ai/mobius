@@ -6,7 +6,7 @@ import threading
 import time
 from types import SimpleNamespace
 
-from deepnoodle.mobius._api.models import JobReportRequest
+from deepnoodle.mobius._api.models import JobActionSpec, JobReportRequest, JobSpec
 from deepnoodle.mobius.worker import Worker, WorkerConfig, WorkerPool, WorkerPoolConfig
 
 
@@ -38,28 +38,22 @@ class FakeClient:
         self.reported.append(req)
 
 
-def _action_job(job_id: str, action: str, parameters: dict[str, object] | None = None):
-    return SimpleNamespace(
-        job_id=job_id,
-        run_id="run_1",
-        workflow_name="demo",
-        step_name="scrape",
-        spec=SimpleNamespace(
-            root=SimpleNamespace(
-                kind="action",
-                name=action,
-                parameters=parameters or {},
-            )
-        ),
-        lease_token=f"lease-{job_id}",
-        attempt_number=1,
-        queue="default",
-        heartbeat_interval_seconds=60,
-    )
+def _action_spec(name, parameters):
+    return JobSpec(root=JobActionSpec(kind="action", name=name, parameters=parameters))
 
 
 def test_worker_supports_action_context_emit_event() -> None:
-    job = _action_job("job_1", "demo.action", {"url": "https://example.com"})
+    job = SimpleNamespace(
+        job_id="job_1",
+        run_id="run_1",
+        workflow_name="demo",
+        step_name="scrape",
+        spec=_action_spec("demo.action", {"url": "https://example.com"}),
+        attempt_number=1,
+        queue="default",
+        lease_token="lease-1",
+        heartbeat_interval_seconds=60,
+    )
     client = FakeClient(job)
     worker = Worker(
         client,  # type: ignore[arg-type]
@@ -84,11 +78,10 @@ def test_worker_supports_action_context_emit_event() -> None:
         ("job_1", "scrape.done", {"pages": 1}),
     ]
     assert len(client.reported) == 1
-    report = client.reported[0]
-    assert len(report.outcomes) == 1
-    outcome = report.outcomes[0].root
+    outcome = client.reported[0].outcomes[0].root
     assert outcome.kind == "complete"
-    assert json.loads(base64.b64decode(outcome.result_b64)) == {"ok": True}
+    result = json.loads(base64.b64decode(outcome.result_b64))
+    assert result == {"ok": True}
 
 
 class SequencedClient(FakeClient):
@@ -114,7 +107,17 @@ class SequencedClient(FakeClient):
 
 
 def _block_job(job_id: str):
-    return _action_job(job_id, "demo.block")
+    return SimpleNamespace(
+        job_id=job_id,
+        run_id="run_1",
+        workflow_name="demo",
+        step_name="scrape",
+        spec=_action_spec("demo.block", {}),
+        attempt_number=1,
+        queue="default",
+        lease_token=f"lease-{job_id}",
+        heartbeat_interval_seconds=60,
+    )
 
 
 def test_worker_claims_next_job_only_after_current_completes() -> None:

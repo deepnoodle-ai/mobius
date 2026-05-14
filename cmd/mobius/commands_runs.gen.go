@@ -31,7 +31,7 @@ func registerRunsCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			resp, err := client.CancelRunWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1))
+			resp, err := client.CancelRunWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}
@@ -87,7 +87,7 @@ func registerRunsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.ForkRunWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1), body)
+			resp, err := client.ForkRunWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}
@@ -106,7 +106,7 @@ func registerRunsCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			resp, err := client.GetRunWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1))
+			resp, err := client.GetRunWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}
@@ -134,7 +134,7 @@ func registerRunsCommands(app *cli.App) {
 				v := api.GetRunStepParamsInclude(ctx.String("include"))
 				params.Include = &v
 			}
-			resp, err := client.GetRunStepWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1), p2, params)
+			resp, err := client.GetRunStepWithResponse(ctx.Context(), p0, p1, p2, params)
 			if err != nil {
 				return err
 			}
@@ -167,7 +167,7 @@ func registerRunsCommands(app *cli.App) {
 			p0 := authFor(ctx).Project
 			params := &api.ListRunsParams{}
 			if ctx.IsSet("status") {
-				v := api.WorkflowRunStatus(ctx.String("status"))
+				v := api.RunStatus(ctx.String("status"))
 				params.Status = &v
 			}
 			if ctx.IsSet("lifecycle") {
@@ -214,7 +214,7 @@ func registerRunsCommands(app *cli.App) {
 				v := api.LimitParam(ctx.Int("limit"))
 				params.Limit = &v
 			}
-			resp, err := client.ListRunsWithResponse(ctx.Context(), api.ProjectHandleParam(p0), params)
+			resp, err := client.ListRunsWithResponse(ctx.Context(), p0, params)
 			if err != nil {
 				return err
 			}
@@ -233,7 +233,7 @@ func registerRunsCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			resp, err := client.ListRunJobsWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1))
+			resp, err := client.ListRunJobsWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}
@@ -252,7 +252,7 @@ func registerRunsCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			resp, err := client.ListWorkflowRunsWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1))
+			resp, err := client.ListWorkflowRunsWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}
@@ -299,7 +299,7 @@ func registerRunsCommands(app *cli.App) {
 				v := api.LimitParam(ctx.Int("limit"))
 				params.Limit = &v
 			}
-			resp, err := client.ListRunStepsWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1), params)
+			resp, err := client.ListRunStepsWithResponse(ctx.Context(), p0, p1, params)
 			if err != nil {
 				return err
 			}
@@ -318,7 +318,7 @@ func registerRunsCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			resp, err := client.ResumeRunWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1))
+			resp, err := client.ResumeRunWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}
@@ -361,7 +361,7 @@ func registerRunsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.SendRunSignalWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1), body)
+			resp, err := client.SendRunSignalWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}
@@ -392,7 +392,7 @@ func registerRunsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.StartRunWithResponse(ctx.Context(), api.ProjectHandleParam(p0), body)
+			resp, err := client.StartRunWithResponse(ctx.Context(), p0, body)
 			if err != nil {
 				return err
 			}
@@ -460,7 +460,7 @@ func registerRunsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.StartWorkflowRunWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.IDParam(p1), body)
+			resp, err := client.StartWorkflowRunWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}

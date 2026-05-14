@@ -51,7 +51,7 @@ func registerTablesCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.BulkInsertTableRowsWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.TableNameParam(p1), body)
+			resp, err := client.BulkInsertTableRowsWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}
@@ -100,7 +100,7 @@ func registerTablesCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.CreateTableWithResponse(ctx.Context(), api.ProjectHandleParam(p0), body)
+			resp, err := client.CreateTableWithResponse(ctx.Context(), p0, body)
 			if err != nil {
 				return err
 			}
@@ -119,7 +119,7 @@ func registerTablesCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			resp, err := client.DeleteTableWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.TableNameParam(p1))
+			resp, err := client.DeleteTableWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}
@@ -139,7 +139,7 @@ func registerTablesCommands(app *cli.App) {
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			p2 := ctx.Arg(1)
-			resp, err := client.DeleteTableRowWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.TableNameParam(p1), p2)
+			resp, err := client.DeleteTableRowWithResponse(ctx.Context(), p0, p1, p2)
 			if err != nil {
 				return err
 			}
@@ -158,7 +158,7 @@ func registerTablesCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			resp, err := client.GetTableWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.TableNameParam(p1))
+			resp, err := client.GetTableWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}
@@ -178,7 +178,7 @@ func registerTablesCommands(app *cli.App) {
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			p2 := ctx.Arg(1)
-			resp, err := client.GetTableRowWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.TableNameParam(p1), p2)
+			resp, err := client.GetTableRowWithResponse(ctx.Context(), p0, p1, p2)
 			if err != nil {
 				return err
 			}
@@ -197,7 +197,7 @@ func registerTablesCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			resp, err := client.GetTableStatsWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.TableNameParam(p1))
+			resp, err := client.GetTableStatsWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}
@@ -236,7 +236,7 @@ func registerTablesCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.InsertTableRowWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.TableNameParam(p1), body)
+			resp, err := client.InsertTableRowWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}
@@ -266,7 +266,7 @@ func registerTablesCommands(app *cli.App) {
 				v := api.LimitParam(ctx.Int("limit"))
 				params.Limit = &v
 			}
-			resp, err := client.ListTablesWithResponse(ctx.Context(), api.ProjectHandleParam(p0), params)
+			resp, err := client.ListTablesWithResponse(ctx.Context(), p0, params)
 			if err != nil {
 				return err
 			}
@@ -321,7 +321,7 @@ func registerTablesCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.QueryTableRowsWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.TableNameParam(p1), body)
+			resp, err := client.QueryTableRowsWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}
@@ -374,7 +374,7 @@ func registerTablesCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.SearchTableRowsWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.TableNameParam(p1), body)
+			resp, err := client.SearchTableRowsWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}
@@ -418,7 +418,7 @@ func registerTablesCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.UpdateTableWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.TableNameParam(p1), body)
+			resp, err := client.UpdateTableWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}
@@ -463,7 +463,7 @@ func registerTablesCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.UpdateTableRowWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.TableNameParam(p1), p2, body)
+			resp, err := client.UpdateTableRowWithResponse(ctx.Context(), p0, p1, p2, body)
 			if err != nil {
 				return err
 			}
@@ -509,7 +509,7 @@ func registerTablesCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.UpsertTableRowWithResponse(ctx.Context(), api.ProjectHandleParam(p0), api.TableNameParam(p1), body)
+			resp, err := client.UpsertTableRowWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}

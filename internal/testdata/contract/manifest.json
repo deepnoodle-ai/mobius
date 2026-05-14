@@ -31,13 +31,13 @@
       "endpoint": "POST /v1/projects/{project}/jobs/{id}/heartbeat"
     },
     {
-      "file": "report_job_request_success.json",
+      "file": "report_job_request_action_completed.json",
       "schema": "JobReportRequest",
       "kind": "request",
       "endpoint": "POST /v1/projects/{project}/jobs/{id}/report"
     },
     {
-      "file": "report_job_request_failed.json",
+      "file": "report_job_request_action_failed.json",
       "schema": "JobReportRequest",
       "kind": "request",
       "endpoint": "POST /v1/projects/{project}/jobs/{id}/report"
