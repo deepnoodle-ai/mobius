@@ -19,7 +19,7 @@ import (
 func registerLogsCommands(app *cli.App) {
 	logsGrp := app.Group("logs").Description("Structured log ingestion and retrieval")
 	logsGrp.Alias("log")
-	logsGrp.Command("ingest-project-logs").
+	logsGrp.Command("ingest").
 		Description("Ingest a batch of structured log records (JSON)").
 		Flags(
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
@@ -50,7 +50,7 @@ func registerLogsCommands(app *cli.App) {
 			return printResponse(ctx, "ingestProjectLogs", resp.StatusCode(), resp.Body)
 		})
 
-	logsGrp.Command("ingest-project-logs-otlp").
+	logsGrp.Command("ingest-otlp").
 		Description("Ingest OTLP log records (JSON-encoded ExportLogsServiceRequest)").
 		Flags(
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
@@ -81,7 +81,7 @@ func registerLogsCommands(app *cli.App) {
 			return printResponse(ctx, "ingestProjectLogsOTLP", resp.StatusCode(), resp.Body)
 		})
 
-	logsGrp.Command("list-logs").
+	logsGrp.Command("list").
 		Description("List log records for a project").
 		Flags(
 			cli.String("cursor", "").Help("cursor"),

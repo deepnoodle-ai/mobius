@@ -17,9 +17,9 @@ import (
 
 // registerAgentToolsCommands registers every generated subcommand in the "agent-tools" group.
 func registerAgentToolsCommands(app *cli.App) {
-	agentToolsGrp := app.Group("agent-tools")
+	agentToolsGrp := app.Group("agent-tools").Description("Skills, toolkits, and resolved agent tool manifests")
 	agentToolsGrp.Alias("agent-tool")
-	agentToolsGrp.Command("create").
+	agentToolsGrp.Command("create-skill").
 		Description("Create a skill").
 		Flags(
 			cli.Strings("allowed-tools", "").Help("allowed-tools"),
@@ -92,7 +92,7 @@ func registerAgentToolsCommands(app *cli.App) {
 			return printResponse(ctx, "createSkill", resp.StatusCode(), resp.Body)
 		})
 
-	agentToolsGrp.Command("create-2").
+	agentToolsGrp.Command("create-toolkit").
 		Description("Create a toolkit").
 		Flags(
 			cli.String("action-grants", "").Help("action-grants Accepts JSON, @file, or @-."),
@@ -143,7 +143,7 @@ func registerAgentToolsCommands(app *cli.App) {
 			return printResponse(ctx, "createToolkit", resp.StatusCode(), resp.Body)
 		})
 
-	agentToolsGrp.Command("delete").
+	agentToolsGrp.Command("delete-skill").
 		Description("Delete a skill").
 		Args("skill-id").
 		Use(requireAuth()).
@@ -162,7 +162,7 @@ func registerAgentToolsCommands(app *cli.App) {
 			return printResponse(ctx, "deleteSkill", resp.StatusCode(), resp.Body)
 		})
 
-	agentToolsGrp.Command("delete-2").
+	agentToolsGrp.Command("delete-toolkit").
 		Description("Delete a toolkit").
 		Args("toolkit-id").
 		Use(requireAuth()).
@@ -181,45 +181,7 @@ func registerAgentToolsCommands(app *cli.App) {
 			return printResponse(ctx, "deleteToolkit", resp.StatusCode(), resp.Body)
 		})
 
-	agentToolsGrp.Command("get").
-		Description("Get a skill").
-		Args("skill-id").
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			resp, err := client.GetSkillWithResponse(ctx.Context(), p0, p1)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "getSkill", resp.StatusCode(), resp.Body)
-		})
-
-	agentToolsGrp.Command("get-2").
-		Description("Get a toolkit").
-		Args("toolkit-id").
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			resp, err := client.GetToolkitWithResponse(ctx.Context(), p0, p1)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "getToolkit", resp.StatusCode(), resp.Body)
-		})
-
-	agentToolsGrp.Command("get-tool-manifest").
+	agentToolsGrp.Command("get-manifest").
 		Description("Resolve an agent tool manifest").
 		Args("id").
 		Flags(
@@ -254,6 +216,44 @@ func registerAgentToolsCommands(app *cli.App) {
 				return err
 			}
 			return printResponse(ctx, "getAgentToolManifest", resp.StatusCode(), resp.Body)
+		})
+
+	agentToolsGrp.Command("get-skill").
+		Description("Get a skill").
+		Args("skill-id").
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			p1 := ctx.Arg(0)
+			resp, err := client.GetSkillWithResponse(ctx.Context(), p0, p1)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "getSkill", resp.StatusCode(), resp.Body)
+		})
+
+	agentToolsGrp.Command("get-toolkit").
+		Description("Get a toolkit").
+		Args("toolkit-id").
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			p1 := ctx.Arg(0)
+			resp, err := client.GetToolkitWithResponse(ctx.Context(), p0, p1)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "getToolkit", resp.StatusCode(), resp.Body)
 		})
 
 	agentToolsGrp.Command("import-skill").
@@ -296,7 +296,26 @@ func registerAgentToolsCommands(app *cli.App) {
 			return printResponse(ctx, "importSkill", resp.StatusCode(), resp.Body)
 		})
 
-	agentToolsGrp.Command("list").
+	agentToolsGrp.Command("list-skill-assignments").
+		Description("List assigned skills").
+		Args("id").
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			p1 := ctx.Arg(0)
+			resp, err := client.ListSkillAssignmentsWithResponse(ctx.Context(), p0, p1)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "listSkillAssignments", resp.StatusCode(), resp.Body)
+		})
+
+	agentToolsGrp.Command("list-skills").
 		Description("List skills").
 		Flags(
 			cli.Bool("include-system", "").Help("Include read-only system skill templates."),
@@ -321,7 +340,26 @@ func registerAgentToolsCommands(app *cli.App) {
 			return printResponse(ctx, "listSkills", resp.StatusCode(), resp.Body)
 		})
 
-	agentToolsGrp.Command("list-2").
+	agentToolsGrp.Command("list-toolkit-assignments").
+		Description("List assigned toolkits").
+		Args("id").
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			p1 := ctx.Arg(0)
+			resp, err := client.ListToolkitAssignmentsWithResponse(ctx.Context(), p0, p1)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "listToolkitAssignments", resp.StatusCode(), resp.Body)
+		})
+
+	agentToolsGrp.Command("list-toolkits").
 		Description("List toolkits").
 		Flags(
 			cli.Bool("include-system", "").Help("Include read-only system templates."),
@@ -344,44 +382,6 @@ func registerAgentToolsCommands(app *cli.App) {
 				return err
 			}
 			return printResponse(ctx, "listToolkits", resp.StatusCode(), resp.Body)
-		})
-
-	agentToolsGrp.Command("list-assignments").
-		Description("List assigned skills").
-		Args("id").
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			resp, err := client.ListSkillAssignmentsWithResponse(ctx.Context(), p0, p1)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "listSkillAssignments", resp.StatusCode(), resp.Body)
-		})
-
-	agentToolsGrp.Command("list-assignments-2").
-		Description("List assigned toolkits").
-		Args("id").
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			resp, err := client.ListToolkitAssignmentsWithResponse(ctx.Context(), p0, p1)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "listToolkitAssignments", resp.StatusCode(), resp.Body)
 		})
 
 	agentToolsGrp.Command("replace-skills").
@@ -458,7 +458,7 @@ func registerAgentToolsCommands(app *cli.App) {
 			return printResponse(ctx, "replaceToolkits", resp.StatusCode(), resp.Body)
 		})
 
-	agentToolsGrp.Command("update").
+	agentToolsGrp.Command("update-skill").
 		Description("Update a skill").
 		Args("skill-id").
 		Flags(
@@ -533,7 +533,7 @@ func registerAgentToolsCommands(app *cli.App) {
 			return printResponse(ctx, "updateSkill", resp.StatusCode(), resp.Body)
 		})
 
-	agentToolsGrp.Command("update-2").
+	agentToolsGrp.Command("update-toolkit").
 		Description("Update a toolkit").
 		Args("toolkit-id").
 		Flags(

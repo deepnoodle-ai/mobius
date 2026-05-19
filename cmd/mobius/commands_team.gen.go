@@ -15,8 +15,8 @@ import (
 
 // registerTeamCommands registers every generated subcommand in the "team" group.
 func registerTeamCommands(app *cli.App) {
-	teamGrp := app.Group("team")
-	teamGrp.Command("list-team").
+	teamGrp := app.Group("team").Description("Project team membership")
+	teamGrp.Command("list").
 		Description("List project team").
 		Flags(
 			cli.String("kind", "").Help("kind"),

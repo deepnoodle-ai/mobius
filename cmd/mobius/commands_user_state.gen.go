@@ -17,8 +17,8 @@ import (
 
 // registerUserStateCommands registers every generated subcommand in the "user-state" group.
 func registerUserStateCommands(app *cli.App) {
-	userStateGrp := app.Group("user-state")
-	userStateGrp.Command("get-state").
+	userStateGrp := app.Group("user-state").Description("Per-user project state and assignments")
+	userStateGrp.Command("get").
 		Description("Get user state").
 		Args("user-id").
 		Use(requireAuth()).
@@ -37,32 +37,7 @@ func registerUserStateCommands(app *cli.App) {
 			return printResponse(ctx, "getUserState", resp.StatusCode(), resp.Body)
 		})
 
-	userStateGrp.Command("list-assignments").
-		Description("List user assignments").
-		Flags(
-			cli.String("status", "").Help("status"),
-		).
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			params := &api.ListUserAssignmentsParams{}
-			if ctx.IsSet("status") {
-				v := api.UserAssignmentStatus(ctx.String("status"))
-				params.Status = &v
-			}
-			resp, err := client.ListUserAssignmentsWithResponse(ctx.Context(), p0, params)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "listUserAssignments", resp.StatusCode(), resp.Body)
-		})
-
-	userStateGrp.Command("list-states").
+	userStateGrp.Command("list").
 		Description("List user state").
 		Flags(
 			cli.String("user-kind", "").Help("user-kind"),
@@ -102,7 +77,32 @@ func registerUserStateCommands(app *cli.App) {
 			return printResponse(ctx, "listUserStates", resp.StatusCode(), resp.Body)
 		})
 
-	userStateGrp.Command("upsert-user-state").
+	userStateGrp.Command("list-assignments").
+		Description("List user assignments").
+		Flags(
+			cli.String("status", "").Help("status"),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			params := &api.ListUserAssignmentsParams{}
+			if ctx.IsSet("status") {
+				v := api.UserAssignmentStatus(ctx.String("status"))
+				params.Status = &v
+			}
+			resp, err := client.ListUserAssignmentsWithResponse(ctx.Context(), p0, params)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "listUserAssignments", resp.StatusCode(), resp.Body)
+		})
+
+	userStateGrp.Command("upsert").
 		Description("Upsert user state").
 		Args("user-id").
 		Flags(

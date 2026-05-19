@@ -15,7 +15,7 @@ import (
 func registerMetricsCommands(app *cli.App) {
 	metricsGrp := app.Group("metrics").Description("Platform and workflow metrics")
 	metricsGrp.Alias("metric")
-	metricsGrp.Command("get-metrics").
+	metricsGrp.Command("get").
 		Description("Get operational metrics for a project").
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {

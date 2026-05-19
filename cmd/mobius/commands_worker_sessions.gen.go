@@ -15,7 +15,7 @@ import (
 func registerWorkerSessionsCommands(app *cli.App) {
 	workerSessionsGrp := app.Group("worker-sessions").Description("Registered worker sessions")
 	workerSessionsGrp.Alias("worker-session")
-	workerSessionsGrp.Command("list-sessions").
+	workerSessionsGrp.Command("list").
 		Description("List worker sessions").
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {

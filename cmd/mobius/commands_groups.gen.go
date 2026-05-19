@@ -174,7 +174,7 @@ func registerGroupsCommands(app *cli.App) {
 			return printResponse(ctx, "listGroups", resp.StatusCode(), resp.Body)
 		})
 
-	groupsGrp.Command("list-groups").
+	groupsGrp.Command("list-for-member").
 		Description("List groups a member belongs to").
 		Args("user-id").
 		Use(requireAuth()).

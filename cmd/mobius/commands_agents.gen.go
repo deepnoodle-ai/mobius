@@ -17,9 +17,9 @@ import (
 
 // registerAgentsCommands registers every generated subcommand in the "agents" group.
 func registerAgentsCommands(app *cli.App) {
-	agentsGrp := app.Group("agents").Description("Agents and agent sessions")
+	agentsGrp := app.Group("agents").Description("Agents, sessions, and presence")
 	agentsGrp.Alias("agent")
-	agentsGrp.Command("append-agent-session-messages").
+	agentsGrp.Command("append-session-messages").
 		Description("Append conversation session messages").
 		Args("id", "session-id").
 		Flags(
@@ -465,7 +465,7 @@ func registerAgentsCommands(app *cli.App) {
 			return printResponse(ctx, "listAgentSessions", resp.StatusCode(), resp.Body)
 		})
 
-	agentsGrp.Command("provision-agent-inbox").
+	agentsGrp.Command("provision-inbox").
 		Description("Provision email inbox").
 		Args("id").
 		Use(requireAuth()).

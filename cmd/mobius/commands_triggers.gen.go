@@ -170,7 +170,7 @@ func registerTriggersCommands(app *cli.App) {
 			return printResponse(ctx, "deleteTriggerTarget", resp.StatusCode(), resp.Body)
 		})
 
-	triggersGrp.Command("delete-trigger-targets").
+	triggersGrp.Command("delete-targets").
 		Description("Remove all targets from a trigger").
 		Args("id").
 		Use(requireAuth()).
@@ -334,7 +334,7 @@ func registerTriggersCommands(app *cli.App) {
 			return printResponse(ctx, "listTriggerTargets", resp.StatusCode(), resp.Body)
 		})
 
-	triggersGrp.Command("test-fire-trigger").
+	triggersGrp.Command("test-fire").
 		Description("Fire a trigger with a synthetic payload").
 		Args("id").
 		Flags(

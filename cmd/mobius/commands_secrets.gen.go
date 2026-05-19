@@ -17,7 +17,7 @@ import (
 
 // registerSecretsCommands registers every generated subcommand in the "secrets" group.
 func registerSecretsCommands(app *cli.App) {
-	secretsGrp := app.Group("secrets")
+	secretsGrp := app.Group("secrets").Description("Project secrets and secret versions")
 	secretsGrp.Alias("secret")
 	secretsGrp.Command("create").
 		Description("Create a secret").

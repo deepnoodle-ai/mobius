@@ -304,7 +304,7 @@ func registerObservablesCommands(app *cli.App) {
 			return printResponse(ctx, "listObservableWaiters", resp.StatusCode(), resp.Body)
 		})
 
-	observablesGrp.Command("submit-observable-observation").
+	observablesGrp.Command("submit-observation").
 		Description("Submit an observation").
 		Args("observable-id").
 		Flags(

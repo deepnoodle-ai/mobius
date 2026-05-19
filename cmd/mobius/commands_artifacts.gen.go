@@ -19,7 +19,7 @@ import (
 func registerArtifactsCommands(app *cli.App) {
 	artifactsGrp := app.Group("artifacts").Description("Run output artifacts and storage settings")
 	artifactsGrp.Alias("artifact")
-	artifactsGrp.Command("commit-artifact").
+	artifactsGrp.Command("commit").
 		Description("Commit an uploaded artifact").
 		Args("id").
 		Flags(
@@ -340,7 +340,7 @@ func registerArtifactsCommands(app *cli.App) {
 			return printResponse(ctx, "listArtifacts", resp.StatusCode(), resp.Body)
 		})
 
-	artifactsGrp.Command("list-artifacts").
+	artifactsGrp.Command("list-for-run").
 		Description("List artifacts produced by a run").
 		Args("run-id").
 		Flags(
@@ -387,7 +387,7 @@ func registerArtifactsCommands(app *cli.App) {
 			return printResponse(ctx, "listRunArtifacts", resp.StatusCode(), resp.Body)
 		})
 
-	artifactsGrp.Command("pin-artifact").
+	artifactsGrp.Command("pin").
 		Description("Pin an artifact (skip TTL)").
 		Args("id").
 		Use(requireAuth()).
@@ -406,7 +406,7 @@ func registerArtifactsCommands(app *cli.App) {
 			return printResponse(ctx, "pinArtifact", resp.StatusCode(), resp.Body)
 		})
 
-	artifactsGrp.Command("unpin-artifact").
+	artifactsGrp.Command("unpin").
 		Description("Remove the pinned flag").
 		Args("id").
 		Use(requireAuth()).
