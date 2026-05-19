@@ -13,17 +13,26 @@ from pydantic import BaseModel
 
 # Generated models from make generate-py
 from ._api.models import (
+    AssociateChannelInteractionRequest,
+    CancelInteractionRequest,
+    Channel,
+    ChannelMessage,
     ConfigEntries,
+    CreateChannelRequest,
+    CreateStandaloneInteractionRequest,
     CreateWorkflowRequest,
+    Interaction,
     JobClaim,
     JobClaimRequest,
     JobReportRequest,
     JobFenceRequest,
     JobHeartbeat,
     RunSignal,
+    SendChannelMessageRequest,
     SendRunSignalRequest,
     StartBoundRunRequest,
     StartInlineRunRequest,
+    Status1 as InteractionStatus,
     TagMap,
     UpdateWorkflowRequest,
     WorkflowDefinition,
@@ -44,6 +53,56 @@ DEFAULT_BASE_URL = "https://api.mobiusops.ai"
 # reject malformed handles at construction time — a project-pinned
 # credential embeds the handle as "<handle>/mbx_<secret>".
 _HANDLE_RE = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
+
+
+@dataclass
+class WaitDiscussionOptions:
+    """Controls :meth:`Client.start_discussion`'s optional completion wait."""
+
+    timeout: float = 24 * 60 * 60.0
+    poll_interval: float = 5.0
+
+
+@dataclass
+class StartDiscussionOptions:
+    """Inputs for :meth:`Client.start_discussion`."""
+
+    opening_message: str
+    channel_id: str | None = None
+    name: str | None = None
+    display_name: str | None = None
+    topic: str | None = None
+    kind: str | None = None
+    private: bool | None = None
+    member_ids: list[str] | None = None
+    tags: dict[str, str] | None = None
+    associated_interaction_ids: list[str] | None = None
+    interactions: list[CreateStandaloneInteractionRequest] | None = None
+    completion_behavior: str | None = None
+    wait: WaitDiscussionOptions | None = None
+
+
+@dataclass
+class DiscussionOutcome:
+    """Terminal interaction outcome surfaced by start_discussion."""
+
+    interaction_id: str
+    status: InteractionStatus
+    interaction: Interaction
+
+
+@dataclass
+class StartDiscussionResult:
+    """What :meth:`Client.start_discussion` produced."""
+
+    channel_id: str
+    interaction_ids: list[str]
+    created_interaction_ids: list[str]
+    opening_message_id: str | None = None
+    channel: Channel | None = None
+    opening_message: ChannelMessage | None = None
+    interactions: list[Interaction] | None = None
+    outcomes: list[DiscussionOutcome] | None = None
 
 
 @dataclass
@@ -251,6 +310,7 @@ class Client:
             timeout=resolved.timeout,
             transport=transport,
         )
+        self.discussions = DiscussionsClient(self)
 
     @property
     def project(self) -> str:
@@ -573,6 +633,15 @@ class Client:
                 return None
             cursor = page.next_cursor
 
+    def start_discussion(self, opts: StartDiscussionOptions) -> StartDiscussionResult:
+        """Create or reuse a channel discussion that resolves one or more
+        interactions, post an opening message, and optionally wait for the
+        linked interactions to terminalize.
+
+        Mirrors the TypeScript ``client.discussions.start`` helper.
+        """
+        return self.discussions.start(opts)
+
     def close(self) -> None:
         self._http.close()
 
@@ -581,6 +650,216 @@ class Client:
 
     def __exit__(self, *_: Any) -> None:
         self.close()
+
+
+class DiscussionsClient:
+    """High-level helper for channel-discussion flows.
+
+    Wraps the lower-level channel + interaction REST endpoints. Mirrors
+    :class:`mobius.discussions_test.Discussions` in the Go SDK and
+    ``client.discussions`` in the TypeScript SDK; the three implementations
+    intentionally produce the same network sequence so behaviour stays
+    consistent across languages.
+    """
+
+    def __init__(self, client: "Client") -> None:
+        self._client = client
+
+    def start(self, opts: StartDiscussionOptions) -> StartDiscussionResult:
+        if not opts.opening_message:
+            raise ValueError("mobius: start discussion requires an opening message")
+        associated_ids = list(opts.associated_interaction_ids or [])
+        interaction_reqs = list(opts.interactions or [])
+        if not associated_ids and not interaction_reqs:
+            raise ValueError(
+                "mobius: start discussion requires at least one associated_interaction_id or interactions[]"
+            )
+
+        created_ids: list[str] = []
+        created_interactions: list[Interaction] = []
+        setup_complete = False
+        channel: Channel | None = None
+        opening: ChannelMessage | None = None
+        channel_id = opts.channel_id or ""
+        try:
+            for req in interaction_reqs:
+                interaction = self._create_interaction(req)
+                created_ids.append(interaction.id)
+                created_interactions.append(interaction)
+
+            interaction_ids = _unique_discussion_ids([*associated_ids, *created_ids])
+            if not interaction_ids:
+                raise ValueError(
+                    "mobius: start discussion requires at least one associated_interaction_id or interactions[]"
+                )
+
+            if channel_id:
+                for interaction_id in interaction_ids:
+                    self._associate_interaction(channel_id, interaction_id)
+            else:
+                channel = self._create_channel(opts, interaction_ids)
+                channel_id = channel.id
+
+            opening = self._send_opening_message(
+                channel_id, opts.opening_message, interaction_ids
+            )
+            setup_complete = True
+        finally:
+            if not setup_complete:
+                self._cancel_created(created_ids)
+
+        result = StartDiscussionResult(
+            channel_id=channel_id,
+            interaction_ids=interaction_ids,
+            created_interaction_ids=created_ids,
+            opening_message_id=opening.id if opening else None,
+            channel=channel,
+            opening_message=opening,
+            interactions=created_interactions,
+        )
+        if opts.wait is not None:
+            final = self._wait_interactions(interaction_ids, opts.wait)
+            result.interactions = final
+            result.outcomes = [
+                DiscussionOutcome(
+                    interaction_id=i.id,
+                    status=i.status,
+                    interaction=i,
+                )
+                for i in final
+            ]
+        return result
+
+    def _project_path(self, suffix: str) -> str:
+        return f"/v1/projects/{quote(self._client.namespace, safe='')}{suffix}"
+
+    def _create_interaction(self, req: CreateStandaloneInteractionRequest) -> Interaction:
+        resp = self._client._http.post(
+            self._project_path("/interactions"),
+            json=_dump(req),
+        )
+        resp.raise_for_status()
+        return Interaction.model_validate(resp.json())
+
+    def _create_channel(
+        self, opts: StartDiscussionOptions, interaction_ids: list[str]
+    ) -> Channel:
+        if not opts.name:
+            raise ValueError(
+                "mobius: start discussion requires name when channel_id is not set"
+            )
+        body: dict[str, Any] = {
+            "name": opts.name,
+            "display_name": opts.display_name or opts.name,
+            "kind": opts.kind or "channel",
+            "private": True if opts.private is None else opts.private,
+            "purpose": "resolve_interactions",
+            "associated_interaction_ids": interaction_ids,
+        }
+        if opts.topic:
+            body["topic"] = opts.topic
+        if opts.member_ids:
+            body["member_ids"] = list(opts.member_ids)
+        if opts.tags:
+            body["tags"] = dict(opts.tags)
+        if opts.completion_behavior:
+            body["completion_behavior"] = opts.completion_behavior
+        resp = self._client._http.post(self._project_path("/channels"), json=body)
+        resp.raise_for_status()
+        return Channel.model_validate(resp.json())
+
+    def _associate_interaction(self, channel_id: str, interaction_id: str) -> None:
+        req = AssociateChannelInteractionRequest(
+            interaction_id=interaction_id, relation="purpose"
+        )
+        resp = self._client._http.post(
+            self._project_path(f"/channels/{quote(channel_id, safe='')}/interactions"),
+            json=_dump(req),
+        )
+        resp.raise_for_status()
+
+    def _send_opening_message(
+        self, channel_id: str, content: str, interaction_ids: list[str]
+    ) -> ChannelMessage:
+        req = SendChannelMessageRequest(
+            content=content,
+            metadata={"mobius_helper": "discussions.start"},
+            references=[
+                {
+                    "entity_type": "interaction",
+                    "entity_id": interaction_id,
+                    "relation": "purpose",
+                }
+                for interaction_id in interaction_ids
+            ],
+            type="user.message",
+        )
+        resp = self._client._http.post(
+            self._project_path(f"/channels/{quote(channel_id, safe='')}/messages"),
+            json=_dump(req),
+        )
+        resp.raise_for_status()
+        return ChannelMessage.model_validate(resp.json())
+
+    def _wait_interactions(
+        self, ids: list[str], opts: WaitDiscussionOptions
+    ) -> list[Interaction]:
+        deadline = time.monotonic() + max(opts.timeout, 0.0)
+        poll = max(opts.poll_interval, 0.001)
+        while True:
+            interactions = [self._get_interaction(i) for i in ids]
+            if all(_is_terminal_interaction_status(i.status) for i in interactions):
+                return interactions
+            if time.monotonic() >= deadline:
+                raise TimeoutError(
+                    "mobius: timed out waiting for discussion interactions"
+                )
+            time.sleep(poll)
+
+    def _get_interaction(self, interaction_id: str) -> Interaction:
+        resp = self._client._http.get(
+            self._project_path(f"/interactions/{quote(interaction_id, safe='')}")
+        )
+        resp.raise_for_status()
+        return Interaction.model_validate(resp.json())
+
+    def _cancel_created(self, ids: list[str]) -> None:
+        if not ids:
+            return
+        req = CancelInteractionRequest(reason="discussion_start_failed")
+        for interaction_id in ids:
+            try:
+                self._client._http.post(
+                    self._project_path(
+                        f"/interactions/{quote(interaction_id, safe='')}/cancel"
+                    ),
+                    json=_dump(req),
+                )
+            except httpx.HTTPError:
+                # Best-effort cleanup; the caller is already propagating the
+                # original error from setup.
+                pass
+
+
+def _unique_discussion_ids(ids: list[str]) -> list[str]:
+    out: list[str] = []
+    seen: set[str] = set()
+    for i in ids:
+        if not i or i in seen:
+            continue
+        seen.add(i)
+        out.append(i)
+    return out
+
+
+def _is_terminal_interaction_status(status: InteractionStatus | str) -> bool:
+    if isinstance(status, str):
+        return status in ("completed", "expired", "cancelled")
+    return status in (
+        InteractionStatus.completed,
+        InteractionStatus.expired,
+        InteractionStatus.cancelled,
+    )
 
 
 def _dump(model: BaseModel) -> dict[str, Any]:
