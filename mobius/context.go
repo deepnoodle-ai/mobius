@@ -89,7 +89,15 @@ const (
 	InteractionKindApproval InteractionKind = "approval"
 	// InteractionKindReview captures an acknowledgement or review notes.
 	InteractionKindReview InteractionKind = "review"
-	// InteractionKindInput collects free-form data from the responder.
+	// InteractionKindRequest collects structured or free-form data.
+	InteractionKindRequest InteractionKind = "request"
+	// InteractionKindVote captures a ballot-style collective choice.
+	InteractionKindVote InteractionKind = "vote"
+	// InteractionKindHandoff tracks delegated work submitted for completion
+	// or review.
+	InteractionKindHandoff InteractionKind = "handoff"
+	// InteractionKindInput is a deprecated alias for [InteractionKindRequest].
+	// Retained because pre-rename rows store "input" as the wire value.
 	InteractionKindInput InteractionKind = "input"
 )
 
@@ -101,7 +109,9 @@ type InteractionRequest struct {
 	// Target is the user, agent queue, or group that receives the
 	// interaction. Required.
 	Target InteractionTarget
-	// Kind is the interaction type (approval / review / input). Required.
+	// Kind is the interaction kind (approval / review / request / vote /
+	// handoff; input is retained as a deprecated alias for request).
+	// Required.
 	Kind InteractionKind
 	// Message is the human-readable prompt shown to the responder. Required.
 	Message string
@@ -137,15 +147,15 @@ type executionContext struct {
 	queue        string
 }
 
-func (c *executionContext) Logger() *slog.Logger    { return c.logger }
-func (c *executionContext) ProjectHandle() string   { return c.projectHndl }
-func (c *executionContext) ProjectID() string       { return c.projectHndl }
-func (c *executionContext) RunID() string           { return c.runID }
-func (c *executionContext) JobID() string           { return c.jobID }
-func (c *executionContext) WorkflowName() string    { return c.workflowName }
-func (c *executionContext) StepName() string        { return c.stepName }
-func (c *executionContext) Attempt() int            { return c.attempt }
-func (c *executionContext) Queue() string           { return c.queue }
+func (c *executionContext) Logger() *slog.Logger  { return c.logger }
+func (c *executionContext) ProjectHandle() string { return c.projectHndl }
+func (c *executionContext) ProjectID() string     { return c.projectHndl }
+func (c *executionContext) RunID() string         { return c.runID }
+func (c *executionContext) JobID() string         { return c.jobID }
+func (c *executionContext) WorkflowName() string  { return c.workflowName }
+func (c *executionContext) StepName() string      { return c.stepName }
+func (c *executionContext) Attempt() int          { return c.attempt }
+func (c *executionContext) Queue() string         { return c.queue }
 func (c *executionContext) EmitEvent(eventType string, payload map[string]any) {
 	if c.emit != nil {
 		c.emit(eventType, payload)

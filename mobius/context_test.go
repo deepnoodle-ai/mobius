@@ -36,6 +36,15 @@ func TestClient_ProjectHandleAccessor(t *testing.T) {
 	assert.Equal(t, c.ProjectHandle(), "test-project")
 }
 
+func TestInteractionKindConstantsCoverCanonicalKinds(t *testing.T) {
+	assert.Equal(t, string(InteractionKindApproval), "approval")
+	assert.Equal(t, string(InteractionKindReview), "review")
+	assert.Equal(t, string(InteractionKindRequest), "request")
+	assert.Equal(t, string(InteractionKindVote), "vote")
+	assert.Equal(t, string(InteractionKindHandoff), "handoff")
+	assert.Equal(t, string(InteractionKindInput), "input")
+}
+
 func TestContext_RunServerAction_PostsToJobActionsRoute(t *testing.T) {
 	var sentBody map[string]any
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
