@@ -24,8 +24,11 @@ type WorkflowOptions struct {
 }
 
 // UpdateWorkflowOptions contains metadata and spec fields that can be updated
-// on a saved workflow definition.
+// on a saved workflow definition. ExpectedVersion is required: pass the
+// current latest_version observed by the caller as an optimistic concurrency
+// guard. The server returns 409 Conflict if the workflow has advanced.
 type UpdateWorkflowOptions struct {
+	ExpectedVersion int
 	Name            string
 	Description     string
 	PublishedAsTool *bool
@@ -177,7 +180,7 @@ func updateWorkflowRequest(opts *UpdateWorkflowOptions) api.UpdateWorkflowReques
 	if opts == nil {
 		return api.UpdateWorkflowRequest{}
 	}
-	req := api.UpdateWorkflowRequest{}
+	req := api.UpdateWorkflowRequest{ExpectedVersion: opts.ExpectedVersion}
 	if opts.Name != "" {
 		req.Name = &opts.Name
 	}
@@ -253,7 +256,7 @@ func (c *Client) findWorkflow(ctx context.Context, desired WorkflowOptions) (*ap
 }
 
 func workflowUpdateForDiff(current *api.WorkflowDefinition, spec api.WorkflowSpec, desired WorkflowOptions) *UpdateWorkflowOptions {
-	update := &UpdateWorkflowOptions{}
+	update := &UpdateWorkflowOptions{ExpectedVersion: current.LatestVersion}
 	changed := false
 	if desired.Name != "" && current.Name != desired.Name {
 		update.Name = desired.Name

@@ -493,6 +493,7 @@ def test_workflow_helpers_create_update_and_ensure_definitions() -> None:
         client.update_workflow(
             "wf_1",
             UpdateWorkflowOptions(
+                expected_version=1,
                 name="research v2",
                 spec=WorkflowSpec(root=WorkflowSpec1(name="research v2", steps=[])),
             ),

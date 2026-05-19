@@ -248,12 +248,11 @@ func registerInteractionsCommands(app *cli.App) {
 		Description("List interactions").
 		Flags(
 			cli.String("status", "").Help("Filter by status"),
+			cli.String("kind", "").Help("Filter by interaction protocol kind"),
 			cli.String("run-id", "").Help("Filter by originating run ID"),
-			cli.String("target-type", "").Help("Filter by target type"),
-			cli.String("target-id", "").Help("Filter by target ID"),
+			cli.String("target-user-id", "").Help("Filter by resolved target user ID."),
 			cli.Bool("inbox", "").Help("When true, returns only interactions visible to the authenticated user (direct + group membership)"),
-			cli.String("reviewer-type", "").Help("Filter handoffs by reviewer type. Defaults to user when reviewer_id is provided."),
-			cli.String("reviewer-id", "").Help("Filter handoffs awaiting review by the specified reviewer."),
+			cli.String("reviewer-user-id", "").Help("Filter handoffs awaiting review by the specified reviewer user."),
 			cli.String("cursor", "").Help("cursor"),
 			cli.Int("limit", "").Help("limit"),
 		).
@@ -270,29 +269,25 @@ func registerInteractionsCommands(app *cli.App) {
 				v := api.ListInteractionsParamsStatus(ctx.String("status"))
 				params.Status = &v
 			}
+			if ctx.IsSet("kind") {
+				v := api.InteractionKind(ctx.String("kind"))
+				params.Kind = &v
+			}
 			if ctx.IsSet("run-id") {
 				v := ctx.String("run-id")
 				params.RunId = &v
 			}
-			if ctx.IsSet("target-type") {
-				v := api.ListInteractionsParamsTargetType(ctx.String("target-type"))
-				params.TargetType = &v
-			}
-			if ctx.IsSet("target-id") {
-				v := ctx.String("target-id")
-				params.TargetId = &v
+			if ctx.IsSet("target-user-id") {
+				v := ctx.String("target-user-id")
+				params.TargetUserId = &v
 			}
 			if ctx.IsSet("inbox") {
 				v := ctx.Bool("inbox")
 				params.Inbox = &v
 			}
-			if ctx.IsSet("reviewer-type") {
-				v := api.ListInteractionsParamsReviewerType(ctx.String("reviewer-type"))
-				params.ReviewerType = &v
-			}
-			if ctx.IsSet("reviewer-id") {
-				v := ctx.String("reviewer-id")
-				params.ReviewerId = &v
+			if ctx.IsSet("reviewer-user-id") {
+				v := ctx.String("reviewer-user-id")
+				params.ReviewerUserId = &v
 			}
 			if ctx.IsSet("cursor") {
 				v := api.CursorParam(ctx.String("cursor"))

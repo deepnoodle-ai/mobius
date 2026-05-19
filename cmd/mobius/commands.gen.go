@@ -27,13 +27,11 @@ import (
 // delegating to the per-group registrars in the commands_<group>.gen.go files.
 func registerGeneratedCommands(app *cli.App) {
 	registerActionsCommands(app)
-	registerActorStateCommands(app)
-	registerAgentCapabilitiesCommands(app)
+	registerAgentToolsCommands(app)
 	registerAgentsCommands(app)
 	registerArtifactsCommands(app)
 	registerAuditLogsCommands(app)
 	registerChannelsCommands(app)
-	registerEnvironmentsCommands(app)
 	registerEventsCommands(app)
 	registerGenerateCommands(app)
 	registerGroupsCommands(app)
@@ -52,6 +50,7 @@ func registerGeneratedCommands(app *cli.App) {
 	registerTablesCommands(app)
 	registerTeamCommands(app)
 	registerTriggersCommands(app)
+	registerUserStateCommands(app)
 	registerWebhooksCommands(app)
 	registerWorkerSessionsCommands(app)
 	registerWorkflowsCommands(app)

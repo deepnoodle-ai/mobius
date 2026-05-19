@@ -544,6 +544,7 @@ test("smoke: workflow helpers create, update, and ensure definitions", async () 
   assert.equal(
     (
       await client.updateWorkflow("wf_1", {
+        expected_version: 1,
         name: "research v2",
         spec: { name: "research v2", steps: [] },
       })

@@ -22,7 +22,6 @@ from deepnoodle.mobius.client import (
 )
 from deepnoodle.mobius._api.models import (
     CreateStandaloneInteractionRequest,
-    InteractionTarget,
 )
 
 
@@ -50,7 +49,7 @@ def _interaction_json(id_: str, status: str) -> dict[str, Any]:
         "kind": "review",
         "status": status,
         "origin": "manual",
-        "target": {"type": "user", "id": "usr_1"},
+        "target_user_ids": ["usr_1"],
         "created_at": _NOW,
         "updated_at": _NOW,
     }
@@ -119,7 +118,7 @@ def test_start_discussion_creates_channel_interaction_and_opening_message() -> N
                 CreateStandaloneInteractionRequest(
                     kind="review",
                     message="Review the incident notes",
-                    target=InteractionTarget(type="user", id="usr_1"),
+                    target_user_ids=["usr_1"],
                 )
             ],
             wait=WaitDiscussionOptions(timeout=1.0, poll_interval=0.001),
@@ -182,7 +181,7 @@ def test_start_discussion_cancels_created_interactions_when_setup_fails() -> Non
                     CreateStandaloneInteractionRequest(
                         kind="review",
                         message="Review the setup",
-                        target=InteractionTarget(type="user", id="usr_1"),
+                        target_user_ids=["usr_1"],
                     )
                 ],
             )

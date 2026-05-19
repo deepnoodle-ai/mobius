@@ -165,6 +165,7 @@ class WorkflowOptions:
 
 @dataclass
 class UpdateWorkflowOptions:
+    expected_version: int = 0
     name: str | None = None
     description: str | None = None
     published_as_tool: bool | None = None
@@ -928,8 +929,15 @@ def _update_workflow_request(
     opts: UpdateWorkflowOptions | None,
 ) -> UpdateWorkflowRequest:
     if opts is None:
-        return UpdateWorkflowRequest()
+        raise ValueError(
+            "UpdateWorkflowOptions is required: expected_version must be set"
+        )
+    if opts.expected_version < 1:
+        raise ValueError(
+            "UpdateWorkflowOptions.expected_version must be the workflow's current latest_version"
+        )
     return UpdateWorkflowRequest(
+        expected_version=opts.expected_version,
         name=opts.name,
         description=opts.description,
         published_as_tool=opts.published_as_tool,
@@ -972,7 +980,7 @@ def _workflow_update_for_diff(
     spec: WorkflowSpec,
     desired: WorkflowOptions,
 ) -> UpdateWorkflowOptions | None:
-    update = UpdateWorkflowOptions()
+    update = UpdateWorkflowOptions(expected_version=current.latest_version)
     changed = False
     if desired.name and current.name != desired.name:
         update.name = desired.name

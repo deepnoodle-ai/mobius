@@ -233,6 +233,8 @@ func registerTriggersCommands(app *cli.App) {
 		Flags(
 			cli.String("kind", "").Help("Filter by trigger kind."),
 			cli.Bool("enabled", "").Help("Filter to enabled or disabled triggers."),
+			cli.String("scope", "").Help("Omit for all/default-scoped triggers; use `owner` with `owned_by` to list owner-scoped triggers."),
+			cli.String("owned-by", "").Help("Canonical user owner ID. When paired with `scope=owner`, filters to that owner namespace."),
 			cli.String("cursor", "").Help("Opaque pagination cursor returned from the previous response."),
 			cli.Int("limit", "").Help("Maximum number of results to return per page."),
 		).
@@ -252,6 +254,14 @@ func registerTriggersCommands(app *cli.App) {
 			if ctx.IsSet("enabled") {
 				v := ctx.Bool("enabled")
 				params.Enabled = &v
+			}
+			if ctx.IsSet("scope") {
+				v := api.ResourceScope(ctx.String("scope"))
+				params.Scope = &v
+			}
+			if ctx.IsSet("owned-by") {
+				v := ctx.String("owned-by")
+				params.OwnedBy = &v
 			}
 			if ctx.IsSet("cursor") {
 				v := ctx.String("cursor")
@@ -381,6 +391,8 @@ func registerTriggersCommands(app *cli.App) {
 			cli.String("concurrency-policy", "").Help("Controls overlapping runs from the same trigger: - `allow` — start new runs unconditionally. - `f…"),
 			cli.Bool("enabled", "").Help("Set to false to pause the trigger without deleting it."),
 			cli.String("name", "").Help("Replacement human-readable name."),
+			cli.String("owned-by", "").Help("Canonical user owner ID. Required when `scope` is `owner`."),
+			cli.String("scope", "").Help("Set to `owner` for owner-scoped names, or null to return to the project/default scope."),
 			cli.String("source-config", "").Help("Typed source configuration. The shape is determined by the trigger's `kind` (`schedule` → `Schedu… Accepts JSON, @file, or @-."),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
 			cli.String("targets", "").Help("Replacement target set for this trigger. Omit to leave targets unchanged; send an empty array to re… Accepts JSON, @file, or @-."),
@@ -412,6 +424,14 @@ func registerTriggersCommands(app *cli.App) {
 				v := ctx.String("name")
 				body.Name = &v
 			}
+			if ctx.IsSet("owned-by") {
+				v := ctx.String("owned-by")
+				body.OwnedBy = &v
+			}
+			if ctx.IsSet("scope") {
+				v := api.ResourceScope(ctx.String("scope"))
+				body.Scope = &v
+			}
 			if ctx.IsSet("source-config") {
 				if err := decodeFlagJSON(ctx, "source-config", ctx.String("source-config"), &body.SourceConfig); err != nil {
 					return err
@@ -428,7 +448,7 @@ func registerTriggersCommands(app *cli.App) {
 					return err
 				}
 			}
-			if ctx.String("file") == "" && !ctx.IsSet("concurrency-policy") && !ctx.IsSet("enabled") && !ctx.IsSet("name") && !ctx.IsSet("source-config") && !ctx.IsSet("tag") && !ctx.IsSet("targets") {
+			if ctx.String("file") == "" && !ctx.IsSet("concurrency-policy") && !ctx.IsSet("enabled") && !ctx.IsSet("name") && !ctx.IsSet("owned-by") && !ctx.IsSet("scope") && !ctx.IsSet("source-config") && !ctx.IsSet("tag") && !ctx.IsSet("targets") {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
 			if ctx.Bool("dry-run") {

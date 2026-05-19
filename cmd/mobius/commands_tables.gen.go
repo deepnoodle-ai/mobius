@@ -23,6 +23,9 @@ func registerTablesCommands(app *cli.App) {
 		Description("Bulk insert rows").
 		Args("table-name").
 		Flags(
+			cli.String("scope", "").Help("scope"),
+			cli.String("owned-by", "").Help("owned-by"),
+			cli.Bool("owned-by-me", "").Help("owned-by-me"),
 			cli.String("rows", "").Help("[required] rows Accepts JSON, @file, or @-."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
@@ -36,6 +39,19 @@ func registerTablesCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
+			params := &api.BulkInsertTableRowsParams{}
+			if ctx.IsSet("scope") {
+				v := api.TableScopeParam(ctx.String("scope"))
+				params.Scope = &v
+			}
+			if ctx.IsSet("owned-by") {
+				v := api.TableOwnedByParam(ctx.String("owned-by"))
+				params.OwnedBy = &v
+			}
+			if ctx.IsSet("owned-by-me") {
+				v := ctx.Bool("owned-by-me")
+				params.OwnedByMe = &v
+			}
 			var body api.BulkInsertTableRowsJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -51,7 +67,7 @@ func registerTablesCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.BulkInsertTableRowsWithResponse(ctx.Context(), p0, p1, body)
+			resp, err := client.BulkInsertTableRowsWithResponse(ctx.Context(), p0, p1, params, body)
 			if err != nil {
 				return err
 			}
@@ -61,9 +77,12 @@ func registerTablesCommands(app *cli.App) {
 	tablesGrp.Command("create").
 		Description("Create a table").
 		Flags(
+			cli.String("access-mode", "").Help("Controls read/write access to the table. \"project\" allows anyone with project table permissions (de…"),
 			cli.String("description", "").Help("description"),
 			cli.String("name", "").Help("[required] name"),
+			cli.String("owned-by", "").Help("Canonical user owner ID. Required when `scope` is `owner`; defaults to the authenticated user for o…"),
 			cli.String("schema", "").Help("[required] schema Accepts JSON, @file, or @-."),
+			cli.String("scope", "").Help("Optional namespace for named runtime resources. Omitted/null means the project/default scope; `owne…"),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -79,6 +98,10 @@ func registerTablesCommands(app *cli.App) {
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
 			}
+			if ctx.IsSet("access-mode") {
+				v := api.TableAccessMode(ctx.String("access-mode"))
+				body.AccessMode = &v
+			}
 			if ctx.IsSet("description") {
 				v := ctx.String("description")
 				body.Description = &v
@@ -86,10 +109,18 @@ func registerTablesCommands(app *cli.App) {
 			if ctx.IsSet("name") {
 				body.Name = ctx.String("name")
 			}
+			if ctx.IsSet("owned-by") {
+				v := ctx.String("owned-by")
+				body.OwnedBy = &v
+			}
 			if ctx.IsSet("schema") {
 				if err := decodeFlagJSON(ctx, "schema", ctx.String("schema"), &body.Schema); err != nil {
 					return err
 				}
+			}
+			if ctx.IsSet("scope") {
+				v := api.ResourceScope(ctx.String("scope"))
+				body.Scope = &v
 			}
 			if body.Name == "" {
 				return fmt.Errorf("--name is required (or supply it via --file)")
@@ -110,6 +141,11 @@ func registerTablesCommands(app *cli.App) {
 	tablesGrp.Command("delete").
 		Description("Delete a table and all its rows").
 		Args("table-name").
+		Flags(
+			cli.String("scope", "").Help("scope"),
+			cli.String("owned-by", "").Help("owned-by"),
+			cli.Bool("owned-by-me", "").Help("owned-by-me"),
+		).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -119,7 +155,20 @@ func registerTablesCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			resp, err := client.DeleteTableWithResponse(ctx.Context(), p0, p1)
+			params := &api.DeleteTableParams{}
+			if ctx.IsSet("scope") {
+				v := api.TableScopeParam(ctx.String("scope"))
+				params.Scope = &v
+			}
+			if ctx.IsSet("owned-by") {
+				v := api.TableOwnedByParam(ctx.String("owned-by"))
+				params.OwnedBy = &v
+			}
+			if ctx.IsSet("owned-by-me") {
+				v := ctx.Bool("owned-by-me")
+				params.OwnedByMe = &v
+			}
+			resp, err := client.DeleteTableWithResponse(ctx.Context(), p0, p1, params)
 			if err != nil {
 				return err
 			}
@@ -129,6 +178,11 @@ func registerTablesCommands(app *cli.App) {
 	tablesGrp.Command("delete-row").
 		Description("Delete a row").
 		Args("table-name", "row-id").
+		Flags(
+			cli.String("scope", "").Help("scope"),
+			cli.String("owned-by", "").Help("owned-by"),
+			cli.Bool("owned-by-me", "").Help("owned-by-me"),
+		).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -139,7 +193,20 @@ func registerTablesCommands(app *cli.App) {
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			p2 := ctx.Arg(1)
-			resp, err := client.DeleteTableRowWithResponse(ctx.Context(), p0, p1, p2)
+			params := &api.DeleteTableRowParams{}
+			if ctx.IsSet("scope") {
+				v := api.TableScopeParam(ctx.String("scope"))
+				params.Scope = &v
+			}
+			if ctx.IsSet("owned-by") {
+				v := api.TableOwnedByParam(ctx.String("owned-by"))
+				params.OwnedBy = &v
+			}
+			if ctx.IsSet("owned-by-me") {
+				v := ctx.Bool("owned-by-me")
+				params.OwnedByMe = &v
+			}
+			resp, err := client.DeleteTableRowWithResponse(ctx.Context(), p0, p1, p2, params)
 			if err != nil {
 				return err
 			}
@@ -149,6 +216,11 @@ func registerTablesCommands(app *cli.App) {
 	tablesGrp.Command("get").
 		Description("Get a table").
 		Args("table-name").
+		Flags(
+			cli.String("scope", "").Help("scope"),
+			cli.String("owned-by", "").Help("owned-by"),
+			cli.Bool("owned-by-me", "").Help("owned-by-me"),
+		).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -158,7 +230,20 @@ func registerTablesCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			resp, err := client.GetTableWithResponse(ctx.Context(), p0, p1)
+			params := &api.GetTableParams{}
+			if ctx.IsSet("scope") {
+				v := api.TableScopeParam(ctx.String("scope"))
+				params.Scope = &v
+			}
+			if ctx.IsSet("owned-by") {
+				v := api.TableOwnedByParam(ctx.String("owned-by"))
+				params.OwnedBy = &v
+			}
+			if ctx.IsSet("owned-by-me") {
+				v := ctx.Bool("owned-by-me")
+				params.OwnedByMe = &v
+			}
+			resp, err := client.GetTableWithResponse(ctx.Context(), p0, p1, params)
 			if err != nil {
 				return err
 			}
@@ -168,6 +253,11 @@ func registerTablesCommands(app *cli.App) {
 	tablesGrp.Command("get-row").
 		Description("Get a row by ID").
 		Args("table-name", "row-id").
+		Flags(
+			cli.String("scope", "").Help("scope"),
+			cli.String("owned-by", "").Help("owned-by"),
+			cli.Bool("owned-by-me", "").Help("owned-by-me"),
+		).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -178,7 +268,20 @@ func registerTablesCommands(app *cli.App) {
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			p2 := ctx.Arg(1)
-			resp, err := client.GetTableRowWithResponse(ctx.Context(), p0, p1, p2)
+			params := &api.GetTableRowParams{}
+			if ctx.IsSet("scope") {
+				v := api.TableScopeParam(ctx.String("scope"))
+				params.Scope = &v
+			}
+			if ctx.IsSet("owned-by") {
+				v := api.TableOwnedByParam(ctx.String("owned-by"))
+				params.OwnedBy = &v
+			}
+			if ctx.IsSet("owned-by-me") {
+				v := ctx.Bool("owned-by-me")
+				params.OwnedByMe = &v
+			}
+			resp, err := client.GetTableRowWithResponse(ctx.Context(), p0, p1, p2, params)
 			if err != nil {
 				return err
 			}
@@ -188,6 +291,11 @@ func registerTablesCommands(app *cli.App) {
 	tablesGrp.Command("get-stats").
 		Description("Get table storage stats").
 		Args("table-name").
+		Flags(
+			cli.String("scope", "").Help("scope"),
+			cli.String("owned-by", "").Help("owned-by"),
+			cli.Bool("owned-by-me", "").Help("owned-by-me"),
+		).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -197,7 +305,20 @@ func registerTablesCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			resp, err := client.GetTableStatsWithResponse(ctx.Context(), p0, p1)
+			params := &api.GetTableStatsParams{}
+			if ctx.IsSet("scope") {
+				v := api.TableScopeParam(ctx.String("scope"))
+				params.Scope = &v
+			}
+			if ctx.IsSet("owned-by") {
+				v := api.TableOwnedByParam(ctx.String("owned-by"))
+				params.OwnedBy = &v
+			}
+			if ctx.IsSet("owned-by-me") {
+				v := ctx.Bool("owned-by-me")
+				params.OwnedByMe = &v
+			}
+			resp, err := client.GetTableStatsWithResponse(ctx.Context(), p0, p1, params)
 			if err != nil {
 				return err
 			}
@@ -208,6 +329,9 @@ func registerTablesCommands(app *cli.App) {
 		Description("Insert a row").
 		Args("table-name").
 		Flags(
+			cli.String("scope", "").Help("scope"),
+			cli.String("owned-by", "").Help("owned-by"),
+			cli.Bool("owned-by-me", "").Help("owned-by-me"),
 			cli.String("data", "").Help("[required] data Accepts JSON, @file, or @-."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
@@ -221,6 +345,19 @@ func registerTablesCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
+			params := &api.InsertTableRowParams{}
+			if ctx.IsSet("scope") {
+				v := api.TableScopeParam(ctx.String("scope"))
+				params.Scope = &v
+			}
+			if ctx.IsSet("owned-by") {
+				v := api.TableOwnedByParam(ctx.String("owned-by"))
+				params.OwnedBy = &v
+			}
+			if ctx.IsSet("owned-by-me") {
+				v := ctx.Bool("owned-by-me")
+				params.OwnedByMe = &v
+			}
 			var body api.InsertTableRowJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -236,7 +373,7 @@ func registerTablesCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.InsertTableRowWithResponse(ctx.Context(), p0, p1, body)
+			resp, err := client.InsertTableRowWithResponse(ctx.Context(), p0, p1, params, body)
 			if err != nil {
 				return err
 			}
@@ -248,6 +385,9 @@ func registerTablesCommands(app *cli.App) {
 		Flags(
 			cli.String("cursor", "").Help("cursor"),
 			cli.Int("limit", "").Help("limit"),
+			cli.Bool("owned-by-me", "").Help("owned-by-me"),
+			cli.String("owned-by", "").Help("owned-by"),
+			cli.String("scope", "").Help("scope"),
 		).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -266,6 +406,18 @@ func registerTablesCommands(app *cli.App) {
 				v := api.LimitParam(ctx.Int("limit"))
 				params.Limit = &v
 			}
+			if ctx.IsSet("owned-by-me") {
+				v := ctx.Bool("owned-by-me")
+				params.OwnedByMe = &v
+			}
+			if ctx.IsSet("owned-by") {
+				v := api.TableOwnedByParam(ctx.String("owned-by"))
+				params.OwnedBy = &v
+			}
+			if ctx.IsSet("scope") {
+				v := api.TableScopeParam(ctx.String("scope"))
+				params.Scope = &v
+			}
 			resp, err := client.ListTablesWithResponse(ctx.Context(), p0, params)
 			if err != nil {
 				return err
@@ -277,6 +429,9 @@ func registerTablesCommands(app *cli.App) {
 		Description("Query rows").
 		Args("table-name").
 		Flags(
+			cli.String("scope", "").Help("scope"),
+			cli.String("owned-by", "").Help("owned-by"),
+			cli.Bool("owned-by-me", "").Help("owned-by-me"),
 			cli.String("cursor", "").Help("Opaque cursor from a prior response."),
 			cli.String("filter", "").Help("Column equality or operator filter Accepts JSON, @file, or @-."),
 			cli.Int("limit", "").Help("limit"),
@@ -293,6 +448,19 @@ func registerTablesCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
+			params := &api.QueryTableRowsParams{}
+			if ctx.IsSet("scope") {
+				v := api.TableScopeParam(ctx.String("scope"))
+				params.Scope = &v
+			}
+			if ctx.IsSet("owned-by") {
+				v := api.TableOwnedByParam(ctx.String("owned-by"))
+				params.OwnedBy = &v
+			}
+			if ctx.IsSet("owned-by-me") {
+				v := ctx.Bool("owned-by-me")
+				params.OwnedByMe = &v
+			}
 			var body api.QueryTableRowsJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -321,7 +489,7 @@ func registerTablesCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.QueryTableRowsWithResponse(ctx.Context(), p0, p1, body)
+			resp, err := client.QueryTableRowsWithResponse(ctx.Context(), p0, p1, params, body)
 			if err != nil {
 				return err
 			}
@@ -332,6 +500,9 @@ func registerTablesCommands(app *cli.App) {
 		Description("Search rows").
 		Args("table-name").
 		Flags(
+			cli.String("scope", "").Help("scope"),
+			cli.String("owned-by", "").Help("owned-by"),
+			cli.Bool("owned-by-me", "").Help("owned-by-me"),
 			cli.String("cursor", "").Help("Opaque cursor from a prior search response."),
 			cli.String("filter", "").Help("Optional column equality or operator filter applied before text search. Accepts JSON, @file, or @-."),
 			cli.Int("limit", "").Help("limit"),
@@ -348,6 +519,19 @@ func registerTablesCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
+			params := &api.SearchTableRowsParams{}
+			if ctx.IsSet("scope") {
+				v := api.TableScopeParam(ctx.String("scope"))
+				params.Scope = &v
+			}
+			if ctx.IsSet("owned-by") {
+				v := api.TableOwnedByParam(ctx.String("owned-by"))
+				params.OwnedBy = &v
+			}
+			if ctx.IsSet("owned-by-me") {
+				v := ctx.Bool("owned-by-me")
+				params.OwnedByMe = &v
+			}
 			var body api.SearchTableRowsJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -374,7 +558,7 @@ func registerTablesCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.SearchTableRowsWithResponse(ctx.Context(), p0, p1, body)
+			resp, err := client.SearchTableRowsWithResponse(ctx.Context(), p0, p1, params, body)
 			if err != nil {
 				return err
 			}
@@ -385,8 +569,14 @@ func registerTablesCommands(app *cli.App) {
 		Description("Update a table").
 		Args("table-name").
 		Flags(
+			cli.String("scope", "").Help("scope"),
+			cli.String("owned-by", "").Help("owned-by"),
+			cli.Bool("owned-by-me", "").Help("owned-by-me"),
+			cli.String("access-mode", "").Help("Controls read/write access to the table. \"project\" allows anyone with project table permissions (de…"),
 			cli.String("description", "").Help("description"),
+			cli.String("owned-by", "").Help("Canonical user owner ID. Send null to clear ownership."),
 			cli.String("schema", "").Help("schema Accepts JSON, @file, or @-."),
+			cli.String("scope", "").Help("Set to `owner` for owner-scoped names, or null to return to the project/default scope."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -399,26 +589,51 @@ func registerTablesCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
+			params := &api.UpdateTableParams{}
+			if ctx.IsSet("scope") {
+				v := api.TableScopeParam(ctx.String("scope"))
+				params.Scope = &v
+			}
+			if ctx.IsSet("owned-by") {
+				v := api.TableOwnedByParam(ctx.String("owned-by"))
+				params.OwnedBy = &v
+			}
+			if ctx.IsSet("owned-by-me") {
+				v := ctx.Bool("owned-by-me")
+				params.OwnedByMe = &v
+			}
 			var body api.UpdateTableJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
 			}
+			if ctx.IsSet("access-mode") {
+				v := api.TableAccessMode(ctx.String("access-mode"))
+				body.AccessMode = &v
+			}
 			if ctx.IsSet("description") {
 				v := ctx.String("description")
 				body.Description = &v
+			}
+			if ctx.IsSet("owned-by") {
+				v := ctx.String("owned-by")
+				body.OwnedBy = &v
 			}
 			if ctx.IsSet("schema") {
 				if err := decodeFlagJSON(ctx, "schema", ctx.String("schema"), &body.Schema); err != nil {
 					return err
 				}
 			}
-			if ctx.String("file") == "" && !ctx.IsSet("description") && !ctx.IsSet("schema") {
+			if ctx.IsSet("scope") {
+				v := api.ResourceScope(ctx.String("scope"))
+				body.Scope = &v
+			}
+			if ctx.String("file") == "" && !ctx.IsSet("access-mode") && !ctx.IsSet("description") && !ctx.IsSet("owned-by") && !ctx.IsSet("schema") && !ctx.IsSet("scope") {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.UpdateTableWithResponse(ctx.Context(), p0, p1, body)
+			resp, err := client.UpdateTableWithResponse(ctx.Context(), p0, p1, params, body)
 			if err != nil {
 				return err
 			}
@@ -429,6 +644,9 @@ func registerTablesCommands(app *cli.App) {
 		Description("Update a row (PATCH — merges into existing data)").
 		Args("table-name", "row-id").
 		Flags(
+			cli.String("scope", "").Help("scope"),
+			cli.String("owned-by", "").Help("owned-by"),
+			cli.Bool("owned-by-me", "").Help("owned-by-me"),
 			cli.String("data", "").Help("[required] data Accepts JSON, @file, or @-."),
 			cli.Int("version", "").Help("Expected version for optimistic locking. Omit or 0 to skip the check."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
@@ -444,6 +662,19 @@ func registerTablesCommands(app *cli.App) {
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			p2 := ctx.Arg(1)
+			params := &api.UpdateTableRowParams{}
+			if ctx.IsSet("scope") {
+				v := api.TableScopeParam(ctx.String("scope"))
+				params.Scope = &v
+			}
+			if ctx.IsSet("owned-by") {
+				v := api.TableOwnedByParam(ctx.String("owned-by"))
+				params.OwnedBy = &v
+			}
+			if ctx.IsSet("owned-by-me") {
+				v := ctx.Bool("owned-by-me")
+				params.OwnedByMe = &v
+			}
 			var body api.UpdateTableRowJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -463,7 +694,7 @@ func registerTablesCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.UpdateTableRowWithResponse(ctx.Context(), p0, p1, p2, body)
+			resp, err := client.UpdateTableRowWithResponse(ctx.Context(), p0, p1, p2, params, body)
 			if err != nil {
 				return err
 			}
@@ -474,6 +705,9 @@ func registerTablesCommands(app *cli.App) {
 		Description("Upsert a row").
 		Args("table-name").
 		Flags(
+			cli.String("scope", "").Help("scope"),
+			cli.String("owned-by", "").Help("owned-by"),
+			cli.Bool("owned-by-me", "").Help("owned-by-me"),
 			cli.String("data", "").Help("[required] Full row data. Must include values for all key_columns. Accepts JSON, @file, or @-."),
 			cli.Strings("key-columns", "").Help("[required] Column names used to match an existing row."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
@@ -488,6 +722,19 @@ func registerTablesCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
+			params := &api.UpsertTableRowParams{}
+			if ctx.IsSet("scope") {
+				v := api.TableScopeParam(ctx.String("scope"))
+				params.Scope = &v
+			}
+			if ctx.IsSet("owned-by") {
+				v := api.TableOwnedByParam(ctx.String("owned-by"))
+				params.OwnedBy = &v
+			}
+			if ctx.IsSet("owned-by-me") {
+				v := ctx.Bool("owned-by-me")
+				params.OwnedByMe = &v
+			}
 			var body api.UpsertTableRowJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -509,7 +756,7 @@ func registerTablesCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.UpsertTableRowWithResponse(ctx.Context(), p0, p1, body)
+			resp, err := client.UpsertTableRowWithResponse(ctx.Context(), p0, p1, params, body)
 			if err != nil {
 				return err
 			}

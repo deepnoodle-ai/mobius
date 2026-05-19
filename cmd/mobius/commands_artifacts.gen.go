@@ -63,6 +63,33 @@ func registerArtifactsCommands(app *cli.App) {
 			return printResponse(ctx, "commitArtifact", resp.StatusCode(), resp.Body)
 		})
 
+	artifactsGrp.Command("create-signed-url").
+		Description("Create a signed artifact URL").
+		Args("id").
+		Flags(
+			cli.Int("ttl-seconds", "").Help("Requested signed URL TTL. The server caps this at the maximum supported artifact download TTL."),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			p1 := ctx.Arg(0)
+			params := &api.CreateArtifactSignedUrlParams{}
+			if ctx.IsSet("ttl-seconds") {
+				v := int64(ctx.Int("ttl-seconds"))
+				params.TtlSeconds = &v
+			}
+			resp, err := client.CreateArtifactSignedUrlWithResponse(ctx.Context(), p0, p1, params)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "createArtifactSignedUrl", resp.StatusCode(), resp.Body)
+		})
+
 	artifactsGrp.Command("create-slot").
 		Description("Reserve an artifact upload slot").
 		Flags(
@@ -213,9 +240,6 @@ func registerArtifactsCommands(app *cli.App) {
 	artifactsGrp.Command("get-content").
 		Description("Fetch artifact bytes").
 		Args("id").
-		Flags(
-			cli.Bool("inline", "").Help("inline"),
-		).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -225,12 +249,7 @@ func registerArtifactsCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			params := &api.GetArtifactContentParams{}
-			if ctx.IsSet("inline") {
-				v := ctx.Bool("inline")
-				params.Inline = &v
-			}
-			resp, err := client.GetArtifactContentWithResponse(ctx.Context(), p0, p1, params)
+			resp, err := client.GetArtifactContentWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}

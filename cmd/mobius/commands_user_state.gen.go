@@ -15,12 +15,12 @@ import (
 	"github.com/deepnoodle-ai/mobius/mobius/api"
 )
 
-// registerActorStateCommands registers every generated subcommand in the "actor-state" group.
-func registerActorStateCommands(app *cli.App) {
-	actorStateGrp := app.Group("actor-state").Description("Reportable actor state and per-target assignments")
-	actorStateGrp.Command("get-state").
-		Description("Get actor state").
-		Args("actor-id").
+// registerUserStateCommands registers every generated subcommand in the "user-state" group.
+func registerUserStateCommands(app *cli.App) {
+	userStateGrp := app.Group("user-state")
+	userStateGrp.Command("get-state").
+		Description("Get user state").
+		Args("user-id").
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -30,15 +30,15 @@ func registerActorStateCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			resp, err := client.GetActorStateWithResponse(ctx.Context(), p0, p1)
+			resp, err := client.GetUserStateWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, "getActorState", resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "getUserState", resp.StatusCode(), resp.Body)
 		})
 
-	actorStateGrp.Command("list-assignments").
-		Description("List actor assignments").
+	userStateGrp.Command("list-assignments").
+		Description("List user assignments").
 		Flags(
 			cli.String("status", "").Help("status"),
 		).
@@ -50,22 +50,22 @@ func registerActorStateCommands(app *cli.App) {
 			}
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
-			params := &api.ListActorAssignmentsParams{}
+			params := &api.ListUserAssignmentsParams{}
 			if ctx.IsSet("status") {
-				v := api.ActorAssignmentStatus(ctx.String("status"))
+				v := api.UserAssignmentStatus(ctx.String("status"))
 				params.Status = &v
 			}
-			resp, err := client.ListActorAssignmentsWithResponse(ctx.Context(), p0, params)
+			resp, err := client.ListUserAssignmentsWithResponse(ctx.Context(), p0, params)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, "listActorAssignments", resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "listUserAssignments", resp.StatusCode(), resp.Body)
 		})
 
-	actorStateGrp.Command("list-states").
-		Description("List actor state").
+	userStateGrp.Command("list-states").
+		Description("List user state").
 		Flags(
-			cli.String("actor-kind", "").Help("actor-kind"),
+			cli.String("user-kind", "").Help("user-kind"),
 			cli.String("availability", "").Help("availability"),
 			cli.String("visibility", "").Help("visibility"),
 			cli.Int("limit", "").Help("limit"),
@@ -78,35 +78,34 @@ func registerActorStateCommands(app *cli.App) {
 			}
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
-			params := &api.ListActorStatesParams{}
-			if ctx.IsSet("actor-kind") {
-				v := api.ActorStateActorKind(ctx.String("actor-kind"))
-				params.ActorKind = &v
+			params := &api.ListUserStatesParams{}
+			if ctx.IsSet("user-kind") {
+				v := api.UserKind(ctx.String("user-kind"))
+				params.UserKind = &v
 			}
 			if ctx.IsSet("availability") {
-				v := api.ActorAvailability(ctx.String("availability"))
+				v := api.UserAvailability(ctx.String("availability"))
 				params.Availability = &v
 			}
 			if ctx.IsSet("visibility") {
-				v := api.ActorStateVisibility(ctx.String("visibility"))
+				v := api.UserStateVisibility(ctx.String("visibility"))
 				params.Visibility = &v
 			}
 			if ctx.IsSet("limit") {
 				v := api.LimitParam(ctx.Int("limit"))
 				params.Limit = &v
 			}
-			resp, err := client.ListActorStatesWithResponse(ctx.Context(), p0, params)
+			resp, err := client.ListUserStatesWithResponse(ctx.Context(), p0, params)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, "listActorStates", resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "listUserStates", resp.StatusCode(), resp.Body)
 		})
 
-	actorStateGrp.Command("upsert-actor-state").
-		Description("Upsert actor state").
-		Args("actor-id").
+	userStateGrp.Command("upsert-user-state").
+		Description("Upsert user state").
+		Args("user-id").
 		Flags(
-			cli.String("actor-kind", "").Help("[required] actor-kind"),
 			cli.String("assignments", "").Help("assignments Accepts JSON, @file, or @-."),
 			cli.String("availability", "").Help("[required] availability"),
 			cli.String("description", "").Help("description"),
@@ -124,12 +123,9 @@ func registerActorStateCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			var body api.UpsertActorStateJSONRequestBody
+			var body api.UpsertUserStateJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
-			}
-			if ctx.IsSet("actor-kind") {
-				body.ActorKind = api.ActorStateActorKind(ctx.String("actor-kind"))
 			}
 			if ctx.IsSet("assignments") {
 				if err := decodeFlagJSON(ctx, "assignments", ctx.String("assignments"), &body.Assignments); err != nil {
@@ -137,7 +133,7 @@ func registerActorStateCommands(app *cli.App) {
 				}
 			}
 			if ctx.IsSet("availability") {
-				body.Availability = api.ActorAvailability(ctx.String("availability"))
+				body.Availability = api.UserAvailability(ctx.String("availability"))
 			}
 			if ctx.IsSet("description") {
 				v := ctx.String("description")
@@ -149,11 +145,8 @@ func registerActorStateCommands(app *cli.App) {
 				}
 			}
 			if ctx.IsSet("visibility") {
-				v := api.ActorStateVisibility(ctx.String("visibility"))
+				v := api.UserStateVisibility(ctx.String("visibility"))
 				body.Visibility = &v
-			}
-			if body.ActorKind == "" {
-				return fmt.Errorf("--actor-kind is required (or supply it via --file)")
 			}
 			if body.Availability == "" {
 				return fmt.Errorf("--availability is required (or supply it via --file)")
@@ -161,11 +154,11 @@ func registerActorStateCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.UpsertActorStateWithResponse(ctx.Context(), p0, p1, body)
+			resp, err := client.UpsertUserStateWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, "upsertActorState", resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "upsertUserState", resp.StatusCode(), resp.Body)
 		})
 
 }

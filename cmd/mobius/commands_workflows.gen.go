@@ -23,9 +23,12 @@ func registerWorkflowsCommands(app *cli.App) {
 		Description("Create a workflow definition").
 		Flags(
 			cli.String("description", "").Help("Optional description of the workflow's purpose."),
-			cli.String("handle", "").Help("URL-safe handle for this workflow, unique within the project. Auto-derived from name if omitted."),
+			cli.String("handle", "").Help("URL-safe handle for this workflow, unique within the resolved scope. Auto-derived from name if omit…"),
 			cli.String("name", "").Help("[required] Human-readable workflow name, unique within the project."),
-			cli.Bool("published-as-tool", "").Help("When true, expose this workflow as a callable tool via /api/tools."),
+			cli.String("owned-by", "").Help("Canonical user owner ID. Required when `scope` is `owner`; defaults to the creator when possible."),
+			cli.String("owner-agent-id", "").Help("Optional owning agent. Callers with `mobius.workflows.manage` may assign any active agent in the pr…"),
+			cli.Bool("published-as-tool", "").Help("When true, expose this workflow through the action catalog for agent tool manifests."),
+			cli.String("scope", "").Help("Optional namespace for named runtime resources. Omitted/null means the project/default scope; `owne…"),
 			cli.String("spec", "").Help("[required] Workflow definition shaped like `workflow.Options`. Accepts JSON, @file, or @-."),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
@@ -54,9 +57,21 @@ func registerWorkflowsCommands(app *cli.App) {
 			if ctx.IsSet("name") {
 				body.Name = ctx.String("name")
 			}
+			if ctx.IsSet("owned-by") {
+				v := ctx.String("owned-by")
+				body.OwnedBy = &v
+			}
+			if ctx.IsSet("owner-agent-id") {
+				v := ctx.String("owner-agent-id")
+				body.OwnerAgentId = &v
+			}
 			if ctx.IsSet("published-as-tool") {
 				v := ctx.Bool("published-as-tool")
 				body.PublishedAsTool = &v
+			}
+			if ctx.IsSet("scope") {
+				v := api.ResourceScope(ctx.String("scope"))
+				body.Scope = &v
 			}
 			if ctx.IsSet("spec") {
 				if err := decodeFlagJSON(ctx, "spec", ctx.String("spec"), &body.Spec); err != nil {
@@ -149,6 +164,8 @@ func registerWorkflowsCommands(app *cli.App) {
 	workflowsGrp.Command("list").
 		Description("List workflow definitions").
 		Flags(
+			cli.String("scope", "").Help("Omit for all/default-scoped workflows; use `owner` with `owned_by` to list owner-scoped workflows."),
+			cli.String("owned-by", "").Help("Canonical user owner ID. When paired with `scope=owner`, filters to that owner namespace."),
 			cli.String("cursor", "").Help("Opaque pagination cursor returned from the previous response."),
 			cli.Int("limit", "").Help("Maximum number of results to return per page."),
 		).
@@ -161,6 +178,14 @@ func registerWorkflowsCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			params := &api.ListWorkflowsParams{}
+			if ctx.IsSet("scope") {
+				v := api.ResourceScope(ctx.String("scope"))
+				params.Scope = &v
+			}
+			if ctx.IsSet("owned-by") {
+				v := ctx.String("owned-by")
+				params.OwnedBy = &v
+			}
 			if ctx.IsSet("cursor") {
 				v := ctx.String("cursor")
 				params.Cursor = &v
@@ -200,8 +225,12 @@ func registerWorkflowsCommands(app *cli.App) {
 		Args("id").
 		Flags(
 			cli.String("description", "").Help("Replacement description. Omit to leave unchanged."),
+			cli.Int("expected-version", "").Help("[required] Current `latest_version` observed by the caller before editing."),
 			cli.String("name", "").Help("Replacement human-readable workflow name."),
-			cli.Bool("published-as-tool", "").Help("When true, expose this workflow as a callable tool via /api/tools."),
+			cli.String("owned-by", "").Help("Canonical user owner ID. Required when `scope` is `owner`."),
+			cli.String("owner-agent-id", "").Help("Replacement owning agent. Set to an empty string to clear ownership. Requires `mobius.workflows.man…"),
+			cli.Bool("published-as-tool", "").Help("When true, expose this workflow through the action catalog for agent tool manifests."),
+			cli.String("scope", "").Help("Set to `owner` for owner-scoped handles, or null to return to the project/default scope."),
 			cli.String("spec", "").Help("Workflow definition shaped like `workflow.Options`. Accepts JSON, @file, or @-."),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
@@ -224,13 +253,28 @@ func registerWorkflowsCommands(app *cli.App) {
 				v := ctx.String("description")
 				body.Description = &v
 			}
+			if ctx.IsSet("expected-version") {
+				body.ExpectedVersion = ctx.Int("expected-version")
+			}
 			if ctx.IsSet("name") {
 				v := ctx.String("name")
 				body.Name = &v
 			}
+			if ctx.IsSet("owned-by") {
+				v := ctx.String("owned-by")
+				body.OwnedBy = &v
+			}
+			if ctx.IsSet("owner-agent-id") {
+				v := ctx.String("owner-agent-id")
+				body.OwnerAgentId = &v
+			}
 			if ctx.IsSet("published-as-tool") {
 				v := ctx.Bool("published-as-tool")
 				body.PublishedAsTool = &v
+			}
+			if ctx.IsSet("scope") {
+				v := api.ResourceScope(ctx.String("scope"))
+				body.Scope = &v
 			}
 			if ctx.IsSet("spec") {
 				if err := decodeFlagJSON(ctx, "spec", ctx.String("spec"), &body.Spec); err != nil {
@@ -243,8 +287,8 @@ func registerWorkflowsCommands(app *cli.App) {
 				v := api.TagMap(tags)
 				body.Tags = &v
 			}
-			if ctx.String("file") == "" && !ctx.IsSet("description") && !ctx.IsSet("name") && !ctx.IsSet("published-as-tool") && !ctx.IsSet("spec") && !ctx.IsSet("tag") {
-				return fmt.Errorf("at least one flag or --file is required")
+			if body.ExpectedVersion == 0 {
+				return fmt.Errorf("--expected-version is required (or supply it via --file)")
 			}
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
@@ -254,6 +298,43 @@ func registerWorkflowsCommands(app *cli.App) {
 				return err
 			}
 			return printResponse(ctx, "updateWorkflow", resp.StatusCode(), resp.Body)
+		})
+
+	workflowsGrp.Command("validate-workflow-expressions").
+		Description("Validate workflow expressions").
+		Flags(
+			cli.String("expressions", "").Help("[required] Expression batch. The server validates each item independently. Accepts JSON, @file, or @-."),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			var body api.ValidateWorkflowExpressionsJSONRequestBody
+			if err := readJSONBody(ctx, &body); err != nil {
+				return err
+			}
+			if ctx.IsSet("expressions") {
+				if err := decodeFlagJSON(ctx, "expressions", ctx.String("expressions"), &body.Expressions); err != nil {
+					return err
+				}
+			}
+			if ctx.String("file") == "" && !ctx.IsSet("expressions") {
+				return fmt.Errorf("--expressions is required (or supply it via --file)")
+			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
+			}
+			resp, err := client.ValidateWorkflowExpressionsWithResponse(ctx.Context(), p0, body)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "validateWorkflowExpressions", resp.StatusCode(), resp.Body)
 		})
 
 }

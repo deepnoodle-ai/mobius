@@ -54,14 +54,16 @@ func TestUpdateWorkflow_HighLevelClient(t *testing.T) {
 
 	spec := api.WorkflowSpec{Name: "research v2", Steps: &[]api.WorkflowStep{}}
 	def, err := c.UpdateWorkflow(context.Background(), "wf_1", &UpdateWorkflowOptions{
-		Name: "research v2",
-		Spec: &spec,
+		ExpectedVersion: 1,
+		Name:            "research v2",
+		Spec:            &spec,
 	})
 
 	assert.NoError(t, err)
 	assert.Equal(t, def.Name, "research v2")
 	assert.Equal(t, body["name"], "research v2")
 	assert.NotEqual(t, body["spec"], nil)
+	assert.Equal(t, body["expected_version"], float64(1))
 }
 
 func TestEnsureWorkflow_CreatesMissingDefinition(t *testing.T) {

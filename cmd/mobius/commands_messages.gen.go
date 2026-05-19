@@ -43,7 +43,7 @@ func registerMessagesCommands(app *cli.App) {
 		Description("List messages in a channel").
 		Args("id").
 		Flags(
-			cli.String("sender-id", "").Help("Filter by sender principal ID — a user ID (for `sender_type=member`), agent ID (for `sender_type=…"),
+			cli.String("sender-id", "").Help("Filter by sender principal ID — a user ID (for `sender_type=human`), agent ID (for `sender_type=a…"),
 			cli.String("reply-to", "").Help("Return only replies to this message ID (thread view)."),
 			cli.Bool("pinned", "").Help("Filter by pinned status."),
 			cli.String("since", "").Help("Return messages strictly newer than this cursor, in chronological order. Accepts either: - a messag…"),
@@ -148,8 +148,9 @@ func registerMessagesCommands(app *cli.App) {
 		Description("Send a message to a channel").
 		Args("id").
 		Flags(
+			cli.String("blocks", "").Help("Typed rich-content blocks. At most 20. Validated server-side. Accepts JSON, @file, or @-."),
 			cli.String("content", "").Help("[required] Message body in Markdown."),
-			cli.String("display", "").Help("Rendering hint for the UI: `message`, `notice`, or `card`."),
+			cli.String("display", "").Help("Rendering hint for the UI: `message`, `notice`, `card`, or `blocks`."),
 			cli.String("metadata", "").Help("Free-form JSON object for caller-defined metadata. Accepts JSON, @file, or @-."),
 			cli.String("references", "").Help("Experimental typed entity links for card/chip rendering. Accepts JSON, @file, or @-."),
 			cli.String("reply-to", "").Help("Parent message ID for threading (creates a reply)."),
@@ -169,6 +170,11 @@ func registerMessagesCommands(app *cli.App) {
 			var body api.SendMessageJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
+			}
+			if ctx.IsSet("blocks") {
+				if err := decodeFlagJSON(ctx, "blocks", ctx.String("blocks"), &body.Blocks); err != nil {
+					return err
+				}
 			}
 			if ctx.IsSet("content") {
 				body.Content = ctx.String("content")
@@ -212,6 +218,7 @@ func registerMessagesCommands(app *cli.App) {
 		Description("Update a channel message").
 		Args("id", "message-id").
 		Flags(
+			cli.String("blocks", "").Help("Replacement typed rich-content blocks. At most 20. Validated server-side. Accepts JSON, @file, or @-."),
 			cli.String("content", "").Help("Updated Markdown content. Sets `edited_at` on the message."),
 			cli.String("metadata", "").Help("Free-form JSON object for caller-defined metadata. Accepts JSON, @file, or @-."),
 			cli.Bool("pinned", "").Help("Pin or unpin the message. Sets/clears `pinned_by`."),
@@ -233,6 +240,11 @@ func registerMessagesCommands(app *cli.App) {
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
 			}
+			if ctx.IsSet("blocks") {
+				if err := decodeFlagJSON(ctx, "blocks", ctx.String("blocks"), &body.Blocks); err != nil {
+					return err
+				}
+			}
 			if ctx.IsSet("content") {
 				v := ctx.String("content")
 				body.Content = &v
@@ -251,7 +263,7 @@ func registerMessagesCommands(app *cli.App) {
 					return err
 				}
 			}
-			if ctx.String("file") == "" && !ctx.IsSet("content") && !ctx.IsSet("metadata") && !ctx.IsSet("pinned") && !ctx.IsSet("references") {
+			if ctx.String("file") == "" && !ctx.IsSet("blocks") && !ctx.IsSet("content") && !ctx.IsSet("metadata") && !ctx.IsSet("pinned") && !ctx.IsSet("references") {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
 			if ctx.Bool("dry-run") {
