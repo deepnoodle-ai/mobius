@@ -123,6 +123,9 @@ func (s *DiscussionsService) Start(ctx context.Context, opts StartDiscussionOpti
 	}
 
 	interactionIDs := uniqueDiscussionIDs(append(append([]string{}, opts.AssociatedInteractionIDs...), createdInteractionIDs...))
+	if len(interactionIDs) == 0 {
+		return nil, fmt.Errorf("mobius: start discussion requires at least one interaction or associated interaction ID")
+	}
 
 	var channel *api.Channel
 	channelID := opts.ChannelID
@@ -161,11 +164,11 @@ func (s *DiscussionsService) Start(ctx context.Context, opts StartDiscussionOpti
 
 	if opts.Wait != nil {
 		finalInteractions, err := s.waitInteractions(ctx, interactionIDs, opts.Wait)
+		result.Interactions = finalInteractions
+		result.Outcomes = discussionOutcomes(finalInteractions)
 		if err != nil {
 			return result, err
 		}
-		result.Interactions = finalInteractions
-		result.Outcomes = discussionOutcomes(finalInteractions)
 	}
 
 	return result, nil

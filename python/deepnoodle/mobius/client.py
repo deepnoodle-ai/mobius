@@ -688,6 +688,10 @@ class DiscussionsClient:
                 created_interactions.append(interaction)
 
             interaction_ids = _unique_discussion_ids([*associated_ids, *created_ids])
+            if not interaction_ids:
+                raise ValueError(
+                    "mobius: start discussion requires at least one associated_interaction_id or interactions[]"
+                )
 
             if channel_id:
                 for interaction_id in interaction_ids:
@@ -831,7 +835,7 @@ class DiscussionsClient:
                     ),
                     json=_dump(req),
                 )
-            except Exception:
+            except httpx.HTTPError:
                 # Best-effort cleanup; the caller is already propagating the
                 # original error from setup.
                 pass
