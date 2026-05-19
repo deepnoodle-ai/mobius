@@ -17,9 +17,9 @@ import (
 
 // registerInteractionsCommands registers every generated subcommand in the "interactions" group.
 func registerInteractionsCommands(app *cli.App) {
-	interactionsGrp := app.Group("interactions").Description("Approval, review, and input prompts")
+	interactionsGrp := app.Group("interactions").Description("Approval, review, vote, and handoff prompts")
 	interactionsGrp.Alias("interaction")
-	interactionsGrp.Command("accept-interaction-handoff").
+	interactionsGrp.Command("accept-handoff").
 		Description("Accept a submitted handoff").
 		Args("id").
 		Flags(
@@ -95,7 +95,7 @@ func registerInteractionsCommands(app *cli.App) {
 			return printResponse(ctx, "cancelInteraction", resp.StatusCode(), resp.Body)
 		})
 
-	interactionsGrp.Command("cast-interaction-ballot").
+	interactionsGrp.Command("cast-ballot").
 		Description("Cast or change a ballot on a vote-kind interaction").
 		Args("id").
 		Flags(
@@ -156,7 +156,7 @@ func registerInteractionsCommands(app *cli.App) {
 			return printResponse(ctx, "claimInteraction", resp.StatusCode(), resp.Body)
 		})
 
-	interactionsGrp.Command("close-interaction-vote").
+	interactionsGrp.Command("close-vote").
 		Description("Manually close a vote-kind interaction").
 		Args("id").
 		Flags(
@@ -323,7 +323,7 @@ func registerInteractionsCommands(app *cli.App) {
 			return printResponse(ctx, "listInteractionBallots", resp.StatusCode(), resp.Body)
 		})
 
-	interactionsGrp.Command("release-interaction").
+	interactionsGrp.Command("release").
 		Description("Release a claimed first-responder group interaction").
 		Args("id").
 		Use(requireAuth()).
@@ -342,7 +342,7 @@ func registerInteractionsCommands(app *cli.App) {
 			return printResponse(ctx, "releaseInteraction", resp.StatusCode(), resp.Body)
 		})
 
-	interactionsGrp.Command("respond-to-interaction").
+	interactionsGrp.Command("respond").
 		Description("Submit a response to an interaction").
 		Args("id").
 		Flags(
@@ -392,7 +392,7 @@ func registerInteractionsCommands(app *cli.App) {
 			return printResponse(ctx, "respondToInteraction", resp.StatusCode(), resp.Body)
 		})
 
-	interactionsGrp.Command("send-interaction-handoff").
+	interactionsGrp.Command("return-handoff").
 		Description("Send a submitted handoff back").
 		Args("id").
 		Flags(
@@ -429,7 +429,7 @@ func registerInteractionsCommands(app *cli.App) {
 			return printResponse(ctx, "sendBackInteractionHandoff", resp.StatusCode(), resp.Body)
 		})
 
-	interactionsGrp.Command("submit-interaction-handoff").
+	interactionsGrp.Command("submit-handoff").
 		Description("Submit a handoff for review or completion").
 		Args("id").
 		Flags(
@@ -473,7 +473,7 @@ func registerInteractionsCommands(app *cli.App) {
 			return printResponse(ctx, "submitInteractionHandoff", resp.StatusCode(), resp.Body)
 		})
 
-	interactionsGrp.Command("withdraw-interaction-ballot").
+	interactionsGrp.Command("withdraw-ballot").
 		Description("Withdraw the caller's ballot before close").
 		Args("id").
 		Use(requireAuth()).

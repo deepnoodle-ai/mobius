@@ -17,9 +17,180 @@ import (
 
 // registerEventsCommands registers every generated subcommand in the "events" group.
 func registerEventsCommands(app *cli.App) {
-	eventsGrp := app.Group("events").Description("Live event streams for runs and projects (SSE)")
+	eventsGrp := app.Group("events").Description("Inbound integration events and live SSE streams")
 	eventsGrp.Alias("event")
-	eventsGrp.Command("create-event-test-fire").
+	eventsGrp.Command("get").
+		Description("Get a received integration event").
+		Args("id").
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			p1 := ctx.Arg(0)
+			resp, err := client.GetIntegrationEventWithResponse(ctx.Context(), p0, p1)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "getIntegrationEvent", resp.StatusCode(), resp.Body)
+		})
+
+	eventsGrp.Command("list").
+		Description("List received integration events").
+		Flags(
+			cli.String("provider", "").Help("Filter by provider name, e.g. `github`."),
+			cli.String("integration-id", "").Help("Filter by integration row id."),
+			cli.String("event-type", "").Help("Filter by exact dotted event type."),
+			cli.String("source", "").Help("Filter by event source."),
+			cli.String("cursor", "").Help("Opaque pagination cursor returned by the previous page."),
+			cli.Int("limit", "").Help("Maximum number of events to return."),
+			cli.Bool("include-payload", "").Help("Include redacted payloads in list rows. Defaults to summaries only."),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			params := &api.ListIntegrationEventsParams{}
+			if ctx.IsSet("provider") {
+				v := ctx.String("provider")
+				params.Provider = &v
+			}
+			if ctx.IsSet("integration-id") {
+				v := ctx.String("integration-id")
+				params.IntegrationId = &v
+			}
+			if ctx.IsSet("event-type") {
+				v := ctx.String("event-type")
+				params.EventType = &v
+			}
+			if ctx.IsSet("source") {
+				v := api.IntegrationEventSource(ctx.String("source"))
+				params.Source = &v
+			}
+			if ctx.IsSet("cursor") {
+				v := ctx.String("cursor")
+				params.Cursor = &v
+			}
+			if ctx.IsSet("limit") {
+				v := ctx.Int("limit")
+				params.Limit = &v
+			}
+			if ctx.IsSet("include-payload") {
+				v := ctx.Bool("include-payload")
+				params.IncludePayload = &v
+			}
+			resp, err := client.ListIntegrationEventsWithResponse(ctx.Context(), p0, params)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "listIntegrationEvents", resp.StatusCode(), resp.Body)
+		})
+
+	eventsGrp.Command("list-test-samples").
+		Description("List synthetic integration event samples").
+		Flags(
+			cli.String("provider", "").Help("Filter samples by provider name, e.g. `github`."),
+			cli.String("event-type", "").Help("Filter samples by exact event type."),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			params := &api.ListIntegrationEventTestSamplesParams{}
+			if ctx.IsSet("provider") {
+				v := ctx.String("provider")
+				params.Provider = &v
+			}
+			if ctx.IsSet("event-type") {
+				v := ctx.String("event-type")
+				params.EventType = &v
+			}
+			resp, err := client.ListIntegrationEventTestSamplesWithResponse(ctx.Context(), p0, params)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "listIntegrationEventTestSamples", resp.StatusCode(), resp.Body)
+		})
+
+	eventsGrp.Command("stream-project").
+		Description("Subscribe to a project-wide live event stream (SSE)").
+		Flags(
+			cli.String("since", "").Help("Opaque durable project-stream cursor to replay from. Pass back the exact `id:`/`seq` string previou…"),
+			cli.String("run", "").Help("Comma-separated run IDs to filter by."),
+			cli.String("channel", "").Help("Comma-separated channel IDs to filter by."),
+			cli.String("interaction", "").Help("Comma-separated interaction IDs to filter by."),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			params := &api.StreamProjectEventsParams{}
+			if ctx.IsSet("since") {
+				v := ctx.String("since")
+				params.Since = &v
+			}
+			if ctx.IsSet("run") {
+				v := ctx.String("run")
+				params.Run = &v
+			}
+			if ctx.IsSet("channel") {
+				v := ctx.String("channel")
+				params.Channel = &v
+			}
+			if ctx.IsSet("interaction") {
+				v := ctx.String("interaction")
+				params.Interaction = &v
+			}
+			resp, err := client.StreamProjectEventsWithResponse(ctx.Context(), p0, params)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "streamProjectEvents", resp.StatusCode(), resp.Body)
+		})
+
+	eventsGrp.Command("stream-run").
+		Description("Subscribe to a stream of events for a single run (SSE)").
+		Args("id").
+		Flags(
+			cli.String("since", "").Help("Run-local `run_events.seq` cursor to replay from, encoded as a string. Do not pass a project-stream…"),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			p1 := ctx.Arg(0)
+			params := &api.StreamRunEventsParams{}
+			if ctx.IsSet("since") {
+				v := ctx.String("since")
+				params.Since = &v
+			}
+			resp, err := client.StreamRunEventsWithResponse(ctx.Context(), p0, p1, params)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "streamRunEvents", resp.StatusCode(), resp.Body)
+		})
+
+	eventsGrp.Command("test-fire").
 		Description("Preview or deliver a synthetic integration event").
 		Flags(
 			cli.String("dedup-key", "").Help("Optional dedup key for deliver mode. Defaults to the generated synthetic event id."),
@@ -90,177 +261,6 @@ func registerEventsCommands(app *cli.App) {
 				return err
 			}
 			return printResponse(ctx, "createIntegrationEventTestFire", resp.StatusCode(), resp.Body)
-		})
-
-	eventsGrp.Command("get-event").
-		Description("Get a received integration event").
-		Args("id").
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			resp, err := client.GetIntegrationEventWithResponse(ctx.Context(), p0, p1)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "getIntegrationEvent", resp.StatusCode(), resp.Body)
-		})
-
-	eventsGrp.Command("list-event-test-samples").
-		Description("List synthetic integration event samples").
-		Flags(
-			cli.String("provider", "").Help("Filter samples by provider name, e.g. `github`."),
-			cli.String("event-type", "").Help("Filter samples by exact event type."),
-		).
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			params := &api.ListIntegrationEventTestSamplesParams{}
-			if ctx.IsSet("provider") {
-				v := ctx.String("provider")
-				params.Provider = &v
-			}
-			if ctx.IsSet("event-type") {
-				v := ctx.String("event-type")
-				params.EventType = &v
-			}
-			resp, err := client.ListIntegrationEventTestSamplesWithResponse(ctx.Context(), p0, params)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "listIntegrationEventTestSamples", resp.StatusCode(), resp.Body)
-		})
-
-	eventsGrp.Command("list-events").
-		Description("List received integration events").
-		Flags(
-			cli.String("provider", "").Help("Filter by provider name, e.g. `github`."),
-			cli.String("integration-id", "").Help("Filter by integration row id."),
-			cli.String("event-type", "").Help("Filter by exact dotted event type."),
-			cli.String("source", "").Help("Filter by event source."),
-			cli.String("cursor", "").Help("Opaque pagination cursor returned by the previous page."),
-			cli.Int("limit", "").Help("Maximum number of events to return."),
-			cli.Bool("include-payload", "").Help("Include redacted payloads in list rows. Defaults to summaries only."),
-		).
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			params := &api.ListIntegrationEventsParams{}
-			if ctx.IsSet("provider") {
-				v := ctx.String("provider")
-				params.Provider = &v
-			}
-			if ctx.IsSet("integration-id") {
-				v := ctx.String("integration-id")
-				params.IntegrationId = &v
-			}
-			if ctx.IsSet("event-type") {
-				v := ctx.String("event-type")
-				params.EventType = &v
-			}
-			if ctx.IsSet("source") {
-				v := api.IntegrationEventSource(ctx.String("source"))
-				params.Source = &v
-			}
-			if ctx.IsSet("cursor") {
-				v := ctx.String("cursor")
-				params.Cursor = &v
-			}
-			if ctx.IsSet("limit") {
-				v := ctx.Int("limit")
-				params.Limit = &v
-			}
-			if ctx.IsSet("include-payload") {
-				v := ctx.Bool("include-payload")
-				params.IncludePayload = &v
-			}
-			resp, err := client.ListIntegrationEventsWithResponse(ctx.Context(), p0, params)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "listIntegrationEvents", resp.StatusCode(), resp.Body)
-		})
-
-	eventsGrp.Command("stream-project-events").
-		Description("Subscribe to a project-wide live event stream (SSE)").
-		Flags(
-			cli.String("since", "").Help("Opaque durable project-stream cursor to replay from. Pass back the exact `id:`/`seq` string previou…"),
-			cli.String("run", "").Help("Comma-separated run IDs to filter by."),
-			cli.String("channel", "").Help("Comma-separated channel IDs to filter by."),
-			cli.String("interaction", "").Help("Comma-separated interaction IDs to filter by."),
-		).
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			params := &api.StreamProjectEventsParams{}
-			if ctx.IsSet("since") {
-				v := ctx.String("since")
-				params.Since = &v
-			}
-			if ctx.IsSet("run") {
-				v := ctx.String("run")
-				params.Run = &v
-			}
-			if ctx.IsSet("channel") {
-				v := ctx.String("channel")
-				params.Channel = &v
-			}
-			if ctx.IsSet("interaction") {
-				v := ctx.String("interaction")
-				params.Interaction = &v
-			}
-			resp, err := client.StreamProjectEventsWithResponse(ctx.Context(), p0, params)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "streamProjectEvents", resp.StatusCode(), resp.Body)
-		})
-
-	eventsGrp.Command("stream-run-events").
-		Description("Subscribe to a stream of events for a single run (SSE)").
-		Args("id").
-		Flags(
-			cli.String("since", "").Help("Run-local `run_events.seq` cursor to replay from, encoded as a string. Do not pass a project-stream…"),
-		).
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			params := &api.StreamRunEventsParams{}
-			if ctx.IsSet("since") {
-				v := ctx.String("since")
-				params.Since = &v
-			}
-			resp, err := client.StreamRunEventsWithResponse(ctx.Context(), p0, p1, params)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "streamRunEvents", resp.StatusCode(), resp.Body)
 		})
 
 }

@@ -226,7 +226,7 @@ func registerJobsCommands(app *cli.App) {
 			return printResponse(ctx, "createJobInteraction", resp.StatusCode(), resp.Body)
 		})
 
-	jobsGrp.Command("emit-job-events").
+	jobsGrp.Command("emit-events").
 		Description("Emit one or more custom events from a claimed workflow job").
 		Args("id").
 		Flags(
@@ -370,7 +370,7 @@ func registerJobsCommands(app *cli.App) {
 			return printResponse(ctx, "heartbeatJob", resp.StatusCode(), resp.Body)
 		})
 
-	jobsGrp.Command("report-job").
+	jobsGrp.Command("report").
 		Description("Report progress or the outcome of a workflow job attempt").
 		Args("id").
 		Flags(
@@ -427,7 +427,7 @@ func registerJobsCommands(app *cli.App) {
 			return printResponse(ctx, "reportJob", resp.StatusCode(), resp.Body)
 		})
 
-	jobsGrp.Command("run-job-action").
+	jobsGrp.Command("run-action").
 		Description("Execute one server-side action for a claimed workflow job").
 		Args("id", "action-name").
 		Flags(

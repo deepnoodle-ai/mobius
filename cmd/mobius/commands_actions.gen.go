@@ -133,7 +133,7 @@ func registerActionsCommands(app *cli.App) {
 			return printResponse(ctx, "getAction", resp.StatusCode(), resp.Body)
 		})
 
-	actionsGrp.Command("get-action").
+	actionsGrp.Command("get-catalog").
 		Description("Get one catalog action by name").
 		Args("action-name").
 		Use(requireAuth()).
@@ -152,7 +152,7 @@ func registerActionsCommands(app *cli.App) {
 			return printResponse(ctx, "getCatalogAction", resp.StatusCode(), resp.Body)
 		})
 
-	actionsGrp.Command("invoke-action").
+	actionsGrp.Command("invoke").
 		Description("Invoke an action").
 		Args("action-name").
 		Flags(
@@ -226,7 +226,7 @@ func registerActionsCommands(app *cli.App) {
 			return printResponse(ctx, "listActions", resp.StatusCode(), resp.Body)
 		})
 
-	actionsGrp.Command("list-actions").
+	actionsGrp.Command("list-catalog").
 		Description("List the action catalog").
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {

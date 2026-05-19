@@ -36,25 +36,7 @@ func registerSpansCommands(app *cli.App) {
 			return printResponse(ctx, "getTrace", resp.StatusCode(), resp.Body)
 		})
 
-	spansGrp.Command("get-step-span-counts").
-		Description("Per-step span tallies for the run timeline badges").
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			params := &api.GetProjectStepSpanCountsParams{}
-			resp, err := client.GetProjectStepSpanCountsWithResponse(ctx.Context(), p0, params)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "getProjectStepSpanCounts", resp.StatusCode(), resp.Body)
-		})
-
-	spansGrp.Command("list-spans").
+	spansGrp.Command("list").
 		Description("List spans with optional filters").
 		Flags(
 			cli.String("cursor", "").Help("cursor"),
@@ -137,6 +119,24 @@ func registerSpansCommands(app *cli.App) {
 				return err
 			}
 			return printResponse(ctx, "listProjectTraces", resp.StatusCode(), resp.Body)
+		})
+
+	spansGrp.Command("step-counts").
+		Description("Per-step span tallies for the run timeline badges").
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			params := &api.GetProjectStepSpanCountsParams{}
+			resp, err := client.GetProjectStepSpanCountsWithResponse(ctx.Context(), p0, params)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "getProjectStepSpanCounts", resp.StatusCode(), resp.Body)
 		})
 
 }

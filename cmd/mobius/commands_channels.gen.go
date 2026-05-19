@@ -61,7 +61,7 @@ func registerChannelsCommands(app *cli.App) {
 			return printResponse(ctx, "addChannelMember", resp.StatusCode(), resp.Body)
 		})
 
-	channelsGrp.Command("associate-channel-interaction").
+	channelsGrp.Command("associate-interaction").
 		Description("Associate an interaction with a channel").
 		Args("id").
 		Flags(
@@ -403,7 +403,7 @@ func registerChannelsCommands(app *cli.App) {
 			return printResponse(ctx, "openDirectMessage", resp.StatusCode(), resp.Body)
 		})
 
-	channelsGrp.Command("release-channel-interaction").
+	channelsGrp.Command("release-interaction").
 		Description("Release an interaction claim from a channel").
 		Args("id", "interaction-id").
 		Use(requireAuth()).
@@ -471,7 +471,7 @@ func registerChannelsCommands(app *cli.App) {
 			return printResponse(ctx, "removeChannelMember", resp.StatusCode(), resp.Body)
 		})
 
-	channelsGrp.Command("respond-to-channel-interaction").
+	channelsGrp.Command("respond-to-interaction").
 		Description("Respond to an interaction from a channel").
 		Args("id", "interaction-id").
 		Flags(
@@ -516,7 +516,7 @@ func registerChannelsCommands(app *cli.App) {
 			return printResponse(ctx, "respondToChannelInteraction", resp.StatusCode(), resp.Body)
 		})
 
-	channelsGrp.Command("share-channel-entity").
+	channelsGrp.Command("share-entity").
 		Description("Share an entity in a channel").
 		Args("id").
 		Flags(

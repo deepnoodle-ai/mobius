@@ -147,24 +147,6 @@ func registerProjectsCommands(app *cli.App) {
 			return printResponse(ctx, "deleteProject", resp.StatusCode(), resp.Body)
 		})
 
-	projectsGrp.Command("delete-config").
-		Description("Clear project config").
-		Args("id").
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := ctx.Arg(0)
-			resp, err := client.DeleteProjectConfigWithResponse(ctx.Context(), p0)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "deleteProjectConfig", resp.StatusCode(), resp.Body)
-		})
-
 	projectsGrp.Command("get").
 		Description("Get a project").
 		Args("id").

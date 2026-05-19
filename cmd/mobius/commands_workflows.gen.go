@@ -300,7 +300,7 @@ func registerWorkflowsCommands(app *cli.App) {
 			return printResponse(ctx, "updateWorkflow", resp.StatusCode(), resp.Body)
 		})
 
-	workflowsGrp.Command("validate-workflow-expressions").
+	workflowsGrp.Command("validate-expressions").
 		Description("Validate workflow expressions").
 		Flags(
 			cli.String("expressions", "").Help("[required] Expression batch. The server validates each item independently. Accepts JSON, @file, or @-."),

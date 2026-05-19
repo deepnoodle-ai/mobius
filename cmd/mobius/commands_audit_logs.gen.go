@@ -17,7 +17,7 @@ import (
 func registerAuditLogsCommands(app *cli.App) {
 	auditLogsGrp := app.Group("audit-logs").Description("Organization and project audit log entries")
 	auditLogsGrp.Alias("audit-log")
-	auditLogsGrp.Command("list-logs").
+	auditLogsGrp.Command("list").
 		Description("List audit log entries").
 		Flags(
 			cli.String("resource-type", "").Help("Filter by resource type"),

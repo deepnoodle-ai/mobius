@@ -188,7 +188,7 @@ func registerWebhooksCommands(app *cli.App) {
 			return printResponse(ctx, "listWebhookDeliveries", resp.StatusCode(), resp.Body)
 		})
 
-	webhooksGrp.Command("ping-webhook").
+	webhooksGrp.Command("ping").
 		Description("Test a webhook URL").
 		Args("id").
 		Flags(

@@ -17,7 +17,7 @@ import (
 
 // registerIntegrationProvidersCommands registers every generated subcommand in the "integration-providers" group.
 func registerIntegrationProvidersCommands(app *cli.App) {
-	integrationProvidersGrp := app.Group("integration-providers")
+	integrationProvidersGrp := app.Group("integration-providers").Description("Connect and manage third-party integration providers")
 	integrationProvidersGrp.Alias("integration-provider")
 	integrationProvidersGrp.Command("connect-apollo").
 		Description("Connect or reconnect Apollo").
@@ -148,7 +148,7 @@ func registerIntegrationProvidersCommands(app *cli.App) {
 			return printResponse(ctx, "connectScrapeCreators", resp.StatusCode(), resp.Body)
 		})
 
-	integrationProvidersGrp.Command("list-providers").
+	integrationProvidersGrp.Command("list").
 		Description("List available integration providers and their capabilities").
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {

@@ -106,7 +106,7 @@ func registerMessagesCommands(app *cli.App) {
 			return printResponse(ctx, "listMessages", resp.StatusCode(), resp.Body)
 		})
 
-	messagesGrp.Command("mark-messages-read").
+	messagesGrp.Command("mark-read").
 		Description("Mark messages in a channel as read").
 		Args("id").
 		Flags(

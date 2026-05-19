@@ -19,7 +19,7 @@ import (
 func registerReferencesCommands(app *cli.App) {
 	referencesGrp := app.Group("references").Description("Reference lookup and resolution")
 	referencesGrp.Alias("reference")
-	referencesGrp.Command("lookup-references").
+	referencesGrp.Command("lookup").
 		Description("Look up reference candidates").
 		Args("reference-type").
 		Flags(
@@ -66,7 +66,7 @@ func registerReferencesCommands(app *cli.App) {
 			return printResponse(ctx, "lookupReferences", resp.StatusCode(), resp.Body)
 		})
 
-	referencesGrp.Command("resolve-references").
+	referencesGrp.Command("resolve").
 		Description("Resolve saved reference values").
 		Args("reference-type").
 		Flags(

@@ -38,7 +38,7 @@ func registerRunsCommands(app *cli.App) {
 			return printResponse(ctx, "cancelRun", resp.StatusCode(), resp.Body)
 		})
 
-	runsGrp.Command("fork-run").
+	runsGrp.Command("fork").
 		Description("Fork a terminal run from a specific step").
 		Args("id").
 		Flags(
@@ -221,6 +221,25 @@ func registerRunsCommands(app *cli.App) {
 			return printResponse(ctx, "listRuns", resp.StatusCode(), resp.Body)
 		})
 
+	runsGrp.Command("list-for-workflow").
+		Description("List runs for a workflow definition").
+		Args("id").
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			p1 := ctx.Arg(0)
+			resp, err := client.ListRunsForWorkflowWithResponse(ctx.Context(), p0, p1)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "listRunsForWorkflow", resp.StatusCode(), resp.Body)
+		})
+
 	runsGrp.Command("list-jobs").
 		Description("List jobs for a run").
 		Args("id").
@@ -238,25 +257,6 @@ func registerRunsCommands(app *cli.App) {
 				return err
 			}
 			return printResponse(ctx, "listRunJobs", resp.StatusCode(), resp.Body)
-		})
-
-	runsGrp.Command("list-runs").
-		Description("List runs for a workflow definition").
-		Args("id").
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			resp, err := client.ListRunsForWorkflowWithResponse(ctx.Context(), p0, p1)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "listRunsForWorkflow", resp.StatusCode(), resp.Body)
 		})
 
 	runsGrp.Command("list-steps").
@@ -404,7 +404,7 @@ func registerRunsCommands(app *cli.App) {
 			return printResponse(ctx, "startRun", resp.StatusCode(), resp.Body)
 		})
 
-	runsGrp.Command("start-workflow-run").
+	runsGrp.Command("start-for-workflow").
 		Description("Start a new workflow run against a saved definition").
 		Args("id").
 		Flags(

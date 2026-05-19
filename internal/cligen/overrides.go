@@ -25,28 +25,164 @@ type Override struct {
 //     the mobius command package).
 //   - The auto-derived group, command name, or description is awkward.
 //
-// Entries are intentionally verbose so the reason for each override stays
-// next to the rule itself.
+// Entries are grouped by command group so the file mirrors how a user reads
+// `mobius --help`.
 var overrides = map[string]Override{
-	// --- Renamed: strip redundant noun suffix inside the command group ---
+	// --- actions ----------------------------------------------------------
+	// Catalog-action ops collide with the project-scoped action ops on the
+	// auto-derived `get` / `list` leaves, so spell them out.
+	"invokeAction":       {Command: "invoke"},
+	"getCatalogAction":   {Command: "get-catalog"},
+	"listCatalogActions": {Command: "list-catalog"},
+
+	// --- agents -----------------------------------------------------------
+	// Drop the redundant `agent` token that the auto-derivation can't strip
+	// (the group name already carries it).
+	"provisionAgentInbox":         {Command: "provision-inbox"},
+	"appendAgentSessionMessages":  {Command: "append-session-messages"},
+
+	// --- agent-tools ------------------------------------------------------
+	// Skill and Toolkit ops share verbs (create/get/list/update/delete) and
+	// the generator's collision suffixer would turn one of each pair into
+	// `delete-2`, `get-2`, etc. Spell out the resource so every command in
+	// the group reads as `<verb>-<resource>`.
+	"createSkill":             {Command: "create-skill"},
+	"createToolkit":           {Command: "create-toolkit"},
+	"deleteSkill":             {Command: "delete-skill"},
+	"deleteToolkit":           {Command: "delete-toolkit"},
+	"getSkill":                {Command: "get-skill"},
+	"getToolkit":              {Command: "get-toolkit"},
+	"listSkills":              {Command: "list-skills"},
+	"listToolkits":            {Command: "list-toolkits"},
+	"updateSkill":             {Command: "update-skill"},
+	"updateToolkit":           {Command: "update-toolkit"},
+	"listSkillAssignments":    {Command: "list-skill-assignments"},
+	"listToolkitAssignments":  {Command: "list-toolkit-assignments"},
+	"getAgentToolManifest":    {Command: "get-manifest"},
+
+	// --- artifacts --------------------------------------------------------
+	"pinArtifact":      {Command: "pin"},
+	"unpinArtifact":    {Command: "unpin"},
+	"commitArtifact":   {Command: "commit"},
+	// The auto-derived leaf is `list-artifacts` (strip `Run`), which reads
+	// no differently from `list` and hides the run-scoping. Be explicit.
+	"listRunArtifacts": {Command: "list-for-run"},
+
+	// --- audit-logs -------------------------------------------------------
+	"listAuditLogs": {Command: "list"},
+
+	// --- channels ---------------------------------------------------------
+	// Drop the redundant `channel` token from interaction/entity ops.
+	"associateChannelInteraction": {Command: "associate-interaction"},
+	"respondToChannelInteraction": {Command: "respond-to-interaction"},
+	"shareChannelEntity":          {Command: "share-entity"},
+	"releaseChannelInteraction":   {Command: "release-interaction"},
+
+	// --- events -----------------------------------------------------------
+	// The `events` group is project integration events; the `Integration`
+	// token in the operationId is redundant once you're inside the group.
+	"listIntegrationEvents":           {Command: "list"},
+	"getIntegrationEvent":             {Command: "get"},
+	"listIntegrationEventTestSamples": {Command: "list-test-samples"},
+	"createIntegrationEventTestFire":  {Command: "test-fire"},
+	"streamProjectEvents":             {Command: "stream-project"},
+	"streamRunEvents":                 {Command: "stream-run"},
+
+	// --- groups -----------------------------------------------------------
+	// Differentiate "list groups in project" from "list groups a member is in".
+	"listMemberGroups": {Command: "list-for-member"},
+
+	// --- integration-providers -------------------------------------------
+	"listIntegrationProviders": {Command: "list"},
+
+	// --- interactions -----------------------------------------------------
+	// Drop the redundant `interaction` token; the group name carries it.
+	"submitInteractionHandoff":   {Command: "submit-handoff"},
+	"acceptInteractionHandoff":   {Command: "accept-handoff"},
+	"sendBackInteractionHandoff": {Command: "return-handoff"},
+	"castInteractionBallot":      {Command: "cast-ballot"},
+	"withdrawInteractionBallot":  {Command: "withdraw-ballot"},
+	"closeInteractionVote":       {Command: "close-vote"},
+	"releaseInteraction":         {Command: "release"},
+	"respondToInteraction":       {Command: "respond"},
+
+	// --- jobs -------------------------------------------------------------
+	"reportJob":     {Command: "report"},
+	"runJobAction":  {Command: "run-action"},
+	"emitJobEvents": {Command: "emit-events"},
+
+	// --- logs -------------------------------------------------------------
+	"ingestProjectLogs":     {Command: "ingest"},
+	"ingestProjectLogsOTLP": {Command: "ingest-otlp"},
+	"listProjectLogs":       {Command: "list"},
+
+	// --- messages ---------------------------------------------------------
+	"markMessagesRead": {Command: "mark-read"},
+
+	// --- metrics ----------------------------------------------------------
+	"getProjectMetrics": {Command: "get"},
+
+	// --- observables ------------------------------------------------------
+	"submitObservableObservation": {Command: "submit-observation"},
+
+	// --- projects ---------------------------------------------------------
+	"archiveProject": {Command: "archive"},
+	"restoreProject": {Command: "restore"},
+	// `deleteProjectConfig` does the same DELETE as the hand-written
+	// `projects clear-config` (when called without --key-prefix). Suppress
+	// the auto-generated leaf so users see only the ergonomic wrapper.
+	"deleteProjectConfig": {Skip: true},
+
+	// --- references -------------------------------------------------------
+	"lookupReferences":  {Command: "lookup"},
+	"resolveReferences": {Command: "resolve"},
+
+	// --- runs -------------------------------------------------------------
 	"startRun":            {Command: "start"},
 	"resumeRun":           {Command: "resume"},
-	"listRunsForWorkflow": {Command: "list-runs"},
-	"archiveProject":      {Command: "archive"},
-	"restoreProject":      {Command: "restore"},
+	"forkRun":             {Command: "fork"},
+	"listRunsForWorkflow": {Command: "list-for-workflow"},
+	// startWorkflowRun is the path-bound variant of `runs start`; rename so
+	// the relationship to a specific workflow is clear in `mobius runs --help`.
+	"startWorkflowRun": {Command: "start-for-workflow"},
 
-	// `tables` group: the row operations use verbs the auto-derivation
-	// doesn't recognise (insert/query/search/upsert) or that produce an
-	// awkward leaf when combined with the `Table` resource word
-	// (bulkInsertTableRows → bulk-table-rows). Spell out the leaf names so
-	// every command in the group reads as `<verb>-row(s)`.
+	// --- spans ------------------------------------------------------------
+	"listProjectSpans":         {Command: "list"},
+	"getProjectStepSpanCounts": {Command: "step-counts"},
+
+	// --- tables -----------------------------------------------------------
+	// Row operations use verbs the auto-derivation doesn't recognise
+	// (insert/query/search/upsert) or produce an awkward leaf when combined
+	// with the `Table` resource word (bulkInsertTableRows → bulk-table-rows).
+	// Spell out the leaf names so every command reads as `<verb>-row(s)`.
 	"insertTableRow":      {Command: "insert-row"},
 	"upsertTableRow":      {Command: "upsert-row"},
 	"queryTableRows":      {Command: "query-rows"},
 	"searchTableRows":     {Command: "search-rows"},
 	"bulkInsertTableRows": {Command: "bulk-insert-rows"},
 
-	// --- Skipped: hand-written in cmd/mobius ---
+	// --- team -------------------------------------------------------------
+	"listProjectTeam": {Command: "list"},
+
+	// --- triggers ---------------------------------------------------------
+	"testFireTrigger":         {Command: "test-fire"},
+	"deleteAllTriggerTargets": {Command: "delete-targets"},
+
+	// --- user-state -------------------------------------------------------
+	"listUserStates":  {Command: "list"},
+	"getUserState":    {Command: "get"},
+	"upsertUserState": {Command: "upsert"},
+
+	// --- webhooks ---------------------------------------------------------
+	"pingWebhook": {Command: "ping"},
+
+	// --- worker-sessions --------------------------------------------------
+	"listWorkerSessions": {Command: "list"},
+
+	// --- workflows --------------------------------------------------------
+	"validateWorkflowExpressions": {Command: "validate-expressions"},
+
+	// --- Skipped: hand-written in cmd/mobius -----------------------------
 	// The browser-based CLI login flow is hand-written in auth.go because it
 	// needs to drive the device challenge, open the browser, poll for
 	// completion, and persist the returned credential locally — none of which
@@ -62,7 +198,7 @@ var overrides = map[string]Override{
 	"listCLICredentials":  {Skip: true},
 	"revokeCLICredential": {Skip: true},
 
-	// --- Skipped: low-value or webhook-style endpoints ---
+	// --- Skipped: low-value or webhook-style endpoints -------------------
 	// These accept opaque payloads and are intended for external callers
 	// (Slack, third-party webhooks), not interactive CLI use.
 	"handleSlackCommands": {Skip: true},
@@ -78,31 +214,36 @@ var overrides = map[string]Override{
 // well when listed vertically in `mobius --help`. Prefer consistent
 // grammatical shape across entries.
 var groupDescriptions = map[string]string{
-	"actions":             "Custom HTTP actions called by workflow steps",
-	"actor-state":         "Reportable actor state and per-target assignments",
-	"agent-invocations":   "Agent invocation lifecycle and results",
-	"agents":              "Agents and agent sessions",
-	"artifacts":           "Run output artifacts and storage settings",
-	"audit-logs":          "Organization and project audit log entries",
-	"channels":            "Chat channels, members, and messages",
-	"events":              "Live event streams for runs and projects (SSE)",
-	"generate":            "LLM message generation",
-	"groups":              "Member groups for routing interactions",
-	"integration-catalog": "Available integration providers and capabilities",
-	"interactions":        "Approval, review, and input prompts",
-	"jobs":                "Worker runtime — claim, heartbeat, complete",
-	"logs":                "Structured log ingestion and retrieval",
-	"messages":            "Send, list, and update channel messages",
-	"metrics":             "Platform and workflow metrics",
-	"observables":         "Tracked observables, observations, and state",
-	"projects":            "Projects within the organization",
-	"references":          "Reference lookup and resolution",
-	"runs":                "Workflow runs",
-	"spans":               "Distributed tracing spans and traces",
-	"tables":              "Project-scoped tables and rows",
-	"tools":               "Workflows published as callable tools",
-	"triggers":            "Event, schedule, and webhook triggers",
-	"webhooks":            "Outgoing webhook subscriptions",
-	"worker-sessions":     "Registered worker sessions",
-	"workflows":           "Workflow definitions",
+	"actions":               "Custom HTTP actions called by workflow steps",
+	"actor-state":           "Reportable actor state and per-target assignments",
+	"agent-invocations":     "Agent invocation lifecycle and results",
+	"agents":                "Agents, sessions, and presence",
+	"agent-tools":           "Skills, toolkits, and resolved agent tool manifests",
+	"artifacts":             "Run output artifacts and storage settings",
+	"audit-logs":            "Organization and project audit log entries",
+	"channels":              "Chat channels, members, and messages",
+	"events":                "Inbound integration events and live SSE streams",
+	"generate":              "LLM message generation",
+	"groups":                "Member groups for routing interactions",
+	"integration-catalog":   "Available integration providers and capabilities",
+	"integration-providers": "Connect and manage third-party integration providers",
+	"interactions":          "Approval, review, vote, and handoff prompts",
+	"jobs":                  "Worker runtime — claim, heartbeat, complete",
+	"logs":                  "Structured log ingestion and retrieval",
+	"messages":              "Send, list, and update channel messages",
+	"metrics":               "Platform and workflow metrics",
+	"observables":           "Tracked observables, observations, and state",
+	"projects":              "Projects within the organization",
+	"references":            "Reference lookup and resolution",
+	"runs":                  "Workflow runs",
+	"secrets":               "Project secrets and secret versions",
+	"spans":                 "Distributed tracing spans and traces",
+	"tables":                "Project-scoped tables and rows",
+	"team":                  "Project team membership",
+	"tools":                 "Workflows published as callable tools",
+	"triggers":              "Event, schedule, and webhook triggers",
+	"user-state":            "Per-user project state and assignments",
+	"webhooks":              "Outgoing webhook subscriptions",
+	"worker-sessions":       "Registered worker sessions",
+	"workflows":             "Workflow definitions",
 }
