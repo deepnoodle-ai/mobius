@@ -252,11 +252,11 @@ func registerRunsCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			resp, err := client.ListWorkflowRunsWithResponse(ctx.Context(), p0, p1)
+			resp, err := client.ListRunsForWorkflowWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, "listWorkflowRuns", resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "listRunsForWorkflow", resp.StatusCode(), resp.Body)
 		})
 
 	runsGrp.Command("list-steps").

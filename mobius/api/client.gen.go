@@ -16902,8 +16902,8 @@ type ClientInterface interface {
 
 	UpdateWorkflow(ctx context.Context, project ProjectHandleParam, id IDParam, body UpdateWorkflowJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListWorkflowRuns request
-	ListWorkflowRuns(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// ListRunsForWorkflow request
+	ListRunsForWorkflow(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// StartWorkflowRunWithBody request with any body
 	StartWorkflowRunWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -20481,8 +20481,8 @@ func (c *Client) UpdateWorkflow(ctx context.Context, project ProjectHandleParam,
 	return c.Client.Do(req)
 }
 
-func (c *Client) ListWorkflowRuns(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListWorkflowRunsRequest(c.Server, project, id)
+func (c *Client) ListRunsForWorkflow(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListRunsForWorkflowRequest(c.Server, project, id)
 	if err != nil {
 		return nil, err
 	}
@@ -33219,8 +33219,8 @@ func NewUpdateWorkflowRequestWithBody(server string, project ProjectHandleParam,
 	return req, nil
 }
 
-// NewListWorkflowRunsRequest generates requests for ListWorkflowRuns
-func NewListWorkflowRunsRequest(server string, project ProjectHandleParam, id IDParam) (*http.Request, error) {
+// NewListRunsForWorkflowRequest generates requests for ListRunsForWorkflow
+func NewListRunsForWorkflowRequest(server string, project ProjectHandleParam, id IDParam) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -34253,8 +34253,8 @@ type ClientWithResponsesInterface interface {
 
 	UpdateWorkflowWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body UpdateWorkflowJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateWorkflowResponse, error)
 
-	// ListWorkflowRunsWithResponse request
-	ListWorkflowRunsWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*ListWorkflowRunsResponse, error)
+	// ListRunsForWorkflowWithResponse request
+	ListRunsForWorkflowWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*ListRunsForWorkflowResponse, error)
 
 	// StartWorkflowRunWithBodyWithResponse request with any body
 	StartWorkflowRunWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*StartWorkflowRunResponse, error)
@@ -39505,7 +39505,7 @@ func (r UpdateWorkflowResponse) StatusCode() int {
 	return 0
 }
 
-type ListWorkflowRunsResponse struct {
+type ListRunsForWorkflowResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *RunListResponse
@@ -39514,7 +39514,7 @@ type ListWorkflowRunsResponse struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r ListWorkflowRunsResponse) Status() string {
+func (r ListRunsForWorkflowResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -39522,7 +39522,7 @@ func (r ListWorkflowRunsResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r ListWorkflowRunsResponse) StatusCode() int {
+func (r ListRunsForWorkflowResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -42193,13 +42193,13 @@ func (c *ClientWithResponses) UpdateWorkflowWithResponse(ctx context.Context, pr
 	return ParseUpdateWorkflowResponse(rsp)
 }
 
-// ListWorkflowRunsWithResponse request returning *ListWorkflowRunsResponse
-func (c *ClientWithResponses) ListWorkflowRunsWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*ListWorkflowRunsResponse, error) {
-	rsp, err := c.ListWorkflowRuns(ctx, project, id, reqEditors...)
+// ListRunsForWorkflowWithResponse request returning *ListRunsForWorkflowResponse
+func (c *ClientWithResponses) ListRunsForWorkflowWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*ListRunsForWorkflowResponse, error) {
+	rsp, err := c.ListRunsForWorkflow(ctx, project, id, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseListWorkflowRunsResponse(rsp)
+	return ParseListRunsForWorkflowResponse(rsp)
 }
 
 // StartWorkflowRunWithBodyWithResponse request with arbitrary body returning *StartWorkflowRunResponse
@@ -51635,15 +51635,15 @@ func ParseUpdateWorkflowResponse(rsp *http.Response) (*UpdateWorkflowResponse, e
 	return response, nil
 }
 
-// ParseListWorkflowRunsResponse parses an HTTP response from a ListWorkflowRunsWithResponse call
-func ParseListWorkflowRunsResponse(rsp *http.Response) (*ListWorkflowRunsResponse, error) {
+// ParseListRunsForWorkflowResponse parses an HTTP response from a ListRunsForWorkflowWithResponse call
+func ParseListRunsForWorkflowResponse(rsp *http.Response) (*ListRunsForWorkflowResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &ListWorkflowRunsResponse{
+	response := &ListRunsForWorkflowResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}

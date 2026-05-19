@@ -440,7 +440,7 @@ export interface paths {
          * List runs for a workflow definition
          * @description Returns runs for a specific workflow definition, newest first. All statuses are included; this endpoint does not currently accept status or range filters.
          */
-        get: operations["listWorkflowRuns"];
+        get: operations["listRunsForWorkflow"];
         put?: never;
         /**
          * Start a new workflow run against a saved definition
@@ -9810,7 +9810,7 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
-    listWorkflowRuns: {
+    listRunsForWorkflow: {
         parameters: {
             query?: never;
             header?: never;

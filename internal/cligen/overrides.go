@@ -29,10 +29,11 @@ type Override struct {
 // next to the rule itself.
 var overrides = map[string]Override{
 	// --- Renamed: strip redundant noun suffix inside the command group ---
-	"startRun":       {Command: "start"},
-	"resumeRun":      {Command: "resume"},
-	"archiveProject": {Command: "archive"},
-	"restoreProject": {Command: "restore"},
+	"startRun":            {Command: "start"},
+	"resumeRun":           {Command: "resume"},
+	"listRunsForWorkflow": {Command: "list-runs"},
+	"archiveProject":      {Command: "archive"},
+	"restoreProject":      {Command: "restore"},
 
 	// `tables` group: the row operations use verbs the auto-derivation
 	// doesn't recognise (insert/query/search/upsert) or that produce an
