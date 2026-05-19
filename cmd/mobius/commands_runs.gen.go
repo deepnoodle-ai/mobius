@@ -266,6 +266,7 @@ func registerRunsCommands(app *cli.App) {
 			cli.String("path-id", "").Help("Filter steps by workflow path identifier."),
 			cli.String("step-name", "").Help("Filter steps by workflow step name."),
 			cli.String("status", "").Help("Filter steps by current run-step status."),
+			cli.String("include", "").Help("Pass `run_state_after` to include `run_state_after_b64`; it is omitted otherwise."),
 			cli.String("cursor", "").Help("cursor"),
 			cli.Int("limit", "").Help("limit"),
 		).
@@ -290,6 +291,10 @@ func registerRunsCommands(app *cli.App) {
 			if ctx.IsSet("status") {
 				v := api.RunStepStatus(ctx.String("status"))
 				params.Status = &v
+			}
+			if ctx.IsSet("include") {
+				v := api.ListRunStepsParamsInclude(ctx.String("include"))
+				params.Include = &v
 			}
 			if ctx.IsSet("cursor") {
 				v := api.CursorParam(ctx.String("cursor"))

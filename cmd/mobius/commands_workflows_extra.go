@@ -96,6 +96,7 @@ func workflowsApplyHandler(ctx *cli.Context) error {
 
 	// Decide create vs update: prefer --id, then handle resolution.
 	id := ctx.String("id")
+	expectedVersion := 0
 	if id == "" {
 		handle := ""
 		if body.Handle != nil {
@@ -104,11 +105,12 @@ func workflowsApplyHandler(ctx *cli.Context) error {
 		if handle == "" {
 			return cli.Errorf("--handle is required for apply (or set 'handle' in --file). Pass --id to update by ID instead.")
 		}
-		found, err := findWorkflowIDByHandle(ctx, client, project, handle)
+		found, version, err := findWorkflowIDByHandle(ctx, client, project, handle)
 		if err != nil {
 			return err
 		}
 		id = found
+		expectedVersion = version
 	}
 
 	if id == "" {
@@ -123,8 +125,25 @@ func workflowsApplyHandler(ctx *cli.Context) error {
 		return printResponse(ctx, "createWorkflow", resp.StatusCode(), resp.Body)
 	}
 
+	// Update path: fetch latest_version if we did not get it from handle
+	// resolution (i.e. --id was supplied directly).
+	if expectedVersion == 0 {
+		current, err := client.GetWorkflowWithResponse(ctx.Context(), project, id)
+		if err != nil {
+			return err
+		}
+		if current.JSON200 == nil {
+			return &cli.ExitError{
+				Code:    exitCodeForStatus(current.StatusCode()),
+				Message: fmt.Sprintf("get workflow: HTTP %d: %s", current.StatusCode(), string(current.Body)),
+			}
+		}
+		expectedVersion = current.JSON200.LatestVersion
+	}
+
 	// Update — project the create request onto the update request.
 	update := api.UpdateWorkflowRequest{
+		ExpectedVersion: expectedVersion,
 		Description:     body.Description,
 		PublishedAsTool: body.PublishedAsTool,
 		Spec:            &body.Spec,
@@ -145,34 +164,35 @@ func workflowsApplyHandler(ctx *cli.Context) error {
 }
 
 // findWorkflowIDByHandle walks the paginated workflow list looking for a
-// workflow whose handle matches. Returns "" with no error when not found,
-// signalling the caller to fall through to create.
-func findWorkflowIDByHandle(ctx *cli.Context, client api.ClientWithResponsesInterface, project, handle string) (string, error) {
+// workflow whose handle matches. Returns ("", 0, nil) when not found, signalling
+// the caller to fall through to create. The latest_version is returned so the
+// caller can pass it as expected_version on update.
+func findWorkflowIDByHandle(ctx *cli.Context, client api.ClientWithResponsesInterface, project, handle string) (string, int, error) {
 	limit := 100
 	var cursor *string
 	for {
 		params := &api.ListWorkflowsParams{Limit: &limit, Cursor: cursor}
 		resp, err := client.ListWorkflowsWithResponse(ctx.Context(), project, params)
 		if err != nil {
-			return "", err
+			return "", 0, err
 		}
 		if resp.StatusCode() < 200 || resp.StatusCode() >= 300 {
-			return "", &cli.ExitError{
+			return "", 0, &cli.ExitError{
 				Code:    exitCodeForStatus(resp.StatusCode()),
 				Message: fmt.Sprintf("list workflows: HTTP %d: %s", resp.StatusCode(), string(resp.Body)),
 			}
 		}
 		page := resp.JSON200
 		if page == nil {
-			return "", nil
+			return "", 0, nil
 		}
 		for _, w := range page.Items {
 			if w.Handle == handle {
-				return w.Id, nil
+				return w.Id, w.LatestVersion, nil
 			}
 		}
 		if !page.HasMore || page.NextCursor == nil || *page.NextCursor == "" {
-			return "", nil
+			return "", 0, nil
 		}
 		cursor = page.NextCursor
 	}

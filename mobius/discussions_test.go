@@ -57,7 +57,7 @@ func TestStartDiscussionCreatesChannelInteractionAndOpeningMessage(t *testing.T)
 		Interactions: []api.CreateStandaloneInteractionRequest{{
 			Kind:    api.InteractionKindReview,
 			Message: "Review the incident notes",
-			Target:  api.InteractionTarget{Type: api.InteractionTargetTypeUser, Id: "usr_1"},
+			TargetUserIds: &[]string{"usr_1"},
 		}},
 		OpeningMessage: "Please resolve this together.",
 		Wait:           &WaitDiscussionOptions{Timeout: time.Second, PollInterval: time.Millisecond},
@@ -112,7 +112,7 @@ func TestStartDiscussionCancelsCreatedInteractionsWhenSetupFails(t *testing.T) {
 		Interactions: []api.CreateStandaloneInteractionRequest{{
 			Kind:    api.InteractionKindReview,
 			Message: "Review the setup",
-			Target:  api.InteractionTarget{Type: api.InteractionTargetTypeUser, Id: "usr_1"},
+			TargetUserIds: &[]string{"usr_1"},
 		}},
 		OpeningMessage: "This will fail.",
 	})
@@ -133,5 +133,5 @@ func channelMessageJSON(id, channelID string) string {
 
 func interactionJSON(id, status string) string {
 	now := "2026-05-17T00:00:00Z"
-	return fmt.Sprintf(`{"id":%q,"kind":"review","status":%q,"origin":"manual","target":{"type":"user","id":"usr_1"},"created_at":%q,"updated_at":%q}`, id, status, now, now)
+	return fmt.Sprintf(`{"id":%q,"kind":"review","status":%q,"origin":"manual","target_user_ids":["usr_1"],"created_at":%q,"updated_at":%q}`, id, status, now, now)
 }

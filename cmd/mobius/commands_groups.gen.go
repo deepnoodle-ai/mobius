@@ -23,7 +23,7 @@ func registerGroupsCommands(app *cli.App) {
 		Description("Add a member to a group").
 		Args("group").
 		Flags(
-			cli.String("user-id", "").Help("[required] Org member user ID to add. Must be a current org member."),
+			cli.String("user-id", "").Help("[required] Human org member or project agent user ID to add."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).

@@ -231,7 +231,7 @@ func registerWebhooksCommands(app *cli.App) {
 		Args("id").
 		Flags(
 			cli.Bool("enabled", "").Help("Set to false to disable delivery without deleting the webhook."),
-			cli.Strings("events", "").Help("Replacement event subscriptions. Replaces the entire current list."),
+			cli.Strings("events", "").Help("Replacement event subscriptions. Replaces the entire current list; an empty list subscribes to all …"),
 			cli.String("name", "").Help("Replacement human-readable name."),
 			cli.String("signing-secret", "").Help("Replace the current signing secret. Set to empty string to disable signing. Omit to leave the curre…"),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),

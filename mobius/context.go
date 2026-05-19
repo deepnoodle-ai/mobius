@@ -64,22 +64,14 @@ type RunServerActionOptions struct {
 	TimeoutSeconds int
 }
 
-// InteractionTarget identifies who should receive an interaction. Use
-// [InteractionTargetTypeUser], [InteractionTargetTypeAgent], or
-// [InteractionTargetTypeGroup] for the Type field.
+// InteractionTarget identifies who should receive an interaction. Either
+// UserIDs (one or more resolved user IDs — agents are users via their
+// backing user ID) or GroupID (a group ID or handle that the server
+// expands to user targets at creation time) must be set.
 type InteractionTarget struct {
-	Type InteractionTargetType
-	ID   string
+	UserIDs []string
+	GroupID string
 }
-
-// InteractionTargetType is the kind of an [InteractionTarget].
-type InteractionTargetType string
-
-const (
-	InteractionTargetTypeUser  InteractionTargetType = "user"
-	InteractionTargetTypeAgent InteractionTargetType = "agent"
-	InteractionTargetTypeGroup InteractionTargetType = "group"
-)
 
 // InteractionKind is the kind of an interaction request.
 type InteractionKind string
@@ -203,11 +195,8 @@ func (c *executionContext) RequestInteraction(req InteractionRequest) (*api.Inte
 	if c.client == nil {
 		return nil, fmt.Errorf("mobius: RequestInteraction: context not bound to a client")
 	}
-	if req.Target.ID == "" {
-		return nil, fmt.Errorf("mobius: RequestInteraction: target.ID is required")
-	}
-	if req.Target.Type == "" {
-		return nil, fmt.Errorf("mobius: RequestInteraction: target.Type is required")
+	if len(req.Target.UserIDs) == 0 && req.Target.GroupID == "" {
+		return nil, fmt.Errorf("mobius: RequestInteraction: target.UserIDs or target.GroupID is required")
 	}
 	if req.Kind == "" {
 		return nil, fmt.Errorf("mobius: RequestInteraction: Kind is required")
@@ -215,11 +204,17 @@ func (c *executionContext) RequestInteraction(req InteractionRequest) (*api.Inte
 	if req.Message == "" {
 		return nil, fmt.Errorf("mobius: RequestInteraction: Message is required")
 	}
+	target := api.InteractionTarget{}
+	if len(req.Target.UserIDs) > 0 {
+		ids := append([]string(nil), req.Target.UserIDs...)
+		target.UserIds = &ids
+	}
+	if req.Target.GroupID != "" {
+		g := req.Target.GroupID
+		target.GroupId = &g
+	}
 	body := api.CreateJobInteractionJSONRequestBody{
-		Target: api.InteractionTarget{
-			Type: api.InteractionTargetType(req.Target.Type),
-			Id:   req.Target.ID,
-		},
+		Target:  target,
 		Kind:    api.InteractionKind(req.Kind),
 		Message: req.Message,
 	}

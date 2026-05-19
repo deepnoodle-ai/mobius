@@ -247,6 +247,23 @@ func registerChannelsCommands(app *cli.App) {
 			return printResponse(ctx, "getChannel", resp.StatusCode(), resp.Body)
 		})
 
+	channelsGrp.Command("get-block-catalog").
+		Description("Get the channel message block catalog").
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			resp, err := client.GetChannelBlockCatalogWithResponse(ctx.Context(), p0)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "getChannelBlockCatalog", resp.StatusCode(), resp.Body)
+		})
+
 	channelsGrp.Command("list").
 		Description("List channels").
 		Flags(
@@ -344,6 +361,46 @@ func registerChannelsCommands(app *cli.App) {
 				return err
 			}
 			return printResponse(ctx, "listChannelMembers", resp.StatusCode(), resp.Body)
+		})
+
+	channelsGrp.Command("open-direct-message").
+		Description("Open a direct-message channel").
+		Flags(
+			cli.String("display-name", "").Help("Human-facing display name for the channel. Defaults to the participant's name or ID when omitted. O…"),
+			cli.String("participant-id", "").Help("[required] User or agent ID of the other DM participant."),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			var body api.OpenDirectMessageJSONRequestBody
+			if err := readJSONBody(ctx, &body); err != nil {
+				return err
+			}
+			if ctx.IsSet("display-name") {
+				v := ctx.String("display-name")
+				body.DisplayName = &v
+			}
+			if ctx.IsSet("participant-id") {
+				body.ParticipantId = ctx.String("participant-id")
+			}
+			if body.ParticipantId == "" {
+				return fmt.Errorf("--participant-id is required (or supply it via --file)")
+			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
+			}
+			resp, err := client.OpenDirectMessageWithResponse(ctx.Context(), p0, body)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "openDirectMessage", resp.StatusCode(), resp.Body)
 		})
 
 	channelsGrp.Command("release-channel-interaction").

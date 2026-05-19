@@ -24,21 +24,6 @@ const (
 	XApiKeyAuthScopes = "XApiKeyAuth.Scopes"
 )
 
-// Defines values for AcquireEnvironmentRequestTemplateId.
-const (
-	AcquireEnvironmentRequestTemplateIdCodingDefault AcquireEnvironmentRequestTemplateId = "coding-default"
-)
-
-// Valid indicates whether the value is a known member of the AcquireEnvironmentRequestTemplateId enum.
-func (e AcquireEnvironmentRequestTemplateId) Valid() bool {
-	switch e {
-	case AcquireEnvironmentRequestTemplateIdCodingDefault:
-		return true
-	default:
-		return false
-	}
-}
-
 // Defines values for ActionEndpointKind.
 const (
 	ActionEndpointKindHttp     ActionEndpointKind = "http"
@@ -141,144 +126,6 @@ func (e ActionInvocationResultStatus) Valid() bool {
 	}
 }
 
-// Defines values for ActorAssignmentStatus.
-const (
-	ActorAssignmentStatusBlocked    ActorAssignmentStatus = "blocked"
-	ActorAssignmentStatusDone       ActorAssignmentStatus = "done"
-	ActorAssignmentStatusInProgress ActorAssignmentStatus = "in_progress"
-	ActorAssignmentStatusTodo       ActorAssignmentStatus = "todo"
-)
-
-// Valid indicates whether the value is a known member of the ActorAssignmentStatus enum.
-func (e ActorAssignmentStatus) Valid() bool {
-	switch e {
-	case ActorAssignmentStatusBlocked:
-		return true
-	case ActorAssignmentStatusDone:
-		return true
-	case ActorAssignmentStatusInProgress:
-		return true
-	case ActorAssignmentStatusTodo:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for ActorAvailability.
-const (
-	ActorAvailabilityAvailable ActorAvailability = "available"
-	ActorAvailabilityAway      ActorAvailability = "away"
-	ActorAvailabilityBusy      ActorAvailability = "busy"
-	ActorAvailabilityFocused   ActorAvailability = "focused"
-	ActorAvailabilityOffline   ActorAvailability = "offline"
-	ActorAvailabilityWaiting   ActorAvailability = "waiting"
-)
-
-// Valid indicates whether the value is a known member of the ActorAvailability enum.
-func (e ActorAvailability) Valid() bool {
-	switch e {
-	case ActorAvailabilityAvailable:
-		return true
-	case ActorAvailabilityAway:
-		return true
-	case ActorAvailabilityBusy:
-		return true
-	case ActorAvailabilityFocused:
-		return true
-	case ActorAvailabilityOffline:
-		return true
-	case ActorAvailabilityWaiting:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for ActorConnectionStatus.
-const (
-	ActorConnectionStatusIdle    ActorConnectionStatus = "idle"
-	ActorConnectionStatusOffline ActorConnectionStatus = "offline"
-	ActorConnectionStatusOnline  ActorConnectionStatus = "online"
-)
-
-// Valid indicates whether the value is a known member of the ActorConnectionStatus enum.
-func (e ActorConnectionStatus) Valid() bool {
-	switch e {
-	case ActorConnectionStatusIdle:
-		return true
-	case ActorConnectionStatusOffline:
-		return true
-	case ActorConnectionStatusOnline:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for ActorPresenceSource.
-const (
-	ActorPresenceSourceAgentSession   ActorPresenceSource = "agent_session"
-	ActorPresenceSourcePlatformHosted ActorPresenceSource = "platform_hosted"
-	ActorPresenceSourceWeb            ActorPresenceSource = "web"
-	ActorPresenceSourceWorkerSession  ActorPresenceSource = "worker_session"
-)
-
-// Valid indicates whether the value is a known member of the ActorPresenceSource enum.
-func (e ActorPresenceSource) Valid() bool {
-	switch e {
-	case ActorPresenceSourceAgentSession:
-		return true
-	case ActorPresenceSourcePlatformHosted:
-		return true
-	case ActorPresenceSourceWeb:
-		return true
-	case ActorPresenceSourceWorkerSession:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for ActorStateActorKind.
-const (
-	ActorStateActorKindAgent ActorStateActorKind = "agent"
-	ActorStateActorKindUser  ActorStateActorKind = "user"
-)
-
-// Valid indicates whether the value is a known member of the ActorStateActorKind enum.
-func (e ActorStateActorKind) Valid() bool {
-	switch e {
-	case ActorStateActorKindAgent:
-		return true
-	case ActorStateActorKindUser:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for ActorStateVisibility.
-const (
-	ActorStateVisibilityOrg     ActorStateVisibility = "org"
-	ActorStateVisibilityProject ActorStateVisibility = "project"
-	ActorStateVisibilitySelf    ActorStateVisibility = "self"
-)
-
-// Valid indicates whether the value is a known member of the ActorStateVisibility enum.
-func (e ActorStateVisibility) Valid() bool {
-	switch e {
-	case ActorStateVisibilityOrg:
-		return true
-	case ActorStateVisibilityProject:
-		return true
-	case ActorStateVisibilitySelf:
-		return true
-	default:
-		return false
-	}
-}
-
 // Defines values for AddChannelMemberRequestRole.
 const (
 	AddChannelMemberRequestRoleAdmin  AddChannelMemberRequestRole = "admin"
@@ -297,42 +144,135 @@ func (e AddChannelMemberRequestRole) Valid() bool {
 	}
 }
 
-// Defines values for AgentPresence.
+// Defines values for AgentConversationSessionOrigin.
 const (
-	AgentPresenceOffline AgentPresence = "offline"
-	AgentPresenceOnline  AgentPresence = "online"
-	AgentPresenceStale   AgentPresence = "stale"
+	AgentConversationSessionOriginApi         AgentConversationSessionOrigin = "api"
+	AgentConversationSessionOriginChannel     AgentConversationSessionOrigin = "channel"
+	AgentConversationSessionOriginInteraction AgentConversationSessionOrigin = "interaction"
+	AgentConversationSessionOriginManual      AgentConversationSessionOrigin = "manual"
+	AgentConversationSessionOriginWorkflow    AgentConversationSessionOrigin = "workflow"
 )
 
-// Valid indicates whether the value is a known member of the AgentPresence enum.
-func (e AgentPresence) Valid() bool {
+// Valid indicates whether the value is a known member of the AgentConversationSessionOrigin enum.
+func (e AgentConversationSessionOrigin) Valid() bool {
 	switch e {
-	case AgentPresenceOffline:
+	case AgentConversationSessionOriginApi:
 		return true
-	case AgentPresenceOnline:
+	case AgentConversationSessionOriginChannel:
 		return true
-	case AgentPresenceStale:
+	case AgentConversationSessionOriginInteraction:
+		return true
+	case AgentConversationSessionOriginManual:
+		return true
+	case AgentConversationSessionOriginWorkflow:
 		return true
 	default:
 		return false
 	}
 }
 
-// Defines values for AgentSessionStatus.
+// Defines values for AgentConversationSessionScope.
 const (
-	AgentSessionStatusConnected    AgentSessionStatus = "connected"
-	AgentSessionStatusDisconnected AgentSessionStatus = "disconnected"
-	AgentSessionStatusStale        AgentSessionStatus = "stale"
+	AgentConversationSessionScopeAgent    AgentConversationSessionScope = "agent"
+	AgentConversationSessionScopeRun      AgentConversationSessionScope = "run"
+	AgentConversationSessionScopeWorkflow AgentConversationSessionScope = "workflow"
 )
 
-// Valid indicates whether the value is a known member of the AgentSessionStatus enum.
-func (e AgentSessionStatus) Valid() bool {
+// Valid indicates whether the value is a known member of the AgentConversationSessionScope enum.
+func (e AgentConversationSessionScope) Valid() bool {
 	switch e {
-	case AgentSessionStatusConnected:
+	case AgentConversationSessionScopeAgent:
 		return true
-	case AgentSessionStatusDisconnected:
+	case AgentConversationSessionScopeRun:
 		return true
-	case AgentSessionStatusStale:
+	case AgentConversationSessionScopeWorkflow:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AgentConversationSessionStatus.
+const (
+	AgentConversationSessionStatusActive   AgentConversationSessionStatus = "active"
+	AgentConversationSessionStatusArchived AgentConversationSessionStatus = "archived"
+	AgentConversationSessionStatusDeleted  AgentConversationSessionStatus = "deleted"
+)
+
+// Valid indicates whether the value is a known member of the AgentConversationSessionStatus enum.
+func (e AgentConversationSessionStatus) Valid() bool {
+	switch e {
+	case AgentConversationSessionStatusActive:
+		return true
+	case AgentConversationSessionStatusArchived:
+		return true
+	case AgentConversationSessionStatusDeleted:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AgentConversationSessionVisibility.
+const (
+	AgentConversationSessionVisibilityPrivate AgentConversationSessionVisibility = "private"
+	AgentConversationSessionVisibilityProject AgentConversationSessionVisibility = "project"
+)
+
+// Valid indicates whether the value is a known member of the AgentConversationSessionVisibility enum.
+func (e AgentConversationSessionVisibility) Valid() bool {
+	switch e {
+	case AgentConversationSessionVisibilityPrivate:
+		return true
+	case AgentConversationSessionVisibilityProject:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AgentPresenceStatus.
+const (
+	AgentPresenceStatusConnected    AgentPresenceStatus = "connected"
+	AgentPresenceStatusDisconnected AgentPresenceStatus = "disconnected"
+	AgentPresenceStatusStale        AgentPresenceStatus = "stale"
+)
+
+// Valid indicates whether the value is a known member of the AgentPresenceStatus enum.
+func (e AgentPresenceStatus) Valid() bool {
+	switch e {
+	case AgentPresenceStatusConnected:
+		return true
+	case AgentPresenceStatusDisconnected:
+		return true
+	case AgentPresenceStatusStale:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AgentSessionMessageRole.
+const (
+	AgentSessionMessageRoleAssistant  AgentSessionMessageRole = "assistant"
+	AgentSessionMessageRoleCompaction AgentSessionMessageRole = "compaction"
+	AgentSessionMessageRoleSystem     AgentSessionMessageRole = "system"
+	AgentSessionMessageRoleTool       AgentSessionMessageRole = "tool"
+	AgentSessionMessageRoleUser       AgentSessionMessageRole = "user"
+)
+
+// Valid indicates whether the value is a known member of the AgentSessionMessageRole enum.
+func (e AgentSessionMessageRole) Valid() bool {
+	switch e {
+	case AgentSessionMessageRoleAssistant:
+		return true
+	case AgentSessionMessageRoleCompaction:
+		return true
+	case AgentSessionMessageRoleSystem:
+		return true
+	case AgentSessionMessageRoleTool:
+		return true
+	case AgentSessionMessageRoleUser:
 		return true
 	default:
 		return false
@@ -351,6 +291,21 @@ func (e AgentStatus) Valid() bool {
 	case AgentStatusActive:
 		return true
 	case AgentStatusInactive:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ArtifactSignedUrlMethod.
+const (
+	ArtifactSignedUrlMethodGET ArtifactSignedUrlMethod = "GET"
+)
+
+// Valid indicates whether the value is a known member of the ArtifactSignedUrlMethod enum.
+func (e ArtifactSignedUrlMethod) Valid() bool {
+	switch e {
+	case ArtifactSignedUrlMethodGET:
 		return true
 	default:
 		return false
@@ -569,6 +524,7 @@ func (e ChannelMemberRole) Valid() bool {
 
 // Defines values for ChannelMessageDisplay.
 const (
+	ChannelMessageDisplayBlocks  ChannelMessageDisplay = "blocks"
 	ChannelMessageDisplayCard    ChannelMessageDisplay = "card"
 	ChannelMessageDisplayMessage ChannelMessageDisplay = "message"
 	ChannelMessageDisplayNotice  ChannelMessageDisplay = "notice"
@@ -577,6 +533,8 @@ const (
 // Valid indicates whether the value is a known member of the ChannelMessageDisplay enum.
 func (e ChannelMessageDisplay) Valid() bool {
 	switch e {
+	case ChannelMessageDisplayBlocks:
+		return true
 	case ChannelMessageDisplayCard:
 		return true
 	case ChannelMessageDisplayMessage:
@@ -591,7 +549,7 @@ func (e ChannelMessageDisplay) Valid() bool {
 // Defines values for ChannelMessageSenderType.
 const (
 	ChannelMessageSenderTypeAgent          ChannelMessageSenderType = "agent"
-	ChannelMessageSenderTypeMember         ChannelMessageSenderType = "member"
+	ChannelMessageSenderTypeHuman          ChannelMessageSenderType = "human"
 	ChannelMessageSenderTypeServiceAccount ChannelMessageSenderType = "service_account"
 )
 
@@ -600,7 +558,7 @@ func (e ChannelMessageSenderType) Valid() bool {
 	switch e {
 	case ChannelMessageSenderTypeAgent:
 		return true
-	case ChannelMessageSenderTypeMember:
+	case ChannelMessageSenderTypeHuman:
 		return true
 	case ChannelMessageSenderTypeServiceAccount:
 		return true
@@ -804,21 +762,6 @@ func (e CreateEmailTriggerRequestKind) Valid() bool {
 	}
 }
 
-// Defines values for CreateEnvironmentRequestTemplateId.
-const (
-	CreateEnvironmentRequestTemplateIdCodingDefault CreateEnvironmentRequestTemplateId = "coding-default"
-)
-
-// Valid indicates whether the value is a known member of the CreateEnvironmentRequestTemplateId enum.
-func (e CreateEnvironmentRequestTemplateId) Valid() bool {
-	switch e {
-	case CreateEnvironmentRequestTemplateIdCodingDefault:
-		return true
-	default:
-		return false
-	}
-}
-
 // Defines values for CreateEventTriggerRequestKind.
 const (
 	CreateEventTriggerRequestKindEvent CreateEventTriggerRequestKind = "event"
@@ -917,7 +860,6 @@ func (e CreateWebhookTriggerRequestKind) Valid() bool {
 
 // Defines values for DeliveryChannelKind.
 const (
-	DeliveryChannelKindAgentQueue    DeliveryChannelKind = "agent_queue"
 	DeliveryChannelKindChannelThread DeliveryChannelKind = "channel_thread"
 	DeliveryChannelKindEmail         DeliveryChannelKind = "email"
 	DeliveryChannelKindInboxOnly     DeliveryChannelKind = "inbox_only"
@@ -927,8 +869,6 @@ const (
 // Valid indicates whether the value is a known member of the DeliveryChannelKind enum.
 func (e DeliveryChannelKind) Valid() bool {
 	switch e {
-	case DeliveryChannelKindAgentQueue:
-		return true
 	case DeliveryChannelKindChannelThread:
 		return true
 	case DeliveryChannelKindEmail:
@@ -975,213 +915,6 @@ func (e EntityReferenceType) Valid() bool {
 	case EntityReferenceTypeUser:
 		return true
 	case EntityReferenceTypeWorkflowDefinition:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for EnvironmentTemplateId.
-const (
-	EnvironmentTemplateIdCodingDefault EnvironmentTemplateId = "coding-default"
-)
-
-// Valid indicates whether the value is a known member of the EnvironmentTemplateId enum.
-func (e EnvironmentTemplateId) Valid() bool {
-	switch e {
-	case EnvironmentTemplateIdCodingDefault:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for EnvironmentCleanupStatus.
-const (
-	EnvironmentCleanupStatusFailed    EnvironmentCleanupStatus = "failed"
-	EnvironmentCleanupStatusNone      EnvironmentCleanupStatus = "none"
-	EnvironmentCleanupStatusPending   EnvironmentCleanupStatus = "pending"
-	EnvironmentCleanupStatusSkipped   EnvironmentCleanupStatus = "skipped"
-	EnvironmentCleanupStatusSucceeded EnvironmentCleanupStatus = "succeeded"
-)
-
-// Valid indicates whether the value is a known member of the EnvironmentCleanupStatus enum.
-func (e EnvironmentCleanupStatus) Valid() bool {
-	switch e {
-	case EnvironmentCleanupStatusFailed:
-		return true
-	case EnvironmentCleanupStatusNone:
-		return true
-	case EnvironmentCleanupStatusPending:
-		return true
-	case EnvironmentCleanupStatusSkipped:
-		return true
-	case EnvironmentCleanupStatusSucceeded:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for EnvironmentLeaseStatus.
-const (
-	EnvironmentLeaseStatusActive   EnvironmentLeaseStatus = "active"
-	EnvironmentLeaseStatusExpired  EnvironmentLeaseStatus = "expired"
-	EnvironmentLeaseStatusReleased EnvironmentLeaseStatus = "released"
-	EnvironmentLeaseStatusRevoked  EnvironmentLeaseStatus = "revoked"
-)
-
-// Valid indicates whether the value is a known member of the EnvironmentLeaseStatus enum.
-func (e EnvironmentLeaseStatus) Valid() bool {
-	switch e {
-	case EnvironmentLeaseStatusActive:
-		return true
-	case EnvironmentLeaseStatusExpired:
-		return true
-	case EnvironmentLeaseStatusReleased:
-		return true
-	case EnvironmentLeaseStatusRevoked:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for EnvironmentOwnerType.
-const (
-	EnvironmentOwnerTypeAgent         EnvironmentOwnerType = "agent"
-	EnvironmentOwnerTypeNone          EnvironmentOwnerType = "none"
-	EnvironmentOwnerTypeRun           EnvironmentOwnerType = "run"
-	EnvironmentOwnerTypeService       EnvironmentOwnerType = "service"
-	EnvironmentOwnerTypeUser          EnvironmentOwnerType = "user"
-	EnvironmentOwnerTypeWorkerSession EnvironmentOwnerType = "worker_session"
-)
-
-// Valid indicates whether the value is a known member of the EnvironmentOwnerType enum.
-func (e EnvironmentOwnerType) Valid() bool {
-	switch e {
-	case EnvironmentOwnerTypeAgent:
-		return true
-	case EnvironmentOwnerTypeNone:
-		return true
-	case EnvironmentOwnerTypeRun:
-		return true
-	case EnvironmentOwnerTypeService:
-		return true
-	case EnvironmentOwnerTypeUser:
-		return true
-	case EnvironmentOwnerTypeWorkerSession:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for EnvironmentProvider.
-const (
-	EnvironmentProviderCloudflareContainers EnvironmentProvider = "cloudflare_containers"
-	EnvironmentProviderSprites              EnvironmentProvider = "sprites"
-)
-
-// Valid indicates whether the value is a known member of the EnvironmentProvider enum.
-func (e EnvironmentProvider) Valid() bool {
-	switch e {
-	case EnvironmentProviderCloudflareContainers:
-		return true
-	case EnvironmentProviderSprites:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for EnvironmentPurpose.
-const (
-	EnvironmentPurposeCustom         EnvironmentPurpose = "custom"
-	EnvironmentPurposeDebug          EnvironmentPurpose = "debug"
-	EnvironmentPurposeImplementation EnvironmentPurpose = "implementation"
-	EnvironmentPurposePreview        EnvironmentPurpose = "preview"
-	EnvironmentPurposeReview         EnvironmentPurpose = "review"
-	EnvironmentPurposeVerification   EnvironmentPurpose = "verification"
-	EnvironmentPurposeWorker         EnvironmentPurpose = "worker"
-)
-
-// Valid indicates whether the value is a known member of the EnvironmentPurpose enum.
-func (e EnvironmentPurpose) Valid() bool {
-	switch e {
-	case EnvironmentPurposeCustom:
-		return true
-	case EnvironmentPurposeDebug:
-		return true
-	case EnvironmentPurposeImplementation:
-		return true
-	case EnvironmentPurposePreview:
-		return true
-	case EnvironmentPurposeReview:
-		return true
-	case EnvironmentPurposeVerification:
-		return true
-	case EnvironmentPurposeWorker:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for EnvironmentRetentionPolicy.
-const (
-	EnvironmentRetentionPolicyDestroyOnSuccess EnvironmentRetentionPolicy = "destroy_on_success"
-	EnvironmentRetentionPolicyManual           EnvironmentRetentionPolicy = "manual"
-	EnvironmentRetentionPolicyRetainAlways     EnvironmentRetentionPolicy = "retain_always"
-	EnvironmentRetentionPolicyRetainOnFailure  EnvironmentRetentionPolicy = "retain_on_failure"
-)
-
-// Valid indicates whether the value is a known member of the EnvironmentRetentionPolicy enum.
-func (e EnvironmentRetentionPolicy) Valid() bool {
-	switch e {
-	case EnvironmentRetentionPolicyDestroyOnSuccess:
-		return true
-	case EnvironmentRetentionPolicyManual:
-		return true
-	case EnvironmentRetentionPolicyRetainAlways:
-		return true
-	case EnvironmentRetentionPolicyRetainOnFailure:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for EnvironmentStatus.
-const (
-	EnvironmentStatusDestroyed    EnvironmentStatus = "destroyed"
-	EnvironmentStatusDestroying   EnvironmentStatus = "destroying"
-	EnvironmentStatusFailed       EnvironmentStatus = "failed"
-	EnvironmentStatusOrphaned     EnvironmentStatus = "orphaned"
-	EnvironmentStatusProvisioning EnvironmentStatus = "provisioning"
-	EnvironmentStatusReady        EnvironmentStatus = "ready"
-	EnvironmentStatusRetained     EnvironmentStatus = "retained"
-	EnvironmentStatusRunning      EnvironmentStatus = "running"
-)
-
-// Valid indicates whether the value is a known member of the EnvironmentStatus enum.
-func (e EnvironmentStatus) Valid() bool {
-	switch e {
-	case EnvironmentStatusDestroyed:
-		return true
-	case EnvironmentStatusDestroying:
-		return true
-	case EnvironmentStatusFailed:
-		return true
-	case EnvironmentStatusOrphaned:
-		return true
-	case EnvironmentStatusProvisioning:
-		return true
-	case EnvironmentStatusReady:
-		return true
-	case EnvironmentStatusRetained:
-		return true
-	case EnvironmentStatusRunning:
 		return true
 	default:
 		return false
@@ -1344,6 +1077,69 @@ func (e ImageContentBlockType) Valid() bool {
 	}
 }
 
+// Defines values for IntegrationCategory.
+const (
+	IntegrationCategoryActions       IntegrationCategory = "Actions"
+	IntegrationCategoryCodeAndDevOps IntegrationCategory = "Code and DevOps"
+	IntegrationCategoryEmail         IntegrationCategory = "Email"
+	IntegrationCategoryEnvironments  IntegrationCategory = "Environments"
+	IntegrationCategoryIssueTracking IntegrationCategory = "Issue Tracking"
+	IntegrationCategoryMessaging     IntegrationCategory = "Messaging"
+	IntegrationCategoryProductivity  IntegrationCategory = "Productivity"
+	IntegrationCategorySalesCRM      IntegrationCategory = "Sales & CRM"
+	IntegrationCategorySocialMedia   IntegrationCategory = "Social Media"
+	IntegrationCategoryStorage       IntegrationCategory = "Storage"
+	IntegrationCategoryWebAndData    IntegrationCategory = "Web and Data"
+)
+
+// Valid indicates whether the value is a known member of the IntegrationCategory enum.
+func (e IntegrationCategory) Valid() bool {
+	switch e {
+	case IntegrationCategoryActions:
+		return true
+	case IntegrationCategoryCodeAndDevOps:
+		return true
+	case IntegrationCategoryEmail:
+		return true
+	case IntegrationCategoryEnvironments:
+		return true
+	case IntegrationCategoryIssueTracking:
+		return true
+	case IntegrationCategoryMessaging:
+		return true
+	case IntegrationCategoryProductivity:
+		return true
+	case IntegrationCategorySalesCRM:
+		return true
+	case IntegrationCategorySocialMedia:
+		return true
+	case IntegrationCategoryStorage:
+		return true
+	case IntegrationCategoryWebAndData:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for IntegrationConnectResponseKind.
+const (
+	IntegrationConnectResponseKindComplete IntegrationConnectResponseKind = "complete"
+	IntegrationConnectResponseKindRedirect IntegrationConnectResponseKind = "redirect"
+)
+
+// Valid indicates whether the value is a known member of the IntegrationConnectResponseKind enum.
+func (e IntegrationConnectResponseKind) Valid() bool {
+	switch e {
+	case IntegrationConnectResponseKindComplete:
+		return true
+	case IntegrationConnectResponseKindRedirect:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for IntegrationEventFireEventSource.
 const (
 	IntegrationEventFireEventSourceSynthetic IntegrationEventFireEventSource = "synthetic"
@@ -1371,6 +1167,120 @@ func (e IntegrationEventFireMode) Valid() bool {
 	case IntegrationEventFireModeDeliver:
 		return true
 	case IntegrationEventFireModePreview:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for IntegrationEventSource.
+const (
+	IntegrationEventSourceSync      IntegrationEventSource = "sync"
+	IntegrationEventSourceSynthetic IntegrationEventSource = "synthetic"
+	IntegrationEventSourceWebhook   IntegrationEventSource = "webhook"
+)
+
+// Valid indicates whether the value is a known member of the IntegrationEventSource enum.
+func (e IntegrationEventSource) Valid() bool {
+	switch e {
+	case IntegrationEventSourceSync:
+		return true
+	case IntegrationEventSourceSynthetic:
+		return true
+	case IntegrationEventSourceWebhook:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for IntegrationEventSourceEventStatusStatus.
+const (
+	IntegrationEventSourceEventStatusStatusDead       IntegrationEventSourceEventStatusStatus = "dead"
+	IntegrationEventSourceEventStatusStatusFailed     IntegrationEventSourceEventStatusStatus = "failed"
+	IntegrationEventSourceEventStatusStatusMissing    IntegrationEventSourceEventStatusStatus = "missing"
+	IntegrationEventSourceEventStatusStatusPending    IntegrationEventSourceEventStatusStatus = "pending"
+	IntegrationEventSourceEventStatusStatusProcessing IntegrationEventSourceEventStatusStatus = "processing"
+	IntegrationEventSourceEventStatusStatusRetrying   IntegrationEventSourceEventStatusStatus = "retrying"
+	IntegrationEventSourceEventStatusStatusSucceeded  IntegrationEventSourceEventStatusStatus = "succeeded"
+)
+
+// Valid indicates whether the value is a known member of the IntegrationEventSourceEventStatusStatus enum.
+func (e IntegrationEventSourceEventStatusStatus) Valid() bool {
+	switch e {
+	case IntegrationEventSourceEventStatusStatusDead:
+		return true
+	case IntegrationEventSourceEventStatusStatusFailed:
+		return true
+	case IntegrationEventSourceEventStatusStatusMissing:
+		return true
+	case IntegrationEventSourceEventStatusStatusPending:
+		return true
+	case IntegrationEventSourceEventStatusStatusProcessing:
+		return true
+	case IntegrationEventSourceEventStatusStatusRetrying:
+		return true
+	case IntegrationEventSourceEventStatusStatusSucceeded:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for IntegrationProviderEventTypeRuntimeState.
+const (
+	IntegrationProviderEventTypeRuntimeStateActive     IntegrationProviderEventTypeRuntimeState = "active"
+	IntegrationProviderEventTypeRuntimeStateDeprecated IntegrationProviderEventTypeRuntimeState = "deprecated"
+	IntegrationProviderEventTypeRuntimeStatePlanned    IntegrationProviderEventTypeRuntimeState = "planned"
+)
+
+// Valid indicates whether the value is a known member of the IntegrationProviderEventTypeRuntimeState enum.
+func (e IntegrationProviderEventTypeRuntimeState) Valid() bool {
+	switch e {
+	case IntegrationProviderEventTypeRuntimeStateActive:
+		return true
+	case IntegrationProviderEventTypeRuntimeStateDeprecated:
+		return true
+	case IntegrationProviderEventTypeRuntimeStatePlanned:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for IntegrationProviderWebhookEndpointDelivery.
+const (
+	IntegrationProviderWebhookEndpointDeliveryWebhook IntegrationProviderWebhookEndpointDelivery = "webhook"
+)
+
+// Valid indicates whether the value is a known member of the IntegrationProviderWebhookEndpointDelivery enum.
+func (e IntegrationProviderWebhookEndpointDelivery) Valid() bool {
+	switch e {
+	case IntegrationProviderWebhookEndpointDeliveryWebhook:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for IntegrationProviderWebhookEndpointStatus.
+const (
+	IntegrationProviderWebhookEndpointStatusConfigured    IntegrationProviderWebhookEndpointStatus = "configured"
+	IntegrationProviderWebhookEndpointStatusLegacyRoute   IntegrationProviderWebhookEndpointStatus = "legacy_route"
+	IntegrationProviderWebhookEndpointStatusMissingSecret IntegrationProviderWebhookEndpointStatus = "missing_secret"
+	IntegrationProviderWebhookEndpointStatusUnavailable   IntegrationProviderWebhookEndpointStatus = "unavailable"
+)
+
+// Valid indicates whether the value is a known member of the IntegrationProviderWebhookEndpointStatus enum.
+func (e IntegrationProviderWebhookEndpointStatus) Valid() bool {
+	switch e {
+	case IntegrationProviderWebhookEndpointStatusConfigured:
+		return true
+	case IntegrationProviderWebhookEndpointStatusLegacyRoute:
+		return true
+	case IntegrationProviderWebhookEndpointStatusMissingSecret:
+		return true
+	case IntegrationProviderWebhookEndpointStatusUnavailable:
 		return true
 	default:
 		return false
@@ -1443,35 +1353,21 @@ func (e InteractionStatus) Valid() bool {
 	}
 }
 
-// Defines values for InteractionBallotVoterType.
-const (
-	InteractionBallotVoterTypeAgent InteractionBallotVoterType = "agent"
-	InteractionBallotVoterTypeUser  InteractionBallotVoterType = "user"
-)
-
-// Valid indicates whether the value is a known member of the InteractionBallotVoterType enum.
-func (e InteractionBallotVoterType) Valid() bool {
-	switch e {
-	case InteractionBallotVoterTypeAgent:
-		return true
-	case InteractionBallotVoterTypeUser:
-		return true
-	default:
-		return false
-	}
-}
-
 // Defines values for InteractionEventType.
 const (
-	InteractionEventTypeAccepted  InteractionEventType = "accepted"
-	InteractionEventTypeCancelled InteractionEventType = "cancelled"
-	InteractionEventTypeClaimed   InteractionEventType = "claimed"
-	InteractionEventTypeCreated   InteractionEventType = "created"
-	InteractionEventTypeExpired   InteractionEventType = "expired"
-	InteractionEventTypeReleased  InteractionEventType = "released"
-	InteractionEventTypeResponded InteractionEventType = "responded"
-	InteractionEventTypeSentBack  InteractionEventType = "sent_back"
-	InteractionEventTypeSubmitted InteractionEventType = "submitted"
+	InteractionEventTypeAccepted      InteractionEventType = "accepted"
+	InteractionEventTypeCancelled     InteractionEventType = "cancelled"
+	InteractionEventTypeClaimed       InteractionEventType = "claimed"
+	InteractionEventTypeCreated       InteractionEventType = "created"
+	InteractionEventTypeExpired       InteractionEventType = "expired"
+	InteractionEventTypeQuorumNotMet  InteractionEventType = "quorum_not_met"
+	InteractionEventTypeReleased      InteractionEventType = "released"
+	InteractionEventTypeResponded     InteractionEventType = "responded"
+	InteractionEventTypeSentBack      InteractionEventType = "sent_back"
+	InteractionEventTypeSubmitted     InteractionEventType = "submitted"
+	InteractionEventTypeVoteCast      InteractionEventType = "vote_cast"
+	InteractionEventTypeVoteClosed    InteractionEventType = "vote_closed"
+	InteractionEventTypeVoteWithdrawn InteractionEventType = "vote_withdrawn"
 )
 
 // Valid indicates whether the value is a known member of the InteractionEventType enum.
@@ -1487,6 +1383,8 @@ func (e InteractionEventType) Valid() bool {
 		return true
 	case InteractionEventTypeExpired:
 		return true
+	case InteractionEventTypeQuorumNotMet:
+		return true
 	case InteractionEventTypeReleased:
 		return true
 	case InteractionEventTypeResponded:
@@ -1494,6 +1392,12 @@ func (e InteractionEventType) Valid() bool {
 	case InteractionEventTypeSentBack:
 		return true
 	case InteractionEventTypeSubmitted:
+		return true
+	case InteractionEventTypeVoteCast:
+		return true
+	case InteractionEventTypeVoteClosed:
+		return true
+	case InteractionEventTypeVoteWithdrawn:
 		return true
 	default:
 		return false
@@ -1596,42 +1500,6 @@ func (e InteractionReferenceKind) Valid() bool {
 	}
 }
 
-// Defines values for InteractionResponderType.
-const (
-	InteractionResponderTypeAgent InteractionResponderType = "agent"
-	InteractionResponderTypeUser  InteractionResponderType = "user"
-)
-
-// Valid indicates whether the value is a known member of the InteractionResponderType enum.
-func (e InteractionResponderType) Valid() bool {
-	switch e {
-	case InteractionResponderTypeAgent:
-		return true
-	case InteractionResponderTypeUser:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for InteractionResponseResponderType.
-const (
-	InteractionResponseResponderTypeAgent InteractionResponseResponderType = "agent"
-	InteractionResponseResponderTypeUser  InteractionResponseResponderType = "user"
-)
-
-// Valid indicates whether the value is a known member of the InteractionResponseResponderType enum.
-func (e InteractionResponseResponderType) Valid() bool {
-	switch e {
-	case InteractionResponseResponderTypeAgent:
-		return true
-	case InteractionResponseResponderTypeUser:
-		return true
-	default:
-		return false
-	}
-}
-
 // Defines values for InteractionSourceType.
 const (
 	InteractionSourceTypeAgent       InteractionSourceType = "agent"
@@ -1674,27 +1542,6 @@ func (e InteractionSubmissionStatus) Valid() bool {
 	case InteractionSubmissionStatusPendingReview:
 		return true
 	case InteractionSubmissionStatusSentBack:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for InteractionTargetType.
-const (
-	InteractionTargetTypeAgent InteractionTargetType = "agent"
-	InteractionTargetTypeGroup InteractionTargetType = "group"
-	InteractionTargetTypeUser  InteractionTargetType = "user"
-)
-
-// Valid indicates whether the value is a known member of the InteractionTargetType enum.
-func (e InteractionTargetType) Valid() bool {
-	switch e {
-	case InteractionTargetTypeAgent:
-		return true
-	case InteractionTargetTypeGroup:
-		return true
-	case InteractionTargetTypeUser:
 		return true
 	default:
 		return false
@@ -1779,6 +1626,27 @@ const (
 func (e LLMGenerateResponseType) Valid() bool {
 	switch e {
 	case LLMGenerateResponseTypeMessage:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyAgentPresence.
+const (
+	LegacyAgentPresenceOffline LegacyAgentPresence = "offline"
+	LegacyAgentPresenceOnline  LegacyAgentPresence = "online"
+	LegacyAgentPresenceStale   LegacyAgentPresence = "stale"
+)
+
+// Valid indicates whether the value is a known member of the LegacyAgentPresence enum.
+func (e LegacyAgentPresence) Valid() bool {
+	switch e {
+	case LegacyAgentPresenceOffline:
+		return true
+	case LegacyAgentPresenceOnline:
+		return true
+	case LegacyAgentPresenceStale:
 		return true
 	default:
 		return false
@@ -2070,24 +1938,6 @@ func (e ProjectAccessMode) Valid() bool {
 	}
 }
 
-// Defines values for ProjectTeamMemberKind.
-const (
-	ProjectTeamMemberKindAgent ProjectTeamMemberKind = "agent"
-	ProjectTeamMemberKindUser  ProjectTeamMemberKind = "user"
-)
-
-// Valid indicates whether the value is a known member of the ProjectTeamMemberKind enum.
-func (e ProjectTeamMemberKind) Valid() bool {
-	switch e {
-	case ProjectTeamMemberKindAgent:
-		return true
-	case ProjectTeamMemberKindUser:
-		return true
-	default:
-		return false
-	}
-}
-
 // Defines values for QueryRowsRequestSortOrder.
 const (
 	QueryRowsRequestSortOrderAsc  QueryRowsRequestSortOrder = "asc"
@@ -2217,6 +2067,21 @@ func (e ResolvedConfigEntrySource) Valid() bool {
 	}
 }
 
+// Defines values for ResourceScope.
+const (
+	ResourceScopeOwner ResourceScope = "owner"
+)
+
+// Valid indicates whether the value is a known member of the ResourceScope enum.
+func (e ResourceScope) Valid() bool {
+	switch e {
+	case ResourceScopeOwner:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ReviewPolicyType.
 const (
 	ReviewPolicyTypeNone                        ReviewPolicyType = "none"
@@ -2229,6 +2094,33 @@ func (e ReviewPolicyType) Valid() bool {
 	case ReviewPolicyTypeNone:
 		return true
 	case ReviewPolicyTypeRequesterAcceptanceRequired:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RunEffectiveCredentialKind.
+const (
+	RunEffectiveCredentialKindApiKey   RunEffectiveCredentialKind = "api_key"
+	RunEffectiveCredentialKindClerk    RunEffectiveCredentialKind = "clerk"
+	RunEffectiveCredentialKindCliToken RunEffectiveCredentialKind = "cli_token"
+	RunEffectiveCredentialKindInternal RunEffectiveCredentialKind = "internal"
+	RunEffectiveCredentialKindUnknown  RunEffectiveCredentialKind = "unknown"
+)
+
+// Valid indicates whether the value is a known member of the RunEffectiveCredentialKind enum.
+func (e RunEffectiveCredentialKind) Valid() bool {
+	switch e {
+	case RunEffectiveCredentialKindApiKey:
+		return true
+	case RunEffectiveCredentialKindClerk:
+		return true
+	case RunEffectiveCredentialKindCliToken:
+		return true
+	case RunEffectiveCredentialKindInternal:
+		return true
+	case RunEffectiveCredentialKindUnknown:
 		return true
 	default:
 		return false
@@ -2265,6 +2157,60 @@ func (e RunErrorType) Valid() bool {
 	}
 }
 
+// Defines values for RunStartedByCredentialKind.
+const (
+	RunStartedByCredentialKindApiKey   RunStartedByCredentialKind = "api_key"
+	RunStartedByCredentialKindClerk    RunStartedByCredentialKind = "clerk"
+	RunStartedByCredentialKindCliToken RunStartedByCredentialKind = "cli_token"
+	RunStartedByCredentialKindInternal RunStartedByCredentialKind = "internal"
+	RunStartedByCredentialKindUnknown  RunStartedByCredentialKind = "unknown"
+)
+
+// Valid indicates whether the value is a known member of the RunStartedByCredentialKind enum.
+func (e RunStartedByCredentialKind) Valid() bool {
+	switch e {
+	case RunStartedByCredentialKindApiKey:
+		return true
+	case RunStartedByCredentialKindClerk:
+		return true
+	case RunStartedByCredentialKindCliToken:
+		return true
+	case RunStartedByCredentialKindInternal:
+		return true
+	case RunStartedByCredentialKindUnknown:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RunDetailEffectiveCredentialKind.
+const (
+	RunDetailEffectiveCredentialKindApiKey   RunDetailEffectiveCredentialKind = "api_key"
+	RunDetailEffectiveCredentialKindClerk    RunDetailEffectiveCredentialKind = "clerk"
+	RunDetailEffectiveCredentialKindCliToken RunDetailEffectiveCredentialKind = "cli_token"
+	RunDetailEffectiveCredentialKindInternal RunDetailEffectiveCredentialKind = "internal"
+	RunDetailEffectiveCredentialKindUnknown  RunDetailEffectiveCredentialKind = "unknown"
+)
+
+// Valid indicates whether the value is a known member of the RunDetailEffectiveCredentialKind enum.
+func (e RunDetailEffectiveCredentialKind) Valid() bool {
+	switch e {
+	case RunDetailEffectiveCredentialKindApiKey:
+		return true
+	case RunDetailEffectiveCredentialKindClerk:
+		return true
+	case RunDetailEffectiveCredentialKindCliToken:
+		return true
+	case RunDetailEffectiveCredentialKindInternal:
+		return true
+	case RunDetailEffectiveCredentialKindUnknown:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for RunDetailErrorType.
 const (
 	RunDetailErrorTypeOutputExtractionFailed RunDetailErrorType = "output_extraction_failed"
@@ -2289,6 +2235,33 @@ func (e RunDetailErrorType) Valid() bool {
 	case RunDetailErrorTypeRunTimeout:
 		return true
 	case RunDetailErrorTypeStepFailed:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RunDetailStartedByCredentialKind.
+const (
+	RunDetailStartedByCredentialKindApiKey   RunDetailStartedByCredentialKind = "api_key"
+	RunDetailStartedByCredentialKindClerk    RunDetailStartedByCredentialKind = "clerk"
+	RunDetailStartedByCredentialKindCliToken RunDetailStartedByCredentialKind = "cli_token"
+	RunDetailStartedByCredentialKindInternal RunDetailStartedByCredentialKind = "internal"
+	RunDetailStartedByCredentialKindUnknown  RunDetailStartedByCredentialKind = "unknown"
+)
+
+// Valid indicates whether the value is a known member of the RunDetailStartedByCredentialKind enum.
+func (e RunDetailStartedByCredentialKind) Valid() bool {
+	switch e {
+	case RunDetailStartedByCredentialKindApiKey:
+		return true
+	case RunDetailStartedByCredentialKindClerk:
+		return true
+	case RunDetailStartedByCredentialKindCliToken:
+		return true
+	case RunDetailStartedByCredentialKindInternal:
+		return true
+	case RunDetailStartedByCredentialKindUnknown:
 		return true
 	default:
 		return false
@@ -2321,9 +2294,10 @@ func (e RunPathState) Valid() bool {
 
 // Defines values for RunStatus.
 const (
-	RunStatusActive    RunStatus = "active"
-	RunStatusCompleted RunStatus = "completed"
-	RunStatusFailed    RunStatus = "failed"
+	RunStatusActive     RunStatus = "active"
+	RunStatusCompleted  RunStatus = "completed"
+	RunStatusFailed     RunStatus = "failed"
+	RunStatusFinalizing RunStatus = "finalizing"
 )
 
 // Valid indicates whether the value is a known member of the RunStatus enum.
@@ -2335,6 +2309,8 @@ func (e RunStatus) Valid() bool {
 		return true
 	case RunStatusFailed:
 		return true
+	case RunStatusFinalizing:
+		return true
 	default:
 		return false
 	}
@@ -2343,7 +2319,13 @@ func (e RunStatus) Valid() bool {
 // Defines values for RunStepKind.
 const (
 	RunStepKindControl      RunStepKind = "control"
+	RunStepKindInteraction  RunStepKind = "interaction"
+	RunStepKindPause        RunStepKind = "pause"
+	RunStepKindRun          RunStepKind = "run"
 	RunStepKindServerAction RunStepKind = "server_action"
+	RunStepKindSleep        RunStepKind = "sleep"
+	RunStepKindWaitEvent    RunStepKind = "wait_event"
+	RunStepKindWaitSignal   RunStepKind = "wait_signal"
 	RunStepKindWorkerAction RunStepKind = "worker_action"
 )
 
@@ -2352,9 +2334,39 @@ func (e RunStepKind) Valid() bool {
 	switch e {
 	case RunStepKindControl:
 		return true
+	case RunStepKindInteraction:
+		return true
+	case RunStepKindPause:
+		return true
+	case RunStepKindRun:
+		return true
 	case RunStepKindServerAction:
 		return true
+	case RunStepKindSleep:
+		return true
+	case RunStepKindWaitEvent:
+		return true
+	case RunStepKindWaitSignal:
+		return true
 	case RunStepKindWorkerAction:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RunStepPhase.
+const (
+	RunStepPhaseFinalize RunStepPhase = "finalize"
+	RunStepPhaseMain     RunStepPhase = "main"
+)
+
+// Valid indicates whether the value is a known member of the RunStepPhase enum.
+func (e RunStepPhase) Valid() bool {
+	switch e {
+	case RunStepPhaseFinalize:
+		return true
+	case RunStepPhaseMain:
 		return true
 	default:
 		return false
@@ -2468,6 +2480,7 @@ func (e SecretVersionState) Valid() bool {
 
 // Defines values for SendChannelMessageRequestDisplay.
 const (
+	SendChannelMessageRequestDisplayBlocks  SendChannelMessageRequestDisplay = "blocks"
 	SendChannelMessageRequestDisplayCard    SendChannelMessageRequestDisplay = "card"
 	SendChannelMessageRequestDisplayMessage SendChannelMessageRequestDisplay = "message"
 	SendChannelMessageRequestDisplayNotice  SendChannelMessageRequestDisplay = "notice"
@@ -2476,6 +2489,8 @@ const (
 // Valid indicates whether the value is a known member of the SendChannelMessageRequestDisplay enum.
 func (e SendChannelMessageRequestDisplay) Valid() bool {
 	switch e {
+	case SendChannelMessageRequestDisplayBlocks:
+		return true
 	case SendChannelMessageRequestDisplayCard:
 		return true
 	case SendChannelMessageRequestDisplayMessage:
@@ -2634,6 +2649,24 @@ const (
 func (e SystemTextBlockType) Valid() bool {
 	switch e {
 	case SystemTextBlockTypeText:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for TableAccessMode.
+const (
+	TableAccessModePrivate TableAccessMode = "private"
+	TableAccessModeProject TableAccessMode = "project"
+)
+
+// Valid indicates whether the value is a known member of the TableAccessMode enum.
+func (e TableAccessMode) Valid() bool {
+	switch e {
+	case TableAccessModePrivate:
+		return true
+	case TableAccessModeProject:
 		return true
 	default:
 		return false
@@ -2958,6 +2991,24 @@ func (e TriggerTargetKind) Valid() bool {
 	}
 }
 
+// Defines values for UpdateAgentRequestStatus.
+const (
+	UpdateAgentRequestStatusActive   UpdateAgentRequestStatus = "active"
+	UpdateAgentRequestStatusInactive UpdateAgentRequestStatus = "inactive"
+)
+
+// Valid indicates whether the value is a known member of the UpdateAgentRequestStatus enum.
+func (e UpdateAgentRequestStatus) Valid() bool {
+	switch e {
+	case UpdateAgentRequestStatusActive:
+		return true
+	case UpdateAgentRequestStatusInactive:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for UpdateChannelRequestPurpose.
 const (
 	UpdateChannelRequestPurposeGeneral             UpdateChannelRequestPurpose = "general"
@@ -3006,6 +3057,150 @@ func (e UpdateTriggerTargetRequestKind) Valid() bool {
 	case UpdateTriggerTargetRequestKindLaunchRun:
 		return true
 	case UpdateTriggerTargetRequestKindSignalRun:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for UserAssignmentStatus.
+const (
+	UserAssignmentStatusBlocked    UserAssignmentStatus = "blocked"
+	UserAssignmentStatusDone       UserAssignmentStatus = "done"
+	UserAssignmentStatusInProgress UserAssignmentStatus = "in_progress"
+	UserAssignmentStatusTodo       UserAssignmentStatus = "todo"
+)
+
+// Valid indicates whether the value is a known member of the UserAssignmentStatus enum.
+func (e UserAssignmentStatus) Valid() bool {
+	switch e {
+	case UserAssignmentStatusBlocked:
+		return true
+	case UserAssignmentStatusDone:
+		return true
+	case UserAssignmentStatusInProgress:
+		return true
+	case UserAssignmentStatusTodo:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for UserAvailability.
+const (
+	UserAvailabilityAvailable UserAvailability = "available"
+	UserAvailabilityAway      UserAvailability = "away"
+	UserAvailabilityBusy      UserAvailability = "busy"
+	UserAvailabilityFocused   UserAvailability = "focused"
+	UserAvailabilityOffline   UserAvailability = "offline"
+	UserAvailabilityWaiting   UserAvailability = "waiting"
+)
+
+// Valid indicates whether the value is a known member of the UserAvailability enum.
+func (e UserAvailability) Valid() bool {
+	switch e {
+	case UserAvailabilityAvailable:
+		return true
+	case UserAvailabilityAway:
+		return true
+	case UserAvailabilityBusy:
+		return true
+	case UserAvailabilityFocused:
+		return true
+	case UserAvailabilityOffline:
+		return true
+	case UserAvailabilityWaiting:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for UserConnectionStatus.
+const (
+	UserConnectionStatusIdle    UserConnectionStatus = "idle"
+	UserConnectionStatusOffline UserConnectionStatus = "offline"
+	UserConnectionStatusOnline  UserConnectionStatus = "online"
+)
+
+// Valid indicates whether the value is a known member of the UserConnectionStatus enum.
+func (e UserConnectionStatus) Valid() bool {
+	switch e {
+	case UserConnectionStatusIdle:
+		return true
+	case UserConnectionStatusOffline:
+		return true
+	case UserConnectionStatusOnline:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for UserKind.
+const (
+	UserKindAgent          UserKind = "agent"
+	UserKindHuman          UserKind = "human"
+	UserKindServiceAccount UserKind = "service_account"
+	UserKindSystem         UserKind = "system"
+)
+
+// Valid indicates whether the value is a known member of the UserKind enum.
+func (e UserKind) Valid() bool {
+	switch e {
+	case UserKindAgent:
+		return true
+	case UserKindHuman:
+		return true
+	case UserKindServiceAccount:
+		return true
+	case UserKindSystem:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for UserPresenceSource.
+const (
+	UserPresenceSourceAgentPresence  UserPresenceSource = "agent_presence"
+	UserPresenceSourcePlatformHosted UserPresenceSource = "platform_hosted"
+	UserPresenceSourceWeb            UserPresenceSource = "web"
+	UserPresenceSourceWorkerSession  UserPresenceSource = "worker_session"
+)
+
+// Valid indicates whether the value is a known member of the UserPresenceSource enum.
+func (e UserPresenceSource) Valid() bool {
+	switch e {
+	case UserPresenceSourceAgentPresence:
+		return true
+	case UserPresenceSourcePlatformHosted:
+		return true
+	case UserPresenceSourceWeb:
+		return true
+	case UserPresenceSourceWorkerSession:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for UserStateVisibility.
+const (
+	UserStateVisibilityOrg     UserStateVisibility = "org"
+	UserStateVisibilityProject UserStateVisibility = "project"
+	UserStateVisibilitySelf    UserStateVisibility = "self"
+)
+
+// Valid indicates whether the value is a known member of the UserStateVisibility enum.
+func (e UserStateVisibility) Valid() bool {
+	switch e {
+	case UserStateVisibilityOrg:
+		return true
+	case UserStateVisibilityProject:
+		return true
+	case UserStateVisibilitySelf:
 		return true
 	default:
 		return false
@@ -3195,6 +3390,36 @@ func (e WorkerSessionJobRefStatus) Valid() bool {
 	}
 }
 
+// Defines values for WorkflowAgentInvokeStepKind.
+const (
+	WorkflowAgentInvokeStepKindAgentInvoke WorkflowAgentInvokeStepKind = "agent.invoke"
+)
+
+// Valid indicates whether the value is a known member of the WorkflowAgentInvokeStepKind enum.
+func (e WorkflowAgentInvokeStepKind) Valid() bool {
+	switch e {
+	case WorkflowAgentInvokeStepKindAgentInvoke:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for WorkflowAgentReactKindStepKind.
+const (
+	WorkflowAgentReactKindStepKindAgentReact WorkflowAgentReactKindStepKind = "agent.react"
+)
+
+// Valid indicates whether the value is a known member of the WorkflowAgentReactKindStepKind enum.
+func (e WorkflowAgentReactKindStepKind) Valid() bool {
+	switch e {
+	case WorkflowAgentReactKindStepKindAgentReact:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for WorkflowEdgeMatchingStrategy.
 const (
 	WorkflowEdgeMatchingStrategyAll   WorkflowEdgeMatchingStrategy = "all"
@@ -3213,21 +3438,63 @@ func (e WorkflowEdgeMatchingStrategy) Valid() bool {
 	}
 }
 
-// Defines values for WorkflowInteractionConfigType.
+// Defines values for WorkflowExecutableStepKind.
 const (
-	WorkflowInteractionConfigTypeApproval WorkflowInteractionConfigType = "approval"
-	WorkflowInteractionConfigTypeInput    WorkflowInteractionConfigType = "input"
-	WorkflowInteractionConfigTypeReview   WorkflowInteractionConfigType = "review"
+	WorkflowExecutableStepKindAction WorkflowExecutableStepKind = "action"
 )
 
-// Valid indicates whether the value is a known member of the WorkflowInteractionConfigType enum.
-func (e WorkflowInteractionConfigType) Valid() bool {
+// Valid indicates whether the value is a known member of the WorkflowExecutableStepKind enum.
+func (e WorkflowExecutableStepKind) Valid() bool {
 	switch e {
-	case WorkflowInteractionConfigTypeApproval:
+	case WorkflowExecutableStepKindAction:
 		return true
-	case WorkflowInteractionConfigTypeInput:
+	default:
+		return false
+	}
+}
+
+// Defines values for WorkflowExpressionValidationMode.
+const (
+	WorkflowExpressionValidationModeExpression WorkflowExpressionValidationMode = "expression"
+	WorkflowExpressionValidationModeTemplate   WorkflowExpressionValidationMode = "template"
+)
+
+// Valid indicates whether the value is a known member of the WorkflowExpressionValidationMode enum.
+func (e WorkflowExpressionValidationMode) Valid() bool {
+	switch e {
+	case WorkflowExpressionValidationModeExpression:
 		return true
-	case WorkflowInteractionConfigTypeReview:
+	case WorkflowExpressionValidationModeTemplate:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for WorkflowInteractionConfigKind.
+const (
+	WorkflowInteractionConfigKindApproval WorkflowInteractionConfigKind = "approval"
+	WorkflowInteractionConfigKindHandoff  WorkflowInteractionConfigKind = "handoff"
+	WorkflowInteractionConfigKindInput    WorkflowInteractionConfigKind = "input"
+	WorkflowInteractionConfigKindRequest  WorkflowInteractionConfigKind = "request"
+	WorkflowInteractionConfigKindReview   WorkflowInteractionConfigKind = "review"
+	WorkflowInteractionConfigKindVote     WorkflowInteractionConfigKind = "vote"
+)
+
+// Valid indicates whether the value is a known member of the WorkflowInteractionConfigKind enum.
+func (e WorkflowInteractionConfigKind) Valid() bool {
+	switch e {
+	case WorkflowInteractionConfigKindApproval:
+		return true
+	case WorkflowInteractionConfigKindHandoff:
+		return true
+	case WorkflowInteractionConfigKindInput:
+		return true
+	case WorkflowInteractionConfigKindRequest:
+		return true
+	case WorkflowInteractionConfigKindReview:
+		return true
+	case WorkflowInteractionConfigKindVote:
 		return true
 	default:
 		return false
@@ -3249,6 +3516,51 @@ func (e WorkflowInteractionDiscussionConfigCompletionBehavior) Valid() bool {
 	case WorkflowInteractionDiscussionConfigCompletionBehaviorMarkInactive:
 		return true
 	case WorkflowInteractionDiscussionConfigCompletionBehaviorNone:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for WorkflowInteractionKindStepKind.
+const (
+	WorkflowInteractionKindStepKindInteraction WorkflowInteractionKindStepKind = "interaction"
+)
+
+// Valid indicates whether the value is a known member of the WorkflowInteractionKindStepKind enum.
+func (e WorkflowInteractionKindStepKind) Valid() bool {
+	switch e {
+	case WorkflowInteractionKindStepKindInteraction:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for WorkflowJoinKindStepKind.
+const (
+	WorkflowJoinKindStepKindJoin WorkflowJoinKindStepKind = "join"
+)
+
+// Valid indicates whether the value is a known member of the WorkflowJoinKindStepKind enum.
+func (e WorkflowJoinKindStepKind) Valid() bool {
+	switch e {
+	case WorkflowJoinKindStepKindJoin:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for WorkflowPauseKindStepKind.
+const (
+	WorkflowPauseKindStepKindPause WorkflowPauseKindStepKind = "pause"
+)
+
+// Valid indicates whether the value is a known member of the WorkflowPauseKindStepKind enum.
+func (e WorkflowPauseKindStepKind) Valid() bool {
+	switch e {
+	case WorkflowPauseKindStepKindPause:
 		return true
 	default:
 		return false
@@ -3288,18 +3600,60 @@ func (e WorkflowSetStepType) Valid() bool {
 	}
 }
 
-// Defines values for WorkflowWaitEventConfigMatchMode.
+// Defines values for WorkflowSleepKindStepKind.
 const (
-	WorkflowWaitEventConfigMatchModeExact  WorkflowWaitEventConfigMatchMode = "exact"
-	WorkflowWaitEventConfigMatchModePrefix WorkflowWaitEventConfigMatchMode = "prefix"
+	WorkflowSleepKindStepKindSleep WorkflowSleepKindStepKind = "sleep"
 )
 
-// Valid indicates whether the value is a known member of the WorkflowWaitEventConfigMatchMode enum.
-func (e WorkflowWaitEventConfigMatchMode) Valid() bool {
+// Valid indicates whether the value is a known member of the WorkflowSleepKindStepKind enum.
+func (e WorkflowSleepKindStepKind) Valid() bool {
 	switch e {
-	case WorkflowWaitEventConfigMatchModeExact:
+	case WorkflowSleepKindStepKindSleep:
 		return true
-	case WorkflowWaitEventConfigMatchModePrefix:
+	default:
+		return false
+	}
+}
+
+// Defines values for WorkflowWaitEventKindStepKind.
+const (
+	WorkflowWaitEventKindStepKindWaitEvent WorkflowWaitEventKindStepKind = "wait_event"
+)
+
+// Valid indicates whether the value is a known member of the WorkflowWaitEventKindStepKind enum.
+func (e WorkflowWaitEventKindStepKind) Valid() bool {
+	switch e {
+	case WorkflowWaitEventKindStepKindWaitEvent:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for WorkflowWaitSignalKindStepKind.
+const (
+	WorkflowWaitSignalKindStepKindWaitSignal WorkflowWaitSignalKindStepKind = "wait_signal"
+)
+
+// Valid indicates whether the value is a known member of the WorkflowWaitSignalKindStepKind enum.
+func (e WorkflowWaitSignalKindStepKind) Valid() bool {
+	switch e {
+	case WorkflowWaitSignalKindStepKindWaitSignal:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for WorkflowWaitUntilKindStepKind.
+const (
+	WorkflowWaitUntilKindStepKindWaitUntil WorkflowWaitUntilKindStepKind = "wait_until"
+)
+
+// Valid indicates whether the value is a known member of the WorkflowWaitUntilKindStepKind enum.
+func (e WorkflowWaitUntilKindStepKind) Valid() bool {
+	switch e {
+	case WorkflowWaitUntilKindStepKindWaitUntil:
 		return true
 	default:
 		return false
@@ -3414,48 +3768,6 @@ func (e ListInteractionsParamsStatus) Valid() bool {
 	}
 }
 
-// Defines values for ListInteractionsParamsTargetType.
-const (
-	ListInteractionsParamsTargetTypeAgent ListInteractionsParamsTargetType = "agent"
-	ListInteractionsParamsTargetTypeGroup ListInteractionsParamsTargetType = "group"
-	ListInteractionsParamsTargetTypeUser  ListInteractionsParamsTargetType = "user"
-)
-
-// Valid indicates whether the value is a known member of the ListInteractionsParamsTargetType enum.
-func (e ListInteractionsParamsTargetType) Valid() bool {
-	switch e {
-	case ListInteractionsParamsTargetTypeAgent:
-		return true
-	case ListInteractionsParamsTargetTypeGroup:
-		return true
-	case ListInteractionsParamsTargetTypeUser:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for ListInteractionsParamsReviewerType.
-const (
-	ListInteractionsParamsReviewerTypeAgent ListInteractionsParamsReviewerType = "agent"
-	ListInteractionsParamsReviewerTypeGroup ListInteractionsParamsReviewerType = "group"
-	ListInteractionsParamsReviewerTypeUser  ListInteractionsParamsReviewerType = "user"
-)
-
-// Valid indicates whether the value is a known member of the ListInteractionsParamsReviewerType enum.
-func (e ListInteractionsParamsReviewerType) Valid() bool {
-	switch e {
-	case ListInteractionsParamsReviewerTypeAgent:
-		return true
-	case ListInteractionsParamsReviewerTypeGroup:
-		return true
-	case ListInteractionsParamsReviewerTypeUser:
-		return true
-	default:
-		return false
-	}
-}
-
 // Defines values for ListRunsParamsLifecycle.
 const (
 	ListRunsParamsLifecycleInFlight ListRunsParamsLifecycle = "in_flight"
@@ -3468,6 +3780,21 @@ func (e ListRunsParamsLifecycle) Valid() bool {
 	case ListRunsParamsLifecycleInFlight:
 		return true
 	case ListRunsParamsLifecycleTerminal:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ListRunStepsParamsInclude.
+const (
+	ListRunStepsParamsIncludeRunStateAfter ListRunStepsParamsInclude = "run_state_after"
+)
+
+// Valid indicates whether the value is a known member of the ListRunStepsParamsInclude enum.
+func (e ListRunStepsParamsInclude) Valid() bool {
+	switch e {
+	case ListRunStepsParamsIncludeRunStateAfter:
 		return true
 	default:
 		return false
@@ -3488,31 +3815,6 @@ func (e GetRunStepParamsInclude) Valid() bool {
 		return false
 	}
 }
-
-// AcquireEnvironmentRequest defines model for AcquireEnvironmentRequest.
-type AcquireEnvironmentRequest struct {
-	EnvironmentId *string               `json:"environment_id,omitempty"`
-	HolderId      *string               `json:"holder_id,omitempty"`
-	HolderType    *EnvironmentOwnerType `json:"holder_type,omitempty"`
-
-	// LeaseTtl Go duration string, for example 30m or 2h.
-	LeaseTtl  *string                 `json:"lease_ttl,omitempty"`
-	Name      *string                 `json:"name,omitempty"`
-	OwnerId   *string                 `json:"owner_id,omitempty"`
-	OwnerType *EnvironmentOwnerType   `json:"owner_type,omitempty"`
-	Provider  *EnvironmentProvider    `json:"provider,omitempty"`
-	Purpose   *EnvironmentPurpose     `json:"purpose,omitempty"`
-	Spec      *map[string]interface{} `json:"spec,omitempty"`
-
-	// Tags Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints.
-	Tags *TagMap `json:"tags,omitempty"`
-
-	// TemplateId V1 supports only coding-default.
-	TemplateId *AcquireEnvironmentRequestTemplateId `json:"template_id,omitempty"`
-}
-
-// AcquireEnvironmentRequestTemplateId V1 supports only coding-default.
-type AcquireEnvironmentRequestTemplateId string
 
 // Action Project-owned HTTP action endpoint callable by workflow steps.
 type Action struct {
@@ -3740,84 +4042,6 @@ type ActionListResponse struct {
 	NextCursor *string `json:"next_cursor,omitempty"`
 }
 
-// ActorAssignment defines model for ActorAssignment.
-type ActorAssignment struct {
-	ActorStateId string                `json:"actor_state_id"`
-	CreatedAt    time.Time             `json:"created_at"`
-	Description  *string               `json:"description,omitempty"`
-	DueBy        *time.Time            `json:"due_by,omitempty"`
-	Headline     string                `json:"headline"`
-	Id           string                `json:"id"`
-	StartedAt    *time.Time            `json:"started_at,omitempty"`
-	Status       ActorAssignmentStatus `json:"status"`
-	UpdatedAt    time.Time             `json:"updated_at"`
-}
-
-// ActorAssignmentInput defines model for ActorAssignmentInput.
-type ActorAssignmentInput struct {
-	Description *string `json:"description,omitempty"`
-
-	// DueBy When the assignment is expected to be completed.
-	DueBy    *time.Time `json:"due_by,omitempty"`
-	Headline string     `json:"headline"`
-
-	// StartedAt When the actor actually began working on this assignment.
-	StartedAt *time.Time            `json:"started_at,omitempty"`
-	Status    ActorAssignmentStatus `json:"status"`
-}
-
-// ActorAssignmentListResponse defines model for ActorAssignmentListResponse.
-type ActorAssignmentListResponse struct {
-	Items []ActorAssignment `json:"items"`
-}
-
-// ActorAssignmentStatus defines model for ActorAssignmentStatus.
-type ActorAssignmentStatus string
-
-// ActorAvailability defines model for ActorAvailability.
-type ActorAvailability string
-
-// ActorConnectionStatus defines model for ActorConnectionStatus.
-type ActorConnectionStatus string
-
-// ActorPresenceSource defines model for ActorPresenceSource.
-type ActorPresenceSource string
-
-// ActorState defines model for ActorState.
-type ActorState struct {
-	ActorId      string               `json:"actor_id"`
-	ActorKind    ActorStateActorKind  `json:"actor_kind"`
-	Assignments  []ActorAssignment    `json:"assignments"`
-	Availability ActorAvailability    `json:"availability"`
-	CreatedAt    time.Time            `json:"created_at"`
-	Description  *string              `json:"description,omitempty"`
-	ExpiresAt    *time.Time           `json:"expires_at,omitempty"`
-	Id           string               `json:"id"`
-	LastSeenAt   *time.Time           `json:"last_seen_at,omitempty"`
-	Stale        bool                 `json:"stale"`
-	UpdatedAt    time.Time            `json:"updated_at"`
-	Visibility   ActorStateVisibility `json:"visibility"`
-}
-
-// ActorStateActorKind defines model for ActorStateActorKind.
-type ActorStateActorKind string
-
-// ActorStateListResponse defines model for ActorStateListResponse.
-type ActorStateListResponse struct {
-	Items []ActorState `json:"items"`
-}
-
-// ActorStateTriggerSourceConfig Narrow transition filter for Actor State event triggers.
-type ActorStateTriggerSourceConfig struct {
-	// ActorId Actor ID to match. Omit to match any actor in the project.
-	ActorId          *string            `json:"actor_id,omitempty"`
-	FromAvailability *ActorAvailability `json:"from_availability,omitempty"`
-	ToAvailability   *ActorAvailability `json:"to_availability,omitempty"`
-}
-
-// ActorStateVisibility defines model for ActorStateVisibility.
-type ActorStateVisibility string
-
 // AddChannelMemberRequest Member identity and role to add to a channel.
 type AddChannelMemberRequest struct {
 	// ParticipantId User or agent ID to add to the channel.
@@ -3832,7 +4056,7 @@ type AddChannelMemberRequestRole string
 
 // AddGroupMemberRequest defines model for AddGroupMemberRequest.
 type AddGroupMemberRequest struct {
-	// UserId Org member user ID to add. Must be a current org member.
+	// UserId Human org member or project agent user ID to add.
 	UserId string `json:"user_id"`
 }
 
@@ -3848,12 +4072,15 @@ type Agent struct {
 	Capabilities *map[string]interface{} `json:"capabilities,omitempty"`
 
 	// Color Display color for this agent in UI surfaces such as channel avatars and message rails. One of the Mantine color palette keys (e.g. `indigo`, `teal`, `grape`); empty string falls back to a hash-derived color.
-	Color                *string               `json:"color,omitempty"`
-	ConnectionLastSeenAt *time.Time            `json:"connection_last_seen_at,omitempty"`
-	ConnectionStatus     ActorConnectionStatus `json:"connection_status"`
+	Color                *string              `json:"color,omitempty"`
+	ConnectionLastSeenAt *time.Time           `json:"connection_last_seen_at,omitempty"`
+	ConnectionStatus     UserConnectionStatus `json:"connection_status"`
 
 	// CreatedAt Timestamp when this agent was created.
 	CreatedAt time.Time `json:"created_at"`
+
+	// DeletedAt Set when the agent has been soft-deleted. Soft-deleted agents are excluded from normal listing and lookups but their records are retained so historical chat messages can resolve the sender name.
+	DeletedAt *time.Time `json:"deleted_at,omitempty"`
 
 	// Description Optional human-readable description.
 	Description *string `json:"description,omitempty"`
@@ -3873,14 +4100,14 @@ type Agent struct {
 	// Name Mutable unique name within the project. Free-form human-readable label; use `id` for stable references and job targeting.
 	Name string `json:"name"`
 
-	// Presence Computed from the most recent 20 sessions. `online` means a connected session with a fresh heartbeat; `stale` means heartbeats are overdue; `offline` means no connected sessions.
-	Presence       AgentPresence        `json:"presence"`
-	PresenceSource *ActorPresenceSource `json:"presence_source,omitempty"`
+	// Presence Deprecated computed status. `online` means a connected presence record with a fresh heartbeat; `stale` means heartbeats are overdue; `offline` means no connected records.
+	Presence       LegacyAgentPresence `json:"presence"`
+	PresenceSource *UserPresenceSource `json:"presence_source,omitempty"`
 
 	// ServiceAccountId The service account whose credentials this agent uses to authenticate. Each service account backs at most one agent; this binding is immutable after creation.
 	ServiceAccountId string `json:"service_account_id"`
 
-	// Status Administrative status. Inactive agents cannot claim new jobs.
+	// Status Administrative status. Inactive agents cannot claim new jobs. Soft-deleted agents are represented by `deleted_at` and excluded from normal reads.
 	Status AgentStatus `json:"status"`
 
 	// SystemPrompt Custom system prompt for platform agents. Empty string uses the generated default based on the agent name.
@@ -3891,6 +4118,9 @@ type Agent struct {
 
 	// UpdatedAt Timestamp when this agent was last updated.
 	UpdatedAt time.Time `json:"updated_at"`
+
+	// UserId Canonical user (users.id) backing this agent. Used as the `owned_by` value when filtering or claiming resources owned by this agent.
+	UserId *string `json:"user_id,omitempty"`
 }
 
 // AgentBlockedGrant defines model for AgentBlockedGrant.
@@ -3902,6 +4132,59 @@ type AgentBlockedGrant struct {
 	Selector     string  `json:"selector"`
 	SelectorType string  `json:"selector_type"`
 }
+
+// AgentConversationSession defines model for AgentConversationSession.
+type AgentConversationSession struct {
+	AgentId             string                  `json:"agent_id"`
+	CompactionPolicy    *map[string]interface{} `json:"compaction_policy,omitempty"`
+	CreatedAt           time.Time               `json:"created_at"`
+	CreatedByUserId     *string                 `json:"created_by_user_id,omitempty"`
+	ForkedFromSequence  *int                    `json:"forked_from_sequence,omitempty"`
+	ForkedFromSessionId *string                 `json:"forked_from_session_id,omitempty"`
+	Id                  string                  `json:"id"`
+	LastMessageAt       *time.Time              `json:"last_message_at,omitempty"`
+	MessageCount        int                     `json:"message_count"`
+	Metadata            *map[string]interface{} `json:"metadata,omitempty"`
+	Model               *string                 `json:"model,omitempty"`
+	ModelProvider       *string                 `json:"model_provider,omitempty"`
+
+	// Origin Surface that created the session.
+	Origin    AgentConversationSessionOrigin `json:"origin"`
+	ProjectId string                         `json:"project_id"`
+
+	// Scope Boundary used to resolve named sessions.
+	Scope      AgentConversationSessionScope `json:"scope"`
+	ScopeName  string                        `json:"scope_name"`
+	ScopeRefId string                        `json:"scope_ref_id"`
+
+	// Status Durable conversation session status.
+	Status           AgentConversationSessionStatus `json:"status"`
+	Title            string                         `json:"title"`
+	TokenInputTotal  int                            `json:"token_input_total"`
+	TokenOutputTotal int                            `json:"token_output_total"`
+	UpdatedAt        time.Time                      `json:"updated_at"`
+	Version          int                            `json:"version"`
+
+	// Visibility Visibility of the session in project surfaces.
+	Visibility AgentConversationSessionVisibility `json:"visibility"`
+}
+
+// AgentConversationSessionListResponse defines model for AgentConversationSessionListResponse.
+type AgentConversationSessionListResponse struct {
+	Items []AgentConversationSession `json:"items"`
+}
+
+// AgentConversationSessionOrigin Surface that created the session.
+type AgentConversationSessionOrigin string
+
+// AgentConversationSessionScope Boundary used to resolve named sessions.
+type AgentConversationSessionScope string
+
+// AgentConversationSessionStatus Durable conversation session status.
+type AgentConversationSessionStatus string
+
+// AgentConversationSessionVisibility Visibility of the session in project surfaces.
+type AgentConversationSessionVisibility string
 
 // AgentListResponse defines model for AgentListResponse.
 type AgentListResponse struct {
@@ -3919,29 +4202,21 @@ type AgentManifestWarning struct {
 	ToolkitId *string `json:"toolkit_id,omitempty"`
 }
 
-// AgentPresence Computed from the most recent 20 sessions. `online` means a connected session with a fresh heartbeat; `stale` means heartbeats are overdue; `offline` means no connected sessions.
-type AgentPresence string
-
-// AgentQueueDelivery defines model for AgentQueueDelivery.
-type AgentQueueDelivery struct {
-	Queue string `json:"queue"`
-}
-
-// AgentSession Live or historical connection from an agent process. Use sessions to monitor availability, transport, metadata, and heartbeat freshness for automated workers.
-type AgentSession struct {
+// AgentPresence Live or historical connection from an agent process. Use presence records to monitor availability, transport, metadata, and heartbeat freshness for automated workers.
+type AgentPresence struct {
 	// AgentId ID of the agent this session belongs to.
 	AgentId string `json:"agent_id"`
 
-	// ConnectedAt Timestamp when this session was established.
+	// ConnectedAt Timestamp when this presence was established.
 	ConnectedAt *time.Time `json:"connected_at,omitempty"`
 
-	// CreatedAt Timestamp when this session record was created.
+	// CreatedAt Timestamp when this presence record was created.
 	CreatedAt time.Time `json:"created_at"`
 
-	// DisconnectedAt Timestamp when this session was closed. Null while connected.
+	// DisconnectedAt Timestamp when this presence was closed. Null while connected.
 	DisconnectedAt *time.Time `json:"disconnected_at,omitempty"`
 
-	// Id Unique identifier for this session.
+	// Id Unique identifier for this presence record.
 	Id string `json:"id"`
 
 	// LastSeenAt Timestamp of the most recent heartbeat.
@@ -3950,26 +4225,50 @@ type AgentSession struct {
 	// Metadata Caller-supplied metadata (e.g. hostname, version, region).
 	Metadata *map[string]interface{} `json:"metadata,omitempty"`
 
-	// Status Connection state for an agent session. `connected` sessions are usable, `stale` sessions have missed heartbeats, and `disconnected` sessions have been closed.
-	Status AgentSessionStatus `json:"status"`
+	// Status Connection state for an agent presence record. `connected` records are usable, `stale` records have missed heartbeats, and `disconnected` records have been closed.
+	Status AgentPresenceStatus `json:"status"`
 
 	// Transport Connection mechanism identifier (e.g. "sse", "polling").
 	Transport string `json:"transport"`
 
-	// UpdatedAt Timestamp when this session was last updated.
+	// UpdatedAt Timestamp when this presence record was last updated.
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-// AgentSessionListResponse defines model for AgentSessionListResponse.
-type AgentSessionListResponse struct {
+// AgentPresenceListResponse defines model for AgentPresenceListResponse.
+type AgentPresenceListResponse struct {
 	// Items The list of results for this page.
-	Items []AgentSession `json:"items"`
+	Items []AgentPresence `json:"items"`
 }
 
-// AgentSessionStatus Connection state for an agent session. `connected` sessions are usable, `stale` sessions have missed heartbeats, and `disconnected` sessions have been closed.
-type AgentSessionStatus string
+// AgentPresenceStatus Connection state for an agent presence record. `connected` records are usable, `stale` records have missed heartbeats, and `disconnected` records have been closed.
+type AgentPresenceStatus string
 
-// AgentStatus Administrative status. Inactive agents cannot claim new jobs.
+// AgentSessionMessage defines model for AgentSessionMessage.
+type AgentSessionMessage struct {
+	AgentId               string                    `json:"agent_id"`
+	Content               string                    `json:"content"`
+	ContentBlocks         *[]map[string]interface{} `json:"content_blocks,omitempty"`
+	CoversThroughSequence *int                      `json:"covers_through_sequence,omitempty"`
+	CreatedAt             time.Time                 `json:"created_at"`
+	Id                    string                    `json:"id"`
+	Metadata              *map[string]interface{}   `json:"metadata,omitempty"`
+
+	// Role Role of one message in a session transcript.
+	Role      AgentSessionMessageRole `json:"role"`
+	Sequence  int                     `json:"sequence"`
+	SessionId string                  `json:"session_id"`
+}
+
+// AgentSessionMessageListResponse defines model for AgentSessionMessageListResponse.
+type AgentSessionMessageListResponse struct {
+	Items []AgentSessionMessage `json:"items"`
+}
+
+// AgentSessionMessageRole Role of one message in a session transcript.
+type AgentSessionMessageRole string
+
+// AgentStatus Administrative status. Inactive agents cannot claim new jobs. Soft-deleted agents are represented by `deleted_at` and excluded from normal reads.
 type AgentStatus string
 
 // AgentToolConsumer defines model for AgentToolConsumer.
@@ -3997,33 +4296,62 @@ type AgentToolManifest struct {
 	Warnings []AgentManifestWarning `json:"warnings"`
 }
 
+// ApolloConnectRequest Body accepted by `POST /v1/projects/{project}/integrations/apollo/connect`. Apollo authenticates with a paste-an-API-key flow; the key is validated inline against Apollo.io before the integration row is persisted.
+type ApolloConnectRequest struct {
+	// ApiKey Apollo.io API key.
+	ApiKey string `json:"api_key"`
+}
+
+// AppendAgentSessionMessage defines model for AppendAgentSessionMessage.
+type AppendAgentSessionMessage struct {
+	Content       string                    `json:"content"`
+	ContentBlocks *[]map[string]interface{} `json:"content_blocks,omitempty"`
+	CreatedAt     *time.Time                `json:"created_at,omitempty"`
+	Metadata      *map[string]interface{}   `json:"metadata,omitempty"`
+
+	// Role Role of one message in a session transcript.
+	Role AgentSessionMessageRole `json:"role"`
+}
+
+// AppendAgentSessionMessagesRequest defines model for AppendAgentSessionMessagesRequest.
+type AppendAgentSessionMessagesRequest struct {
+	Messages         []AppendAgentSessionMessage `json:"messages"`
+	Model            *string                     `json:"model,omitempty"`
+	ModelProvider    *string                     `json:"model_provider,omitempty"`
+	TokenInputTotal  *int                        `json:"token_input_total,omitempty"`
+	TokenOutputTotal *int                        `json:"token_output_total,omitempty"`
+}
+
 // Artifact defines model for Artifact.
 type Artifact struct {
-	Attempt       *int                    `json:"attempt,omitempty"`
-	CommittedAt   *time.Time              `json:"committed_at,omitempty"`
-	CreatedAt     time.Time               `json:"created_at"`
-	CreatedById   *string                 `json:"created_by_id,omitempty"`
-	CreatedByName *string                 `json:"created_by_name,omitempty"`
-	CreatedByType *string                 `json:"created_by_type,omitempty"`
-	DeletedAt     *time.Time              `json:"deleted_at,omitempty"`
-	ExpiresAt     *time.Time              `json:"expires_at,omitempty"`
-	Id            string                  `json:"id"`
-	IntegrationId *string                 `json:"integration_id,omitempty"`
-	JobId         *string                 `json:"job_id,omitempty"`
-	Metadata      *map[string]interface{} `json:"metadata,omitempty"`
-	MimeType      string                  `json:"mime_type"`
-	Name          string                  `json:"name"`
-	OrgId         string                  `json:"org_id"`
-	Pinned        *bool                   `json:"pinned,omitempty"`
-	ProjectId     string                  `json:"project_id"`
-	RunId         *string                 `json:"run_id,omitempty"`
-	Sha256        *string                 `json:"sha256,omitempty"`
-	SizeBytes     int64                   `json:"size_bytes"`
-	State         ArtifactState           `json:"state"`
-	StepId        *string                 `json:"step_id,omitempty"`
-	Storage       ArtifactStorageBackend  `json:"storage"`
-	StorageUri    *string                 `json:"storage_uri,omitempty"`
-	Tags          *map[string]string      `json:"tags,omitempty"`
+	Attempt                 *int                    `json:"attempt,omitempty"`
+	CommittedAt             *time.Time              `json:"committed_at,omitempty"`
+	CreatedAt               time.Time               `json:"created_at"`
+	CreatedByCredentialKind *string                 `json:"created_by_credential_kind,omitempty"`
+	CreatedByName           *string                 `json:"created_by_name,omitempty"`
+	CreatedByUserId         *string                 `json:"created_by_user_id,omitempty"`
+	DeletedAt               *time.Time              `json:"deleted_at,omitempty"`
+	ExpiresAt               *time.Time              `json:"expires_at,omitempty"`
+	Id                      string                  `json:"id"`
+	IntegrationId           *string                 `json:"integration_id,omitempty"`
+	JobId                   *string                 `json:"job_id,omitempty"`
+	Metadata                *map[string]interface{} `json:"metadata,omitempty"`
+	MimeType                string                  `json:"mime_type"`
+	Name                    string                  `json:"name"`
+	OrgId                   string                  `json:"org_id"`
+
+	// OwnerUserId User-keyed private artifact-space owner. Humans, agents, service accounts, and system principals all use users.id.
+	OwnerUserId string                 `json:"owner_user_id"`
+	Pinned      *bool                  `json:"pinned,omitempty"`
+	ProjectId   string                 `json:"project_id"`
+	RunId       *string                `json:"run_id,omitempty"`
+	Sha256      *string                `json:"sha256,omitempty"`
+	SizeBytes   int64                  `json:"size_bytes"`
+	State       ArtifactState          `json:"state"`
+	StepId      *string                `json:"step_id,omitempty"`
+	Storage     ArtifactStorageBackend `json:"storage"`
+	StorageUri  *string                `json:"storage_uri,omitempty"`
+	Tags        *map[string]string     `json:"tags,omitempty"`
 }
 
 // ArtifactListResponse defines model for ArtifactListResponse.
@@ -4042,6 +4370,16 @@ type ArtifactQuotaUsage struct {
 	PendingCount  int64     `json:"pending_count"`
 	UsedBytes     int64     `json:"used_bytes"`
 }
+
+// ArtifactSignedUrl defines model for ArtifactSignedUrl.
+type ArtifactSignedUrl struct {
+	ExpiresAt time.Time               `json:"expires_at"`
+	Method    ArtifactSignedUrlMethod `json:"method"`
+	Url       string                  `json:"url"`
+}
+
+// ArtifactSignedUrlMethod defines model for ArtifactSignedUrl.Method.
+type ArtifactSignedUrlMethod string
 
 // ArtifactSlot defines model for ArtifactSlot.
 type ArtifactSlot struct {
@@ -4102,14 +4440,8 @@ type AuditLogEntry struct {
 	// Action Type of action performed: `create`, `update`, `delete`, `archive`, or `restore`.
 	Action AuditLogEntryAction `json:"action"`
 
-	// ActorId Durable actor ID that performed the action
-	ActorId *string `json:"actor_id,omitempty"`
-
-	// ActorName Display name of the actor (email for users, service account name for service accounts)
+	// ActorName Display name of the user at the time the entry was written (snapshotted)
 	ActorName *string `json:"actor_name,omitempty"`
-
-	// ActorType Durable actor type that performed the action
-	ActorType *string `json:"actor_type,omitempty"`
 
 	// Changes Object containing before/after changes for update actions
 	Changes *map[string]interface{} `json:"changes,omitempty"`
@@ -4144,7 +4476,7 @@ type AuditLogEntry struct {
 	// UserAgent User agent of the request
 	UserAgent *string `json:"user_agent,omitempty"`
 
-	// UserId ID of the user who performed the action, when a human user is attributable
+	// UserId ID of the user who performed the action
 	UserId *string `json:"user_id,omitempty"`
 }
 
@@ -4260,11 +4592,8 @@ type ChannelInteractionLink struct {
 	// CreatedAt Timestamp when the association was created.
 	CreatedAt time.Time `json:"created_at"`
 
-	// CreatedById Actor ID that created the association.
-	CreatedById string `json:"created_by_id"`
-
-	// CreatedByType Actor type that created the association.
-	CreatedByType string `json:"created_by_type"`
+	// CreatedByUserId User ID that created the association.
+	CreatedByUserId string `json:"created_by_user_id"`
 
 	// Id Unique identifier for this association.
 	Id string `json:"id"`
@@ -4349,6 +4678,9 @@ type ChannelMemberListResponse struct {
 
 // ChannelMessage Message posted in a channel, including sender attribution and rendering metadata.
 type ChannelMessage struct {
+	// Blocks Typed rich-content blocks for structured display.
+	Blocks *[]MessageBlock `json:"blocks,omitempty"`
+
 	// ChannelId ID of the channel this message was posted in.
 	ChannelId string `json:"channel_id"`
 
@@ -4358,7 +4690,7 @@ type ChannelMessage struct {
 	// CreatedAt Timestamp when this message was posted.
 	CreatedAt time.Time `json:"created_at"`
 
-	// Display Rendering hint for the UI. `message` — standard chat bubble. `notice` — system/informational notice (no attribution). `card` — structured card layout.
+	// Display Rendering hint for the UI. `message` — standard chat bubble. `notice` — system/informational notice (no attribution). `card` — structured card layout. `blocks` — rich content blocks layout.
 	Display *ChannelMessageDisplay `json:"display,omitempty"`
 
 	// EditedAt Set when the message content has been updated after initial send.
@@ -4382,7 +4714,7 @@ type ChannelMessage struct {
 	// ReplyTo ID of the parent message this reply belongs to, or null when this is not a threaded reply.
 	ReplyTo *string `json:"reply_to,omitempty"`
 
-	// SenderId Sender principal identifier — the user ID for `sender_type=member`, the agent's ID for `sender_type=agent`, or the service account's ID for `sender_type=service_account`.
+	// SenderId Sender principal identifier — the user ID for `sender_type=human`, the agent's ID for `sender_type=agent`, or the service account's ID for `sender_type=service_account`.
 	SenderId string `json:"sender_id"`
 
 	// SenderSessionId Live agent session that posted the message, when applicable.
@@ -4390,8 +4722,8 @@ type ChannelMessage struct {
 
 	// SenderType Authenticated principal that posted the message, derived from the
 	// credential at send time and never overrideable in the request body
-	// (PRD 048 §5):
-	// - `member` — a human org member's user credential.
+	// (PRD 048 §5). Values align with `users.kind`:
+	// - `human` — a human org member's user credential.
 	// - `agent` — an API key whose service account backs an agent (1:1
 	// invariant from PRD 048 §1). `sender_id` is the agent's ID.
 	// - `service_account` — an API key whose service account backs no
@@ -4402,7 +4734,7 @@ type ChannelMessage struct {
 	Type string `json:"type"`
 }
 
-// ChannelMessageDisplay Rendering hint for the UI. `message` — standard chat bubble. `notice` — system/informational notice (no attribution). `card` — structured card layout.
+// ChannelMessageDisplay Rendering hint for the UI. `message` — standard chat bubble. `notice` — system/informational notice (no attribution). `card` — structured card layout. `blocks` — rich content blocks layout.
 type ChannelMessageDisplay string
 
 // ChannelMessageListResponse Paginated list of channel messages.
@@ -4419,8 +4751,8 @@ type ChannelMessageListResponse struct {
 
 // ChannelMessageSenderType Authenticated principal that posted the message, derived from the
 // credential at send time and never overrideable in the request body
-// (PRD 048 §5):
-// - `member` — a human org member's user credential.
+// (PRD 048 §5). Values align with `users.kind`:
+// - `human` — a human org member's user credential.
 // - `agent` — an API key whose service account backs an agent (1:1
 // invariant from PRD 048 §1). `sender_id` is the agent's ID.
 // - `service_account` — an API key whose service account backs no
@@ -4526,7 +4858,7 @@ type ConfigEntry struct {
 	Value string `json:"value"`
 }
 
-// Consumer Polymorphic identifier of what is waiting on this interaction's resolution (PRD 077 §3.7). Replaces the previously special-cased `run_id` + `signal_name` pair. When `kind=run`, the legacy fields are also populated for compatibility. `http_subscriber` triggers a best-effort POST to `callback_url` when the interaction resolves; when `secret_ref` is set, the raw request body is signed with HMAC-SHA256 against the resolved project secret and the signed dispatch carries `X-Mobius-Signature`, `X-Mobius-Secret-Ref`, `X-Mobius-Secret-Version`, and `X-Mobius-Timestamp`. Verifiers should check all four headers.
+// Consumer Polymorphic identifier of what is waiting on this interaction's resolution (PRD 077 §3.7). Replaces the previously special-cased `run_id` + `signal_name` pair. When `kind=run`, the legacy fields are also populated for compatibility. `http_subscriber` enqueues a durable callback dispatch to `callback_url` when the interaction resolves; when `secret_ref` is set, the canonical string `{interaction_id}.{unix_timestamp}.{raw_body}` is signed with HMAC-SHA256 against the resolved project secret and the signed dispatch carries `X-Mobius-Signature`, `X-Mobius-Secret-Ref`, `X-Mobius-Secret-Version`, and `X-Mobius-Timestamp`. Signed dispatches also carry `X-Mobius-Signature-Version: v2`. Verifiers should recompute the signature over the exact raw body, reject stale timestamps (for example, older than five minutes), and check all five headers.
 type Consumer struct {
 	AgentTool      *AgentToolConsumer      `json:"agent_tool,omitempty"`
 	HttpSubscriber *HttpSubscriberConsumer `json:"http_subscriber,omitempty"`
@@ -4569,6 +4901,15 @@ type CreateActionRequest struct {
 	Title *string `json:"title,omitempty"`
 }
 
+// CreateAgentPresenceRequest defines model for CreateAgentPresenceRequest.
+type CreateAgentPresenceRequest struct {
+	// Metadata Optional metadata such as hostname, SDK version, or region.
+	Metadata *map[string]interface{} `json:"metadata,omitempty"`
+
+	// Transport Connection mechanism identifier (e.g. "sse", "polling").
+	Transport string `json:"transport"`
+}
+
 // CreateAgentRequest defines model for CreateAgentRequest.
 type CreateAgentRequest struct {
 	// Capabilities Arbitrary capability map used by orchestrators to select suitable agents.
@@ -4600,15 +4941,6 @@ type CreateAgentRequest struct {
 
 	// Tags Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints.
 	Tags *TagMap `json:"tags,omitempty"`
-}
-
-// CreateAgentSessionRequest defines model for CreateAgentSessionRequest.
-type CreateAgentSessionRequest struct {
-	// Metadata Optional metadata such as hostname, SDK version, or region.
-	Metadata *map[string]interface{} `json:"metadata,omitempty"`
-
-	// Transport Connection mechanism identifier (e.g. "sse", "polling").
-	Transport string `json:"transport"`
 }
 
 // CreateArtifactSlotRequest defines model for CreateArtifactSlotRequest.
@@ -4644,8 +4976,14 @@ type CreateChannelMessageTriggerRequest struct {
 	// Kind Discriminator value — must be `channel_message`.
 	Kind CreateChannelMessageTriggerRequestKind `json:"kind"`
 
-	// Name Human-readable trigger name, unique within the project.
+	// Name Human-readable trigger name, unique within the resolved scope.
 	Name string `json:"name"`
+
+	// OwnedBy Canonical user owner ID. Required when `scope` is `owner`; defaults to the creator when possible.
+	OwnedBy *string `json:"owned_by,omitempty"`
+
+	// Scope Optional namespace for named runtime resources. Omitted/null means the project/default scope; `owner` means names are unique within `(project, owned_by)`.
+	Scope *ResourceScope `json:"scope,omitempty"`
 
 	// SourceConfig Source configuration for `channel_message` triggers.
 	SourceConfig *ChannelMessageSourceConfig `json:"source_config,omitempty"`
@@ -4711,8 +5049,14 @@ type CreateEmailTriggerRequest struct {
 	// Kind Discriminator value — must be `email`.
 	Kind CreateEmailTriggerRequestKind `json:"kind"`
 
-	// Name Human-readable trigger name, unique within the project.
+	// Name Human-readable trigger name, unique within the resolved scope.
 	Name string `json:"name"`
+
+	// OwnedBy Canonical user owner ID. Required when `scope` is `owner`; defaults to the creator when possible.
+	OwnedBy *string `json:"owned_by,omitempty"`
+
+	// Scope Optional namespace for named runtime resources. Omitted/null means the project/default scope; `owner` means names are unique within `(project, owned_by)`.
+	Scope *ResourceScope `json:"scope,omitempty"`
 
 	// SourceConfig Source configuration for `email` triggers.
 	SourceConfig *EmailSourceConfig `json:"source_config,omitempty"`
@@ -4726,26 +5070,6 @@ type CreateEmailTriggerRequest struct {
 
 // CreateEmailTriggerRequestKind Discriminator value — must be `email`.
 type CreateEmailTriggerRequestKind string
-
-// CreateEnvironmentRequest defines model for CreateEnvironmentRequest.
-type CreateEnvironmentRequest struct {
-	Name            *string                     `json:"name,omitempty"`
-	OwnerId         *string                     `json:"owner_id,omitempty"`
-	OwnerType       *EnvironmentOwnerType       `json:"owner_type,omitempty"`
-	Provider        *EnvironmentProvider        `json:"provider,omitempty"`
-	Purpose         *EnvironmentPurpose         `json:"purpose,omitempty"`
-	RetentionPolicy *EnvironmentRetentionPolicy `json:"retention_policy,omitempty"`
-	Spec            *map[string]interface{}     `json:"spec,omitempty"`
-
-	// Tags Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints.
-	Tags *TagMap `json:"tags,omitempty"`
-
-	// TemplateId V1 supports only coding-default.
-	TemplateId *CreateEnvironmentRequestTemplateId `json:"template_id,omitempty"`
-}
-
-// CreateEnvironmentRequestTemplateId V1 supports only coding-default.
-type CreateEnvironmentRequestTemplateId string
 
 // CreateEventTriggerRequest Creates an event trigger for platform-originated events.
 type CreateEventTriggerRequest struct {
@@ -4761,8 +5085,14 @@ type CreateEventTriggerRequest struct {
 	// Kind Discriminator value — must be `event`.
 	Kind CreateEventTriggerRequestKind `json:"kind"`
 
-	// Name Human-readable trigger name, unique within the project.
+	// Name Human-readable trigger name, unique within the resolved scope.
 	Name string `json:"name"`
+
+	// OwnedBy Canonical user owner ID. Required when `scope` is `owner`; defaults to the creator when possible.
+	OwnedBy *string `json:"owned_by,omitempty"`
+
+	// Scope Optional namespace for named runtime resources. Omitted/null means the project/default scope; `owner` means names are unique within `(project, owned_by)`.
+	Scope *ResourceScope `json:"scope,omitempty"`
 
 	// SourceConfig Source configuration for `event` triggers.
 	SourceConfig EventSourceConfig `json:"source_config"`
@@ -4828,10 +5158,13 @@ type CreateJobInteractionRequest struct {
 	// Message Message shown to the responder.
 	Message string `json:"message"`
 
+	// Properties Free-form structured metadata to attach to the interaction.
+	Properties *map[string]interface{} `json:"properties,omitempty"`
+
 	// References Supporting links and related entities.
 	References *[]InteractionReference `json:"references,omitempty"`
 
-	// RequireAll When target.type is "group", setting require_all=true means all snapshotted group members must respond before the interaction is considered complete. Ignored for non-group targets. Defaults to false when omitted. Mutually exclusive with `resolution_policy`; prefer the policy form for new code.
+	// RequireAll When `target_group_id` is set, setting require_all=true means all snapshotted group members must respond before the interaction is considered complete. Ignored for non-group targets. Defaults to false when omitted. Mutually exclusive with `resolution_policy`; prefer the policy form for new code.
 	RequireAll *bool `json:"require_all,omitempty"`
 
 	// ResolutionPolicy Declarative resolution rule attached to an Interaction. Determines how participant responses become a final outcome.
@@ -4859,7 +5192,10 @@ type CreateJobInteractionRequest struct {
 	// SubmissionReviewPolicy Reviewability policy for an interaction artifact (PRD 077 §3.5). Carried as a template on `Interaction.submission_review_policy` (so new submissions inherit a snapshot) and as the per-submission snapshot on `InteractionSubmission.review_policy`.
 	SubmissionReviewPolicy *ReviewPolicy `json:"submission_review_policy,omitempty"`
 
-	// Target Identifies who should receive an interaction request. Note: distinct from the caller/audit `Actor` vocabulary — a target is a *recipient*, not someone who has acted yet.
+	// Tags Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints.
+	Tags *TagMap `json:"tags,omitempty"`
+
+	// Target Identifies who should receive an interaction request. Humans and agents are both users; agent targets use the agent's backing user ID. `group_id` is a routing input that is expanded to target user rows at creation time.
 	Target InteractionTarget `json:"target"`
 
 	// Timeout Optional duration string (e.g. "24h", "30m") specifying how long the interaction should remain open before expiring. When absent the caller is responsible for setting expires_at directly.
@@ -4898,7 +5234,7 @@ type CreateProjectRequest struct {
 
 // CreateRunBackedInteractionRequest Creates a run-backed interaction. Completion delivers `signal_name` to `run_id` so a waiting run path can resume.
 type CreateRunBackedInteractionRequest struct {
-	// Consumer Polymorphic identifier of what is waiting on this interaction's resolution (PRD 077 §3.7). Replaces the previously special-cased `run_id` + `signal_name` pair. When `kind=run`, the legacy fields are also populated for compatibility. `http_subscriber` triggers a best-effort POST to `callback_url` when the interaction resolves; when `secret_ref` is set, the raw request body is signed with HMAC-SHA256 against the resolved project secret and the signed dispatch carries `X-Mobius-Signature`, `X-Mobius-Secret-Ref`, `X-Mobius-Secret-Version`, and `X-Mobius-Timestamp`. Verifiers should check all four headers.
+	// Consumer Polymorphic identifier of what is waiting on this interaction's resolution (PRD 077 §3.7). Replaces the previously special-cased `run_id` + `signal_name` pair. When `kind=run`, the legacy fields are also populated for compatibility. `http_subscriber` enqueues a durable callback dispatch to `callback_url` when the interaction resolves; when `secret_ref` is set, the canonical string `{interaction_id}.{unix_timestamp}.{raw_body}` is signed with HMAC-SHA256 against the resolved project secret and the signed dispatch carries `X-Mobius-Signature`, `X-Mobius-Secret-Ref`, `X-Mobius-Secret-Version`, and `X-Mobius-Timestamp`. Signed dispatches also carry `X-Mobius-Signature-Version: v2`. Verifiers should recompute the signature over the exact raw body, reject stale timestamps (for example, older than five minutes), and check all five headers.
 	Consumer *Consumer `json:"consumer,omitempty"`
 
 	// Context Additional key-value context surfaced in the UI alongside the message.
@@ -4930,10 +5266,13 @@ type CreateRunBackedInteractionRequest struct {
 	// Message Message shown to the responder describing what response is needed.
 	Message string `json:"message"`
 
+	// Properties Free-form structured metadata to attach to the interaction.
+	Properties *map[string]interface{} `json:"properties,omitempty"`
+
 	// References Supporting links and related entities.
 	References *[]InteractionReference `json:"references,omitempty"`
 
-	// RequireAll When target.type is "group", setting require_all=true means all snapshotted group members must respond before the interaction is considered complete. Ignored for non-group targets. Defaults to false when omitted. Mutually exclusive with `resolution_policy`; prefer the policy form for new code.
+	// RequireAll When `target_group_id` is set, setting require_all=true means all snapshotted group members must respond before the interaction is considered complete. Ignored for non-group targets. Defaults to false when omitted. Mutually exclusive with `resolution_policy`; prefer the policy form for new code.
 	RequireAll *bool `json:"require_all,omitempty"`
 
 	// ResolutionPolicy Declarative resolution rule attached to an Interaction. Determines how participant responses become a final outcome.
@@ -4961,8 +5300,14 @@ type CreateRunBackedInteractionRequest struct {
 	// SubmissionReviewPolicy Reviewability policy for an interaction artifact (PRD 077 §3.5). Carried as a template on `Interaction.submission_review_policy` (so new submissions inherit a snapshot) and as the per-submission snapshot on `InteractionSubmission.review_policy`.
 	SubmissionReviewPolicy *ReviewPolicy `json:"submission_review_policy,omitempty"`
 
-	// Target Identifies who should receive an interaction request. Note: distinct from the caller/audit `Actor` vocabulary — a target is a *recipient*, not someone who has acted yet.
-	Target InteractionTarget `json:"target"`
+	// Tags Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints.
+	Tags *TagMap `json:"tags,omitempty"`
+
+	// TargetGroupId Optional group ID or handle to expand into target users.
+	TargetGroupId *string `json:"target_group_id,omitempty"`
+
+	// TargetUserIds Resolved user IDs to target directly. Agents use their backing user IDs.
+	TargetUserIds *[]string `json:"target_user_ids,omitempty"`
 }
 
 // CreateScheduleTriggerRequest Creates a schedule trigger from a cron expression or fixed interval.
@@ -4979,8 +5324,14 @@ type CreateScheduleTriggerRequest struct {
 	// Kind Discriminator value — must be `schedule`.
 	Kind CreateScheduleTriggerRequestKind `json:"kind"`
 
-	// Name Human-readable trigger name, unique within the project.
+	// Name Human-readable trigger name, unique within the resolved scope.
 	Name string `json:"name"`
+
+	// OwnedBy Canonical user owner ID. Required when `scope` is `owner`; defaults to the creator when possible.
+	OwnedBy *string `json:"owned_by,omitempty"`
+
+	// Scope Optional namespace for named runtime resources. Omitted/null means the project/default scope; `owner` means names are unique within `(project, owned_by)`.
+	Scope *ResourceScope `json:"scope,omitempty"`
 
 	// SourceConfig Source configuration for `schedule` triggers. Provide exactly one of `cron` or `interval`.
 	SourceConfig ScheduleSourceConfig `json:"source_config"`
@@ -5009,7 +5360,7 @@ type CreateSecretRequest struct {
 
 // CreateStandaloneInteractionRequest Creates a standalone interaction. Completion records the response but does not deliver a workflow signal.
 type CreateStandaloneInteractionRequest struct {
-	// Consumer Polymorphic identifier of what is waiting on this interaction's resolution (PRD 077 §3.7). Replaces the previously special-cased `run_id` + `signal_name` pair. When `kind=run`, the legacy fields are also populated for compatibility. `http_subscriber` triggers a best-effort POST to `callback_url` when the interaction resolves; when `secret_ref` is set, the raw request body is signed with HMAC-SHA256 against the resolved project secret and the signed dispatch carries `X-Mobius-Signature`, `X-Mobius-Secret-Ref`, `X-Mobius-Secret-Version`, and `X-Mobius-Timestamp`. Verifiers should check all four headers.
+	// Consumer Polymorphic identifier of what is waiting on this interaction's resolution (PRD 077 §3.7). Replaces the previously special-cased `run_id` + `signal_name` pair. When `kind=run`, the legacy fields are also populated for compatibility. `http_subscriber` enqueues a durable callback dispatch to `callback_url` when the interaction resolves; when `secret_ref` is set, the canonical string `{interaction_id}.{unix_timestamp}.{raw_body}` is signed with HMAC-SHA256 against the resolved project secret and the signed dispatch carries `X-Mobius-Signature`, `X-Mobius-Secret-Ref`, `X-Mobius-Secret-Version`, and `X-Mobius-Timestamp`. Signed dispatches also carry `X-Mobius-Signature-Version: v2`. Verifiers should recompute the signature over the exact raw body, reject stale timestamps (for example, older than five minutes), and check all five headers.
 	Consumer *Consumer `json:"consumer,omitempty"`
 
 	// Context Additional key-value context surfaced in the UI alongside the message.
@@ -5041,10 +5392,13 @@ type CreateStandaloneInteractionRequest struct {
 	// Message Message shown to the responder describing what response is needed.
 	Message string `json:"message"`
 
+	// Properties Free-form structured metadata to attach to the interaction.
+	Properties *map[string]interface{} `json:"properties,omitempty"`
+
 	// References Supporting links and related entities.
 	References *[]InteractionReference `json:"references,omitempty"`
 
-	// RequireAll When target.type is "group", setting require_all=true means all snapshotted group members must respond before the interaction is considered complete. Ignored for non-group targets. Defaults to false when omitted. Mutually exclusive with `resolution_policy`; prefer the policy form for new code.
+	// RequireAll When true, all target users must respond before the interaction is considered complete. Ignored for non-group targets. Defaults to false when omitted. Mutually exclusive with `resolution_policy`; prefer the policy form for new code.
 	RequireAll *bool `json:"require_all,omitempty"`
 
 	// ResolutionPolicy Declarative resolution rule attached to an Interaction. Determines how participant responses become a final outcome.
@@ -5066,15 +5420,29 @@ type CreateStandaloneInteractionRequest struct {
 	// SubmissionReviewPolicy Reviewability policy for an interaction artifact (PRD 077 §3.5). Carried as a template on `Interaction.submission_review_policy` (so new submissions inherit a snapshot) and as the per-submission snapshot on `InteractionSubmission.review_policy`.
 	SubmissionReviewPolicy *ReviewPolicy `json:"submission_review_policy,omitempty"`
 
-	// Target Identifies who should receive an interaction request. Note: distinct from the caller/audit `Actor` vocabulary — a target is a *recipient*, not someone who has acted yet.
-	Target InteractionTarget `json:"target"`
+	// Tags Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints.
+	Tags *TagMap `json:"tags,omitempty"`
+
+	// TargetGroupId Optional group ID or handle to expand into target users.
+	TargetGroupId *string `json:"target_group_id,omitempty"`
+
+	// TargetUserIds Resolved user IDs to target directly. Agents use their backing user IDs.
+	TargetUserIds *[]string `json:"target_user_ids,omitempty"`
 }
 
 // CreateTableRequest defines model for CreateTableRequest.
 type CreateTableRequest struct {
-	Description *string     `json:"description,omitempty"`
-	Name        string      `json:"name"`
-	Schema      TableSchema `json:"schema"`
+	// AccessMode Controls read/write access to the table. "project" allows anyone with project table permissions (default for unowned tables). "private" restricts access to the owner only (default when an owner is set).
+	AccessMode  *TableAccessMode `json:"access_mode,omitempty"`
+	Description *string          `json:"description,omitempty"`
+	Name        string           `json:"name"`
+
+	// OwnedBy Canonical user owner ID. Required when `scope` is `owner`; defaults to the authenticated user for owned table creates.
+	OwnedBy *string     `json:"owned_by,omitempty"`
+	Schema  TableSchema `json:"schema"`
+
+	// Scope Optional namespace for named runtime resources. Omitted/null means the project/default scope; `owner` means names are unique within `(project, owned_by)`.
+	Scope *ResourceScope `json:"scope,omitempty"`
 }
 
 // CreateTableRowTriggerRequest Creates a trigger that fires when a table row is inserted, updated, or deleted.
@@ -5091,8 +5459,14 @@ type CreateTableRowTriggerRequest struct {
 	// Kind Discriminator value — must be `table_row`.
 	Kind CreateTableRowTriggerRequestKind `json:"kind"`
 
-	// Name Human-readable trigger name, unique within the project.
+	// Name Human-readable trigger name, unique within the resolved scope.
 	Name string `json:"name"`
+
+	// OwnedBy Canonical user owner ID. Required when `scope` is `owner`; defaults to the creator when possible.
+	OwnedBy *string `json:"owned_by,omitempty"`
+
+	// Scope Optional namespace for named runtime resources. Omitted/null means the project/default scope; `owner` means names are unique within `(project, owned_by)`.
+	Scope *ResourceScope `json:"scope,omitempty"`
 
 	// SourceConfig Source configuration for `table_row` triggers.
 	SourceConfig TableRowSourceConfig `json:"source_config"`
@@ -5148,7 +5522,7 @@ type CreateWebhookRequest struct {
 	// Enabled Whether the webhook starts enabled. Defaults to true when omitted.
 	Enabled *bool `json:"enabled,omitempty"`
 
-	// Events Event types to subscribe to. Use wildcards for broad subscriptions, e.g. `["run.*"]` for all run events.
+	// Events Event types to subscribe to. Use wildcards for broad subscriptions, e.g. `["run.*"]` for all run events. An empty list subscribes to all event types.
 	Events []string `json:"events"`
 
 	// Name Human-readable name, unique within the project.
@@ -5178,8 +5552,14 @@ type CreateWebhookTriggerRequest struct {
 	// Kind Discriminator value — must be `webhook`.
 	Kind CreateWebhookTriggerRequestKind `json:"kind"`
 
-	// Name Human-readable trigger name, unique within the project.
+	// Name Human-readable trigger name, unique within the resolved scope.
 	Name string `json:"name"`
+
+	// OwnedBy Canonical user owner ID. Required when `scope` is `owner`; defaults to the creator when possible.
+	OwnedBy *string `json:"owned_by,omitempty"`
+
+	// Scope Optional namespace for named runtime resources. Omitted/null means the project/default scope; `owner` means names are unique within `(project, owned_by)`.
+	Scope *ResourceScope `json:"scope,omitempty"`
 
 	// SourceConfig Source configuration for `webhook` triggers.
 	SourceConfig *WebhookSourceConfig `json:"source_config,omitempty"`
@@ -5199,14 +5579,23 @@ type CreateWorkflowRequest struct {
 	// Description Optional description of the workflow's purpose.
 	Description *string `json:"description,omitempty"`
 
-	// Handle URL-safe handle for this workflow, unique within the project. Auto-derived from name if omitted.
+	// Handle URL-safe handle for this workflow, unique within the resolved scope. Auto-derived from name if omitted.
 	Handle *string `json:"handle,omitempty"`
 
 	// Name Human-readable workflow name, unique within the project.
 	Name string `json:"name"`
 
-	// PublishedAsTool When true, expose this workflow as a callable tool via /api/tools.
+	// OwnedBy Canonical user owner ID. Required when `scope` is `owner`; defaults to the creator when possible.
+	OwnedBy *string `json:"owned_by,omitempty"`
+
+	// OwnerAgentId Optional owning agent. Callers with `mobius.workflows.manage` may assign any active agent in the project. Agent-backed service accounts with `mobius.workflows.manage_owned` may omit this field, or set it to their own agent, and the server will store their agent as the owner.
+	OwnerAgentId *string `json:"owner_agent_id,omitempty"`
+
+	// PublishedAsTool When true, expose this workflow through the action catalog for agent tool manifests.
 	PublishedAsTool *bool `json:"published_as_tool,omitempty"`
+
+	// Scope Optional namespace for named runtime resources. Omitted/null means the project/default scope; `owner` means names are unique within `(project, owned_by)`.
+	Scope *ResourceScope `json:"scope,omitempty"`
 
 	// Spec Workflow definition shaped like `workflow.Options`.
 	//
@@ -5238,9 +5627,8 @@ type Delivery struct {
 	OverrideParticipantPreferences *bool `json:"override_participant_preferences,omitempty"`
 }
 
-// DeliveryChannel A single delivery destination. `inbox_only` carries no payload; each other kind owns its variant. `page` is schema-only in v1 — the server rejects it at create until paging is implemented.
+// DeliveryChannel A single delivery destination. `inbox_only` carries no payload; each other kind owns its variant. `page` is schema-only in v1 — the server rejects it at create until paging is implemented. `agent_queue` is not exposed until queue fan-out has real delivery semantics.
 type DeliveryChannel struct {
-	AgentQueue    *AgentQueueDelivery    `json:"agent_queue,omitempty"`
 	ChannelThread *ChannelThreadDelivery `json:"channel_thread,omitempty"`
 	Email         *EmailDelivery         `json:"email,omitempty"`
 	Kind          DeliveryChannelKind    `json:"kind"`
@@ -5285,111 +5673,6 @@ type EntityReference struct {
 // EntityReferenceType Mobius entity kind that can be attached to a channel message.
 type EntityReferenceType string
 
-// Environment defines model for Environment.
-type Environment struct {
-	AgentId                *string                    `json:"agent_id,omitempty"`
-	Capabilities           []string                   `json:"capabilities"`
-	CleanupStatus          EnvironmentCleanupStatus   `json:"cleanup_status"`
-	ContainsSecrets        bool                       `json:"contains_secrets"`
-	CreatedAt              time.Time                  `json:"created_at"`
-	CreatedBy              *string                    `json:"created_by,omitempty"`
-	CurrentWorkerSessionId *string                    `json:"current_worker_session_id,omitempty"`
-	DestroyedAt            *time.Time                 `json:"destroyed_at,omitempty"`
-	Id                     string                     `json:"id"`
-	JobId                  *string                    `json:"job_id,omitempty"`
-	LastError              *string                    `json:"last_error,omitempty"`
-	LastReconciledAt       *time.Time                 `json:"last_reconciled_at,omitempty"`
-	LastSeenAt             *time.Time                 `json:"last_seen_at,omitempty"`
-	LeaseExpiresAt         *time.Time                 `json:"lease_expires_at,omitempty"`
-	Name                   string                     `json:"name"`
-	OwnerId                *string                    `json:"owner_id,omitempty"`
-	OwnerType              *EnvironmentOwnerType      `json:"owner_type,omitempty"`
-	Provider               EnvironmentProvider        `json:"provider"`
-	ProviderResourceId     *string                    `json:"provider_resource_id,omitempty"`
-	ProviderResourceName   *string                    `json:"provider_resource_name,omitempty"`
-	Purpose                *EnvironmentPurpose        `json:"purpose,omitempty"`
-	RetentionPolicy        EnvironmentRetentionPolicy `json:"retention_policy"`
-	RunId                  *string                    `json:"run_id,omitempty"`
-
-	// Runtime Provider-observed runtime data. URLs live under runtime.urls, with runtime.urls.primary as the primary URL when present.
-	Runtime     map[string]interface{}  `json:"runtime"`
-	Spec        *map[string]interface{} `json:"spec,omitempty"`
-	SpecVersion int                     `json:"spec_version"`
-	Status      EnvironmentStatus       `json:"status"`
-
-	// Tags Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints.
-	Tags       *TagMap                `json:"tags,omitempty"`
-	TemplateId *EnvironmentTemplateId `json:"template_id,omitempty"`
-	UpdatedAt  time.Time              `json:"updated_at"`
-}
-
-// EnvironmentTemplateId defines model for Environment.TemplateId.
-type EnvironmentTemplateId string
-
-// EnvironmentAcquireResult defines model for EnvironmentAcquireResult.
-type EnvironmentAcquireResult struct {
-	Environment Environment      `json:"environment"`
-	Lease       EnvironmentLease `json:"lease"`
-}
-
-// EnvironmentCleanupStatus defines model for EnvironmentCleanupStatus.
-type EnvironmentCleanupStatus string
-
-// EnvironmentExecResult defines model for EnvironmentExecResult.
-type EnvironmentExecResult struct {
-	ExitCode int    `json:"exit_code"`
-	Stderr   string `json:"stderr"`
-	Stdout   string `json:"stdout"`
-}
-
-// EnvironmentLease defines model for EnvironmentLease.
-type EnvironmentLease struct {
-	AcquiredAt    time.Time              `json:"acquired_at"`
-	EnvironmentId string                 `json:"environment_id"`
-	ExpiresAt     *time.Time             `json:"expires_at,omitempty"`
-	HolderId      *string                `json:"holder_id,omitempty"`
-	HolderType    *EnvironmentOwnerType  `json:"holder_type,omitempty"`
-	Id            string                 `json:"id"`
-	Purpose       *EnvironmentPurpose    `json:"purpose,omitempty"`
-	ReleasedAt    *time.Time             `json:"released_at,omitempty"`
-	Status        EnvironmentLeaseStatus `json:"status"`
-}
-
-// EnvironmentLeaseStatus defines model for EnvironmentLeaseStatus.
-type EnvironmentLeaseStatus string
-
-// EnvironmentListResponse defines model for EnvironmentListResponse.
-type EnvironmentListResponse struct {
-	HasMore    bool          `json:"has_more"`
-	Items      []Environment `json:"items"`
-	NextCursor *string       `json:"next_cursor,omitempty"`
-}
-
-// EnvironmentOwnerType defines model for EnvironmentOwnerType.
-type EnvironmentOwnerType string
-
-// EnvironmentProvider defines model for EnvironmentProvider.
-type EnvironmentProvider string
-
-// EnvironmentPurpose defines model for EnvironmentPurpose.
-type EnvironmentPurpose string
-
-// EnvironmentRetentionPolicy defines model for EnvironmentRetentionPolicy.
-type EnvironmentRetentionPolicy string
-
-// EnvironmentStartWorkerResult defines model for EnvironmentStartWorkerResult.
-type EnvironmentStartWorkerResult struct {
-	ApiKeyId     string      `json:"api_key_id"`
-	Environment  Environment `json:"environment"`
-	ExitCode     int         `json:"exit_code"`
-	KeyExpiresAt time.Time   `json:"key_expires_at"`
-	Stderr       string      `json:"stderr"`
-	Stdout       string      `json:"stdout"`
-}
-
-// EnvironmentStatus defines model for EnvironmentStatus.
-type EnvironmentStatus string
-
 // ErrorResponse Standard error envelope returned by API endpoints.
 type ErrorResponse struct {
 	// Error Error detail.
@@ -5407,19 +5690,26 @@ type ErrorResponse struct {
 
 // EventSourceConfig Source configuration for `event` triggers.
 type EventSourceConfig struct {
-	// ActorState Narrow transition filter for Actor State event triggers.
-	ActorState *ActorStateTriggerSourceConfig `json:"actor_state,omitempty"`
-
-	// EventType Platform event type to match, e.g. `run.completed`.
+	// EventType Event type pattern to match. Exact match by default, or trailing `.*` for prefix matching. Examples: `github.pull_request.opened` (exact), `github.pull_request.*` (any github pull_request event), `github.*` (any github event).
 	EventType *string `json:"event_type,omitempty"`
+
+	// UserState Narrow transition filter for User State event triggers.
+	UserState *UserStateTriggerSourceConfig `json:"user_state,omitempty"`
 }
 
-// ExecEnvironmentRequest defines model for ExecEnvironmentRequest.
-type ExecEnvironmentRequest struct {
-	Command []string  `json:"command"`
-	Dir     *string   `json:"dir,omitempty"`
-	Env     *[]string `json:"env,omitempty"`
-	Stdin   *string   `json:"stdin,omitempty"`
+// FinalizerWarning defines model for FinalizerWarning.
+type FinalizerWarning struct {
+	// Message Human-readable warning from a non-required finalizer.
+	Message string `json:"message"`
+
+	// StepId Finalize-phase run step that produced this warning.
+	StepId string `json:"step_id"`
+}
+
+// FirecrawlConnectRequest Credential shape used when creating the Firecrawl integration record. The API key is stored under `credentials.api_key` and powers the `firecrawl.*` workflow actions.
+type FirecrawlConnectRequest struct {
+	// ApiKey Firecrawl API key.
+	ApiKey string `json:"api_key"`
 }
 
 // GenerateMessage defines model for GenerateMessage.
@@ -5519,6 +5809,12 @@ type GenerateToolDefinition struct {
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
+// GoogleSheetsConnectRequest Body accepted by `POST /v1/projects/{project}/integrations/google_sheets/connect`. Send an empty body to start the OAuth2 user-grant flow, or provide `service_account_json` to connect with a Google service account key.
+type GoogleSheetsConnectRequest struct {
+	// ServiceAccountJson Raw Google service account JSON key used for service-account mode.
+	ServiceAccountJson *string `json:"service_account_json,omitempty"`
+}
+
 // Group Project-scoped collection of users used as an interaction target. Groups let workflows route approvals, reviews, and input requests to a team by handle rather than hard-coding individual users.
 type Group struct {
 	// CreatedAt Timestamp when this group was created.
@@ -5553,12 +5849,12 @@ type GroupListResponse struct {
 	Items []Group `json:"items"`
 }
 
-// GroupMember User membership in a project group. Membership determines who receives future group-targeted interactions; existing interaction snapshots are not retroactively changed.
+// GroupMember Human org member or project agent user membership in a project group; membership determines who receives future group-targeted interactions; existing interaction snapshots are not retroactively changed.
 type GroupMember struct {
 	// AddedAt Timestamp when this member was added to the group.
 	AddedAt time.Time `json:"added_at"`
 
-	// AddedBy User ID of the org member who added this person to the group.
+	// AddedBy User ID of the principal who added this user to the group.
 	AddedBy *string `json:"added_by,omitempty"`
 
 	// GroupId ID of the group this membership belongs to.
@@ -5628,10 +5924,10 @@ type GroupWithCountListResponse struct {
 
 // HttpSubscriberConsumer defines model for HttpSubscriberConsumer.
 type HttpSubscriberConsumer struct {
-	// CallbackUrl Absolute http(s) URL the server POSTs to when the interaction resolves. The body is a JSON object with the interaction id, kind, status, outcome value, comment, responder, and `resolved_by`. Delivery is best-effort in v1 (no durable outbox or retries).
+	// CallbackUrl Absolute http(s) URL the server POSTs to when the interaction resolves. The body is a JSON object with the interaction id, kind, status, outcome value, comment, responder, and `resolved_by`. Delivery is enqueued as a `source_events` dispatch so the worker can retry failed attempts instead of dropping them inline with interaction resolution.
 	CallbackUrl string `json:"callback_url"`
 
-	// SecretRef Reference to a project secret used to sign deliveries with HMAC-SHA256 over the raw callback request body (the exact bytes of the HTTP request body). Accepts `<name>` for the latest enabled version or `<name>:<version>` to pin a specific positive-integer version. The plaintext signing bytes are taken from the secret's `signing_key`, `secret`, or `hmac_secret` key — or the only key if exactly one is set. The hex signature is forwarded as `X-Mobius-Signature: sha256=<hex>` alongside `X-Mobius-Secret-Ref`, `X-Mobius-Secret-Version`, and a unix `X-Mobius-Timestamp`. When `secret_ref` resolution fails the dispatch is skipped rather than sent unsigned.
+	// SecretRef Reference to a project secret used to sign deliveries with HMAC-SHA256 over the canonical string `{interaction_id}.{unix_timestamp}.{raw_body}`, where `raw_body` is the exact callback request body bytes. Accepts `<name>` for the latest enabled version or `<name>:<version>` to pin a specific positive-integer version. The plaintext signing bytes are taken from the secret's `signing_key`, `secret`, or `hmac_secret` key — or the only key if exactly one is set. The hex signature is forwarded as `X-Mobius-Signature: sha256=<hex>` alongside `X-Mobius-Secret-Ref`, `X-Mobius-Secret-Version`, `X-Mobius-Signature-Version: v2`, and a unix `X-Mobius-Timestamp`. Consumers should reject stale timestamps (for example, older than five minutes). When `secret_ref` resolution fails the dispatch is retried by the event processor rather than sent unsigned.
 	SecretRef *string `json:"secret_ref,omitempty"`
 }
 
@@ -5664,6 +5960,69 @@ type IndexDef struct {
 // InsertRowRequest defines model for InsertRowRequest.
 type InsertRowRequest struct {
 	Data map[string]interface{} `json:"data"`
+}
+
+// Integration Project-scoped connection to an external provider such as Slack, GitHub, or a model service. Workflows and actions use integrations to find provider configuration without embedding secrets in definitions.
+type Integration struct {
+	// Config Provider-specific credential and configuration blob stored as JSON. The shape is provider-defined.
+	Config *map[string]interface{} `json:"config,omitempty"`
+
+	// CreatedAt Timestamp when this integration was created.
+	CreatedAt time.Time `json:"created_at"`
+
+	// CreatedBy User ID of the org member who created this integration.
+	CreatedBy *string `json:"created_by,omitempty"`
+
+	// Id Unique identifier for this integration.
+	Id string `json:"id"`
+
+	// Name Human-readable name, unique per `(project, provider)` tuple.
+	Name string `json:"name"`
+
+	// Provider Free-form provider identifier (e.g. `openai`, `slack`, `github`). Immutable after creation.
+	Provider string `json:"provider"`
+
+	// Status `active` — integration is enabled and usable by workflows. `inactive` — manually disabled; no automatic expiry behavior. `expired` — token/credential has expired (e.g., OAuth token not refreshed).
+	Status IntegrationStatus `json:"status"`
+
+	// Tags Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints.
+	Tags *TagMap `json:"tags,omitempty"`
+
+	// UpdatedAt Timestamp when this integration was last updated.
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+// IntegrationCategory Stable integration directory grouping.
+type IntegrationCategory string
+
+// IntegrationConnectResponse Unified integration-framework connect response. Redirect-style providers return `kind=redirect` plus `redirect_url`; inline API-key and service-account providers return `kind=complete` plus the persisted integration row.
+type IntegrationConnectResponse struct {
+	// Integration Project-scoped connection to an external provider such as Slack, GitHub, or a model service. Workflows and actions use integrations to find provider configuration without embedding secrets in definitions.
+	Integration *Integration                   `json:"integration,omitempty"`
+	Kind        IntegrationConnectResponseKind `json:"kind"`
+
+	// RedirectUrl OAuth or install URL to visit when `kind=redirect`.
+	RedirectUrl *string `json:"redirect_url,omitempty"`
+}
+
+// IntegrationConnectResponseKind defines model for IntegrationConnectResponse.Kind.
+type IntegrationConnectResponseKind string
+
+// IntegrationEventDetail defines model for IntegrationEventDetail.
+type IntegrationEventDetail struct {
+	DedupKey            string                             `json:"dedup_key"`
+	EventType           string                             `json:"event_type"`
+	Id                  string                             `json:"id"`
+	IntegrationId       string                             `json:"integration_id"`
+	OccurredAt          *time.Time                         `json:"occurred_at,omitempty"`
+	Payload             map[string]interface{}             `json:"payload"`
+	PayloadSummary      *map[string]interface{}            `json:"payload_summary,omitempty"`
+	Provider            string                             `json:"provider"`
+	RawPayloadTruncated *bool                              `json:"raw_payload_truncated,omitempty"`
+	ReceivedAt          time.Time                          `json:"received_at"`
+	SchemaVersion       int                                `json:"schema_version"`
+	Source              IntegrationEventSource             `json:"source"`
+	SourceEvent         *IntegrationEventSourceEventStatus `json:"source_event,omitempty"`
 }
 
 // IntegrationEventFireEvent defines model for IntegrationEventFireEvent.
@@ -5741,12 +6100,34 @@ type IntegrationEventFireTriggerMatch struct {
 type IntegrationEventFireWaiterMatch struct {
 	Condition *string `json:"condition,omitempty"`
 	EventType *string `json:"event_type,omitempty"`
-	MatchMode *string `json:"match_mode,omitempty"`
 	Matches   bool    `json:"matches"`
 	PathId    *string `json:"path_id,omitempty"`
 	Reason    *string `json:"reason,omitempty"`
 	RunId     string  `json:"run_id"`
 	StepName  string  `json:"step_name"`
+}
+
+// IntegrationEventListResponse defines model for IntegrationEventListResponse.
+type IntegrationEventListResponse struct {
+	Items      []IntegrationEventReceipt `json:"items"`
+	NextCursor *string                   `json:"next_cursor,omitempty"`
+}
+
+// IntegrationEventReceipt defines model for IntegrationEventReceipt.
+type IntegrationEventReceipt struct {
+	DedupKey            string                             `json:"dedup_key"`
+	EventType           string                             `json:"event_type"`
+	Id                  string                             `json:"id"`
+	IntegrationId       string                             `json:"integration_id"`
+	OccurredAt          *time.Time                         `json:"occurred_at,omitempty"`
+	Payload             *map[string]interface{}            `json:"payload,omitempty"`
+	PayloadSummary      *map[string]interface{}            `json:"payload_summary,omitempty"`
+	Provider            string                             `json:"provider"`
+	RawPayloadTruncated *bool                              `json:"raw_payload_truncated,omitempty"`
+	ReceivedAt          time.Time                          `json:"received_at"`
+	SchemaVersion       int                                `json:"schema_version"`
+	Source              IntegrationEventSource             `json:"source"`
+	SourceEvent         *IntegrationEventSourceEventStatus `json:"source_event,omitempty"`
 }
 
 // IntegrationEventSample defines model for IntegrationEventSample.
@@ -5778,6 +6159,21 @@ type IntegrationEventSamplesResponse struct {
 	Samples []IntegrationEventSample `json:"samples"`
 }
 
+// IntegrationEventSource defines model for IntegrationEventSource.
+type IntegrationEventSource string
+
+// IntegrationEventSourceEventStatus defines model for IntegrationEventSourceEventStatus.
+type IntegrationEventSourceEventStatus struct {
+	Attempts    *int                                    `json:"attempts,omitempty"`
+	Id          *string                                 `json:"id,omitempty"`
+	LastError   *string                                 `json:"last_error,omitempty"`
+	ProcessedAt *time.Time                              `json:"processed_at,omitempty"`
+	Status      IntegrationEventSourceEventStatusStatus `json:"status"`
+}
+
+// IntegrationEventSourceEventStatusStatus defines model for IntegrationEventSourceEventStatus.Status.
+type IntegrationEventSourceEventStatusStatus string
+
 // IntegrationProvider defines model for IntegrationProvider.
 type IntegrationProvider struct {
 	Actions []IntegrationProviderAction `json:"actions"`
@@ -5789,7 +6185,7 @@ type IntegrationProvider struct {
 	Capabilities map[string]bool `json:"capabilities"`
 
 	// Category Human-readable grouping label for directory surfaces.
-	Category *string `json:"category,omitempty"`
+	Category *IntegrationCategory `json:"category,omitempty"`
 
 	// Connection Project-local connection summary for a provider.
 	Connection IntegrationProviderConnection `json:"connection"`
@@ -5810,6 +6206,9 @@ type IntegrationProvider struct {
 
 	// TriggerPatterns Provider-owned trigger authoring presets. Empty until trigger patterns are registered for this provider.
 	TriggerPatterns []IntegrationProviderTriggerPattern `json:"trigger_patterns"`
+
+	// WebhookEndpoints Provider-owned inbound webhook endpoints and setup status.
+	WebhookEndpoints *[]IntegrationProviderWebhookEndpoint `json:"webhook_endpoints,omitempty"`
 }
 
 // IntegrationProviderAction defines model for IntegrationProviderAction.
@@ -5855,9 +6254,15 @@ type IntegrationProviderEventType struct {
 	// PayloadSchema JSON Schema for the event payload. Absent when the registered Go type cannot be reflected meaningfully (for example, `map[string]any` aliases of raw upstream payloads).
 	PayloadSchema *map[string]interface{} `json:"payload_schema,omitempty"`
 
+	// RuntimeState Whether the event type is backed by current ingest. Planned events are catalog/documentation-only and should not be offered for new triggers or wait_event steps.
+	RuntimeState IntegrationProviderEventTypeRuntimeState `json:"runtime_state"`
+
 	// SchemaVersion Integer schema version. Bumps are additive-only by convention.
 	SchemaVersion int `json:"schema_version"`
 }
+
+// IntegrationProviderEventTypeRuntimeState Whether the event type is backed by current ingest. Planned events are catalog/documentation-only and should not be offered for new triggers or wait_event steps.
+type IntegrationProviderEventTypeRuntimeState string
 
 // IntegrationProviderTriggerPattern Catalog descriptor for creating a trigger from a provider-owned event pattern. The array is currently empty for all providers; this schema reserves the response shape for the trigger-pattern rollout.
 type IntegrationProviderTriggerPattern struct {
@@ -5867,6 +6272,28 @@ type IntegrationProviderTriggerPattern struct {
 	Id          string  `json:"id"`
 	Label       string  `json:"label"`
 }
+
+// IntegrationProviderWebhookEndpoint defines model for IntegrationProviderWebhookEndpoint.
+type IntegrationProviderWebhookEndpoint struct {
+	Delivery IntegrationProviderWebhookEndpointDelivery `json:"delivery"`
+	Notes    *string                                    `json:"notes,omitempty"`
+
+	// PathSuffix Provider webhook path suffix under `/v1/provider/{provider}/webhook`.
+	PathSuffix string `json:"path_suffix"`
+
+	// SignatureMode Framework signature verification mode.
+	SignatureMode *string                                  `json:"signature_mode,omitempty"`
+	Status        IntegrationProviderWebhookEndpointStatus `json:"status"`
+
+	// Url Fully-qualified endpoint URL for upstream provider setup.
+	Url string `json:"url"`
+}
+
+// IntegrationProviderWebhookEndpointDelivery defines model for IntegrationProviderWebhookEndpoint.Delivery.
+type IntegrationProviderWebhookEndpointDelivery string
+
+// IntegrationProviderWebhookEndpointStatus defines model for IntegrationProviderWebhookEndpoint.Status.
+type IntegrationProviderWebhookEndpointStatus string
 
 // IntegrationProvidersResponse Integration providers and capabilities available to a project.
 type IntegrationProvidersResponse struct {
@@ -5887,13 +6314,13 @@ type Interaction struct {
 	// ClaimedAt Timestamp when a first-responder member claimed this interaction.
 	ClaimedAt *time.Time `json:"claimed_at,omitempty"`
 
-	// ClaimedBy User ID of the member who claimed this interaction; null until claimed and only used for first_responder routing.
-	ClaimedBy *string `json:"claimed_by,omitempty"`
+	// ClaimedByUserId User ID of the member who claimed this interaction; null until claimed and only used for first_responder routing.
+	ClaimedByUserId *string `json:"claimed_by_user_id,omitempty"`
 
 	// CompletedAt Timestamp when the interaction received a terminal response.
 	CompletedAt *time.Time `json:"completed_at,omitempty"`
 
-	// Consumer Polymorphic identifier of what is waiting on this interaction's resolution (PRD 077 §3.7). Replaces the previously special-cased `run_id` + `signal_name` pair. When `kind=run`, the legacy fields are also populated for compatibility. `http_subscriber` triggers a best-effort POST to `callback_url` when the interaction resolves; when `secret_ref` is set, the raw request body is signed with HMAC-SHA256 against the resolved project secret and the signed dispatch carries `X-Mobius-Signature`, `X-Mobius-Secret-Ref`, `X-Mobius-Secret-Version`, and `X-Mobius-Timestamp`. Verifiers should check all four headers.
+	// Consumer Polymorphic identifier of what is waiting on this interaction's resolution (PRD 077 §3.7). Replaces the previously special-cased `run_id` + `signal_name` pair. When `kind=run`, the legacy fields are also populated for compatibility. `http_subscriber` enqueues a durable callback dispatch to `callback_url` when the interaction resolves; when `secret_ref` is set, the canonical string `{interaction_id}.{unix_timestamp}.{raw_body}` is signed with HMAC-SHA256 against the resolved project secret and the signed dispatch carries `X-Mobius-Signature`, `X-Mobius-Secret-Ref`, `X-Mobius-Secret-Version`, and `X-Mobius-Timestamp`. Signed dispatches also carry `X-Mobius-Signature-Version: v2`. Verifiers should recompute the signature over the exact raw body, reject stale timestamps (for example, older than five minutes), and check all five headers.
 	Consumer *Consumer `json:"consumer,omitempty"`
 
 	// Context Additional key-value context surfaced in the UI alongside the message when supplied.
@@ -5943,6 +6370,9 @@ type Interaction struct {
 	// Outcome Free-form JSON payload. Used both for responder-supplied values and for policy-derived values (e.g. `Interaction.outcome`, `ResolutionPolicy.proposal`); each consumer documents which.
 	Outcome *InteractionValue `json:"outcome,omitempty"`
 
+	// Properties Free-form structured metadata attached to the interaction.
+	Properties *map[string]interface{} `json:"properties,omitempty"`
+
 	// References Supporting links and related entities.
 	References *[]InteractionReference `json:"references,omitempty"`
 
@@ -5958,7 +6388,7 @@ type Interaction struct {
 	// ResolvingResponseId ID of the response that triggered resolution. Null while the interaction is pending, when the speculative `proposal` is auto-accepted with no response, on cancel, and on expiry. Look up the response in `responses` for the full payload.
 	ResolvingResponseId *string `json:"resolving_response_id,omitempty"`
 
-	// Responder Identifies who answered an interaction. Groups cannot themselves respond — only a user within a group — so `group` is not a valid responder type.
+	// Responder Identifies the user who answered an interaction. Agents answer through their backing users.id.
 	Responder *InteractionResponder `json:"responder,omitempty"`
 
 	// Responses All participant responses recorded against this interaction in arrival order. Empty until the first response is submitted. The full set is what the resolution-policy evaluator runs against.
@@ -5998,14 +6428,14 @@ type Interaction struct {
 	// Submissions Handoff submission attempts, in arrival order.
 	Submissions *[]InteractionSubmission `json:"submissions,omitempty"`
 
-	// Target Identifies who should receive an interaction request. Note: distinct from the caller/audit `Actor` vocabulary — a target is a *recipient*, not someone who has acted yet.
-	Target InteractionTarget `json:"target"`
+	// Tags Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints.
+	Tags *TagMap `json:"tags,omitempty"`
 
-	// TargetGroupId Resolved group ID (set when target.type = group)
+	// TargetGroupId Resolved group ID used to produce target_user_ids, when any.
 	TargetGroupId *string `json:"target_group_id,omitempty"`
 
-	// TargetMemberSnapshot User IDs of group members at the time of creation; null for non-group targets.
-	TargetMemberSnapshot *[]string `json:"target_member_snapshot,omitempty"`
+	// TargetUserIds Resolved user IDs targeted by the interaction.
+	TargetUserIds []string `json:"target_user_ids"`
 
 	// UpdatedAt Timestamp when this interaction was last updated.
 	UpdatedAt time.Time `json:"updated_at"`
@@ -6028,19 +6458,13 @@ type InteractionBallot struct {
 	InteractionId string     `json:"interaction_id"`
 	UpdatedAt     *time.Time `json:"updated_at,omitempty"`
 
-	// VoterId Voter identity. Anonymised (omitted) when the vote's `anonymous` rule is true and the caller is not the interaction owner.
-	VoterId *string `json:"voter_id,omitempty"`
-
-	// VoterType Voter actor class.
-	VoterType InteractionBallotVoterType `json:"voter_type"`
+	// VoterUserId Voter user identity. Anonymised (omitted) when the vote's `anonymous` rule is true and the caller is not the interaction owner.
+	VoterUserId *string `json:"voter_user_id,omitempty"`
 
 	// Withdrawn True when the voter withdrew before close.
 	Withdrawn   *bool      `json:"withdrawn,omitempty"`
 	WithdrawnAt *time.Time `json:"withdrawn_at,omitempty"`
 }
-
-// InteractionBallotVoterType Voter actor class.
-type InteractionBallotVoterType string
 
 // InteractionBallotListResponse defines model for InteractionBallotListResponse.
 type InteractionBallotListResponse struct {
@@ -6049,7 +6473,7 @@ type InteractionBallotListResponse struct {
 
 // InteractionEvent Lifecycle timeline entry for an interaction.
 type InteractionEvent struct {
-	// Actor Identifies who answered an interaction. Groups cannot themselves respond — only a user within a group — so `group` is not a valid responder type.
+	// Actor Identifies the user who answered an interaction. Agents answer through their backing users.id.
 	Actor         *InteractionResponder   `json:"actor,omitempty"`
 	CreatedAt     time.Time               `json:"created_at"`
 	Data          *map[string]interface{} `json:"data,omitempty"`
@@ -6150,19 +6574,13 @@ type InteractionReference struct {
 // InteractionReferenceKind defines model for InteractionReference.Kind.
 type InteractionReferenceKind string
 
-// InteractionResponder Identifies who answered an interaction. Groups cannot themselves respond — only a user within a group — so `group` is not a valid responder type.
+// InteractionResponder Identifies the user who answered an interaction. Agents answer through their backing users.id.
 type InteractionResponder struct {
-	// Id User ID for user; agent ID for agent.
-	Id string `json:"id"`
-
-	// Type Responder kind: a user or an agent.
-	Type InteractionResponderType `json:"type"`
+	// UserId Responder user ID.
+	UserId string `json:"user_id"`
 }
 
-// InteractionResponderType Responder kind: a user or an agent.
-type InteractionResponderType string
-
-// InteractionResponse One participant's response to an interaction. Each respond call writes a new row with a unique `(interaction_id, responder_type, responder_id)` constraint — `responder_type` is part of the key so a user and an agent that share an ID string can both respond. The resolution-policy evaluator sees the full set when deciding whether to resolve; the response that triggered resolution is referenced from `Interaction.resolving_response_id`.
+// InteractionResponse One participant's response to an interaction. Each respond call writes a new row with a unique `(interaction_id, responder_user_id)` constraint. Humans and agents are both users, so the resolution-policy evaluator sees the full set when deciding whether to resolve; the response that triggered resolution is referenced from `Interaction.resolving_response_id`.
 type InteractionResponse struct {
 	// Comment Optional free-text comment from this responder.
 	Comment *string `json:"comment,omitempty"`
@@ -6179,18 +6597,12 @@ type InteractionResponse struct {
 	// RespondedAt Timestamp when this response was submitted.
 	RespondedAt time.Time `json:"responded_at"`
 
-	// ResponderId User ID for user; agent ID for agent.
-	ResponderId string `json:"responder_id"`
-
-	// ResponderType Actor class behind this response. Asymmetric policies route on this; majority/threshold ignore it.
-	ResponderType InteractionResponseResponderType `json:"responder_type"`
+	// ResponderUserId User ID that submitted this response.
+	ResponderUserId string `json:"responder_user_id"`
 
 	// Value Free-form JSON payload. Used both for responder-supplied values and for policy-derived values (e.g. `Interaction.outcome`, `ResolutionPolicy.proposal`); each consumer documents which.
 	Value InteractionValue `json:"value"`
 }
-
-// InteractionResponseResponderType Actor class behind this response. Asymmetric policies route on this; majority/threshold ignore it.
-type InteractionResponseResponderType string
 
 // InteractionSource Server-derived actor or system context that requested the interaction. Public create requests do not supply this field.
 type InteractionSource struct {
@@ -6251,12 +6663,12 @@ type InteractionSubmission struct {
 	ReviewPolicy *ReviewPolicy `json:"review_policy,omitempty"`
 	ReviewedAt   *time.Time    `json:"reviewed_at,omitempty"`
 
-	// ReviewedBy Identifies who answered an interaction. Groups cannot themselves respond — only a user within a group — so `group` is not a valid responder type.
+	// ReviewedBy Identifies the user who answered an interaction. Agents answer through their backing users.id.
 	ReviewedBy  *InteractionResponder       `json:"reviewed_by,omitempty"`
 	Status      InteractionSubmissionStatus `json:"status"`
 	SubmittedAt time.Time                   `json:"submitted_at"`
 
-	// Submitter Identifies who answered an interaction. Groups cannot themselves respond — only a user within a group — so `group` is not a valid responder type.
+	// Submitter Identifies the user who answered an interaction. Agents answer through their backing users.id.
 	Submitter InteractionResponder `json:"submitter"`
 
 	// Value Free-form JSON payload. Used both for responder-supplied values and for policy-derived values (e.g. `Interaction.outcome`, `ResolutionPolicy.proposal`); each consumer documents which.
@@ -6266,17 +6678,14 @@ type InteractionSubmission struct {
 // InteractionSubmissionStatus defines model for InteractionSubmission.Status.
 type InteractionSubmissionStatus string
 
-// InteractionTarget Identifies who should receive an interaction request. Note: distinct from the caller/audit `Actor` vocabulary — a target is a *recipient*, not someone who has acted yet.
+// InteractionTarget Identifies who should receive an interaction request. Humans and agents are both users; agent targets use the agent's backing user ID. `group_id` is a routing input that is expanded to target user rows at creation time.
 type InteractionTarget struct {
-	// Id User ID for user; queue name for agent; group ID or handle for group.
-	Id string `json:"id"`
+	// GroupId Optional group ID or handle to expand into user targets.
+	GroupId *string `json:"group_id,omitempty"`
 
-	// Type Target kind: a specific user, an agent queue, or a group.
-	Type InteractionTargetType `json:"type"`
+	// UserIds Resolved user IDs to target directly.
+	UserIds *[]string `json:"user_ids,omitempty"`
 }
-
-// InteractionTargetType Target kind: a specific user, an agent queue, or a group.
-type InteractionTargetType string
 
 // InteractionValue Free-form JSON payload. Used both for responder-supplied values and for policy-derived values (e.g. `Interaction.outcome`, `ResolutionPolicy.proposal`); each consumer documents which.
 type InteractionValue struct {
@@ -6309,8 +6718,8 @@ type Job struct {
 	// AgentId Agent ID the claiming worker is acting on behalf of.
 	AgentId *string `json:"agent_id,omitempty"`
 
-	// AgentSessionId Agent session ID provided during the claim.
-	AgentSessionId *string `json:"agent_session_id,omitempty"`
+	// AgentPresenceId Agent presence ID provided during the claim.
+	AgentPresenceId *string `json:"agent_presence_id,omitempty"`
 
 	// Attempt Current attempt number (1-based). Increments on each retry.
 	Attempt int `json:"attempt"`
@@ -6402,8 +6811,8 @@ type JobClaim struct {
 	// AgentId Agent that should execute this job, when the step is agent-targeted.
 	AgentId *string `json:"agent_id,omitempty"`
 
-	// AgentSessionId Agent session the job was routed to, when applicable.
-	AgentSessionId *string `json:"agent_session_id,omitempty"`
+	// AgentPresenceId Agent presence the job was routed to, when applicable.
+	AgentPresenceId *string `json:"agent_presence_id,omitempty"`
 
 	// AttemptNumber Workflow-level attempt counter, informational only. Action jobs increment this on automatic retry; code jobs always report 1 (the SDK manages its own per-step retry policy internally). Never the fence value — that role belongs to `lease_token`.
 	AttemptNumber *int `json:"attempt_number,omitempty"`
@@ -6559,12 +6968,12 @@ type JobMetrics struct {
 	RetryRate float64 `json:"retry_rate"`
 }
 
-// JobReportRequest Single terminal report for a claimed job attempt. The worker echoes the `lease_token` from the claim and supplies an ordered list of `outcomes` ending in exactly one terminator (`complete` / `fail` / `suspend`).
+// JobReportRequest Report for a claimed job attempt. The worker echoes the `lease_token` from the claim and supplies an ordered list of `outcomes`. Terminal reports end in exactly one terminator (`complete` / `fail` / `suspend`); partial reports (`partial=true`) contain only code progress outcomes and keep the job claimed.
 type JobReportRequest struct {
 	// LeaseToken Opaque fence value from the original claim. Mismatch returns 409 lease-lost; a duplicate report with the same token and terminator is idempotent (204).
 	LeaseToken string `json:"lease_token"`
 
-	// Outcomes Ordered list of outcomes. May contain zero or more durable progress entries (`step_done`, `wait_observed`) followed by exactly one terminator (`complete`, `fail`, `suspend`). The terminator must be the final entry; no entry may follow it. Action-spec jobs may not include `step_done` or `wait_observed`; code-spec jobs may.
+	// Outcomes Ordered list of outcomes. May contain zero or more durable progress entries (`step_done`, `wait_observed`) followed by exactly one terminator (`complete`, `fail`, `suspend`) on terminal reports. The terminator must be the final entry; no entry may follow it. With `partial=true`, the list must contain at least one progress entry and no terminator. Action-spec jobs may not include `step_done` or `wait_observed`; code-spec jobs may.
 	Outcomes []Outcome `json:"outcomes"`
 
 	// WorkerInstanceId Echo of the claim's `worker_instance_id`. Audit only.
@@ -6610,6 +7019,9 @@ type LLMGenerateUsage struct {
 	InputTokens              int  `json:"input_tokens"`
 	OutputTokens             int  `json:"output_tokens"`
 }
+
+// LegacyAgentPresence Deprecated computed status. `online` means a connected presence record with a fresh heartbeat; `stale` means heartbeats are overdue; `offline` means no connected records.
+type LegacyAgentPresence string
 
 // LogIngestResponse defines model for LogIngestResponse.
 type LogIngestResponse struct {
@@ -6657,6 +7069,31 @@ type LogRecordListResponse struct {
 type MarkChannelMessagesReadRequest struct {
 	// UpToMessageId Message ID to advance the read cursor to. Must belong to this channel. Omit to advance to the channel's latest message.
 	UpToMessageId *string `json:"up_to_message_id,omitempty"`
+}
+
+// MessageBlock A typed rich-content block carried by a channel message.
+type MessageBlock struct {
+	// Config Type-specific configuration object, validated server-side by the BlockCatalog.
+	Config *map[string]interface{} `json:"config,omitempty"`
+
+	// Type Block type identifier (e.g. "header", "table", "badge_row").
+	Type string `json:"type"`
+
+	// Version Catalog version at authoring time. Defaults to the server's current version for that block type when omitted.
+	Version *int `json:"version,omitempty"`
+}
+
+// MessageBlockCatalogEntry Describes one block type the server can validate and render.
+type MessageBlockCatalogEntry struct {
+	Description string `json:"description"`
+	Label       string `json:"label"`
+	Type        string `json:"type"`
+	Version     int    `json:"version"`
+}
+
+// MessageBlockCatalogResponse defines model for MessageBlockCatalogResponse.
+type MessageBlockCatalogResponse struct {
+	Items []MessageBlockCatalogEntry `json:"items"`
 }
 
 // Metadata Free-form JSON object for caller-defined metadata.
@@ -6804,6 +7241,15 @@ type ObservableWaiterRunStatus string
 // ObservableWaiterListResponse defines model for ObservableWaiterListResponse.
 type ObservableWaiterListResponse struct {
 	Items []ObservableWaiter `json:"items"`
+}
+
+// OpenDirectMessageRequest Request body for the idempotent open-DM endpoint.
+type OpenDirectMessageRequest struct {
+	// DisplayName Human-facing display name for the channel. Defaults to the participant's name or ID when omitted. Only used on creation; ignored when an existing channel is returned.
+	DisplayName *string `json:"display_name,omitempty"`
+
+	// ParticipantId User or agent ID of the other DM participant.
+	ParticipantId string `json:"participant_id"`
 }
 
 // Outcome One thing that happened during a job attempt. Discriminated by `kind`. Durable kinds (`step_done`, `wait_observed`) describe sub-steps a code handler executed or observed during this invocation; terminal kinds (`complete`, `fail`, `suspend`) end the attempt.
@@ -6978,11 +7424,8 @@ type ProjectMember struct {
 	// AddedAt Timestamp when the member was added.
 	AddedAt time.Time `json:"added_at"`
 
-	// AddedByActorId Actor ID of whoever added this member, if recorded.
-	AddedByActorId *string `json:"added_by_actor_id,omitempty"`
-
-	// AddedByActorType Actor type of whoever added this member, if recorded.
-	AddedByActorType *string `json:"added_by_actor_type,omitempty"`
+	// AddedByUserId User ID of whoever added this member, if recorded.
+	AddedByUserId *string `json:"added_by_user_id,omitempty"`
 
 	// Id Unique identifier for this membership record.
 	Id string `json:"id"`
@@ -7073,27 +7516,26 @@ type ProjectTeamListResponse struct {
 
 // ProjectTeamMember defines model for ProjectTeamMember.
 type ProjectTeamMember struct {
-	ActorId      string                `json:"actor_id"`
-	ActorKind    ProjectTeamMemberKind `json:"actor_kind"`
-	Assignments  []ActorAssignment     `json:"assignments"`
-	Availability *ActorAvailability    `json:"availability,omitempty"`
-	AvatarUrl    *string               `json:"avatar_url,omitempty"`
+	// AgentId Agent row ID when `user_kind=agent`; used for agent detail routes.
+	AgentId      *string           `json:"agent_id,omitempty"`
+	Assignments  []UserAssignment  `json:"assignments"`
+	Availability *UserAvailability `json:"availability,omitempty"`
+	AvatarUrl    *string           `json:"avatar_url,omitempty"`
 
-	// CanUpdateStatus True when the current caller can update this teammate's Actor State.
+	// CanUpdateStatus True when the current caller can update this teammate's User State.
 	CanUpdateStatus      bool                    `json:"can_update_status"`
 	ConnectionLastSeenAt *time.Time              `json:"connection_last_seen_at,omitempty"`
-	ConnectionStatus     ActorConnectionStatus   `json:"connection_status"`
+	ConnectionStatus     UserConnectionStatus    `json:"connection_status"`
 	DisplayName          string                  `json:"display_name"`
 	LastSeenAt           *time.Time              `json:"last_seen_at,omitempty"`
 	Links                *ProjectTeamMemberLinks `json:"links,omitempty"`
-	PresenceSource       *ActorPresenceSource    `json:"presence_source,omitempty"`
+	PresenceSource       *UserPresenceSource     `json:"presence_source,omitempty"`
 	SecondaryLabel       *string                 `json:"secondary_label,omitempty"`
 	Stale                bool                    `json:"stale"`
 	StatusDescription    *string                 `json:"status_description,omitempty"`
+	UserId               string                  `json:"user_id"`
+	UserKind             UserKind                `json:"user_kind"`
 }
-
-// ProjectTeamMemberKind defines model for ProjectTeamMemberKind.
-type ProjectTeamMemberKind string
 
 // ProjectTeamMemberLinks defines model for ProjectTeamMemberLinks.
 type ProjectTeamMemberLinks struct {
@@ -7250,6 +7692,9 @@ type ResolvedConfigEntry struct {
 // ResolvedConfigEntrySource Cascade layer that supplied the winning value: service, project, workflow, run, or step.
 type ResolvedConfigEntrySource string
 
+// ResourceScope Optional namespace for named runtime resources. Omitted/null means the project/default scope; `owner` means names are unique within `(project, owned_by)`.
+type ResourceScope string
+
 // RespondToInteractionRequest defines model for RespondToInteractionRequest.
 type RespondToInteractionRequest struct {
 	// Comment Optional free-text comment accompanying the response. Available on every interaction kind (approval, choice, multi-choice, input) and never gated by the spec — the responder may always attach reasoning, caveats, or follow-up notes alongside `value`.
@@ -7270,8 +7715,8 @@ type ReviewHandoffRequest struct {
 
 // ReviewPolicy Reviewability policy for an interaction artifact (PRD 077 §3.5). Carried as a template on `Interaction.submission_review_policy` (so new submissions inherit a snapshot) and as the per-submission snapshot on `InteractionSubmission.review_policy`.
 type ReviewPolicy struct {
-	// Reviewers Optional explicit reviewers. When omitted for `requester_acceptance_required`, the requester/source actor is the reviewer. Workflow, system, or integration-created handoffs should provide explicit user, agent, or group reviewers.
-	Reviewers *[]InteractionTarget `json:"reviewers,omitempty"`
+	// ReviewerUserIds Optional explicit reviewer user IDs. When omitted for `requester_acceptance_required`, the requester/source actor is the reviewer. Workflow, system, or integration-created handoffs should provide explicit reviewers.
+	ReviewerUserIds *[]string `json:"reviewer_user_ids,omitempty"`
 
 	// Type `none` completes a handoff when submitted. `requester_acceptance_required` moves submitted handoffs to `in_review` until an authorized reviewer accepts or sends back.
 	Type ReviewPolicyType `json:"type"`
@@ -7288,12 +7733,6 @@ type RotateSecretResult struct {
 
 // Run Runtime record for one workflow execution.
 type Run struct {
-	// ActorId ID of the actor that started this run.
-	ActorId *string `json:"actor_id,omitempty"`
-
-	// ActorType Type of the actor that started this run (user, service_account, system).
-	ActorType *string `json:"actor_type,omitempty"`
-
 	// Attempt Retry attempt number (1-based). Increments each time the run is retried.
 	Attempt int `json:"attempt"`
 
@@ -7315,6 +7754,15 @@ type Run struct {
 	// DefinitionVersion Version number of the workflow definition this run was started from. Present only when `ephemeral` is false.
 	DefinitionVersion *int `json:"definition_version,omitempty"`
 
+	// EffectiveCredentialKind Credential kind whose context the run executes under.
+	EffectiveCredentialKind *RunEffectiveCredentialKind `json:"effective_credential_kind,omitempty"`
+
+	// EffectiveSource Source label for the effective principal.
+	EffectiveSource *string `json:"effective_source,omitempty"`
+
+	// EffectiveUserId User ID whose context the run executes under.
+	EffectiveUserId *string `json:"effective_user_id,omitempty"`
+
 	// Ephemeral True when the run was started from an inline spec rather than a saved workflow definition. Derived server-side; always present on the response. When true, `definition_id` and `definition_version` are omitted.
 	Ephemeral bool `json:"ephemeral"`
 
@@ -7328,8 +7776,14 @@ type Run struct {
 	Errors []RunError `json:"errors"`
 
 	// ExternalId Caller-supplied logical correlation key for this run. Unique within the project; identifies a logical job across attempts. See the `external_id` description on `POST /runs` for the conflict semantics that govern duplicate values.
-	ExternalId *string         `json:"external_id,omitempty"`
-	ForkedFrom *RunForkLineage `json:"forked_from,omitempty"`
+	ExternalId *string `json:"external_id,omitempty"`
+
+	// FinalizeStartedAt Timestamp when the run entered its Finalize phase.
+	FinalizeStartedAt *time.Time `json:"finalize_started_at,omitempty"`
+
+	// FinalizerWarnings Non-required finalizer failures recorded after the run completes.
+	FinalizerWarnings *[]FinalizerWarning `json:"finalizer_warnings,omitempty"`
+	ForkedFrom        *RunForkLineage     `json:"forked_from,omitempty"`
 
 	// Id Unique identifier for this run.
 	Id string `json:"id"`
@@ -7342,6 +7796,12 @@ type Run struct {
 
 	// Metadata Caller-supplied string metadata attached to the run.
 	Metadata *map[string]string `json:"metadata,omitempty"`
+
+	// OwnedBy Canonical user owner ID for this run. Set to the user who started the run; agent and service-account initiated runs use their associated user. May be omitted for legacy or unresolved system-started rows.
+	OwnedBy *string `json:"owned_by,omitempty"`
+
+	// OwnerAgentId Agent that owned the workflow definition when this run started.
+	OwnerAgentId *string `json:"owner_agent_id,omitempty"`
 
 	// ParentRunId ID of the parent run, when this is a child run spawned by a fan-out step.
 	ParentRunId *string `json:"parent_run_id,omitempty"`
@@ -7367,7 +7827,16 @@ type Run struct {
 	// StartedAt Timestamp when this run transitioned out of initial progression and began executing steps.
 	StartedAt *time.Time `json:"started_at,omitempty"`
 
-	// Status Public run lifecycle. Path-level fields explain why an active run is working, waiting, sleeping, retrying, paused, or blocked at a join.
+	// StartedByCredentialKind Credential kind that started this run.
+	StartedByCredentialKind *RunStartedByCredentialKind `json:"started_by_credential_kind,omitempty"`
+
+	// StartedBySource Source label for the start credential.
+	StartedBySource *string `json:"started_by_source,omitempty"`
+
+	// StartedByUserId User ID of the principal that started this run.
+	StartedByUserId *string `json:"started_by_user_id,omitempty"`
+
+	// Status Public run lifecycle. Path-level fields explain why an active run is working, waiting, sleeping, retrying, paused, or blocked at a join. `finalizing` means the main graph has quiesced and cleanup/finalize steps are still running.
 	Status RunStatus `json:"status"`
 
 	// StepCounts Aggregate count of run-step rows for this run grouped by status. Counts every attempt of every step (one row per step x attempt x path), so it reflects durable progress rather than the live worker pool. Use this for run-progress UI; use `job_counts` for live claimability.
@@ -7390,8 +7859,14 @@ type Run struct {
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
+// RunEffectiveCredentialKind Credential kind whose context the run executes under.
+type RunEffectiveCredentialKind string
+
 // RunErrorType Typed run-level failure cause: `run_timeout`, `run_cancelled`, `step_failed`, `run_failed`, `output_extraction_failed`, or `output_validation_failed`. Its own vocabulary, not a superset of the job-level `error_type`. Present when `status=failed`.
 type RunErrorType string
+
+// RunStartedByCredentialKind Credential kind that started this run.
+type RunStartedByCredentialKind string
 
 // RunActionRequest defines model for RunActionRequest.
 type RunActionRequest struct {
@@ -7442,12 +7917,6 @@ type RunConsumer struct {
 
 // RunDetail defines model for RunDetail.
 type RunDetail struct {
-	// ActorId ID of the actor that started this run.
-	ActorId *string `json:"actor_id,omitempty"`
-
-	// ActorType Type of the actor that started this run (user, service_account, system).
-	ActorType *string `json:"actor_type,omitempty"`
-
 	// Attempt Retry attempt number (1-based). Increments each time the run is retried.
 	Attempt int `json:"attempt"`
 
@@ -7469,6 +7938,15 @@ type RunDetail struct {
 	// DefinitionVersion Version number of the workflow definition this run was started from. Present only when `ephemeral` is false.
 	DefinitionVersion *int `json:"definition_version,omitempty"`
 
+	// EffectiveCredentialKind Credential kind whose context the run executes under.
+	EffectiveCredentialKind *RunDetailEffectiveCredentialKind `json:"effective_credential_kind,omitempty"`
+
+	// EffectiveSource Source label for the effective principal.
+	EffectiveSource *string `json:"effective_source,omitempty"`
+
+	// EffectiveUserId User ID whose context the run executes under.
+	EffectiveUserId *string `json:"effective_user_id,omitempty"`
+
 	// Ephemeral True when the run was started from an inline spec rather than a saved workflow definition. Derived server-side; always present on the response. When true, `definition_id` and `definition_version` are omitted.
 	Ephemeral bool `json:"ephemeral"`
 
@@ -7482,8 +7960,14 @@ type RunDetail struct {
 	Errors []RunError `json:"errors"`
 
 	// ExternalId Caller-supplied logical correlation key for this run. Unique within the project; identifies a logical job across attempts. See the `external_id` description on `POST /runs` for the conflict semantics that govern duplicate values.
-	ExternalId *string         `json:"external_id,omitempty"`
-	ForkedFrom *RunForkLineage `json:"forked_from,omitempty"`
+	ExternalId *string `json:"external_id,omitempty"`
+
+	// FinalizeStartedAt Timestamp when the run entered its Finalize phase.
+	FinalizeStartedAt *time.Time `json:"finalize_started_at,omitempty"`
+
+	// FinalizerWarnings Non-required finalizer failures recorded after the run completes.
+	FinalizerWarnings *[]FinalizerWarning `json:"finalizer_warnings,omitempty"`
+	ForkedFrom        *RunForkLineage     `json:"forked_from,omitempty"`
 
 	// Id Unique identifier for this run.
 	Id string `json:"id"`
@@ -7496,6 +7980,12 @@ type RunDetail struct {
 
 	// Metadata Caller-supplied string metadata attached to the run.
 	Metadata *map[string]string `json:"metadata,omitempty"`
+
+	// OwnedBy Canonical user owner ID for this run. Set to the user who started the run; agent and service-account initiated runs use their associated user. May be omitted for legacy or unresolved system-started rows.
+	OwnedBy *string `json:"owned_by,omitempty"`
+
+	// OwnerAgentId Agent that owned the workflow definition when this run started.
+	OwnerAgentId *string `json:"owner_agent_id,omitempty"`
 
 	// ParentRunId ID of the parent run, when this is a child run spawned by a fan-out step.
 	ParentRunId *string `json:"parent_run_id,omitempty"`
@@ -7545,7 +8035,16 @@ type RunDetail struct {
 	// StartedAt Timestamp when this run transitioned out of initial progression and began executing steps.
 	StartedAt *time.Time `json:"started_at,omitempty"`
 
-	// Status Public run lifecycle. Path-level fields explain why an active run is working, waiting, sleeping, retrying, paused, or blocked at a join.
+	// StartedByCredentialKind Credential kind that started this run.
+	StartedByCredentialKind *RunDetailStartedByCredentialKind `json:"started_by_credential_kind,omitempty"`
+
+	// StartedBySource Source label for the start credential.
+	StartedBySource *string `json:"started_by_source,omitempty"`
+
+	// StartedByUserId User ID of the principal that started this run.
+	StartedByUserId *string `json:"started_by_user_id,omitempty"`
+
+	// Status Public run lifecycle. Path-level fields explain why an active run is working, waiting, sleeping, retrying, paused, or blocked at a join. `finalizing` means the main graph has quiesced and cleanup/finalize steps are still running.
 	Status RunStatus `json:"status"`
 
 	// StepCounts Aggregate count of run-step rows for this run grouped by status. Counts every attempt of every step (one row per step x attempt x path), so it reflects durable progress rather than the live worker pool. Use this for run-progress UI; use `job_counts` for live claimability.
@@ -7574,8 +8073,14 @@ type RunDetail struct {
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
+// RunDetailEffectiveCredentialKind Credential kind whose context the run executes under.
+type RunDetailEffectiveCredentialKind string
+
 // RunDetailErrorType Typed run-level failure cause: `run_timeout`, `run_cancelled`, `step_failed`, `run_failed`, `output_extraction_failed`, or `output_validation_failed`. Its own vocabulary, not a superset of the job-level `error_type`. Present when `status=failed`.
 type RunDetailErrorType string
+
+// RunDetailStartedByCredentialKind Credential kind that started this run.
+type RunDetailStartedByCredentialKind string
 
 // RunError defines model for RunError.
 type RunError struct {
@@ -7694,7 +8199,7 @@ type RunSignal struct {
 	RunId string `json:"run_id"`
 }
 
-// RunStatus Public run lifecycle. Path-level fields explain why an active run is working, waiting, sleeping, retrying, paused, or blocked at a join.
+// RunStatus Public run lifecycle. Path-level fields explain why an active run is working, waiting, sleeping, retrying, paused, or blocked at a join. `finalizing` means the main graph has quiesced and cleanup/finalize steps are still running.
 type RunStatus string
 
 // RunStep Durable execution-history row for one step attempt on one workflow path. RunStep is the canonical source for run history; linked Job rows are transient worker-claim records and may be TTL-swept after terminal retention.
@@ -7718,7 +8223,7 @@ type RunStep struct {
 	// JobId Linked live worker job when one exists. Terminal jobs may be reaped while the RunStep remains.
 	JobId *string `json:"job_id,omitempty"`
 
-	// Kind Why this ledger row exists: worker-claimable action, synchronous server action, or Mobius control transition.
+	// Kind Why this ledger row exists: worker-claimable action, synchronous server action, Mobius control transition, or a code-workflow child step kind (`run`, `sleep`, `wait_signal`, `wait_event`, `interaction`, `pause`).
 	Kind RunStepKind `json:"kind"`
 
 	// Parameters Resolved parameters/input for this step attempt.
@@ -7726,6 +8231,9 @@ type RunStep struct {
 
 	// PathId Workflow path identifier for branch/fanout execution.
 	PathId string `json:"path_id"`
+
+	// Phase Step phase. `finalize` steps run after the main graph settles.
+	Phase RunStepPhase `json:"phase"`
 
 	// Reason Optional suppression reason, most commonly set when status is `skipped`.
 	Reason *string `json:"reason,omitempty"`
@@ -7789,6 +8297,9 @@ type RunStepListResponse struct {
 	NextCursor *string   `json:"next_cursor,omitempty"`
 }
 
+// RunStepPhase defines model for RunStepPhase.
+type RunStepPhase string
+
 // RunStepSource defines model for RunStepSource.
 type RunStepSource string
 
@@ -7812,7 +8323,7 @@ type RunWaitDetail struct {
 	// DeadlineAt Fixed timeout deadline for `wait_until`.
 	DeadlineAt *time.Time `json:"deadline_at,omitempty"`
 
-	// EventType Event type pattern this path is waiting for. Set when `kind` is `wait_event`.
+	// EventType Event type pattern this path is waiting for. Set when `kind` is `wait_event`. Exact match unless ending in `.*`.
 	EventType *string `json:"event_type,omitempty"`
 
 	// InteractionId Pending interaction linked to this wait.
@@ -7832,9 +8343,6 @@ type RunWaitDetail struct {
 
 	// LastResult Latest poll result preview for `wait_until`.
 	LastResult interface{} `json:"last_result,omitempty"`
-
-	// MatchMode Event match mode for `wait_event`; empty means `exact`.
-	MatchMode *string `json:"match_mode,omitempty"`
 
 	// MaxAttempts Maximum attempts for `retry` waits.
 	MaxAttempts *int `json:"max_attempts,omitempty"`
@@ -7863,7 +8371,7 @@ type RunWaitDetail struct {
 	// SourceKind Wait source kind for `wait_until` (`poll` or `observable`).
 	SourceKind *string `json:"source_kind,omitempty"`
 
-	// Target Identifies who should receive an interaction request. Note: distinct from the caller/audit `Actor` vocabulary — a target is a *recipient*, not someone who has acted yet.
+	// Target Identifies who should receive an interaction request. Humans and agents are both users; agent targets use the agent's backing user ID. `group_id` is a routing input that is expanded to target user rows at creation time.
 	Target *InteractionTarget `json:"target,omitempty"`
 
 	// WaitingForPaths Path IDs still required before a join can proceed.
@@ -7898,6 +8406,12 @@ type ScheduleSourceConfig struct {
 	Interval *string `json:"interval,omitempty"`
 }
 
+// ScrapeCreatorsConnectRequest Credential shape used when creating the ScrapeCreators integration record. The API key is stored under `credentials.api_key` and powers the `scrapecreators.*` workflow actions.
+type ScrapeCreatorsConnectRequest struct {
+	// ApiKey ScrapeCreators API key.
+	ApiKey string `json:"api_key"`
+}
+
 // SearchRowsRequest defines model for SearchRowsRequest.
 type SearchRowsRequest struct {
 	// Cursor Opaque cursor from a prior search response.
@@ -7923,7 +8437,7 @@ type SearchRowsResponse struct {
 type Secret struct {
 	CreatedAt time.Time `json:"created_at"`
 
-	// CreatedBy Actor that created the secret, when known.
+	// CreatedBy User that created the secret, when known.
 	CreatedBy *string `json:"created_by,omitempty"`
 
 	// Description Optional human-readable description.
@@ -7958,7 +8472,7 @@ type SecretValues map[string]string
 type SecretVersion struct {
 	CreatedAt time.Time `json:"created_at"`
 
-	// CreatedBy Actor that created this version, when known.
+	// CreatedBy User that created this version, when known.
 	CreatedBy   *string    `json:"created_by,omitempty"`
 	DestroyedAt *time.Time `json:"destroyed_at,omitempty"`
 
@@ -7997,10 +8511,13 @@ type SendBackHandoffRequest struct {
 
 // SendChannelMessageRequest Fields used to post a new channel message. Sender attribution is determined entirely by the authenticated credential and cannot be overridden via this request body.
 type SendChannelMessageRequest struct {
+	// Blocks Typed rich-content blocks. At most 20. Validated server-side.
+	Blocks *[]MessageBlock `json:"blocks,omitempty"`
+
 	// Content Message body in Markdown.
 	Content string `json:"content"`
 
-	// Display Rendering hint for the UI: `message`, `notice`, or `card`.
+	// Display Rendering hint for the UI: `message`, `notice`, `card`, or `blocks`.
 	Display *SendChannelMessageRequestDisplay `json:"display,omitempty"`
 
 	// Metadata Free-form JSON object for caller-defined metadata.
@@ -8016,7 +8533,7 @@ type SendChannelMessageRequest struct {
 	Type *string `json:"type,omitempty"`
 }
 
-// SendChannelMessageRequestDisplay Rendering hint for the UI: `message`, `notice`, or `card`.
+// SendChannelMessageRequestDisplay Rendering hint for the UI: `message`, `notice`, `card`, or `blocks`.
 type SendChannelMessageRequestDisplay string
 
 // SendRunSignalRequest Delivers an external signal to a workflow run.
@@ -8245,13 +8762,6 @@ type StartBoundRunRequest struct {
 	Tags *TagMap `json:"tags,omitempty"`
 }
 
-// StartEnvironmentWorkerRequest defines model for StartEnvironmentWorkerRequest.
-type StartEnvironmentWorkerRequest struct {
-	ApiUrl  *string   `json:"api_url,omitempty"`
-	Command *[]string `json:"command,omitempty"`
-	Dir     *string   `json:"dir,omitempty"`
-}
-
 // StartInlineRunRequest Run an ephemeral workflow from an inline spec. Selected by `mode: inline` on `POST /v1/projects/{project}/runs`. No `WorkflowDefinition` is persisted; the spec is snapshotted onto the returned run.
 type StartInlineRunRequest struct {
 	// Config Flat config input used outside authored workflow YAML. Each entry addresses one registered key. Unknown keys are rejected at write time. Phase 1 ships: `jobs.timeouts.claim`, `jobs.timeouts.execution`, `jobs.timeouts.heartbeat`, and `runs.timeouts.execution`.
@@ -8381,16 +8891,27 @@ type SystemTextBlockType string
 
 // Table defines model for Table.
 type Table struct {
-	CreatedAt   time.Time          `json:"created_at"`
-	Description *string            `json:"description,omitempty"`
-	Id          string             `json:"id"`
-	Name        string             `json:"name"`
-	OrgId       string             `json:"org_id"`
-	ProjectId   string             `json:"project_id"`
-	Schema      TableSchema        `json:"schema"`
-	Tags        *map[string]string `json:"tags,omitempty"`
-	UpdatedAt   time.Time          `json:"updated_at"`
+	// AccessMode Controls read/write access. When access_mode is "private", owned_by MUST be present; the server enforces this invariant. If access_mode is omitted on create, the server defaults to "private" when an owner is set and "project" when no owner is provided.
+	AccessMode  TableAccessMode `json:"access_mode"`
+	CreatedAt   time.Time       `json:"created_at"`
+	Description *string         `json:"description,omitempty"`
+	Id          string          `json:"id"`
+	Name        string          `json:"name"`
+	OrgId       string          `json:"org_id"`
+
+	// OwnedBy Canonical user owner ID. For agent-owned tables, this is the agent's backing user ID.
+	OwnedBy   *string     `json:"owned_by,omitempty"`
+	ProjectId string      `json:"project_id"`
+	Schema    TableSchema `json:"schema"`
+
+	// Scope Optional namespace for named runtime resources. Omitted/null means the project/default scope; `owner` means names are unique within `(project, owned_by)`.
+	Scope     *ResourceScope     `json:"scope,omitempty"`
+	Tags      *map[string]string `json:"tags,omitempty"`
+	UpdatedAt time.Time          `json:"updated_at"`
 }
+
+// TableAccessMode Controls read/write access to the table. "project" allows anyone with project table permissions (default for unowned tables). "private" restricts access to the owner only (default when an owner is set).
+type TableAccessMode string
 
 // TableListResponse defines model for TableListResponse.
 type TableListResponse struct {
@@ -8702,11 +9223,17 @@ type Trigger struct {
 	// LastFireAt Timestamp of the most recent fire attempt.
 	LastFireAt *time.Time `json:"last_fire_at,omitempty"`
 
-	// Name Human-readable trigger name, unique within the project.
+	// Name Human-readable trigger name, unique within the resolved scope.
 	Name string `json:"name"`
 
 	// NextFireAt Computed next scheduled fire time (schedule triggers only).
 	NextFireAt *time.Time `json:"next_fire_at,omitempty"`
+
+	// OwnedBy Canonical user owner ID. Required when `scope` is `owner`; defaults to the creator when possible.
+	OwnedBy *string `json:"owned_by,omitempty"`
+
+	// Scope Optional namespace for named runtime resources. Omitted/null means the project/default scope; `owner` means names are unique within `(project, owned_by)`.
+	Scope *ResourceScope `json:"scope,omitempty"`
 
 	// SourceConfig Typed source configuration. The shape is determined by the trigger's `kind` (`schedule` → `ScheduleSourceConfig`, `webhook` → `WebhookSourceConfig`, `event` → `EventSourceConfig`, `channel_message` → `ChannelMessageSourceConfig`, `table_row` → `TableRowSourceConfig`, `email` → `EmailSourceConfig`); mismatches are rejected with 400.
 	SourceConfig *TriggerSourceConfig `json:"source_config,omitempty"`
@@ -8938,8 +9465,8 @@ type UpdateAgentRequest struct {
 	// Name Free-form human-readable label, 1-63 characters; must be unique within the project.
 	Name *string `json:"name,omitempty"`
 
-	// Status Administrative status. Inactive agents cannot claim new jobs.
-	Status *AgentStatus `json:"status,omitempty"`
+	// Status Replacement agent status: `active` or `inactive`. Use DELETE to soft-delete.
+	Status *UpdateAgentRequestStatus `json:"status,omitempty"`
 
 	// SystemPrompt Replacement system prompt for platform agents.
 	SystemPrompt *string `json:"system_prompt,omitempty"`
@@ -8948,8 +9475,14 @@ type UpdateAgentRequest struct {
 	Tags *TagMap `json:"tags,omitempty"`
 }
 
+// UpdateAgentRequestStatus Replacement agent status: `active` or `inactive`. Use DELETE to soft-delete.
+type UpdateAgentRequestStatus string
+
 // UpdateChannelMessageRequest Mutable fields for an existing channel message.
 type UpdateChannelMessageRequest struct {
+	// Blocks Replacement typed rich-content blocks. At most 20. Validated server-side.
+	Blocks *[]MessageBlock `json:"blocks,omitempty"`
+
 	// Content Updated Markdown content. Sets `edited_at` on the message.
 	Content *string `json:"content,omitempty"`
 
@@ -8986,17 +9519,6 @@ type UpdateChannelRequest struct {
 
 // UpdateChannelRequestPurpose Channel purpose. `resolve_interactions` requires at least one purpose-linked interaction.
 type UpdateChannelRequestPurpose string
-
-// UpdateEnvironmentRequest defines model for UpdateEnvironmentRequest.
-type UpdateEnvironmentRequest struct {
-	OwnerId         *string                     `json:"owner_id,omitempty"`
-	OwnerType       *EnvironmentOwnerType       `json:"owner_type,omitempty"`
-	Purpose         *EnvironmentPurpose         `json:"purpose,omitempty"`
-	RetentionPolicy *EnvironmentRetentionPolicy `json:"retention_policy,omitempty"`
-
-	// Tags Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints.
-	Tags *TagMap `json:"tags,omitempty"`
-}
 
 // UpdateGroupRequest defines model for UpdateGroupRequest.
 type UpdateGroupRequest struct {
@@ -9065,8 +9587,16 @@ type UpdateSecretRequest struct {
 
 // UpdateTableRequest defines model for UpdateTableRequest.
 type UpdateTableRequest struct {
-	Description *string      `json:"description,omitempty"`
-	Schema      *TableSchema `json:"schema,omitempty"`
+	// AccessMode Controls read/write access to the table. "project" allows anyone with project table permissions (default for unowned tables). "private" restricts access to the owner only (default when an owner is set).
+	AccessMode  *TableAccessMode `json:"access_mode,omitempty"`
+	Description *string          `json:"description,omitempty"`
+
+	// OwnedBy Canonical user owner ID. Send null to clear ownership.
+	OwnedBy *string      `json:"owned_by,omitempty"`
+	Schema  *TableSchema `json:"schema,omitempty"`
+
+	// Scope Set to `owner` for owner-scoped names, or null to return to the project/default scope.
+	Scope *ResourceScope `json:"scope,omitempty"`
 }
 
 // UpdateTriggerRequest defines model for UpdateTriggerRequest.
@@ -9082,6 +9612,12 @@ type UpdateTriggerRequest struct {
 
 	// Name Replacement human-readable name.
 	Name *string `json:"name,omitempty"`
+
+	// OwnedBy Canonical user owner ID. Required when `scope` is `owner`.
+	OwnedBy *string `json:"owned_by,omitempty"`
+
+	// Scope Set to `owner` for owner-scoped names, or null to return to the project/default scope.
+	Scope *ResourceScope `json:"scope,omitempty"`
 
 	// SourceConfig Typed source configuration. The shape is determined by the trigger's `kind` (`schedule` → `ScheduleSourceConfig`, `webhook` → `WebhookSourceConfig`, `event` → `EventSourceConfig`, `channel_message` → `ChannelMessageSourceConfig`, `table_row` → `TableRowSourceConfig`, `email` → `EmailSourceConfig`); mismatches are rejected with 400.
 	SourceConfig *TriggerSourceConfig `json:"source_config,omitempty"`
@@ -9131,7 +9667,7 @@ type UpdateWebhookRequest struct {
 	// Enabled Set to false to disable delivery without deleting the webhook.
 	Enabled *bool `json:"enabled,omitempty"`
 
-	// Events Replacement event subscriptions. Replaces the entire current list.
+	// Events Replacement event subscriptions. Replaces the entire current list; an empty list subscribes to all event types.
 	Events *[]string `json:"events,omitempty"`
 
 	// Name Replacement human-readable name.
@@ -9147,16 +9683,28 @@ type UpdateWebhookRequest struct {
 	Url *string `json:"url,omitempty"`
 }
 
-// UpdateWorkflowRequest Updates workflow metadata and optionally creates a new immutable version when `spec` changes.
+// UpdateWorkflowRequest Updates workflow metadata and optionally creates a new immutable version when `spec` changes. `expected_version` is an optimistic concurrency guard: the server returns `409 Conflict` when the workflow's current `latest_version` no longer matches the version the caller edited.
 type UpdateWorkflowRequest struct {
 	// Description Replacement description. Omit to leave unchanged.
 	Description *string `json:"description,omitempty"`
 
+	// ExpectedVersion Current `latest_version` observed by the caller before editing.
+	ExpectedVersion int `json:"expected_version"`
+
 	// Name Replacement human-readable workflow name.
 	Name *string `json:"name,omitempty"`
 
-	// PublishedAsTool When true, expose this workflow as a callable tool via /api/tools.
+	// OwnedBy Canonical user owner ID. Required when `scope` is `owner`.
+	OwnedBy *string `json:"owned_by,omitempty"`
+
+	// OwnerAgentId Replacement owning agent. Set to an empty string to clear ownership. Requires `mobius.workflows.manage`; owner-scoped workflow managers cannot transfer or clear ownership.
+	OwnerAgentId *string `json:"owner_agent_id,omitempty"`
+
+	// PublishedAsTool When true, expose this workflow through the action catalog for agent tool manifests.
 	PublishedAsTool *bool `json:"published_as_tool,omitempty"`
+
+	// Scope Set to `owner` for owner-scoped handles, or null to return to the project/default scope.
+	Scope *ResourceScope `json:"scope,omitempty"`
 
 	// Spec Workflow definition shaped like `workflow.Options`.
 	//
@@ -9180,16 +9728,6 @@ type UpdateWorkflowRequest struct {
 	Tags *TagMap `json:"tags,omitempty"`
 }
 
-// UpsertActorStateRequest defines model for UpsertActorStateRequest.
-type UpsertActorStateRequest struct {
-	ActorKind    ActorStateActorKind     `json:"actor_kind"`
-	Assignments  *[]ActorAssignmentInput `json:"assignments,omitempty"`
-	Availability ActorAvailability       `json:"availability"`
-	Description  *string                 `json:"description,omitempty"`
-	ExpiresAt    *time.Time              `json:"expires_at,omitempty"`
-	Visibility   *ActorStateVisibility   `json:"visibility,omitempty"`
-}
-
 // UpsertRowRequest defines model for UpsertRowRequest.
 type UpsertRowRequest struct {
 	// Data Full row data. Must include values for all key_columns.
@@ -9206,13 +9744,28 @@ type UpsertRowResponse struct {
 	Row     TableRow `json:"row"`
 }
 
+// UpsertUserStateRequest defines model for UpsertUserStateRequest.
+type UpsertUserStateRequest struct {
+	Assignments  *[]UserAssignmentInput `json:"assignments,omitempty"`
+	Availability UserAvailability       `json:"availability"`
+	Description  *string                `json:"description,omitempty"`
+	ExpiresAt    *time.Time             `json:"expires_at,omitempty"`
+	Visibility   *UserStateVisibility   `json:"visibility,omitempty"`
+}
+
 // User Human identity known to the organization. User records are useful for membership lists, role assignment UIs, attribution, and displaying profile information next to actions.
 type User struct {
 	// AvatarUrl Profile avatar URL from Clerk (may be a Gravatar or uploaded image).
 	AvatarUrl *string `json:"avatar_url,omitempty"`
 
+	// Color Optional Mantine palette key (e.g. "indigo") used by avatar surfaces when no avatar_url is set. Populated for agent-kind users; empty otherwise.
+	Color *string `json:"color,omitempty"`
+
 	// CreatedAt When the user record was first mirrored into Mobius.
 	CreatedAt time.Time `json:"created_at"`
+
+	// DisplayName Authoritative single-line label for this user, regardless of kind. Humans get "First Last"; agents get the agent name; service accounts get the SA name. Renderers should prefer this over first_name/last_name.
+	DisplayName *string `json:"display_name,omitempty"`
 
 	// Email Primary email address from Clerk.
 	Email string `json:"email"`
@@ -9230,12 +9783,97 @@ type User struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-// VoteEligibility Who is eligible to vote on this interaction. `explicit` lists voters directly; `group_snapshot` uses the interaction's target group snapshot.
+// UserAssignment defines model for UserAssignment.
+type UserAssignment struct {
+	CreatedAt   time.Time            `json:"created_at"`
+	Description *string              `json:"description,omitempty"`
+	DueBy       *time.Time           `json:"due_by,omitempty"`
+	Headline    string               `json:"headline"`
+	Id          string               `json:"id"`
+	StartedAt   *time.Time           `json:"started_at,omitempty"`
+	Status      UserAssignmentStatus `json:"status"`
+	UpdatedAt   time.Time            `json:"updated_at"`
+	UserStateId string               `json:"user_state_id"`
+}
+
+// UserAssignmentInput defines model for UserAssignmentInput.
+type UserAssignmentInput struct {
+	Description *string `json:"description,omitempty"`
+
+	// DueBy When the assignment is expected to be completed.
+	DueBy    *time.Time `json:"due_by,omitempty"`
+	Headline string     `json:"headline"`
+
+	// StartedAt When the user actually began working on this assignment.
+	StartedAt *time.Time           `json:"started_at,omitempty"`
+	Status    UserAssignmentStatus `json:"status"`
+}
+
+// UserAssignmentListResponse defines model for UserAssignmentListResponse.
+type UserAssignmentListResponse struct {
+	Items []UserAssignment `json:"items"`
+}
+
+// UserAssignmentStatus defines model for UserAssignmentStatus.
+type UserAssignmentStatus string
+
+// UserAvailability defines model for UserAvailability.
+type UserAvailability string
+
+// UserConnectionStatus defines model for UserConnectionStatus.
+type UserConnectionStatus string
+
+// UserKind defines model for UserKind.
+type UserKind string
+
+// UserPresenceSource defines model for UserPresenceSource.
+type UserPresenceSource string
+
+// UserState defines model for UserState.
+type UserState struct {
+	Assignments  []UserAssignment    `json:"assignments"`
+	Availability UserAvailability    `json:"availability"`
+	CreatedAt    time.Time           `json:"created_at"`
+	Description  *string             `json:"description,omitempty"`
+	ExpiresAt    *time.Time          `json:"expires_at,omitempty"`
+	Id           string              `json:"id"`
+	LastSeenAt   *time.Time          `json:"last_seen_at,omitempty"`
+	Stale        bool                `json:"stale"`
+	UpdatedAt    time.Time           `json:"updated_at"`
+	UserId       string              `json:"user_id"`
+	UserKind     UserKind            `json:"user_kind"`
+	Visibility   UserStateVisibility `json:"visibility"`
+}
+
+// UserStateListResponse defines model for UserStateListResponse.
+type UserStateListResponse struct {
+	Items []UserState `json:"items"`
+}
+
+// UserStateTriggerSourceConfig Narrow transition filter for User State event triggers.
+type UserStateTriggerSourceConfig struct {
+	FromAvailability *UserAvailability `json:"from_availability,omitempty"`
+	ToAvailability   *UserAvailability `json:"to_availability,omitempty"`
+
+	// UserId User ID to match. Omit to match any user in the project.
+	UserId *string `json:"user_id,omitempty"`
+}
+
+// UserStateVisibility defines model for UserStateVisibility.
+type UserStateVisibility string
+
+// ValidateWorkflowExpressionsRequest defines model for ValidateWorkflowExpressionsRequest.
+type ValidateWorkflowExpressionsRequest struct {
+	// Expressions Expression batch. The server validates each item independently.
+	Expressions []WorkflowExpressionValidationItem `json:"expressions"`
+}
+
+// VoteEligibility Who is eligible to vote on this interaction. `explicit` lists voters directly; `group_snapshot` uses the interaction's resolved target users.
 type VoteEligibility struct {
 	Kind VoteEligibilityKind `json:"kind"`
 
-	// Voters Required when `kind=explicit`.
-	Voters *[]InteractionTarget `json:"voters,omitempty"`
+	// VoterUserIds Required when `kind=explicit`.
+	VoterUserIds *[]string `json:"voter_user_ids,omitempty"`
 }
 
 // VoteEligibilityKind defines model for VoteEligibility.Kind.
@@ -9264,7 +9902,7 @@ type VoteRules struct {
 	// CloseAt Time after which new ballots are rejected.
 	CloseAt *time.Time `json:"close_at,omitempty"`
 
-	// Eligibility Who is eligible to vote on this interaction. `explicit` lists voters directly; `group_snapshot` uses the interaction's target group snapshot.
+	// Eligibility Who is eligible to vote on this interaction. `explicit` lists voters directly; `group_snapshot` uses the interaction's resolved target users.
 	Eligibility *VoteEligibility `json:"eligibility,omitempty"`
 
 	// Options Choices voters can select. Values must be unique.
@@ -9327,7 +9965,7 @@ type WaitDescriptorSleepKind string
 type WaitDescriptorWaitEvent struct {
 	Kind WaitDescriptorWaitEventKind `json:"kind"`
 
-	// WaitEvent Suspends the run until an integration event matching `event_type` (and `condition`, when provided) is delivered to the project. `event_type` is exact-matched by default. Set `match_mode: prefix` for descendant matching such as `github.pull_request` matching `.opened`, `.closed`, etc.
+	// WaitEvent Suspends the run until an integration event matching `event_type` (and `condition`, when provided) is delivered to the project. `event_type` is exact-matched unless it ends in `.*`, in which case any descendant of the prefix matches (e.g. `github.pull_request.*` matches `github.pull_request.opened`).
 	WaitEvent WorkflowWaitEventConfig `json:"wait_event"`
 }
 
@@ -9356,7 +9994,7 @@ type Webhook struct {
 	// Enabled When false, matching events are not delivered.
 	Enabled bool `json:"enabled"`
 
-	// Events Subscribed event types. Use dot notation (`run.completed`, `run.failed`) or wildcards (`run.*` for all run events).
+	// Events Subscribed event types. Use dot notation (`run.completed`, `run.failed`) or wildcards (`run.*` for all run events). An empty list subscribes to all event types.
 	Events []string `json:"events"`
 
 	// Id Unique identifier for this webhook.
@@ -9579,6 +10217,227 @@ type WorkerSessionTotals struct {
 	Stale int `json:"stale"`
 }
 
+// WorkflowAgentInvokeConfig Configures one `agent.invoke` turn.
+type WorkflowAgentInvokeConfig struct {
+	// AgentId Agent ID or expression to invoke. Defaults to the workflow owner agent when omitted.
+	AgentId *string `json:"agent_id,omitempty"`
+
+	// AllowedActions Legacy input alias for `allowed_tools`. Accepted for one release and normalized into `allowed_tools`; new responses omit it.
+	// Deprecated: Renamed to allowed_tools; kept for one release for compatibility.
+	AllowedActions *[]string `json:"allowed_actions,omitempty"`
+
+	// AllowedTools Optional action catalog names, wildcard selectors, or group references for the agent turn.
+	AllowedTools *[]string `json:"allowed_tools,omitempty"`
+
+	// Context Optional invocation context.
+	Context *map[string]interface{} `json:"context,omitempty"`
+
+	// Instructions Optional turn instructions passed to `agent.invoke`.
+	Instructions *string `json:"instructions,omitempty"`
+
+	// OutputSchema Optional structured-output schema for the agent turn.
+	OutputSchema *map[string]interface{} `json:"output_schema,omitempty"`
+
+	// Prompt Prompt passed to the `agent.invoke` job.
+	Prompt string `json:"prompt"`
+
+	// SessionForkId Optional session fork ID.
+	SessionForkId *string `json:"session_fork_id,omitempty"`
+
+	// SessionId Optional existing session ID.
+	SessionId *string `json:"session_id,omitempty"`
+
+	// SessionName Optional agent session name.
+	SessionName *string `json:"session_name,omitempty"`
+
+	// SessionScope Optional agent session scope.
+	SessionScope *string `json:"session_scope,omitempty"`
+
+	// SkillName Optional skill name to run for the agent turn.
+	SkillName *string `json:"skill_name,omitempty"`
+
+	// TimeoutSec Optional agent invocation timeout in seconds. 0 uses the system default.
+	TimeoutSec *int `json:"timeout_sec,omitempty"`
+
+	// ToolkitIds Toolkit IDs made available to the agent turn.
+	ToolkitIds *[]string `json:"toolkit_ids,omitempty"`
+}
+
+// WorkflowAgentInvokeStep First-class authored `agent.invoke` step. It asks an agent to take one turn and exposes the response at `steps.<name>.result`. Internally this compiles to the `agent.invoke` catalog action/job.
+type WorkflowAgentInvokeStep struct {
+	// Bind Optional writes to top-level `vars.*` keys, evaluated after the step completes. Targets must look like `vars.foo`.
+	Bind *map[string]string `json:"bind,omitempty"`
+
+	// Catch Error catch clauses that redirect execution when agent.invoke fails.
+	Catch *[]WorkflowCatch `json:"catch,omitempty"`
+
+	// Description Optional human-readable description of what this step does.
+	Description *string `json:"description,omitempty"`
+
+	// EdgeMatchingStrategy Controls matching when multiple outbound edge conditions are true: `all` follows every matching edge in parallel, while `first` follows only the first matching edge in declaration order.
+	EdgeMatchingStrategy *WorkflowEdgeMatchingStrategy `json:"edge_matching_strategy,omitempty"`
+	Kind                 WorkflowAgentInvokeStepKind   `json:"kind"`
+
+	// Layout Optional presentation hint for the visual editor. Ignored by the execution engine; when absent, editors auto-lay out the step.
+	Layout *WorkflowStepLayout `json:"layout,omitempty"`
+
+	// Name Unique step name within the workflow, used for routing and logging.
+	Name string `json:"name"`
+
+	// Next Outbound edges controlling which step executes after this one.
+	Next *[]WorkflowEdge `json:"next,omitempty"`
+
+	// Retry Retry policies applied when the agent.invoke job fails.
+	Retry *[]WorkflowRetry `json:"retry,omitempty"`
+
+	// With Configures one `agent.invoke` turn.
+	With WorkflowAgentInvokeConfig `json:"with"`
+}
+
+// WorkflowAgentInvokeStepKind defines model for WorkflowAgentInvokeStep.Kind.
+type WorkflowAgentInvokeStepKind string
+
+// WorkflowAgentReactConfig Configures a first-class `agent.react` loop. The wait fields decide when the step wakes; the remaining fields are evaluated and forwarded to `agent.invoke` only after at least one signal or event arrives.
+//
+// Exactly one of `topic` (signal mode) or `event_type` (event mode) must be set. In event mode the runtime maintains a durable subscription that survives across agent turns so events arriving while the agent is busy are delivered at the next loop iteration.
+type WorkflowAgentReactConfig struct {
+	// AgentId Agent ID or expression to invoke. Defaults to the workflow owner agent when omitted.
+	AgentId *string `json:"agent_id,omitempty"`
+
+	// AllowedActions Legacy input alias for `allowed_tools`. Accepted for one release and normalized into `allowed_tools`; new responses omit it.
+	// Deprecated: Renamed to allowed_tools; kept for one release for compatibility.
+	AllowedActions *[]string `json:"allowed_actions,omitempty"`
+
+	// AllowedTools Optional action catalog names, wildcard selectors, or group references for the agent turn.
+	AllowedTools *[]string `json:"allowed_tools,omitempty"`
+
+	// Batch Batch configuration used by signal-waiting consumers such as `wait_signal.batch` and `agent_react.batch`. `max_events` limits how many queued signals are drained after the first arrival; `settle_for` gives fast bursts a short coalescing window before the batch is read.
+	Batch *WorkflowWaitSignalBatchConfig `json:"batch,omitempty"`
+
+	// Condition Optional expression evaluated against each candidate event in event mode. Only events that pass the condition are delivered to the inbox. Same expression contract as `wait_event.condition`.
+	Condition *string `json:"condition,omitempty"`
+
+	// Context Optional invocation context. The runtime fills missing `signal_name`, `payload`, `signals`, and `count` keys from the received signal batch.
+	Context *map[string]interface{} `json:"context,omitempty"`
+
+	// EventType Event mode. Public event_type pattern (e.g. `github.pull_request.*`). The runtime opens a durable subscription keyed by `(run, step, path)` that survives across agent turns. Mutually exclusive with `topic`.
+	EventType *string `json:"event_type,omitempty"`
+
+	// Instructions Optional turn instructions passed to `agent.invoke`.
+	Instructions *string `json:"instructions,omitempty"`
+
+	// MaxPending Optional per-subscription cap on pending (unconsumed) deliveries in event mode. Defaults to 1000. On overflow, the newest delivery is dropped, the subscription's overflow counter is incremented, and a `runtime.subscription.overflow` event is emitted.
+	MaxPending *int `json:"max_pending,omitempty"`
+
+	// OnTimeout Step name to transition to if the timeout elapses without a signal. Fails the run if omitted.
+	OnTimeout *string `json:"on_timeout,omitempty"`
+
+	// OutputSchema Optional structured-output schema for the agent turn.
+	OutputSchema *map[string]interface{} `json:"output_schema,omitempty"`
+
+	// Prompt Prompt passed to the emitted `agent.invoke` job. May use `steps.<name>.result` from the signal batch.
+	Prompt string `json:"prompt"`
+
+	// SessionForkId Optional session fork ID.
+	SessionForkId *string `json:"session_fork_id,omitempty"`
+
+	// SessionId Optional existing session ID.
+	SessionId *string `json:"session_id,omitempty"`
+
+	// SessionName Optional agent session name.
+	SessionName *string `json:"session_name,omitempty"`
+
+	// SessionScope Optional agent session scope.
+	SessionScope *string `json:"session_scope,omitempty"`
+
+	// SkillName Optional skill name to run for the agent turn.
+	SkillName *string `json:"skill_name,omitempty"`
+
+	// Timeout Maximum wait duration as a Go duration string (e.g. "24h", "30m").
+	Timeout string `json:"timeout"`
+
+	// TimeoutSec Optional agent invocation timeout in seconds. 0 uses the system default.
+	TimeoutSec *int `json:"timeout_sec,omitempty"`
+
+	// ToolkitIds Toolkit IDs made available to the agent turn.
+	ToolkitIds *[]string `json:"toolkit_ids,omitempty"`
+
+	// Topic Signal mode. Workflow signal topic to wait on. May use expression interpolation. Mutually exclusive with `event_type`.
+	Topic *string `json:"topic,omitempty"`
+	union json.RawMessage
+}
+
+// WorkflowAgentReactConfig0 defines model for .
+type WorkflowAgentReactConfig0 = interface{}
+
+// WorkflowAgentReactConfig1 defines model for .
+type WorkflowAgentReactConfig1 = interface{}
+
+// WorkflowAgentReactKindStep First-class authored `agent.react` step. Suspends on a signal topic, drains an optional burst batch, then emits an `agent.invoke` job for the configured agent turn. It is a step kind, not an action catalog entry, because no worker job is claimed while the workflow is waiting.
+type WorkflowAgentReactKindStep struct {
+	// Bind Optional writes to top-level `vars.*` keys, evaluated after the step completes. Targets must look like `vars.foo`.
+	Bind *map[string]string `json:"bind,omitempty"`
+
+	// Catch Error catch clauses that redirect execution when the emitted agent.invoke job fails.
+	Catch *[]WorkflowCatch `json:"catch,omitempty"`
+
+	// Description Optional human-readable description of what this step does.
+	Description *string `json:"description,omitempty"`
+
+	// EdgeMatchingStrategy Controls matching when multiple outbound edge conditions are true: `all` follows every matching edge in parallel, while `first` follows only the first matching edge in declaration order.
+	EdgeMatchingStrategy *WorkflowEdgeMatchingStrategy  `json:"edge_matching_strategy,omitempty"`
+	Kind                 WorkflowAgentReactKindStepKind `json:"kind"`
+
+	// Layout Optional presentation hint for the visual editor. Ignored by the execution engine; when absent, editors auto-lay out the step.
+	Layout *WorkflowStepLayout `json:"layout,omitempty"`
+
+	// Name Unique step name within the workflow, used for routing and logging.
+	Name string `json:"name"`
+
+	// Next Outbound edges controlling which step executes after the agent turn completes.
+	Next *[]WorkflowEdge `json:"next,omitempty"`
+
+	// Retry Retry policies applied when the emitted agent.invoke job fails.
+	Retry *[]WorkflowRetry `json:"retry,omitempty"`
+
+	// With Configures a first-class `agent.react` loop. The wait fields decide when the step wakes; the remaining fields are evaluated and forwarded to `agent.invoke` only after at least one signal or event arrives.
+	//
+	// Exactly one of `topic` (signal mode) or `event_type` (event mode) must be set. In event mode the runtime maintains a durable subscription that survives across agent turns so events arriving while the agent is busy are delivered at the next loop iteration.
+	With WorkflowAgentReactConfig `json:"with"`
+}
+
+// WorkflowAgentReactKindStepKind defines model for WorkflowAgentReactKindStep.Kind.
+type WorkflowAgentReactKindStepKind string
+
+// WorkflowAgentReactStep Legacy first-class `agent.react` step shape. Prefer `kind: agent.react` with `with` for new YAML.
+type WorkflowAgentReactStep struct {
+	// AgentReact Configures a first-class `agent.react` loop. The wait fields decide when the step wakes; the remaining fields are evaluated and forwarded to `agent.invoke` only after at least one signal or event arrives.
+	//
+	// Exactly one of `topic` (signal mode) or `event_type` (event mode) must be set. In event mode the runtime maintains a durable subscription that survives across agent turns so events arriving while the agent is busy are delivered at the next loop iteration.
+	AgentReact WorkflowAgentReactConfig `json:"agent_react"`
+
+	// Catch Error catch clauses that redirect execution when the emitted agent.invoke job fails.
+	Catch *[]WorkflowCatch `json:"catch,omitempty"`
+
+	// Description Optional human-readable description of what this step does.
+	Description *string `json:"description,omitempty"`
+
+	// EdgeMatchingStrategy Controls matching when multiple outbound edge conditions are true: `all` follows every matching edge in parallel, while `first` follows only the first matching edge in declaration order.
+	EdgeMatchingStrategy *WorkflowEdgeMatchingStrategy `json:"edge_matching_strategy,omitempty"`
+
+	// Layout Optional presentation hint for the visual editor. Ignored by the execution engine; when absent, editors auto-lay out the step.
+	Layout *WorkflowStepLayout `json:"layout,omitempty"`
+
+	// Name Unique step name within the workflow, used for routing and logging.
+	Name string `json:"name"`
+
+	// Next Outbound edges controlling which step executes after the agent turn completes.
+	Next *[]WorkflowEdge `json:"next,omitempty"`
+
+	// Retry Retry policies applied when the emitted agent.invoke job fails.
+	Retry *[]WorkflowRetry `json:"retry,omitempty"`
+}
+
 // WorkflowCatch Error routing rule that transfers execution to another step.
 type WorkflowCatch struct {
 	// ErrorEquals Error class names this catch clause handles. Use `all` or `*` for a wildcard.
@@ -9613,7 +10472,7 @@ type WorkflowDefinition struct {
 	// Description Optional description of the workflow's purpose.
 	Description *string `json:"description,omitempty"`
 
-	// Handle URL-safe slug, unique within the project. Used to reference this workflow in triggers and tools.
+	// Handle URL-safe slug, unique within the resolved scope. Used to reference this workflow in triggers and tools.
 	Handle string `json:"handle"`
 
 	// Id Unique identifier for this workflow definition.
@@ -9625,8 +10484,17 @@ type WorkflowDefinition struct {
 	// Name Human-readable workflow name.
 	Name string `json:"name"`
 
-	// PublishedAsTool When true, this workflow is exposed as a callable tool via /api/tools.
+	// OwnedBy Canonical user owner ID. Required when `scope` is `owner`.
+	OwnedBy *string `json:"owned_by,omitempty"`
+
+	// OwnerAgentId Optional owning agent for this workflow definition. When set, the owner agent's backing service account is the effective actor for saved runs, and `agent.invoke` steps may omit `agent_id` to target this agent.
+	OwnerAgentId *string `json:"owner_agent_id,omitempty"`
+
+	// PublishedAsTool When true, expose this workflow through the action catalog for agent tool manifests.
 	PublishedAsTool *bool `json:"published_as_tool,omitempty"`
+
+	// Scope Optional namespace for named runtime resources. Omitted/null means the project/default scope; `owner` means names are unique within `(project, owned_by)`.
+	Scope *ResourceScope `json:"scope,omitempty"`
 
 	// Spec Workflow definition shaped like `workflow.Options`.
 	//
@@ -9677,7 +10545,7 @@ type WorkflowDefinitionSummary struct {
 	// Description Optional description of the workflow's purpose.
 	Description *string `json:"description,omitempty"`
 
-	// Handle URL-safe slug, unique within the project. Used to reference this workflow in triggers and tools.
+	// Handle URL-safe slug, unique within the resolved scope. Used to reference this workflow in triggers and tools.
 	Handle string `json:"handle"`
 
 	// Id Unique identifier for this workflow definition.
@@ -9689,8 +10557,17 @@ type WorkflowDefinitionSummary struct {
 	// Name Human-readable workflow name.
 	Name string `json:"name"`
 
-	// PublishedAsTool When true, this workflow is exposed as a callable tool via /api/tools.
+	// OwnedBy Canonical user owner ID. Required when `scope` is `owner`.
+	OwnedBy *string `json:"owned_by,omitempty"`
+
+	// OwnerAgentId Optional owning agent for this workflow definition. When set, the owner agent's backing service account is the effective actor for saved runs, and `agent.invoke` steps may omit `agent_id` to target this agent.
+	OwnerAgentId *string `json:"owner_agent_id,omitempty"`
+
+	// PublishedAsTool When true, expose this workflow through the action catalog for agent tool manifests.
 	PublishedAsTool *bool `json:"published_as_tool,omitempty"`
+
+	// Scope Optional namespace for named runtime resources. Omitted/null means the project/default scope; `owner` means names are unique within `(project, owned_by)`.
+	Scope *ResourceScope `json:"scope,omitempty"`
 
 	// Tags Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints.
 	Tags *TagMap `json:"tags,omitempty"`
@@ -9709,6 +10586,45 @@ type WorkflowEach struct {
 	Items interface{} `json:"items"`
 }
 
+// WorkflowEachStep Runs one action once per item in a fan-out collection.
+type WorkflowEachStep struct {
+	// Action Action to run once per item.
+	Action string `json:"action"`
+
+	// Bind Optional writes to top-level `vars.*` keys after each item result is available.
+	Bind *map[string]string `json:"bind,omitempty"`
+
+	// Catch Error catch clauses that redirect execution when an item action fails.
+	Catch *[]WorkflowCatch `json:"catch,omitempty"`
+
+	// Description Optional human-readable description of what this step does.
+	Description *string `json:"description,omitempty"`
+
+	// Each Fan-out configuration that repeats a step over a collection.
+	Each WorkflowEach `json:"each"`
+
+	// EdgeMatchingStrategy Controls matching when multiple outbound edge conditions are true: `all` follows every matching edge in parallel, while `first` follows only the first matching edge in declaration order.
+	EdgeMatchingStrategy *WorkflowEdgeMatchingStrategy `json:"edge_matching_strategy,omitempty"`
+
+	// Layout Optional presentation hint for the visual editor. Ignored by the execution engine; when absent, editors auto-lay out the step.
+	Layout *WorkflowStepLayout `json:"layout,omitempty"`
+
+	// Name Unique step name within the workflow, used for routing and logging.
+	Name string `json:"name"`
+
+	// Next Outbound edges controlling which step executes after all fan-out items complete.
+	Next *[]WorkflowEdge `json:"next,omitempty"`
+
+	// Parameters Legacy input parameters passed to each action invocation. Prefer `with` for new YAML.
+	Parameters *map[string]interface{} `json:"parameters,omitempty"`
+
+	// Retry Retry policies applied when an item action fails.
+	Retry *[]WorkflowRetry `json:"retry,omitempty"`
+
+	// With Preferred input object passed to each action invocation, supporting expression interpolation over `each`.
+	With *map[string]interface{} `json:"with,omitempty"`
+}
+
 // WorkflowEdge Directed transition from one workflow step to another.
 type WorkflowEdge struct {
 	// Branch Branch name assigned to parallel execution started by this edge.
@@ -9717,14 +10633,23 @@ type WorkflowEdge struct {
 	// Condition Expression that must evaluate to true for this edge to be followed.
 	Condition *string `json:"condition,omitempty"`
 
+	// Layout Optional presentation hint for an edge in the visual editor. Lets the editor persist user-adjusted orthogonal routes. Ignored by the execution engine; when absent, the editor auto-routes the edge.
+	Layout *WorkflowEdgeLayout `json:"layout,omitempty"`
+
 	// Step Name of the step to transition to.
 	Step string `json:"step"`
+}
+
+// WorkflowEdgeLayout Optional presentation hint for an edge in the visual editor. Lets the editor persist user-adjusted orthogonal routes. Ignored by the execution engine; when absent, the editor auto-routes the edge.
+type WorkflowEdgeLayout struct {
+	// Waypoints Ordered list of canvas-coordinate corner points the edge should pass through, between source and target handles.
+	Waypoints *[]WorkflowPoint `json:"waypoints,omitempty"`
 }
 
 // WorkflowEdgeMatchingStrategy Controls matching when multiple outbound edge conditions are true: `all` follows every matching edge in parallel, while `first` follows only the first matching edge in declaration order.
 type WorkflowEdgeMatchingStrategy string
 
-// WorkflowExecutableStep Executes a worker or server action and exposes its result at `steps.<name>.result`.
+// WorkflowExecutableStep Executes a catalog action and exposes its result at `steps.<name>.result`. `kind: action` is optional when `action` is present.
 type WorkflowExecutableStep struct {
 	// Action Canonical executable-step field. The engine resolves the execution domain (platform pool vs. customer worker) from the action's registered `runs_on` metadata, not from any step field.
 	Action string `json:"action"`
@@ -9738,11 +10663,11 @@ type WorkflowExecutableStep struct {
 	// Description Optional human-readable description of what this step does.
 	Description *string `json:"description,omitempty"`
 
-	// Each Fan-out configuration that repeats a step over a collection.
-	Each *WorkflowEach `json:"each,omitempty"`
-
 	// EdgeMatchingStrategy Controls matching when multiple outbound edge conditions are true: `all` follows every matching edge in parallel, while `first` follows only the first matching edge in declaration order.
 	EdgeMatchingStrategy *WorkflowEdgeMatchingStrategy `json:"edge_matching_strategy,omitempty"`
+
+	// Kind Optional explicit step kind. Omit this when the `action` shorthand is clearer.
+	Kind *WorkflowExecutableStepKind `json:"kind,omitempty"`
 
 	// Layout Optional presentation hint for the visual editor. Ignored by the execution engine; when absent, editors auto-lay out the step.
 	Layout *WorkflowStepLayout `json:"layout,omitempty"`
@@ -9753,11 +10678,54 @@ type WorkflowExecutableStep struct {
 	// Next Outbound edges controlling which step executes after this one.
 	Next *[]WorkflowEdge `json:"next,omitempty"`
 
-	// Parameters Input parameters passed to the action, supporting expression interpolation.
+	// Parameters Legacy input parameters passed to the action. Prefer `with` for new YAML.
 	Parameters *map[string]interface{} `json:"parameters,omitempty"`
 
 	// Retry Retry policies applied when the action fails.
 	Retry *[]WorkflowRetry `json:"retry,omitempty"`
+
+	// With Preferred input object passed to the action, supporting expression interpolation.
+	With *map[string]interface{} `json:"with,omitempty"`
+}
+
+// WorkflowExecutableStepKind Optional explicit step kind. Omit this when the `action` shorthand is clearer.
+type WorkflowExecutableStepKind string
+
+// WorkflowExpressionDiagnostic defines model for WorkflowExpressionDiagnostic.
+type WorkflowExpressionDiagnostic struct {
+	Errors []WorkflowExpressionDiagnosticError `json:"errors"`
+	Id     string                              `json:"id"`
+}
+
+// WorkflowExpressionDiagnosticError defines model for WorkflowExpressionDiagnosticError.
+type WorkflowExpressionDiagnosticError struct {
+	// End Optional exclusive character offset when known.
+	End     *int   `json:"end,omitempty"`
+	Message string `json:"message"`
+
+	// Start Optional zero-based character offset when known.
+	Start *int `json:"start,omitempty"`
+}
+
+// WorkflowExpressionValidationItem defines model for WorkflowExpressionValidationItem.
+type WorkflowExpressionValidationItem struct {
+	// Expression Expression or template text to validate.
+	Expression string `json:"expression"`
+
+	// Id Client-generated stable field identifier returned with diagnostics.
+	Id string `json:"id"`
+
+	// Mode `template` validates strings that may contain `${...}` tokens. `expression` validates a bare expression or predicate without `${...}` wrapping.
+	Mode *WorkflowExpressionValidationMode `json:"mode,omitempty"`
+}
+
+// WorkflowExpressionValidationMode `template` validates strings that may contain `${...}` tokens. `expression` validates a bare expression or predicate without `${...}` wrapping.
+type WorkflowExpressionValidationMode string
+
+// WorkflowExpressionValidationResponse defines model for WorkflowExpressionValidationResponse.
+type WorkflowExpressionValidationResponse struct {
+	// Diagnostics Diagnostics for invalid expressions. Valid expressions are omitted.
+	Diagnostics []WorkflowExpressionDiagnostic `json:"diagnostics"`
 }
 
 // WorkflowInput Declares one named input accepted by a workflow spec.
@@ -9783,10 +10751,13 @@ type WorkflowInteractionConfig struct {
 	// Discussion Creates or reuses a project channel for the surrounding discussion while the interaction remains the typed outcome that resumes the workflow.
 	Discussion *WorkflowInteractionDiscussionConfig `json:"discussion,omitempty"`
 
+	// Kind Interaction protocol kind. `input` is a deprecated alias of `request` and is normalized on create; new workflow specs should use `request`. `vote` steps require `spec.vote_rules`.
+	Kind WorkflowInteractionConfigKind `json:"kind"`
+
 	// Message Prompt message shown to the interaction recipient.
 	Message string `json:"message"`
 
-	// RequireAll When true, all group members must respond before the interaction completes. Only meaningful when type is `group`.
+	// RequireAll When true, all group members must respond before the interaction completes. Only meaningful when target.group_id is set.
 	RequireAll *bool `json:"require_all,omitempty"`
 
 	// Spec Declarative dialog contract for rendering and validating an interaction. Used at both authoring time (inside a workflow definition) and runtime (persisted on an interaction). PRD 077 decouples protocol kind from input shape: each kind declares which spec modes are *allowed*, not which is *implied*. An approval may now legitimately use `select` mode (approve/deny/defer), for example.
@@ -9799,18 +10770,15 @@ type WorkflowInteractionConfig struct {
 	// * `handoff` → `input`
 	Spec *InteractionSpec `json:"spec,omitempty"`
 
-	// Target Identifies who should receive an interaction request. Note: distinct from the caller/audit `Actor` vocabulary — a target is a *recipient*, not someone who has acted yet.
+	// Target Identifies who should receive an interaction request. Humans and agents are both users; agent targets use the agent's backing user ID. `group_id` is a routing input that is expanded to target user rows at creation time.
 	Target InteractionTarget `json:"target"`
 
 	// Timeout Go duration string.
 	Timeout string `json:"timeout"`
-
-	// Type Interaction kind: approval requires a yes/no decision, review requests acknowledgement, input collects free-form data.
-	Type WorkflowInteractionConfigType `json:"type"`
 }
 
-// WorkflowInteractionConfigType Interaction kind: approval requires a yes/no decision, review requests acknowledgement, input collects free-form data.
-type WorkflowInteractionConfigType string
+// WorkflowInteractionConfigKind Interaction protocol kind. `input` is a deprecated alias of `request` and is normalized on create; new workflow specs should use `request`. `vote` steps require `spec.vote_rules`.
+type WorkflowInteractionConfigKind string
 
 // WorkflowInteractionDiscussionConfig Creates or reuses a project channel for the surrounding discussion while the interaction remains the typed outcome that resumes the workflow.
 type WorkflowInteractionDiscussionConfig struct {
@@ -9842,13 +10810,35 @@ type WorkflowInteractionDiscussionConfig struct {
 // WorkflowInteractionDiscussionConfigCompletionBehavior Behavior to apply when all purpose-linked interactions are terminal.
 type WorkflowInteractionDiscussionConfigCompletionBehavior string
 
+// WorkflowInteractionKindStep Canonical authored interaction step using `kind` and `with`.
+type WorkflowInteractionKindStep struct {
+	// Description Optional human-readable description of what this step does.
+	Description *string `json:"description,omitempty"`
+
+	// EdgeMatchingStrategy Controls matching when multiple outbound edge conditions are true: `all` follows every matching edge in parallel, while `first` follows only the first matching edge in declaration order.
+	EdgeMatchingStrategy *WorkflowEdgeMatchingStrategy   `json:"edge_matching_strategy,omitempty"`
+	Kind                 WorkflowInteractionKindStepKind `json:"kind"`
+
+	// Layout Optional presentation hint for the visual editor. Ignored by the execution engine; when absent, editors auto-lay out the step.
+	Layout *WorkflowStepLayout `json:"layout,omitempty"`
+
+	// Name Unique step name within the workflow, used for routing and logging.
+	Name string `json:"name"`
+
+	// Next Outbound edges controlling which step executes after the interaction completes.
+	Next *[]WorkflowEdge `json:"next,omitempty"`
+
+	// With Configuration for an interaction step that waits on a response.
+	With WorkflowInteractionConfig `json:"with"`
+}
+
+// WorkflowInteractionKindStepKind defines model for WorkflowInteractionKindStep.Kind.
+type WorkflowInteractionKindStepKind string
+
 // WorkflowInteractionStep Creates a human or agent interaction and resumes when the interaction completes.
 type WorkflowInteractionStep struct {
 	// Description Optional human-readable description of what this step does.
 	Description *string `json:"description,omitempty"`
-
-	// Each Fan-out configuration that repeats a step over a collection.
-	Each *WorkflowEach `json:"each,omitempty"`
 
 	// EdgeMatchingStrategy Controls matching when multiple outbound edge conditions are true: `all` follows every matching edge in parallel, while `first` follows only the first matching edge in declaration order.
 	EdgeMatchingStrategy *WorkflowEdgeMatchingStrategy `json:"edge_matching_strategy,omitempty"`
@@ -9878,13 +10868,35 @@ type WorkflowJoinConfig struct {
 	Result *map[string]interface{} `json:"result,omitempty"`
 }
 
+// WorkflowJoinKindStep Canonical authored join step using `kind` and `with`.
+type WorkflowJoinKindStep struct {
+	// Description Optional human-readable description of what this step does.
+	Description *string `json:"description,omitempty"`
+
+	// EdgeMatchingStrategy Controls matching when multiple outbound edge conditions are true: `all` follows every matching edge in parallel, while `first` follows only the first matching edge in declaration order.
+	EdgeMatchingStrategy *WorkflowEdgeMatchingStrategy `json:"edge_matching_strategy,omitempty"`
+	Kind                 WorkflowJoinKindStepKind      `json:"kind"`
+
+	// Layout Optional presentation hint for the visual editor. Ignored by the execution engine; when absent, editors auto-lay out the step.
+	Layout *WorkflowStepLayout `json:"layout,omitempty"`
+
+	// Name Unique step name within the workflow, used for routing and logging.
+	Name string `json:"name"`
+
+	// Next Outbound edges controlling which step executes after this one.
+	Next *[]WorkflowEdge `json:"next,omitempty"`
+
+	// With Waits for one or more parallel branches to complete before proceeding.
+	With WorkflowJoinConfig `json:"with"`
+}
+
+// WorkflowJoinKindStepKind defines model for WorkflowJoinKindStep.Kind.
+type WorkflowJoinKindStepKind string
+
 // WorkflowJoinStep Waits for one or more parallel branches before continuing.
 type WorkflowJoinStep struct {
 	// Description Optional human-readable description of what this step does.
 	Description *string `json:"description,omitempty"`
-
-	// Each Fan-out configuration that repeats a step over a collection.
-	Each *WorkflowEach `json:"each,omitempty"`
 
 	// EdgeMatchingStrategy Controls matching when multiple outbound edge conditions are true: `all` follows every matching edge in parallel, while `first` follows only the first matching edge in declaration order.
 	EdgeMatchingStrategy *WorkflowEdgeMatchingStrategy `json:"edge_matching_strategy,omitempty"`
@@ -9928,13 +10940,35 @@ type WorkflowPauseConfig struct {
 	Reason *string `json:"reason,omitempty"`
 }
 
+// WorkflowPauseKindStep Canonical authored pause step using `kind` and `with`.
+type WorkflowPauseKindStep struct {
+	// Description Optional human-readable description of what this step does.
+	Description *string `json:"description,omitempty"`
+
+	// EdgeMatchingStrategy Controls matching when multiple outbound edge conditions are true: `all` follows every matching edge in parallel, while `first` follows only the first matching edge in declaration order.
+	EdgeMatchingStrategy *WorkflowEdgeMatchingStrategy `json:"edge_matching_strategy,omitempty"`
+	Kind                 WorkflowPauseKindStepKind     `json:"kind"`
+
+	// Layout Optional presentation hint for the visual editor. Ignored by the execution engine; when absent, editors auto-lay out the step.
+	Layout *WorkflowStepLayout `json:"layout,omitempty"`
+
+	// Name Unique step name within the workflow, used for routing and logging.
+	Name string `json:"name"`
+
+	// Next Outbound edges controlling which step executes after this one.
+	Next *[]WorkflowEdge `json:"next,omitempty"`
+
+	// With Configuration for a manual pause step.
+	With WorkflowPauseConfig `json:"with"`
+}
+
+// WorkflowPauseKindStepKind defines model for WorkflowPauseKindStep.Kind.
+type WorkflowPauseKindStepKind string
+
 // WorkflowPauseStep Suspends a branch until it is manually resumed.
 type WorkflowPauseStep struct {
 	// Description Optional human-readable description of what this step does.
 	Description *string `json:"description,omitempty"`
-
-	// Each Fan-out configuration that repeats a step over a collection.
-	Each *WorkflowEach `json:"each,omitempty"`
 
 	// EdgeMatchingStrategy Controls matching when multiple outbound edge conditions are true: `all` follows every matching edge in parallel, while `first` follows only the first matching edge in declaration order.
 	EdgeMatchingStrategy *WorkflowEdgeMatchingStrategy `json:"edge_matching_strategy,omitempty"`
@@ -9950,6 +10984,12 @@ type WorkflowPauseStep struct {
 
 	// Pause Configuration for a manual pause step.
 	Pause WorkflowPauseConfig `json:"pause"`
+}
+
+// WorkflowPoint A point in workflow editor canvas coordinates.
+type WorkflowPoint struct {
+	X float32 `json:"x"`
+	Y float32 `json:"y"`
 }
 
 // WorkflowRetry Retry policy for a workflow step after a recoverable failure.
@@ -9983,9 +11023,6 @@ type WorkflowRetryJitterStrategy string
 type WorkflowSetStep struct {
 	Description *string `json:"description,omitempty"`
 
-	// Each Fan-out configuration that repeats a step over a collection.
-	Each *WorkflowEach `json:"each,omitempty"`
-
 	// EdgeMatchingStrategy Controls matching when multiple outbound edge conditions are true: `all` follows every matching edge in parallel, while `first` follows only the first matching edge in declaration order.
 	EdgeMatchingStrategy *WorkflowEdgeMatchingStrategy `json:"edge_matching_strategy,omitempty"`
 
@@ -10010,13 +11047,35 @@ type WorkflowSleepConfig struct {
 	Duration string `json:"duration"`
 }
 
+// WorkflowSleepKindStep Canonical authored sleep step using `kind` and `with`.
+type WorkflowSleepKindStep struct {
+	// Description Optional human-readable description of what this step does.
+	Description *string `json:"description,omitempty"`
+
+	// EdgeMatchingStrategy Controls matching when multiple outbound edge conditions are true: `all` follows every matching edge in parallel, while `first` follows only the first matching edge in declaration order.
+	EdgeMatchingStrategy *WorkflowEdgeMatchingStrategy `json:"edge_matching_strategy,omitempty"`
+	Kind                 WorkflowSleepKindStepKind     `json:"kind"`
+
+	// Layout Optional presentation hint for the visual editor. Ignored by the execution engine; when absent, editors auto-lay out the step.
+	Layout *WorkflowStepLayout `json:"layout,omitempty"`
+
+	// Name Unique step name within the workflow, used for routing and logging.
+	Name string `json:"name"`
+
+	// Next Outbound edges controlling which step executes after this one.
+	Next *[]WorkflowEdge `json:"next,omitempty"`
+
+	// With Configuration for a sleep step.
+	With WorkflowSleepConfig `json:"with"`
+}
+
+// WorkflowSleepKindStepKind defines model for WorkflowSleepKindStep.Kind.
+type WorkflowSleepKindStepKind string
+
 // WorkflowSleepStep Suspends a branch for a fixed duration before continuing.
 type WorkflowSleepStep struct {
 	// Description Optional human-readable description of what this step does.
 	Description *string `json:"description,omitempty"`
-
-	// Each Fan-out configuration that repeats a step over a collection.
-	Each *WorkflowEach `json:"each,omitempty"`
 
 	// EdgeMatchingStrategy Controls matching when multiple outbound edge conditions are true: `all` follows every matching edge in parallel, while `first` follows only the first matching edge in declaration order.
 	EdgeMatchingStrategy *WorkflowEdgeMatchingStrategy `json:"edge_matching_strategy,omitempty"`
@@ -10082,7 +11141,7 @@ type WorkflowSpec0 = interface{}
 // WorkflowSpec1 defines model for .
 type WorkflowSpec1 = interface{}
 
-// WorkflowStep A workflow step. Exactly one step shape should be used. Step variants are identified by their distinctive required property (`action`, `type: set`, `join`, `wait_signal`, `wait_event`, `wait_until`, `sleep`, `pause`, or `interaction`). The current authored shape intentionally does not add a separate discriminator field, so existing workflow YAML stays compact. Code workflows do not use `WorkflowStep`; see `WorkflowSpec.code`.
+// WorkflowStep A workflow step. Exactly one step shape should be used. Step variants are identified either by `kind` or by their legacy distinctive required property (`action`, `each`, `type: set`, `join`, `wait_signal`, `agent_react`, `wait_event`, `wait_until`, `sleep`, `pause`, or `interaction`). If `kind` is omitted and `action` is present, Mobius infers `kind: action`. Code workflows do not use `WorkflowStep`; see `WorkflowSpec.code`.
 type WorkflowStep struct {
 	union json.RawMessage
 }
@@ -10152,34 +11211,53 @@ type WorkflowVersionSummary struct {
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
-// WorkflowWaitEventConfig Suspends the run until an integration event matching `event_type` (and `condition`, when provided) is delivered to the project. `event_type` is exact-matched by default. Set `match_mode: prefix` for descendant matching such as `github.pull_request` matching `.opened`, `.closed`, etc.
+// WorkflowWaitEventConfig Suspends the run until an integration event matching `event_type` (and `condition`, when provided) is delivered to the project. `event_type` is exact-matched unless it ends in `.*`, in which case any descendant of the prefix matches (e.g. `github.pull_request.*` matches `github.pull_request.opened`).
 type WorkflowWaitEventConfig struct {
 	// Condition Optional bare-form `expr` predicate over `{ event, meta, inputs, steps, vars, each, run }`. The event resumes the step only when the expression evaluates bool true. Empty means "any event of the matching type resumes". Predicate fields use bare `expr`; `${...}` templating is reserved for value-producing fields.
 	Condition *string `json:"condition,omitempty"`
 
-	// EventType Integration event type to wait for, e.g. `github.pull_request.closed` or `stripe.invoice.paid`.
+	// EventType Event type pattern to wait for. Exact match, or trailing `.*` for prefix matching. Examples: `github.pull_request.closed`, `github.pull_request.*`, `github.*`.
 	EventType string `json:"event_type"`
-
-	// MatchMode Event type match mode. `exact` is the default. `prefix` requires a non-empty condition and matches descendants separated by `.`.
-	MatchMode *WorkflowWaitEventConfigMatchMode `json:"match_mode,omitempty"`
 
 	// OnTimeout Step name to transition to if the timeout elapses without a matching event. Fails the run if omitted.
 	OnTimeout *string `json:"on_timeout,omitempty"`
+
+	// PayloadMapping Optional projection for the matched public event envelope. Keys become fields on the wait step result; values are bare `expr` or `${expr}` templates evaluated against `{ event, meta, inputs, steps, vars, each, run, source_event_id }`. When omitted, the result remains the full default envelope.
+	PayloadMapping *map[string]string `json:"payload_mapping,omitempty"`
 
 	// Timeout Maximum wait duration as a Go duration string (e.g. "24h", "30m").
 	Timeout string `json:"timeout"`
 }
 
-// WorkflowWaitEventConfigMatchMode Event type match mode. `exact` is the default. `prefix` requires a non-empty condition and matches descendants separated by `.`.
-type WorkflowWaitEventConfigMatchMode string
+// WorkflowWaitEventKindStep Canonical authored wait-event step using `kind` and `with`.
+type WorkflowWaitEventKindStep struct {
+	// Description Optional human-readable description of what this step does.
+	Description *string `json:"description,omitempty"`
+
+	// EdgeMatchingStrategy Controls matching when multiple outbound edge conditions are true: `all` follows every matching edge in parallel, while `first` follows only the first matching edge in declaration order.
+	EdgeMatchingStrategy *WorkflowEdgeMatchingStrategy `json:"edge_matching_strategy,omitempty"`
+	Kind                 WorkflowWaitEventKindStepKind `json:"kind"`
+
+	// Layout Optional presentation hint for the visual editor. Ignored by the execution engine; when absent, editors auto-lay out the step.
+	Layout *WorkflowStepLayout `json:"layout,omitempty"`
+
+	// Name Unique step name within the workflow, used for routing and logging.
+	Name string `json:"name"`
+
+	// Next Outbound edges controlling which step executes after this one.
+	Next *[]WorkflowEdge `json:"next,omitempty"`
+
+	// With Suspends the run until an integration event matching `event_type` (and `condition`, when provided) is delivered to the project. `event_type` is exact-matched unless it ends in `.*`, in which case any descendant of the prefix matches (e.g. `github.pull_request.*` matches `github.pull_request.opened`).
+	With WorkflowWaitEventConfig `json:"with"`
+}
+
+// WorkflowWaitEventKindStepKind defines model for WorkflowWaitEventKindStep.Kind.
+type WorkflowWaitEventKindStepKind string
 
 // WorkflowWaitEventStep Suspends a branch until an integration event of the configured type is delivered to the project and (optionally) satisfies an `expr` predicate over its payload. Same operational model as `wait_signal` but matches against the event bus directly, without requiring a separate `signal_run` trigger.
 type WorkflowWaitEventStep struct {
 	// Description Optional human-readable description of what this step does.
 	Description *string `json:"description,omitempty"`
-
-	// Each Fan-out configuration that repeats a step over a collection.
-	Each *WorkflowEach `json:"each,omitempty"`
 
 	// EdgeMatchingStrategy Controls matching when multiple outbound edge conditions are true: `all` follows every matching edge in parallel, while `first` follows only the first matching edge in declaration order.
 	EdgeMatchingStrategy *WorkflowEdgeMatchingStrategy `json:"edge_matching_strategy,omitempty"`
@@ -10193,12 +11271,24 @@ type WorkflowWaitEventStep struct {
 	// Next Outbound edges controlling which step executes after this one.
 	Next *[]WorkflowEdge `json:"next,omitempty"`
 
-	// WaitEvent Suspends the run until an integration event matching `event_type` (and `condition`, when provided) is delivered to the project. `event_type` is exact-matched by default. Set `match_mode: prefix` for descendant matching such as `github.pull_request` matching `.opened`, `.closed`, etc.
+	// WaitEvent Suspends the run until an integration event matching `event_type` (and `condition`, when provided) is delivered to the project. `event_type` is exact-matched unless it ends in `.*`, in which case any descendant of the prefix matches (e.g. `github.pull_request.*` matches `github.pull_request.opened`).
 	WaitEvent WorkflowWaitEventConfig `json:"wait_event"`
+}
+
+// WorkflowWaitSignalBatchConfig Batch configuration used by signal-waiting consumers such as `wait_signal.batch` and `agent_react.batch`. `max_events` limits how many queued signals are drained after the first arrival; `settle_for` gives fast bursts a short coalescing window before the batch is read.
+type WorkflowWaitSignalBatchConfig struct {
+	// MaxEvents Maximum number of queued signals to consume in one step completion. Defaults to 25 when omitted or set to 0.
+	MaxEvents *int `json:"max_events,omitempty"`
+
+	// SettleFor Short Go duration string to wait after the first signal so fast bursts can coalesce. Maximum 30s.
+	SettleFor *string `json:"settle_for,omitempty"`
 }
 
 // WorkflowWaitSignalConfig Suspends the run until a signal with the matching topic arrives.
 type WorkflowWaitSignalConfig struct {
+	// Batch Batch configuration used by signal-waiting consumers such as `wait_signal.batch` and `agent_react.batch`. `max_events` limits how many queued signals are drained after the first arrival; `settle_for` gives fast bursts a short coalescing window before the batch is read.
+	Batch *WorkflowWaitSignalBatchConfig `json:"batch,omitempty"`
+
 	// OnTimeout Step name to transition to if the timeout elapses without a signal. Fails the run if omitted.
 	OnTimeout *string `json:"on_timeout,omitempty"`
 
@@ -10209,13 +11299,41 @@ type WorkflowWaitSignalConfig struct {
 	Topic string `json:"topic"`
 }
 
+// WorkflowWaitSignalKindStep Canonical authored wait-signal step using `kind` and `with`.
+type WorkflowWaitSignalKindStep struct {
+	// Catch Error catch clauses that redirect execution when the wait fails.
+	Catch *[]WorkflowCatch `json:"catch,omitempty"`
+
+	// Description Optional human-readable description of what this step does.
+	Description *string `json:"description,omitempty"`
+
+	// EdgeMatchingStrategy Controls matching when multiple outbound edge conditions are true: `all` follows every matching edge in parallel, while `first` follows only the first matching edge in declaration order.
+	EdgeMatchingStrategy *WorkflowEdgeMatchingStrategy  `json:"edge_matching_strategy,omitempty"`
+	Kind                 WorkflowWaitSignalKindStepKind `json:"kind"`
+
+	// Layout Optional presentation hint for the visual editor. Ignored by the execution engine; when absent, editors auto-lay out the step.
+	Layout *WorkflowStepLayout `json:"layout,omitempty"`
+
+	// Name Unique step name within the workflow, used for routing and logging.
+	Name string `json:"name"`
+
+	// Next Outbound edges controlling which step executes after this one.
+	Next *[]WorkflowEdge `json:"next,omitempty"`
+
+	// Retry Retry policies applied when the wait resumes through a retryable path.
+	Retry *[]WorkflowRetry `json:"retry,omitempty"`
+
+	// With Suspends the run until a signal with the matching topic arrives.
+	With WorkflowWaitSignalConfig `json:"with"`
+}
+
+// WorkflowWaitSignalKindStepKind defines model for WorkflowWaitSignalKindStep.Kind.
+type WorkflowWaitSignalKindStepKind string
+
 // WorkflowWaitSignalStep Suspends a branch until an external signal with the matching topic arrives.
 type WorkflowWaitSignalStep struct {
 	// Description Optional human-readable description of what this step does.
 	Description *string `json:"description,omitempty"`
-
-	// Each Fan-out configuration that repeats a step over a collection.
-	Each *WorkflowEach `json:"each,omitempty"`
 
 	// EdgeMatchingStrategy Controls matching when multiple outbound edge conditions are true: `all` follows every matching edge in parallel, while `first` follows only the first matching edge in declaration order.
 	EdgeMatchingStrategy *WorkflowEdgeMatchingStrategy `json:"edge_matching_strategy,omitempty"`
@@ -10261,6 +11379,31 @@ type WorkflowWaitUntilConfig struct {
 	Timeout string `json:"timeout"`
 }
 
+// WorkflowWaitUntilKindStep Canonical authored wait-until step using `kind` and `with`.
+type WorkflowWaitUntilKindStep struct {
+	// Description Optional human-readable description of what this step does.
+	Description *string `json:"description,omitempty"`
+
+	// EdgeMatchingStrategy Controls matching when multiple outbound edge conditions are true: `all` follows every matching edge in parallel, while `first` follows only the first matching edge in declaration order.
+	EdgeMatchingStrategy *WorkflowEdgeMatchingStrategy `json:"edge_matching_strategy,omitempty"`
+	Kind                 WorkflowWaitUntilKindStepKind `json:"kind"`
+
+	// Layout Optional presentation hint for the visual editor. Ignored by the execution engine; when absent, editors auto-lay out the step.
+	Layout *WorkflowStepLayout `json:"layout,omitempty"`
+
+	// Name Unique step name within the workflow, used for routing and logging.
+	Name string `json:"name"`
+
+	// Next Outbound edges controlling which step executes after the condition passes.
+	Next *[]WorkflowEdge `json:"next,omitempty"`
+
+	// With Durable condition wait. Exactly one of `poll` or `observable` must be set. Poll waits evaluate direct checks; Observable waits read reusable project-scoped Observable state and suspend on change events.
+	With WorkflowWaitUntilConfig `json:"with"`
+}
+
+// WorkflowWaitUntilKindStepKind defines model for WorkflowWaitUntilKindStep.Kind.
+type WorkflowWaitUntilKindStepKind string
+
 // WorkflowWaitUntilPollConfig defines model for WorkflowWaitUntilPollConfig.
 type WorkflowWaitUntilPollConfig struct {
 	// Action Mobius action invoked for each poll attempt.
@@ -10279,9 +11422,6 @@ type WorkflowWaitUntilStep struct {
 	// Description Optional human-readable description of what this step does.
 	Description *string `json:"description,omitempty"`
 
-	// Each Fan-out configuration that repeats a step over a collection.
-	Each *WorkflowEach `json:"each,omitempty"`
-
 	// EdgeMatchingStrategy Controls matching when multiple outbound edge conditions are true: `all` follows every matching edge in parallel, while `first` follows only the first matching edge in declaration order.
 	EdgeMatchingStrategy *WorkflowEdgeMatchingStrategy `json:"edge_matching_strategy,omitempty"`
 
@@ -10298,12 +11438,6 @@ type WorkflowWaitUntilStep struct {
 	WaitUntil WorkflowWaitUntilConfig `json:"wait_until"`
 }
 
-// WriteEnvironmentFileRequest defines model for WriteEnvironmentFileRequest.
-type WriteEnvironmentFileRequest struct {
-	Content string `json:"content"`
-	Path    string `json:"path"`
-}
-
 // ActionNameParam defines model for ActionNameParam.
 type ActionNameParam = string
 
@@ -10312,9 +11446,6 @@ type ArtifactIdParam = string
 
 // CursorParam defines model for CursorParam.
 type CursorParam = string
-
-// EnvironmentIDParam defines model for EnvironmentIDParam.
-type EnvironmentIDParam = string
 
 // GroupParam defines model for GroupParam.
 type GroupParam = string
@@ -10346,6 +11477,15 @@ type SecretVersionParam = string
 // TableNameParam defines model for TableNameParam.
 type TableNameParam = string
 
+// TableOwnedByMeParam defines model for TableOwnedByMeParam.
+type TableOwnedByMeParam = bool
+
+// TableOwnedByParam defines model for TableOwnedByParam.
+type TableOwnedByParam = string
+
+// TableScopeParam Optional namespace for named runtime resources. Omitted/null means the project/default scope; `owner` means names are unique within `(project, owned_by)`.
+type TableScopeParam = ResourceScope
+
 // TagFilterParam defines model for TagFilterParam.
 type TagFilterParam = []string
 
@@ -10358,8 +11498,8 @@ type MemberId = string
 // MessageId defines model for message_id.
 type MessageId = string
 
-// SessionId defines model for session_id.
-type SessionId = string
+// PresenceId defines model for presence_id.
+type PresenceId = string
 
 // UserId defines model for user_id.
 type UserId = string
@@ -10401,12 +11541,6 @@ type ListAuditLogsParams struct {
 
 	// UserId Filter by user ID
 	UserId *string `form:"user_id,omitempty" json:"user_id,omitempty"`
-
-	// ActorType Filter by actor type
-	ActorType *string `form:"actor_type,omitempty" json:"actor_type,omitempty"`
-
-	// ActorId Filter by actor ID
-	ActorId *string `form:"actor_id,omitempty" json:"actor_id,omitempty"`
 
 	// Action Filter by action (create, update, delete, archive, restore)
 	Action *string `form:"action,omitempty" json:"action,omitempty"`
@@ -10489,21 +11623,6 @@ type ListActionsParams struct {
 	Tag *TagFilterParam `form:"tag,omitempty" json:"tag,omitempty"`
 }
 
-// ListActorStatesParams defines parameters for ListActorStates.
-type ListActorStatesParams struct {
-	ActorKind    *ActorStateActorKind  `form:"actor_kind,omitempty" json:"actor_kind,omitempty"`
-	Availability *ActorAvailability    `form:"availability,omitempty" json:"availability,omitempty"`
-	Visibility   *ActorStateVisibility `form:"visibility,omitempty" json:"visibility,omitempty"`
-
-	// Limit Maximum number of items to return
-	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
-}
-
-// ListActorAssignmentsParams defines parameters for ListActorAssignments.
-type ListActorAssignmentsParams struct {
-	Status *ActorAssignmentStatus `form:"status,omitempty" json:"status,omitempty"`
-}
-
 // ListAgentsParams defines parameters for ListAgents.
 type ListAgentsParams struct {
 	// ServiceAccountId Filter to agents backed by this service account.
@@ -10523,13 +11642,37 @@ type ListAgentsParams struct {
 	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
-// ListAgentSessionsParams defines parameters for ListAgentSessions.
-type ListAgentSessionsParams struct {
-	// Status Filter by session status.
-	Status *AgentSessionStatus `form:"status,omitempty" json:"status,omitempty"`
+// ListAgentPresencesParams defines parameters for ListAgentPresences.
+type ListAgentPresencesParams struct {
+	// Status Filter by presence status.
+	Status *AgentPresenceStatus `form:"status,omitempty" json:"status,omitempty"`
 
 	// Transport Filter by transport type (e.g. "sse", "polling").
 	Transport *string `form:"transport,omitempty" json:"transport,omitempty"`
+
+	// Limit Maximum number of items to return
+	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// ListAgentSessionsParams defines parameters for ListAgentSessions.
+type ListAgentSessionsParams struct {
+	// Status Filter by session status.
+	Status *AgentConversationSessionStatus `form:"status,omitempty" json:"status,omitempty"`
+
+	// Scope Filter by session scope.
+	Scope *AgentConversationSessionScope `form:"scope,omitempty" json:"scope,omitempty"`
+
+	// Since Only include sessions with activity after this timestamp.
+	Since *time.Time `form:"since,omitempty" json:"since,omitempty"`
+
+	// Limit Maximum number of items to return
+	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// ListAgentSessionMessagesParams defines parameters for ListAgentSessionMessages.
+type ListAgentSessionMessagesParams struct {
+	// AfterSequence Only include messages with sequence greater than this value.
+	AfterSequence *int `form:"after_sequence,omitempty" json:"after_sequence,omitempty"`
 
 	// Limit Maximum number of items to return
 	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
@@ -10568,9 +11711,10 @@ type DeleteArtifactParams struct {
 	Force *bool `form:"force,omitempty" json:"force,omitempty"`
 }
 
-// GetArtifactContentParams defines parameters for GetArtifactContent.
-type GetArtifactContentParams struct {
-	Inline *bool `form:"inline,omitempty" json:"inline,omitempty"`
+// CreateArtifactSignedUrlParams defines parameters for CreateArtifactSignedUrl.
+type CreateArtifactSignedUrlParams struct {
+	// TtlSeconds Requested signed URL TTL. The server caps this at the maximum supported artifact download TTL.
+	TtlSeconds *int64 `form:"ttl_seconds,omitempty" json:"ttl_seconds,omitempty"`
 }
 
 // ListChannelsParams defines parameters for ListChannels.
@@ -10627,7 +11771,7 @@ type ListChannelMembersParams struct {
 
 // ListMessagesParams defines parameters for ListMessages.
 type ListMessagesParams struct {
-	// SenderId Filter by sender principal ID — a user ID (for `sender_type=member`), agent ID (for `sender_type=agent`), or service account ID (for `sender_type=service_account`).
+	// SenderId Filter by sender principal ID — a user ID (for `sender_type=human`), agent ID (for `sender_type=agent`), or service account ID (for `sender_type=service_account`).
 	SenderId *string `form:"sender_id,omitempty" json:"sender_id,omitempty"`
 
 	// ReplyTo Return only replies to this message ID (thread view).
@@ -10661,30 +11805,10 @@ type ListMessagesParams struct {
 	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
-// ListEnvironmentsParams defines parameters for ListEnvironments.
-type ListEnvironmentsParams struct {
-	// Cursor Cursor for pagination (opaque string from previous response)
-	Cursor *CursorParam `form:"cursor,omitempty" json:"cursor,omitempty"`
-
-	// Limit Maximum number of items to return
-	Limit     *LimitParam           `form:"limit,omitempty" json:"limit,omitempty"`
-	Provider  *EnvironmentProvider  `form:"provider,omitempty" json:"provider,omitempty"`
-	Status    *EnvironmentStatus    `form:"status,omitempty" json:"status,omitempty"`
-	Purpose   *EnvironmentPurpose   `form:"purpose,omitempty" json:"purpose,omitempty"`
-	OwnerType *EnvironmentOwnerType `form:"owner_type,omitempty" json:"owner_type,omitempty"`
-	OwnerId   *string               `form:"owner_id,omitempty" json:"owner_id,omitempty"`
-
-	// IncludeDestroyed Include destroyed environments in the result. By default destroyed rows are excluded; set this to true (or pass status=destroyed) to see them.
-	IncludeDestroyed *bool `form:"include_destroyed,omitempty" json:"include_destroyed,omitempty"`
-
-	// DestroyedSince Narrow destroyed rows to those torn down at or after this timestamp. Composes with `status=destroyed` to fetch a "recently destroyed" tombstone window (e.g. last hour). Non-destroyed rows are unaffected when this is combined with the default (no-status) view.
-	DestroyedSince *time.Time `form:"destroyed_since,omitempty" json:"destroyed_since,omitempty"`
-}
-
 // StreamProjectEventsParams defines parameters for StreamProjectEvents.
 type StreamProjectEventsParams struct {
-	// Since Durable event cursor to replay from, expressed as a unix-nano timestamp matching the largest `seq` the client has received on this project-wide stream. Do not pass a run-local `seq` from `streamRunEvents` here.
-	Since *int64 `form:"since,omitempty" json:"since,omitempty"`
+	// Since Opaque durable project-stream cursor to replay from. Pass back the exact `id:`/`seq` string previously received from this endpoint, or `0` for an explicit bounded fresh-start replay. Omit on initial live-only connects. Do not pass a run-local `seq` from `streamRunEvents` here.
+	Since *string `form:"since,omitempty" json:"since,omitempty"`
 
 	// Run Comma-separated run IDs to filter by.
 	Run *string `form:"run,omitempty" json:"run,omitempty"`
@@ -10714,6 +11838,36 @@ type ListGroupMembersParams struct {
 	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
+// ListIntegrationEventsParams defines parameters for ListIntegrationEvents.
+type ListIntegrationEventsParams struct {
+	// Provider Filter by provider name, e.g. `github`.
+	Provider *string `form:"provider,omitempty" json:"provider,omitempty"`
+
+	// IntegrationId Filter by integration row id.
+	IntegrationId *string `form:"integration_id,omitempty" json:"integration_id,omitempty"`
+
+	// EventType Filter by exact dotted event type.
+	EventType *string `form:"event_type,omitempty" json:"event_type,omitempty"`
+
+	// Source Filter by event source.
+	Source *IntegrationEventSource `form:"source,omitempty" json:"source,omitempty"`
+
+	// Since Include events received at or after this timestamp.
+	Since *time.Time `form:"since,omitempty" json:"since,omitempty"`
+
+	// Until Include events received before this timestamp.
+	Until *time.Time `form:"until,omitempty" json:"until,omitempty"`
+
+	// Cursor Opaque pagination cursor returned by the previous page.
+	Cursor *string `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Limit Maximum number of events to return.
+	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// IncludePayload Include redacted payloads in list rows. Defaults to summaries only.
+	IncludePayload *bool `form:"include_payload,omitempty" json:"include_payload,omitempty"`
+}
+
 // ListIntegrationEventTestSamplesParams defines parameters for ListIntegrationEventTestSamples.
 type ListIntegrationEventTestSamplesParams struct {
 	// Provider Filter samples by provider name, e.g. `github`.
@@ -10728,23 +11882,20 @@ type ListInteractionsParams struct {
 	// Status Filter by status
 	Status *ListInteractionsParamsStatus `form:"status,omitempty" json:"status,omitempty"`
 
+	// Kind Filter by interaction protocol kind
+	Kind *InteractionKind `form:"kind,omitempty" json:"kind,omitempty"`
+
 	// RunId Filter by originating run ID
 	RunId *string `form:"run_id,omitempty" json:"run_id,omitempty"`
 
-	// TargetType Filter by target type
-	TargetType *ListInteractionsParamsTargetType `form:"target_type,omitempty" json:"target_type,omitempty"`
-
-	// TargetId Filter by target ID
-	TargetId *string `form:"target_id,omitempty" json:"target_id,omitempty"`
+	// TargetUserId Filter by resolved target user ID.
+	TargetUserId *string `form:"target_user_id,omitempty" json:"target_user_id,omitempty"`
 
 	// Inbox When true, returns only interactions visible to the authenticated user (direct + group membership)
 	Inbox *bool `form:"inbox,omitempty" json:"inbox,omitempty"`
 
-	// ReviewerType Filter handoffs by reviewer type. Defaults to user when reviewer_id is provided.
-	ReviewerType *ListInteractionsParamsReviewerType `form:"reviewer_type,omitempty" json:"reviewer_type,omitempty"`
-
-	// ReviewerId Filter handoffs awaiting review by the specified reviewer.
-	ReviewerId *string `form:"reviewer_id,omitempty" json:"reviewer_id,omitempty"`
+	// ReviewerUserId Filter handoffs awaiting review by the specified reviewer user.
+	ReviewerUserId *string `form:"reviewer_user_id,omitempty" json:"reviewer_user_id,omitempty"`
 
 	// Cursor Cursor for pagination (opaque string from previous response)
 	Cursor *CursorParam `form:"cursor,omitempty" json:"cursor,omitempty"`
@@ -10763,12 +11914,6 @@ type ListInteractionsParams struct {
 // ListInteractionsParamsStatus defines parameters for ListInteractions.
 type ListInteractionsParamsStatus string
 
-// ListInteractionsParamsTargetType defines parameters for ListInteractions.
-type ListInteractionsParamsTargetType string
-
-// ListInteractionsParamsReviewerType defines parameters for ListInteractions.
-type ListInteractionsParamsReviewerType string
-
 // GetJobHistoryParams defines parameters for GetJobHistory.
 type GetJobHistoryParams struct {
 	// After Opaque cursor returned by a prior page (or `JobClaim.spec.code.history_cursor`). Omit to fetch from the beginning.
@@ -10776,6 +11921,12 @@ type GetJobHistoryParams struct {
 
 	// Limit Maximum number of entries to return per page.
 	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// ReportJobParams defines parameters for ReportJob.
+type ReportJobParams struct {
+	// Partial When `true`, commit durable code progress without terminalizing the job. Only valid for code jobs and progress outcomes; terminal outcomes (`complete`, `fail`, `suspend`) are rejected.
+	Partial *bool `form:"partial,omitempty" json:"partial,omitempty"`
 }
 
 // ListProjectLogsParams defines parameters for ListProjectLogs.
@@ -10910,8 +12061,8 @@ type ListRunsParamsLifecycle string
 
 // StreamRunEventsParams defines parameters for StreamRunEvents.
 type StreamRunEventsParams struct {
-	// Since Run-local `run_events.seq` cursor to replay from. Do not pass a unix-nano cursor from `streamProjectEvents` here.
-	Since *int64 `form:"since,omitempty" json:"since,omitempty"`
+	// Since Run-local `run_events.seq` cursor to replay from, encoded as a string. Do not pass a project-stream cursor from `streamProjectEvents` here.
+	Since *string `form:"since,omitempty" json:"since,omitempty"`
 }
 
 // ListRunStepsParams defines parameters for ListRunSteps.
@@ -10925,12 +12076,18 @@ type ListRunStepsParams struct {
 	// Status Filter steps by current run-step status.
 	Status *RunStepStatus `form:"status,omitempty" json:"status,omitempty"`
 
+	// Include Pass `run_state_after` to include `run_state_after_b64`; it is omitted otherwise.
+	Include *ListRunStepsParamsInclude `form:"include,omitempty" json:"include,omitempty"`
+
 	// Cursor Cursor for pagination (opaque string from previous response)
 	Cursor *CursorParam `form:"cursor,omitempty" json:"cursor,omitempty"`
 
 	// Limit Maximum number of items to return
 	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
 }
+
+// ListRunStepsParamsInclude defines parameters for ListRunSteps.
+type ListRunStepsParamsInclude string
 
 // GetRunStepParams defines parameters for GetRunStep.
 type GetRunStepParams struct {
@@ -11002,14 +12159,167 @@ type ListTablesParams struct {
 
 	// Limit Maximum number of items to return
 	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// OwnedByMe Resolve `table_name` in the authenticated user's owner scope, or filter lists to tables owned by the authenticated user.
+	OwnedByMe *TableOwnedByMeParam `form:"owned_by_me,omitempty" json:"owned_by_me,omitempty"`
+
+	// OwnedBy Canonical user owner ID. Used with `scope=owner` for lookups; for list filters, narrows to tables owned by this user. Ignored when `owned_by_me=true` is present.
+	OwnedBy *TableOwnedByParam `form:"owned_by,omitempty" json:"owned_by,omitempty"`
+
+	// Scope Scope used to resolve `table_name`. Omit for the project/default scope; use `owner` with `owned_by` or `owned_by_me=true` for per-user memory tables. For list filters, scope is orthogonal and does not affect ownership-filter precedence.
+	Scope *TableScopeParam `form:"scope,omitempty" json:"scope,omitempty"`
+}
+
+// DeleteTableParams defines parameters for DeleteTable.
+type DeleteTableParams struct {
+	// Scope Scope used to resolve `table_name`. Omit for the project/default scope; use `owner` with `owned_by` or `owned_by_me=true` for per-user memory tables. For list filters, scope is orthogonal and does not affect ownership-filter precedence.
+	Scope *TableScopeParam `form:"scope,omitempty" json:"scope,omitempty"`
+
+	// OwnedBy Canonical user owner ID. Used with `scope=owner` for lookups; for list filters, narrows to tables owned by this user. Ignored when `owned_by_me=true` is present.
+	OwnedBy *TableOwnedByParam `form:"owned_by,omitempty" json:"owned_by,omitempty"`
+
+	// OwnedByMe Resolve `table_name` in the authenticated user's owner scope, or filter lists to tables owned by the authenticated user.
+	OwnedByMe *TableOwnedByMeParam `form:"owned_by_me,omitempty" json:"owned_by_me,omitempty"`
+}
+
+// GetTableParams defines parameters for GetTable.
+type GetTableParams struct {
+	// Scope Scope used to resolve `table_name`. Omit for the project/default scope; use `owner` with `owned_by` or `owned_by_me=true` for per-user memory tables. For list filters, scope is orthogonal and does not affect ownership-filter precedence.
+	Scope *TableScopeParam `form:"scope,omitempty" json:"scope,omitempty"`
+
+	// OwnedBy Canonical user owner ID. Used with `scope=owner` for lookups; for list filters, narrows to tables owned by this user. Ignored when `owned_by_me=true` is present.
+	OwnedBy *TableOwnedByParam `form:"owned_by,omitempty" json:"owned_by,omitempty"`
+
+	// OwnedByMe Resolve `table_name` in the authenticated user's owner scope, or filter lists to tables owned by the authenticated user.
+	OwnedByMe *TableOwnedByMeParam `form:"owned_by_me,omitempty" json:"owned_by_me,omitempty"`
+}
+
+// UpdateTableParams defines parameters for UpdateTable.
+type UpdateTableParams struct {
+	// Scope Scope used to resolve `table_name`. Omit for the project/default scope; use `owner` with `owned_by` or `owned_by_me=true` for per-user memory tables. For list filters, scope is orthogonal and does not affect ownership-filter precedence.
+	Scope *TableScopeParam `form:"scope,omitempty" json:"scope,omitempty"`
+
+	// OwnedBy Canonical user owner ID. Used with `scope=owner` for lookups; for list filters, narrows to tables owned by this user. Ignored when `owned_by_me=true` is present.
+	OwnedBy *TableOwnedByParam `form:"owned_by,omitempty" json:"owned_by,omitempty"`
+
+	// OwnedByMe Resolve `table_name` in the authenticated user's owner scope, or filter lists to tables owned by the authenticated user.
+	OwnedByMe *TableOwnedByMeParam `form:"owned_by_me,omitempty" json:"owned_by_me,omitempty"`
+}
+
+// InsertTableRowParams defines parameters for InsertTableRow.
+type InsertTableRowParams struct {
+	// Scope Scope used to resolve `table_name`. Omit for the project/default scope; use `owner` with `owned_by` or `owned_by_me=true` for per-user memory tables. For list filters, scope is orthogonal and does not affect ownership-filter precedence.
+	Scope *TableScopeParam `form:"scope,omitempty" json:"scope,omitempty"`
+
+	// OwnedBy Canonical user owner ID. Used with `scope=owner` for lookups; for list filters, narrows to tables owned by this user. Ignored when `owned_by_me=true` is present.
+	OwnedBy *TableOwnedByParam `form:"owned_by,omitempty" json:"owned_by,omitempty"`
+
+	// OwnedByMe Resolve `table_name` in the authenticated user's owner scope, or filter lists to tables owned by the authenticated user.
+	OwnedByMe *TableOwnedByMeParam `form:"owned_by_me,omitempty" json:"owned_by_me,omitempty"`
+}
+
+// BulkInsertTableRowsParams defines parameters for BulkInsertTableRows.
+type BulkInsertTableRowsParams struct {
+	// Scope Scope used to resolve `table_name`. Omit for the project/default scope; use `owner` with `owned_by` or `owned_by_me=true` for per-user memory tables. For list filters, scope is orthogonal and does not affect ownership-filter precedence.
+	Scope *TableScopeParam `form:"scope,omitempty" json:"scope,omitempty"`
+
+	// OwnedBy Canonical user owner ID. Used with `scope=owner` for lookups; for list filters, narrows to tables owned by this user. Ignored when `owned_by_me=true` is present.
+	OwnedBy *TableOwnedByParam `form:"owned_by,omitempty" json:"owned_by,omitempty"`
+
+	// OwnedByMe Resolve `table_name` in the authenticated user's owner scope, or filter lists to tables owned by the authenticated user.
+	OwnedByMe *TableOwnedByMeParam `form:"owned_by_me,omitempty" json:"owned_by_me,omitempty"`
+}
+
+// QueryTableRowsParams defines parameters for QueryTableRows.
+type QueryTableRowsParams struct {
+	// Scope Scope used to resolve `table_name`. Omit for the project/default scope; use `owner` with `owned_by` or `owned_by_me=true` for per-user memory tables. For list filters, scope is orthogonal and does not affect ownership-filter precedence.
+	Scope *TableScopeParam `form:"scope,omitempty" json:"scope,omitempty"`
+
+	// OwnedBy Canonical user owner ID. Used with `scope=owner` for lookups; for list filters, narrows to tables owned by this user. Ignored when `owned_by_me=true` is present.
+	OwnedBy *TableOwnedByParam `form:"owned_by,omitempty" json:"owned_by,omitempty"`
+
+	// OwnedByMe Resolve `table_name` in the authenticated user's owner scope, or filter lists to tables owned by the authenticated user.
+	OwnedByMe *TableOwnedByMeParam `form:"owned_by_me,omitempty" json:"owned_by_me,omitempty"`
+}
+
+// SearchTableRowsParams defines parameters for SearchTableRows.
+type SearchTableRowsParams struct {
+	// Scope Scope used to resolve `table_name`. Omit for the project/default scope; use `owner` with `owned_by` or `owned_by_me=true` for per-user memory tables. For list filters, scope is orthogonal and does not affect ownership-filter precedence.
+	Scope *TableScopeParam `form:"scope,omitempty" json:"scope,omitempty"`
+
+	// OwnedBy Canonical user owner ID. Used with `scope=owner` for lookups; for list filters, narrows to tables owned by this user. Ignored when `owned_by_me=true` is present.
+	OwnedBy *TableOwnedByParam `form:"owned_by,omitempty" json:"owned_by,omitempty"`
+
+	// OwnedByMe Resolve `table_name` in the authenticated user's owner scope, or filter lists to tables owned by the authenticated user.
+	OwnedByMe *TableOwnedByMeParam `form:"owned_by_me,omitempty" json:"owned_by_me,omitempty"`
+}
+
+// UpsertTableRowParams defines parameters for UpsertTableRow.
+type UpsertTableRowParams struct {
+	// Scope Scope used to resolve `table_name`. Omit for the project/default scope; use `owner` with `owned_by` or `owned_by_me=true` for per-user memory tables. For list filters, scope is orthogonal and does not affect ownership-filter precedence.
+	Scope *TableScopeParam `form:"scope,omitempty" json:"scope,omitempty"`
+
+	// OwnedBy Canonical user owner ID. Used with `scope=owner` for lookups; for list filters, narrows to tables owned by this user. Ignored when `owned_by_me=true` is present.
+	OwnedBy *TableOwnedByParam `form:"owned_by,omitempty" json:"owned_by,omitempty"`
+
+	// OwnedByMe Resolve `table_name` in the authenticated user's owner scope, or filter lists to tables owned by the authenticated user.
+	OwnedByMe *TableOwnedByMeParam `form:"owned_by_me,omitempty" json:"owned_by_me,omitempty"`
+}
+
+// DeleteTableRowParams defines parameters for DeleteTableRow.
+type DeleteTableRowParams struct {
+	// Scope Scope used to resolve `table_name`. Omit for the project/default scope; use `owner` with `owned_by` or `owned_by_me=true` for per-user memory tables. For list filters, scope is orthogonal and does not affect ownership-filter precedence.
+	Scope *TableScopeParam `form:"scope,omitempty" json:"scope,omitempty"`
+
+	// OwnedBy Canonical user owner ID. Used with `scope=owner` for lookups; for list filters, narrows to tables owned by this user. Ignored when `owned_by_me=true` is present.
+	OwnedBy *TableOwnedByParam `form:"owned_by,omitempty" json:"owned_by,omitempty"`
+
+	// OwnedByMe Resolve `table_name` in the authenticated user's owner scope, or filter lists to tables owned by the authenticated user.
+	OwnedByMe *TableOwnedByMeParam `form:"owned_by_me,omitempty" json:"owned_by_me,omitempty"`
+}
+
+// GetTableRowParams defines parameters for GetTableRow.
+type GetTableRowParams struct {
+	// Scope Scope used to resolve `table_name`. Omit for the project/default scope; use `owner` with `owned_by` or `owned_by_me=true` for per-user memory tables. For list filters, scope is orthogonal and does not affect ownership-filter precedence.
+	Scope *TableScopeParam `form:"scope,omitempty" json:"scope,omitempty"`
+
+	// OwnedBy Canonical user owner ID. Used with `scope=owner` for lookups; for list filters, narrows to tables owned by this user. Ignored when `owned_by_me=true` is present.
+	OwnedBy *TableOwnedByParam `form:"owned_by,omitempty" json:"owned_by,omitempty"`
+
+	// OwnedByMe Resolve `table_name` in the authenticated user's owner scope, or filter lists to tables owned by the authenticated user.
+	OwnedByMe *TableOwnedByMeParam `form:"owned_by_me,omitempty" json:"owned_by_me,omitempty"`
+}
+
+// UpdateTableRowParams defines parameters for UpdateTableRow.
+type UpdateTableRowParams struct {
+	// Scope Scope used to resolve `table_name`. Omit for the project/default scope; use `owner` with `owned_by` or `owned_by_me=true` for per-user memory tables. For list filters, scope is orthogonal and does not affect ownership-filter precedence.
+	Scope *TableScopeParam `form:"scope,omitempty" json:"scope,omitempty"`
+
+	// OwnedBy Canonical user owner ID. Used with `scope=owner` for lookups; for list filters, narrows to tables owned by this user. Ignored when `owned_by_me=true` is present.
+	OwnedBy *TableOwnedByParam `form:"owned_by,omitempty" json:"owned_by,omitempty"`
+
+	// OwnedByMe Resolve `table_name` in the authenticated user's owner scope, or filter lists to tables owned by the authenticated user.
+	OwnedByMe *TableOwnedByMeParam `form:"owned_by_me,omitempty" json:"owned_by_me,omitempty"`
+}
+
+// GetTableStatsParams defines parameters for GetTableStats.
+type GetTableStatsParams struct {
+	// Scope Scope used to resolve `table_name`. Omit for the project/default scope; use `owner` with `owned_by` or `owned_by_me=true` for per-user memory tables. For list filters, scope is orthogonal and does not affect ownership-filter precedence.
+	Scope *TableScopeParam `form:"scope,omitempty" json:"scope,omitempty"`
+
+	// OwnedBy Canonical user owner ID. Used with `scope=owner` for lookups; for list filters, narrows to tables owned by this user. Ignored when `owned_by_me=true` is present.
+	OwnedBy *TableOwnedByParam `form:"owned_by,omitempty" json:"owned_by,omitempty"`
+
+	// OwnedByMe Resolve `table_name` in the authenticated user's owner scope, or filter lists to tables owned by the authenticated user.
+	OwnedByMe *TableOwnedByMeParam `form:"owned_by_me,omitempty" json:"owned_by_me,omitempty"`
 }
 
 // ListProjectTeamParams defines parameters for ListProjectTeam.
 type ListProjectTeamParams struct {
-	Kind             *ProjectTeamMemberKind `form:"kind,omitempty" json:"kind,omitempty"`
-	Availability     *ActorAvailability     `form:"availability,omitempty" json:"availability,omitempty"`
-	AssignmentStatus *ActorAssignmentStatus `form:"assignment_status,omitempty" json:"assignment_status,omitempty"`
-	Q                *string                `form:"q,omitempty" json:"q,omitempty"`
+	Kind             *UserKind             `form:"kind,omitempty" json:"kind,omitempty"`
+	Availability     *UserAvailability     `form:"availability,omitempty" json:"availability,omitempty"`
+	AssignmentStatus *UserAssignmentStatus `form:"assignment_status,omitempty" json:"assignment_status,omitempty"`
+	Q                *string               `form:"q,omitempty" json:"q,omitempty"`
 }
 
 // ListToolkitsParams defines parameters for ListToolkits.
@@ -11048,6 +12358,12 @@ type ListTriggersParams struct {
 	// Not supported on the runs list — runs are too high-cardinality for ad-hoc tag filtering. To narrow runs by parent workflow, use the workflow-scoped endpoint `GET /v1/projects/{project}/workflows/{id}/runs` and inspect `tags` on each run client-side.
 	Tag *TagFilterParam `form:"tag,omitempty" json:"tag,omitempty"`
 
+	// Scope Omit for all/default-scoped triggers; use `owner` with `owned_by` to list owner-scoped triggers.
+	Scope *ResourceScope `form:"scope,omitempty" json:"scope,omitempty"`
+
+	// OwnedBy Canonical user owner ID. When paired with `scope=owner`, filters to that owner namespace.
+	OwnedBy *string `form:"owned_by,omitempty" json:"owned_by,omitempty"`
+
 	// Cursor Opaque pagination cursor returned from the previous response.
 	Cursor *string `form:"cursor,omitempty" json:"cursor,omitempty"`
 
@@ -11065,6 +12381,21 @@ type ListTriggerFiresParams struct {
 
 	// Limit Maximum number of results to return per page.
 	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// ListUserStatesParams defines parameters for ListUserStates.
+type ListUserStatesParams struct {
+	UserKind     *UserKind            `form:"user_kind,omitempty" json:"user_kind,omitempty"`
+	Availability *UserAvailability    `form:"availability,omitempty" json:"availability,omitempty"`
+	Visibility   *UserStateVisibility `form:"visibility,omitempty" json:"visibility,omitempty"`
+
+	// Limit Maximum number of items to return
+	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// ListUserAssignmentsParams defines parameters for ListUserAssignments.
+type ListUserAssignmentsParams struct {
+	Status *UserAssignmentStatus `form:"status,omitempty" json:"status,omitempty"`
 }
 
 // ListWebhooksParams defines parameters for ListWebhooks.
@@ -11104,6 +12435,12 @@ type ListWorkflowsParams struct {
 	// Not supported on the runs list — runs are too high-cardinality for ad-hoc tag filtering. To narrow runs by parent workflow, use the workflow-scoped endpoint `GET /v1/projects/{project}/workflows/{id}/runs` and inspect `tags` on each run client-side.
 	Tag *TagFilterParam `form:"tag,omitempty" json:"tag,omitempty"`
 
+	// Scope Omit for all/default-scoped workflows; use `owner` with `owned_by` to list owner-scoped workflows.
+	Scope *ResourceScope `form:"scope,omitempty" json:"scope,omitempty"`
+
+	// OwnedBy Canonical user owner ID. When paired with `scope=owner`, filters to that owner namespace.
+	OwnedBy *string `form:"owned_by,omitempty" json:"owned_by,omitempty"`
+
 	// Cursor Opaque pagination cursor returned from the previous response.
 	Cursor *string `form:"cursor,omitempty" json:"cursor,omitempty"`
 
@@ -11135,17 +12472,17 @@ type UpdateActionJSONRequestBody = UpdateActionRequest
 // InvokeActionJSONRequestBody defines body for InvokeAction for application/json ContentType.
 type InvokeActionJSONRequestBody = ActionInvocationRequest
 
-// UpsertActorStateJSONRequestBody defines body for UpsertActorState for application/json ContentType.
-type UpsertActorStateJSONRequestBody = UpsertActorStateRequest
-
 // CreateAgentJSONRequestBody defines body for CreateAgent for application/json ContentType.
 type CreateAgentJSONRequestBody = CreateAgentRequest
 
 // UpdateAgentJSONRequestBody defines body for UpdateAgent for application/json ContentType.
 type UpdateAgentJSONRequestBody = UpdateAgentRequest
 
-// CreateAgentSessionJSONRequestBody defines body for CreateAgentSession for application/json ContentType.
-type CreateAgentSessionJSONRequestBody = CreateAgentSessionRequest
+// CreateAgentPresenceJSONRequestBody defines body for CreateAgentPresence for application/json ContentType.
+type CreateAgentPresenceJSONRequestBody = CreateAgentPresenceRequest
+
+// AppendAgentSessionMessagesJSONRequestBody defines body for AppendAgentSessionMessages for application/json ContentType.
+type AppendAgentSessionMessagesJSONRequestBody = AppendAgentSessionMessagesRequest
 
 // ReplaceSkillsJSONRequestBody defines body for ReplaceSkills for application/json ContentType.
 type ReplaceSkillsJSONRequestBody = ReplaceSkillsRequest
@@ -11161,6 +12498,9 @@ type CreateArtifactSlotJSONRequestBody = CreateArtifactSlotRequest
 
 // CreateChannelJSONRequestBody defines body for CreateChannel for application/json ContentType.
 type CreateChannelJSONRequestBody = CreateChannelRequest
+
+// OpenDirectMessageJSONRequestBody defines body for OpenDirectMessage for application/json ContentType.
+type OpenDirectMessageJSONRequestBody = OpenDirectMessageRequest
 
 // UpdateChannelJSONRequestBody defines body for UpdateChannel for application/json ContentType.
 type UpdateChannelJSONRequestBody = UpdateChannelRequest
@@ -11186,24 +12526,6 @@ type MarkMessagesReadJSONRequestBody = MarkChannelMessagesReadRequest
 // ShareChannelEntityJSONRequestBody defines body for ShareChannelEntity for application/json ContentType.
 type ShareChannelEntityJSONRequestBody = ShareChannelEntityRequest
 
-// CreateEnvironmentJSONRequestBody defines body for CreateEnvironment for application/json ContentType.
-type CreateEnvironmentJSONRequestBody = CreateEnvironmentRequest
-
-// AcquireEnvironmentJSONRequestBody defines body for AcquireEnvironment for application/json ContentType.
-type AcquireEnvironmentJSONRequestBody = AcquireEnvironmentRequest
-
-// UpdateEnvironmentJSONRequestBody defines body for UpdateEnvironment for application/json ContentType.
-type UpdateEnvironmentJSONRequestBody = UpdateEnvironmentRequest
-
-// ExecEnvironmentJSONRequestBody defines body for ExecEnvironment for application/json ContentType.
-type ExecEnvironmentJSONRequestBody = ExecEnvironmentRequest
-
-// WriteEnvironmentFileJSONRequestBody defines body for WriteEnvironmentFile for application/json ContentType.
-type WriteEnvironmentFileJSONRequestBody = WriteEnvironmentFileRequest
-
-// StartEnvironmentWorkerJSONRequestBody defines body for StartEnvironmentWorker for application/json ContentType.
-type StartEnvironmentWorkerJSONRequestBody = StartEnvironmentWorkerRequest
-
 // CreateGroupJSONRequestBody defines body for CreateGroup for application/json ContentType.
 type CreateGroupJSONRequestBody = CreateGroupRequest
 
@@ -11215,6 +12537,18 @@ type AddGroupMemberJSONRequestBody = AddGroupMemberRequest
 
 // CreateIntegrationEventTestFireJSONRequestBody defines body for CreateIntegrationEventTestFire for application/json ContentType.
 type CreateIntegrationEventTestFireJSONRequestBody = IntegrationEventFireRequest
+
+// ConnectApolloJSONRequestBody defines body for ConnectApollo for application/json ContentType.
+type ConnectApolloJSONRequestBody = ApolloConnectRequest
+
+// ConnectFirecrawlJSONRequestBody defines body for ConnectFirecrawl for application/json ContentType.
+type ConnectFirecrawlJSONRequestBody = FirecrawlConnectRequest
+
+// ConnectGoogleSheetsJSONRequestBody defines body for ConnectGoogleSheets for application/json ContentType.
+type ConnectGoogleSheetsJSONRequestBody = GoogleSheetsConnectRequest
+
+// ConnectScrapeCreatorsJSONRequestBody defines body for ConnectScrapeCreators for application/json ContentType.
+type ConnectScrapeCreatorsJSONRequestBody = ScrapeCreatorsConnectRequest
 
 // CreateInteractionJSONRequestBody defines body for CreateInteraction for application/json ContentType.
 type CreateInteractionJSONRequestBody = CreateInteractionRequest
@@ -11348,6 +12682,9 @@ type UpdateTriggerTargetJSONRequestBody = UpdateTriggerTargetRequest
 // TestFireTriggerJSONRequestBody defines body for TestFireTrigger for application/json ContentType.
 type TestFireTriggerJSONRequestBody = TestFireTriggerRequest
 
+// UpsertUserStateJSONRequestBody defines body for UpsertUserState for application/json ContentType.
+type UpsertUserStateJSONRequestBody = UpsertUserStateRequest
+
 // CreateWebhookJSONRequestBody defines body for CreateWebhook for application/json ContentType.
 type CreateWebhookJSONRequestBody = CreateWebhookRequest
 
@@ -11365,6 +12702,9 @@ type UpdateWorkflowJSONRequestBody = UpdateWorkflowRequest
 
 // StartWorkflowRunJSONRequestBody defines body for StartWorkflowRun for application/json ContentType.
 type StartWorkflowRunJSONRequestBody = StartBoundRunRequest
+
+// ValidateWorkflowExpressionsJSONRequestBody defines body for ValidateWorkflowExpressions for application/json ContentType.
+type ValidateWorkflowExpressionsJSONRequestBody = ValidateWorkflowExpressionsRequest
 
 // Getter for additional properties for ActionAnnotationsResponse. Returns the specified
 // element and whether it was found
@@ -12104,22 +13444,6 @@ func (a *Run) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
-	if raw, found := object["actor_id"]; found {
-		err = json.Unmarshal(raw, &a.ActorId)
-		if err != nil {
-			return fmt.Errorf("error reading 'actor_id': %w", err)
-		}
-		delete(object, "actor_id")
-	}
-
-	if raw, found := object["actor_type"]; found {
-		err = json.Unmarshal(raw, &a.ActorType)
-		if err != nil {
-			return fmt.Errorf("error reading 'actor_type': %w", err)
-		}
-		delete(object, "actor_type")
-	}
-
 	if raw, found := object["attempt"]; found {
 		err = json.Unmarshal(raw, &a.Attempt)
 		if err != nil {
@@ -12176,6 +13500,30 @@ func (a *Run) UnmarshalJSON(b []byte) error {
 		delete(object, "definition_version")
 	}
 
+	if raw, found := object["effective_credential_kind"]; found {
+		err = json.Unmarshal(raw, &a.EffectiveCredentialKind)
+		if err != nil {
+			return fmt.Errorf("error reading 'effective_credential_kind': %w", err)
+		}
+		delete(object, "effective_credential_kind")
+	}
+
+	if raw, found := object["effective_source"]; found {
+		err = json.Unmarshal(raw, &a.EffectiveSource)
+		if err != nil {
+			return fmt.Errorf("error reading 'effective_source': %w", err)
+		}
+		delete(object, "effective_source")
+	}
+
+	if raw, found := object["effective_user_id"]; found {
+		err = json.Unmarshal(raw, &a.EffectiveUserId)
+		if err != nil {
+			return fmt.Errorf("error reading 'effective_user_id': %w", err)
+		}
+		delete(object, "effective_user_id")
+	}
+
 	if raw, found := object["ephemeral"]; found {
 		err = json.Unmarshal(raw, &a.Ephemeral)
 		if err != nil {
@@ -12216,6 +13564,22 @@ func (a *Run) UnmarshalJSON(b []byte) error {
 		delete(object, "external_id")
 	}
 
+	if raw, found := object["finalize_started_at"]; found {
+		err = json.Unmarshal(raw, &a.FinalizeStartedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'finalize_started_at': %w", err)
+		}
+		delete(object, "finalize_started_at")
+	}
+
+	if raw, found := object["finalizer_warnings"]; found {
+		err = json.Unmarshal(raw, &a.FinalizerWarnings)
+		if err != nil {
+			return fmt.Errorf("error reading 'finalizer_warnings': %w", err)
+		}
+		delete(object, "finalizer_warnings")
+	}
+
 	if raw, found := object["forked_from"]; found {
 		err = json.Unmarshal(raw, &a.ForkedFrom)
 		if err != nil {
@@ -12254,6 +13618,22 @@ func (a *Run) UnmarshalJSON(b []byte) error {
 			return fmt.Errorf("error reading 'metadata': %w", err)
 		}
 		delete(object, "metadata")
+	}
+
+	if raw, found := object["owned_by"]; found {
+		err = json.Unmarshal(raw, &a.OwnedBy)
+		if err != nil {
+			return fmt.Errorf("error reading 'owned_by': %w", err)
+		}
+		delete(object, "owned_by")
+	}
+
+	if raw, found := object["owner_agent_id"]; found {
+		err = json.Unmarshal(raw, &a.OwnerAgentId)
+		if err != nil {
+			return fmt.Errorf("error reading 'owner_agent_id': %w", err)
+		}
+		delete(object, "owner_agent_id")
 	}
 
 	if raw, found := object["parent_run_id"]; found {
@@ -12318,6 +13698,30 @@ func (a *Run) UnmarshalJSON(b []byte) error {
 			return fmt.Errorf("error reading 'started_at': %w", err)
 		}
 		delete(object, "started_at")
+	}
+
+	if raw, found := object["started_by_credential_kind"]; found {
+		err = json.Unmarshal(raw, &a.StartedByCredentialKind)
+		if err != nil {
+			return fmt.Errorf("error reading 'started_by_credential_kind': %w", err)
+		}
+		delete(object, "started_by_credential_kind")
+	}
+
+	if raw, found := object["started_by_source"]; found {
+		err = json.Unmarshal(raw, &a.StartedBySource)
+		if err != nil {
+			return fmt.Errorf("error reading 'started_by_source': %w", err)
+		}
+		delete(object, "started_by_source")
+	}
+
+	if raw, found := object["started_by_user_id"]; found {
+		err = json.Unmarshal(raw, &a.StartedByUserId)
+		if err != nil {
+			return fmt.Errorf("error reading 'started_by_user_id': %w", err)
+		}
+		delete(object, "started_by_user_id")
 	}
 
 	if raw, found := object["status"]; found {
@@ -12395,20 +13799,6 @@ func (a Run) MarshalJSON() ([]byte, error) {
 	var err error
 	object := make(map[string]json.RawMessage)
 
-	if a.ActorId != nil {
-		object["actor_id"], err = json.Marshal(a.ActorId)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'actor_id': %w", err)
-		}
-	}
-
-	if a.ActorType != nil {
-		object["actor_type"], err = json.Marshal(a.ActorType)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'actor_type': %w", err)
-		}
-	}
-
 	object["attempt"], err = json.Marshal(a.Attempt)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling 'attempt': %w", err)
@@ -12454,6 +13844,27 @@ func (a Run) MarshalJSON() ([]byte, error) {
 		}
 	}
 
+	if a.EffectiveCredentialKind != nil {
+		object["effective_credential_kind"], err = json.Marshal(a.EffectiveCredentialKind)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'effective_credential_kind': %w", err)
+		}
+	}
+
+	if a.EffectiveSource != nil {
+		object["effective_source"], err = json.Marshal(a.EffectiveSource)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'effective_source': %w", err)
+		}
+	}
+
+	if a.EffectiveUserId != nil {
+		object["effective_user_id"], err = json.Marshal(a.EffectiveUserId)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'effective_user_id': %w", err)
+		}
+	}
+
 	object["ephemeral"], err = json.Marshal(a.Ephemeral)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling 'ephemeral': %w", err)
@@ -12487,6 +13898,20 @@ func (a Run) MarshalJSON() ([]byte, error) {
 		}
 	}
 
+	if a.FinalizeStartedAt != nil {
+		object["finalize_started_at"], err = json.Marshal(a.FinalizeStartedAt)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'finalize_started_at': %w", err)
+		}
+	}
+
+	if a.FinalizerWarnings != nil {
+		object["finalizer_warnings"], err = json.Marshal(a.FinalizerWarnings)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'finalizer_warnings': %w", err)
+		}
+	}
+
 	if a.ForkedFrom != nil {
 		object["forked_from"], err = json.Marshal(a.ForkedFrom)
 		if err != nil {
@@ -12515,6 +13940,20 @@ func (a Run) MarshalJSON() ([]byte, error) {
 		object["metadata"], err = json.Marshal(a.Metadata)
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'metadata': %w", err)
+		}
+	}
+
+	if a.OwnedBy != nil {
+		object["owned_by"], err = json.Marshal(a.OwnedBy)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'owned_by': %w", err)
+		}
+	}
+
+	if a.OwnerAgentId != nil {
+		object["owner_agent_id"], err = json.Marshal(a.OwnerAgentId)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'owner_agent_id': %w", err)
 		}
 	}
 
@@ -12569,6 +14008,27 @@ func (a Run) MarshalJSON() ([]byte, error) {
 		object["started_at"], err = json.Marshal(a.StartedAt)
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'started_at': %w", err)
+		}
+	}
+
+	if a.StartedByCredentialKind != nil {
+		object["started_by_credential_kind"], err = json.Marshal(a.StartedByCredentialKind)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'started_by_credential_kind': %w", err)
+		}
+	}
+
+	if a.StartedBySource != nil {
+		object["started_by_source"], err = json.Marshal(a.StartedBySource)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'started_by_source': %w", err)
+		}
+	}
+
+	if a.StartedByUserId != nil {
+		object["started_by_user_id"], err = json.Marshal(a.StartedByUserId)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'started_by_user_id': %w", err)
 		}
 	}
 
@@ -12645,22 +14105,6 @@ func (a *RunDetail) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
-	if raw, found := object["actor_id"]; found {
-		err = json.Unmarshal(raw, &a.ActorId)
-		if err != nil {
-			return fmt.Errorf("error reading 'actor_id': %w", err)
-		}
-		delete(object, "actor_id")
-	}
-
-	if raw, found := object["actor_type"]; found {
-		err = json.Unmarshal(raw, &a.ActorType)
-		if err != nil {
-			return fmt.Errorf("error reading 'actor_type': %w", err)
-		}
-		delete(object, "actor_type")
-	}
-
 	if raw, found := object["attempt"]; found {
 		err = json.Unmarshal(raw, &a.Attempt)
 		if err != nil {
@@ -12717,6 +14161,30 @@ func (a *RunDetail) UnmarshalJSON(b []byte) error {
 		delete(object, "definition_version")
 	}
 
+	if raw, found := object["effective_credential_kind"]; found {
+		err = json.Unmarshal(raw, &a.EffectiveCredentialKind)
+		if err != nil {
+			return fmt.Errorf("error reading 'effective_credential_kind': %w", err)
+		}
+		delete(object, "effective_credential_kind")
+	}
+
+	if raw, found := object["effective_source"]; found {
+		err = json.Unmarshal(raw, &a.EffectiveSource)
+		if err != nil {
+			return fmt.Errorf("error reading 'effective_source': %w", err)
+		}
+		delete(object, "effective_source")
+	}
+
+	if raw, found := object["effective_user_id"]; found {
+		err = json.Unmarshal(raw, &a.EffectiveUserId)
+		if err != nil {
+			return fmt.Errorf("error reading 'effective_user_id': %w", err)
+		}
+		delete(object, "effective_user_id")
+	}
+
 	if raw, found := object["ephemeral"]; found {
 		err = json.Unmarshal(raw, &a.Ephemeral)
 		if err != nil {
@@ -12757,6 +14225,22 @@ func (a *RunDetail) UnmarshalJSON(b []byte) error {
 		delete(object, "external_id")
 	}
 
+	if raw, found := object["finalize_started_at"]; found {
+		err = json.Unmarshal(raw, &a.FinalizeStartedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'finalize_started_at': %w", err)
+		}
+		delete(object, "finalize_started_at")
+	}
+
+	if raw, found := object["finalizer_warnings"]; found {
+		err = json.Unmarshal(raw, &a.FinalizerWarnings)
+		if err != nil {
+			return fmt.Errorf("error reading 'finalizer_warnings': %w", err)
+		}
+		delete(object, "finalizer_warnings")
+	}
+
 	if raw, found := object["forked_from"]; found {
 		err = json.Unmarshal(raw, &a.ForkedFrom)
 		if err != nil {
@@ -12795,6 +14279,22 @@ func (a *RunDetail) UnmarshalJSON(b []byte) error {
 			return fmt.Errorf("error reading 'metadata': %w", err)
 		}
 		delete(object, "metadata")
+	}
+
+	if raw, found := object["owned_by"]; found {
+		err = json.Unmarshal(raw, &a.OwnedBy)
+		if err != nil {
+			return fmt.Errorf("error reading 'owned_by': %w", err)
+		}
+		delete(object, "owned_by")
+	}
+
+	if raw, found := object["owner_agent_id"]; found {
+		err = json.Unmarshal(raw, &a.OwnerAgentId)
+		if err != nil {
+			return fmt.Errorf("error reading 'owner_agent_id': %w", err)
+		}
+		delete(object, "owner_agent_id")
 	}
 
 	if raw, found := object["parent_run_id"]; found {
@@ -12883,6 +14383,30 @@ func (a *RunDetail) UnmarshalJSON(b []byte) error {
 			return fmt.Errorf("error reading 'started_at': %w", err)
 		}
 		delete(object, "started_at")
+	}
+
+	if raw, found := object["started_by_credential_kind"]; found {
+		err = json.Unmarshal(raw, &a.StartedByCredentialKind)
+		if err != nil {
+			return fmt.Errorf("error reading 'started_by_credential_kind': %w", err)
+		}
+		delete(object, "started_by_credential_kind")
+	}
+
+	if raw, found := object["started_by_source"]; found {
+		err = json.Unmarshal(raw, &a.StartedBySource)
+		if err != nil {
+			return fmt.Errorf("error reading 'started_by_source': %w", err)
+		}
+		delete(object, "started_by_source")
+	}
+
+	if raw, found := object["started_by_user_id"]; found {
+		err = json.Unmarshal(raw, &a.StartedByUserId)
+		if err != nil {
+			return fmt.Errorf("error reading 'started_by_user_id': %w", err)
+		}
+		delete(object, "started_by_user_id")
 	}
 
 	if raw, found := object["status"]; found {
@@ -12976,20 +14500,6 @@ func (a RunDetail) MarshalJSON() ([]byte, error) {
 	var err error
 	object := make(map[string]json.RawMessage)
 
-	if a.ActorId != nil {
-		object["actor_id"], err = json.Marshal(a.ActorId)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'actor_id': %w", err)
-		}
-	}
-
-	if a.ActorType != nil {
-		object["actor_type"], err = json.Marshal(a.ActorType)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'actor_type': %w", err)
-		}
-	}
-
 	object["attempt"], err = json.Marshal(a.Attempt)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling 'attempt': %w", err)
@@ -13035,6 +14545,27 @@ func (a RunDetail) MarshalJSON() ([]byte, error) {
 		}
 	}
 
+	if a.EffectiveCredentialKind != nil {
+		object["effective_credential_kind"], err = json.Marshal(a.EffectiveCredentialKind)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'effective_credential_kind': %w", err)
+		}
+	}
+
+	if a.EffectiveSource != nil {
+		object["effective_source"], err = json.Marshal(a.EffectiveSource)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'effective_source': %w", err)
+		}
+	}
+
+	if a.EffectiveUserId != nil {
+		object["effective_user_id"], err = json.Marshal(a.EffectiveUserId)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'effective_user_id': %w", err)
+		}
+	}
+
 	object["ephemeral"], err = json.Marshal(a.Ephemeral)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling 'ephemeral': %w", err)
@@ -13068,6 +14599,20 @@ func (a RunDetail) MarshalJSON() ([]byte, error) {
 		}
 	}
 
+	if a.FinalizeStartedAt != nil {
+		object["finalize_started_at"], err = json.Marshal(a.FinalizeStartedAt)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'finalize_started_at': %w", err)
+		}
+	}
+
+	if a.FinalizerWarnings != nil {
+		object["finalizer_warnings"], err = json.Marshal(a.FinalizerWarnings)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'finalizer_warnings': %w", err)
+		}
+	}
+
 	if a.ForkedFrom != nil {
 		object["forked_from"], err = json.Marshal(a.ForkedFrom)
 		if err != nil {
@@ -13096,6 +14641,20 @@ func (a RunDetail) MarshalJSON() ([]byte, error) {
 		object["metadata"], err = json.Marshal(a.Metadata)
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'metadata': %w", err)
+		}
+	}
+
+	if a.OwnedBy != nil {
+		object["owned_by"], err = json.Marshal(a.OwnedBy)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'owned_by': %w", err)
+		}
+	}
+
+	if a.OwnerAgentId != nil {
+		object["owner_agent_id"], err = json.Marshal(a.OwnerAgentId)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'owner_agent_id': %w", err)
 		}
 	}
 
@@ -13171,6 +14730,27 @@ func (a RunDetail) MarshalJSON() ([]byte, error) {
 		object["started_at"], err = json.Marshal(a.StartedAt)
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'started_at': %w", err)
+		}
+	}
+
+	if a.StartedByCredentialKind != nil {
+		object["started_by_credential_kind"], err = json.Marshal(a.StartedByCredentialKind)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'started_by_credential_kind': %w", err)
+		}
+	}
+
+	if a.StartedBySource != nil {
+		object["started_by_source"], err = json.Marshal(a.StartedBySource)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'started_by_source': %w", err)
+		}
+	}
+
+	if a.StartedByUserId != nil {
+		object["started_by_user_id"], err = json.Marshal(a.StartedByUserId)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'started_by_user_id': %w", err)
 		}
 	}
 
@@ -13317,12 +14897,36 @@ func (a *WorkflowDefinition) UnmarshalJSON(b []byte) error {
 		delete(object, "name")
 	}
 
+	if raw, found := object["owned_by"]; found {
+		err = json.Unmarshal(raw, &a.OwnedBy)
+		if err != nil {
+			return fmt.Errorf("error reading 'owned_by': %w", err)
+		}
+		delete(object, "owned_by")
+	}
+
+	if raw, found := object["owner_agent_id"]; found {
+		err = json.Unmarshal(raw, &a.OwnerAgentId)
+		if err != nil {
+			return fmt.Errorf("error reading 'owner_agent_id': %w", err)
+		}
+		delete(object, "owner_agent_id")
+	}
+
 	if raw, found := object["published_as_tool"]; found {
 		err = json.Unmarshal(raw, &a.PublishedAsTool)
 		if err != nil {
 			return fmt.Errorf("error reading 'published_as_tool': %w", err)
 		}
 		delete(object, "published_as_tool")
+	}
+
+	if raw, found := object["scope"]; found {
+		err = json.Unmarshal(raw, &a.Scope)
+		if err != nil {
+			return fmt.Errorf("error reading 'scope': %w", err)
+		}
+		delete(object, "scope")
 	}
 
 	if raw, found := object["spec"]; found {
@@ -13405,10 +15009,31 @@ func (a WorkflowDefinition) MarshalJSON() ([]byte, error) {
 		return nil, fmt.Errorf("error marshaling 'name': %w", err)
 	}
 
+	if a.OwnedBy != nil {
+		object["owned_by"], err = json.Marshal(a.OwnedBy)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'owned_by': %w", err)
+		}
+	}
+
+	if a.OwnerAgentId != nil {
+		object["owner_agent_id"], err = json.Marshal(a.OwnerAgentId)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'owner_agent_id': %w", err)
+		}
+	}
+
 	if a.PublishedAsTool != nil {
 		object["published_as_tool"], err = json.Marshal(a.PublishedAsTool)
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'published_as_tool': %w", err)
+		}
+	}
+
+	if a.Scope != nil {
+		object["scope"], err = json.Marshal(a.Scope)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'scope': %w", err)
 		}
 	}
 
@@ -13519,12 +15144,36 @@ func (a *WorkflowDefinitionSummary) UnmarshalJSON(b []byte) error {
 		delete(object, "name")
 	}
 
+	if raw, found := object["owned_by"]; found {
+		err = json.Unmarshal(raw, &a.OwnedBy)
+		if err != nil {
+			return fmt.Errorf("error reading 'owned_by': %w", err)
+		}
+		delete(object, "owned_by")
+	}
+
+	if raw, found := object["owner_agent_id"]; found {
+		err = json.Unmarshal(raw, &a.OwnerAgentId)
+		if err != nil {
+			return fmt.Errorf("error reading 'owner_agent_id': %w", err)
+		}
+		delete(object, "owner_agent_id")
+	}
+
 	if raw, found := object["published_as_tool"]; found {
 		err = json.Unmarshal(raw, &a.PublishedAsTool)
 		if err != nil {
 			return fmt.Errorf("error reading 'published_as_tool': %w", err)
 		}
 		delete(object, "published_as_tool")
+	}
+
+	if raw, found := object["scope"]; found {
+		err = json.Unmarshal(raw, &a.Scope)
+		if err != nil {
+			return fmt.Errorf("error reading 'scope': %w", err)
+		}
+		delete(object, "scope")
 	}
 
 	if raw, found := object["tags"]; found {
@@ -13599,10 +15248,31 @@ func (a WorkflowDefinitionSummary) MarshalJSON() ([]byte, error) {
 		return nil, fmt.Errorf("error marshaling 'name': %w", err)
 	}
 
+	if a.OwnedBy != nil {
+		object["owned_by"], err = json.Marshal(a.OwnedBy)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'owned_by': %w", err)
+		}
+	}
+
+	if a.OwnerAgentId != nil {
+		object["owner_agent_id"], err = json.Marshal(a.OwnerAgentId)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'owner_agent_id': %w", err)
+		}
+	}
+
 	if a.PublishedAsTool != nil {
 		object["published_as_tool"], err = json.Marshal(a.PublishedAsTool)
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'published_as_tool': %w", err)
+		}
+	}
+
+	if a.Scope != nil {
+		object["scope"], err = json.Marshal(a.Scope)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'scope': %w", err)
 		}
 	}
 
@@ -15538,6 +17208,378 @@ func (t *WaitDescriptor) UnmarshalJSON(b []byte) error {
 	return err
 }
 
+// AsWorkflowAgentReactConfig0 returns the union data inside the WorkflowAgentReactConfig as a WorkflowAgentReactConfig0
+func (t WorkflowAgentReactConfig) AsWorkflowAgentReactConfig0() (WorkflowAgentReactConfig0, error) {
+	var body WorkflowAgentReactConfig0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromWorkflowAgentReactConfig0 overwrites any union data inside the WorkflowAgentReactConfig as the provided WorkflowAgentReactConfig0
+func (t *WorkflowAgentReactConfig) FromWorkflowAgentReactConfig0(v WorkflowAgentReactConfig0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeWorkflowAgentReactConfig0 performs a merge with any union data inside the WorkflowAgentReactConfig, using the provided WorkflowAgentReactConfig0
+func (t *WorkflowAgentReactConfig) MergeWorkflowAgentReactConfig0(v WorkflowAgentReactConfig0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsWorkflowAgentReactConfig1 returns the union data inside the WorkflowAgentReactConfig as a WorkflowAgentReactConfig1
+func (t WorkflowAgentReactConfig) AsWorkflowAgentReactConfig1() (WorkflowAgentReactConfig1, error) {
+	var body WorkflowAgentReactConfig1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromWorkflowAgentReactConfig1 overwrites any union data inside the WorkflowAgentReactConfig as the provided WorkflowAgentReactConfig1
+func (t *WorkflowAgentReactConfig) FromWorkflowAgentReactConfig1(v WorkflowAgentReactConfig1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeWorkflowAgentReactConfig1 performs a merge with any union data inside the WorkflowAgentReactConfig, using the provided WorkflowAgentReactConfig1
+func (t *WorkflowAgentReactConfig) MergeWorkflowAgentReactConfig1(v WorkflowAgentReactConfig1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t WorkflowAgentReactConfig) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	object := make(map[string]json.RawMessage)
+	if t.union != nil {
+		err = json.Unmarshal(b, &object)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if t.AgentId != nil {
+		object["agent_id"], err = json.Marshal(t.AgentId)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'agent_id': %w", err)
+		}
+	}
+
+	if t.AllowedActions != nil {
+		object["allowed_actions"], err = json.Marshal(t.AllowedActions)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'allowed_actions': %w", err)
+		}
+	}
+
+	if t.AllowedTools != nil {
+		object["allowed_tools"], err = json.Marshal(t.AllowedTools)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'allowed_tools': %w", err)
+		}
+	}
+
+	if t.Batch != nil {
+		object["batch"], err = json.Marshal(t.Batch)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'batch': %w", err)
+		}
+	}
+
+	if t.Condition != nil {
+		object["condition"], err = json.Marshal(t.Condition)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'condition': %w", err)
+		}
+	}
+
+	if t.Context != nil {
+		object["context"], err = json.Marshal(t.Context)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'context': %w", err)
+		}
+	}
+
+	if t.EventType != nil {
+		object["event_type"], err = json.Marshal(t.EventType)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'event_type': %w", err)
+		}
+	}
+
+	if t.Instructions != nil {
+		object["instructions"], err = json.Marshal(t.Instructions)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'instructions': %w", err)
+		}
+	}
+
+	if t.MaxPending != nil {
+		object["max_pending"], err = json.Marshal(t.MaxPending)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'max_pending': %w", err)
+		}
+	}
+
+	if t.OnTimeout != nil {
+		object["on_timeout"], err = json.Marshal(t.OnTimeout)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'on_timeout': %w", err)
+		}
+	}
+
+	if t.OutputSchema != nil {
+		object["output_schema"], err = json.Marshal(t.OutputSchema)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'output_schema': %w", err)
+		}
+	}
+
+	object["prompt"], err = json.Marshal(t.Prompt)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'prompt': %w", err)
+	}
+
+	if t.SessionForkId != nil {
+		object["session_fork_id"], err = json.Marshal(t.SessionForkId)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'session_fork_id': %w", err)
+		}
+	}
+
+	if t.SessionId != nil {
+		object["session_id"], err = json.Marshal(t.SessionId)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'session_id': %w", err)
+		}
+	}
+
+	if t.SessionName != nil {
+		object["session_name"], err = json.Marshal(t.SessionName)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'session_name': %w", err)
+		}
+	}
+
+	if t.SessionScope != nil {
+		object["session_scope"], err = json.Marshal(t.SessionScope)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'session_scope': %w", err)
+		}
+	}
+
+	if t.SkillName != nil {
+		object["skill_name"], err = json.Marshal(t.SkillName)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'skill_name': %w", err)
+		}
+	}
+
+	object["timeout"], err = json.Marshal(t.Timeout)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'timeout': %w", err)
+	}
+
+	if t.TimeoutSec != nil {
+		object["timeout_sec"], err = json.Marshal(t.TimeoutSec)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'timeout_sec': %w", err)
+		}
+	}
+
+	if t.ToolkitIds != nil {
+		object["toolkit_ids"], err = json.Marshal(t.ToolkitIds)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'toolkit_ids': %w", err)
+		}
+	}
+
+	if t.Topic != nil {
+		object["topic"], err = json.Marshal(t.Topic)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'topic': %w", err)
+		}
+	}
+	b, err = json.Marshal(object)
+	return b, err
+}
+
+func (t *WorkflowAgentReactConfig) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	if err != nil {
+		return err
+	}
+	object := make(map[string]json.RawMessage)
+	err = json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["agent_id"]; found {
+		err = json.Unmarshal(raw, &t.AgentId)
+		if err != nil {
+			return fmt.Errorf("error reading 'agent_id': %w", err)
+		}
+	}
+
+	if raw, found := object["allowed_actions"]; found {
+		err = json.Unmarshal(raw, &t.AllowedActions)
+		if err != nil {
+			return fmt.Errorf("error reading 'allowed_actions': %w", err)
+		}
+	}
+
+	if raw, found := object["allowed_tools"]; found {
+		err = json.Unmarshal(raw, &t.AllowedTools)
+		if err != nil {
+			return fmt.Errorf("error reading 'allowed_tools': %w", err)
+		}
+	}
+
+	if raw, found := object["batch"]; found {
+		err = json.Unmarshal(raw, &t.Batch)
+		if err != nil {
+			return fmt.Errorf("error reading 'batch': %w", err)
+		}
+	}
+
+	if raw, found := object["condition"]; found {
+		err = json.Unmarshal(raw, &t.Condition)
+		if err != nil {
+			return fmt.Errorf("error reading 'condition': %w", err)
+		}
+	}
+
+	if raw, found := object["context"]; found {
+		err = json.Unmarshal(raw, &t.Context)
+		if err != nil {
+			return fmt.Errorf("error reading 'context': %w", err)
+		}
+	}
+
+	if raw, found := object["event_type"]; found {
+		err = json.Unmarshal(raw, &t.EventType)
+		if err != nil {
+			return fmt.Errorf("error reading 'event_type': %w", err)
+		}
+	}
+
+	if raw, found := object["instructions"]; found {
+		err = json.Unmarshal(raw, &t.Instructions)
+		if err != nil {
+			return fmt.Errorf("error reading 'instructions': %w", err)
+		}
+	}
+
+	if raw, found := object["max_pending"]; found {
+		err = json.Unmarshal(raw, &t.MaxPending)
+		if err != nil {
+			return fmt.Errorf("error reading 'max_pending': %w", err)
+		}
+	}
+
+	if raw, found := object["on_timeout"]; found {
+		err = json.Unmarshal(raw, &t.OnTimeout)
+		if err != nil {
+			return fmt.Errorf("error reading 'on_timeout': %w", err)
+		}
+	}
+
+	if raw, found := object["output_schema"]; found {
+		err = json.Unmarshal(raw, &t.OutputSchema)
+		if err != nil {
+			return fmt.Errorf("error reading 'output_schema': %w", err)
+		}
+	}
+
+	if raw, found := object["prompt"]; found {
+		err = json.Unmarshal(raw, &t.Prompt)
+		if err != nil {
+			return fmt.Errorf("error reading 'prompt': %w", err)
+		}
+	}
+
+	if raw, found := object["session_fork_id"]; found {
+		err = json.Unmarshal(raw, &t.SessionForkId)
+		if err != nil {
+			return fmt.Errorf("error reading 'session_fork_id': %w", err)
+		}
+	}
+
+	if raw, found := object["session_id"]; found {
+		err = json.Unmarshal(raw, &t.SessionId)
+		if err != nil {
+			return fmt.Errorf("error reading 'session_id': %w", err)
+		}
+	}
+
+	if raw, found := object["session_name"]; found {
+		err = json.Unmarshal(raw, &t.SessionName)
+		if err != nil {
+			return fmt.Errorf("error reading 'session_name': %w", err)
+		}
+	}
+
+	if raw, found := object["session_scope"]; found {
+		err = json.Unmarshal(raw, &t.SessionScope)
+		if err != nil {
+			return fmt.Errorf("error reading 'session_scope': %w", err)
+		}
+	}
+
+	if raw, found := object["skill_name"]; found {
+		err = json.Unmarshal(raw, &t.SkillName)
+		if err != nil {
+			return fmt.Errorf("error reading 'skill_name': %w", err)
+		}
+	}
+
+	if raw, found := object["timeout"]; found {
+		err = json.Unmarshal(raw, &t.Timeout)
+		if err != nil {
+			return fmt.Errorf("error reading 'timeout': %w", err)
+		}
+	}
+
+	if raw, found := object["timeout_sec"]; found {
+		err = json.Unmarshal(raw, &t.TimeoutSec)
+		if err != nil {
+			return fmt.Errorf("error reading 'timeout_sec': %w", err)
+		}
+	}
+
+	if raw, found := object["toolkit_ids"]; found {
+		err = json.Unmarshal(raw, &t.ToolkitIds)
+		if err != nil {
+			return fmt.Errorf("error reading 'toolkit_ids': %w", err)
+		}
+	}
+
+	if raw, found := object["topic"]; found {
+		err = json.Unmarshal(raw, &t.Topic)
+		if err != nil {
+			return fmt.Errorf("error reading 'topic': %w", err)
+		}
+	}
+
+	return err
+}
+
 // AsWorkflowOutput0 returns the union data inside the WorkflowOutput as a WorkflowOutput0
 func (t WorkflowOutput) AsWorkflowOutput0() (WorkflowOutput0, error) {
 	var body WorkflowOutput0
@@ -15804,6 +17846,58 @@ func (t *WorkflowStep) MergeWorkflowExecutableStep(v WorkflowExecutableStep) err
 	return err
 }
 
+// AsWorkflowAgentInvokeStep returns the union data inside the WorkflowStep as a WorkflowAgentInvokeStep
+func (t WorkflowStep) AsWorkflowAgentInvokeStep() (WorkflowAgentInvokeStep, error) {
+	var body WorkflowAgentInvokeStep
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromWorkflowAgentInvokeStep overwrites any union data inside the WorkflowStep as the provided WorkflowAgentInvokeStep
+func (t *WorkflowStep) FromWorkflowAgentInvokeStep(v WorkflowAgentInvokeStep) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeWorkflowAgentInvokeStep performs a merge with any union data inside the WorkflowStep, using the provided WorkflowAgentInvokeStep
+func (t *WorkflowStep) MergeWorkflowAgentInvokeStep(v WorkflowAgentInvokeStep) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsWorkflowEachStep returns the union data inside the WorkflowStep as a WorkflowEachStep
+func (t WorkflowStep) AsWorkflowEachStep() (WorkflowEachStep, error) {
+	var body WorkflowEachStep
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromWorkflowEachStep overwrites any union data inside the WorkflowStep as the provided WorkflowEachStep
+func (t *WorkflowStep) FromWorkflowEachStep(v WorkflowEachStep) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeWorkflowEachStep performs a merge with any union data inside the WorkflowStep, using the provided WorkflowEachStep
+func (t *WorkflowStep) MergeWorkflowEachStep(v WorkflowEachStep) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
 // AsWorkflowSetStep returns the union data inside the WorkflowStep as a WorkflowSetStep
 func (t WorkflowStep) AsWorkflowSetStep() (WorkflowSetStep, error) {
 	var body WorkflowSetStep
@@ -15856,6 +17950,32 @@ func (t *WorkflowStep) MergeWorkflowJoinStep(v WorkflowJoinStep) error {
 	return err
 }
 
+// AsWorkflowJoinKindStep returns the union data inside the WorkflowStep as a WorkflowJoinKindStep
+func (t WorkflowStep) AsWorkflowJoinKindStep() (WorkflowJoinKindStep, error) {
+	var body WorkflowJoinKindStep
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromWorkflowJoinKindStep overwrites any union data inside the WorkflowStep as the provided WorkflowJoinKindStep
+func (t *WorkflowStep) FromWorkflowJoinKindStep(v WorkflowJoinKindStep) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeWorkflowJoinKindStep performs a merge with any union data inside the WorkflowStep, using the provided WorkflowJoinKindStep
+func (t *WorkflowStep) MergeWorkflowJoinKindStep(v WorkflowJoinKindStep) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
 // AsWorkflowWaitSignalStep returns the union data inside the WorkflowStep as a WorkflowWaitSignalStep
 func (t WorkflowStep) AsWorkflowWaitSignalStep() (WorkflowWaitSignalStep, error) {
 	var body WorkflowWaitSignalStep
@@ -15872,6 +17992,84 @@ func (t *WorkflowStep) FromWorkflowWaitSignalStep(v WorkflowWaitSignalStep) erro
 
 // MergeWorkflowWaitSignalStep performs a merge with any union data inside the WorkflowStep, using the provided WorkflowWaitSignalStep
 func (t *WorkflowStep) MergeWorkflowWaitSignalStep(v WorkflowWaitSignalStep) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsWorkflowWaitSignalKindStep returns the union data inside the WorkflowStep as a WorkflowWaitSignalKindStep
+func (t WorkflowStep) AsWorkflowWaitSignalKindStep() (WorkflowWaitSignalKindStep, error) {
+	var body WorkflowWaitSignalKindStep
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromWorkflowWaitSignalKindStep overwrites any union data inside the WorkflowStep as the provided WorkflowWaitSignalKindStep
+func (t *WorkflowStep) FromWorkflowWaitSignalKindStep(v WorkflowWaitSignalKindStep) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeWorkflowWaitSignalKindStep performs a merge with any union data inside the WorkflowStep, using the provided WorkflowWaitSignalKindStep
+func (t *WorkflowStep) MergeWorkflowWaitSignalKindStep(v WorkflowWaitSignalKindStep) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsWorkflowAgentReactStep returns the union data inside the WorkflowStep as a WorkflowAgentReactStep
+func (t WorkflowStep) AsWorkflowAgentReactStep() (WorkflowAgentReactStep, error) {
+	var body WorkflowAgentReactStep
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromWorkflowAgentReactStep overwrites any union data inside the WorkflowStep as the provided WorkflowAgentReactStep
+func (t *WorkflowStep) FromWorkflowAgentReactStep(v WorkflowAgentReactStep) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeWorkflowAgentReactStep performs a merge with any union data inside the WorkflowStep, using the provided WorkflowAgentReactStep
+func (t *WorkflowStep) MergeWorkflowAgentReactStep(v WorkflowAgentReactStep) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsWorkflowAgentReactKindStep returns the union data inside the WorkflowStep as a WorkflowAgentReactKindStep
+func (t WorkflowStep) AsWorkflowAgentReactKindStep() (WorkflowAgentReactKindStep, error) {
+	var body WorkflowAgentReactKindStep
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromWorkflowAgentReactKindStep overwrites any union data inside the WorkflowStep as the provided WorkflowAgentReactKindStep
+func (t *WorkflowStep) FromWorkflowAgentReactKindStep(v WorkflowAgentReactKindStep) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeWorkflowAgentReactKindStep performs a merge with any union data inside the WorkflowStep, using the provided WorkflowAgentReactKindStep
+func (t *WorkflowStep) MergeWorkflowAgentReactKindStep(v WorkflowAgentReactKindStep) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -15908,6 +18106,32 @@ func (t *WorkflowStep) MergeWorkflowWaitEventStep(v WorkflowWaitEventStep) error
 	return err
 }
 
+// AsWorkflowWaitEventKindStep returns the union data inside the WorkflowStep as a WorkflowWaitEventKindStep
+func (t WorkflowStep) AsWorkflowWaitEventKindStep() (WorkflowWaitEventKindStep, error) {
+	var body WorkflowWaitEventKindStep
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromWorkflowWaitEventKindStep overwrites any union data inside the WorkflowStep as the provided WorkflowWaitEventKindStep
+func (t *WorkflowStep) FromWorkflowWaitEventKindStep(v WorkflowWaitEventKindStep) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeWorkflowWaitEventKindStep performs a merge with any union data inside the WorkflowStep, using the provided WorkflowWaitEventKindStep
+func (t *WorkflowStep) MergeWorkflowWaitEventKindStep(v WorkflowWaitEventKindStep) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
 // AsWorkflowWaitUntilStep returns the union data inside the WorkflowStep as a WorkflowWaitUntilStep
 func (t WorkflowStep) AsWorkflowWaitUntilStep() (WorkflowWaitUntilStep, error) {
 	var body WorkflowWaitUntilStep
@@ -15924,6 +18148,32 @@ func (t *WorkflowStep) FromWorkflowWaitUntilStep(v WorkflowWaitUntilStep) error 
 
 // MergeWorkflowWaitUntilStep performs a merge with any union data inside the WorkflowStep, using the provided WorkflowWaitUntilStep
 func (t *WorkflowStep) MergeWorkflowWaitUntilStep(v WorkflowWaitUntilStep) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsWorkflowWaitUntilKindStep returns the union data inside the WorkflowStep as a WorkflowWaitUntilKindStep
+func (t WorkflowStep) AsWorkflowWaitUntilKindStep() (WorkflowWaitUntilKindStep, error) {
+	var body WorkflowWaitUntilKindStep
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromWorkflowWaitUntilKindStep overwrites any union data inside the WorkflowStep as the provided WorkflowWaitUntilKindStep
+func (t *WorkflowStep) FromWorkflowWaitUntilKindStep(v WorkflowWaitUntilKindStep) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeWorkflowWaitUntilKindStep performs a merge with any union data inside the WorkflowStep, using the provided WorkflowWaitUntilKindStep
+func (t *WorkflowStep) MergeWorkflowWaitUntilKindStep(v WorkflowWaitUntilKindStep) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -15960,6 +18210,32 @@ func (t *WorkflowStep) MergeWorkflowSleepStep(v WorkflowSleepStep) error {
 	return err
 }
 
+// AsWorkflowSleepKindStep returns the union data inside the WorkflowStep as a WorkflowSleepKindStep
+func (t WorkflowStep) AsWorkflowSleepKindStep() (WorkflowSleepKindStep, error) {
+	var body WorkflowSleepKindStep
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromWorkflowSleepKindStep overwrites any union data inside the WorkflowStep as the provided WorkflowSleepKindStep
+func (t *WorkflowStep) FromWorkflowSleepKindStep(v WorkflowSleepKindStep) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeWorkflowSleepKindStep performs a merge with any union data inside the WorkflowStep, using the provided WorkflowSleepKindStep
+func (t *WorkflowStep) MergeWorkflowSleepKindStep(v WorkflowSleepKindStep) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
 // AsWorkflowPauseStep returns the union data inside the WorkflowStep as a WorkflowPauseStep
 func (t WorkflowStep) AsWorkflowPauseStep() (WorkflowPauseStep, error) {
 	var body WorkflowPauseStep
@@ -15986,6 +18262,32 @@ func (t *WorkflowStep) MergeWorkflowPauseStep(v WorkflowPauseStep) error {
 	return err
 }
 
+// AsWorkflowPauseKindStep returns the union data inside the WorkflowStep as a WorkflowPauseKindStep
+func (t WorkflowStep) AsWorkflowPauseKindStep() (WorkflowPauseKindStep, error) {
+	var body WorkflowPauseKindStep
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromWorkflowPauseKindStep overwrites any union data inside the WorkflowStep as the provided WorkflowPauseKindStep
+func (t *WorkflowStep) FromWorkflowPauseKindStep(v WorkflowPauseKindStep) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeWorkflowPauseKindStep performs a merge with any union data inside the WorkflowStep, using the provided WorkflowPauseKindStep
+func (t *WorkflowStep) MergeWorkflowPauseKindStep(v WorkflowPauseKindStep) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
 // AsWorkflowInteractionStep returns the union data inside the WorkflowStep as a WorkflowInteractionStep
 func (t WorkflowStep) AsWorkflowInteractionStep() (WorkflowInteractionStep, error) {
 	var body WorkflowInteractionStep
@@ -16002,6 +18304,32 @@ func (t *WorkflowStep) FromWorkflowInteractionStep(v WorkflowInteractionStep) er
 
 // MergeWorkflowInteractionStep performs a merge with any union data inside the WorkflowStep, using the provided WorkflowInteractionStep
 func (t *WorkflowStep) MergeWorkflowInteractionStep(v WorkflowInteractionStep) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsWorkflowInteractionKindStep returns the union data inside the WorkflowStep as a WorkflowInteractionKindStep
+func (t WorkflowStep) AsWorkflowInteractionKindStep() (WorkflowInteractionKindStep, error) {
+	var body WorkflowInteractionKindStep
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromWorkflowInteractionKindStep overwrites any union data inside the WorkflowStep as the provided WorkflowInteractionKindStep
+func (t *WorkflowStep) FromWorkflowInteractionKindStep(v WorkflowInteractionKindStep) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeWorkflowInteractionKindStep performs a merge with any union data inside the WorkflowStep, using the provided WorkflowInteractionKindStep
+func (t *WorkflowStep) MergeWorkflowInteractionKindStep(v WorkflowInteractionKindStep) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -16186,20 +18514,6 @@ type ClientInterface interface {
 	// RotateActionSecret request
 	RotateActionSecret(ctx context.Context, project ProjectHandleParam, actionName ActionNameParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListActorStates request
-	ListActorStates(ctx context.Context, project ProjectHandleParam, params *ListActorStatesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// ListActorAssignments request
-	ListActorAssignments(ctx context.Context, project ProjectHandleParam, params *ListActorAssignmentsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// GetActorState request
-	GetActorState(ctx context.Context, project ProjectHandleParam, actorId string, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// UpsertActorStateWithBody request with any body
-	UpsertActorStateWithBody(ctx context.Context, project ProjectHandleParam, actorId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	UpsertActorState(ctx context.Context, project ProjectHandleParam, actorId string, body UpsertActorStateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
 	// ListAgents request
 	ListAgents(ctx context.Context, project ProjectHandleParam, params *ListAgentsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -16222,22 +18536,36 @@ type ClientInterface interface {
 	// ProvisionAgentInbox request
 	ProvisionAgentInbox(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ListAgentPresences request
+	ListAgentPresences(ctx context.Context, project ProjectHandleParam, id IDParam, params *ListAgentPresencesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateAgentPresenceWithBody request with any body
+	CreateAgentPresenceWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	CreateAgentPresence(ctx context.Context, project ProjectHandleParam, id IDParam, body CreateAgentPresenceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetAgentPresence request
+	GetAgentPresence(ctx context.Context, project ProjectHandleParam, id IDParam, presenceId PresenceId, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DisconnectAgentPresence request
+	DisconnectAgentPresence(ctx context.Context, project ProjectHandleParam, id IDParam, presenceId PresenceId, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// HeartbeatAgentPresence request
+	HeartbeatAgentPresence(ctx context.Context, project ProjectHandleParam, id IDParam, presenceId PresenceId, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListAgentSessions request
 	ListAgentSessions(ctx context.Context, project ProjectHandleParam, id IDParam, params *ListAgentSessionsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CreateAgentSessionWithBody request with any body
-	CreateAgentSessionWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	CreateAgentSession(ctx context.Context, project ProjectHandleParam, id IDParam, body CreateAgentSessionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
 	// GetAgentSession request
-	GetAgentSession(ctx context.Context, project ProjectHandleParam, id IDParam, sessionId SessionId, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetAgentSession(ctx context.Context, project ProjectHandleParam, id IDParam, sessionId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// DisconnectAgentSession request
-	DisconnectAgentSession(ctx context.Context, project ProjectHandleParam, id IDParam, sessionId SessionId, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// ListAgentSessionMessages request
+	ListAgentSessionMessages(ctx context.Context, project ProjectHandleParam, id IDParam, sessionId string, params *ListAgentSessionMessagesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// HeartbeatAgentSession request
-	HeartbeatAgentSession(ctx context.Context, project ProjectHandleParam, id IDParam, sessionId SessionId, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// AppendAgentSessionMessagesWithBody request with any body
+	AppendAgentSessionMessagesWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, sessionId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	AppendAgentSessionMessages(ctx context.Context, project ProjectHandleParam, id IDParam, sessionId string, body AppendAgentSessionMessagesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListSkillAssignments request
 	ListSkillAssignments(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -16268,13 +18596,16 @@ type ClientInterface interface {
 	GetArtifact(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetArtifactContent request
-	GetArtifactContent(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, params *GetArtifactContentParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetArtifactContent(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// UnpinArtifact request
 	UnpinArtifact(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// PinArtifact request
 	PinArtifact(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateArtifactSignedUrl request
+	CreateArtifactSignedUrl(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, params *CreateArtifactSignedUrlParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// CommitArtifactWithBody request with any body
 	CommitArtifactWithBody(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -16293,6 +18624,14 @@ type ClientInterface interface {
 	CreateChannelWithBody(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	CreateChannel(ctx context.Context, project ProjectHandleParam, body CreateChannelJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetChannelBlockCatalog request
+	GetChannelBlockCatalog(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// OpenDirectMessageWithBody request with any body
+	OpenDirectMessageWithBody(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	OpenDirectMessage(ctx context.Context, project ProjectHandleParam, body OpenDirectMessageJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// DeleteChannel request
 	DeleteChannel(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -16364,51 +18703,6 @@ type ClientInterface interface {
 
 	ShareChannelEntity(ctx context.Context, project ProjectHandleParam, id IDParam, body ShareChannelEntityJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListEnvironments request
-	ListEnvironments(ctx context.Context, project ProjectHandleParam, params *ListEnvironmentsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// CreateEnvironmentWithBody request with any body
-	CreateEnvironmentWithBody(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	CreateEnvironment(ctx context.Context, project ProjectHandleParam, body CreateEnvironmentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// AcquireEnvironmentWithBody request with any body
-	AcquireEnvironmentWithBody(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	AcquireEnvironment(ctx context.Context, project ProjectHandleParam, body AcquireEnvironmentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// ReleaseEnvironmentLease request
-	ReleaseEnvironmentLease(ctx context.Context, project ProjectHandleParam, leaseId string, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// DestroyEnvironment request
-	DestroyEnvironment(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// GetEnvironment request
-	GetEnvironment(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// UpdateEnvironmentWithBody request with any body
-	UpdateEnvironmentWithBody(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	UpdateEnvironment(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, body UpdateEnvironmentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// ExecEnvironmentWithBody request with any body
-	ExecEnvironmentWithBody(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	ExecEnvironment(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, body ExecEnvironmentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// WriteEnvironmentFileWithBody request with any body
-	WriteEnvironmentFileWithBody(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	WriteEnvironmentFile(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, body WriteEnvironmentFileJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// ReconcileEnvironment request
-	ReconcileEnvironment(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// StartEnvironmentWorkerWithBody request with any body
-	StartEnvironmentWorkerWithBody(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	StartEnvironmentWorker(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, body StartEnvironmentWorkerJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
 	// StreamProjectEvents request
 	StreamProjectEvents(ctx context.Context, project ProjectHandleParam, params *StreamProjectEventsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -16442,6 +18736,9 @@ type ClientInterface interface {
 	// RemoveGroupMember request
 	RemoveGroupMember(ctx context.Context, project ProjectHandleParam, group GroupParam, userId UserId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ListIntegrationEvents request
+	ListIntegrationEvents(ctx context.Context, project ProjectHandleParam, params *ListIntegrationEventsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// CreateIntegrationEventTestFireWithBody request with any body
 	CreateIntegrationEventTestFireWithBody(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -16450,8 +18747,31 @@ type ClientInterface interface {
 	// ListIntegrationEventTestSamples request
 	ListIntegrationEventTestSamples(ctx context.Context, project ProjectHandleParam, params *ListIntegrationEventTestSamplesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetIntegrationEvent request
+	GetIntegrationEvent(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListIntegrationProviders request
 	ListIntegrationProviders(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ConnectApolloWithBody request with any body
+	ConnectApolloWithBody(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	ConnectApollo(ctx context.Context, project ProjectHandleParam, body ConnectApolloJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ConnectFirecrawlWithBody request with any body
+	ConnectFirecrawlWithBody(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	ConnectFirecrawl(ctx context.Context, project ProjectHandleParam, body ConnectFirecrawlJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ConnectGoogleSheetsWithBody request with any body
+	ConnectGoogleSheetsWithBody(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	ConnectGoogleSheets(ctx context.Context, project ProjectHandleParam, body ConnectGoogleSheetsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ConnectScrapeCreatorsWithBody request with any body
+	ConnectScrapeCreatorsWithBody(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	ConnectScrapeCreators(ctx context.Context, project ProjectHandleParam, body ConnectScrapeCreatorsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListInteractions request
 	ListInteractions(ctx context.Context, project ProjectHandleParam, params *ListInteractionsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -16543,9 +18863,9 @@ type ClientInterface interface {
 	CreateJobInteraction(ctx context.Context, project ProjectHandleParam, id IDParam, body CreateJobInteractionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ReportJobWithBody request with any body
-	ReportJobWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ReportJobWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, params *ReportJobParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	ReportJob(ctx context.Context, project ProjectHandleParam, id IDParam, body ReportJobJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ReportJob(ctx context.Context, project ProjectHandleParam, id IDParam, params *ReportJobParams, body ReportJobJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListProjectLogs request
 	ListProjectLogs(ctx context.Context, project ProjectHandleParam, params *ListProjectLogsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -16727,54 +19047,54 @@ type ClientInterface interface {
 	CreateTable(ctx context.Context, project ProjectHandleParam, body CreateTableJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// DeleteTable request
-	DeleteTable(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+	DeleteTable(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, params *DeleteTableParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetTable request
-	GetTable(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetTable(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, params *GetTableParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// UpdateTableWithBody request with any body
-	UpdateTableWithBody(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateTableWithBody(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, params *UpdateTableParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	UpdateTable(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body UpdateTableJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateTable(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, params *UpdateTableParams, body UpdateTableJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// InsertTableRowWithBody request with any body
-	InsertTableRowWithBody(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	InsertTableRowWithBody(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, params *InsertTableRowParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	InsertTableRow(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body InsertTableRowJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	InsertTableRow(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, params *InsertTableRowParams, body InsertTableRowJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// BulkInsertTableRowsWithBody request with any body
-	BulkInsertTableRowsWithBody(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	BulkInsertTableRowsWithBody(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, params *BulkInsertTableRowsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	BulkInsertTableRows(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body BulkInsertTableRowsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	BulkInsertTableRows(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, params *BulkInsertTableRowsParams, body BulkInsertTableRowsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// QueryTableRowsWithBody request with any body
-	QueryTableRowsWithBody(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	QueryTableRowsWithBody(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, params *QueryTableRowsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	QueryTableRows(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body QueryTableRowsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	QueryTableRows(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, params *QueryTableRowsParams, body QueryTableRowsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// SearchTableRowsWithBody request with any body
-	SearchTableRowsWithBody(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	SearchTableRowsWithBody(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, params *SearchTableRowsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	SearchTableRows(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body SearchTableRowsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	SearchTableRows(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, params *SearchTableRowsParams, body SearchTableRowsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// UpsertTableRowWithBody request with any body
-	UpsertTableRowWithBody(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpsertTableRowWithBody(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, params *UpsertTableRowParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	UpsertTableRow(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body UpsertTableRowJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpsertTableRow(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, params *UpsertTableRowParams, body UpsertTableRowJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// DeleteTableRow request
-	DeleteTableRow(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	DeleteTableRow(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, params *DeleteTableRowParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetTableRow request
-	GetTableRow(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetTableRow(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, params *GetTableRowParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// UpdateTableRowWithBody request with any body
-	UpdateTableRowWithBody(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateTableRowWithBody(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, params *UpdateTableRowParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	UpdateTableRow(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, body UpdateTableRowJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateTableRow(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, params *UpdateTableRowParams, body UpdateTableRowJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetTableStats request
-	GetTableStats(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetTableStats(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, params *GetTableStatsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListProjectTeam request
 	ListProjectTeam(ctx context.Context, project ProjectHandleParam, params *ListProjectTeamParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -16853,6 +19173,20 @@ type ClientInterface interface {
 
 	TestFireTrigger(ctx context.Context, project ProjectHandleParam, id IDParam, body TestFireTriggerJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ListUserStates request
+	ListUserStates(ctx context.Context, project ProjectHandleParam, params *ListUserStatesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListUserAssignments request
+	ListUserAssignments(ctx context.Context, project ProjectHandleParam, params *ListUserAssignmentsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetUserState request
+	GetUserState(ctx context.Context, project ProjectHandleParam, userId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpsertUserStateWithBody request with any body
+	UpsertUserStateWithBody(ctx context.Context, project ProjectHandleParam, userId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	UpsertUserState(ctx context.Context, project ProjectHandleParam, userId string, body UpsertUserStateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListWebhooks request
 	ListWebhooks(ctx context.Context, project ProjectHandleParam, params *ListWebhooksParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -16915,6 +19249,11 @@ type ClientInterface interface {
 
 	// GetWorkflowVersion request
 	GetWorkflowVersion(ctx context.Context, project ProjectHandleParam, id IDParam, version int, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ValidateWorkflowExpressionsWithBody request with any body
+	ValidateWorkflowExpressionsWithBody(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	ValidateWorkflowExpressions(ctx context.Context, project ProjectHandleParam, body ValidateWorkflowExpressionsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
 func (c *Client) ListAuditLogs(ctx context.Context, params *ListAuditLogsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -17313,66 +19652,6 @@ func (c *Client) RotateActionSecret(ctx context.Context, project ProjectHandlePa
 	return c.Client.Do(req)
 }
 
-func (c *Client) ListActorStates(ctx context.Context, project ProjectHandleParam, params *ListActorStatesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListActorStatesRequest(c.Server, project, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) ListActorAssignments(ctx context.Context, project ProjectHandleParam, params *ListActorAssignmentsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListActorAssignmentsRequest(c.Server, project, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) GetActorState(ctx context.Context, project ProjectHandleParam, actorId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetActorStateRequest(c.Server, project, actorId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) UpsertActorStateWithBody(ctx context.Context, project ProjectHandleParam, actorId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpsertActorStateRequestWithBody(c.Server, project, actorId, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) UpsertActorState(ctx context.Context, project ProjectHandleParam, actorId string, body UpsertActorStateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpsertActorStateRequest(c.Server, project, actorId, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
 func (c *Client) ListAgents(ctx context.Context, project ProjectHandleParam, params *ListAgentsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListAgentsRequest(c.Server, project, params)
 	if err != nil {
@@ -17469,6 +19748,78 @@ func (c *Client) ProvisionAgentInbox(ctx context.Context, project ProjectHandleP
 	return c.Client.Do(req)
 }
 
+func (c *Client) ListAgentPresences(ctx context.Context, project ProjectHandleParam, id IDParam, params *ListAgentPresencesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListAgentPresencesRequest(c.Server, project, id, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateAgentPresenceWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateAgentPresenceRequestWithBody(c.Server, project, id, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateAgentPresence(ctx context.Context, project ProjectHandleParam, id IDParam, body CreateAgentPresenceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateAgentPresenceRequest(c.Server, project, id, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetAgentPresence(ctx context.Context, project ProjectHandleParam, id IDParam, presenceId PresenceId, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetAgentPresenceRequest(c.Server, project, id, presenceId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) DisconnectAgentPresence(ctx context.Context, project ProjectHandleParam, id IDParam, presenceId PresenceId, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDisconnectAgentPresenceRequest(c.Server, project, id, presenceId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) HeartbeatAgentPresence(ctx context.Context, project ProjectHandleParam, id IDParam, presenceId PresenceId, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewHeartbeatAgentPresenceRequest(c.Server, project, id, presenceId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) ListAgentSessions(ctx context.Context, project ProjectHandleParam, id IDParam, params *ListAgentSessionsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListAgentSessionsRequest(c.Server, project, id, params)
 	if err != nil {
@@ -17481,31 +19832,7 @@ func (c *Client) ListAgentSessions(ctx context.Context, project ProjectHandlePar
 	return c.Client.Do(req)
 }
 
-func (c *Client) CreateAgentSessionWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateAgentSessionRequestWithBody(c.Server, project, id, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) CreateAgentSession(ctx context.Context, project ProjectHandleParam, id IDParam, body CreateAgentSessionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateAgentSessionRequest(c.Server, project, id, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) GetAgentSession(ctx context.Context, project ProjectHandleParam, id IDParam, sessionId SessionId, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetAgentSession(ctx context.Context, project ProjectHandleParam, id IDParam, sessionId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetAgentSessionRequest(c.Server, project, id, sessionId)
 	if err != nil {
 		return nil, err
@@ -17517,8 +19844,8 @@ func (c *Client) GetAgentSession(ctx context.Context, project ProjectHandleParam
 	return c.Client.Do(req)
 }
 
-func (c *Client) DisconnectAgentSession(ctx context.Context, project ProjectHandleParam, id IDParam, sessionId SessionId, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDisconnectAgentSessionRequest(c.Server, project, id, sessionId)
+func (c *Client) ListAgentSessionMessages(ctx context.Context, project ProjectHandleParam, id IDParam, sessionId string, params *ListAgentSessionMessagesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListAgentSessionMessagesRequest(c.Server, project, id, sessionId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -17529,8 +19856,20 @@ func (c *Client) DisconnectAgentSession(ctx context.Context, project ProjectHand
 	return c.Client.Do(req)
 }
 
-func (c *Client) HeartbeatAgentSession(ctx context.Context, project ProjectHandleParam, id IDParam, sessionId SessionId, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewHeartbeatAgentSessionRequest(c.Server, project, id, sessionId)
+func (c *Client) AppendAgentSessionMessagesWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, sessionId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAppendAgentSessionMessagesRequestWithBody(c.Server, project, id, sessionId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) AppendAgentSessionMessages(ctx context.Context, project ProjectHandleParam, id IDParam, sessionId string, body AppendAgentSessionMessagesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAppendAgentSessionMessagesRequest(c.Server, project, id, sessionId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -17661,8 +20000,8 @@ func (c *Client) GetArtifact(ctx context.Context, project ProjectHandleParam, id
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetArtifactContent(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, params *GetArtifactContentParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetArtifactContentRequest(c.Server, project, id, params)
+func (c *Client) GetArtifactContent(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetArtifactContentRequest(c.Server, project, id)
 	if err != nil {
 		return nil, err
 	}
@@ -17687,6 +20026,18 @@ func (c *Client) UnpinArtifact(ctx context.Context, project ProjectHandleParam, 
 
 func (c *Client) PinArtifact(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewPinArtifactRequest(c.Server, project, id)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateArtifactSignedUrl(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, params *CreateArtifactSignedUrlParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateArtifactSignedUrlRequest(c.Server, project, id, params)
 	if err != nil {
 		return nil, err
 	}
@@ -17771,6 +20122,42 @@ func (c *Client) CreateChannelWithBody(ctx context.Context, project ProjectHandl
 
 func (c *Client) CreateChannel(ctx context.Context, project ProjectHandleParam, body CreateChannelJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewCreateChannelRequest(c.Server, project, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetChannelBlockCatalog(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetChannelBlockCatalogRequest(c.Server, project)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) OpenDirectMessageWithBody(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewOpenDirectMessageRequestWithBody(c.Server, project, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) OpenDirectMessage(ctx context.Context, project ProjectHandleParam, body OpenDirectMessageJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewOpenDirectMessageRequest(c.Server, project, body)
 	if err != nil {
 		return nil, err
 	}
@@ -18093,210 +20480,6 @@ func (c *Client) ShareChannelEntity(ctx context.Context, project ProjectHandlePa
 	return c.Client.Do(req)
 }
 
-func (c *Client) ListEnvironments(ctx context.Context, project ProjectHandleParam, params *ListEnvironmentsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListEnvironmentsRequest(c.Server, project, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) CreateEnvironmentWithBody(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateEnvironmentRequestWithBody(c.Server, project, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) CreateEnvironment(ctx context.Context, project ProjectHandleParam, body CreateEnvironmentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateEnvironmentRequest(c.Server, project, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) AcquireEnvironmentWithBody(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewAcquireEnvironmentRequestWithBody(c.Server, project, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) AcquireEnvironment(ctx context.Context, project ProjectHandleParam, body AcquireEnvironmentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewAcquireEnvironmentRequest(c.Server, project, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) ReleaseEnvironmentLease(ctx context.Context, project ProjectHandleParam, leaseId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewReleaseEnvironmentLeaseRequest(c.Server, project, leaseId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) DestroyEnvironment(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDestroyEnvironmentRequest(c.Server, project, environmentId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) GetEnvironment(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetEnvironmentRequest(c.Server, project, environmentId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) UpdateEnvironmentWithBody(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateEnvironmentRequestWithBody(c.Server, project, environmentId, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) UpdateEnvironment(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, body UpdateEnvironmentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateEnvironmentRequest(c.Server, project, environmentId, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) ExecEnvironmentWithBody(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewExecEnvironmentRequestWithBody(c.Server, project, environmentId, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) ExecEnvironment(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, body ExecEnvironmentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewExecEnvironmentRequest(c.Server, project, environmentId, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) WriteEnvironmentFileWithBody(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewWriteEnvironmentFileRequestWithBody(c.Server, project, environmentId, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) WriteEnvironmentFile(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, body WriteEnvironmentFileJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewWriteEnvironmentFileRequest(c.Server, project, environmentId, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) ReconcileEnvironment(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewReconcileEnvironmentRequest(c.Server, project, environmentId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) StartEnvironmentWorkerWithBody(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewStartEnvironmentWorkerRequestWithBody(c.Server, project, environmentId, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) StartEnvironmentWorker(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, body StartEnvironmentWorkerJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewStartEnvironmentWorkerRequest(c.Server, project, environmentId, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
 func (c *Client) StreamProjectEvents(ctx context.Context, project ProjectHandleParam, params *StreamProjectEventsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewStreamProjectEventsRequest(c.Server, project, params)
 	if err != nil {
@@ -18441,6 +20624,18 @@ func (c *Client) RemoveGroupMember(ctx context.Context, project ProjectHandlePar
 	return c.Client.Do(req)
 }
 
+func (c *Client) ListIntegrationEvents(ctx context.Context, project ProjectHandleParam, params *ListIntegrationEventsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListIntegrationEventsRequest(c.Server, project, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) CreateIntegrationEventTestFireWithBody(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewCreateIntegrationEventTestFireRequestWithBody(c.Server, project, contentType, body)
 	if err != nil {
@@ -18477,8 +20672,116 @@ func (c *Client) ListIntegrationEventTestSamples(ctx context.Context, project Pr
 	return c.Client.Do(req)
 }
 
+func (c *Client) GetIntegrationEvent(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetIntegrationEventRequest(c.Server, project, id)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) ListIntegrationProviders(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListIntegrationProvidersRequest(c.Server, project)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ConnectApolloWithBody(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewConnectApolloRequestWithBody(c.Server, project, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ConnectApollo(ctx context.Context, project ProjectHandleParam, body ConnectApolloJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewConnectApolloRequest(c.Server, project, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ConnectFirecrawlWithBody(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewConnectFirecrawlRequestWithBody(c.Server, project, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ConnectFirecrawl(ctx context.Context, project ProjectHandleParam, body ConnectFirecrawlJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewConnectFirecrawlRequest(c.Server, project, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ConnectGoogleSheetsWithBody(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewConnectGoogleSheetsRequestWithBody(c.Server, project, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ConnectGoogleSheets(ctx context.Context, project ProjectHandleParam, body ConnectGoogleSheetsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewConnectGoogleSheetsRequest(c.Server, project, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ConnectScrapeCreatorsWithBody(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewConnectScrapeCreatorsRequestWithBody(c.Server, project, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ConnectScrapeCreators(ctx context.Context, project ProjectHandleParam, body ConnectScrapeCreatorsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewConnectScrapeCreatorsRequest(c.Server, project, body)
 	if err != nil {
 		return nil, err
 	}
@@ -18897,8 +21200,8 @@ func (c *Client) CreateJobInteraction(ctx context.Context, project ProjectHandle
 	return c.Client.Do(req)
 }
 
-func (c *Client) ReportJobWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewReportJobRequestWithBody(c.Server, project, id, contentType, body)
+func (c *Client) ReportJobWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, params *ReportJobParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewReportJobRequestWithBody(c.Server, project, id, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -18909,8 +21212,8 @@ func (c *Client) ReportJobWithBody(ctx context.Context, project ProjectHandlePar
 	return c.Client.Do(req)
 }
 
-func (c *Client) ReportJob(ctx context.Context, project ProjectHandleParam, id IDParam, body ReportJobJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewReportJobRequest(c.Server, project, id, body)
+func (c *Client) ReportJob(ctx context.Context, project ProjectHandleParam, id IDParam, params *ReportJobParams, body ReportJobJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewReportJobRequest(c.Server, project, id, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -19701,8 +22004,8 @@ func (c *Client) CreateTable(ctx context.Context, project ProjectHandleParam, bo
 	return c.Client.Do(req)
 }
 
-func (c *Client) DeleteTable(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDeleteTableRequest(c.Server, project, tableName)
+func (c *Client) DeleteTable(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, params *DeleteTableParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteTableRequest(c.Server, project, tableName, params)
 	if err != nil {
 		return nil, err
 	}
@@ -19713,8 +22016,8 @@ func (c *Client) DeleteTable(ctx context.Context, project ProjectHandleParam, ta
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetTable(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetTableRequest(c.Server, project, tableName)
+func (c *Client) GetTable(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, params *GetTableParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetTableRequest(c.Server, project, tableName, params)
 	if err != nil {
 		return nil, err
 	}
@@ -19725,8 +22028,8 @@ func (c *Client) GetTable(ctx context.Context, project ProjectHandleParam, table
 	return c.Client.Do(req)
 }
 
-func (c *Client) UpdateTableWithBody(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateTableRequestWithBody(c.Server, project, tableName, contentType, body)
+func (c *Client) UpdateTableWithBody(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, params *UpdateTableParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateTableRequestWithBody(c.Server, project, tableName, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -19737,8 +22040,8 @@ func (c *Client) UpdateTableWithBody(ctx context.Context, project ProjectHandleP
 	return c.Client.Do(req)
 }
 
-func (c *Client) UpdateTable(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body UpdateTableJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateTableRequest(c.Server, project, tableName, body)
+func (c *Client) UpdateTable(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, params *UpdateTableParams, body UpdateTableJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateTableRequest(c.Server, project, tableName, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -19749,8 +22052,8 @@ func (c *Client) UpdateTable(ctx context.Context, project ProjectHandleParam, ta
 	return c.Client.Do(req)
 }
 
-func (c *Client) InsertTableRowWithBody(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewInsertTableRowRequestWithBody(c.Server, project, tableName, contentType, body)
+func (c *Client) InsertTableRowWithBody(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, params *InsertTableRowParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewInsertTableRowRequestWithBody(c.Server, project, tableName, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -19761,8 +22064,8 @@ func (c *Client) InsertTableRowWithBody(ctx context.Context, project ProjectHand
 	return c.Client.Do(req)
 }
 
-func (c *Client) InsertTableRow(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body InsertTableRowJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewInsertTableRowRequest(c.Server, project, tableName, body)
+func (c *Client) InsertTableRow(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, params *InsertTableRowParams, body InsertTableRowJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewInsertTableRowRequest(c.Server, project, tableName, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -19773,8 +22076,8 @@ func (c *Client) InsertTableRow(ctx context.Context, project ProjectHandleParam,
 	return c.Client.Do(req)
 }
 
-func (c *Client) BulkInsertTableRowsWithBody(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewBulkInsertTableRowsRequestWithBody(c.Server, project, tableName, contentType, body)
+func (c *Client) BulkInsertTableRowsWithBody(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, params *BulkInsertTableRowsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewBulkInsertTableRowsRequestWithBody(c.Server, project, tableName, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -19785,8 +22088,8 @@ func (c *Client) BulkInsertTableRowsWithBody(ctx context.Context, project Projec
 	return c.Client.Do(req)
 }
 
-func (c *Client) BulkInsertTableRows(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body BulkInsertTableRowsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewBulkInsertTableRowsRequest(c.Server, project, tableName, body)
+func (c *Client) BulkInsertTableRows(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, params *BulkInsertTableRowsParams, body BulkInsertTableRowsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewBulkInsertTableRowsRequest(c.Server, project, tableName, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -19797,8 +22100,8 @@ func (c *Client) BulkInsertTableRows(ctx context.Context, project ProjectHandleP
 	return c.Client.Do(req)
 }
 
-func (c *Client) QueryTableRowsWithBody(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewQueryTableRowsRequestWithBody(c.Server, project, tableName, contentType, body)
+func (c *Client) QueryTableRowsWithBody(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, params *QueryTableRowsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewQueryTableRowsRequestWithBody(c.Server, project, tableName, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -19809,8 +22112,8 @@ func (c *Client) QueryTableRowsWithBody(ctx context.Context, project ProjectHand
 	return c.Client.Do(req)
 }
 
-func (c *Client) QueryTableRows(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body QueryTableRowsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewQueryTableRowsRequest(c.Server, project, tableName, body)
+func (c *Client) QueryTableRows(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, params *QueryTableRowsParams, body QueryTableRowsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewQueryTableRowsRequest(c.Server, project, tableName, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -19821,8 +22124,8 @@ func (c *Client) QueryTableRows(ctx context.Context, project ProjectHandleParam,
 	return c.Client.Do(req)
 }
 
-func (c *Client) SearchTableRowsWithBody(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewSearchTableRowsRequestWithBody(c.Server, project, tableName, contentType, body)
+func (c *Client) SearchTableRowsWithBody(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, params *SearchTableRowsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSearchTableRowsRequestWithBody(c.Server, project, tableName, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -19833,8 +22136,8 @@ func (c *Client) SearchTableRowsWithBody(ctx context.Context, project ProjectHan
 	return c.Client.Do(req)
 }
 
-func (c *Client) SearchTableRows(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body SearchTableRowsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewSearchTableRowsRequest(c.Server, project, tableName, body)
+func (c *Client) SearchTableRows(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, params *SearchTableRowsParams, body SearchTableRowsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSearchTableRowsRequest(c.Server, project, tableName, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -19845,8 +22148,8 @@ func (c *Client) SearchTableRows(ctx context.Context, project ProjectHandleParam
 	return c.Client.Do(req)
 }
 
-func (c *Client) UpsertTableRowWithBody(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpsertTableRowRequestWithBody(c.Server, project, tableName, contentType, body)
+func (c *Client) UpsertTableRowWithBody(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, params *UpsertTableRowParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpsertTableRowRequestWithBody(c.Server, project, tableName, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -19857,8 +22160,8 @@ func (c *Client) UpsertTableRowWithBody(ctx context.Context, project ProjectHand
 	return c.Client.Do(req)
 }
 
-func (c *Client) UpsertTableRow(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body UpsertTableRowJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpsertTableRowRequest(c.Server, project, tableName, body)
+func (c *Client) UpsertTableRow(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, params *UpsertTableRowParams, body UpsertTableRowJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpsertTableRowRequest(c.Server, project, tableName, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -19869,8 +22172,8 @@ func (c *Client) UpsertTableRow(ctx context.Context, project ProjectHandleParam,
 	return c.Client.Do(req)
 }
 
-func (c *Client) DeleteTableRow(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDeleteTableRowRequest(c.Server, project, tableName, rowId)
+func (c *Client) DeleteTableRow(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, params *DeleteTableRowParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteTableRowRequest(c.Server, project, tableName, rowId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -19881,8 +22184,8 @@ func (c *Client) DeleteTableRow(ctx context.Context, project ProjectHandleParam,
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetTableRow(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetTableRowRequest(c.Server, project, tableName, rowId)
+func (c *Client) GetTableRow(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, params *GetTableRowParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetTableRowRequest(c.Server, project, tableName, rowId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -19893,8 +22196,8 @@ func (c *Client) GetTableRow(ctx context.Context, project ProjectHandleParam, ta
 	return c.Client.Do(req)
 }
 
-func (c *Client) UpdateTableRowWithBody(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateTableRowRequestWithBody(c.Server, project, tableName, rowId, contentType, body)
+func (c *Client) UpdateTableRowWithBody(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, params *UpdateTableRowParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateTableRowRequestWithBody(c.Server, project, tableName, rowId, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -19905,8 +22208,8 @@ func (c *Client) UpdateTableRowWithBody(ctx context.Context, project ProjectHand
 	return c.Client.Do(req)
 }
 
-func (c *Client) UpdateTableRow(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, body UpdateTableRowJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateTableRowRequest(c.Server, project, tableName, rowId, body)
+func (c *Client) UpdateTableRow(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, params *UpdateTableRowParams, body UpdateTableRowJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateTableRowRequest(c.Server, project, tableName, rowId, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -19917,8 +22220,8 @@ func (c *Client) UpdateTableRow(ctx context.Context, project ProjectHandleParam,
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetTableStats(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetTableStatsRequest(c.Server, project, tableName)
+func (c *Client) GetTableStats(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, params *GetTableStatsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetTableStatsRequest(c.Server, project, tableName, params)
 	if err != nil {
 		return nil, err
 	}
@@ -20265,6 +22568,66 @@ func (c *Client) TestFireTrigger(ctx context.Context, project ProjectHandleParam
 	return c.Client.Do(req)
 }
 
+func (c *Client) ListUserStates(ctx context.Context, project ProjectHandleParam, params *ListUserStatesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListUserStatesRequest(c.Server, project, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListUserAssignments(ctx context.Context, project ProjectHandleParam, params *ListUserAssignmentsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListUserAssignmentsRequest(c.Server, project, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetUserState(ctx context.Context, project ProjectHandleParam, userId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetUserStateRequest(c.Server, project, userId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpsertUserStateWithBody(ctx context.Context, project ProjectHandleParam, userId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpsertUserStateRequestWithBody(c.Server, project, userId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpsertUserState(ctx context.Context, project ProjectHandleParam, userId string, body UpsertUserStateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpsertUserStateRequest(c.Server, project, userId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) ListWebhooks(ctx context.Context, project ProjectHandleParam, params *ListWebhooksParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListWebhooksRequest(c.Server, project, params)
 	if err != nil {
@@ -20541,6 +22904,30 @@ func (c *Client) GetWorkflowVersion(ctx context.Context, project ProjectHandlePa
 	return c.Client.Do(req)
 }
 
+func (c *Client) ValidateWorkflowExpressionsWithBody(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewValidateWorkflowExpressionsRequestWithBody(c.Server, project, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ValidateWorkflowExpressions(ctx context.Context, project ProjectHandleParam, body ValidateWorkflowExpressionsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewValidateWorkflowExpressionsRequest(c.Server, project, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 // NewListAuditLogsRequest generates requests for ListAuditLogs
 func NewListAuditLogsRequest(server string, params *ListAuditLogsParams) (*http.Request, error) {
 	var err error
@@ -20614,38 +23001,6 @@ func NewListAuditLogsRequest(server string, params *ListAuditLogsParams) (*http.
 		if params.UserId != nil {
 
 			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "user_id", *params.UserId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-				return nil, err
-			} else {
-				for k, v := range parsed {
-					for _, v2 := range v {
-						queryValues.Add(k, v2)
-					}
-				}
-			}
-
-		}
-
-		if params.ActorType != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "actor_type", *params.ActorType, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-				return nil, err
-			} else {
-				for k, v := range parsed {
-					for _, v2 := range v {
-						queryValues.Add(k, v2)
-					}
-				}
-			}
-
-		}
-
-		if params.ActorId != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "actor_id", *params.ActorId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
 				return nil, err
 			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
 				return nil, err
@@ -21946,261 +24301,6 @@ func NewRotateActionSecretRequest(server string, project ProjectHandleParam, act
 	return req, nil
 }
 
-// NewListActorStatesRequest generates requests for ListActorStates
-func NewListActorStatesRequest(server string, project ProjectHandleParam, params *ListActorStatesParams) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/projects/%s/actor-state", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		queryValues := queryURL.Query()
-
-		if params.ActorKind != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "actor_kind", *params.ActorKind, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-				return nil, err
-			} else {
-				for k, v := range parsed {
-					for _, v2 := range v {
-						queryValues.Add(k, v2)
-					}
-				}
-			}
-
-		}
-
-		if params.Availability != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "availability", *params.Availability, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-				return nil, err
-			} else {
-				for k, v := range parsed {
-					for _, v2 := range v {
-						queryValues.Add(k, v2)
-					}
-				}
-			}
-
-		}
-
-		if params.Visibility != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "visibility", *params.Visibility, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-				return nil, err
-			} else {
-				for k, v := range parsed {
-					for _, v2 := range v {
-						queryValues.Add(k, v2)
-					}
-				}
-			}
-
-		}
-
-		if params.Limit != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
-				return nil, err
-			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-				return nil, err
-			} else {
-				for k, v := range parsed {
-					for _, v2 := range v {
-						queryValues.Add(k, v2)
-					}
-				}
-			}
-
-		}
-
-		queryURL.RawQuery = queryValues.Encode()
-	}
-
-	req, err := http.NewRequest("GET", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewListActorAssignmentsRequest generates requests for ListActorAssignments
-func NewListActorAssignmentsRequest(server string, project ProjectHandleParam, params *ListActorAssignmentsParams) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/projects/%s/actor-state/assignments", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		queryValues := queryURL.Query()
-
-		if params.Status != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "status", *params.Status, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-				return nil, err
-			} else {
-				for k, v := range parsed {
-					for _, v2 := range v {
-						queryValues.Add(k, v2)
-					}
-				}
-			}
-
-		}
-
-		queryURL.RawQuery = queryValues.Encode()
-	}
-
-	req, err := http.NewRequest("GET", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewGetActorStateRequest generates requests for GetActorState
-func NewGetActorStateRequest(server string, project ProjectHandleParam, actorId string) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "actor_id", actorId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/projects/%s/actor-state/%s", pathParam0, pathParam1)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("GET", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewUpsertActorStateRequest calls the generic UpsertActorState builder with application/json body
-func NewUpsertActorStateRequest(server string, project ProjectHandleParam, actorId string, body UpsertActorStateJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewUpsertActorStateRequestWithBody(server, project, actorId, "application/json", bodyReader)
-}
-
-// NewUpsertActorStateRequestWithBody generates requests for UpsertActorState with any type of body
-func NewUpsertActorStateRequestWithBody(server string, project ProjectHandleParam, actorId string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "actor_id", actorId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/projects/%s/actor-state/%s", pathParam0, pathParam1)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("PUT", queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
 // NewListAgentsRequest generates requests for ListAgents
 func NewListAgentsRequest(server string, project ProjectHandleParam, params *ListAgentsParams) (*http.Request, error) {
 	var err error
@@ -22529,8 +24629,8 @@ func NewProvisionAgentInboxRequest(server string, project ProjectHandleParam, id
 	return req, nil
 }
 
-// NewListAgentSessionsRequest generates requests for ListAgentSessions
-func NewListAgentSessionsRequest(server string, project ProjectHandleParam, id IDParam, params *ListAgentSessionsParams) (*http.Request, error) {
+// NewListAgentPresencesRequest generates requests for ListAgentPresences
+func NewListAgentPresencesRequest(server string, project ProjectHandleParam, id IDParam, params *ListAgentPresencesParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -22552,7 +24652,7 @@ func NewListAgentSessionsRequest(server string, project ProjectHandleParam, id I
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/projects/%s/agents/%s/sessions", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v1/projects/%s/agents/%s/presence", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -22624,19 +24724,206 @@ func NewListAgentSessionsRequest(server string, project ProjectHandleParam, id I
 	return req, nil
 }
 
-// NewCreateAgentSessionRequest calls the generic CreateAgentSession builder with application/json body
-func NewCreateAgentSessionRequest(server string, project ProjectHandleParam, id IDParam, body CreateAgentSessionJSONRequestBody) (*http.Request, error) {
+// NewCreateAgentPresenceRequest calls the generic CreateAgentPresence builder with application/json body
+func NewCreateAgentPresenceRequest(server string, project ProjectHandleParam, id IDParam, body CreateAgentPresenceJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewCreateAgentSessionRequestWithBody(server, project, id, "application/json", bodyReader)
+	return NewCreateAgentPresenceRequestWithBody(server, project, id, "application/json", bodyReader)
 }
 
-// NewCreateAgentSessionRequestWithBody generates requests for CreateAgentSession with any type of body
-func NewCreateAgentSessionRequestWithBody(server string, project ProjectHandleParam, id IDParam, contentType string, body io.Reader) (*http.Request, error) {
+// NewCreateAgentPresenceRequestWithBody generates requests for CreateAgentPresence with any type of body
+func NewCreateAgentPresenceRequestWithBody(server string, project ProjectHandleParam, id IDParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/agents/%s/presence", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetAgentPresenceRequest generates requests for GetAgentPresence
+func NewGetAgentPresenceRequest(server string, project ProjectHandleParam, id IDParam, presenceId PresenceId) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam2 string
+
+	pathParam2, err = runtime.StyleParamWithOptions("simple", false, "presence_id", presenceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/agents/%s/presence/%s", pathParam0, pathParam1, pathParam2)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewDisconnectAgentPresenceRequest generates requests for DisconnectAgentPresence
+func NewDisconnectAgentPresenceRequest(server string, project ProjectHandleParam, id IDParam, presenceId PresenceId) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam2 string
+
+	pathParam2, err = runtime.StyleParamWithOptions("simple", false, "presence_id", presenceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/agents/%s/presence/%s/disconnect", pathParam0, pathParam1, pathParam2)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewHeartbeatAgentPresenceRequest generates requests for HeartbeatAgentPresence
+func NewHeartbeatAgentPresenceRequest(server string, project ProjectHandleParam, id IDParam, presenceId PresenceId) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam2 string
+
+	pathParam2, err = runtime.StyleParamWithOptions("simple", false, "presence_id", presenceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/agents/%s/presence/%s/heartbeat", pathParam0, pathParam1, pathParam2)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewListAgentSessionsRequest generates requests for ListAgentSessions
+func NewListAgentSessionsRequest(server string, project ProjectHandleParam, id IDParam, params *ListAgentSessionsParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -22668,18 +24955,86 @@ func NewCreateAgentSessionRequestWithBody(server string, project ProjectHandlePa
 		return nil, err
 	}
 
-	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Status != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "status", *params.Status, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Scope != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "scope", *params.Scope, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Since != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "since", *params.Since, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
-
-	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
 }
 
 // NewGetAgentSessionRequest generates requests for GetAgentSession
-func NewGetAgentSessionRequest(server string, project ProjectHandleParam, id IDParam, sessionId SessionId) (*http.Request, error) {
+func NewGetAgentSessionRequest(server string, project ProjectHandleParam, id IDParam, sessionId string) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -22726,8 +25081,8 @@ func NewGetAgentSessionRequest(server string, project ProjectHandleParam, id IDP
 	return req, nil
 }
 
-// NewDisconnectAgentSessionRequest generates requests for DisconnectAgentSession
-func NewDisconnectAgentSessionRequest(server string, project ProjectHandleParam, id IDParam, sessionId SessionId) (*http.Request, error) {
+// NewListAgentSessionMessagesRequest generates requests for ListAgentSessionMessages
+func NewListAgentSessionMessagesRequest(server string, project ProjectHandleParam, id IDParam, sessionId string, params *ListAgentSessionMessagesParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -22756,7 +25111,7 @@ func NewDisconnectAgentSessionRequest(server string, project ProjectHandleParam,
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/projects/%s/agents/%s/sessions/%s/disconnect", pathParam0, pathParam1, pathParam2)
+	operationPath := fmt.Sprintf("/v1/projects/%s/agents/%s/sessions/%s/messages", pathParam0, pathParam1, pathParam2)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -22766,7 +25121,45 @@ func NewDisconnectAgentSessionRequest(server string, project ProjectHandleParam,
 		return nil, err
 	}
 
-	req, err := http.NewRequest("POST", queryURL.String(), nil)
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.AfterSequence != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "after_sequence", *params.AfterSequence, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -22774,8 +25167,19 @@ func NewDisconnectAgentSessionRequest(server string, project ProjectHandleParam,
 	return req, nil
 }
 
-// NewHeartbeatAgentSessionRequest generates requests for HeartbeatAgentSession
-func NewHeartbeatAgentSessionRequest(server string, project ProjectHandleParam, id IDParam, sessionId SessionId) (*http.Request, error) {
+// NewAppendAgentSessionMessagesRequest calls the generic AppendAgentSessionMessages builder with application/json body
+func NewAppendAgentSessionMessagesRequest(server string, project ProjectHandleParam, id IDParam, sessionId string, body AppendAgentSessionMessagesJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewAppendAgentSessionMessagesRequestWithBody(server, project, id, sessionId, "application/json", bodyReader)
+}
+
+// NewAppendAgentSessionMessagesRequestWithBody generates requests for AppendAgentSessionMessages with any type of body
+func NewAppendAgentSessionMessagesRequestWithBody(server string, project ProjectHandleParam, id IDParam, sessionId string, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -22804,7 +25208,7 @@ func NewHeartbeatAgentSessionRequest(server string, project ProjectHandleParam, 
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/projects/%s/agents/%s/sessions/%s/heartbeat", pathParam0, pathParam1, pathParam2)
+	operationPath := fmt.Sprintf("/v1/projects/%s/agents/%s/sessions/%s/messages", pathParam0, pathParam1, pathParam2)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -22814,10 +25218,12 @@ func NewHeartbeatAgentSessionRequest(server string, project ProjectHandleParam, 
 		return nil, err
 	}
 
-	req, err := http.NewRequest("POST", queryURL.String(), nil)
+	req, err := http.NewRequest("POST", queryURL.String(), body)
 	if err != nil {
 		return nil, err
 	}
+
+	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
 }
@@ -23348,7 +25754,7 @@ func NewGetArtifactRequest(server string, project ProjectHandleParam, id Artifac
 }
 
 // NewGetArtifactContentRequest generates requests for GetArtifactContent
-func NewGetArtifactContentRequest(server string, project ProjectHandleParam, id ArtifactIdParam, params *GetArtifactContentParams) (*http.Request, error) {
+func NewGetArtifactContentRequest(server string, project ProjectHandleParam, id ArtifactIdParam) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -23378,28 +25784,6 @@ func NewGetArtifactContentRequest(server string, project ProjectHandleParam, id 
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
-	}
-
-	if params != nil {
-		queryValues := queryURL.Query()
-
-		if params.Inline != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "inline", *params.Inline, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "boolean", Format: ""}); err != nil {
-				return nil, err
-			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-				return nil, err
-			} else {
-				for k, v := range parsed {
-					for _, v2 := range v {
-						queryValues.Add(k, v2)
-					}
-				}
-			}
-
-		}
-
-		queryURL.RawQuery = queryValues.Encode()
 	}
 
 	req, err := http.NewRequest("GET", queryURL.String(), nil)
@@ -23482,6 +25866,69 @@ func NewPinArtifactRequest(server string, project ProjectHandleParam, id Artifac
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCreateArtifactSignedUrlRequest generates requests for CreateArtifactSignedUrl
+func NewCreateArtifactSignedUrlRequest(server string, project ProjectHandleParam, id ArtifactIdParam, params *CreateArtifactSignedUrlParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/artifacts/%s/signed-url", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.TtlSeconds != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "ttl_seconds", *params.TtlSeconds, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
 	}
 
 	req, err := http.NewRequest("POST", queryURL.String(), nil)
@@ -23741,6 +26188,87 @@ func NewCreateChannelRequestWithBody(server string, project ProjectHandleParam, 
 	}
 
 	operationPath := fmt.Sprintf("/v1/projects/%s/channels", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetChannelBlockCatalogRequest generates requests for GetChannelBlockCatalog
+func NewGetChannelBlockCatalogRequest(server string, project ProjectHandleParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/channels/block-catalog", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewOpenDirectMessageRequest calls the generic OpenDirectMessage builder with application/json body
+func NewOpenDirectMessageRequest(server string, project ProjectHandleParam, body OpenDirectMessageJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewOpenDirectMessageRequestWithBody(server, project, "application/json", bodyReader)
+}
+
+// NewOpenDirectMessageRequestWithBody generates requests for OpenDirectMessage with any type of body
+func NewOpenDirectMessageRequestWithBody(server string, project ProjectHandleParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/channels/dm", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -24883,664 +27411,6 @@ func NewShareChannelEntityRequestWithBody(server string, project ProjectHandlePa
 	return req, nil
 }
 
-// NewListEnvironmentsRequest generates requests for ListEnvironments
-func NewListEnvironmentsRequest(server string, project ProjectHandleParam, params *ListEnvironmentsParams) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/projects/%s/environments", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		queryValues := queryURL.Query()
-
-		if params.Cursor != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "cursor", *params.Cursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-				return nil, err
-			} else {
-				for k, v := range parsed {
-					for _, v2 := range v {
-						queryValues.Add(k, v2)
-					}
-				}
-			}
-
-		}
-
-		if params.Limit != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
-				return nil, err
-			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-				return nil, err
-			} else {
-				for k, v := range parsed {
-					for _, v2 := range v {
-						queryValues.Add(k, v2)
-					}
-				}
-			}
-
-		}
-
-		if params.Provider != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "provider", *params.Provider, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-				return nil, err
-			} else {
-				for k, v := range parsed {
-					for _, v2 := range v {
-						queryValues.Add(k, v2)
-					}
-				}
-			}
-
-		}
-
-		if params.Status != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "status", *params.Status, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-				return nil, err
-			} else {
-				for k, v := range parsed {
-					for _, v2 := range v {
-						queryValues.Add(k, v2)
-					}
-				}
-			}
-
-		}
-
-		if params.Purpose != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "purpose", *params.Purpose, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-				return nil, err
-			} else {
-				for k, v := range parsed {
-					for _, v2 := range v {
-						queryValues.Add(k, v2)
-					}
-				}
-			}
-
-		}
-
-		if params.OwnerType != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "owner_type", *params.OwnerType, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-				return nil, err
-			} else {
-				for k, v := range parsed {
-					for _, v2 := range v {
-						queryValues.Add(k, v2)
-					}
-				}
-			}
-
-		}
-
-		if params.OwnerId != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "owner_id", *params.OwnerId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-				return nil, err
-			} else {
-				for k, v := range parsed {
-					for _, v2 := range v {
-						queryValues.Add(k, v2)
-					}
-				}
-			}
-
-		}
-
-		if params.IncludeDestroyed != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "include_destroyed", *params.IncludeDestroyed, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "boolean", Format: ""}); err != nil {
-				return nil, err
-			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-				return nil, err
-			} else {
-				for k, v := range parsed {
-					for _, v2 := range v {
-						queryValues.Add(k, v2)
-					}
-				}
-			}
-
-		}
-
-		if params.DestroyedSince != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "destroyed_since", *params.DestroyedSince, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
-				return nil, err
-			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-				return nil, err
-			} else {
-				for k, v := range parsed {
-					for _, v2 := range v {
-						queryValues.Add(k, v2)
-					}
-				}
-			}
-
-		}
-
-		queryURL.RawQuery = queryValues.Encode()
-	}
-
-	req, err := http.NewRequest("GET", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewCreateEnvironmentRequest calls the generic CreateEnvironment builder with application/json body
-func NewCreateEnvironmentRequest(server string, project ProjectHandleParam, body CreateEnvironmentJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewCreateEnvironmentRequestWithBody(server, project, "application/json", bodyReader)
-}
-
-// NewCreateEnvironmentRequestWithBody generates requests for CreateEnvironment with any type of body
-func NewCreateEnvironmentRequestWithBody(server string, project ProjectHandleParam, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/projects/%s/environments", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("POST", queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewAcquireEnvironmentRequest calls the generic AcquireEnvironment builder with application/json body
-func NewAcquireEnvironmentRequest(server string, project ProjectHandleParam, body AcquireEnvironmentJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewAcquireEnvironmentRequestWithBody(server, project, "application/json", bodyReader)
-}
-
-// NewAcquireEnvironmentRequestWithBody generates requests for AcquireEnvironment with any type of body
-func NewAcquireEnvironmentRequestWithBody(server string, project ProjectHandleParam, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/projects/%s/environments/acquire", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("POST", queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewReleaseEnvironmentLeaseRequest generates requests for ReleaseEnvironmentLease
-func NewReleaseEnvironmentLeaseRequest(server string, project ProjectHandleParam, leaseId string) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "lease_id", leaseId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/projects/%s/environments/leases/%s/release", pathParam0, pathParam1)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("POST", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewDestroyEnvironmentRequest generates requests for DestroyEnvironment
-func NewDestroyEnvironmentRequest(server string, project ProjectHandleParam, environmentId EnvironmentIDParam) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "environment_id", environmentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/projects/%s/environments/%s", pathParam0, pathParam1)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewGetEnvironmentRequest generates requests for GetEnvironment
-func NewGetEnvironmentRequest(server string, project ProjectHandleParam, environmentId EnvironmentIDParam) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "environment_id", environmentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/projects/%s/environments/%s", pathParam0, pathParam1)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("GET", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewUpdateEnvironmentRequest calls the generic UpdateEnvironment builder with application/json body
-func NewUpdateEnvironmentRequest(server string, project ProjectHandleParam, environmentId EnvironmentIDParam, body UpdateEnvironmentJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewUpdateEnvironmentRequestWithBody(server, project, environmentId, "application/json", bodyReader)
-}
-
-// NewUpdateEnvironmentRequestWithBody generates requests for UpdateEnvironment with any type of body
-func NewUpdateEnvironmentRequestWithBody(server string, project ProjectHandleParam, environmentId EnvironmentIDParam, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "environment_id", environmentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/projects/%s/environments/%s", pathParam0, pathParam1)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("PATCH", queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewExecEnvironmentRequest calls the generic ExecEnvironment builder with application/json body
-func NewExecEnvironmentRequest(server string, project ProjectHandleParam, environmentId EnvironmentIDParam, body ExecEnvironmentJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewExecEnvironmentRequestWithBody(server, project, environmentId, "application/json", bodyReader)
-}
-
-// NewExecEnvironmentRequestWithBody generates requests for ExecEnvironment with any type of body
-func NewExecEnvironmentRequestWithBody(server string, project ProjectHandleParam, environmentId EnvironmentIDParam, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "environment_id", environmentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/projects/%s/environments/%s/exec", pathParam0, pathParam1)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("POST", queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewWriteEnvironmentFileRequest calls the generic WriteEnvironmentFile builder with application/json body
-func NewWriteEnvironmentFileRequest(server string, project ProjectHandleParam, environmentId EnvironmentIDParam, body WriteEnvironmentFileJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewWriteEnvironmentFileRequestWithBody(server, project, environmentId, "application/json", bodyReader)
-}
-
-// NewWriteEnvironmentFileRequestWithBody generates requests for WriteEnvironmentFile with any type of body
-func NewWriteEnvironmentFileRequestWithBody(server string, project ProjectHandleParam, environmentId EnvironmentIDParam, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "environment_id", environmentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/projects/%s/environments/%s/files", pathParam0, pathParam1)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("PUT", queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewReconcileEnvironmentRequest generates requests for ReconcileEnvironment
-func NewReconcileEnvironmentRequest(server string, project ProjectHandleParam, environmentId EnvironmentIDParam) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "environment_id", environmentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/projects/%s/environments/%s/reconcile", pathParam0, pathParam1)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("POST", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewStartEnvironmentWorkerRequest calls the generic StartEnvironmentWorker builder with application/json body
-func NewStartEnvironmentWorkerRequest(server string, project ProjectHandleParam, environmentId EnvironmentIDParam, body StartEnvironmentWorkerJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewStartEnvironmentWorkerRequestWithBody(server, project, environmentId, "application/json", bodyReader)
-}
-
-// NewStartEnvironmentWorkerRequestWithBody generates requests for StartEnvironmentWorker with any type of body
-func NewStartEnvironmentWorkerRequestWithBody(server string, project ProjectHandleParam, environmentId EnvironmentIDParam, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "environment_id", environmentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/projects/%s/environments/%s/workers/start", pathParam0, pathParam1)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("POST", queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
 // NewStreamProjectEventsRequest generates requests for StreamProjectEvents
 func NewStreamProjectEventsRequest(server string, project ProjectHandleParam, params *StreamProjectEventsParams) (*http.Request, error) {
 	var err error
@@ -25572,7 +27442,7 @@ func NewStreamProjectEventsRequest(server string, project ProjectHandleParam, pa
 
 		if params.Since != nil {
 
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "since", *params.Since, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "since", *params.Since, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
 				return nil, err
 			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
 				return nil, err
@@ -26081,6 +27951,190 @@ func NewRemoveGroupMemberRequest(server string, project ProjectHandleParam, grou
 	return req, nil
 }
 
+// NewListIntegrationEventsRequest generates requests for ListIntegrationEvents
+func NewListIntegrationEventsRequest(server string, project ProjectHandleParam, params *ListIntegrationEventsParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/integration-events", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Provider != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "provider", *params.Provider, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.IntegrationId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "integration_id", *params.IntegrationId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.EventType != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "event_type", *params.EventType, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Source != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "source", *params.Source, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Since != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "since", *params.Since, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Until != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "until", *params.Until, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Cursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "cursor", *params.Cursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.IncludePayload != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "include_payload", *params.IncludePayload, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "boolean", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewCreateIntegrationEventTestFireRequest calls the generic CreateIntegrationEventTestFire builder with application/json body
 func NewCreateIntegrationEventTestFireRequest(server string, project ProjectHandleParam, body CreateIntegrationEventTestFireJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
@@ -26200,6 +28254,47 @@ func NewListIntegrationEventTestSamplesRequest(server string, project ProjectHan
 	return req, nil
 }
 
+// NewGetIntegrationEventRequest generates requests for GetIntegrationEvent
+func NewGetIntegrationEventRequest(server string, project ProjectHandleParam, id IDParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/integration-events/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewListIntegrationProvidersRequest generates requests for ListIntegrationProviders
 func NewListIntegrationProvidersRequest(server string, project ProjectHandleParam) (*http.Request, error) {
 	var err error
@@ -26230,6 +28325,194 @@ func NewListIntegrationProvidersRequest(server string, project ProjectHandlePara
 	if err != nil {
 		return nil, err
 	}
+
+	return req, nil
+}
+
+// NewConnectApolloRequest calls the generic ConnectApollo builder with application/json body
+func NewConnectApolloRequest(server string, project ProjectHandleParam, body ConnectApolloJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewConnectApolloRequestWithBody(server, project, "application/json", bodyReader)
+}
+
+// NewConnectApolloRequestWithBody generates requests for ConnectApollo with any type of body
+func NewConnectApolloRequestWithBody(server string, project ProjectHandleParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/integrations/apollo/connect", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewConnectFirecrawlRequest calls the generic ConnectFirecrawl builder with application/json body
+func NewConnectFirecrawlRequest(server string, project ProjectHandleParam, body ConnectFirecrawlJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewConnectFirecrawlRequestWithBody(server, project, "application/json", bodyReader)
+}
+
+// NewConnectFirecrawlRequestWithBody generates requests for ConnectFirecrawl with any type of body
+func NewConnectFirecrawlRequestWithBody(server string, project ProjectHandleParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/integrations/firecrawl/connect", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewConnectGoogleSheetsRequest calls the generic ConnectGoogleSheets builder with application/json body
+func NewConnectGoogleSheetsRequest(server string, project ProjectHandleParam, body ConnectGoogleSheetsJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewConnectGoogleSheetsRequestWithBody(server, project, "application/json", bodyReader)
+}
+
+// NewConnectGoogleSheetsRequestWithBody generates requests for ConnectGoogleSheets with any type of body
+func NewConnectGoogleSheetsRequestWithBody(server string, project ProjectHandleParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/integrations/google_sheets/connect", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewConnectScrapeCreatorsRequest calls the generic ConnectScrapeCreators builder with application/json body
+func NewConnectScrapeCreatorsRequest(server string, project ProjectHandleParam, body ConnectScrapeCreatorsJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewConnectScrapeCreatorsRequestWithBody(server, project, "application/json", bodyReader)
+}
+
+// NewConnectScrapeCreatorsRequestWithBody generates requests for ConnectScrapeCreators with any type of body
+func NewConnectScrapeCreatorsRequestWithBody(server string, project ProjectHandleParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/integrations/scrapecreators/connect", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
 }
@@ -26279,6 +28562,22 @@ func NewListInteractionsRequest(server string, project ProjectHandleParam, param
 
 		}
 
+		if params.Kind != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "kind", *params.Kind, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
 		if params.RunId != nil {
 
 			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "run_id", *params.RunId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
@@ -26295,25 +28594,9 @@ func NewListInteractionsRequest(server string, project ProjectHandleParam, param
 
 		}
 
-		if params.TargetType != nil {
+		if params.TargetUserId != nil {
 
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "target_type", *params.TargetType, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-				return nil, err
-			} else {
-				for k, v := range parsed {
-					for _, v2 := range v {
-						queryValues.Add(k, v2)
-					}
-				}
-			}
-
-		}
-
-		if params.TargetId != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "target_id", *params.TargetId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "target_user_id", *params.TargetUserId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
 				return nil, err
 			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
 				return nil, err
@@ -26343,25 +28626,9 @@ func NewListInteractionsRequest(server string, project ProjectHandleParam, param
 
 		}
 
-		if params.ReviewerType != nil {
+		if params.ReviewerUserId != nil {
 
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "reviewer_type", *params.ReviewerType, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-				return nil, err
-			} else {
-				for k, v := range parsed {
-					for _, v2 := range v {
-						queryValues.Add(k, v2)
-					}
-				}
-			}
-
-		}
-
-		if params.ReviewerId != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "reviewer_id", *params.ReviewerId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "reviewer_user_id", *params.ReviewerUserId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
 				return nil, err
 			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
 				return nil, err
@@ -27455,18 +29722,18 @@ func NewCreateJobInteractionRequestWithBody(server string, project ProjectHandle
 }
 
 // NewReportJobRequest calls the generic ReportJob builder with application/json body
-func NewReportJobRequest(server string, project ProjectHandleParam, id IDParam, body ReportJobJSONRequestBody) (*http.Request, error) {
+func NewReportJobRequest(server string, project ProjectHandleParam, id IDParam, params *ReportJobParams, body ReportJobJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewReportJobRequestWithBody(server, project, id, "application/json", bodyReader)
+	return NewReportJobRequestWithBody(server, project, id, params, "application/json", bodyReader)
 }
 
 // NewReportJobRequestWithBody generates requests for ReportJob with any type of body
-func NewReportJobRequestWithBody(server string, project ProjectHandleParam, id IDParam, contentType string, body io.Reader) (*http.Request, error) {
+func NewReportJobRequestWithBody(server string, project ProjectHandleParam, id IDParam, params *ReportJobParams, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -27496,6 +29763,28 @@ func NewReportJobRequestWithBody(server string, project ProjectHandleParam, id I
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Partial != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "partial", *params.Partial, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "boolean", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
 	}
 
 	req, err := http.NewRequest("POST", queryURL.String(), body)
@@ -29082,7 +31371,7 @@ func NewStreamRunEventsRequest(server string, project ProjectHandleParam, id IDP
 
 		if params.Since != nil {
 
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "since", *params.Since, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "since", *params.Since, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
 				return nil, err
 			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
 				return nil, err
@@ -29368,6 +31657,22 @@ func NewListRunStepsRequest(server string, project ProjectHandleParam, id IDPara
 		if params.Status != nil {
 
 			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "status", *params.Status, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Include != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "include", *params.Include, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
 				return nil, err
 			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
 				return nil, err
@@ -30599,6 +32904,54 @@ func NewListTablesRequest(server string, project ProjectHandleParam, params *Lis
 
 		}
 
+		if params.OwnedByMe != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "owned_by_me", *params.OwnedByMe, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "boolean", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.OwnedBy != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "owned_by", *params.OwnedBy, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Scope != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "scope", *params.Scope, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
 		queryURL.RawQuery = queryValues.Encode()
 	}
 
@@ -30658,7 +33011,7 @@ func NewCreateTableRequestWithBody(server string, project ProjectHandleParam, co
 }
 
 // NewDeleteTableRequest generates requests for DeleteTable
-func NewDeleteTableRequest(server string, project ProjectHandleParam, tableName TableNameParam) (*http.Request, error) {
+func NewDeleteTableRequest(server string, project ProjectHandleParam, tableName TableNameParam, params *DeleteTableParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -30688,6 +33041,60 @@ func NewDeleteTableRequest(server string, project ProjectHandleParam, tableName 
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Scope != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "scope", *params.Scope, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.OwnedBy != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "owned_by", *params.OwnedBy, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.OwnedByMe != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "owned_by_me", *params.OwnedByMe, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "boolean", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
 	}
 
 	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
@@ -30699,7 +33106,7 @@ func NewDeleteTableRequest(server string, project ProjectHandleParam, tableName 
 }
 
 // NewGetTableRequest generates requests for GetTable
-func NewGetTableRequest(server string, project ProjectHandleParam, tableName TableNameParam) (*http.Request, error) {
+func NewGetTableRequest(server string, project ProjectHandleParam, tableName TableNameParam, params *GetTableParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -30729,6 +33136,60 @@ func NewGetTableRequest(server string, project ProjectHandleParam, tableName Tab
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Scope != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "scope", *params.Scope, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.OwnedBy != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "owned_by", *params.OwnedBy, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.OwnedByMe != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "owned_by_me", *params.OwnedByMe, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "boolean", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
 	}
 
 	req, err := http.NewRequest("GET", queryURL.String(), nil)
@@ -30740,18 +33201,18 @@ func NewGetTableRequest(server string, project ProjectHandleParam, tableName Tab
 }
 
 // NewUpdateTableRequest calls the generic UpdateTable builder with application/json body
-func NewUpdateTableRequest(server string, project ProjectHandleParam, tableName TableNameParam, body UpdateTableJSONRequestBody) (*http.Request, error) {
+func NewUpdateTableRequest(server string, project ProjectHandleParam, tableName TableNameParam, params *UpdateTableParams, body UpdateTableJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewUpdateTableRequestWithBody(server, project, tableName, "application/json", bodyReader)
+	return NewUpdateTableRequestWithBody(server, project, tableName, params, "application/json", bodyReader)
 }
 
 // NewUpdateTableRequestWithBody generates requests for UpdateTable with any type of body
-func NewUpdateTableRequestWithBody(server string, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader) (*http.Request, error) {
+func NewUpdateTableRequestWithBody(server string, project ProjectHandleParam, tableName TableNameParam, params *UpdateTableParams, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -30781,6 +33242,60 @@ func NewUpdateTableRequestWithBody(server string, project ProjectHandleParam, ta
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Scope != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "scope", *params.Scope, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.OwnedBy != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "owned_by", *params.OwnedBy, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.OwnedByMe != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "owned_by_me", *params.OwnedByMe, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "boolean", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
 	}
 
 	req, err := http.NewRequest("PUT", queryURL.String(), body)
@@ -30794,18 +33309,18 @@ func NewUpdateTableRequestWithBody(server string, project ProjectHandleParam, ta
 }
 
 // NewInsertTableRowRequest calls the generic InsertTableRow builder with application/json body
-func NewInsertTableRowRequest(server string, project ProjectHandleParam, tableName TableNameParam, body InsertTableRowJSONRequestBody) (*http.Request, error) {
+func NewInsertTableRowRequest(server string, project ProjectHandleParam, tableName TableNameParam, params *InsertTableRowParams, body InsertTableRowJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewInsertTableRowRequestWithBody(server, project, tableName, "application/json", bodyReader)
+	return NewInsertTableRowRequestWithBody(server, project, tableName, params, "application/json", bodyReader)
 }
 
 // NewInsertTableRowRequestWithBody generates requests for InsertTableRow with any type of body
-func NewInsertTableRowRequestWithBody(server string, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader) (*http.Request, error) {
+func NewInsertTableRowRequestWithBody(server string, project ProjectHandleParam, tableName TableNameParam, params *InsertTableRowParams, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -30837,6 +33352,60 @@ func NewInsertTableRowRequestWithBody(server string, project ProjectHandleParam,
 		return nil, err
 	}
 
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Scope != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "scope", *params.Scope, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.OwnedBy != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "owned_by", *params.OwnedBy, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.OwnedByMe != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "owned_by_me", *params.OwnedByMe, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "boolean", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
 	req, err := http.NewRequest("POST", queryURL.String(), body)
 	if err != nil {
 		return nil, err
@@ -30848,18 +33417,18 @@ func NewInsertTableRowRequestWithBody(server string, project ProjectHandleParam,
 }
 
 // NewBulkInsertTableRowsRequest calls the generic BulkInsertTableRows builder with application/json body
-func NewBulkInsertTableRowsRequest(server string, project ProjectHandleParam, tableName TableNameParam, body BulkInsertTableRowsJSONRequestBody) (*http.Request, error) {
+func NewBulkInsertTableRowsRequest(server string, project ProjectHandleParam, tableName TableNameParam, params *BulkInsertTableRowsParams, body BulkInsertTableRowsJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewBulkInsertTableRowsRequestWithBody(server, project, tableName, "application/json", bodyReader)
+	return NewBulkInsertTableRowsRequestWithBody(server, project, tableName, params, "application/json", bodyReader)
 }
 
 // NewBulkInsertTableRowsRequestWithBody generates requests for BulkInsertTableRows with any type of body
-func NewBulkInsertTableRowsRequestWithBody(server string, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader) (*http.Request, error) {
+func NewBulkInsertTableRowsRequestWithBody(server string, project ProjectHandleParam, tableName TableNameParam, params *BulkInsertTableRowsParams, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -30891,6 +33460,60 @@ func NewBulkInsertTableRowsRequestWithBody(server string, project ProjectHandleP
 		return nil, err
 	}
 
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Scope != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "scope", *params.Scope, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.OwnedBy != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "owned_by", *params.OwnedBy, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.OwnedByMe != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "owned_by_me", *params.OwnedByMe, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "boolean", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
 	req, err := http.NewRequest("POST", queryURL.String(), body)
 	if err != nil {
 		return nil, err
@@ -30902,18 +33525,18 @@ func NewBulkInsertTableRowsRequestWithBody(server string, project ProjectHandleP
 }
 
 // NewQueryTableRowsRequest calls the generic QueryTableRows builder with application/json body
-func NewQueryTableRowsRequest(server string, project ProjectHandleParam, tableName TableNameParam, body QueryTableRowsJSONRequestBody) (*http.Request, error) {
+func NewQueryTableRowsRequest(server string, project ProjectHandleParam, tableName TableNameParam, params *QueryTableRowsParams, body QueryTableRowsJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewQueryTableRowsRequestWithBody(server, project, tableName, "application/json", bodyReader)
+	return NewQueryTableRowsRequestWithBody(server, project, tableName, params, "application/json", bodyReader)
 }
 
 // NewQueryTableRowsRequestWithBody generates requests for QueryTableRows with any type of body
-func NewQueryTableRowsRequestWithBody(server string, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader) (*http.Request, error) {
+func NewQueryTableRowsRequestWithBody(server string, project ProjectHandleParam, tableName TableNameParam, params *QueryTableRowsParams, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -30945,6 +33568,60 @@ func NewQueryTableRowsRequestWithBody(server string, project ProjectHandleParam,
 		return nil, err
 	}
 
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Scope != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "scope", *params.Scope, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.OwnedBy != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "owned_by", *params.OwnedBy, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.OwnedByMe != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "owned_by_me", *params.OwnedByMe, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "boolean", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
 	req, err := http.NewRequest("POST", queryURL.String(), body)
 	if err != nil {
 		return nil, err
@@ -30956,18 +33633,18 @@ func NewQueryTableRowsRequestWithBody(server string, project ProjectHandleParam,
 }
 
 // NewSearchTableRowsRequest calls the generic SearchTableRows builder with application/json body
-func NewSearchTableRowsRequest(server string, project ProjectHandleParam, tableName TableNameParam, body SearchTableRowsJSONRequestBody) (*http.Request, error) {
+func NewSearchTableRowsRequest(server string, project ProjectHandleParam, tableName TableNameParam, params *SearchTableRowsParams, body SearchTableRowsJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewSearchTableRowsRequestWithBody(server, project, tableName, "application/json", bodyReader)
+	return NewSearchTableRowsRequestWithBody(server, project, tableName, params, "application/json", bodyReader)
 }
 
 // NewSearchTableRowsRequestWithBody generates requests for SearchTableRows with any type of body
-func NewSearchTableRowsRequestWithBody(server string, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader) (*http.Request, error) {
+func NewSearchTableRowsRequestWithBody(server string, project ProjectHandleParam, tableName TableNameParam, params *SearchTableRowsParams, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -30999,6 +33676,60 @@ func NewSearchTableRowsRequestWithBody(server string, project ProjectHandleParam
 		return nil, err
 	}
 
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Scope != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "scope", *params.Scope, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.OwnedBy != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "owned_by", *params.OwnedBy, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.OwnedByMe != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "owned_by_me", *params.OwnedByMe, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "boolean", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
 	req, err := http.NewRequest("POST", queryURL.String(), body)
 	if err != nil {
 		return nil, err
@@ -31010,18 +33741,18 @@ func NewSearchTableRowsRequestWithBody(server string, project ProjectHandleParam
 }
 
 // NewUpsertTableRowRequest calls the generic UpsertTableRow builder with application/json body
-func NewUpsertTableRowRequest(server string, project ProjectHandleParam, tableName TableNameParam, body UpsertTableRowJSONRequestBody) (*http.Request, error) {
+func NewUpsertTableRowRequest(server string, project ProjectHandleParam, tableName TableNameParam, params *UpsertTableRowParams, body UpsertTableRowJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewUpsertTableRowRequestWithBody(server, project, tableName, "application/json", bodyReader)
+	return NewUpsertTableRowRequestWithBody(server, project, tableName, params, "application/json", bodyReader)
 }
 
 // NewUpsertTableRowRequestWithBody generates requests for UpsertTableRow with any type of body
-func NewUpsertTableRowRequestWithBody(server string, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader) (*http.Request, error) {
+func NewUpsertTableRowRequestWithBody(server string, project ProjectHandleParam, tableName TableNameParam, params *UpsertTableRowParams, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -31053,6 +33784,60 @@ func NewUpsertTableRowRequestWithBody(server string, project ProjectHandleParam,
 		return nil, err
 	}
 
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Scope != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "scope", *params.Scope, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.OwnedBy != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "owned_by", *params.OwnedBy, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.OwnedByMe != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "owned_by_me", *params.OwnedByMe, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "boolean", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
 	req, err := http.NewRequest("POST", queryURL.String(), body)
 	if err != nil {
 		return nil, err
@@ -31064,7 +33849,7 @@ func NewUpsertTableRowRequestWithBody(server string, project ProjectHandleParam,
 }
 
 // NewDeleteTableRowRequest generates requests for DeleteTableRow
-func NewDeleteTableRowRequest(server string, project ProjectHandleParam, tableName TableNameParam, rowId string) (*http.Request, error) {
+func NewDeleteTableRowRequest(server string, project ProjectHandleParam, tableName TableNameParam, rowId string, params *DeleteTableRowParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -31101,6 +33886,60 @@ func NewDeleteTableRowRequest(server string, project ProjectHandleParam, tableNa
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Scope != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "scope", *params.Scope, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.OwnedBy != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "owned_by", *params.OwnedBy, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.OwnedByMe != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "owned_by_me", *params.OwnedByMe, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "boolean", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
 	}
 
 	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
@@ -31112,7 +33951,7 @@ func NewDeleteTableRowRequest(server string, project ProjectHandleParam, tableNa
 }
 
 // NewGetTableRowRequest generates requests for GetTableRow
-func NewGetTableRowRequest(server string, project ProjectHandleParam, tableName TableNameParam, rowId string) (*http.Request, error) {
+func NewGetTableRowRequest(server string, project ProjectHandleParam, tableName TableNameParam, rowId string, params *GetTableRowParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -31149,6 +33988,60 @@ func NewGetTableRowRequest(server string, project ProjectHandleParam, tableName 
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Scope != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "scope", *params.Scope, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.OwnedBy != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "owned_by", *params.OwnedBy, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.OwnedByMe != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "owned_by_me", *params.OwnedByMe, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "boolean", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
 	}
 
 	req, err := http.NewRequest("GET", queryURL.String(), nil)
@@ -31160,18 +34053,18 @@ func NewGetTableRowRequest(server string, project ProjectHandleParam, tableName 
 }
 
 // NewUpdateTableRowRequest calls the generic UpdateTableRow builder with application/json body
-func NewUpdateTableRowRequest(server string, project ProjectHandleParam, tableName TableNameParam, rowId string, body UpdateTableRowJSONRequestBody) (*http.Request, error) {
+func NewUpdateTableRowRequest(server string, project ProjectHandleParam, tableName TableNameParam, rowId string, params *UpdateTableRowParams, body UpdateTableRowJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewUpdateTableRowRequestWithBody(server, project, tableName, rowId, "application/json", bodyReader)
+	return NewUpdateTableRowRequestWithBody(server, project, tableName, rowId, params, "application/json", bodyReader)
 }
 
 // NewUpdateTableRowRequestWithBody generates requests for UpdateTableRow with any type of body
-func NewUpdateTableRowRequestWithBody(server string, project ProjectHandleParam, tableName TableNameParam, rowId string, contentType string, body io.Reader) (*http.Request, error) {
+func NewUpdateTableRowRequestWithBody(server string, project ProjectHandleParam, tableName TableNameParam, rowId string, params *UpdateTableRowParams, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -31208,6 +34101,60 @@ func NewUpdateTableRowRequestWithBody(server string, project ProjectHandleParam,
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Scope != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "scope", *params.Scope, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.OwnedBy != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "owned_by", *params.OwnedBy, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.OwnedByMe != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "owned_by_me", *params.OwnedByMe, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "boolean", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
 	}
 
 	req, err := http.NewRequest("PATCH", queryURL.String(), body)
@@ -31221,7 +34168,7 @@ func NewUpdateTableRowRequestWithBody(server string, project ProjectHandleParam,
 }
 
 // NewGetTableStatsRequest generates requests for GetTableStats
-func NewGetTableStatsRequest(server string, project ProjectHandleParam, tableName TableNameParam) (*http.Request, error) {
+func NewGetTableStatsRequest(server string, project ProjectHandleParam, tableName TableNameParam, params *GetTableStatsParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -31251,6 +34198,60 @@ func NewGetTableStatsRequest(server string, project ProjectHandleParam, tableNam
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Scope != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "scope", *params.Scope, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.OwnedBy != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "owned_by", *params.OwnedBy, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.OwnedByMe != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "owned_by_me", *params.OwnedByMe, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "boolean", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
 	}
 
 	req, err := http.NewRequest("GET", queryURL.String(), nil)
@@ -31813,6 +34814,38 @@ func NewListTriggersRequest(server string, project ProjectHandleParam, params *L
 		if params.Tag != nil {
 
 			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "tag", *params.Tag, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "array", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Scope != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "scope", *params.Scope, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.OwnedBy != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "owned_by", *params.OwnedBy, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
 				return nil, err
 			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
 				return nil, err
@@ -32494,6 +35527,261 @@ func NewTestFireTriggerRequestWithBody(server string, project ProjectHandleParam
 	return req, nil
 }
 
+// NewListUserStatesRequest generates requests for ListUserStates
+func NewListUserStatesRequest(server string, project ProjectHandleParam, params *ListUserStatesParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/user-state", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.UserKind != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "user_kind", *params.UserKind, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Availability != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "availability", *params.Availability, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Visibility != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "visibility", *params.Visibility, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewListUserAssignmentsRequest generates requests for ListUserAssignments
+func NewListUserAssignmentsRequest(server string, project ProjectHandleParam, params *ListUserAssignmentsParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/user-state/assignments", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Status != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "status", *params.Status, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetUserStateRequest generates requests for GetUserState
+func NewGetUserStateRequest(server string, project ProjectHandleParam, userId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "user_id", userId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/user-state/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewUpsertUserStateRequest calls the generic UpsertUserState builder with application/json body
+func NewUpsertUserStateRequest(server string, project ProjectHandleParam, userId string, body UpsertUserStateJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpsertUserStateRequestWithBody(server, project, userId, "application/json", bodyReader)
+}
+
+// NewUpsertUserStateRequestWithBody generates requests for UpsertUserState with any type of body
+func NewUpsertUserStateRequestWithBody(server string, project ProjectHandleParam, userId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "user_id", userId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/user-state/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PUT", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewListWebhooksRequest generates requests for ListWebhooks
 func NewListWebhooksRequest(server string, project ProjectHandleParam, params *ListWebhooksParams) (*http.Request, error) {
 	var err error
@@ -32993,6 +36281,38 @@ func NewListWorkflowsRequest(server string, project ProjectHandleParam, params *
 
 		}
 
+		if params.Scope != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "scope", *params.Scope, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.OwnedBy != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "owned_by", *params.OwnedBy, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
 		if params.Cursor != nil {
 
 			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "cursor", *params.Cursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
@@ -33403,6 +36723,53 @@ func NewGetWorkflowVersionRequest(server string, project ProjectHandleParam, id 
 	return req, nil
 }
 
+// NewValidateWorkflowExpressionsRequest calls the generic ValidateWorkflowExpressions builder with application/json body
+func NewValidateWorkflowExpressionsRequest(server string, project ProjectHandleParam, body ValidateWorkflowExpressionsJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewValidateWorkflowExpressionsRequestWithBody(server, project, "application/json", bodyReader)
+}
+
+// NewValidateWorkflowExpressionsRequestWithBody generates requests for ValidateWorkflowExpressions with any type of body
+func NewValidateWorkflowExpressionsRequestWithBody(server string, project ProjectHandleParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/workflows:validate-expressions", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 func (c *Client) applyEditors(ctx context.Context, req *http.Request, additionalEditors []RequestEditorFn) error {
 	for _, r := range c.RequestEditors {
 		if err := r(ctx, req); err != nil {
@@ -33537,20 +36904,6 @@ type ClientWithResponsesInterface interface {
 	// RotateActionSecretWithResponse request
 	RotateActionSecretWithResponse(ctx context.Context, project ProjectHandleParam, actionName ActionNameParam, reqEditors ...RequestEditorFn) (*RotateActionSecretResponse, error)
 
-	// ListActorStatesWithResponse request
-	ListActorStatesWithResponse(ctx context.Context, project ProjectHandleParam, params *ListActorStatesParams, reqEditors ...RequestEditorFn) (*ListActorStatesResponse, error)
-
-	// ListActorAssignmentsWithResponse request
-	ListActorAssignmentsWithResponse(ctx context.Context, project ProjectHandleParam, params *ListActorAssignmentsParams, reqEditors ...RequestEditorFn) (*ListActorAssignmentsResponse, error)
-
-	// GetActorStateWithResponse request
-	GetActorStateWithResponse(ctx context.Context, project ProjectHandleParam, actorId string, reqEditors ...RequestEditorFn) (*GetActorStateResponse, error)
-
-	// UpsertActorStateWithBodyWithResponse request with any body
-	UpsertActorStateWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, actorId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpsertActorStateResponse, error)
-
-	UpsertActorStateWithResponse(ctx context.Context, project ProjectHandleParam, actorId string, body UpsertActorStateJSONRequestBody, reqEditors ...RequestEditorFn) (*UpsertActorStateResponse, error)
-
 	// ListAgentsWithResponse request
 	ListAgentsWithResponse(ctx context.Context, project ProjectHandleParam, params *ListAgentsParams, reqEditors ...RequestEditorFn) (*ListAgentsResponse, error)
 
@@ -33573,22 +36926,36 @@ type ClientWithResponsesInterface interface {
 	// ProvisionAgentInboxWithResponse request
 	ProvisionAgentInboxWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*ProvisionAgentInboxResponse, error)
 
+	// ListAgentPresencesWithResponse request
+	ListAgentPresencesWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, params *ListAgentPresencesParams, reqEditors ...RequestEditorFn) (*ListAgentPresencesResponse, error)
+
+	// CreateAgentPresenceWithBodyWithResponse request with any body
+	CreateAgentPresenceWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateAgentPresenceResponse, error)
+
+	CreateAgentPresenceWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body CreateAgentPresenceJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateAgentPresenceResponse, error)
+
+	// GetAgentPresenceWithResponse request
+	GetAgentPresenceWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, presenceId PresenceId, reqEditors ...RequestEditorFn) (*GetAgentPresenceResponse, error)
+
+	// DisconnectAgentPresenceWithResponse request
+	DisconnectAgentPresenceWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, presenceId PresenceId, reqEditors ...RequestEditorFn) (*DisconnectAgentPresenceResponse, error)
+
+	// HeartbeatAgentPresenceWithResponse request
+	HeartbeatAgentPresenceWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, presenceId PresenceId, reqEditors ...RequestEditorFn) (*HeartbeatAgentPresenceResponse, error)
+
 	// ListAgentSessionsWithResponse request
 	ListAgentSessionsWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, params *ListAgentSessionsParams, reqEditors ...RequestEditorFn) (*ListAgentSessionsResponse, error)
 
-	// CreateAgentSessionWithBodyWithResponse request with any body
-	CreateAgentSessionWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateAgentSessionResponse, error)
-
-	CreateAgentSessionWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body CreateAgentSessionJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateAgentSessionResponse, error)
-
 	// GetAgentSessionWithResponse request
-	GetAgentSessionWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, sessionId SessionId, reqEditors ...RequestEditorFn) (*GetAgentSessionResponse, error)
+	GetAgentSessionWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, sessionId string, reqEditors ...RequestEditorFn) (*GetAgentSessionResponse, error)
 
-	// DisconnectAgentSessionWithResponse request
-	DisconnectAgentSessionWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, sessionId SessionId, reqEditors ...RequestEditorFn) (*DisconnectAgentSessionResponse, error)
+	// ListAgentSessionMessagesWithResponse request
+	ListAgentSessionMessagesWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, sessionId string, params *ListAgentSessionMessagesParams, reqEditors ...RequestEditorFn) (*ListAgentSessionMessagesResponse, error)
 
-	// HeartbeatAgentSessionWithResponse request
-	HeartbeatAgentSessionWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, sessionId SessionId, reqEditors ...RequestEditorFn) (*HeartbeatAgentSessionResponse, error)
+	// AppendAgentSessionMessagesWithBodyWithResponse request with any body
+	AppendAgentSessionMessagesWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, sessionId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AppendAgentSessionMessagesResponse, error)
+
+	AppendAgentSessionMessagesWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, sessionId string, body AppendAgentSessionMessagesJSONRequestBody, reqEditors ...RequestEditorFn) (*AppendAgentSessionMessagesResponse, error)
 
 	// ListSkillAssignmentsWithResponse request
 	ListSkillAssignmentsWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*ListSkillAssignmentsResponse, error)
@@ -33619,13 +36986,16 @@ type ClientWithResponsesInterface interface {
 	GetArtifactWithResponse(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, reqEditors ...RequestEditorFn) (*GetArtifactResponse, error)
 
 	// GetArtifactContentWithResponse request
-	GetArtifactContentWithResponse(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, params *GetArtifactContentParams, reqEditors ...RequestEditorFn) (*GetArtifactContentResponse, error)
+	GetArtifactContentWithResponse(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, reqEditors ...RequestEditorFn) (*GetArtifactContentResponse, error)
 
 	// UnpinArtifactWithResponse request
 	UnpinArtifactWithResponse(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, reqEditors ...RequestEditorFn) (*UnpinArtifactResponse, error)
 
 	// PinArtifactWithResponse request
 	PinArtifactWithResponse(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, reqEditors ...RequestEditorFn) (*PinArtifactResponse, error)
+
+	// CreateArtifactSignedUrlWithResponse request
+	CreateArtifactSignedUrlWithResponse(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, params *CreateArtifactSignedUrlParams, reqEditors ...RequestEditorFn) (*CreateArtifactSignedUrlResponse, error)
 
 	// CommitArtifactWithBodyWithResponse request with any body
 	CommitArtifactWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CommitArtifactResponse, error)
@@ -33644,6 +37014,14 @@ type ClientWithResponsesInterface interface {
 	CreateChannelWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateChannelResponse, error)
 
 	CreateChannelWithResponse(ctx context.Context, project ProjectHandleParam, body CreateChannelJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateChannelResponse, error)
+
+	// GetChannelBlockCatalogWithResponse request
+	GetChannelBlockCatalogWithResponse(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*GetChannelBlockCatalogResponse, error)
+
+	// OpenDirectMessageWithBodyWithResponse request with any body
+	OpenDirectMessageWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*OpenDirectMessageResponse, error)
+
+	OpenDirectMessageWithResponse(ctx context.Context, project ProjectHandleParam, body OpenDirectMessageJSONRequestBody, reqEditors ...RequestEditorFn) (*OpenDirectMessageResponse, error)
 
 	// DeleteChannelWithResponse request
 	DeleteChannelWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*DeleteChannelResponse, error)
@@ -33715,51 +37093,6 @@ type ClientWithResponsesInterface interface {
 
 	ShareChannelEntityWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body ShareChannelEntityJSONRequestBody, reqEditors ...RequestEditorFn) (*ShareChannelEntityResponse, error)
 
-	// ListEnvironmentsWithResponse request
-	ListEnvironmentsWithResponse(ctx context.Context, project ProjectHandleParam, params *ListEnvironmentsParams, reqEditors ...RequestEditorFn) (*ListEnvironmentsResponse, error)
-
-	// CreateEnvironmentWithBodyWithResponse request with any body
-	CreateEnvironmentWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateEnvironmentResponse, error)
-
-	CreateEnvironmentWithResponse(ctx context.Context, project ProjectHandleParam, body CreateEnvironmentJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateEnvironmentResponse, error)
-
-	// AcquireEnvironmentWithBodyWithResponse request with any body
-	AcquireEnvironmentWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AcquireEnvironmentResponse, error)
-
-	AcquireEnvironmentWithResponse(ctx context.Context, project ProjectHandleParam, body AcquireEnvironmentJSONRequestBody, reqEditors ...RequestEditorFn) (*AcquireEnvironmentResponse, error)
-
-	// ReleaseEnvironmentLeaseWithResponse request
-	ReleaseEnvironmentLeaseWithResponse(ctx context.Context, project ProjectHandleParam, leaseId string, reqEditors ...RequestEditorFn) (*ReleaseEnvironmentLeaseResponse, error)
-
-	// DestroyEnvironmentWithResponse request
-	DestroyEnvironmentWithResponse(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, reqEditors ...RequestEditorFn) (*DestroyEnvironmentResponse, error)
-
-	// GetEnvironmentWithResponse request
-	GetEnvironmentWithResponse(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, reqEditors ...RequestEditorFn) (*GetEnvironmentResponse, error)
-
-	// UpdateEnvironmentWithBodyWithResponse request with any body
-	UpdateEnvironmentWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateEnvironmentResponse, error)
-
-	UpdateEnvironmentWithResponse(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, body UpdateEnvironmentJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateEnvironmentResponse, error)
-
-	// ExecEnvironmentWithBodyWithResponse request with any body
-	ExecEnvironmentWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ExecEnvironmentResponse, error)
-
-	ExecEnvironmentWithResponse(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, body ExecEnvironmentJSONRequestBody, reqEditors ...RequestEditorFn) (*ExecEnvironmentResponse, error)
-
-	// WriteEnvironmentFileWithBodyWithResponse request with any body
-	WriteEnvironmentFileWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*WriteEnvironmentFileResponse, error)
-
-	WriteEnvironmentFileWithResponse(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, body WriteEnvironmentFileJSONRequestBody, reqEditors ...RequestEditorFn) (*WriteEnvironmentFileResponse, error)
-
-	// ReconcileEnvironmentWithResponse request
-	ReconcileEnvironmentWithResponse(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, reqEditors ...RequestEditorFn) (*ReconcileEnvironmentResponse, error)
-
-	// StartEnvironmentWorkerWithBodyWithResponse request with any body
-	StartEnvironmentWorkerWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*StartEnvironmentWorkerResponse, error)
-
-	StartEnvironmentWorkerWithResponse(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, body StartEnvironmentWorkerJSONRequestBody, reqEditors ...RequestEditorFn) (*StartEnvironmentWorkerResponse, error)
-
 	// StreamProjectEventsWithResponse request
 	StreamProjectEventsWithResponse(ctx context.Context, project ProjectHandleParam, params *StreamProjectEventsParams, reqEditors ...RequestEditorFn) (*StreamProjectEventsResponse, error)
 
@@ -33793,6 +37126,9 @@ type ClientWithResponsesInterface interface {
 	// RemoveGroupMemberWithResponse request
 	RemoveGroupMemberWithResponse(ctx context.Context, project ProjectHandleParam, group GroupParam, userId UserId, reqEditors ...RequestEditorFn) (*RemoveGroupMemberResponse, error)
 
+	// ListIntegrationEventsWithResponse request
+	ListIntegrationEventsWithResponse(ctx context.Context, project ProjectHandleParam, params *ListIntegrationEventsParams, reqEditors ...RequestEditorFn) (*ListIntegrationEventsResponse, error)
+
 	// CreateIntegrationEventTestFireWithBodyWithResponse request with any body
 	CreateIntegrationEventTestFireWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateIntegrationEventTestFireResponse, error)
 
@@ -33801,8 +37137,31 @@ type ClientWithResponsesInterface interface {
 	// ListIntegrationEventTestSamplesWithResponse request
 	ListIntegrationEventTestSamplesWithResponse(ctx context.Context, project ProjectHandleParam, params *ListIntegrationEventTestSamplesParams, reqEditors ...RequestEditorFn) (*ListIntegrationEventTestSamplesResponse, error)
 
+	// GetIntegrationEventWithResponse request
+	GetIntegrationEventWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*GetIntegrationEventResponse, error)
+
 	// ListIntegrationProvidersWithResponse request
 	ListIntegrationProvidersWithResponse(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*ListIntegrationProvidersResponse, error)
+
+	// ConnectApolloWithBodyWithResponse request with any body
+	ConnectApolloWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ConnectApolloResponse, error)
+
+	ConnectApolloWithResponse(ctx context.Context, project ProjectHandleParam, body ConnectApolloJSONRequestBody, reqEditors ...RequestEditorFn) (*ConnectApolloResponse, error)
+
+	// ConnectFirecrawlWithBodyWithResponse request with any body
+	ConnectFirecrawlWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ConnectFirecrawlResponse, error)
+
+	ConnectFirecrawlWithResponse(ctx context.Context, project ProjectHandleParam, body ConnectFirecrawlJSONRequestBody, reqEditors ...RequestEditorFn) (*ConnectFirecrawlResponse, error)
+
+	// ConnectGoogleSheetsWithBodyWithResponse request with any body
+	ConnectGoogleSheetsWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ConnectGoogleSheetsResponse, error)
+
+	ConnectGoogleSheetsWithResponse(ctx context.Context, project ProjectHandleParam, body ConnectGoogleSheetsJSONRequestBody, reqEditors ...RequestEditorFn) (*ConnectGoogleSheetsResponse, error)
+
+	// ConnectScrapeCreatorsWithBodyWithResponse request with any body
+	ConnectScrapeCreatorsWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ConnectScrapeCreatorsResponse, error)
+
+	ConnectScrapeCreatorsWithResponse(ctx context.Context, project ProjectHandleParam, body ConnectScrapeCreatorsJSONRequestBody, reqEditors ...RequestEditorFn) (*ConnectScrapeCreatorsResponse, error)
 
 	// ListInteractionsWithResponse request
 	ListInteractionsWithResponse(ctx context.Context, project ProjectHandleParam, params *ListInteractionsParams, reqEditors ...RequestEditorFn) (*ListInteractionsResponse, error)
@@ -33894,9 +37253,9 @@ type ClientWithResponsesInterface interface {
 	CreateJobInteractionWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body CreateJobInteractionJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateJobInteractionResponse, error)
 
 	// ReportJobWithBodyWithResponse request with any body
-	ReportJobWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ReportJobResponse, error)
+	ReportJobWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, params *ReportJobParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ReportJobResponse, error)
 
-	ReportJobWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body ReportJobJSONRequestBody, reqEditors ...RequestEditorFn) (*ReportJobResponse, error)
+	ReportJobWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, params *ReportJobParams, body ReportJobJSONRequestBody, reqEditors ...RequestEditorFn) (*ReportJobResponse, error)
 
 	// ListProjectLogsWithResponse request
 	ListProjectLogsWithResponse(ctx context.Context, project ProjectHandleParam, params *ListProjectLogsParams, reqEditors ...RequestEditorFn) (*ListProjectLogsResponse, error)
@@ -34078,54 +37437,54 @@ type ClientWithResponsesInterface interface {
 	CreateTableWithResponse(ctx context.Context, project ProjectHandleParam, body CreateTableJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateTableResponse, error)
 
 	// DeleteTableWithResponse request
-	DeleteTableWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, reqEditors ...RequestEditorFn) (*DeleteTableResponse, error)
+	DeleteTableWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, params *DeleteTableParams, reqEditors ...RequestEditorFn) (*DeleteTableResponse, error)
 
 	// GetTableWithResponse request
-	GetTableWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, reqEditors ...RequestEditorFn) (*GetTableResponse, error)
+	GetTableWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, params *GetTableParams, reqEditors ...RequestEditorFn) (*GetTableResponse, error)
 
 	// UpdateTableWithBodyWithResponse request with any body
-	UpdateTableWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateTableResponse, error)
+	UpdateTableWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, params *UpdateTableParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateTableResponse, error)
 
-	UpdateTableWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body UpdateTableJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateTableResponse, error)
+	UpdateTableWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, params *UpdateTableParams, body UpdateTableJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateTableResponse, error)
 
 	// InsertTableRowWithBodyWithResponse request with any body
-	InsertTableRowWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*InsertTableRowResponse, error)
+	InsertTableRowWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, params *InsertTableRowParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*InsertTableRowResponse, error)
 
-	InsertTableRowWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body InsertTableRowJSONRequestBody, reqEditors ...RequestEditorFn) (*InsertTableRowResponse, error)
+	InsertTableRowWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, params *InsertTableRowParams, body InsertTableRowJSONRequestBody, reqEditors ...RequestEditorFn) (*InsertTableRowResponse, error)
 
 	// BulkInsertTableRowsWithBodyWithResponse request with any body
-	BulkInsertTableRowsWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*BulkInsertTableRowsResponse, error)
+	BulkInsertTableRowsWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, params *BulkInsertTableRowsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*BulkInsertTableRowsResponse, error)
 
-	BulkInsertTableRowsWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body BulkInsertTableRowsJSONRequestBody, reqEditors ...RequestEditorFn) (*BulkInsertTableRowsResponse, error)
+	BulkInsertTableRowsWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, params *BulkInsertTableRowsParams, body BulkInsertTableRowsJSONRequestBody, reqEditors ...RequestEditorFn) (*BulkInsertTableRowsResponse, error)
 
 	// QueryTableRowsWithBodyWithResponse request with any body
-	QueryTableRowsWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*QueryTableRowsResponse, error)
+	QueryTableRowsWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, params *QueryTableRowsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*QueryTableRowsResponse, error)
 
-	QueryTableRowsWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body QueryTableRowsJSONRequestBody, reqEditors ...RequestEditorFn) (*QueryTableRowsResponse, error)
+	QueryTableRowsWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, params *QueryTableRowsParams, body QueryTableRowsJSONRequestBody, reqEditors ...RequestEditorFn) (*QueryTableRowsResponse, error)
 
 	// SearchTableRowsWithBodyWithResponse request with any body
-	SearchTableRowsWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SearchTableRowsResponse, error)
+	SearchTableRowsWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, params *SearchTableRowsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SearchTableRowsResponse, error)
 
-	SearchTableRowsWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body SearchTableRowsJSONRequestBody, reqEditors ...RequestEditorFn) (*SearchTableRowsResponse, error)
+	SearchTableRowsWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, params *SearchTableRowsParams, body SearchTableRowsJSONRequestBody, reqEditors ...RequestEditorFn) (*SearchTableRowsResponse, error)
 
 	// UpsertTableRowWithBodyWithResponse request with any body
-	UpsertTableRowWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpsertTableRowResponse, error)
+	UpsertTableRowWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, params *UpsertTableRowParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpsertTableRowResponse, error)
 
-	UpsertTableRowWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body UpsertTableRowJSONRequestBody, reqEditors ...RequestEditorFn) (*UpsertTableRowResponse, error)
+	UpsertTableRowWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, params *UpsertTableRowParams, body UpsertTableRowJSONRequestBody, reqEditors ...RequestEditorFn) (*UpsertTableRowResponse, error)
 
 	// DeleteTableRowWithResponse request
-	DeleteTableRowWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, reqEditors ...RequestEditorFn) (*DeleteTableRowResponse, error)
+	DeleteTableRowWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, params *DeleteTableRowParams, reqEditors ...RequestEditorFn) (*DeleteTableRowResponse, error)
 
 	// GetTableRowWithResponse request
-	GetTableRowWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, reqEditors ...RequestEditorFn) (*GetTableRowResponse, error)
+	GetTableRowWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, params *GetTableRowParams, reqEditors ...RequestEditorFn) (*GetTableRowResponse, error)
 
 	// UpdateTableRowWithBodyWithResponse request with any body
-	UpdateTableRowWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateTableRowResponse, error)
+	UpdateTableRowWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, params *UpdateTableRowParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateTableRowResponse, error)
 
-	UpdateTableRowWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, body UpdateTableRowJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateTableRowResponse, error)
+	UpdateTableRowWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, params *UpdateTableRowParams, body UpdateTableRowJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateTableRowResponse, error)
 
 	// GetTableStatsWithResponse request
-	GetTableStatsWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, reqEditors ...RequestEditorFn) (*GetTableStatsResponse, error)
+	GetTableStatsWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, params *GetTableStatsParams, reqEditors ...RequestEditorFn) (*GetTableStatsResponse, error)
 
 	// ListProjectTeamWithResponse request
 	ListProjectTeamWithResponse(ctx context.Context, project ProjectHandleParam, params *ListProjectTeamParams, reqEditors ...RequestEditorFn) (*ListProjectTeamResponse, error)
@@ -34204,6 +37563,20 @@ type ClientWithResponsesInterface interface {
 
 	TestFireTriggerWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body TestFireTriggerJSONRequestBody, reqEditors ...RequestEditorFn) (*TestFireTriggerResponse, error)
 
+	// ListUserStatesWithResponse request
+	ListUserStatesWithResponse(ctx context.Context, project ProjectHandleParam, params *ListUserStatesParams, reqEditors ...RequestEditorFn) (*ListUserStatesResponse, error)
+
+	// ListUserAssignmentsWithResponse request
+	ListUserAssignmentsWithResponse(ctx context.Context, project ProjectHandleParam, params *ListUserAssignmentsParams, reqEditors ...RequestEditorFn) (*ListUserAssignmentsResponse, error)
+
+	// GetUserStateWithResponse request
+	GetUserStateWithResponse(ctx context.Context, project ProjectHandleParam, userId string, reqEditors ...RequestEditorFn) (*GetUserStateResponse, error)
+
+	// UpsertUserStateWithBodyWithResponse request with any body
+	UpsertUserStateWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, userId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpsertUserStateResponse, error)
+
+	UpsertUserStateWithResponse(ctx context.Context, project ProjectHandleParam, userId string, body UpsertUserStateJSONRequestBody, reqEditors ...RequestEditorFn) (*UpsertUserStateResponse, error)
+
 	// ListWebhooksWithResponse request
 	ListWebhooksWithResponse(ctx context.Context, project ProjectHandleParam, params *ListWebhooksParams, reqEditors ...RequestEditorFn) (*ListWebhooksResponse, error)
 
@@ -34266,6 +37639,11 @@ type ClientWithResponsesInterface interface {
 
 	// GetWorkflowVersionWithResponse request
 	GetWorkflowVersionWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, version int, reqEditors ...RequestEditorFn) (*GetWorkflowVersionResponse, error)
+
+	// ValidateWorkflowExpressionsWithBodyWithResponse request with any body
+	ValidateWorkflowExpressionsWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ValidateWorkflowExpressionsResponse, error)
+
+	ValidateWorkflowExpressionsWithResponse(ctx context.Context, project ProjectHandleParam, body ValidateWorkflowExpressionsJSONRequestBody, reqEditors ...RequestEditorFn) (*ValidateWorkflowExpressionsResponse, error)
 }
 
 type ListAuditLogsResponse struct {
@@ -34273,6 +37651,7 @@ type ListAuditLogsResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *AuditLogListResponse
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 }
 
 // Status returns HTTPResponse.Status
@@ -34322,6 +37701,7 @@ type ListProjectsResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *ProjectListResponse
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 }
 
 // Status returns HTTPResponse.Status
@@ -34346,6 +37726,7 @@ type CreateProjectResponse struct {
 	JSON201      *Project
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON409      *Conflict
 }
 
@@ -34369,6 +37750,7 @@ type DeleteProjectResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 	JSON409      *Conflict
 }
@@ -34394,6 +37776,7 @@ type GetProjectResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *Project
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -34419,6 +37802,7 @@ type UpdateProjectResponse struct {
 	JSON200      *Project
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 	JSON409      *Conflict
 }
@@ -34444,6 +37828,7 @@ type ArchiveProjectResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *Project
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -34620,6 +38005,7 @@ type RestoreProjectResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *Project
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -34644,6 +38030,7 @@ type ListActionInvocationsResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *ActionInvocationListResponse
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 }
 
 // Status returns HTTPResponse.Status
@@ -34667,6 +38054,7 @@ type ListActionsResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *ActionListResponse
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 }
 
 // Status returns HTTPResponse.Status
@@ -34691,6 +38079,7 @@ type CreateActionResponse struct {
 	JSON201      *Action
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON409      *Conflict
 }
 
@@ -34715,6 +38104,7 @@ type ListCatalogActionsResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *ActionCatalogListResponse
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 }
 
 // Status returns HTTPResponse.Status
@@ -34738,6 +38128,7 @@ type GetCatalogActionResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *ActionCatalogEntry
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -34761,6 +38152,7 @@ type DeleteActionResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 	JSON409      *Conflict
 }
@@ -34786,6 +38178,7 @@ type GetActionResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *Action
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -34811,6 +38204,7 @@ type UpdateActionResponse struct {
 	JSON200      *Action
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -34837,6 +38231,7 @@ type InvokeActionResponse struct {
 	JSON202      *ActionInvocationResult
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -34861,6 +38256,7 @@ type RotateActionSecretResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *RotateSecretResult
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -34880,110 +38276,12 @@ func (r RotateActionSecretResponse) StatusCode() int {
 	return 0
 }
 
-type ListActorStatesResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *ActorStateListResponse
-	JSON401      *Unauthorized
-	JSON404      *NotFound
-}
-
-// Status returns HTTPResponse.Status
-func (r ListActorStatesResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ListActorStatesResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type ListActorAssignmentsResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *ActorAssignmentListResponse
-	JSON400      *BadRequest
-	JSON401      *Unauthorized
-	JSON404      *NotFound
-}
-
-// Status returns HTTPResponse.Status
-func (r ListActorAssignmentsResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ListActorAssignmentsResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type GetActorStateResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *ActorState
-	JSON401      *Unauthorized
-	JSON404      *NotFound
-}
-
-// Status returns HTTPResponse.Status
-func (r GetActorStateResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetActorStateResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type UpsertActorStateResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *ActorState
-	JSON400      *BadRequest
-	JSON401      *Unauthorized
-	JSON403      *Forbidden
-	JSON404      *NotFound
-}
-
-// Status returns HTTPResponse.Status
-func (r UpsertActorStateResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r UpsertActorStateResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
 type ListAgentsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *AgentListResponse
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -35009,6 +38307,7 @@ type CreateAgentResponse struct {
 	JSON201      *Agent
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 	JSON409      *Conflict
 }
@@ -35033,6 +38332,7 @@ type DeleteAgentResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -35082,6 +38382,7 @@ type UpdateAgentResponse struct {
 	JSON200      *Agent
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 	JSON409      *Conflict
 }
@@ -35127,10 +38428,131 @@ func (r ProvisionAgentInboxResponse) StatusCode() int {
 	return 0
 }
 
+type ListAgentPresencesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *AgentPresenceListResponse
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r ListAgentPresencesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListAgentPresencesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type CreateAgentPresenceResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON201      *AgentPresence
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateAgentPresenceResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateAgentPresenceResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetAgentPresenceResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *AgentPresence
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r GetAgentPresenceResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetAgentPresenceResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type DisconnectAgentPresenceResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *AgentPresence
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r DisconnectAgentPresenceResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DisconnectAgentPresenceResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type HeartbeatAgentPresenceResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *AgentPresence
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r HeartbeatAgentPresenceResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r HeartbeatAgentPresenceResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type ListAgentSessionsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *AgentSessionListResponse
+	JSON200      *AgentConversationSessionListResponse
 	JSON401      *Unauthorized
 	JSON404      *NotFound
 }
@@ -35151,35 +38573,10 @@ func (r ListAgentSessionsResponse) StatusCode() int {
 	return 0
 }
 
-type CreateAgentSessionResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON201      *AgentSession
-	JSON400      *BadRequest
-	JSON401      *Unauthorized
-	JSON404      *NotFound
-}
-
-// Status returns HTTPResponse.Status
-func (r CreateAgentSessionResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r CreateAgentSessionResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
 type GetAgentSessionResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *AgentSession
+	JSON200      *AgentConversationSession
 	JSON401      *Unauthorized
 	JSON404      *NotFound
 }
@@ -35200,16 +38597,16 @@ func (r GetAgentSessionResponse) StatusCode() int {
 	return 0
 }
 
-type DisconnectAgentSessionResponse struct {
+type ListAgentSessionMessagesResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *AgentSession
+	JSON200      *AgentSessionMessageListResponse
 	JSON401      *Unauthorized
 	JSON404      *NotFound
 }
 
 // Status returns HTTPResponse.Status
-func (r DisconnectAgentSessionResponse) Status() string {
+func (r ListAgentSessionMessagesResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -35217,23 +38614,24 @@ func (r DisconnectAgentSessionResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r DisconnectAgentSessionResponse) StatusCode() int {
+func (r ListAgentSessionMessagesResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
-type HeartbeatAgentSessionResponse struct {
+type AppendAgentSessionMessagesResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *AgentSession
+	JSON200      *AgentConversationSession
+	JSON400      *BadRequest
 	JSON401      *Unauthorized
 	JSON404      *NotFound
 }
 
 // Status returns HTTPResponse.Status
-func (r HeartbeatAgentSessionResponse) Status() string {
+func (r AppendAgentSessionMessagesResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -35241,7 +38639,7 @@ func (r HeartbeatAgentSessionResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r HeartbeatAgentSessionResponse) StatusCode() int {
+func (r AppendAgentSessionMessagesResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -35253,6 +38651,7 @@ type ListSkillAssignmentsResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *SkillAssignmentListResponse
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -35278,6 +38677,7 @@ type ReplaceSkillsResponse struct {
 	JSON200      *SkillAssignmentListResponse
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -35303,6 +38703,7 @@ type GetAgentToolManifestResponse struct {
 	JSON200      *AgentToolManifest
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -35327,6 +38728,7 @@ type ListToolkitAssignmentsResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *ToolkitAssignmentListResponse
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -35352,6 +38754,7 @@ type ReplaceToolkitsResponse struct {
 	JSON200      *ToolkitAssignmentListResponse
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -35376,6 +38779,7 @@ type ListArtifactsResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *ArtifactListResponse
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 }
 
 // Status returns HTTPResponse.Status
@@ -35398,6 +38802,7 @@ type DeleteArtifactResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 	JSON409      *Conflict
 }
@@ -35423,6 +38828,7 @@ type GetArtifactResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *Artifact
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -35446,9 +38852,9 @@ type GetArtifactContentResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 	JSON409      *Conflict
-	JSON413      *ErrorResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -35472,6 +38878,7 @@ type UnpinArtifactResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *Artifact
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -35496,6 +38903,7 @@ type PinArtifactResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *Artifact
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -35515,12 +38923,39 @@ func (r PinArtifactResponse) StatusCode() int {
 	return 0
 }
 
+type CreateArtifactSignedUrlResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ArtifactSignedUrl
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+	JSON409      *Conflict
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateArtifactSignedUrlResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateArtifactSignedUrlResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type CommitArtifactResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *Artifact
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 	JSON409      *Conflict
 	JSON422      *ErrorResponse
@@ -35548,6 +38983,7 @@ type CreateArtifactSlotResponse struct {
 	JSON201      *ArtifactSlot
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON409      *Conflict
 	JSON429      *ErrorResponse
 }
@@ -35573,6 +39009,7 @@ type ListChannelsResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *ChannelListResponse
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 }
 
 // Status returns HTTPResponse.Status
@@ -35597,6 +39034,7 @@ type CreateChannelResponse struct {
 	JSON201      *Channel
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON409      *Conflict
 }
 
@@ -35616,10 +39054,62 @@ func (r CreateChannelResponse) StatusCode() int {
 	return 0
 }
 
+type GetChannelBlockCatalogResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *MessageBlockCatalogResponse
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+}
+
+// Status returns HTTPResponse.Status
+func (r GetChannelBlockCatalogResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetChannelBlockCatalogResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type OpenDirectMessageResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Channel
+	JSON201      *Channel
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r OpenDirectMessageResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r OpenDirectMessageResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type DeleteChannelResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -35644,6 +39134,7 @@ type GetChannelResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *Channel
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -35669,6 +39160,7 @@ type UpdateChannelResponse struct {
 	JSON200      *Channel
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -35693,6 +39185,7 @@ type ListChannelInteractionsResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *ChannelInteractionLinkListResponse
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -35718,6 +39211,7 @@ type AssociateChannelInteractionResponse struct {
 	JSON201      *ChannelInteractionLink
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 	JSON409      *Conflict
 }
@@ -35742,6 +39236,7 @@ type RemoveChannelInteractionResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -35845,6 +39340,7 @@ type ListChannelMembersResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *ChannelMemberListResponse
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -35870,6 +39366,7 @@ type AddChannelMemberResponse struct {
 	JSON201      *ChannelMember
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 	JSON409      *Conflict
 }
@@ -35894,6 +39391,7 @@ type RemoveChannelMemberResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -35945,6 +39443,7 @@ type SendMessageResponse struct {
 	JSON201      *ChannelMessage
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -35969,6 +39468,7 @@ type GetMessageResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *ChannelMessage
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -35994,6 +39494,7 @@ type UpdateMessageResponse struct {
 	JSON200      *ChannelMessage
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -36044,6 +39545,7 @@ type ShareChannelEntityResponse struct {
 	JSON201      *ChannelMessage
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -36063,282 +39565,12 @@ func (r ShareChannelEntityResponse) StatusCode() int {
 	return 0
 }
 
-type ListEnvironmentsResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *EnvironmentListResponse
-	JSON401      *Unauthorized
-}
-
-// Status returns HTTPResponse.Status
-func (r ListEnvironmentsResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ListEnvironmentsResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type CreateEnvironmentResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON201      *Environment
-	JSON400      *BadRequest
-	JSON401      *Unauthorized
-	JSON409      *Conflict
-}
-
-// Status returns HTTPResponse.Status
-func (r CreateEnvironmentResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r CreateEnvironmentResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type AcquireEnvironmentResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *EnvironmentAcquireResult
-	JSON400      *BadRequest
-	JSON401      *Unauthorized
-	JSON409      *Conflict
-}
-
-// Status returns HTTPResponse.Status
-func (r AcquireEnvironmentResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r AcquireEnvironmentResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type ReleaseEnvironmentLeaseResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *EnvironmentLease
-	JSON401      *Unauthorized
-	JSON404      *NotFound
-}
-
-// Status returns HTTPResponse.Status
-func (r ReleaseEnvironmentLeaseResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ReleaseEnvironmentLeaseResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type DestroyEnvironmentResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *Environment
-	JSON401      *Unauthorized
-	JSON404      *NotFound
-}
-
-// Status returns HTTPResponse.Status
-func (r DestroyEnvironmentResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r DestroyEnvironmentResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type GetEnvironmentResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *Environment
-	JSON401      *Unauthorized
-	JSON404      *NotFound
-}
-
-// Status returns HTTPResponse.Status
-func (r GetEnvironmentResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetEnvironmentResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type UpdateEnvironmentResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *Environment
-	JSON400      *BadRequest
-	JSON401      *Unauthorized
-	JSON404      *NotFound
-}
-
-// Status returns HTTPResponse.Status
-func (r UpdateEnvironmentResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r UpdateEnvironmentResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type ExecEnvironmentResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *EnvironmentExecResult
-	JSON400      *BadRequest
-	JSON401      *Unauthorized
-	JSON404      *NotFound
-	JSON409      *Conflict
-}
-
-// Status returns HTTPResponse.Status
-func (r ExecEnvironmentResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ExecEnvironmentResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type WriteEnvironmentFileResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON400      *BadRequest
-	JSON401      *Unauthorized
-	JSON404      *NotFound
-	JSON409      *Conflict
-}
-
-// Status returns HTTPResponse.Status
-func (r WriteEnvironmentFileResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r WriteEnvironmentFileResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type ReconcileEnvironmentResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *Environment
-	JSON401      *Unauthorized
-	JSON404      *NotFound
-}
-
-// Status returns HTTPResponse.Status
-func (r ReconcileEnvironmentResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ReconcileEnvironmentResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type StartEnvironmentWorkerResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *EnvironmentStartWorkerResult
-	JSON400      *BadRequest
-	JSON401      *Unauthorized
-	JSON404      *NotFound
-	JSON409      *Conflict
-}
-
-// Status returns HTTPResponse.Status
-func (r StartEnvironmentWorkerResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r StartEnvironmentWorkerResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
 type StreamProjectEventsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 }
 
 // Status returns HTTPResponse.Status
@@ -36362,6 +39594,7 @@ type ListGroupsResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *GroupWithCountListResponse
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 }
 
 // Status returns HTTPResponse.Status
@@ -36386,6 +39619,7 @@ type CreateGroupResponse struct {
 	JSON201      *Group
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON409      *Conflict
 }
 
@@ -36410,6 +39644,7 @@ type DeleteGroupResponse struct {
 	HTTPResponse *http.Response
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -36434,6 +39669,7 @@ type GetGroupResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *GroupWithCount
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -36459,6 +39695,7 @@ type UpdateGroupResponse struct {
 	JSON200      *Group
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -36483,6 +39720,7 @@ type ListGroupMembersResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *GroupMemberListResponse
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -36508,6 +39746,7 @@ type AddGroupMemberResponse struct {
 	JSON201      *GroupMember
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 	JSON409      *Conflict
 }
@@ -36532,6 +39771,7 @@ type RemoveGroupMemberResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -36551,12 +39791,38 @@ func (r RemoveGroupMemberResponse) StatusCode() int {
 	return 0
 }
 
+type ListIntegrationEventsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *IntegrationEventListResponse
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+}
+
+// Status returns HTTPResponse.Status
+func (r ListIntegrationEventsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListIntegrationEventsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type CreateIntegrationEventTestFireResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *IntegrationEventFireResponse
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 	JSON503      *ServiceUnavailable
 }
@@ -36582,6 +39848,7 @@ type ListIntegrationEventTestSamplesResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *IntegrationEventSamplesResponse
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 }
 
 // Status returns HTTPResponse.Status
@@ -36600,11 +39867,37 @@ func (r ListIntegrationEventTestSamplesResponse) StatusCode() int {
 	return 0
 }
 
+type GetIntegrationEventResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *IntegrationEventDetail
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r GetIntegrationEventResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetIntegrationEventResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type ListIntegrationProvidersResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *IntegrationProvidersResponse
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 }
 
 // Status returns HTTPResponse.Status
@@ -36623,11 +39916,115 @@ func (r ListIntegrationProvidersResponse) StatusCode() int {
 	return 0
 }
 
+type ConnectApolloResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *IntegrationConnectResponse
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r ConnectApolloResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ConnectApolloResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ConnectFirecrawlResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *IntegrationConnectResponse
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+}
+
+// Status returns HTTPResponse.Status
+func (r ConnectFirecrawlResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ConnectFirecrawlResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ConnectGoogleSheetsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *IntegrationConnectResponse
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+	JSON503      *ServiceUnavailable
+}
+
+// Status returns HTTPResponse.Status
+func (r ConnectGoogleSheetsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ConnectGoogleSheetsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ConnectScrapeCreatorsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *IntegrationConnectResponse
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+}
+
+// Status returns HTTPResponse.Status
+func (r ConnectScrapeCreatorsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ConnectScrapeCreatorsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type ListInteractionsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *InteractionListResponse
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 }
 
 // Status returns HTTPResponse.Status
@@ -36652,6 +40049,7 @@ type CreateInteractionResponse struct {
 	JSON201      *Interaction
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -36676,6 +40074,7 @@ type GetInteractionResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *Interaction
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -36725,6 +40124,7 @@ type ListInteractionBallotsResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *InteractionBallotListResponse
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -36776,6 +40176,7 @@ type ClaimInteractionResponse struct {
 	JSON200      *Interaction
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -36827,6 +40228,7 @@ type ReleaseInteractionResponse struct {
 	JSON200      *Interaction
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -36852,6 +40254,7 @@ type RespondToInteractionResponse struct {
 	JSON200      *Interaction
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 	JSON409      *Conflict
 }
@@ -36903,6 +40306,7 @@ type SubmitInteractionHandoffResponse struct {
 	JSON200      *Interaction
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 	JSON409      *Conflict
 }
@@ -36929,6 +40333,7 @@ type CastInteractionBallotResponse struct {
 	JSON200      *InteractionBallot
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 	JSON409      *Conflict
 }
@@ -36955,6 +40360,7 @@ type WithdrawInteractionBallotResponse struct {
 	JSON200      *InteractionBallot
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -36980,6 +40386,7 @@ type ClaimJobResponse struct {
 	JSON200      *JobClaim
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 	JSON409      *ErrorResponse
 }
@@ -37005,6 +40412,7 @@ type GetJobResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *Job
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -37030,6 +40438,7 @@ type RunJobActionResponse struct {
 	JSON200      *RunActionResult
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -37054,6 +40463,7 @@ type EmitJobEventsResponse struct {
 	HTTPResponse *http.Response
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 	JSON409      *Conflict
 	JSON413      *ErrorResponse
@@ -37082,6 +40492,7 @@ type HeartbeatJobResponse struct {
 	JSON200      *JobHeartbeat
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 	JSON409      *Conflict
 }
@@ -37107,6 +40518,7 @@ type GetJobHistoryResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *JobHistoryResponse
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -37132,6 +40544,7 @@ type CreateJobInteractionResponse struct {
 	JSON201      *Interaction
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 	JSON409      *Conflict
 }
@@ -37157,6 +40570,7 @@ type ReportJobResponse struct {
 	HTTPResponse *http.Response
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 	JSON409      *Conflict
 }
@@ -37182,6 +40596,7 @@ type ListProjectLogsResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *LogRecordListResponse
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -37207,6 +40622,7 @@ type IngestProjectLogsResponse struct {
 	JSON202      *LogIngestResponse
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -37232,6 +40648,7 @@ type IngestProjectLogsOTLPResponse struct {
 	JSON202      *LogIngestResponse
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -37256,6 +40673,7 @@ type ListMemberGroupsResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *GroupListResponse
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -37280,6 +40698,7 @@ type GetProjectMetricsResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *ProjectMetrics
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -37304,6 +40723,7 @@ type ListObservablesResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *ObservableListResponse
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 }
 
 // Status returns HTTPResponse.Status
@@ -37328,6 +40748,7 @@ type CreateObservableResponse struct {
 	JSON201      *Observable
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON409      *Conflict
 }
 
@@ -37351,6 +40772,7 @@ type DeleteObservableResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -37375,6 +40797,7 @@ type GetObservableResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *Observable
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -37400,6 +40823,7 @@ type UpdateObservableResponse struct {
 	JSON200      *Observable
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 	JSON409      *Conflict
 }
@@ -37425,6 +40849,7 @@ type ListObservableEventsResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *ObservableEventListResponse
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -37449,6 +40874,7 @@ type ListObservableObservationsResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *ObservableObservationListResponse
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -37474,6 +40900,7 @@ type SubmitObservableObservationResponse struct {
 	JSON202      *SubmitObservableObservationResult
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 	JSON422      *SubmitObservableObservationResult
 }
@@ -37499,6 +40926,7 @@ type ListObservableStateVersionsResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *ObservableStateVersionListResponse
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -37523,6 +40951,7 @@ type ListObservableWaitersResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *ObservableWaiterListResponse
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -37548,6 +40977,7 @@ type LookupReferencesResponse struct {
 	JSON200      *ReferenceLookupResponse
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 	JSON409      *ErrorResponse
 	JSON429      *TooManyRequests
@@ -37576,6 +41006,7 @@ type ResolveReferencesResponse struct {
 	JSON200      *ReferenceResolveResponse
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 	JSON409      *ErrorResponse
 	JSON429      *TooManyRequests
@@ -37603,6 +41034,7 @@ type ListRunsResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *RunListResponse
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 }
 
 // Status returns HTTPResponse.Status
@@ -37627,6 +41059,7 @@ type StartRunResponse struct {
 	JSON202      *Run
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 	JSON409      *ErrorResponse
 	JSON429      *TooManyRequests
@@ -37653,6 +41086,7 @@ type GetRunResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *RunDetail
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -37677,6 +41111,7 @@ type CancelRunResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *Run
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -37700,6 +41135,7 @@ type StreamRunEventsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -37725,6 +41161,7 @@ type ForkRunResponse struct {
 	JSON202      *Run
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 	JSON409      *ErrorResponse
 }
@@ -37750,6 +41187,7 @@ type ListRunJobsResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *JobListResponse
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -37774,6 +41212,7 @@ type ResumeRunResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *Run
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -37799,6 +41238,7 @@ type SendRunSignalResponse struct {
 	JSON202      *RunSignal
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -37823,6 +41263,7 @@ type ListRunStepsResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *RunStepListResponse
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -37847,6 +41288,7 @@ type GetRunStepResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *RunStep
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -37871,6 +41313,7 @@ type ListRunArtifactsResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *ArtifactListResponse
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -37895,6 +41338,7 @@ type ListSecretsResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *SecretListResponse
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -37920,6 +41364,7 @@ type CreateSecretResponse struct {
 	JSON201      *Secret
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 	JSON409      *Conflict
 }
@@ -37944,6 +41389,7 @@ type DeleteSecretResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -37968,6 +41414,7 @@ type GetSecretResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *Secret
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -37993,6 +41440,7 @@ type UpdateSecretResponse struct {
 	JSON200      *Secret
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 	JSON409      *Conflict
 }
@@ -38018,6 +41466,7 @@ type ListSecretVersionsResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *SecretVersionListResponse
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -38043,6 +41492,7 @@ type GetSecretVersionResponse struct {
 	JSON200      *SecretVersion
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -38067,6 +41517,7 @@ type GetArtifactStorageSettingsResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *ArtifactStorageSettings
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 }
 
 // Status returns HTTPResponse.Status
@@ -38091,6 +41542,7 @@ type UpdateArtifactStorageSettingsResponse struct {
 	JSON200      *ArtifactStorageSettings
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 }
 
 // Status returns HTTPResponse.Status
@@ -38114,6 +41566,7 @@ type GetArtifactStorageQuotaResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *ArtifactQuotaUsage
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 }
 
 // Status returns HTTPResponse.Status
@@ -38137,6 +41590,7 @@ type ListSkillsResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *SkillListResponse
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -38162,6 +41616,7 @@ type CreateSkillResponse struct {
 	JSON201      *Skill
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 	JSON409      *Conflict
 }
@@ -38186,6 +41641,7 @@ type DeleteSkillResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 	JSON409      *Conflict
 }
@@ -38211,6 +41667,7 @@ type GetSkillResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *Skill
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -38236,6 +41693,7 @@ type UpdateSkillResponse struct {
 	JSON200      *Skill
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 	JSON409      *Conflict
 }
@@ -38262,6 +41720,7 @@ type ImportSkillResponse struct {
 	JSON201      *Skill
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 	JSON409      *Conflict
 }
@@ -38287,6 +41746,7 @@ type ListProjectSpansResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *SpanListResponse
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -38311,6 +41771,7 @@ type GetProjectStepSpanCountsResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *StepSpanCountsResponse
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -38335,6 +41796,7 @@ type ListTablesResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *TableListResponse
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 }
 
 // Status returns HTTPResponse.Status
@@ -38359,6 +41821,7 @@ type CreateTableResponse struct {
 	JSON201      *Table
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 }
 
 // Status returns HTTPResponse.Status
@@ -38381,6 +41844,7 @@ type DeleteTableResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -38405,6 +41869,7 @@ type GetTableResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *Table
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -38430,6 +41895,7 @@ type UpdateTableResponse struct {
 	JSON200      *Table
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -38455,6 +41921,7 @@ type InsertTableRowResponse struct {
 	JSON201      *TableRow
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -38480,6 +41947,7 @@ type BulkInsertTableRowsResponse struct {
 	JSON201      *BulkInsertRowsResponse
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -38505,6 +41973,7 @@ type QueryTableRowsResponse struct {
 	JSON200      *QueryRowsResponse
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -38530,6 +41999,7 @@ type SearchTableRowsResponse struct {
 	JSON200      *SearchRowsResponse
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -38556,6 +42026,7 @@ type UpsertTableRowResponse struct {
 	JSON201      *UpsertRowResponse
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 	JSON409      *Conflict
 }
@@ -38580,6 +42051,7 @@ type DeleteTableRowResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -38604,6 +42076,7 @@ type GetTableRowResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *TableRow
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -38629,6 +42102,7 @@ type UpdateTableRowResponse struct {
 	JSON200      *TableRow
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 	JSON409      *Conflict
 }
@@ -38654,6 +42128,7 @@ type GetTableStatsResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *TableStats
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -38704,6 +42179,7 @@ type ListToolkitsResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *ToolkitListResponse
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -38729,6 +42205,7 @@ type CreateToolkitResponse struct {
 	JSON201      *Toolkit
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 	JSON409      *Conflict
 }
@@ -38753,6 +42230,7 @@ type DeleteToolkitResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 	JSON409      *Conflict
 }
@@ -38778,6 +42256,7 @@ type GetToolkitResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *Toolkit
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -38803,6 +42282,7 @@ type UpdateToolkitResponse struct {
 	JSON200      *Toolkit
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 	JSON409      *Conflict
 }
@@ -38828,6 +42308,7 @@ type ListProjectTracesResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *TraceListResponse
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -38852,6 +42333,7 @@ type GetTraceResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *TraceDetail
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -38876,6 +42358,7 @@ type ListTriggersResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *TriggerListResponse
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -38901,6 +42384,7 @@ type CreateTriggerResponse struct {
 	JSON201      *Trigger
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -38924,6 +42408,7 @@ type DeleteTriggerResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -38948,6 +42433,7 @@ type GetTriggerResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *Trigger
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -38973,6 +42459,7 @@ type UpdateTriggerResponse struct {
 	JSON200      *Trigger
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 	JSON409      *Conflict
 }
@@ -38998,6 +42485,7 @@ type ListTriggerFiresResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *TriggerFireListResponse
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -39021,6 +42509,7 @@ type DeleteAllTriggerTargetsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -39045,6 +42534,7 @@ type ListTriggerTargetsResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *TriggerTargetListResponse
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -39070,6 +42560,7 @@ type CreateTriggerTargetResponse struct {
 	JSON201      *TriggerTarget
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -39093,6 +42584,7 @@ type DeleteTriggerTargetResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -39117,6 +42609,7 @@ type GetTriggerTargetResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *TriggerTarget
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -39142,6 +42635,7 @@ type UpdateTriggerTargetResponse struct {
 	JSON200      *TriggerTarget
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -39167,6 +42661,7 @@ type TestFireTriggerResponse struct {
 	JSON200      *TestFireTriggerResult
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -39186,11 +42681,114 @@ func (r TestFireTriggerResponse) StatusCode() int {
 	return 0
 }
 
+type ListUserStatesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *UserStateListResponse
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r ListUserStatesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListUserStatesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ListUserAssignmentsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *UserAssignmentListResponse
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r ListUserAssignmentsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListUserAssignmentsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetUserStateResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *UserState
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r GetUserStateResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetUserStateResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type UpsertUserStateResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *UserState
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r UpsertUserStateResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpsertUserStateResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type ListWebhooksResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *WebhookListResponse
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -39216,6 +42814,7 @@ type CreateWebhookResponse struct {
 	JSON201      *Webhook
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 	JSON409      *Conflict
 }
@@ -39240,6 +42839,7 @@ type DeleteWebhookResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -39264,6 +42864,7 @@ type GetWebhookResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *Webhook
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -39289,6 +42890,7 @@ type UpdateWebhookResponse struct {
 	JSON200      *Webhook
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 	JSON409      *Conflict
 }
@@ -39314,6 +42916,7 @@ type ListWebhookDeliveriesResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *WebhookDeliveryListResponse
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -39339,6 +42942,7 @@ type PingWebhookResponse struct {
 	JSON200      *PingWebhookResult
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -39363,6 +42967,7 @@ type ListWorkerSessionsResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *WorkerSessionListResponse
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -39387,6 +42992,7 @@ type ListWorkflowsResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *WorkflowDefinitionListResponse
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -39412,6 +43018,7 @@ type CreateWorkflowResponse struct {
 	JSON201      *WorkflowDefinition
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 	JSON409      *Conflict
 }
@@ -39436,6 +43043,7 @@ type DeleteWorkflowResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -39460,6 +43068,7 @@ type GetWorkflowResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *WorkflowDefinition
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -39485,6 +43094,7 @@ type UpdateWorkflowResponse struct {
 	JSON200      *WorkflowDefinition
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 	JSON409      *Conflict
 }
@@ -39510,6 +43120,7 @@ type ListRunsForWorkflowResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *RunListResponse
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -39535,6 +43146,7 @@ type StartWorkflowRunResponse struct {
 	JSON202      *Run
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 	JSON409      *ErrorResponse
 	JSON429      *TooManyRequests
@@ -39561,6 +43173,7 @@ type ListWorkflowVersionsResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *WorkflowVersionListResponse
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -39585,6 +43198,7 @@ type GetWorkflowVersionResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *WorkflowVersion
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
@@ -39598,6 +43212,32 @@ func (r GetWorkflowVersionResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r GetWorkflowVersionResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ValidateWorkflowExpressionsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *WorkflowExpressionValidationResponse
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r ValidateWorkflowExpressionsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ValidateWorkflowExpressionsResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -39893,50 +43533,6 @@ func (c *ClientWithResponses) RotateActionSecretWithResponse(ctx context.Context
 	return ParseRotateActionSecretResponse(rsp)
 }
 
-// ListActorStatesWithResponse request returning *ListActorStatesResponse
-func (c *ClientWithResponses) ListActorStatesWithResponse(ctx context.Context, project ProjectHandleParam, params *ListActorStatesParams, reqEditors ...RequestEditorFn) (*ListActorStatesResponse, error) {
-	rsp, err := c.ListActorStates(ctx, project, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseListActorStatesResponse(rsp)
-}
-
-// ListActorAssignmentsWithResponse request returning *ListActorAssignmentsResponse
-func (c *ClientWithResponses) ListActorAssignmentsWithResponse(ctx context.Context, project ProjectHandleParam, params *ListActorAssignmentsParams, reqEditors ...RequestEditorFn) (*ListActorAssignmentsResponse, error) {
-	rsp, err := c.ListActorAssignments(ctx, project, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseListActorAssignmentsResponse(rsp)
-}
-
-// GetActorStateWithResponse request returning *GetActorStateResponse
-func (c *ClientWithResponses) GetActorStateWithResponse(ctx context.Context, project ProjectHandleParam, actorId string, reqEditors ...RequestEditorFn) (*GetActorStateResponse, error) {
-	rsp, err := c.GetActorState(ctx, project, actorId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetActorStateResponse(rsp)
-}
-
-// UpsertActorStateWithBodyWithResponse request with arbitrary body returning *UpsertActorStateResponse
-func (c *ClientWithResponses) UpsertActorStateWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, actorId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpsertActorStateResponse, error) {
-	rsp, err := c.UpsertActorStateWithBody(ctx, project, actorId, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUpsertActorStateResponse(rsp)
-}
-
-func (c *ClientWithResponses) UpsertActorStateWithResponse(ctx context.Context, project ProjectHandleParam, actorId string, body UpsertActorStateJSONRequestBody, reqEditors ...RequestEditorFn) (*UpsertActorStateResponse, error) {
-	rsp, err := c.UpsertActorState(ctx, project, actorId, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUpsertActorStateResponse(rsp)
-}
-
 // ListAgentsWithResponse request returning *ListAgentsResponse
 func (c *ClientWithResponses) ListAgentsWithResponse(ctx context.Context, project ProjectHandleParam, params *ListAgentsParams, reqEditors ...RequestEditorFn) (*ListAgentsResponse, error) {
 	rsp, err := c.ListAgents(ctx, project, params, reqEditors...)
@@ -40007,6 +43603,59 @@ func (c *ClientWithResponses) ProvisionAgentInboxWithResponse(ctx context.Contex
 	return ParseProvisionAgentInboxResponse(rsp)
 }
 
+// ListAgentPresencesWithResponse request returning *ListAgentPresencesResponse
+func (c *ClientWithResponses) ListAgentPresencesWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, params *ListAgentPresencesParams, reqEditors ...RequestEditorFn) (*ListAgentPresencesResponse, error) {
+	rsp, err := c.ListAgentPresences(ctx, project, id, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListAgentPresencesResponse(rsp)
+}
+
+// CreateAgentPresenceWithBodyWithResponse request with arbitrary body returning *CreateAgentPresenceResponse
+func (c *ClientWithResponses) CreateAgentPresenceWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateAgentPresenceResponse, error) {
+	rsp, err := c.CreateAgentPresenceWithBody(ctx, project, id, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateAgentPresenceResponse(rsp)
+}
+
+func (c *ClientWithResponses) CreateAgentPresenceWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body CreateAgentPresenceJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateAgentPresenceResponse, error) {
+	rsp, err := c.CreateAgentPresence(ctx, project, id, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateAgentPresenceResponse(rsp)
+}
+
+// GetAgentPresenceWithResponse request returning *GetAgentPresenceResponse
+func (c *ClientWithResponses) GetAgentPresenceWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, presenceId PresenceId, reqEditors ...RequestEditorFn) (*GetAgentPresenceResponse, error) {
+	rsp, err := c.GetAgentPresence(ctx, project, id, presenceId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetAgentPresenceResponse(rsp)
+}
+
+// DisconnectAgentPresenceWithResponse request returning *DisconnectAgentPresenceResponse
+func (c *ClientWithResponses) DisconnectAgentPresenceWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, presenceId PresenceId, reqEditors ...RequestEditorFn) (*DisconnectAgentPresenceResponse, error) {
+	rsp, err := c.DisconnectAgentPresence(ctx, project, id, presenceId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDisconnectAgentPresenceResponse(rsp)
+}
+
+// HeartbeatAgentPresenceWithResponse request returning *HeartbeatAgentPresenceResponse
+func (c *ClientWithResponses) HeartbeatAgentPresenceWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, presenceId PresenceId, reqEditors ...RequestEditorFn) (*HeartbeatAgentPresenceResponse, error) {
+	rsp, err := c.HeartbeatAgentPresence(ctx, project, id, presenceId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseHeartbeatAgentPresenceResponse(rsp)
+}
+
 // ListAgentSessionsWithResponse request returning *ListAgentSessionsResponse
 func (c *ClientWithResponses) ListAgentSessionsWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, params *ListAgentSessionsParams, reqEditors ...RequestEditorFn) (*ListAgentSessionsResponse, error) {
 	rsp, err := c.ListAgentSessions(ctx, project, id, params, reqEditors...)
@@ -40016,25 +43665,8 @@ func (c *ClientWithResponses) ListAgentSessionsWithResponse(ctx context.Context,
 	return ParseListAgentSessionsResponse(rsp)
 }
 
-// CreateAgentSessionWithBodyWithResponse request with arbitrary body returning *CreateAgentSessionResponse
-func (c *ClientWithResponses) CreateAgentSessionWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateAgentSessionResponse, error) {
-	rsp, err := c.CreateAgentSessionWithBody(ctx, project, id, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateAgentSessionResponse(rsp)
-}
-
-func (c *ClientWithResponses) CreateAgentSessionWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body CreateAgentSessionJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateAgentSessionResponse, error) {
-	rsp, err := c.CreateAgentSession(ctx, project, id, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateAgentSessionResponse(rsp)
-}
-
 // GetAgentSessionWithResponse request returning *GetAgentSessionResponse
-func (c *ClientWithResponses) GetAgentSessionWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, sessionId SessionId, reqEditors ...RequestEditorFn) (*GetAgentSessionResponse, error) {
+func (c *ClientWithResponses) GetAgentSessionWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, sessionId string, reqEditors ...RequestEditorFn) (*GetAgentSessionResponse, error) {
 	rsp, err := c.GetAgentSession(ctx, project, id, sessionId, reqEditors...)
 	if err != nil {
 		return nil, err
@@ -40042,22 +43674,30 @@ func (c *ClientWithResponses) GetAgentSessionWithResponse(ctx context.Context, p
 	return ParseGetAgentSessionResponse(rsp)
 }
 
-// DisconnectAgentSessionWithResponse request returning *DisconnectAgentSessionResponse
-func (c *ClientWithResponses) DisconnectAgentSessionWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, sessionId SessionId, reqEditors ...RequestEditorFn) (*DisconnectAgentSessionResponse, error) {
-	rsp, err := c.DisconnectAgentSession(ctx, project, id, sessionId, reqEditors...)
+// ListAgentSessionMessagesWithResponse request returning *ListAgentSessionMessagesResponse
+func (c *ClientWithResponses) ListAgentSessionMessagesWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, sessionId string, params *ListAgentSessionMessagesParams, reqEditors ...RequestEditorFn) (*ListAgentSessionMessagesResponse, error) {
+	rsp, err := c.ListAgentSessionMessages(ctx, project, id, sessionId, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseDisconnectAgentSessionResponse(rsp)
+	return ParseListAgentSessionMessagesResponse(rsp)
 }
 
-// HeartbeatAgentSessionWithResponse request returning *HeartbeatAgentSessionResponse
-func (c *ClientWithResponses) HeartbeatAgentSessionWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, sessionId SessionId, reqEditors ...RequestEditorFn) (*HeartbeatAgentSessionResponse, error) {
-	rsp, err := c.HeartbeatAgentSession(ctx, project, id, sessionId, reqEditors...)
+// AppendAgentSessionMessagesWithBodyWithResponse request with arbitrary body returning *AppendAgentSessionMessagesResponse
+func (c *ClientWithResponses) AppendAgentSessionMessagesWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, sessionId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AppendAgentSessionMessagesResponse, error) {
+	rsp, err := c.AppendAgentSessionMessagesWithBody(ctx, project, id, sessionId, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseHeartbeatAgentSessionResponse(rsp)
+	return ParseAppendAgentSessionMessagesResponse(rsp)
+}
+
+func (c *ClientWithResponses) AppendAgentSessionMessagesWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, sessionId string, body AppendAgentSessionMessagesJSONRequestBody, reqEditors ...RequestEditorFn) (*AppendAgentSessionMessagesResponse, error) {
+	rsp, err := c.AppendAgentSessionMessages(ctx, project, id, sessionId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAppendAgentSessionMessagesResponse(rsp)
 }
 
 // ListSkillAssignmentsWithResponse request returning *ListSkillAssignmentsResponse
@@ -40149,8 +43789,8 @@ func (c *ClientWithResponses) GetArtifactWithResponse(ctx context.Context, proje
 }
 
 // GetArtifactContentWithResponse request returning *GetArtifactContentResponse
-func (c *ClientWithResponses) GetArtifactContentWithResponse(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, params *GetArtifactContentParams, reqEditors ...RequestEditorFn) (*GetArtifactContentResponse, error) {
-	rsp, err := c.GetArtifactContent(ctx, project, id, params, reqEditors...)
+func (c *ClientWithResponses) GetArtifactContentWithResponse(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, reqEditors ...RequestEditorFn) (*GetArtifactContentResponse, error) {
+	rsp, err := c.GetArtifactContent(ctx, project, id, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -40173,6 +43813,15 @@ func (c *ClientWithResponses) PinArtifactWithResponse(ctx context.Context, proje
 		return nil, err
 	}
 	return ParsePinArtifactResponse(rsp)
+}
+
+// CreateArtifactSignedUrlWithResponse request returning *CreateArtifactSignedUrlResponse
+func (c *ClientWithResponses) CreateArtifactSignedUrlWithResponse(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, params *CreateArtifactSignedUrlParams, reqEditors ...RequestEditorFn) (*CreateArtifactSignedUrlResponse, error) {
+	rsp, err := c.CreateArtifactSignedUrl(ctx, project, id, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateArtifactSignedUrlResponse(rsp)
 }
 
 // CommitArtifactWithBodyWithResponse request with arbitrary body returning *CommitArtifactResponse
@@ -40233,6 +43882,32 @@ func (c *ClientWithResponses) CreateChannelWithResponse(ctx context.Context, pro
 		return nil, err
 	}
 	return ParseCreateChannelResponse(rsp)
+}
+
+// GetChannelBlockCatalogWithResponse request returning *GetChannelBlockCatalogResponse
+func (c *ClientWithResponses) GetChannelBlockCatalogWithResponse(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*GetChannelBlockCatalogResponse, error) {
+	rsp, err := c.GetChannelBlockCatalog(ctx, project, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetChannelBlockCatalogResponse(rsp)
+}
+
+// OpenDirectMessageWithBodyWithResponse request with arbitrary body returning *OpenDirectMessageResponse
+func (c *ClientWithResponses) OpenDirectMessageWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*OpenDirectMessageResponse, error) {
+	rsp, err := c.OpenDirectMessageWithBody(ctx, project, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseOpenDirectMessageResponse(rsp)
+}
+
+func (c *ClientWithResponses) OpenDirectMessageWithResponse(ctx context.Context, project ProjectHandleParam, body OpenDirectMessageJSONRequestBody, reqEditors ...RequestEditorFn) (*OpenDirectMessageResponse, error) {
+	rsp, err := c.OpenDirectMessage(ctx, project, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseOpenDirectMessageResponse(rsp)
 }
 
 // DeleteChannelWithResponse request returning *DeleteChannelResponse
@@ -40461,153 +44136,6 @@ func (c *ClientWithResponses) ShareChannelEntityWithResponse(ctx context.Context
 	return ParseShareChannelEntityResponse(rsp)
 }
 
-// ListEnvironmentsWithResponse request returning *ListEnvironmentsResponse
-func (c *ClientWithResponses) ListEnvironmentsWithResponse(ctx context.Context, project ProjectHandleParam, params *ListEnvironmentsParams, reqEditors ...RequestEditorFn) (*ListEnvironmentsResponse, error) {
-	rsp, err := c.ListEnvironments(ctx, project, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseListEnvironmentsResponse(rsp)
-}
-
-// CreateEnvironmentWithBodyWithResponse request with arbitrary body returning *CreateEnvironmentResponse
-func (c *ClientWithResponses) CreateEnvironmentWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateEnvironmentResponse, error) {
-	rsp, err := c.CreateEnvironmentWithBody(ctx, project, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateEnvironmentResponse(rsp)
-}
-
-func (c *ClientWithResponses) CreateEnvironmentWithResponse(ctx context.Context, project ProjectHandleParam, body CreateEnvironmentJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateEnvironmentResponse, error) {
-	rsp, err := c.CreateEnvironment(ctx, project, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateEnvironmentResponse(rsp)
-}
-
-// AcquireEnvironmentWithBodyWithResponse request with arbitrary body returning *AcquireEnvironmentResponse
-func (c *ClientWithResponses) AcquireEnvironmentWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AcquireEnvironmentResponse, error) {
-	rsp, err := c.AcquireEnvironmentWithBody(ctx, project, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseAcquireEnvironmentResponse(rsp)
-}
-
-func (c *ClientWithResponses) AcquireEnvironmentWithResponse(ctx context.Context, project ProjectHandleParam, body AcquireEnvironmentJSONRequestBody, reqEditors ...RequestEditorFn) (*AcquireEnvironmentResponse, error) {
-	rsp, err := c.AcquireEnvironment(ctx, project, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseAcquireEnvironmentResponse(rsp)
-}
-
-// ReleaseEnvironmentLeaseWithResponse request returning *ReleaseEnvironmentLeaseResponse
-func (c *ClientWithResponses) ReleaseEnvironmentLeaseWithResponse(ctx context.Context, project ProjectHandleParam, leaseId string, reqEditors ...RequestEditorFn) (*ReleaseEnvironmentLeaseResponse, error) {
-	rsp, err := c.ReleaseEnvironmentLease(ctx, project, leaseId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseReleaseEnvironmentLeaseResponse(rsp)
-}
-
-// DestroyEnvironmentWithResponse request returning *DestroyEnvironmentResponse
-func (c *ClientWithResponses) DestroyEnvironmentWithResponse(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, reqEditors ...RequestEditorFn) (*DestroyEnvironmentResponse, error) {
-	rsp, err := c.DestroyEnvironment(ctx, project, environmentId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseDestroyEnvironmentResponse(rsp)
-}
-
-// GetEnvironmentWithResponse request returning *GetEnvironmentResponse
-func (c *ClientWithResponses) GetEnvironmentWithResponse(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, reqEditors ...RequestEditorFn) (*GetEnvironmentResponse, error) {
-	rsp, err := c.GetEnvironment(ctx, project, environmentId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetEnvironmentResponse(rsp)
-}
-
-// UpdateEnvironmentWithBodyWithResponse request with arbitrary body returning *UpdateEnvironmentResponse
-func (c *ClientWithResponses) UpdateEnvironmentWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateEnvironmentResponse, error) {
-	rsp, err := c.UpdateEnvironmentWithBody(ctx, project, environmentId, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUpdateEnvironmentResponse(rsp)
-}
-
-func (c *ClientWithResponses) UpdateEnvironmentWithResponse(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, body UpdateEnvironmentJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateEnvironmentResponse, error) {
-	rsp, err := c.UpdateEnvironment(ctx, project, environmentId, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUpdateEnvironmentResponse(rsp)
-}
-
-// ExecEnvironmentWithBodyWithResponse request with arbitrary body returning *ExecEnvironmentResponse
-func (c *ClientWithResponses) ExecEnvironmentWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ExecEnvironmentResponse, error) {
-	rsp, err := c.ExecEnvironmentWithBody(ctx, project, environmentId, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseExecEnvironmentResponse(rsp)
-}
-
-func (c *ClientWithResponses) ExecEnvironmentWithResponse(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, body ExecEnvironmentJSONRequestBody, reqEditors ...RequestEditorFn) (*ExecEnvironmentResponse, error) {
-	rsp, err := c.ExecEnvironment(ctx, project, environmentId, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseExecEnvironmentResponse(rsp)
-}
-
-// WriteEnvironmentFileWithBodyWithResponse request with arbitrary body returning *WriteEnvironmentFileResponse
-func (c *ClientWithResponses) WriteEnvironmentFileWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*WriteEnvironmentFileResponse, error) {
-	rsp, err := c.WriteEnvironmentFileWithBody(ctx, project, environmentId, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseWriteEnvironmentFileResponse(rsp)
-}
-
-func (c *ClientWithResponses) WriteEnvironmentFileWithResponse(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, body WriteEnvironmentFileJSONRequestBody, reqEditors ...RequestEditorFn) (*WriteEnvironmentFileResponse, error) {
-	rsp, err := c.WriteEnvironmentFile(ctx, project, environmentId, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseWriteEnvironmentFileResponse(rsp)
-}
-
-// ReconcileEnvironmentWithResponse request returning *ReconcileEnvironmentResponse
-func (c *ClientWithResponses) ReconcileEnvironmentWithResponse(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, reqEditors ...RequestEditorFn) (*ReconcileEnvironmentResponse, error) {
-	rsp, err := c.ReconcileEnvironment(ctx, project, environmentId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseReconcileEnvironmentResponse(rsp)
-}
-
-// StartEnvironmentWorkerWithBodyWithResponse request with arbitrary body returning *StartEnvironmentWorkerResponse
-func (c *ClientWithResponses) StartEnvironmentWorkerWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*StartEnvironmentWorkerResponse, error) {
-	rsp, err := c.StartEnvironmentWorkerWithBody(ctx, project, environmentId, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseStartEnvironmentWorkerResponse(rsp)
-}
-
-func (c *ClientWithResponses) StartEnvironmentWorkerWithResponse(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, body StartEnvironmentWorkerJSONRequestBody, reqEditors ...RequestEditorFn) (*StartEnvironmentWorkerResponse, error) {
-	rsp, err := c.StartEnvironmentWorker(ctx, project, environmentId, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseStartEnvironmentWorkerResponse(rsp)
-}
-
 // StreamProjectEventsWithResponse request returning *StreamProjectEventsResponse
 func (c *ClientWithResponses) StreamProjectEventsWithResponse(ctx context.Context, project ProjectHandleParam, params *StreamProjectEventsParams, reqEditors ...RequestEditorFn) (*StreamProjectEventsResponse, error) {
 	rsp, err := c.StreamProjectEvents(ctx, project, params, reqEditors...)
@@ -40713,6 +44241,15 @@ func (c *ClientWithResponses) RemoveGroupMemberWithResponse(ctx context.Context,
 	return ParseRemoveGroupMemberResponse(rsp)
 }
 
+// ListIntegrationEventsWithResponse request returning *ListIntegrationEventsResponse
+func (c *ClientWithResponses) ListIntegrationEventsWithResponse(ctx context.Context, project ProjectHandleParam, params *ListIntegrationEventsParams, reqEditors ...RequestEditorFn) (*ListIntegrationEventsResponse, error) {
+	rsp, err := c.ListIntegrationEvents(ctx, project, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListIntegrationEventsResponse(rsp)
+}
+
 // CreateIntegrationEventTestFireWithBodyWithResponse request with arbitrary body returning *CreateIntegrationEventTestFireResponse
 func (c *ClientWithResponses) CreateIntegrationEventTestFireWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateIntegrationEventTestFireResponse, error) {
 	rsp, err := c.CreateIntegrationEventTestFireWithBody(ctx, project, contentType, body, reqEditors...)
@@ -40739,6 +44276,15 @@ func (c *ClientWithResponses) ListIntegrationEventTestSamplesWithResponse(ctx co
 	return ParseListIntegrationEventTestSamplesResponse(rsp)
 }
 
+// GetIntegrationEventWithResponse request returning *GetIntegrationEventResponse
+func (c *ClientWithResponses) GetIntegrationEventWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*GetIntegrationEventResponse, error) {
+	rsp, err := c.GetIntegrationEvent(ctx, project, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetIntegrationEventResponse(rsp)
+}
+
 // ListIntegrationProvidersWithResponse request returning *ListIntegrationProvidersResponse
 func (c *ClientWithResponses) ListIntegrationProvidersWithResponse(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*ListIntegrationProvidersResponse, error) {
 	rsp, err := c.ListIntegrationProviders(ctx, project, reqEditors...)
@@ -40746,6 +44292,74 @@ func (c *ClientWithResponses) ListIntegrationProvidersWithResponse(ctx context.C
 		return nil, err
 	}
 	return ParseListIntegrationProvidersResponse(rsp)
+}
+
+// ConnectApolloWithBodyWithResponse request with arbitrary body returning *ConnectApolloResponse
+func (c *ClientWithResponses) ConnectApolloWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ConnectApolloResponse, error) {
+	rsp, err := c.ConnectApolloWithBody(ctx, project, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseConnectApolloResponse(rsp)
+}
+
+func (c *ClientWithResponses) ConnectApolloWithResponse(ctx context.Context, project ProjectHandleParam, body ConnectApolloJSONRequestBody, reqEditors ...RequestEditorFn) (*ConnectApolloResponse, error) {
+	rsp, err := c.ConnectApollo(ctx, project, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseConnectApolloResponse(rsp)
+}
+
+// ConnectFirecrawlWithBodyWithResponse request with arbitrary body returning *ConnectFirecrawlResponse
+func (c *ClientWithResponses) ConnectFirecrawlWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ConnectFirecrawlResponse, error) {
+	rsp, err := c.ConnectFirecrawlWithBody(ctx, project, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseConnectFirecrawlResponse(rsp)
+}
+
+func (c *ClientWithResponses) ConnectFirecrawlWithResponse(ctx context.Context, project ProjectHandleParam, body ConnectFirecrawlJSONRequestBody, reqEditors ...RequestEditorFn) (*ConnectFirecrawlResponse, error) {
+	rsp, err := c.ConnectFirecrawl(ctx, project, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseConnectFirecrawlResponse(rsp)
+}
+
+// ConnectGoogleSheetsWithBodyWithResponse request with arbitrary body returning *ConnectGoogleSheetsResponse
+func (c *ClientWithResponses) ConnectGoogleSheetsWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ConnectGoogleSheetsResponse, error) {
+	rsp, err := c.ConnectGoogleSheetsWithBody(ctx, project, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseConnectGoogleSheetsResponse(rsp)
+}
+
+func (c *ClientWithResponses) ConnectGoogleSheetsWithResponse(ctx context.Context, project ProjectHandleParam, body ConnectGoogleSheetsJSONRequestBody, reqEditors ...RequestEditorFn) (*ConnectGoogleSheetsResponse, error) {
+	rsp, err := c.ConnectGoogleSheets(ctx, project, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseConnectGoogleSheetsResponse(rsp)
+}
+
+// ConnectScrapeCreatorsWithBodyWithResponse request with arbitrary body returning *ConnectScrapeCreatorsResponse
+func (c *ClientWithResponses) ConnectScrapeCreatorsWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ConnectScrapeCreatorsResponse, error) {
+	rsp, err := c.ConnectScrapeCreatorsWithBody(ctx, project, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseConnectScrapeCreatorsResponse(rsp)
+}
+
+func (c *ClientWithResponses) ConnectScrapeCreatorsWithResponse(ctx context.Context, project ProjectHandleParam, body ConnectScrapeCreatorsJSONRequestBody, reqEditors ...RequestEditorFn) (*ConnectScrapeCreatorsResponse, error) {
+	rsp, err := c.ConnectScrapeCreators(ctx, project, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseConnectScrapeCreatorsResponse(rsp)
 }
 
 // ListInteractionsWithResponse request returning *ListInteractionsResponse
@@ -41042,16 +44656,16 @@ func (c *ClientWithResponses) CreateJobInteractionWithResponse(ctx context.Conte
 }
 
 // ReportJobWithBodyWithResponse request with arbitrary body returning *ReportJobResponse
-func (c *ClientWithResponses) ReportJobWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ReportJobResponse, error) {
-	rsp, err := c.ReportJobWithBody(ctx, project, id, contentType, body, reqEditors...)
+func (c *ClientWithResponses) ReportJobWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, params *ReportJobParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ReportJobResponse, error) {
+	rsp, err := c.ReportJobWithBody(ctx, project, id, params, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
 	return ParseReportJobResponse(rsp)
 }
 
-func (c *ClientWithResponses) ReportJobWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body ReportJobJSONRequestBody, reqEditors ...RequestEditorFn) (*ReportJobResponse, error) {
-	rsp, err := c.ReportJob(ctx, project, id, body, reqEditors...)
+func (c *ClientWithResponses) ReportJobWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, params *ReportJobParams, body ReportJobJSONRequestBody, reqEditors ...RequestEditorFn) (*ReportJobResponse, error) {
+	rsp, err := c.ReportJob(ctx, project, id, params, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -41628,8 +45242,8 @@ func (c *ClientWithResponses) CreateTableWithResponse(ctx context.Context, proje
 }
 
 // DeleteTableWithResponse request returning *DeleteTableResponse
-func (c *ClientWithResponses) DeleteTableWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, reqEditors ...RequestEditorFn) (*DeleteTableResponse, error) {
-	rsp, err := c.DeleteTable(ctx, project, tableName, reqEditors...)
+func (c *ClientWithResponses) DeleteTableWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, params *DeleteTableParams, reqEditors ...RequestEditorFn) (*DeleteTableResponse, error) {
+	rsp, err := c.DeleteTable(ctx, project, tableName, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -41637,8 +45251,8 @@ func (c *ClientWithResponses) DeleteTableWithResponse(ctx context.Context, proje
 }
 
 // GetTableWithResponse request returning *GetTableResponse
-func (c *ClientWithResponses) GetTableWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, reqEditors ...RequestEditorFn) (*GetTableResponse, error) {
-	rsp, err := c.GetTable(ctx, project, tableName, reqEditors...)
+func (c *ClientWithResponses) GetTableWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, params *GetTableParams, reqEditors ...RequestEditorFn) (*GetTableResponse, error) {
+	rsp, err := c.GetTable(ctx, project, tableName, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -41646,16 +45260,16 @@ func (c *ClientWithResponses) GetTableWithResponse(ctx context.Context, project 
 }
 
 // UpdateTableWithBodyWithResponse request with arbitrary body returning *UpdateTableResponse
-func (c *ClientWithResponses) UpdateTableWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateTableResponse, error) {
-	rsp, err := c.UpdateTableWithBody(ctx, project, tableName, contentType, body, reqEditors...)
+func (c *ClientWithResponses) UpdateTableWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, params *UpdateTableParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateTableResponse, error) {
+	rsp, err := c.UpdateTableWithBody(ctx, project, tableName, params, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
 	return ParseUpdateTableResponse(rsp)
 }
 
-func (c *ClientWithResponses) UpdateTableWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body UpdateTableJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateTableResponse, error) {
-	rsp, err := c.UpdateTable(ctx, project, tableName, body, reqEditors...)
+func (c *ClientWithResponses) UpdateTableWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, params *UpdateTableParams, body UpdateTableJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateTableResponse, error) {
+	rsp, err := c.UpdateTable(ctx, project, tableName, params, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -41663,16 +45277,16 @@ func (c *ClientWithResponses) UpdateTableWithResponse(ctx context.Context, proje
 }
 
 // InsertTableRowWithBodyWithResponse request with arbitrary body returning *InsertTableRowResponse
-func (c *ClientWithResponses) InsertTableRowWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*InsertTableRowResponse, error) {
-	rsp, err := c.InsertTableRowWithBody(ctx, project, tableName, contentType, body, reqEditors...)
+func (c *ClientWithResponses) InsertTableRowWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, params *InsertTableRowParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*InsertTableRowResponse, error) {
+	rsp, err := c.InsertTableRowWithBody(ctx, project, tableName, params, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
 	return ParseInsertTableRowResponse(rsp)
 }
 
-func (c *ClientWithResponses) InsertTableRowWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body InsertTableRowJSONRequestBody, reqEditors ...RequestEditorFn) (*InsertTableRowResponse, error) {
-	rsp, err := c.InsertTableRow(ctx, project, tableName, body, reqEditors...)
+func (c *ClientWithResponses) InsertTableRowWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, params *InsertTableRowParams, body InsertTableRowJSONRequestBody, reqEditors ...RequestEditorFn) (*InsertTableRowResponse, error) {
+	rsp, err := c.InsertTableRow(ctx, project, tableName, params, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -41680,16 +45294,16 @@ func (c *ClientWithResponses) InsertTableRowWithResponse(ctx context.Context, pr
 }
 
 // BulkInsertTableRowsWithBodyWithResponse request with arbitrary body returning *BulkInsertTableRowsResponse
-func (c *ClientWithResponses) BulkInsertTableRowsWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*BulkInsertTableRowsResponse, error) {
-	rsp, err := c.BulkInsertTableRowsWithBody(ctx, project, tableName, contentType, body, reqEditors...)
+func (c *ClientWithResponses) BulkInsertTableRowsWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, params *BulkInsertTableRowsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*BulkInsertTableRowsResponse, error) {
+	rsp, err := c.BulkInsertTableRowsWithBody(ctx, project, tableName, params, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
 	return ParseBulkInsertTableRowsResponse(rsp)
 }
 
-func (c *ClientWithResponses) BulkInsertTableRowsWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body BulkInsertTableRowsJSONRequestBody, reqEditors ...RequestEditorFn) (*BulkInsertTableRowsResponse, error) {
-	rsp, err := c.BulkInsertTableRows(ctx, project, tableName, body, reqEditors...)
+func (c *ClientWithResponses) BulkInsertTableRowsWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, params *BulkInsertTableRowsParams, body BulkInsertTableRowsJSONRequestBody, reqEditors ...RequestEditorFn) (*BulkInsertTableRowsResponse, error) {
+	rsp, err := c.BulkInsertTableRows(ctx, project, tableName, params, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -41697,16 +45311,16 @@ func (c *ClientWithResponses) BulkInsertTableRowsWithResponse(ctx context.Contex
 }
 
 // QueryTableRowsWithBodyWithResponse request with arbitrary body returning *QueryTableRowsResponse
-func (c *ClientWithResponses) QueryTableRowsWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*QueryTableRowsResponse, error) {
-	rsp, err := c.QueryTableRowsWithBody(ctx, project, tableName, contentType, body, reqEditors...)
+func (c *ClientWithResponses) QueryTableRowsWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, params *QueryTableRowsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*QueryTableRowsResponse, error) {
+	rsp, err := c.QueryTableRowsWithBody(ctx, project, tableName, params, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
 	return ParseQueryTableRowsResponse(rsp)
 }
 
-func (c *ClientWithResponses) QueryTableRowsWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body QueryTableRowsJSONRequestBody, reqEditors ...RequestEditorFn) (*QueryTableRowsResponse, error) {
-	rsp, err := c.QueryTableRows(ctx, project, tableName, body, reqEditors...)
+func (c *ClientWithResponses) QueryTableRowsWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, params *QueryTableRowsParams, body QueryTableRowsJSONRequestBody, reqEditors ...RequestEditorFn) (*QueryTableRowsResponse, error) {
+	rsp, err := c.QueryTableRows(ctx, project, tableName, params, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -41714,16 +45328,16 @@ func (c *ClientWithResponses) QueryTableRowsWithResponse(ctx context.Context, pr
 }
 
 // SearchTableRowsWithBodyWithResponse request with arbitrary body returning *SearchTableRowsResponse
-func (c *ClientWithResponses) SearchTableRowsWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SearchTableRowsResponse, error) {
-	rsp, err := c.SearchTableRowsWithBody(ctx, project, tableName, contentType, body, reqEditors...)
+func (c *ClientWithResponses) SearchTableRowsWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, params *SearchTableRowsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SearchTableRowsResponse, error) {
+	rsp, err := c.SearchTableRowsWithBody(ctx, project, tableName, params, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
 	return ParseSearchTableRowsResponse(rsp)
 }
 
-func (c *ClientWithResponses) SearchTableRowsWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body SearchTableRowsJSONRequestBody, reqEditors ...RequestEditorFn) (*SearchTableRowsResponse, error) {
-	rsp, err := c.SearchTableRows(ctx, project, tableName, body, reqEditors...)
+func (c *ClientWithResponses) SearchTableRowsWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, params *SearchTableRowsParams, body SearchTableRowsJSONRequestBody, reqEditors ...RequestEditorFn) (*SearchTableRowsResponse, error) {
+	rsp, err := c.SearchTableRows(ctx, project, tableName, params, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -41731,16 +45345,16 @@ func (c *ClientWithResponses) SearchTableRowsWithResponse(ctx context.Context, p
 }
 
 // UpsertTableRowWithBodyWithResponse request with arbitrary body returning *UpsertTableRowResponse
-func (c *ClientWithResponses) UpsertTableRowWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpsertTableRowResponse, error) {
-	rsp, err := c.UpsertTableRowWithBody(ctx, project, tableName, contentType, body, reqEditors...)
+func (c *ClientWithResponses) UpsertTableRowWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, params *UpsertTableRowParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpsertTableRowResponse, error) {
+	rsp, err := c.UpsertTableRowWithBody(ctx, project, tableName, params, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
 	return ParseUpsertTableRowResponse(rsp)
 }
 
-func (c *ClientWithResponses) UpsertTableRowWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, body UpsertTableRowJSONRequestBody, reqEditors ...RequestEditorFn) (*UpsertTableRowResponse, error) {
-	rsp, err := c.UpsertTableRow(ctx, project, tableName, body, reqEditors...)
+func (c *ClientWithResponses) UpsertTableRowWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, params *UpsertTableRowParams, body UpsertTableRowJSONRequestBody, reqEditors ...RequestEditorFn) (*UpsertTableRowResponse, error) {
+	rsp, err := c.UpsertTableRow(ctx, project, tableName, params, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -41748,8 +45362,8 @@ func (c *ClientWithResponses) UpsertTableRowWithResponse(ctx context.Context, pr
 }
 
 // DeleteTableRowWithResponse request returning *DeleteTableRowResponse
-func (c *ClientWithResponses) DeleteTableRowWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, reqEditors ...RequestEditorFn) (*DeleteTableRowResponse, error) {
-	rsp, err := c.DeleteTableRow(ctx, project, tableName, rowId, reqEditors...)
+func (c *ClientWithResponses) DeleteTableRowWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, params *DeleteTableRowParams, reqEditors ...RequestEditorFn) (*DeleteTableRowResponse, error) {
+	rsp, err := c.DeleteTableRow(ctx, project, tableName, rowId, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -41757,8 +45371,8 @@ func (c *ClientWithResponses) DeleteTableRowWithResponse(ctx context.Context, pr
 }
 
 // GetTableRowWithResponse request returning *GetTableRowResponse
-func (c *ClientWithResponses) GetTableRowWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, reqEditors ...RequestEditorFn) (*GetTableRowResponse, error) {
-	rsp, err := c.GetTableRow(ctx, project, tableName, rowId, reqEditors...)
+func (c *ClientWithResponses) GetTableRowWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, params *GetTableRowParams, reqEditors ...RequestEditorFn) (*GetTableRowResponse, error) {
+	rsp, err := c.GetTableRow(ctx, project, tableName, rowId, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -41766,16 +45380,16 @@ func (c *ClientWithResponses) GetTableRowWithResponse(ctx context.Context, proje
 }
 
 // UpdateTableRowWithBodyWithResponse request with arbitrary body returning *UpdateTableRowResponse
-func (c *ClientWithResponses) UpdateTableRowWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateTableRowResponse, error) {
-	rsp, err := c.UpdateTableRowWithBody(ctx, project, tableName, rowId, contentType, body, reqEditors...)
+func (c *ClientWithResponses) UpdateTableRowWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, params *UpdateTableRowParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateTableRowResponse, error) {
+	rsp, err := c.UpdateTableRowWithBody(ctx, project, tableName, rowId, params, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
 	return ParseUpdateTableRowResponse(rsp)
 }
 
-func (c *ClientWithResponses) UpdateTableRowWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, body UpdateTableRowJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateTableRowResponse, error) {
-	rsp, err := c.UpdateTableRow(ctx, project, tableName, rowId, body, reqEditors...)
+func (c *ClientWithResponses) UpdateTableRowWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, rowId string, params *UpdateTableRowParams, body UpdateTableRowJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateTableRowResponse, error) {
+	rsp, err := c.UpdateTableRow(ctx, project, tableName, rowId, params, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -41783,8 +45397,8 @@ func (c *ClientWithResponses) UpdateTableRowWithResponse(ctx context.Context, pr
 }
 
 // GetTableStatsWithResponse request returning *GetTableStatsResponse
-func (c *ClientWithResponses) GetTableStatsWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, reqEditors ...RequestEditorFn) (*GetTableStatsResponse, error) {
-	rsp, err := c.GetTableStats(ctx, project, tableName, reqEditors...)
+func (c *ClientWithResponses) GetTableStatsWithResponse(ctx context.Context, project ProjectHandleParam, tableName TableNameParam, params *GetTableStatsParams, reqEditors ...RequestEditorFn) (*GetTableStatsResponse, error) {
+	rsp, err := c.GetTableStats(ctx, project, tableName, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -42036,6 +45650,50 @@ func (c *ClientWithResponses) TestFireTriggerWithResponse(ctx context.Context, p
 	return ParseTestFireTriggerResponse(rsp)
 }
 
+// ListUserStatesWithResponse request returning *ListUserStatesResponse
+func (c *ClientWithResponses) ListUserStatesWithResponse(ctx context.Context, project ProjectHandleParam, params *ListUserStatesParams, reqEditors ...RequestEditorFn) (*ListUserStatesResponse, error) {
+	rsp, err := c.ListUserStates(ctx, project, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListUserStatesResponse(rsp)
+}
+
+// ListUserAssignmentsWithResponse request returning *ListUserAssignmentsResponse
+func (c *ClientWithResponses) ListUserAssignmentsWithResponse(ctx context.Context, project ProjectHandleParam, params *ListUserAssignmentsParams, reqEditors ...RequestEditorFn) (*ListUserAssignmentsResponse, error) {
+	rsp, err := c.ListUserAssignments(ctx, project, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListUserAssignmentsResponse(rsp)
+}
+
+// GetUserStateWithResponse request returning *GetUserStateResponse
+func (c *ClientWithResponses) GetUserStateWithResponse(ctx context.Context, project ProjectHandleParam, userId string, reqEditors ...RequestEditorFn) (*GetUserStateResponse, error) {
+	rsp, err := c.GetUserState(ctx, project, userId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetUserStateResponse(rsp)
+}
+
+// UpsertUserStateWithBodyWithResponse request with arbitrary body returning *UpsertUserStateResponse
+func (c *ClientWithResponses) UpsertUserStateWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, userId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpsertUserStateResponse, error) {
+	rsp, err := c.UpsertUserStateWithBody(ctx, project, userId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpsertUserStateResponse(rsp)
+}
+
+func (c *ClientWithResponses) UpsertUserStateWithResponse(ctx context.Context, project ProjectHandleParam, userId string, body UpsertUserStateJSONRequestBody, reqEditors ...RequestEditorFn) (*UpsertUserStateResponse, error) {
+	rsp, err := c.UpsertUserState(ctx, project, userId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpsertUserStateResponse(rsp)
+}
+
 // ListWebhooksWithResponse request returning *ListWebhooksResponse
 func (c *ClientWithResponses) ListWebhooksWithResponse(ctx context.Context, project ProjectHandleParam, params *ListWebhooksParams, reqEditors ...RequestEditorFn) (*ListWebhooksResponse, error) {
 	rsp, err := c.ListWebhooks(ctx, project, params, reqEditors...)
@@ -42237,6 +45895,23 @@ func (c *ClientWithResponses) GetWorkflowVersionWithResponse(ctx context.Context
 	return ParseGetWorkflowVersionResponse(rsp)
 }
 
+// ValidateWorkflowExpressionsWithBodyWithResponse request with arbitrary body returning *ValidateWorkflowExpressionsResponse
+func (c *ClientWithResponses) ValidateWorkflowExpressionsWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ValidateWorkflowExpressionsResponse, error) {
+	rsp, err := c.ValidateWorkflowExpressionsWithBody(ctx, project, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseValidateWorkflowExpressionsResponse(rsp)
+}
+
+func (c *ClientWithResponses) ValidateWorkflowExpressionsWithResponse(ctx context.Context, project ProjectHandleParam, body ValidateWorkflowExpressionsJSONRequestBody, reqEditors ...RequestEditorFn) (*ValidateWorkflowExpressionsResponse, error) {
+	rsp, err := c.ValidateWorkflowExpressions(ctx, project, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseValidateWorkflowExpressionsResponse(rsp)
+}
+
 // ParseListAuditLogsResponse parses an HTTP response from a ListAuditLogsWithResponse call
 func ParseListAuditLogsResponse(rsp *http.Response) (*ListAuditLogsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -42264,6 +45939,13 @@ func ParseListAuditLogsResponse(rsp *http.Response) (*ListAuditLogsResponse, err
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	}
 
@@ -42355,6 +46037,13 @@ func ParseListProjectsResponse(rsp *http.Response) (*ListProjectsResponse, error
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	}
 
 	return response, nil
@@ -42395,6 +46084,13 @@ func ParseCreateProjectResponse(rsp *http.Response) (*CreateProjectResponse, err
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
 		var dest Conflict
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -42427,6 +46123,13 @@ func ParseDeleteProjectResponse(rsp *http.Response) (*DeleteProjectResponse, err
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
@@ -42475,6 +46178,13 @@ func ParseGetProjectResponse(rsp *http.Response) (*GetProjectResponse, error) {
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -42522,6 +46232,13 @@ func ParseUpdateProjectResponse(rsp *http.Response) (*UpdateProjectResponse, err
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -42568,6 +46285,13 @@ func ParseArchiveProjectResponse(rsp *http.Response) (*ArchiveProjectResponse, e
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
@@ -42905,6 +46629,13 @@ func ParseRestoreProjectResponse(rsp *http.Response) (*RestoreProjectResponse, e
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -42945,6 +46676,13 @@ func ParseListActionInvocationsResponse(rsp *http.Response) (*ListActionInvocati
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	}
 
 	return response, nil
@@ -42977,6 +46715,13 @@ func ParseListActionsResponse(rsp *http.Response) (*ListActionsResponse, error) 
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	}
 
@@ -43018,6 +46763,13 @@ func ParseCreateActionResponse(rsp *http.Response) (*CreateActionResponse, error
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
 		var dest Conflict
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -43058,6 +46810,13 @@ func ParseListCatalogActionsResponse(rsp *http.Response) (*ListCatalogActionsRes
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	}
 
 	return response, nil
@@ -43091,6 +46850,13 @@ func ParseGetCatalogActionResponse(rsp *http.Response) (*GetCatalogActionRespons
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -43123,6 +46889,13 @@ func ParseDeleteActionResponse(rsp *http.Response) (*DeleteActionResponse, error
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
@@ -43171,6 +46944,13 @@ func ParseGetActionResponse(rsp *http.Response) (*GetActionResponse, error) {
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -43217,6 +46997,13 @@ func ParseUpdateActionResponse(rsp *http.Response) (*UpdateActionResponse, error
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
@@ -43272,6 +47059,13 @@ func ParseInvokeActionResponse(rsp *http.Response) (*InvokeActionResponse, error
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -43304,180 +47098,6 @@ func ParseRotateActionSecretResponse(rsp *http.Response) (*RotateActionSecretRes
 			return nil, err
 		}
 		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseListActorStatesResponse parses an HTTP response from a ListActorStatesWithResponse call
-func ParseListActorStatesResponse(rsp *http.Response) (*ListActorStatesResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ListActorStatesResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest ActorStateListResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseListActorAssignmentsResponse parses an HTTP response from a ListActorAssignmentsWithResponse call
-func ParseListActorAssignmentsResponse(rsp *http.Response) (*ListActorAssignmentsResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ListActorAssignmentsResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest ActorAssignmentListResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest BadRequest
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseGetActorStateResponse parses an HTTP response from a GetActorStateWithResponse call
-func ParseGetActorStateResponse(rsp *http.Response) (*GetActorStateResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetActorStateResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest ActorState
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseUpsertActorStateResponse parses an HTTP response from a UpsertActorStateWithResponse call
-func ParseUpsertActorStateResponse(rsp *http.Response) (*UpsertActorStateResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &UpsertActorStateResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest ActorState
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest BadRequest
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
 		var dest Unauthorized
@@ -43533,6 +47153,13 @@ func ParseListAgentsResponse(rsp *http.Response) (*ListAgentsResponse, error) {
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -43580,6 +47207,13 @@ func ParseCreateAgentResponse(rsp *http.Response) (*CreateAgentResponse, error) 
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -43619,6 +47253,13 @@ func ParseDeleteAgentResponse(rsp *http.Response) (*DeleteAgentResponse, error) 
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
@@ -43707,6 +47348,13 @@ func ParseUpdateAgentResponse(rsp *http.Response) (*UpdateAgentResponse, error) 
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -43773,22 +47421,22 @@ func ParseProvisionAgentInboxResponse(rsp *http.Response) (*ProvisionAgentInboxR
 	return response, nil
 }
 
-// ParseListAgentSessionsResponse parses an HTTP response from a ListAgentSessionsWithResponse call
-func ParseListAgentSessionsResponse(rsp *http.Response) (*ListAgentSessionsResponse, error) {
+// ParseListAgentPresencesResponse parses an HTTP response from a ListAgentPresencesWithResponse call
+func ParseListAgentPresencesResponse(rsp *http.Response) (*ListAgentPresencesResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &ListAgentSessionsResponse{
+	response := &ListAgentPresencesResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest AgentSessionListResponse
+		var dest AgentPresenceListResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -43813,22 +47461,22 @@ func ParseListAgentSessionsResponse(rsp *http.Response) (*ListAgentSessionsRespo
 	return response, nil
 }
 
-// ParseCreateAgentSessionResponse parses an HTTP response from a CreateAgentSessionWithResponse call
-func ParseCreateAgentSessionResponse(rsp *http.Response) (*CreateAgentSessionResponse, error) {
+// ParseCreateAgentPresenceResponse parses an HTTP response from a CreateAgentPresenceWithResponse call
+func ParseCreateAgentPresenceResponse(rsp *http.Response) (*CreateAgentPresenceResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &CreateAgentSessionResponse{
+	response := &CreateAgentPresenceResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
-		var dest AgentSession
+		var dest AgentPresence
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -43840,6 +47488,166 @@ func ParseCreateAgentSessionResponse(rsp *http.Response) (*CreateAgentSessionRes
 			return nil, err
 		}
 		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetAgentPresenceResponse parses an HTTP response from a GetAgentPresenceWithResponse call
+func ParseGetAgentPresenceResponse(rsp *http.Response) (*GetAgentPresenceResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetAgentPresenceResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest AgentPresence
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDisconnectAgentPresenceResponse parses an HTTP response from a DisconnectAgentPresenceWithResponse call
+func ParseDisconnectAgentPresenceResponse(rsp *http.Response) (*DisconnectAgentPresenceResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DisconnectAgentPresenceResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest AgentPresence
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseHeartbeatAgentPresenceResponse parses an HTTP response from a HeartbeatAgentPresenceWithResponse call
+func ParseHeartbeatAgentPresenceResponse(rsp *http.Response) (*HeartbeatAgentPresenceResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &HeartbeatAgentPresenceResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest AgentPresence
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListAgentSessionsResponse parses an HTTP response from a ListAgentSessionsWithResponse call
+func ParseListAgentSessionsResponse(rsp *http.Response) (*ListAgentSessionsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListAgentSessionsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest AgentConversationSessionListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
 		var dest Unauthorized
@@ -43875,7 +47683,7 @@ func ParseGetAgentSessionResponse(rsp *http.Response) (*GetAgentSessionResponse,
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest AgentSession
+		var dest AgentConversationSession
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -43900,22 +47708,22 @@ func ParseGetAgentSessionResponse(rsp *http.Response) (*GetAgentSessionResponse,
 	return response, nil
 }
 
-// ParseDisconnectAgentSessionResponse parses an HTTP response from a DisconnectAgentSessionWithResponse call
-func ParseDisconnectAgentSessionResponse(rsp *http.Response) (*DisconnectAgentSessionResponse, error) {
+// ParseListAgentSessionMessagesResponse parses an HTTP response from a ListAgentSessionMessagesWithResponse call
+func ParseListAgentSessionMessagesResponse(rsp *http.Response) (*ListAgentSessionMessagesResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &DisconnectAgentSessionResponse{
+	response := &ListAgentSessionMessagesResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest AgentSession
+		var dest AgentSessionMessageListResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -43940,26 +47748,33 @@ func ParseDisconnectAgentSessionResponse(rsp *http.Response) (*DisconnectAgentSe
 	return response, nil
 }
 
-// ParseHeartbeatAgentSessionResponse parses an HTTP response from a HeartbeatAgentSessionWithResponse call
-func ParseHeartbeatAgentSessionResponse(rsp *http.Response) (*HeartbeatAgentSessionResponse, error) {
+// ParseAppendAgentSessionMessagesResponse parses an HTTP response from a AppendAgentSessionMessagesWithResponse call
+func ParseAppendAgentSessionMessagesResponse(rsp *http.Response) (*AppendAgentSessionMessagesResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &HeartbeatAgentSessionResponse{
+	response := &AppendAgentSessionMessagesResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest AgentSession
+		var dest AgentConversationSession
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
 		var dest Unauthorized
@@ -44008,6 +47823,13 @@ func ParseListSkillAssignmentsResponse(rsp *http.Response) (*ListSkillAssignment
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -44054,6 +47876,13 @@ func ParseReplaceSkillsResponse(rsp *http.Response) (*ReplaceSkillsResponse, err
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
@@ -44102,6 +47931,13 @@ func ParseGetAgentToolManifestResponse(rsp *http.Response) (*GetAgentToolManifes
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -44141,6 +47977,13 @@ func ParseListToolkitAssignmentsResponse(rsp *http.Response) (*ListToolkitAssign
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
@@ -44189,6 +48032,13 @@ func ParseReplaceToolkitsResponse(rsp *http.Response) (*ReplaceToolkitsResponse,
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -44229,6 +48079,13 @@ func ParseListArtifactsResponse(rsp *http.Response) (*ListArtifactsResponse, err
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	}
 
 	return response, nil
@@ -44254,6 +48111,13 @@ func ParseDeleteArtifactResponse(rsp *http.Response) (*DeleteArtifactResponse, e
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
@@ -44302,6 +48166,13 @@ func ParseGetArtifactResponse(rsp *http.Response) (*GetArtifactResponse, error) 
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -44335,6 +48206,13 @@ func ParseGetArtifactContentResponse(rsp *http.Response) (*GetArtifactContentRes
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -44348,13 +48226,6 @@ func ParseGetArtifactContentResponse(rsp *http.Response) (*GetArtifactContentRes
 			return nil, err
 		}
 		response.JSON409 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 413:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON413 = &dest
 
 	}
 
@@ -44388,6 +48259,13 @@ func ParseUnpinArtifactResponse(rsp *http.Response) (*UnpinArtifactResponse, err
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
@@ -44429,12 +48307,73 @@ func ParsePinArtifactResponse(rsp *http.Response) (*PinArtifactResponse, error) 
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateArtifactSignedUrlResponse parses an HTTP response from a CreateArtifactSignedUrlWithResponse call
+func ParseCreateArtifactSignedUrlResponse(rsp *http.Response) (*CreateArtifactSignedUrlResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateArtifactSignedUrlResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ArtifactSignedUrl
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	}
 
@@ -44475,6 +48414,13 @@ func ParseCommitArtifactResponse(rsp *http.Response) (*CommitArtifactResponse, e
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
@@ -44537,6 +48483,13 @@ func ParseCreateArtifactSlotResponse(rsp *http.Response) (*CreateArtifactSlotRes
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
 		var dest Conflict
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -44584,6 +48537,13 @@ func ParseListChannelsResponse(rsp *http.Response) (*ListChannelsResponse, error
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	}
 
 	return response, nil
@@ -44624,12 +48584,120 @@ func ParseCreateChannelResponse(rsp *http.Response) (*CreateChannelResponse, err
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
 		var dest Conflict
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetChannelBlockCatalogResponse parses an HTTP response from a GetChannelBlockCatalogWithResponse call
+func ParseGetChannelBlockCatalogResponse(rsp *http.Response) (*GetChannelBlockCatalogResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetChannelBlockCatalogResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest MessageBlockCatalogResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseOpenDirectMessageResponse parses an HTTP response from a OpenDirectMessageWithResponse call
+func ParseOpenDirectMessageResponse(rsp *http.Response) (*OpenDirectMessageResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &OpenDirectMessageResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Channel
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest Channel
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
 
 	}
 
@@ -44656,6 +48724,13 @@ func ParseDeleteChannelResponse(rsp *http.Response) (*DeleteChannelResponse, err
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
@@ -44696,6 +48771,13 @@ func ParseGetChannelResponse(rsp *http.Response) (*GetChannelResponse, error) {
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
@@ -44744,6 +48826,13 @@ func ParseUpdateChannelResponse(rsp *http.Response) (*UpdateChannelResponse, err
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -44783,6 +48872,13 @@ func ParseListChannelInteractionsResponse(rsp *http.Response) (*ListChannelInter
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
@@ -44831,6 +48927,13 @@ func ParseAssociateChannelInteractionResponse(rsp *http.Response) (*AssociateCha
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -44870,6 +48973,13 @@ func ParseRemoveChannelInteractionResponse(rsp *http.Response) (*RemoveChannelIn
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
@@ -45080,6 +49190,13 @@ func ParseListChannelMembersResponse(rsp *http.Response) (*ListChannelMembersRes
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -45127,6 +49244,13 @@ func ParseAddChannelMemberResponse(rsp *http.Response) (*AddChannelMemberRespons
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -45166,6 +49290,13 @@ func ParseRemoveChannelMemberResponse(rsp *http.Response) (*RemoveChannelMemberR
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
@@ -45268,6 +49399,13 @@ func ParseSendMessageResponse(rsp *http.Response) (*SendMessageResponse, error) 
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -45307,6 +49445,13 @@ func ParseGetMessageResponse(rsp *http.Response) (*GetMessageResponse, error) {
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
@@ -45354,6 +49499,13 @@ func ParseUpdateMessageResponse(rsp *http.Response) (*UpdateMessageResponse, err
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
@@ -45449,172 +49601,12 @@ func ParseShareChannelEntityResponse(rsp *http.Response) (*ShareChannelEntityRes
 		}
 		response.JSON401 = &dest
 
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
-		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseListEnvironmentsResponse parses an HTTP response from a ListEnvironmentsWithResponse call
-func ParseListEnvironmentsResponse(rsp *http.Response) (*ListEnvironmentsResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ListEnvironmentsResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest EnvironmentListResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseCreateEnvironmentResponse parses an HTTP response from a CreateEnvironmentWithResponse call
-func ParseCreateEnvironmentResponse(rsp *http.Response) (*CreateEnvironmentResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &CreateEnvironmentResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
-		var dest Environment
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON201 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest BadRequest
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
-		var dest Conflict
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON409 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseAcquireEnvironmentResponse parses an HTTP response from a AcquireEnvironmentWithResponse call
-func ParseAcquireEnvironmentResponse(rsp *http.Response) (*AcquireEnvironmentResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &AcquireEnvironmentResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest EnvironmentAcquireResult
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest BadRequest
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
-		var dest Conflict
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON409 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseReleaseEnvironmentLeaseResponse parses an HTTP response from a ReleaseEnvironmentLeaseWithResponse call
-func ParseReleaseEnvironmentLeaseResponse(rsp *http.Response) (*ReleaseEnvironmentLeaseResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ReleaseEnvironmentLeaseResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest EnvironmentLease
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
@@ -45622,328 +49614,6 @@ func ParseReleaseEnvironmentLeaseResponse(rsp *http.Response) (*ReleaseEnvironme
 			return nil, err
 		}
 		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseDestroyEnvironmentResponse parses an HTTP response from a DestroyEnvironmentWithResponse call
-func ParseDestroyEnvironmentResponse(rsp *http.Response) (*DestroyEnvironmentResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &DestroyEnvironmentResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Environment
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseGetEnvironmentResponse parses an HTTP response from a GetEnvironmentWithResponse call
-func ParseGetEnvironmentResponse(rsp *http.Response) (*GetEnvironmentResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetEnvironmentResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Environment
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseUpdateEnvironmentResponse parses an HTTP response from a UpdateEnvironmentWithResponse call
-func ParseUpdateEnvironmentResponse(rsp *http.Response) (*UpdateEnvironmentResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &UpdateEnvironmentResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Environment
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest BadRequest
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseExecEnvironmentResponse parses an HTTP response from a ExecEnvironmentWithResponse call
-func ParseExecEnvironmentResponse(rsp *http.Response) (*ExecEnvironmentResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ExecEnvironmentResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest EnvironmentExecResult
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest BadRequest
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
-		var dest Conflict
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON409 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseWriteEnvironmentFileResponse parses an HTTP response from a WriteEnvironmentFileWithResponse call
-func ParseWriteEnvironmentFileResponse(rsp *http.Response) (*WriteEnvironmentFileResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &WriteEnvironmentFileResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest BadRequest
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
-		var dest Conflict
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON409 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseReconcileEnvironmentResponse parses an HTTP response from a ReconcileEnvironmentWithResponse call
-func ParseReconcileEnvironmentResponse(rsp *http.Response) (*ReconcileEnvironmentResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ReconcileEnvironmentResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Environment
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseStartEnvironmentWorkerResponse parses an HTTP response from a StartEnvironmentWorkerWithResponse call
-func ParseStartEnvironmentWorkerResponse(rsp *http.Response) (*StartEnvironmentWorkerResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &StartEnvironmentWorkerResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest EnvironmentStartWorkerResult
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest BadRequest
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
-		var dest Conflict
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON409 = &dest
 
 	}
 
@@ -45978,6 +49648,13 @@ func ParseStreamProjectEventsResponse(rsp *http.Response) (*StreamProjectEventsR
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	}
 
 	return response, nil
@@ -46010,6 +49687,13 @@ func ParseListGroupsResponse(rsp *http.Response) (*ListGroupsResponse, error) {
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	}
 
@@ -46051,6 +49735,13 @@ func ParseCreateGroupResponse(rsp *http.Response) (*CreateGroupResponse, error) 
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
 		var dest Conflict
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -46091,6 +49782,13 @@ func ParseDeleteGroupResponse(rsp *http.Response) (*DeleteGroupResponse, error) 
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -46130,6 +49828,13 @@ func ParseGetGroupResponse(rsp *http.Response) (*GetGroupResponse, error) {
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
@@ -46178,6 +49883,13 @@ func ParseUpdateGroupResponse(rsp *http.Response) (*UpdateGroupResponse, error) 
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -46217,6 +49929,13 @@ func ParseListGroupMembersResponse(rsp *http.Response) (*ListGroupMembersRespons
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
@@ -46265,6 +49984,13 @@ func ParseAddGroupMemberResponse(rsp *http.Response) (*AddGroupMemberResponse, e
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -46305,12 +50031,66 @@ func ParseRemoveGroupMemberResponse(rsp *http.Response) (*RemoveGroupMemberRespo
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListIntegrationEventsResponse parses an HTTP response from a ListIntegrationEventsWithResponse call
+func ParseListIntegrationEventsResponse(rsp *http.Response) (*ListIntegrationEventsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListIntegrationEventsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest IntegrationEventListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	}
 
@@ -46351,6 +50131,13 @@ func ParseCreateIntegrationEventTestFireResponse(rsp *http.Response) (*CreateInt
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
@@ -46399,6 +50186,60 @@ func ParseListIntegrationEventTestSamplesResponse(rsp *http.Response) (*ListInte
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetIntegrationEventResponse parses an HTTP response from a GetIntegrationEventWithResponse call
+func ParseGetIntegrationEventResponse(rsp *http.Response) (*GetIntegrationEventResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetIntegrationEventResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest IntegrationEventDetail
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
 	}
 
 	return response, nil
@@ -46432,6 +50273,222 @@ func ParseListIntegrationProvidersResponse(rsp *http.Response) (*ListIntegration
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseConnectApolloResponse parses an HTTP response from a ConnectApolloWithResponse call
+func ParseConnectApolloResponse(rsp *http.Response) (*ConnectApolloResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ConnectApolloResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest IntegrationConnectResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseConnectFirecrawlResponse parses an HTTP response from a ConnectFirecrawlWithResponse call
+func ParseConnectFirecrawlResponse(rsp *http.Response) (*ConnectFirecrawlResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ConnectFirecrawlResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest IntegrationConnectResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseConnectGoogleSheetsResponse parses an HTTP response from a ConnectGoogleSheetsWithResponse call
+func ParseConnectGoogleSheetsResponse(rsp *http.Response) (*ConnectGoogleSheetsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ConnectGoogleSheetsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest IntegrationConnectResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest ServiceUnavailable
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseConnectScrapeCreatorsResponse parses an HTTP response from a ConnectScrapeCreatorsWithResponse call
+func ParseConnectScrapeCreatorsResponse(rsp *http.Response) (*ConnectScrapeCreatorsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ConnectScrapeCreatorsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest IntegrationConnectResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	}
 
 	return response, nil
@@ -46464,6 +50521,13 @@ func ParseListInteractionsResponse(rsp *http.Response) (*ListInteractionsRespons
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	}
 
@@ -46505,6 +50569,13 @@ func ParseCreateInteractionResponse(rsp *http.Response) (*CreateInteractionRespo
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -46544,6 +50615,13 @@ func ParseGetInteractionResponse(rsp *http.Response) (*GetInteractionResponse, e
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
@@ -46631,6 +50709,13 @@ func ParseListInteractionBallotsResponse(rsp *http.Response) (*ListInteractionBa
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
@@ -46733,6 +50818,13 @@ func ParseClaimInteractionResponse(rsp *http.Response) (*ClaimInteractionRespons
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -46834,6 +50926,13 @@ func ParseReleaseInteractionResponse(rsp *http.Response) (*ReleaseInteractionRes
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -46880,6 +50979,13 @@ func ParseRespondToInteractionResponse(rsp *http.Response) (*RespondToInteractio
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
@@ -46982,6 +51088,13 @@ func ParseSubmitInteractionHandoffResponse(rsp *http.Response) (*SubmitInteracti
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -47035,6 +51148,13 @@ func ParseCastInteractionBallotResponse(rsp *http.Response) (*CastInteractionBal
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
@@ -47090,6 +51210,13 @@ func ParseWithdrawInteractionBallotResponse(rsp *http.Response) (*WithdrawIntera
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -47136,6 +51263,13 @@ func ParseClaimJobResponse(rsp *http.Response) (*ClaimJobResponse, error) {
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
@@ -47184,6 +51318,13 @@ func ParseGetJobResponse(rsp *http.Response) (*GetJobResponse, error) {
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -47231,6 +51372,13 @@ func ParseRunJobActionResponse(rsp *http.Response) (*RunJobActionResponse, error
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -47270,6 +51418,13 @@ func ParseEmitJobEventsResponse(rsp *http.Response) (*EmitJobEventsResponse, err
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
@@ -47339,6 +51494,13 @@ func ParseHeartbeatJobResponse(rsp *http.Response) (*HeartbeatJobResponse, error
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -47385,6 +51547,13 @@ func ParseGetJobHistoryResponse(rsp *http.Response) (*GetJobHistoryResponse, err
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
@@ -47433,6 +51602,13 @@ func ParseCreateJobInteractionResponse(rsp *http.Response) (*CreateJobInteractio
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -47479,6 +51655,13 @@ func ParseReportJobResponse(rsp *http.Response) (*ReportJobResponse, error) {
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
@@ -47527,6 +51710,13 @@ func ParseListProjectLogsResponse(rsp *http.Response) (*ListProjectLogsResponse,
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -47573,6 +51763,13 @@ func ParseIngestProjectLogsResponse(rsp *http.Response) (*IngestProjectLogsRespo
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
@@ -47621,6 +51818,13 @@ func ParseIngestProjectLogsOTLPResponse(rsp *http.Response) (*IngestProjectLogsO
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -47660,6 +51864,13 @@ func ParseListMemberGroupsResponse(rsp *http.Response) (*ListMemberGroupsRespons
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
@@ -47701,6 +51912,13 @@ func ParseGetProjectMetricsResponse(rsp *http.Response) (*GetProjectMetricsRespo
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -47740,6 +51958,13 @@ func ParseListObservablesResponse(rsp *http.Response) (*ListObservablesResponse,
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	}
 
@@ -47781,6 +52006,13 @@ func ParseCreateObservableResponse(rsp *http.Response) (*CreateObservableRespons
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
 		var dest Conflict
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -47813,6 +52045,13 @@ func ParseDeleteObservableResponse(rsp *http.Response) (*DeleteObservableRespons
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
@@ -47853,6 +52092,13 @@ func ParseGetObservableResponse(rsp *http.Response) (*GetObservableResponse, err
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
@@ -47901,6 +52147,13 @@ func ParseUpdateObservableResponse(rsp *http.Response) (*UpdateObservableRespons
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -47948,6 +52201,13 @@ func ParseListObservableEventsResponse(rsp *http.Response) (*ListObservableEvent
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -47987,6 +52247,13 @@ func ParseListObservableObservationsResponse(rsp *http.Response) (*ListObservabl
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
@@ -48035,6 +52302,13 @@ func ParseSubmitObservableObservationResponse(rsp *http.Response) (*SubmitObserv
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -48082,6 +52356,13 @@ func ParseListObservableStateVersionsResponse(rsp *http.Response) (*ListObservab
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -48121,6 +52402,13 @@ func ParseListObservableWaitersResponse(rsp *http.Response) (*ListObservableWait
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
@@ -48168,6 +52456,13 @@ func ParseLookupReferencesResponse(rsp *http.Response) (*LookupReferencesRespons
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
@@ -48237,6 +52532,13 @@ func ParseResolveReferencesResponse(rsp *http.Response) (*ResolveReferencesRespo
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -48298,6 +52600,13 @@ func ParseListRunsResponse(rsp *http.Response) (*ListRunsResponse, error) {
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	}
 
 	return response, nil
@@ -48337,6 +52646,13 @@ func ParseStartRunResponse(rsp *http.Response) (*StartRunResponse, error) {
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
@@ -48392,6 +52708,13 @@ func ParseGetRunResponse(rsp *http.Response) (*GetRunResponse, error) {
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -48432,6 +52755,13 @@ func ParseCancelRunResponse(rsp *http.Response) (*CancelRunResponse, error) {
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -48464,6 +52794,13 @@ func ParseStreamRunEventsResponse(rsp *http.Response) (*StreamRunEventsResponse,
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
@@ -48512,6 +52849,13 @@ func ParseForkRunResponse(rsp *http.Response) (*ForkRunResponse, error) {
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -48559,6 +52903,13 @@ func ParseListRunJobsResponse(rsp *http.Response) (*ListRunJobsResponse, error) 
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -48598,6 +52949,13 @@ func ParseResumeRunResponse(rsp *http.Response) (*ResumeRunResponse, error) {
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
@@ -48646,6 +53004,13 @@ func ParseSendRunSignalResponse(rsp *http.Response) (*SendRunSignalResponse, err
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -48685,6 +53050,13 @@ func ParseListRunStepsResponse(rsp *http.Response) (*ListRunStepsResponse, error
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
@@ -48726,6 +53098,13 @@ func ParseGetRunStepResponse(rsp *http.Response) (*GetRunStepResponse, error) {
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -48766,6 +53145,13 @@ func ParseListRunArtifactsResponse(rsp *http.Response) (*ListRunArtifactsRespons
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -48805,6 +53191,13 @@ func ParseListSecretsResponse(rsp *http.Response) (*ListSecretsResponse, error) 
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
@@ -48853,6 +53246,13 @@ func ParseCreateSecretResponse(rsp *http.Response) (*CreateSecretResponse, error
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -48893,6 +53293,13 @@ func ParseDeleteSecretResponse(rsp *http.Response) (*DeleteSecretResponse, error
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -48932,6 +53339,13 @@ func ParseGetSecretResponse(rsp *http.Response) (*GetSecretResponse, error) {
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
@@ -48980,6 +53394,13 @@ func ParseUpdateSecretResponse(rsp *http.Response) (*UpdateSecretResponse, error
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -49026,6 +53447,13 @@ func ParseListSecretVersionsResponse(rsp *http.Response) (*ListSecretVersionsRes
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
@@ -49074,6 +53502,13 @@ func ParseGetSecretVersionResponse(rsp *http.Response) (*GetSecretVersionRespons
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -49113,6 +53548,13 @@ func ParseGetArtifactStorageSettingsResponse(rsp *http.Response) (*GetArtifactSt
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	}
 
@@ -49154,6 +53596,13 @@ func ParseUpdateArtifactStorageSettingsResponse(rsp *http.Response) (*UpdateArti
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	}
 
 	return response, nil
@@ -49187,6 +53636,13 @@ func ParseGetArtifactStorageQuotaResponse(rsp *http.Response) (*GetArtifactStora
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	}
 
 	return response, nil
@@ -49219,6 +53675,13 @@ func ParseListSkillsResponse(rsp *http.Response) (*ListSkillsResponse, error) {
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
@@ -49267,6 +53730,13 @@ func ParseCreateSkillResponse(rsp *http.Response) (*CreateSkillResponse, error) 
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -49306,6 +53776,13 @@ func ParseDeleteSkillResponse(rsp *http.Response) (*DeleteSkillResponse, error) 
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
@@ -49354,6 +53831,13 @@ func ParseGetSkillResponse(rsp *http.Response) (*GetSkillResponse, error) {
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -49400,6 +53884,13 @@ func ParseUpdateSkillResponse(rsp *http.Response) (*UpdateSkillResponse, error) 
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
@@ -49455,6 +53946,13 @@ func ParseImportSkillResponse(rsp *http.Response) (*ImportSkillResponse, error) 
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -49502,6 +54000,13 @@ func ParseListProjectSpansResponse(rsp *http.Response) (*ListProjectSpansRespons
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -49541,6 +54046,13 @@ func ParseGetProjectStepSpanCountsResponse(rsp *http.Response) (*GetProjectStepS
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
@@ -49582,6 +54094,13 @@ func ParseListTablesResponse(rsp *http.Response) (*ListTablesResponse, error) {
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	}
 
 	return response, nil
@@ -49622,6 +54141,13 @@ func ParseCreateTableResponse(rsp *http.Response) (*CreateTableResponse, error) 
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	}
 
 	return response, nil
@@ -49647,6 +54173,13 @@ func ParseDeleteTableResponse(rsp *http.Response) (*DeleteTableResponse, error) 
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
@@ -49687,6 +54220,13 @@ func ParseGetTableResponse(rsp *http.Response) (*GetTableResponse, error) {
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
@@ -49735,6 +54275,13 @@ func ParseUpdateTableResponse(rsp *http.Response) (*UpdateTableResponse, error) 
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -49781,6 +54328,13 @@ func ParseInsertTableRowResponse(rsp *http.Response) (*InsertTableRowResponse, e
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
@@ -49829,6 +54383,13 @@ func ParseBulkInsertTableRowsResponse(rsp *http.Response) (*BulkInsertTableRowsR
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -49876,6 +54437,13 @@ func ParseQueryTableRowsResponse(rsp *http.Response) (*QueryTableRowsResponse, e
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -49922,6 +54490,13 @@ func ParseSearchTableRowsResponse(rsp *http.Response) (*SearchTableRowsResponse,
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
@@ -49977,6 +54552,13 @@ func ParseUpsertTableRowResponse(rsp *http.Response) (*UpsertTableRowResponse, e
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -50017,6 +54599,13 @@ func ParseDeleteTableRowResponse(rsp *http.Response) (*DeleteTableRowResponse, e
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -50056,6 +54645,13 @@ func ParseGetTableRowResponse(rsp *http.Response) (*GetTableRowResponse, error) 
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
@@ -50104,6 +54700,13 @@ func ParseUpdateTableRowResponse(rsp *http.Response) (*UpdateTableRowResponse, e
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -50150,6 +54753,13 @@ func ParseGetTableStatsResponse(rsp *http.Response) (*GetTableStatsResponse, err
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
@@ -50245,6 +54855,13 @@ func ParseListToolkitsResponse(rsp *http.Response) (*ListToolkitsResponse, error
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -50292,6 +54909,13 @@ func ParseCreateToolkitResponse(rsp *http.Response) (*CreateToolkitResponse, err
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -50331,6 +54955,13 @@ func ParseDeleteToolkitResponse(rsp *http.Response) (*DeleteToolkitResponse, err
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
@@ -50379,6 +55010,13 @@ func ParseGetToolkitResponse(rsp *http.Response) (*GetToolkitResponse, error) {
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -50425,6 +55063,13 @@ func ParseUpdateToolkitResponse(rsp *http.Response) (*UpdateToolkitResponse, err
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
@@ -50473,6 +55118,13 @@ func ParseListProjectTracesResponse(rsp *http.Response) (*ListProjectTracesRespo
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -50513,6 +55165,13 @@ func ParseGetTraceResponse(rsp *http.Response) (*GetTraceResponse, error) {
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -50552,6 +55211,13 @@ func ParseListTriggersResponse(rsp *http.Response) (*ListTriggersResponse, error
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
@@ -50600,6 +55266,13 @@ func ParseCreateTriggerResponse(rsp *http.Response) (*CreateTriggerResponse, err
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -50632,6 +55305,13 @@ func ParseDeleteTriggerResponse(rsp *http.Response) (*DeleteTriggerResponse, err
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
@@ -50672,6 +55352,13 @@ func ParseGetTriggerResponse(rsp *http.Response) (*GetTriggerResponse, error) {
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
@@ -50720,6 +55407,13 @@ func ParseUpdateTriggerResponse(rsp *http.Response) (*UpdateTriggerResponse, err
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -50767,6 +55461,13 @@ func ParseListTriggerFiresResponse(rsp *http.Response) (*ListTriggerFiresRespons
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -50799,6 +55500,13 @@ func ParseDeleteAllTriggerTargetsResponse(rsp *http.Response) (*DeleteAllTrigger
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
@@ -50839,6 +55547,13 @@ func ParseListTriggerTargetsResponse(rsp *http.Response) (*ListTriggerTargetsRes
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
@@ -50887,6 +55602,13 @@ func ParseCreateTriggerTargetResponse(rsp *http.Response) (*CreateTriggerTargetR
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -50919,6 +55641,13 @@ func ParseDeleteTriggerTargetResponse(rsp *http.Response) (*DeleteTriggerTargetR
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
@@ -50959,6 +55688,13 @@ func ParseGetTriggerTargetResponse(rsp *http.Response) (*GetTriggerTargetRespons
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
@@ -51007,6 +55743,13 @@ func ParseUpdateTriggerTargetResponse(rsp *http.Response) (*UpdateTriggerTargetR
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -51054,6 +55797,215 @@ func ParseTestFireTriggerResponse(rsp *http.Response) (*TestFireTriggerResponse,
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListUserStatesResponse parses an HTTP response from a ListUserStatesWithResponse call
+func ParseListUserStatesResponse(rsp *http.Response) (*ListUserStatesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListUserStatesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest UserStateListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListUserAssignmentsResponse parses an HTTP response from a ListUserAssignmentsWithResponse call
+func ParseListUserAssignmentsResponse(rsp *http.Response) (*ListUserAssignmentsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListUserAssignmentsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest UserAssignmentListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetUserStateResponse parses an HTTP response from a GetUserStateWithResponse call
+func ParseGetUserStateResponse(rsp *http.Response) (*GetUserStateResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetUserStateResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest UserState
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUpsertUserStateResponse parses an HTTP response from a UpsertUserStateWithResponse call
+func ParseUpsertUserStateResponse(rsp *http.Response) (*UpsertUserStateResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpsertUserStateResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest UserState
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -51093,6 +56045,13 @@ func ParseListWebhooksResponse(rsp *http.Response) (*ListWebhooksResponse, error
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
@@ -51141,6 +56100,13 @@ func ParseCreateWebhookResponse(rsp *http.Response) (*CreateWebhookResponse, err
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -51181,6 +56147,13 @@ func ParseDeleteWebhookResponse(rsp *http.Response) (*DeleteWebhookResponse, err
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -51220,6 +56193,13 @@ func ParseGetWebhookResponse(rsp *http.Response) (*GetWebhookResponse, error) {
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
@@ -51268,6 +56248,13 @@ func ParseUpdateWebhookResponse(rsp *http.Response) (*UpdateWebhookResponse, err
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -51314,6 +56301,13 @@ func ParseListWebhookDeliveriesResponse(rsp *http.Response) (*ListWebhookDeliver
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
@@ -51362,6 +56356,13 @@ func ParsePingWebhookResponse(rsp *http.Response) (*PingWebhookResponse, error) 
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -51402,6 +56403,13 @@ func ParseListWorkerSessionsResponse(rsp *http.Response) (*ListWorkerSessionsRes
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -51441,6 +56449,13 @@ func ParseListWorkflowsResponse(rsp *http.Response) (*ListWorkflowsResponse, err
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
@@ -51489,6 +56504,13 @@ func ParseCreateWorkflowResponse(rsp *http.Response) (*CreateWorkflowResponse, e
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -51529,6 +56551,13 @@ func ParseDeleteWorkflowResponse(rsp *http.Response) (*DeleteWorkflowResponse, e
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -51568,6 +56597,13 @@ func ParseGetWorkflowResponse(rsp *http.Response) (*GetWorkflowResponse, error) 
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
@@ -51616,6 +56652,13 @@ func ParseUpdateWorkflowResponse(rsp *http.Response) (*UpdateWorkflowResponse, e
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -51663,6 +56706,13 @@ func ParseListRunsForWorkflowResponse(rsp *http.Response) (*ListRunsForWorkflowR
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -51709,6 +56759,13 @@ func ParseStartWorkflowRunResponse(rsp *http.Response) (*StartWorkflowRunRespons
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
@@ -51764,6 +56821,13 @@ func ParseListWorkflowVersionsResponse(rsp *http.Response) (*ListWorkflowVersion
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -51803,6 +56867,67 @@ func ParseGetWorkflowVersionResponse(rsp *http.Response) (*GetWorkflowVersionRes
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseValidateWorkflowExpressionsResponse parses an HTTP response from a ValidateWorkflowExpressionsWithResponse call
+func ParseValidateWorkflowExpressionsResponse(rsp *http.Response) (*ValidateWorkflowExpressionsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ValidateWorkflowExpressionsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest WorkflowExpressionValidationResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound

@@ -34,15 +34,15 @@ func registerTeamCommands(app *cli.App) {
 			p0 := authFor(ctx).Project
 			params := &api.ListProjectTeamParams{}
 			if ctx.IsSet("kind") {
-				v := api.ProjectTeamMemberKind(ctx.String("kind"))
+				v := api.UserKind(ctx.String("kind"))
 				params.Kind = &v
 			}
 			if ctx.IsSet("availability") {
-				v := api.ActorAvailability(ctx.String("availability"))
+				v := api.UserAvailability(ctx.String("availability"))
 				params.Availability = &v
 			}
 			if ctx.IsSet("assignment-status") {
-				v := api.ActorAssignmentStatus(ctx.String("assignment-status"))
+				v := api.UserAssignmentStatus(ctx.String("assignment-status"))
 				params.AssignmentStatus = &v
 			}
 			if ctx.IsSet("q") {

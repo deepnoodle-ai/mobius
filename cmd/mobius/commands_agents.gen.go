@@ -19,6 +19,66 @@ import (
 func registerAgentsCommands(app *cli.App) {
 	agentsGrp := app.Group("agents").Description("Agents and agent sessions")
 	agentsGrp.Alias("agent")
+	agentsGrp.Command("append-agent-session-messages").
+		Description("Append conversation session messages").
+		Args("id", "session-id").
+		Flags(
+			cli.String("messages", "").Help("[required] messages Accepts JSON, @file, or @-."),
+			cli.String("model", "").Help("model"),
+			cli.String("model-provider", "").Help("model-provider"),
+			cli.Int("token-input-total", "").Help("token-input-total"),
+			cli.Int("token-output-total", "").Help("token-output-total"),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			p1 := ctx.Arg(0)
+			p2 := ctx.Arg(1)
+			var body api.AppendAgentSessionMessagesJSONRequestBody
+			if err := readJSONBody(ctx, &body); err != nil {
+				return err
+			}
+			if ctx.IsSet("messages") {
+				if err := decodeFlagJSON(ctx, "messages", ctx.String("messages"), &body.Messages); err != nil {
+					return err
+				}
+			}
+			if ctx.IsSet("model") {
+				v := ctx.String("model")
+				body.Model = &v
+			}
+			if ctx.IsSet("model-provider") {
+				v := ctx.String("model-provider")
+				body.ModelProvider = &v
+			}
+			if ctx.IsSet("token-input-total") {
+				v := ctx.Int("token-input-total")
+				body.TokenInputTotal = &v
+			}
+			if ctx.IsSet("token-output-total") {
+				v := ctx.Int("token-output-total")
+				body.TokenOutputTotal = &v
+			}
+			if ctx.String("file") == "" && !ctx.IsSet("messages") {
+				return fmt.Errorf("--messages is required (or supply it via --file)")
+			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
+			}
+			resp, err := client.AppendAgentSessionMessagesWithResponse(ctx.Context(), p0, p1, p2, body)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "appendAgentSessionMessages", resp.StatusCode(), resp.Body)
+		})
+
 	agentsGrp.Command("create").
 		Description("Create an agent").
 		Flags(
@@ -102,8 +162,8 @@ func registerAgentsCommands(app *cli.App) {
 			return printResponse(ctx, "createAgent", resp.StatusCode(), resp.Body)
 		})
 
-	agentsGrp.Command("create-session").
-		Description("Register a new agent session").
+	agentsGrp.Command("create-presence").
+		Description("Register a new agent presence").
 		Args("id").
 		Flags(
 			cli.String("metadata", "").Help("Optional metadata such as hostname, SDK version, or region. Accepts JSON, @file, or @-."),
@@ -120,7 +180,7 @@ func registerAgentsCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			var body api.CreateAgentSessionJSONRequestBody
+			var body api.CreateAgentPresenceJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
 			}
@@ -138,11 +198,11 @@ func registerAgentsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.CreateAgentSessionWithResponse(ctx.Context(), p0, p1, body)
+			resp, err := client.CreateAgentPresenceWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, "createAgentSession", resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "createAgentPresence", resp.StatusCode(), resp.Body)
 		})
 
 	agentsGrp.Command("delete").
@@ -164,9 +224,9 @@ func registerAgentsCommands(app *cli.App) {
 			return printResponse(ctx, "deleteAgent", resp.StatusCode(), resp.Body)
 		})
 
-	agentsGrp.Command("disconnect-session").
-		Description("Mark an agent session as disconnected").
-		Args("id", "session-id").
+	agentsGrp.Command("disconnect-presence").
+		Description("Mark an agent presence as disconnected").
+		Args("id", "presence-id").
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -177,11 +237,11 @@ func registerAgentsCommands(app *cli.App) {
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			p2 := ctx.Arg(1)
-			resp, err := client.DisconnectAgentSessionWithResponse(ctx.Context(), p0, p1, p2)
+			resp, err := client.DisconnectAgentPresenceWithResponse(ctx.Context(), p0, p1, p2)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, "disconnectAgentSession", resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "disconnectAgentPresence", resp.StatusCode(), resp.Body)
 		})
 
 	agentsGrp.Command("get").
@@ -203,8 +263,28 @@ func registerAgentsCommands(app *cli.App) {
 			return printResponse(ctx, "getAgent", resp.StatusCode(), resp.Body)
 		})
 
+	agentsGrp.Command("get-presence").
+		Description("Get an agent presence record").
+		Args("id", "presence-id").
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			p1 := ctx.Arg(0)
+			p2 := ctx.Arg(1)
+			resp, err := client.GetAgentPresenceWithResponse(ctx.Context(), p0, p1, p2)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "getAgentPresence", resp.StatusCode(), resp.Body)
+		})
+
 	agentsGrp.Command("get-session").
-		Description("Get an agent session").
+		Description("Get a conversation session").
 		Args("id", "session-id").
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -223,9 +303,9 @@ func registerAgentsCommands(app *cli.App) {
 			return printResponse(ctx, "getAgentSession", resp.StatusCode(), resp.Body)
 		})
 
-	agentsGrp.Command("heartbeat-session").
-		Description("Refresh an agent session heartbeat").
-		Args("id", "session-id").
+	agentsGrp.Command("heartbeat-presence").
+		Description("Refresh an agent presence heartbeat").
+		Args("id", "presence-id").
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -236,11 +316,11 @@ func registerAgentsCommands(app *cli.App) {
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			p2 := ctx.Arg(1)
-			resp, err := client.HeartbeatAgentSessionWithResponse(ctx.Context(), p0, p1, p2)
+			resp, err := client.HeartbeatAgentPresenceWithResponse(ctx.Context(), p0, p1, p2)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, "heartbeatAgentSession", resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "heartbeatAgentPresence", resp.StatusCode(), resp.Body)
 		})
 
 	agentsGrp.Command("list").
@@ -278,12 +358,82 @@ func registerAgentsCommands(app *cli.App) {
 			return printResponse(ctx, "listAgents", resp.StatusCode(), resp.Body)
 		})
 
+	agentsGrp.Command("list-presences").
+		Description("List presence records for an agent").
+		Args("id").
+		Flags(
+			cli.String("status", "").Help("Filter by presence status."),
+			cli.String("transport", "").Help("Filter by transport type (e.g. \"sse\", \"polling\")."),
+			cli.Int("limit", "").Help("limit"),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			p1 := ctx.Arg(0)
+			params := &api.ListAgentPresencesParams{}
+			if ctx.IsSet("status") {
+				v := api.AgentPresenceStatus(ctx.String("status"))
+				params.Status = &v
+			}
+			if ctx.IsSet("transport") {
+				v := ctx.String("transport")
+				params.Transport = &v
+			}
+			if ctx.IsSet("limit") {
+				v := api.LimitParam(ctx.Int("limit"))
+				params.Limit = &v
+			}
+			resp, err := client.ListAgentPresencesWithResponse(ctx.Context(), p0, p1, params)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "listAgentPresences", resp.StatusCode(), resp.Body)
+		})
+
+	agentsGrp.Command("list-session-messages").
+		Description("List conversation session messages").
+		Args("id", "session-id").
+		Flags(
+			cli.Int("after-sequence", "").Help("Only include messages with sequence greater than this value."),
+			cli.Int("limit", "").Help("limit"),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			p1 := ctx.Arg(0)
+			p2 := ctx.Arg(1)
+			params := &api.ListAgentSessionMessagesParams{}
+			if ctx.IsSet("after-sequence") {
+				v := ctx.Int("after-sequence")
+				params.AfterSequence = &v
+			}
+			if ctx.IsSet("limit") {
+				v := api.LimitParam(ctx.Int("limit"))
+				params.Limit = &v
+			}
+			resp, err := client.ListAgentSessionMessagesWithResponse(ctx.Context(), p0, p1, p2, params)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "listAgentSessionMessages", resp.StatusCode(), resp.Body)
+		})
+
 	agentsGrp.Command("list-sessions").
-		Description("List sessions for an agent").
+		Description("List conversation sessions for an agent").
 		Args("id").
 		Flags(
 			cli.String("status", "").Help("Filter by session status."),
-			cli.String("transport", "").Help("Filter by transport type (e.g. \"sse\", \"polling\")."),
+			cli.String("scope", "").Help("Filter by session scope."),
 			cli.Int("limit", "").Help("limit"),
 		).
 		Use(requireAuth()).
@@ -297,12 +447,12 @@ func registerAgentsCommands(app *cli.App) {
 			p1 := ctx.Arg(0)
 			params := &api.ListAgentSessionsParams{}
 			if ctx.IsSet("status") {
-				v := api.AgentSessionStatus(ctx.String("status"))
+				v := api.AgentConversationSessionStatus(ctx.String("status"))
 				params.Status = &v
 			}
-			if ctx.IsSet("transport") {
-				v := ctx.String("transport")
-				params.Transport = &v
+			if ctx.IsSet("scope") {
+				v := api.AgentConversationSessionScope(ctx.String("scope"))
+				params.Scope = &v
 			}
 			if ctx.IsSet("limit") {
 				v := api.LimitParam(ctx.Int("limit"))
@@ -344,7 +494,7 @@ func registerAgentsCommands(app *cli.App) {
 			cli.String("kind", "").Help("Replacement freeform agent classification (e.g. `llm`, `rpa`)."),
 			cli.String("model", "").Help("Replacement Anthropic model identifier for platform agents."),
 			cli.String("name", "").Help("Free-form human-readable label, 1-63 characters; must be unique within the project."),
-			cli.String("status", "").Help("Administrative status. Inactive agents cannot claim new jobs."),
+			cli.String("status", "").Help("Replacement agent status: `active` or `inactive`. Use DELETE to soft-delete."),
 			cli.String("system-prompt", "").Help("Replacement system prompt for platform agents."),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
@@ -389,7 +539,7 @@ func registerAgentsCommands(app *cli.App) {
 				body.Name = &v
 			}
 			if ctx.IsSet("status") {
-				v := api.AgentStatus(ctx.String("status"))
+				v := api.UpdateAgentRequestStatus(ctx.String("status"))
 				body.Status = &v
 			}
 			if ctx.IsSet("system-prompt") {

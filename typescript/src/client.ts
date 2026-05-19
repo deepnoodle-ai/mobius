@@ -224,6 +224,7 @@ export interface WorkflowOptions {
 }
 
 export interface UpdateWorkflowOptions {
+  expected_version: number;
   name?: string;
   description?: string;
   published_as_tool?: boolean;
@@ -536,15 +537,16 @@ export class Client {
 
   async updateWorkflow(
     workflowId: string,
-    opts: UpdateWorkflowOptions = {},
+    opts: UpdateWorkflowOptions,
   ): Promise<WorkflowDefinition> {
     const body: UpdateWorkflowRequest = removeUndefined({
+      expected_version: opts.expected_version,
       name: opts.name,
       description: opts.description,
       published_as_tool: opts.published_as_tool,
       spec: opts.spec,
       tags: opts.tags,
-    });
+    }) as UpdateWorkflowRequest;
     const resp = await this.request(
       `/v1/projects/${encodeURIComponent(this.project)}/workflows/${encodeURIComponent(workflowId)}`,
       { method: "PATCH", body },
@@ -711,22 +713,34 @@ function workflowUpdateForDiff(
   spec: WorkflowSpec,
   desired: Required<Pick<WorkflowOptions, "name">> & WorkflowOptions,
 ): UpdateWorkflowOptions | null {
-  const update: UpdateWorkflowOptions = {};
-  if (desired.name && current.name !== desired.name) update.name = desired.name;
+  const update: UpdateWorkflowOptions = {
+    expected_version: current.latest_version,
+  };
+  let changed = false;
+  if (desired.name && current.name !== desired.name) {
+    update.name = desired.name;
+    changed = true;
+  }
   if (desired.description && current.description !== desired.description) {
     update.description = desired.description;
+    changed = true;
   }
   if (
     desired.published_as_tool !== undefined &&
     current.published_as_tool !== desired.published_as_tool
   ) {
     update.published_as_tool = desired.published_as_tool;
+    changed = true;
   }
   if (desired.tags !== undefined && !jsonEqual(current.tags, desired.tags)) {
     update.tags = desired.tags;
+    changed = true;
   }
-  if (!jsonEqual(current.spec, spec)) update.spec = spec;
-  return Object.keys(update).length > 0 ? update : null;
+  if (!jsonEqual(current.spec, spec)) {
+    update.spec = spec;
+    changed = true;
+  }
+  return changed ? update : null;
 }
 
 function jsonEqual(a: unknown, b: unknown): boolean {

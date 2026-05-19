@@ -15,11 +15,11 @@ import (
 	"github.com/deepnoodle-ai/mobius/mobius/api"
 )
 
-// registerAgentCapabilitiesCommands registers every generated subcommand in the "agent-capabilities" group.
-func registerAgentCapabilitiesCommands(app *cli.App) {
-	agentCapabilitiesGrp := app.Group("agent-capabilities")
-	agentCapabilitiesGrp.Alias("agent-capability")
-	agentCapabilitiesGrp.Command("create").
+// registerAgentToolsCommands registers every generated subcommand in the "agent-tools" group.
+func registerAgentToolsCommands(app *cli.App) {
+	agentToolsGrp := app.Group("agent-tools")
+	agentToolsGrp.Alias("agent-tool")
+	agentToolsGrp.Command("create").
 		Description("Create a skill").
 		Flags(
 			cli.Strings("allowed-tools", "").Help("allowed-tools"),
@@ -92,8 +92,8 @@ func registerAgentCapabilitiesCommands(app *cli.App) {
 			return printResponse(ctx, "createSkill", resp.StatusCode(), resp.Body)
 		})
 
-	agentCapabilitiesGrp.Command("create-2").
-		Description("Create an toolkit").
+	agentToolsGrp.Command("create-2").
+		Description("Create a toolkit").
 		Flags(
 			cli.String("action-grants", "").Help("action-grants Accepts JSON, @file, or @-."),
 			cli.String("description", "").Help("description"),
@@ -143,7 +143,7 @@ func registerAgentCapabilitiesCommands(app *cli.App) {
 			return printResponse(ctx, "createToolkit", resp.StatusCode(), resp.Body)
 		})
 
-	agentCapabilitiesGrp.Command("delete").
+	agentToolsGrp.Command("delete").
 		Description("Delete a skill").
 		Args("skill-id").
 		Use(requireAuth()).
@@ -162,8 +162,8 @@ func registerAgentCapabilitiesCommands(app *cli.App) {
 			return printResponse(ctx, "deleteSkill", resp.StatusCode(), resp.Body)
 		})
 
-	agentCapabilitiesGrp.Command("delete-2").
-		Description("Delete an toolkit").
+	agentToolsGrp.Command("delete-2").
+		Description("Delete a toolkit").
 		Args("toolkit-id").
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -181,7 +181,7 @@ func registerAgentCapabilitiesCommands(app *cli.App) {
 			return printResponse(ctx, "deleteToolkit", resp.StatusCode(), resp.Body)
 		})
 
-	agentCapabilitiesGrp.Command("get").
+	agentToolsGrp.Command("get").
 		Description("Get a skill").
 		Args("skill-id").
 		Use(requireAuth()).
@@ -200,8 +200,8 @@ func registerAgentCapabilitiesCommands(app *cli.App) {
 			return printResponse(ctx, "getSkill", resp.StatusCode(), resp.Body)
 		})
 
-	agentCapabilitiesGrp.Command("get-2").
-		Description("Get an toolkit").
+	agentToolsGrp.Command("get-2").
+		Description("Get a toolkit").
 		Args("toolkit-id").
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -219,7 +219,7 @@ func registerAgentCapabilitiesCommands(app *cli.App) {
 			return printResponse(ctx, "getToolkit", resp.StatusCode(), resp.Body)
 		})
 
-	agentCapabilitiesGrp.Command("get-tool-manifest").
+	agentToolsGrp.Command("get-tool-manifest").
 		Description("Resolve an agent tool manifest").
 		Args("id").
 		Flags(
@@ -256,7 +256,7 @@ func registerAgentCapabilitiesCommands(app *cli.App) {
 			return printResponse(ctx, "getAgentToolManifest", resp.StatusCode(), resp.Body)
 		})
 
-	agentCapabilitiesGrp.Command("import-skill").
+	agentToolsGrp.Command("import-skill").
 		Description("Import a skill").
 		Flags(
 			cli.String("content", "").Help("[required] Full skill document, optionally with YAML frontmatter."),
@@ -296,7 +296,7 @@ func registerAgentCapabilitiesCommands(app *cli.App) {
 			return printResponse(ctx, "importSkill", resp.StatusCode(), resp.Body)
 		})
 
-	agentCapabilitiesGrp.Command("list").
+	agentToolsGrp.Command("list").
 		Description("List skills").
 		Flags(
 			cli.Bool("include-system", "").Help("Include read-only system skill templates."),
@@ -321,7 +321,7 @@ func registerAgentCapabilitiesCommands(app *cli.App) {
 			return printResponse(ctx, "listSkills", resp.StatusCode(), resp.Body)
 		})
 
-	agentCapabilitiesGrp.Command("list-2").
+	agentToolsGrp.Command("list-2").
 		Description("List toolkits").
 		Flags(
 			cli.Bool("include-system", "").Help("Include read-only system templates."),
@@ -346,7 +346,7 @@ func registerAgentCapabilitiesCommands(app *cli.App) {
 			return printResponse(ctx, "listToolkits", resp.StatusCode(), resp.Body)
 		})
 
-	agentCapabilitiesGrp.Command("list-assignments").
+	agentToolsGrp.Command("list-assignments").
 		Description("List assigned skills").
 		Args("id").
 		Use(requireAuth()).
@@ -365,7 +365,7 @@ func registerAgentCapabilitiesCommands(app *cli.App) {
 			return printResponse(ctx, "listSkillAssignments", resp.StatusCode(), resp.Body)
 		})
 
-	agentCapabilitiesGrp.Command("list-assignments-2").
+	agentToolsGrp.Command("list-assignments-2").
 		Description("List assigned toolkits").
 		Args("id").
 		Use(requireAuth()).
@@ -384,7 +384,7 @@ func registerAgentCapabilitiesCommands(app *cli.App) {
 			return printResponse(ctx, "listToolkitAssignments", resp.StatusCode(), resp.Body)
 		})
 
-	agentCapabilitiesGrp.Command("replace-skills").
+	agentToolsGrp.Command("replace-skills").
 		Description("Replace assigned skills").
 		Args("id").
 		Flags(
@@ -421,7 +421,7 @@ func registerAgentCapabilitiesCommands(app *cli.App) {
 			return printResponse(ctx, "replaceSkills", resp.StatusCode(), resp.Body)
 		})
 
-	agentCapabilitiesGrp.Command("replace-toolkits").
+	agentToolsGrp.Command("replace-toolkits").
 		Description("Replace assigned toolkits").
 		Args("id").
 		Flags(
@@ -458,7 +458,7 @@ func registerAgentCapabilitiesCommands(app *cli.App) {
 			return printResponse(ctx, "replaceToolkits", resp.StatusCode(), resp.Body)
 		})
 
-	agentCapabilitiesGrp.Command("update").
+	agentToolsGrp.Command("update").
 		Description("Update a skill").
 		Args("skill-id").
 		Flags(
@@ -533,8 +533,8 @@ func registerAgentCapabilitiesCommands(app *cli.App) {
 			return printResponse(ctx, "updateSkill", resp.StatusCode(), resp.Body)
 		})
 
-	agentCapabilitiesGrp.Command("update-2").
-		Description("Update an toolkit").
+	agentToolsGrp.Command("update-2").
+		Description("Update a toolkit").
 		Args("toolkit-id").
 		Flags(
 			cli.String("action-grants", "").Help("action-grants Accepts JSON, @file, or @-."),

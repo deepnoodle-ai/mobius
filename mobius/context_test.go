@@ -140,7 +140,7 @@ func TestContext_RequestInteraction_BuildsJobScopedRequest(t *testing.T) {
 	})
 
 	got, err := ctx.RequestInteraction(InteractionRequest{
-		Target:  InteractionTarget{Type: InteractionTargetTypeUser, ID: "usr_1"},
+		Target:  InteractionTarget{UserIDs: []string{"usr_1"}},
 		Kind:    InteractionKindReview,
 		Message: "Please ack",
 		Timeout: "15m",
@@ -153,8 +153,9 @@ func TestContext_RequestInteraction_BuildsJobScopedRequest(t *testing.T) {
 	assert.Equal(t, sentBody["step_name"], "review-step")
 	assert.Equal(t, sentBody["timeout"], "15m")
 	target, _ := sentBody["target"].(map[string]any)
-	assert.Equal(t, target["type"], "user")
-	assert.Equal(t, target["id"], "usr_1")
+	userIDs, _ := target["user_ids"].([]any)
+	assert.Equal(t, len(userIDs), 1)
+	assert.Equal(t, userIDs[0], "usr_1")
 }
 
 func TestContext_RequestInteraction_ValidatesRequiredFields(t *testing.T) {
@@ -165,10 +166,9 @@ func TestContext_RequestInteraction_ValidatesRequiredFields(t *testing.T) {
 
 	cases := []InteractionRequest{
 		{}, // all empty
-		{Kind: InteractionKindReview, Message: "x", Target: InteractionTarget{Type: InteractionTargetTypeUser}},
-		{Kind: InteractionKindReview, Message: "x", Target: InteractionTarget{ID: "usr_1"}},
-		{Kind: InteractionKindReview, Target: InteractionTarget{Type: InteractionTargetTypeUser, ID: "usr_1"}},
-		{Message: "x", Target: InteractionTarget{Type: InteractionTargetTypeUser, ID: "usr_1"}},
+		{Kind: InteractionKindReview, Message: "x", Target: InteractionTarget{}},
+		{Kind: InteractionKindReview, Target: InteractionTarget{UserIDs: []string{"usr_1"}}},
+		{Message: "x", Target: InteractionTarget{UserIDs: []string{"usr_1"}}},
 	}
 	for i, req := range cases {
 		_, err := ctx.RequestInteraction(req)

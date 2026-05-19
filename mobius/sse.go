@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/deepnoodle-ai/mobius/mobius/api"
@@ -167,12 +168,14 @@ func (c *Client) WatchProjectRuns(ctx context.Context, since int64) (<-chan RunE
 }
 
 // sinceParam returns nil for zero so the request omits ?since=0 and the
-// server delivers live-only updates. Positive values replay from that cursor.
-func sinceParam(since int64) *int64 {
+// server delivers live-only updates. Positive values replay from that
+// numeric cursor, encoded as the opaque string the API expects.
+func sinceParam(since int64) *string {
 	if since <= 0 {
 		return nil
 	}
-	return &since
+	s := strconv.FormatInt(since, 10)
+	return &s
 }
 
 // readSSEStream decodes SSE frames from body using wonton/sse and forwards

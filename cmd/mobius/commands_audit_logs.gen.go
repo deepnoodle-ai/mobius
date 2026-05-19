@@ -24,8 +24,6 @@ func registerAuditLogsCommands(app *cli.App) {
 			cli.String("project-id", "").Help("Filter by project ID"),
 			cli.String("resource-id", "").Help("Filter by resource ID"),
 			cli.String("user-id", "").Help("Filter by user ID"),
-			cli.String("actor-type", "").Help("Filter by actor type"),
-			cli.String("actor-id", "").Help("Filter by actor ID"),
 			cli.String("action", "").Help("Filter by action (create, update, delete, archive, restore)"),
 			cli.String("cursor", "").Help("cursor"),
 			cli.Int("limit", "").Help("limit"),
@@ -53,14 +51,6 @@ func registerAuditLogsCommands(app *cli.App) {
 			if ctx.IsSet("user-id") {
 				v := ctx.String("user-id")
 				params.UserId = &v
-			}
-			if ctx.IsSet("actor-type") {
-				v := ctx.String("actor-type")
-				params.ActorType = &v
-			}
-			if ctx.IsSet("actor-id") {
-				v := ctx.String("actor-id")
-				params.ActorId = &v
 			}
 			if ctx.IsSet("action") {
 				v := ctx.String("action")

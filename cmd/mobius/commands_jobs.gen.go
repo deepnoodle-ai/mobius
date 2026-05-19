@@ -106,15 +106,17 @@ func registerJobsCommands(app *cli.App) {
 			cli.String("expires-at", "").Help("Timestamp after which this interaction expires. Accepts JSON, @file, or @-."),
 			cli.String("kind", "").Help("[required] Protocol kind of the interaction (PRD 077). Each value names a distinct multi-party coordination pr…"),
 			cli.String("message", "").Help("[required] Message shown to the responder."),
+			cli.String("properties", "").Help("Free-form structured metadata to attach to the interaction. Accepts JSON, @file, or @-."),
 			cli.String("references", "").Help("Supporting links and related entities. Accepts JSON, @file, or @-."),
-			cli.Bool("require-all", "").Help("When target.type is \"group\", setting require_all=true means all snapshotted group members must resp…"),
+			cli.Bool("require-all", "").Help("When `target_group_id` is set, setting require_all=true means all snapshotted group members must re…"),
 			cli.String("resolution-policy", "").Help("Declarative resolution rule attached to an Interaction. Determines how participant responses become… Accepts JSON, @file, or @-."),
 			cli.String("signal-name", "").Help("Optional signal name override. When omitted, the server derives the signal name from step_name or f…"),
 			cli.String("spec", "").Help("Declarative dialog contract for rendering and validating an interaction. Used at both authoring tim… Accepts JSON, @file, or @-."),
 			cli.String("step-name", "").Help("Optional workflow step label for UI/debugging context"),
 			cli.String("subject", "").Help("Pointer to the work item, artifact, external ticket, or Mobius entity this interaction is about. Accepts JSON, @file, or @-."),
 			cli.String("submission-review-policy", "").Help("Reviewability policy for an interaction artifact (PRD 077 §3.5). Carried as a template on `Interac… Accepts JSON, @file, or @-."),
-			cli.String("target", "").Help("[required] Identifies who should receive an interaction request. Note: distinct from the caller/audit `Actor` … Accepts JSON, @file, or @-."),
+			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
+			cli.String("target", "").Help("[required] Identifies who should receive an interaction request. Humans and agents are both users; agent targe… Accepts JSON, @file, or @-."),
 			cli.String("timeout", "").Help("Optional duration string (e.g. \"24h\", \"30m\") specifying how long the interaction should remain open…"),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
@@ -147,6 +149,11 @@ func registerJobsCommands(app *cli.App) {
 			}
 			if ctx.IsSet("message") {
 				body.Message = ctx.String("message")
+			}
+			if ctx.IsSet("properties") {
+				if err := decodeFlagJSON(ctx, "properties", ctx.String("properties"), &body.Properties); err != nil {
+					return err
+				}
 			}
 			if ctx.IsSet("references") {
 				if err := decodeFlagJSON(ctx, "references", ctx.String("references"), &body.References); err != nil {
@@ -184,6 +191,12 @@ func registerJobsCommands(app *cli.App) {
 				if err := decodeFlagJSON(ctx, "submission-review-policy", ctx.String("submission-review-policy"), &body.SubmissionReviewPolicy); err != nil {
 					return err
 				}
+			}
+			if tags, err := parseTagFlags(ctx); err != nil {
+				return err
+			} else if tags != nil {
+				v := api.TagMap(tags)
+				body.Tags = &v
 			}
 			if ctx.IsSet("target") {
 				if err := decodeFlagJSON(ctx, "target", ctx.String("target"), &body.Target); err != nil {
@@ -358,9 +371,10 @@ func registerJobsCommands(app *cli.App) {
 		})
 
 	jobsGrp.Command("report-job").
-		Description("Report the outcome of a workflow job attempt").
+		Description("Report progress or the outcome of a workflow job attempt").
 		Args("id").
 		Flags(
+			cli.Bool("partial", "").Help("When `true`, commit durable code progress without terminalizing the job. Only valid for code jobs a…"),
 			cli.String("lease-token", "").Help("[required] Opaque fence value from the original claim. Mismatch returns 409 lease-lost; a duplicate report wit…"),
 			cli.String("outcomes", "").Help("[required] Ordered list of outcomes. May contain zero or more durable progress entries (`step_done`, `wait_obs… Accepts JSON, @file, or @-."),
 			cli.String("worker-instance-id", "").Help("Echo of the claim's `worker_instance_id`. Audit only."),
@@ -376,6 +390,11 @@ func registerJobsCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
+			params := &api.ReportJobParams{}
+			if ctx.IsSet("partial") {
+				v := ctx.Bool("partial")
+				params.Partial = &v
+			}
 			var body api.ReportJobJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -401,7 +420,7 @@ func registerJobsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.ReportJobWithResponse(ctx.Context(), p0, p1, body)
+			resp, err := client.ReportJobWithResponse(ctx.Context(), p0, p1, params, body)
 			if err != nil {
 				return err
 			}
