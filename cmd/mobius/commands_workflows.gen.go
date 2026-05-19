@@ -26,7 +26,6 @@ func registerWorkflowsCommands(app *cli.App) {
 			cli.String("handle", "").Help("URL-safe handle for this workflow, unique within the resolved scope. Auto-derived from name if omit…"),
 			cli.String("name", "").Help("[required] Human-readable workflow name, unique within the project."),
 			cli.String("owned-by", "").Help("Canonical user owner ID. Required when `scope` is `owner`; defaults to the creator when possible."),
-			cli.String("owner-agent-id", "").Help("Optional owning agent. Callers with `mobius.workflows.manage` may assign any active agent in the pr…"),
 			cli.Bool("published-as-tool", "").Help("When true, expose this workflow through the action catalog for agent tool manifests."),
 			cli.String("scope", "").Help("Optional namespace for named runtime resources. Omitted/null means the project/default scope; `owne…"),
 			cli.String("spec", "").Help("[required] Workflow definition shaped like `workflow.Options`. Accepts JSON, @file, or @-."),
@@ -60,10 +59,6 @@ func registerWorkflowsCommands(app *cli.App) {
 			if ctx.IsSet("owned-by") {
 				v := ctx.String("owned-by")
 				body.OwnedBy = &v
-			}
-			if ctx.IsSet("owner-agent-id") {
-				v := ctx.String("owner-agent-id")
-				body.OwnerAgentId = &v
 			}
 			if ctx.IsSet("published-as-tool") {
 				v := ctx.Bool("published-as-tool")
@@ -228,7 +223,6 @@ func registerWorkflowsCommands(app *cli.App) {
 			cli.Int("expected-version", "").Help("[required] Current `latest_version` observed by the caller before editing."),
 			cli.String("name", "").Help("Replacement human-readable workflow name."),
 			cli.String("owned-by", "").Help("Canonical user owner ID. Required when `scope` is `owner`."),
-			cli.String("owner-agent-id", "").Help("Replacement owning agent. Set to an empty string to clear ownership. Requires `mobius.workflows.man…"),
 			cli.Bool("published-as-tool", "").Help("When true, expose this workflow through the action catalog for agent tool manifests."),
 			cli.String("scope", "").Help("Set to `owner` for owner-scoped handles, or null to return to the project/default scope."),
 			cli.String("spec", "").Help("Workflow definition shaped like `workflow.Options`. Accepts JSON, @file, or @-."),
@@ -263,10 +257,6 @@ func registerWorkflowsCommands(app *cli.App) {
 			if ctx.IsSet("owned-by") {
 				v := ctx.String("owned-by")
 				body.OwnedBy = &v
-			}
-			if ctx.IsSet("owner-agent-id") {
-				v := ctx.String("owner-agent-id")
-				body.OwnerAgentId = &v
 			}
 			if ctx.IsSet("published-as-tool") {
 				v := ctx.Bool("published-as-tool")

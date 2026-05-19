@@ -23,7 +23,7 @@ func registerChannelsCommands(app *cli.App) {
 		Description("Add a member to a channel").
 		Args("id").
 		Flags(
-			cli.String("participant-id", "").Help("[required] User or agent ID to add to the channel."),
+			cli.String("participant-id", "").Help("[required] User ID to add to the channel. Agent members use their backing user ID."),
 			cli.String("role", "").Help("Role to assign the new member, either `member` or `admin`."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
@@ -130,7 +130,7 @@ func registerChannelsCommands(app *cli.App) {
 			cli.String("completion-behavior", "").Help("completion-behavior"),
 			cli.String("display-name", "").Help("[required] Human-facing display name shown in the UI."),
 			cli.String("kind", "").Help("[required] Channel kind, either `dm` or `channel`. Cannot be changed after creation."),
-			cli.Strings("member-ids", "").Help("Optional list of user or agent IDs to add as members at creation time. All receive the `member` rol…"),
+			cli.Strings("member-ids", "").Help("Optional list of user IDs to add as members at creation time. Agent members use their backing user …"),
 			cli.String("name", "").Help("[required] URL-safe handle, unique within the project. Immutable after creation — choose carefully."),
 			cli.Bool("private", "").Help("When true, the channel is invite-only."),
 			cli.String("purpose", "").Help("Optional purpose for the channel."),
@@ -367,7 +367,7 @@ func registerChannelsCommands(app *cli.App) {
 		Description("Open a direct-message channel").
 		Flags(
 			cli.String("display-name", "").Help("Human-facing display name for the channel. Defaults to the participant's name or ID when omitted. O…"),
-			cli.String("participant-id", "").Help("[required] User or agent ID of the other DM participant."),
+			cli.String("participant-id", "").Help("[required] User ID of the other DM participant. Agent participants use their backing user ID."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).

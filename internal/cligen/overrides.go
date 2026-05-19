@@ -38,38 +38,39 @@ var overrides = map[string]Override{
 	// --- agents -----------------------------------------------------------
 	// Drop the redundant `agent` token that the auto-derivation can't strip
 	// (the group name already carries it).
-	"provisionAgentInbox":         {Command: "provision-inbox"},
-	"appendAgentSessionMessages":  {Command: "append-session-messages"},
+	"provisionAgentInbox":        {Command: "provision-inbox"},
+	"appendAgentSessionMessages": {Command: "append-session-messages"},
 
 	// --- agent-tools ------------------------------------------------------
 	// Skill and Toolkit ops share verbs (create/get/list/update/delete) and
 	// the generator's collision suffixer would turn one of each pair into
 	// `delete-2`, `get-2`, etc. Spell out the resource so every command in
 	// the group reads as `<verb>-<resource>`.
-	"createSkill":             {Command: "create-skill"},
-	"createToolkit":           {Command: "create-toolkit"},
-	"deleteSkill":             {Command: "delete-skill"},
-	"deleteToolkit":           {Command: "delete-toolkit"},
-	"getSkill":                {Command: "get-skill"},
-	"getToolkit":              {Command: "get-toolkit"},
-	"listSkills":              {Command: "list-skills"},
-	"listToolkits":            {Command: "list-toolkits"},
-	"updateSkill":             {Command: "update-skill"},
-	"updateToolkit":           {Command: "update-toolkit"},
-	"listSkillAssignments":    {Command: "list-skill-assignments"},
-	"listToolkitAssignments":  {Command: "list-toolkit-assignments"},
-	"getAgentToolManifest":    {Command: "get-manifest"},
+	"createSkill":            {Command: "create-skill"},
+	"createToolkit":          {Command: "create-toolkit"},
+	"deleteSkill":            {Command: "delete-skill"},
+	"deleteToolkit":          {Command: "delete-toolkit"},
+	"getSkill":               {Command: "get-skill"},
+	"getToolkit":             {Command: "get-toolkit"},
+	"listSkills":             {Command: "list-skills"},
+	"listToolkits":           {Command: "list-toolkits"},
+	"updateSkill":            {Command: "update-skill"},
+	"updateToolkit":          {Command: "update-toolkit"},
+	"listSkillAssignments":   {Command: "list-skill-assignments"},
+	"listToolkitAssignments": {Command: "list-toolkit-assignments"},
+	"getAgentToolManifest":   {Command: "get-manifest"},
 
 	// --- artifacts --------------------------------------------------------
-	"pinArtifact":      {Command: "pin"},
-	"unpinArtifact":    {Command: "unpin"},
-	"commitArtifact":   {Command: "commit"},
+	"pinArtifact":    {Command: "pin"},
+	"unpinArtifact":  {Command: "unpin"},
+	"commitArtifact": {Command: "commit"},
 	// The auto-derived leaf is `list-artifacts` (strip `Run`), which reads
 	// no differently from `list` and hides the run-scoping. Be explicit.
 	"listRunArtifacts": {Command: "list-for-run"},
 
 	// --- audit-logs -------------------------------------------------------
-	"listAuditLogs": {Command: "list"},
+	"listAuditLogs":    {Command: "list"},
+	"listOrgAuditLogs": {Command: "list-org"},
 
 	// --- channels ---------------------------------------------------------
 	// Drop the redundant `channel` token from interaction/entity ops.
@@ -87,6 +88,19 @@ var overrides = map[string]Override{
 	"createIntegrationEventTestFire":  {Command: "test-fire"},
 	"streamProjectEvents":             {Command: "stream-project"},
 	"streamRunEvents":                 {Command: "stream-run"},
+
+	// --- environments -----------------------------------------------------
+	"listEnvironments":        {Command: "list"},
+	"createEnvironment":       {Command: "create"},
+	"acquireEnvironment":      {Command: "acquire"},
+	"releaseEnvironmentLease": {Command: "release-lease"},
+	"getEnvironment":          {Command: "get"},
+	"updateEnvironment":       {Command: "update"},
+	"destroyEnvironment":      {Command: "destroy"},
+	"reconcileEnvironment":    {Command: "reconcile"},
+	"execEnvironment":         {Command: "exec"},
+	"writeEnvironmentFile":    {Command: "write-file"},
+	"startEnvironmentWorker":  {Command: "start-worker"},
 
 	// --- groups -----------------------------------------------------------
 	// Differentiate "list groups in project" from "list groups a member is in".
@@ -223,6 +237,7 @@ var groupDescriptions = map[string]string{
 	"audit-logs":            "Organization and project audit log entries",
 	"channels":              "Chat channels, members, and messages",
 	"events":                "Inbound integration events and live SSE streams",
+	"environments":          "Managed execution environments",
 	"generate":              "LLM message generation",
 	"groups":                "Member groups for routing interactions",
 	"integration-catalog":   "Available integration providers and capabilities",
