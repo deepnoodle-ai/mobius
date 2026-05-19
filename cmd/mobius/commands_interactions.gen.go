@@ -225,6 +225,25 @@ func registerInteractionsCommands(app *cli.App) {
 			return printResponse(ctx, "createInteraction", resp.StatusCode(), resp.Body)
 		})
 
+	interactionsGrp.Command("delete").
+		Description("Delete an interaction").
+		Args("id").
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			p1 := ctx.Arg(0)
+			resp, err := client.DeleteInteractionWithResponse(ctx.Context(), p0, p1)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "deleteInteraction", resp.StatusCode(), resp.Body)
+		})
+
 	interactionsGrp.Command("get").
 		Description("Get an interaction").
 		Args("id").

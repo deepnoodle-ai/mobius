@@ -43,7 +43,7 @@ func registerMessagesCommands(app *cli.App) {
 		Description("List messages in a channel").
 		Args("id").
 		Flags(
-			cli.String("sender-id", "").Help("Filter by sender principal ID — a user ID (for `sender_type=human`), agent ID (for `sender_type=a…"),
+			cli.String("sender-id", "").Help("Filter by sender user ID. Humans, agents, and bare service accounts all send as rows in `users`; us…"),
 			cli.String("reply-to", "").Help("Return only replies to this message ID (thread view)."),
 			cli.Bool("pinned", "").Help("Filter by pinned status."),
 			cli.String("since", "").Help("Return messages strictly newer than this cursor, in chronological order. Accepts either: - a messag…"),

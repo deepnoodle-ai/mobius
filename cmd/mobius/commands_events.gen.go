@@ -195,7 +195,7 @@ func registerEventsCommands(app *cli.App) {
 		Flags(
 			cli.String("dedup-key", "").Help("Optional dedup key for deliver mode. Defaults to the generated synthetic event id."),
 			cli.String("event-type", "").Help("Dotted integration event type to fire. Required when sample_id is omitted."),
-			cli.String("integration-id", "").Help("Optional integration id metadata. Defaults to `synthetic:<provider>`."),
+			cli.String("integration-id", "").Help("Optional integration id metadata. Preview mode defaults to `synthetic:<provider>`. Deliver mode def…"),
 			cli.String("meta", "").Help("Optional metadata overrides. Reserved event metadata is controlled by the top-level request fields. Accepts JSON, @file, or @-."),
 			cli.String("mode", "").Help("`preview` evaluates matches without persistence; `deliver` persists a synthetic integration event a…"),
 			cli.String("payload", "").Help("Canonical event payload. When sample_id is set, this replaces the sample payload. Accepts JSON, @file, or @-."),

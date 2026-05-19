@@ -18,7 +18,57 @@ func registerAuditLogsCommands(app *cli.App) {
 	auditLogsGrp := app.Group("audit-logs").Description("Organization and project audit log entries")
 	auditLogsGrp.Alias("audit-log")
 	auditLogsGrp.Command("list").
-		Description("List audit log entries").
+		Description("List project audit log entries").
+		Flags(
+			cli.String("resource-type", "").Help("Filter by resource type"),
+			cli.String("resource-id", "").Help("Filter by resource ID"),
+			cli.String("user-id", "").Help("Filter by user ID"),
+			cli.String("action", "").Help("Filter by action (create, update, delete, archive, restore)"),
+			cli.String("cursor", "").Help("cursor"),
+			cli.Int("limit", "").Help("limit"),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			params := &api.ListAuditLogsParams{}
+			if ctx.IsSet("resource-type") {
+				v := ctx.String("resource-type")
+				params.ResourceType = &v
+			}
+			if ctx.IsSet("resource-id") {
+				v := ctx.String("resource-id")
+				params.ResourceId = &v
+			}
+			if ctx.IsSet("user-id") {
+				v := ctx.String("user-id")
+				params.UserId = &v
+			}
+			if ctx.IsSet("action") {
+				v := ctx.String("action")
+				params.Action = &v
+			}
+			if ctx.IsSet("cursor") {
+				v := api.CursorParam(ctx.String("cursor"))
+				params.Cursor = &v
+			}
+			if ctx.IsSet("limit") {
+				v := api.LimitParam(ctx.Int("limit"))
+				params.Limit = &v
+			}
+			resp, err := client.ListAuditLogsWithResponse(ctx.Context(), p0, params)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "listAuditLogs", resp.StatusCode(), resp.Body)
+		})
+
+	auditLogsGrp.Command("list-org").
+		Description("List organization audit log entries").
 		Flags(
 			cli.String("resource-type", "").Help("Filter by resource type"),
 			cli.String("project-id", "").Help("Filter by project ID"),
@@ -35,7 +85,7 @@ func registerAuditLogsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			params := &api.ListAuditLogsParams{}
+			params := &api.ListOrgAuditLogsParams{}
 			if ctx.IsSet("resource-type") {
 				v := ctx.String("resource-type")
 				params.ResourceType = &v
@@ -64,11 +114,11 @@ func registerAuditLogsCommands(app *cli.App) {
 				v := api.LimitParam(ctx.Int("limit"))
 				params.Limit = &v
 			}
-			resp, err := client.ListAuditLogsWithResponse(ctx.Context(), params)
+			resp, err := client.ListOrgAuditLogsWithResponse(ctx.Context(), params)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, "listAuditLogs", resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "listOrgAuditLogs", resp.StatusCode(), resp.Body)
 		})
 
 }

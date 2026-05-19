@@ -33,12 +33,12 @@ tags:
 - name: actions
   x-displayName: Actions
   description: Project and catalog actions invoked by workflow steps.
+- name: environments
+  x-displayName: Environments
+  description: Environments API operations.
 - name: secrets
   x-displayName: Secrets
   description: Secrets API operations.
-- name: references
-  x-displayName: References
-  description: References API operations.
 - name: jobs
   x-displayName: Jobs
   description: Worker protocol endpoints for claiming, heartbeating, completing, and instrumenting
@@ -52,18 +52,9 @@ tags:
 - name: projects
   x-displayName: Projects
   description: Project records, membership, defaults, and project-scoped configuration.
-- name: generate
-  x-displayName: Generate
-  description: Generate API operations.
 - name: webhooks
   x-displayName: Webhooks
   description: Outgoing webhook subscriptions, tests, and delivery history.
-- name: integration-providers
-  x-displayName: Integration Providers
-  description: Integration Providers API operations.
-- name: metrics
-  x-displayName: Metrics
-  description: Project operational metrics for workflow and worker activity.
 - name: interactions
   x-displayName: Interactions
   description: Human-in-the-loop requests, responses, and group routing.
@@ -75,13 +66,18 @@ tags:
   description: Agent identities, sessions, presence, and lifecycle administration.
 - name: agent-tools
   x-displayName: Agent Tools
-  description: Toolkits, skills, assignments, and resolved agent tool manifests.
+  description: Resolved agent tool manifests for agent invocations.
 - name: agent-capabilities
   x-displayName: Agent Tools (Legacy)
-  description: Compatibility tag for agent tool operations; prefer agent-tools.
-- name: user-state
-  x-displayName: User State
-  description: User State API operations.
+  description: Compatibility tag for resolved agent tool manifest operations; prefer agent-tools.
+- name: toolkits
+  x-displayName: Toolkits
+  description: Project-local and system toolkit templates that grant agents access to action
+    selectors.
+- name: skills
+  x-displayName: Skills
+  description: Project-local and system skill templates used to shape agent behavior and requested
+    tools.
 - name: team
   x-displayName: Team
   description: Team API operations.
@@ -94,12 +90,6 @@ tags:
 - name: tables
   x-displayName: Tables
   description: Tables API operations.
-- name: artifacts
-  x-displayName: Artifacts
-  description: Artifacts API operations.
-- name: observables
-  x-displayName: Observables
-  description: Observables API operations.
 paths:
   /v1/projects/{project}/channels:
     post:
@@ -505,8 +495,8 @@ paths:
         in: query
         schema:
           type: string
-        description: Filter by sender principal ID — a user ID (for `sender_type=human`),
-          agent ID (for `sender_type=agent`), or service account ID (for `sender_type=service_account`).
+        description: Filter by sender user ID. Humans, agents, and bare service accounts all
+          send as rows in `users`; use `sender_type` only as the kind/display discriminator.
       - name: reply_to
         in: query
         schema:
@@ -834,10 +824,10 @@ paths:
           $ref: '#/components/responses/NotFound'
   /v1/audit-logs:
     get:
-      operationId: listAuditLogs
+      operationId: listOrgAuditLogs
       tags:
       - audit-logs
-      summary: List audit log entries
+      summary: List organization audit log entries
       description: |-
         Returns an immutable, append-only log of create/update/delete/archive/restore actions performed against org resources. Each entry attributes the action to a `user_id` (the universal principal) along with the credential used, enabling attribution even when keys are later revoked.
 
@@ -853,6 +843,62 @@ paths:
         schema:
           type: string
         description: Filter by project ID
+      - name: resource_id
+        in: query
+        schema:
+          type: string
+        description: Filter by resource ID
+      - name: user_id
+        in: query
+        schema:
+          type: string
+        description: Filter by user ID
+      - name: action
+        in: query
+        schema:
+          type: string
+        description: Filter by action (create, update, delete, archive, restore)
+      - name: created_after
+        in: query
+        schema:
+          type: string
+          format: date-time
+        description: Filter to entries created after this timestamp
+      - name: created_before
+        in: query
+        schema:
+          type: string
+          format: date-time
+        description: Filter to entries created before this timestamp
+      - $ref: '#/components/parameters/CursorParam'
+      - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditLogListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /v1/projects/{project}/audit-logs:
+    get:
+      operationId: listAuditLogs
+      tags:
+      - audit-logs
+      summary: List project audit log entries
+      description: Returns immutable audit log entries for the selected project. Project-pinned
+        CLI tokens and service-account API keys can use this route because the project is
+        resolved from the path before permission checks run.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - name: resource_type
+        in: query
+        schema:
+          type: string
+        description: Filter by resource type
       - name: resource_id
         in: query
         schema:
@@ -2059,24 +2105,24 @@ paths:
           $ref: '#/components/responses/NotFound'
   /v1/projects/{project}/actions:
     get:
-      operationId: listActions
+      operationId: listCatalogActions
       tags:
       - actions
-      summary: List actions
-      description: Returns project-owned HTTP actions only; use `/catalog` for all available
-        actions including platform integrations and workflow-backed actions.
+      summary: List the action catalog
+      description: 'Returns the full catalog of actions available to this project: project-owned
+        HTTP actions, platform-provided integration actions (Slack, GitHub, etc.), and workflow-backed
+        actions (workflows with `published_as_tool = true`). The `available` flag indicates
+        whether the action can currently be invoked. The `endpoint_kind` field distinguishes
+        HTTP-backed from workflow-backed actions.'
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
-      - $ref: '#/components/parameters/CursorParam'
-      - $ref: '#/components/parameters/LimitParam'
-      - $ref: '#/components/parameters/TagFilterParam'
       responses:
         '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ActionListResponse'
+                $ref: '#/components/schemas/ActionCatalogListResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -2116,13 +2162,12 @@ paths:
           $ref: '#/components/responses/Conflict'
   /v1/projects/{project}/actions/{action_name}:
     get:
-      operationId: getAction
+      operationId: getCatalogAction
       tags:
       - actions
-      summary: Get an action by name
-      description: Returns one project-owned HTTP action by its stable `action_name`. Use
-        this endpoint when authoring workflow steps or validating the schemas and signing
-        configuration for a specific action.
+      summary: Get one catalog action by name
+      description: Returns availability status, schemas, and metadata for a single catalog
+        entry.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/ActionNameParam'
@@ -2132,7 +2177,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Action'
+                $ref: '#/components/schemas/ActionCatalogEntry'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -2310,54 +2355,377 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-  /v1/projects/{project}/actions/catalog:
+  /v1/projects/{project}/environments:
     get:
-      operationId: listCatalogActions
+      operationId: listEnvironments
       tags:
-      - actions
-      summary: List the action catalog
-      description: 'Returns the full catalog of actions available to this project: project-owned
-        HTTP actions, platform-provided integration actions (Slack, GitHub, etc.), and workflow-backed
-        actions (workflows with `published_as_tool = true`). The `available` flag indicates
-        whether the action can currently be invoked. The `endpoint_kind` field distinguishes
-        HTTP-backed from workflow-backed actions.'
+      - environments
+      summary: List environments
+      description: Returns project environments visible to the caller, newest-first. Filters
+        let clients narrow by provider, lifecycle status, purpose, binding, owner scope, and
+        recently destroyed tombstones.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/CursorParam'
+      - $ref: '#/components/parameters/LimitParam'
+      - name: provider
+        in: query
+        schema:
+          $ref: '#/components/schemas/EnvironmentProvider'
+      - name: status
+        in: query
+        schema:
+          $ref: '#/components/schemas/EnvironmentStatus'
+      - name: lifetime
+        in: query
+        schema:
+          $ref: '#/components/schemas/EnvironmentLifetime'
+      - name: purpose
+        in: query
+        schema:
+          $ref: '#/components/schemas/EnvironmentPurpose'
+      - name: scope
+        in: query
+        description: Omit for all/default-scoped environments; use `owner` with `owned_by`
+          to list owner-scoped environments.
+        schema:
+          $ref: '#/components/schemas/ResourceScope'
+      - name: owned_by
+        in: query
+        description: Canonical user owner ID for the environment.
+        schema:
+          type: string
+      - name: bound_to_type
+        in: query
+        schema:
+          $ref: '#/components/schemas/EnvironmentBoundToType'
+      - name: bound_to_id
+        in: query
+        schema:
+          type: string
+      - name: include_destroyed
+        in: query
+        description: Include destroyed environments in the result. By default destroyed rows
+          are excluded; set this to true (or pass status=destroyed) to see them.
+        schema:
+          type: boolean
+          default: false
+      - name: destroyed_since
+        in: query
+        description: Narrow destroyed rows to those torn down at or after this timestamp.
+          Composes with `status=destroyed` to fetch a "recently destroyed" tombstone window
+          (e.g. last hour). Non-destroyed rows are unaffected when this is combined with the
+          default (no-status) view.
+        schema:
+          type: string
+          format: date-time
       responses:
         '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ActionCatalogListResponse'
+                $ref: '#/components/schemas/EnvironmentListResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
-  /v1/projects/{project}/actions/catalog/{action_name}:
-    get:
-      operationId: getCatalogAction
+    post:
+      operationId: createEnvironment
       tags:
-      - actions
-      summary: Get one catalog action by name
-      description: Returns availability status, schemas, and metadata for a single catalog
-        entry.
+      - environments
+      summary: Create an environment
+      description: Creates a durable execution environment record and provisions it with the
+        selected provider. The server resolves scope and ownership before enforcing uniqueness
+        for the environment name.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
-      - $ref: '#/components/parameters/ActionNameParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEnvironmentRequest'
       responses:
-        '200':
-          description: OK
+        '201':
+          description: Created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ActionCatalogEntry'
+                $ref: '#/components/schemas/Environment'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /v1/projects/{project}/environments/acquire:
+    post:
+      operationId: acquireEnvironment
+      tags:
+      - environments
+      summary: Acquire an environment lease
+      description: Collection-level acquire creates or claims an environment and creates a
+        single active lease. There is intentionally no per-environment acquire endpoint.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AcquireEnvironmentRequest'
+      responses:
+        '200':
+          description: Acquired
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnvironmentAcquireResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /v1/projects/{project}/environments/leases/{lease_id}/release:
+    post:
+      operationId: releaseEnvironmentLease
+      tags:
+      - environments
+      summary: Release an environment lease
+      description: Releases a previously acquired environment lease so the environment can
+        be reused, retired, or reclaimed by another worker. The released lease snapshot is
+        returned for audit and UI state updates.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - name: lease_id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Released
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnvironmentLease'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /v1/projects/{project}/environments/{environment_id}:
+    get:
+      operationId: getEnvironment
+      tags:
+      - environments
+      summary: Get an environment
+      description: Returns the current environment record, including provider status, lease
+        metadata, ownership, binding, and retention settings.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/EnvironmentIDParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Environment'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      operationId: updateEnvironment
+      tags:
+      - environments
+      summary: Update environment metadata
+      description: Only purpose, retention_policy, scope, owned_by, bound_to_type, bound_to_id,
+        and tags are mutable.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/EnvironmentIDParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateEnvironmentRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Environment'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      operationId: destroyEnvironment
+      tags:
+      - environments
+      summary: Destroy an environment
+      description: Requests provider teardown for the environment and records the destroyed
+        state in Mobius. The response includes the final environment snapshot after the destroy
+        request is accepted.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/EnvironmentIDParam'
+      responses:
+        '200':
+          description: Destroyed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Environment'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/projects/{project}/environments/{environment_id}/reconcile:
+    post:
+      operationId: reconcileEnvironment
+      tags:
+      - environments
+      summary: Reconcile environment provider state
+      description: Refreshes Mobius' environment record from the provider control plane. Use
+        this when a UI or operator needs to resynchronize status after an out-of-band provider
+        change.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/EnvironmentIDParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Environment'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/projects/{project}/environments/{environment_id}/exec:
+    post:
+      operationId: execEnvironment
+      tags:
+      - environments
+      summary: Execute a command inside an environment
+      description: Runs a command in the target environment and returns its captured output.
+        The environment must be active and able to accept execution requests from the selected
+        provider.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/EnvironmentIDParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExecEnvironmentRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnvironmentExecResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /v1/projects/{project}/environments/{environment_id}/files:
+    put:
+      operationId: writeEnvironmentFile
+      tags:
+      - environments
+      summary: Write a file into an environment
+      description: Writes file content into the environment filesystem. The request is intended
+        for setup and repair flows that need to place source files, scripts, or configuration
+        before executing work.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/EnvironmentIDParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WriteEnvironmentFileRequest'
+      responses:
+        '204':
+          $ref: '#/components/responses/NoContent'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /v1/projects/{project}/environments/{environment_id}/workers/start:
+    post:
+      operationId: startEnvironmentWorker
+      tags:
+      - environments
+      summary: Start a Mobius worker in an environment
+      description: Starts or reuses a worker process inside the environment so it can claim
+        Mobius jobs. The result reports the worker identity and provider execution details
+        needed for follow-up diagnostics.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/EnvironmentIDParam'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StartEnvironmentWorkerRequest'
+      responses:
+        '200':
+          description: Started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnvironmentStartWorkerResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
   /v1/projects/{project}/secrets:
     get:
       operationId: listSecrets
@@ -2541,113 +2909,6 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-  /v1/projects/{project}/references/{reference_type}/lookup:
-    get:
-      operationId: lookupReferences
-      tags:
-      - references
-      summary: Look up reference candidates
-      description: Returns lightweight selectable candidates for a reference-backed action
-        input field.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      - $ref: '#/components/parameters/ReferenceTypeParam'
-      - name: q
-        in: query
-        description: Human search query.
-        schema:
-          type: string
-      - name: limit
-        in: query
-        description: Maximum number of candidates to return. Defaults to 20 and is capped
-          at 100.
-        schema:
-          type: integer
-          minimum: 1
-          maximum: 100
-      - name: cursor
-        in: query
-        description: Opaque pagination cursor from a previous response.
-        schema:
-          type: string
-      - name: integration_id
-        in: query
-        description: Optional provider integration instance selector for projects with multiple
-          connections.
-        schema:
-          type: string
-      - name: depends_on
-        in: query
-        description: Optional JSON object containing values from fields this lookup depends
-          on.
-        schema:
-          type: string
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ReferenceLookupResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          description: Required integration is missing, expired, or unauthorized.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '429':
-          $ref: '#/components/responses/TooManyRequests'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
-  /v1/projects/{project}/references/{reference_type}/resolve:
-    post:
-      operationId: resolveReferences
-      tags:
-      - references
-      summary: Resolve saved reference values
-      description: Resolves stored reference values to display candidates when possible.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      - $ref: '#/components/parameters/ReferenceTypeParam'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ReferenceResolveRequest'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ReferenceResolveResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          description: Required integration is missing, expired, or unauthorized.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '429':
-          $ref: '#/components/responses/TooManyRequests'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
   /v1/projects/{project}/jobs/{id}:
     get:
       operationId: getJob
@@ -3956,44 +4217,6 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-  /v1/messages:
-    post:
-      operationId: createMessage
-      tags:
-      - generate
-      summary: Create an Anthropic-compatible message
-      description: Anthropic Messages API-compatible route. This exists so the official Anthropic
-        client can be pointed at Mobius by setting its base URL to the Mobius API origin and
-        using a project-pinned Mobius API key as `x-api-key`. The response is the raw Anthropic-compatible
-        message object, not wrapped in a Mobius `data` envelope.
-      security:
-      - XApiKeyAuth: []
-      - BearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/GenerateRequest'
-      responses:
-        '200':
-          description: Anthropic-compatible message, or an SSE stream when `stream` is true.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/LLMGenerateResponse'
-            text/event-stream:
-              schema:
-                type: string
-                description: Anthropic-format server-sent events.
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '502':
-          $ref: '#/components/responses/ProviderError'
   /v1/projects/{project}/webhooks:
     get:
       operationId: listWebhooks
@@ -4254,177 +4477,6 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-  /v1/projects/{project}/integration-providers:
-    get:
-      operationId: listIntegrationProviders
-      tags:
-      - integration-providers
-      summary: List available integration providers and their capabilities
-      description: |-
-        Returns the integration providers available to this project. Most provider metadata is registered at server or org scope, but the project-scoped path lets project-pinned credentials discover providers through the same authorization boundary they use for workflow and integration APIs.
-
-        The response includes provider presentation metadata, project connection state, the dotted event types each provider can emit (with payload JSON Schema where reflectable), and the workflow actions that call back into the integration (with input/output JSON Schema).
-
-        This response is the single source of truth that the integration page, provider detail pages, the new-trigger wizard's event-type picker, and public docs all read from. Workflow action pickers continue to use `/actions/catalog` because that catalog includes user-created and workflow-backed actions too.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/IntegrationProvidersResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-  /v1/projects/{project}/integrations/apollo/connect:
-    post:
-      operationId: connectApollo
-      tags:
-      - integration-providers
-      summary: Connect or reconnect Apollo
-      description: Validates and stores Apollo API-key credentials through the unified integration
-        framework. The resulting integration powers the `apollo.*` workflow actions.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ApolloConnectRequest'
-      responses:
-        '200':
-          description: Connected
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/IntegrationConnectResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-  /v1/projects/{project}/integrations/google_sheets/connect:
-    post:
-      operationId: connectGoogleSheets
-      tags:
-      - integration-providers
-      summary: Connect or reconnect Google Sheets
-      description: Starts the Google Sheets OAuth2 flow when the body is empty, or connects
-        inline with `service_account_json` when supplied.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/GoogleSheetsConnectRequest'
-      responses:
-        '200':
-          description: Connection flow started or completed
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/IntegrationConnectResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
-  /v1/projects/{project}/integrations/firecrawl/connect:
-    post:
-      operationId: connectFirecrawl
-      tags:
-      - integration-providers
-      summary: Connect or reconnect Firecrawl
-      description: Stores Firecrawl API-key credentials through the unified integration framework.
-        The resulting integration powers the `firecrawl.*` workflow actions.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/FirecrawlConnectRequest'
-      responses:
-        '200':
-          description: Connected
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/IntegrationConnectResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-  /v1/projects/{project}/integrations/scrapecreators/connect:
-    post:
-      operationId: connectScrapeCreators
-      tags:
-      - integration-providers
-      summary: Connect or reconnect ScrapeCreators
-      description: Stores ScrapeCreators API-key credentials through the unified integration
-        framework. The resulting integration powers the `scrapecreators.*` workflow actions.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ScrapeCreatorsConnectRequest'
-      responses:
-        '200':
-          description: Connected
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/IntegrationConnectResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-  /v1/projects/{project}/metrics:
-    get:
-      operationId: getProjectMetrics
-      tags:
-      - metrics
-      summary: Get operational metrics for a project
-      description: |-
-        Returns a snapshot of current execution health for the project. All rate and duration metrics are computed over a rolling window (default: 60 minutes). P95 step duration is computed from the 40 most recent completed jobs.
-
-        The response is structured per resource type. The top-level flat fields (`runs_per_minute`, `failure_rate`, etc.) are deprecated mirrors of `runs.*` that will be removed before GA.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProjectMetrics'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
   /v1/projects/{project}/interactions:
     post:
       operationId: createInteraction
@@ -4472,6 +4524,7 @@ paths:
                 signal_name: manager_approval
                 kind: approval
                 status: pending
+                origin: workflow_step
                 message: Approve publishing the April billing report?
                 context:
                   report_id: rpt_2026_04
@@ -4581,6 +4634,29 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+    delete:
+      operationId: deleteInteraction
+      tags:
+      - interactions
+      summary: Delete an interaction
+      description: Soft-deletes an interaction so it disappears from inbox and project listings.
+        The row is retained for audit history. Only terminal interactions (`completed`, `cancelled`,
+        `expired`) may be deleted; pending or in-review interactions must be cancelled first
+        so any waiting workflow run can route to a fallback.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/IDParam'
+      responses:
+        '204':
+          description: No Content
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /v1/projects/{project}/interactions/{id}/respond:
     post:
       operationId: respondToInteraction
@@ -4616,6 +4692,7 @@ paths:
                 signal_name: manager_approval
                 kind: approval
                 status: completed
+                origin: workflow_step
                 message: Approve publishing the April billing report?
                 context:
                   report_id: rpt_2026_04
@@ -5655,8 +5732,7 @@ paths:
     get:
       operationId: listToolkitAssignments
       tags:
-      - agent-tools
-      - agent-capabilities
+      - agents
       summary: List assigned toolkits
       description: Returns the toolkits assigned to an agent in assignment order.
       parameters:
@@ -5678,8 +5754,7 @@ paths:
     put:
       operationId: replaceToolkits
       tags:
-      - agent-tools
-      - agent-capabilities
+      - agents
       summary: Replace assigned toolkits
       description: Replaces the agent's toolkit assignment set as a whole. The effective tool
         surface is the union of assigned toolkit grants intersected with service-account permissions
@@ -5712,8 +5787,7 @@ paths:
     get:
       operationId: listSkillAssignments
       tags:
-      - agent-tools
-      - agent-capabilities
+      - agents
       summary: List assigned skills
       description: Returns the skills assigned to an agent in assignment order.
       parameters:
@@ -5735,8 +5809,7 @@ paths:
     put:
       operationId: replaceSkills
       tags:
-      - agent-tools
-      - agent-capabilities
+      - agents
       summary: Replace assigned skills
       description: Replaces the agent's skill assignment set as a whole. Skills request tools
         and actions; the manifest enforces only the intersection with toolkit grants and service-account
@@ -5815,8 +5888,7 @@ paths:
     get:
       operationId: listToolkits
       tags:
-      - agent-tools
-      - agent-capabilities
+      - toolkits
       summary: List toolkits
       description: Returns project-local and system toolkit templates visible to the project.
       parameters:
@@ -5843,8 +5915,7 @@ paths:
     post:
       operationId: createToolkit
       tags:
-      - agent-tools
-      - agent-capabilities
+      - toolkits
       summary: Create a toolkit
       description: Creates a project-local toolkit with action selector grants.
       parameters:
@@ -5876,9 +5947,9 @@ paths:
     get:
       operationId: getToolkit
       tags:
-      - agent-tools
-      - agent-capabilities
+      - toolkits
       summary: Get a toolkit
+      description: Returns a single project-local or system toolkit template by ID.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - name: toolkit_id
@@ -5903,8 +5974,7 @@ paths:
     put:
       operationId: updateToolkit
       tags:
-      - agent-tools
-      - agent-capabilities
+      - toolkits
       summary: Update a toolkit
       description: Replaces mutable toolkit metadata and grant arrays when supplied.
       parameters:
@@ -5940,9 +6010,9 @@ paths:
     delete:
       operationId: deleteToolkit
       tags:
-      - agent-tools
-      - agent-capabilities
+      - toolkits
       summary: Delete a toolkit
+      description: Deletes a project-local toolkit that is not assigned to any agent.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - name: toolkit_id
@@ -5965,9 +6035,9 @@ paths:
     get:
       operationId: listSkills
       tags:
-      - agent-tools
-      - agent-capabilities
+      - skills
       summary: List skills
+      description: Returns project-local and system skill templates visible to the project.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - name: include_system
@@ -5992,8 +6062,7 @@ paths:
     post:
       operationId: createSkill
       tags:
-      - agent-tools
-      - agent-capabilities
+      - skills
       summary: Create a skill
       description: Creates a project-local skill with instructions and requested tool filters.
       parameters:
@@ -6021,12 +6090,11 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
-  /v1/projects/{project}/skills:import:
+  /v1/projects/{project}/skills/import:
     post:
       operationId: importSkill
       tags:
-      - agent-tools
-      - agent-capabilities
+      - skills
       summary: Import a skill
       description: Imports a Claude Code or Dive-style skill document into a project-local
         Mobius skill.
@@ -6059,9 +6127,9 @@ paths:
     get:
       operationId: getSkill
       tags:
-      - agent-tools
-      - agent-capabilities
+      - skills
       summary: Get a skill
+      description: Returns a single project-local or system skill template by ID.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - name: skill_id
@@ -6086,8 +6154,7 @@ paths:
     put:
       operationId: updateSkill
       tags:
-      - agent-tools
-      - agent-capabilities
+      - skills
       summary: Update a skill
       description: Replaces mutable skill metadata, instructions, and requested tool filters
         when supplied.
@@ -6124,9 +6191,9 @@ paths:
     delete:
       operationId: deleteSkill
       tags:
-      - agent-tools
-      - agent-capabilities
+      - skills
       summary: Delete a skill
+      description: Deletes a project-local skill that is not assigned to any agent.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - name: skill_id
@@ -6145,131 +6212,6 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
-  /v1/projects/{project}/user-state:
-    get:
-      operationId: listUserStates
-      tags:
-      - user-state
-      summary: List user state
-      description: Returns the live User State rows visible in a project.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      - name: user_kind
-        in: query
-        schema:
-          $ref: '#/components/schemas/UserKind'
-      - name: availability
-        in: query
-        schema:
-          $ref: '#/components/schemas/UserAvailability'
-      - name: visibility
-        in: query
-        schema:
-          $ref: '#/components/schemas/UserStateVisibility'
-      - $ref: '#/components/parameters/LimitParam'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UserStateListResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-  /v1/projects/{project}/user-state/assignments:
-    get:
-      operationId: listUserAssignments
-      tags:
-      - user-state
-      summary: List user assignments
-      description: Returns explicitly reported high-level user assignments.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      - name: status
-        in: query
-        schema:
-          $ref: '#/components/schemas/UserAssignmentStatus'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UserAssignmentListResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-  /v1/projects/{project}/user-state/{user_id}:
-    get:
-      operationId: getUserState
-      tags:
-      - user-state
-      summary: Get user state
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      - name: user_id
-        in: path
-        required: true
-        schema:
-          type: string
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UserState'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-    put:
-      operationId: upsertUserState
-      tags:
-      - user-state
-      summary: Upsert user state
-      description: Upserts explicitly reported high-level user availability, status description,
-        and assignments. This endpoint does not infer state from unrelated platform lifecycle
-        events.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      - name: user_id
-        in: path
-        required: true
-        schema:
-          type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpsertUserStateRequest'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UserState'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
   /v1/projects/{project}/team:
     get:
       operationId: listProjectTeam
@@ -6454,6 +6396,8 @@ paths:
       tags:
       - logs
       summary: Ingest a batch of structured log records (JSON)
+      description: Accepts structured application log records for the project and stores the
+        normalized fields used by run diagnostics and log search.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       requestBody:
@@ -6484,6 +6428,8 @@ paths:
       tags:
       - logs
       summary: List log records for a project
+      description: Returns project log records newest-first with optional filters for run
+        identity, severity, and observed time window.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/CursorParam'
@@ -6525,6 +6471,8 @@ paths:
       tags:
       - logs
       summary: Ingest OTLP log records (JSON-encoded ExportLogsServiceRequest)
+      description: Accepts an OTLP ExportLogsServiceRequest encoded as JSON and converts resource
+        and record attributes into Mobius project log records.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       requestBody:
@@ -6993,681 +6941,6 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-  /v1/projects/{project}/artifacts:
-    get:
-      operationId: listArtifacts
-      tags:
-      - artifacts
-      summary: List artifacts in a project
-      description: Returns artifacts in the project, ordered (created_at desc, id desc). Optional
-        filters narrow by run, step, state, or mime prefix. Use the run-scoped `listRunArtifacts`
-        endpoint when you already have a run id. Results are scoped to the authenticated principal's
-        User-owned artifact space.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      - name: run_id
-        in: query
-        required: false
-        schema:
-          type: string
-      - name: step_id
-        in: query
-        required: false
-        schema:
-          type: string
-      - name: mime
-        in: query
-        required: false
-        schema:
-          type: string
-        description: Mime prefix filter (e.g. `image/`)
-      - name: state
-        in: query
-        required: false
-        schema:
-          $ref: '#/components/schemas/ArtifactState'
-      - $ref: '#/components/parameters/CursorParam'
-      - $ref: '#/components/parameters/LimitParam'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ArtifactListResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-  /v1/projects/{project}/artifacts:slot:
-    post:
-      operationId: createArtifactSlot
-      tags:
-      - artifacts
-      summary: Reserve an artifact upload slot
-      description: Reserve a `pending_upload` artifact row and mint a presigned PUT URL the
-        worker uploads bytes to. Step-produced uploads MUST include the active job claim's
-        `(job_id, worker_session_token, attempt)` triple — Mobius rejects mismatches with
-        `409 conflict_wrong_claim`. After the worker uploads bytes, call `:commit` to verify
-        and transition the row to `available`. New artifacts are owned by the authenticated
-        principal's `user_id` and stored under that user's bucket prefix.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateArtifactSlotRequest'
-      responses:
-        '201':
-          description: Slot reserved
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ArtifactSlot'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '409':
-          $ref: '#/components/responses/Conflict'
-        '429':
-          description: Too many pending uploads
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-  /v1/projects/{project}/artifacts/{id}:commit:
-    post:
-      operationId: commitArtifact
-      tags:
-      - artifacts
-      summary: Commit an uploaded artifact
-      description: Verify the bytes uploaded against the `:slot` URL and transition the artifact
-        to `available`. The server consults the storage backend's HEAD metadata to confirm
-        the object exists and matches the caller-reported `size_bytes` and `sha256`. Mismatches
-        mark the row `failed`, attempt to delete the orphan, and return 422.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      - $ref: '#/components/parameters/ArtifactIdParam'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CommitArtifactRequest'
-      responses:
-        '200':
-          description: Artifact committed
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Artifact'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
-        '422':
-          description: Object failed verification
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-  /v1/projects/{project}/artifacts/{id}:
-    get:
-      operationId: getArtifact
-      tags:
-      - artifacts
-      summary: Get an artifact
-      description: Returns artifact metadata after enforcing the caller's project and owner-user
-        artifact scope.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      - $ref: '#/components/parameters/ArtifactIdParam'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Artifact'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-    delete:
-      operationId: deleteArtifact
-      tags:
-      - artifacts
-      summary: Delete an artifact
-      description: Soft-delete the row and (for Mobius-managed) delete the underlying object
-        best-effort. Pinned artifacts are refused unless `force=true`.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      - $ref: '#/components/parameters/ArtifactIdParam'
-      - name: force
-        in: query
-        required: false
-        schema:
-          type: boolean
-          default: false
-      responses:
-        '204':
-          description: Deleted
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
-  /v1/projects/{project}/artifacts/{id}/content:
-    get:
-      operationId: getArtifactContent
-      tags:
-      - artifacts
-      summary: Fetch artifact bytes
-      description: 'Streams artifact bytes through the Mobius API after enforcing the caller''s
-        artifact access scope. Safe preview mime types are returned inline; all other content
-        is served as an attachment with `X-Content-Type-Options: nosniff`.'
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      - $ref: '#/components/parameters/ArtifactIdParam'
-      responses:
-        '200':
-          description: Streamed artifact bytes
-          content:
-            application/octet-stream:
-              schema:
-                type: string
-                format: binary
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
-  /v1/projects/{project}/artifacts/{id}/signed-url:
-    post:
-      operationId: createArtifactSignedUrl
-      tags:
-      - artifacts
-      summary: Create a signed artifact URL
-      description: Generates a fresh, time-boxed storage URL for the artifact after enforcing
-        the caller's artifact access scope. Use `getArtifactContent` when bytes should flow
-        through the Mobius API instead of directly from object storage.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      - $ref: '#/components/parameters/ArtifactIdParam'
-      - name: ttl_seconds
-        in: query
-        required: false
-        schema:
-          type: integer
-          format: int64
-          minimum: 1
-        description: Requested signed URL TTL. The server caps this at the maximum supported
-          artifact download TTL.
-      responses:
-        '200':
-          description: Signed URL created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ArtifactSignedUrl'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
-  /v1/projects/{project}/artifacts/{id}/pin:
-    post:
-      operationId: pinArtifact
-      tags:
-      - artifacts
-      summary: Pin an artifact (skip TTL)
-      description: Pins an artifact so the expiry sweeper does not delete it while it remains
-        pinned.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      - $ref: '#/components/parameters/ArtifactIdParam'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Artifact'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-    delete:
-      operationId: unpinArtifact
-      tags:
-      - artifacts
-      summary: Remove the pinned flag
-      description: Removes the pinned flag so the artifact is again eligible for its configured
-        retention policy.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      - $ref: '#/components/parameters/ArtifactIdParam'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Artifact'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-  /v1/projects/{project}/runs/{run_id}/artifacts:
-    get:
-      operationId: listRunArtifacts
-      tags:
-      - artifacts
-      summary: List artifacts produced by a run
-      description: Lists artifacts associated with a workflow run, scoped to the authenticated
-        principal's User-owned artifact space.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      - $ref: '#/components/parameters/RunIdParam'
-      - name: step_id
-        in: query
-        required: false
-        schema:
-          type: string
-      - name: mime
-        in: query
-        required: false
-        schema:
-          type: string
-        description: Mime prefix filter (e.g. `image/`)
-      - name: state
-        in: query
-        required: false
-        schema:
-          $ref: '#/components/schemas/ArtifactState'
-      - $ref: '#/components/parameters/CursorParam'
-      - $ref: '#/components/parameters/LimitParam'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ArtifactListResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-  /v1/projects/{project}/settings/artifact-storage:
-    get:
-      operationId: getArtifactStorageSettings
-      tags:
-      - artifacts
-      summary: Get project artifact-storage settings
-      description: Returns the effective artifact storage settings for the project.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ArtifactStorageSettings'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-    put:
-      operationId: updateArtifactStorageSettings
-      tags:
-      - artifacts
-      summary: Update project artifact-storage settings
-      description: Updates project artifact storage settings. v1 accepts the contract shape
-        while Mobius-managed storage remains the wired default.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ArtifactStorageSettingsUpdate'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ArtifactStorageSettings'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-  /v1/projects/{project}/settings/artifact-storage/quota:
-    get:
-      operationId: getArtifactStorageQuota
-      tags:
-      - artifacts
-      summary: Get per-org Mobius-managed artifact storage quota usage
-      description: Returns Mobius-managed artifact quota usage for the current org.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ArtifactQuotaUsage'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-  /v1/projects/{project}/observables:
-    get:
-      operationId: listObservables
-      tags:
-      - observables
-      summary: List Observables in a project
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      - $ref: '#/components/parameters/CursorParam'
-      - $ref: '#/components/parameters/LimitParam'
-      - name: subject_kind
-        in: query
-        required: false
-        schema:
-          type: string
-      - name: freshness_status
-        in: query
-        required: false
-        schema:
-          $ref: '#/components/schemas/ObservableFreshnessStatus'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ObservableListResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-    post:
-      operationId: createObservable
-      tags:
-      - observables
-      summary: Create an Observable
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateObservableRequest'
-      responses:
-        '201':
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Observable'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '409':
-          $ref: '#/components/responses/Conflict'
-  /v1/projects/{project}/observables/{observable_id}:
-    get:
-      operationId: getObservable
-      tags:
-      - observables
-      summary: Get an Observable by ID or name
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      - $ref: '#/components/parameters/ObservableIdParam'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Observable'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-    patch:
-      operationId: updateObservable
-      tags:
-      - observables
-      summary: Update an Observable definition
-      description: Updates project-scoped Observable metadata and configuration. Current state
-        remains server-owned and can only change through accepted observations.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      - $ref: '#/components/parameters/ObservableIdParam'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpdateObservableRequest'
-      responses:
-        '200':
-          description: Updated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Observable'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
-    delete:
-      operationId: deleteObservable
-      tags:
-      - observables
-      summary: Delete an Observable
-      description: Deletes the Observable definition and its observation, version, and event
-        history.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      - $ref: '#/components/parameters/ObservableIdParam'
-      responses:
-        '204':
-          description: Deleted
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-  /v1/projects/{project}/observables/{observable_id}/observations:
-    get:
-      operationId: listObservableObservations
-      tags:
-      - observables
-      summary: List observations for an Observable
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      - $ref: '#/components/parameters/ObservableIdParam'
-      - $ref: '#/components/parameters/CursorParam'
-      - $ref: '#/components/parameters/LimitParam'
-      - name: status
-        in: query
-        required: false
-        schema:
-          $ref: '#/components/schemas/ObservableObservationStatus'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ObservableObservationListResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-    post:
-      operationId: submitObservableObservation
-      tags:
-      - observables
-      summary: Submit an observation
-      description: Idempotent by `(observable_id, invocation_id)`. Accepted observations are
-        reduced by Mobius into authoritative state; observers cannot mutate current state
-        directly.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      - $ref: '#/components/parameters/ObservableIdParam'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/SubmitObservableObservationRequest'
-      responses:
-        '202':
-          description: Observation accepted or deduplicated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SubmitObservableObservationResult'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '422':
-          description: Observation recorded as rejected
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SubmitObservableObservationResult'
-  /v1/projects/{project}/observables/{observable_id}/versions:
-    get:
-      operationId: listObservableStateVersions
-      tags:
-      - observables
-      summary: List state versions for an Observable
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      - $ref: '#/components/parameters/ObservableIdParam'
-      - $ref: '#/components/parameters/CursorParam'
-      - $ref: '#/components/parameters/LimitParam'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ObservableStateVersionListResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-  /v1/projects/{project}/observables/{observable_id}/events:
-    get:
-      operationId: listObservableEvents
-      tags:
-      - observables
-      summary: List change events for an Observable
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      - $ref: '#/components/parameters/ObservableIdParam'
-      - $ref: '#/components/parameters/CursorParam'
-      - $ref: '#/components/parameters/LimitParam'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ObservableEventListResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-  /v1/projects/{project}/observables/{observable_id}/waiters:
-    get:
-      operationId: listObservableWaiters
-      tags:
-      - observables
-      summary: List workflow paths waiting on an Observable
-      description: Returns active workflow paths currently suspended on this Observable via
-        `wait_until.observable`. The list is intended for operator visibility; terminal runs
-        are omitted.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      - $ref: '#/components/parameters/ObservableIdParam'
-      - $ref: '#/components/parameters/LimitParam'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ObservableWaiterListResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
 components:
   securitySchemes:
     BearerAuth:
@@ -7677,9 +6950,9 @@ components:
         Bearer credential supplied via the `Authorization: Bearer <credential>` header. Two credential types are accepted:
 
         - **API keys** — prefix `mbx_`. Issued from the dashboard or via the
-        API key endpoints. API keys with a project binding are scoped to
-        that project; unbound keys are org-scoped ("system"). The raw token
-        is sent as-is.
+        API key endpoints. API keys authenticate as a service account in one
+        project and are sent with a trailing `.<project_handle>` suffix —
+        e.g. `mbx_abcdef….myproject`.
         - **CLI credentials** — prefix `mbc_`. Issued by the device-auth
         flow on behalf of a user. Unpinned CLI credentials are org-scoped
         and sent as the raw token. Project-pinned CLI credentials MUST be
@@ -7691,8 +6964,8 @@ components:
       in: header
       name: x-api-key
       description: API key supplied through the `x-api-key` header. This is primarily used
-        by Anthropic-compatible clients targeting `/v1/messages`; project-pinned keys are
-        required for that endpoint.
+        by Anthropic-compatible clients targeting `/v1/messages`; project service-account
+        keys are required for that endpoint.
   parameters:
     ProjectHandleParam:
       name: project
@@ -7719,7 +6992,7 @@ components:
       name: member_id
       in: path
       required: true
-      description: User or agent ID of the channel member.
+      description: User ID of the channel member. Agent members use their backing user ID.
       schema:
         type: string
     user_id:
@@ -7741,13 +7014,6 @@ components:
       in: path
       required: true
       description: ID of the agent presence record.
-      schema:
-        type: string
-    run_id:
-      name: run_id
-      in: path
-      required: true
-      description: ID of the tool run to poll.
       schema:
         type: string
     CursorParam:
@@ -7785,9 +7051,9 @@ components:
       required: false
       schema:
         $ref: '#/components/schemas/ProjectID'
-      description: Optional project scope for this request. When `project_id` is provided,
-        the API key operation is resolved in that project's permission context. When `project_id`
-        is omitted, the request is treated as org-level and project-pinned keys are excluded.
+      description: Optional project filter for this request. When `project_id` is provided,
+        the API key operation is resolved in that project's permission context. When omitted,
+        org-level callers operate across projects.
     EnvironmentIDParam:
       name: environment_id
       in: path
@@ -8213,14 +7479,15 @@ components:
       - agent
       - service_account
       description: |-
-        Authenticated principal that posted the message, derived from the
+        Authenticated user kind that posted the message, derived from the
         credential at send time and never overrideable in the request body
-        (PRD 048 §5). Values align with `users.kind`:
+        (PRD 048 §5). `sender_id` is always `users.id`; values align with
+        `users.kind`:
         - `human` — a human org member's user credential.
         - `agent` — an API key whose service account backs an agent (1:1
-        invariant from PRD 048 §1). `sender_id` is the agent's ID.
+        invariant from PRD 048 §1).
         - `service_account` — an API key whose service account backs no
-        agent. `sender_id` is the service account's ID.
+        agent.
     EntityReferenceType:
       type: string
       enum:
@@ -8437,8 +7704,8 @@ components:
             credential.
         sender_id:
           type: string
-          description: Sender principal identifier — the user ID for `sender_type=human`,
-            the agent's ID for `sender_type=agent`, or the service account's ID for `sender_type=service_account`.
+          description: Sender user ID. For `sender_type=agent`, this is the agent's backing
+            `users.id`, not `agents.id`.
         sender_session_id:
           type: string
           nullable: true
@@ -8603,8 +7870,9 @@ components:
           type: array
           items:
             type: string
-          description: Optional list of user or agent IDs to add as members at creation time.
-            All receive the `member` role; the creator is added as `admin` separately.
+          description: Optional list of user IDs to add as members at creation time. Agent
+            members use their backing user IDs. All receive the `member` role; the creator
+            is added as `admin` separately.
         purpose:
           type: string
           enum:
@@ -8661,7 +7929,8 @@ components:
       properties:
         participant_id:
           type: string
-          description: User or agent ID to add to the channel.
+          description: User ID to add to the channel. Agent members use their backing user
+            ID.
         role:
           type: string
           enum:
@@ -8814,7 +8083,8 @@ components:
       properties:
         participant_id:
           type: string
-          description: User or agent ID of the other DM participant.
+          description: User ID of the other DM participant. Agent participants use their backing
+            user ID.
         display_name:
           type: string
           description: Human-facing display name for the channel. Defaults to the participant's
@@ -8905,8 +8175,9 @@ components:
       required:
       - type
       - id
-      description: Server-derived actor or system context that requested the interaction.
-        Public create requests do not supply this field.
+      description: Server-derived user or system context that requested the interaction. For
+        type `user` or `agent`, `id` is always the canonical users.id; `agent` is the backing
+        user for an AI-agent principal. Public create requests do not supply this field.
       properties:
         type:
           type: string
@@ -9077,7 +8348,9 @@ components:
           type: string
           format: date-time
         reviewed_by:
-          $ref: '#/components/schemas/InteractionResponder'
+          type: object
+          allOf:
+          - $ref: '#/components/schemas/InteractionResponder'
           nullable: true
         review_comment:
           type: string
@@ -9087,7 +8360,9 @@ components:
           format: date-time
           nullable: true
         review_policy:
-          $ref: '#/components/schemas/ReviewPolicy'
+          type: object
+          allOf:
+          - $ref: '#/components/schemas/ReviewPolicy'
           nullable: true
           description: Per-submission reviewability snapshot taken at submit time from the
             interaction's `submission_review_policy` template (PRD 077 §3.5). Captures the
@@ -9123,7 +8398,9 @@ components:
           - vote_closed
           - quorum_not_met
         actor:
-          $ref: '#/components/schemas/InteractionResponder'
+          type: object
+          allOf:
+          - $ref: '#/components/schemas/InteractionResponder'
           nullable: true
         submission_id:
           type: string
@@ -9181,7 +8458,7 @@ components:
             waits for `owner_id` to break the tie.
         owner_id:
           type: string
-          description: User/agent ID treated as authoritative when `tie_break` is `owner_decides`.
+          description: Canonical users.id treated as authoritative when `tie_break` is `owner_decides`.
         weight_by:
           type: string
           enum:
@@ -9299,8 +8576,10 @@ components:
         is signed with HMAC-SHA256 against the resolved project secret and the signed dispatch
         carries `X-Mobius-Signature`, `X-Mobius-Secret-Ref`, `X-Mobius-Secret-Version`, and
         `X-Mobius-Timestamp`. Signed dispatches also carry `X-Mobius-Signature-Version: v2`.
-        Verifiers should recompute the signature over the exact raw body, reject stale timestamps
-        (for example, older than five minutes), and check all five headers.'
+        Every durable dispatch also carries the stable outbox row id in `X-Mobius-Delivery-ID`
+        and `Idempotency-Key`; retries reuse the same value. Verifiers should recompute the
+        signature over the exact raw body, reject stale timestamps (for example, older than
+        five minutes), deduplicate by delivery id, and check all five signing headers.'
       properties:
         kind:
           type: string
@@ -9310,13 +8589,19 @@ components:
           - http_subscriber
           - none
         run:
-          $ref: '#/components/schemas/RunConsumer'
+          type: object
+          allOf:
+          - $ref: '#/components/schemas/RunConsumer'
           nullable: true
         agent_tool:
-          $ref: '#/components/schemas/AgentToolConsumer'
+          type: object
+          allOf:
+          - $ref: '#/components/schemas/AgentToolConsumer'
           nullable: true
         http_subscriber:
-          $ref: '#/components/schemas/HttpSubscriberConsumer'
+          type: object
+          allOf:
+          - $ref: '#/components/schemas/HttpSubscriberConsumer'
           nullable: true
     ChannelThreadDelivery:
       type: object
@@ -9366,13 +8651,19 @@ components:
           - channel_thread
           - page
         channel_thread:
-          $ref: '#/components/schemas/ChannelThreadDelivery'
+          type: object
+          allOf:
+          - $ref: '#/components/schemas/ChannelThreadDelivery'
           nullable: true
         email:
-          $ref: '#/components/schemas/EmailDelivery'
+          type: object
+          allOf:
+          - $ref: '#/components/schemas/EmailDelivery'
           nullable: true
         page:
-          $ref: '#/components/schemas/PageDelivery'
+          type: object
+          allOf:
+          - $ref: '#/components/schemas/PageDelivery'
           nullable: true
     Delivery:
       type: object
@@ -9436,14 +8727,18 @@ components:
         origin:
           $ref: '#/components/schemas/InteractionOrigin'
         source:
-          $ref: '#/components/schemas/InteractionSource'
+          type: object
+          allOf:
+          - $ref: '#/components/schemas/InteractionSource'
           nullable: true
         message:
           type: string
           nullable: true
           description: Human-readable message shown to the responder when supplied.
         subject:
-          $ref: '#/components/schemas/InteractionReference'
+          type: object
+          allOf:
+          - $ref: '#/components/schemas/InteractionReference'
           nullable: true
           description: Primary work item or artifact the interaction is about.
         references:
@@ -9476,10 +8771,10 @@ components:
           description: Resolved user IDs targeted by the interaction.
         responder:
           type: object
-          additionalProperties: false
+          allOf:
+          - $ref: '#/components/schemas/InteractionResponder'
           nullable: true
           description: User or agent that completed the interaction; null until completion.
-          $ref: '#/components/schemas/InteractionResponder'
         resolving_response_id:
           type: string
           nullable: true
@@ -9555,37 +8850,44 @@ components:
           nullable: true
           description: Timestamp when a first-responder member claimed this interaction.
         resolution_policy:
-          $ref: '#/components/schemas/ResolutionPolicy'
+          type: object
+          allOf:
+          - $ref: '#/components/schemas/ResolutionPolicy'
           nullable: true
           description: Declarative resolution rule attached at creation time. Legacy inputs
             (`require_all` / `first_responder`) are synthesized into an equivalent policy
             at create time, so on a freshly-created Interaction this should always be present;
             nullability covers historical rows that pre-date the synthesis.
         submission_review_policy:
-          $ref: '#/components/schemas/ReviewPolicy'
+          type: object
+          allOf:
+          - $ref: '#/components/schemas/ReviewPolicy'
           nullable: true
           description: Template review policy applied to new submissions of this interaction
             (PRD 077 §3.5). Each submission carries its own `review_policy` snapshot taken
             at submit time; this field is the create-time intent that the snapshot is copied
             from.
         consumer:
-          $ref: '#/components/schemas/Consumer'
+          type: object
+          allOf:
+          - $ref: '#/components/schemas/Consumer'
           nullable: true
           description: Polymorphic identifier of what is waiting on this interaction's resolution
             (PRD 077 §3.7). Replaces the special-cased `run_id`/`signal_name` pair; the latter
             remain populated when `consumer.kind=run`.
         delivery:
-          $ref: '#/components/schemas/Delivery'
+          type: object
+          allOf:
+          - $ref: '#/components/schemas/Delivery'
           nullable: true
           description: Optional per-interaction delivery override (PRD 077 §3.8). When absent,
             the dispatcher uses each participant's NotificationPreferences.
         outcome:
           $ref: '#/components/schemas/InteractionValue'
-          nullable: true
           description: 'Final outcome selected by the resolution policy (not responder-supplied).
             Shape depends on the policy: `simple_majority` returns the winning option; `all_required`
             returns the array of every response; `speculative` returns either the proposal
-            or the vetoer''s value. Null while the interaction is still pending.'
+            or the vetoer''s value. Omitted while the interaction is still pending.'
         resolved_by:
           type: string
           nullable: true
@@ -10837,7 +10139,7 @@ components:
       properties:
         agent_id:
           type: string
-          description: Agent ID or expression to invoke. Defaults to the workflow owner agent
+          description: Agent ID or expression to invoke. Defaults to the run's `default_agent_id`
             when omitted.
         prompt:
           type: string
@@ -10950,7 +10252,7 @@ components:
             Fails the run if omitted.
         agent_id:
           type: string
-          description: Agent ID or expression to invoke. Defaults to the workflow owner agent
+          description: Agent ID or expression to invoke. Defaults to the run's `default_agent_id`
             when omitted.
         prompt:
           type: string
@@ -11214,7 +10516,8 @@ components:
           type: array
           items:
             type: string
-          description: Additional user or agent IDs to invite to the channel.
+          description: Additional user IDs to invite to the channel. Agent participants use
+            their backing user IDs.
         opening_message:
           type: string
           minLength: 1
@@ -11266,11 +10569,6 @@ components:
           type: boolean
           description: When true, expose this workflow through the action catalog for agent
             tool manifests.
-        owner_agent_id:
-          type: string
-          description: Optional owning agent for this workflow definition. When set, the owner
-            agent's backing service account is the effective actor for saved runs, and `agent.invoke`
-            steps may omit `agent_id` to target this agent.
         owned_by:
           type: string
           description: Canonical user owner ID. Required when `scope` is `owner`.
@@ -11345,12 +10643,6 @@ components:
           type: boolean
           description: When true, expose this workflow through the action catalog for agent
             tool manifests.
-        owner_agent_id:
-          type: string
-          description: Optional owning agent. Callers with `mobius.workflows.manage` may assign
-            any active agent in the project. Agent-backed service accounts with `mobius.workflows.manage_owned`
-            may omit this field, or set it to their own agent, and the server will store their
-            agent as the owner.
         owned_by:
           type: string
           description: Canonical user owner ID. Required when `scope` is `owner`; defaults
@@ -11379,6 +10671,7 @@ components:
           type: string
           description: Replacement human-readable workflow name.
         scope:
+          type: string
           allOf:
           - $ref: '#/components/schemas/ResourceScope'
           nullable: true
@@ -11395,11 +10688,6 @@ components:
           type: boolean
           description: When true, expose this workflow through the action catalog for agent
             tool manifests.
-        owner_agent_id:
-          type: string
-          description: Replacement owning agent. Set to an empty string to clear ownership.
-            Requires `mobius.workflows.manage`; owner-scoped workflow managers cannot transfer
-            or clear ownership.
         spec:
           $ref: '#/components/schemas/WorkflowSpec'
           description: Replacement executable workflow spec. Supplying this creates a new
@@ -11824,12 +11112,13 @@ components:
         owned_by:
           type: string
           nullable: true
-          description: Canonical user owner ID for this run. Set to the user who started the
-            run; agent and service-account initiated runs use their associated user. May be
-            omitted for legacy or unresolved system-started rows.
-        owner_agent_id:
+          description: Canonical user owner ID for this run. Saved workflow runs inherit the
+            workflow definition owner when present; otherwise runs use the starting user.
+            May be omitted for legacy or unresolved system-started rows.
+        default_agent_id:
           type: string
-          description: Agent that owned the workflow definition when this run started.
+          description: Agent ID derived from the owner user when that user is backed by an
+            AI agent. Used as the default `agent.invoke` target when a step omits `agent_id`.
         effective_user_id:
           type: string
           description: User ID whose context the run executes under.
@@ -12686,6 +11975,7 @@ components:
             additionalProperties: true
     IntegrationEventSample:
       type: object
+      additionalProperties: false
       required:
       - id
       - provider
@@ -12718,6 +12008,7 @@ components:
           description: Optional extra metadata merged into test-fire requests.
     IntegrationEventSamplesResponse:
       type: object
+      additionalProperties: false
       required:
       - samples
       properties:
@@ -12749,7 +12040,9 @@ components:
           description: Dotted integration event type to fire. Required when sample_id is omitted.
         integration_id:
           type: string
-          description: Optional integration id metadata. Defaults to `synthetic:<provider>`.
+          description: Optional integration id metadata. Preview mode defaults to `synthetic:<provider>`.
+            Deliver mode defaults to the project's active provider integration; pass an explicit
+            value when no matching integration is connected.
         dedup_key:
           type: string
           description: Optional dedup key for deliver mode. Defaults to the generated synthetic
@@ -12766,6 +12059,7 @@ components:
             by the top-level request fields.
     IntegrationEventFireEvent:
       type: object
+      additionalProperties: false
       required:
       - provider
       - event_type
@@ -12795,6 +12089,7 @@ components:
           additionalProperties: true
     IntegrationEventFireTriggerMatch:
       type: object
+      additionalProperties: false
       required:
       - trigger_id
       - name
@@ -12812,6 +12107,7 @@ components:
             $ref: '#/components/schemas/TestFireTargetResult'
     IntegrationEventFireWaiterMatch:
       type: object
+      additionalProperties: false
       required:
       - run_id
       - step_name
@@ -12833,6 +12129,7 @@ components:
           type: string
     IntegrationEventFireResponse:
       type: object
+      additionalProperties: false
       required:
       - mode
       - event
@@ -13045,7 +12342,9 @@ components:
           additionalProperties: true
           description: Replacement JSON Schema for outputs. Replaces the existing schema.
         annotations:
-          $ref: '#/components/schemas/ActionAnnotationsRequest'
+          type: object
+          allOf:
+          - $ref: '#/components/schemas/ActionAnnotationsRequest'
           nullable: true
           description: Pass null to clear all annotation flags.
         tags:
@@ -13119,26 +12418,6 @@ components:
           type: string
           format: date-time
           description: Timestamp when this action was last updated.
-    ActionListResponse:
-      type: object
-      additionalProperties: false
-      description: Paginated list of project-owned actions.
-      required:
-      - items
-      - has_more
-      properties:
-        items:
-          type: array
-          description: The list of results for this page.
-          items:
-            $ref: '#/components/schemas/Action'
-        next_cursor:
-          type: string
-          description: Opaque cursor to pass as `cursor` on the next request. Absent when
-            `has_more` is false.
-        has_more:
-          type: boolean
-          description: Whether additional pages are available.
     RotateSecretResult:
       type: object
       additionalProperties: false
@@ -13368,6 +12647,409 @@ components:
         has_more:
           type: boolean
           description: Whether additional pages are available.
+    EnvironmentProvider:
+      type: string
+      enum:
+      - sprites
+      - cloudflare_containers
+    EnvironmentStatus:
+      type: string
+      enum:
+      - provisioning
+      - ready
+      - running
+      - retained
+      - destroying
+      - destroyed
+      - failed
+      - orphaned
+    EnvironmentLifetime:
+      type: string
+      enum:
+      - run
+      - lease
+      - explicit
+      description: Lifecycle owner for automatic cleanup. `run` environments are destroyed
+        during their owning run's Finalize phase; `lease` environments are reaped after lease
+        expiry; `explicit` environments require an explicit destroy call.
+    EnvironmentPurpose:
+      type: string
+      enum:
+      - implementation
+      - review
+      - verification
+      - preview
+      - debug
+      - worker
+      - custom
+    EnvironmentBoundToType:
+      type: string
+      enum:
+      - none
+      - run
+      - worker_session
+      - service
+      - manual
+      description: Execution or lifecycle object this environment is bound to. Ownership remains
+        in `owned_by`.
+    EnvironmentRetentionPolicy:
+      type: string
+      enum:
+      - manual
+      - destroy_on_success
+      - retain_on_failure
+      - retain_always
+    EnvironmentCleanupStatus:
+      type: string
+      enum:
+      - none
+      - pending
+      - succeeded
+      - failed
+      - skipped
+    EnvironmentLeaseStatus:
+      type: string
+      enum:
+      - active
+      - released
+      - expired
+      - revoked
+    Environment:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - name
+      - provider
+      - status
+      - lifetime
+      - capabilities
+      - spec_version
+      - runtime
+      - contains_secrets
+      - cleanup_status
+      - retention_policy
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        scope:
+          $ref: '#/components/schemas/ResourceScope'
+        provider:
+          $ref: '#/components/schemas/EnvironmentProvider'
+        provider_resource_id:
+          type: string
+        provider_resource_name:
+          type: string
+        status:
+          $ref: '#/components/schemas/EnvironmentStatus'
+        lifetime:
+          $ref: '#/components/schemas/EnvironmentLifetime'
+        purpose:
+          $ref: '#/components/schemas/EnvironmentPurpose'
+        owned_by:
+          type: string
+          description: Canonical user owner ID. For agent-started work, this is the agent's
+            backing user ID.
+        bound_to_type:
+          $ref: '#/components/schemas/EnvironmentBoundToType'
+        bound_to_id:
+          type: string
+          description: ID of the run, worker session, service, or manual association named
+            by `bound_to_type`.
+        created_by:
+          type: string
+        run_id:
+          type: string
+        job_id:
+          type: string
+        current_worker_session_id:
+          type: string
+        agent_id:
+          type: string
+        template_id:
+          type: string
+          enum:
+          - coding-default
+        capabilities:
+          type: array
+          maxItems: 50
+          items:
+            type: string
+        spec_version:
+          type: integer
+          minimum: 1
+        spec:
+          type: object
+          additionalProperties: true
+        runtime:
+          type: object
+          additionalProperties: true
+          description: Provider-observed runtime data. URLs live under runtime.urls, with
+            runtime.urls.primary as the primary URL when present.
+        tags:
+          $ref: '#/components/schemas/TagMap'
+        contains_secrets:
+          type: boolean
+        cleanup_status:
+          $ref: '#/components/schemas/EnvironmentCleanupStatus'
+        retention_policy:
+          $ref: '#/components/schemas/EnvironmentRetentionPolicy'
+        lease_expires_at:
+          type: string
+          format: date-time
+        last_seen_at:
+          type: string
+          format: date-time
+        last_reconciled_at:
+          type: string
+          format: date-time
+        last_error:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        destroyed_at:
+          type: string
+          format: date-time
+    EnvironmentLease:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - environment_id
+      - status
+      - acquired_at
+      properties:
+        id:
+          type: string
+        environment_id:
+          type: string
+        holder_type:
+          $ref: '#/components/schemas/EnvironmentBoundToType'
+        holder_id:
+          type: string
+        purpose:
+          $ref: '#/components/schemas/EnvironmentPurpose'
+        status:
+          $ref: '#/components/schemas/EnvironmentLeaseStatus'
+        acquired_at:
+          type: string
+          format: date-time
+        expires_at:
+          type: string
+          format: date-time
+        released_at:
+          type: string
+          format: date-time
+    EnvironmentListResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - has_more
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Environment'
+        has_more:
+          type: boolean
+        next_cursor:
+          type: string
+    CreateEnvironmentRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+        scope:
+          $ref: '#/components/schemas/ResourceScope'
+        provider:
+          $ref: '#/components/schemas/EnvironmentProvider'
+        purpose:
+          $ref: '#/components/schemas/EnvironmentPurpose'
+        owned_by:
+          type: string
+          description: Canonical user owner ID. Defaults to the authenticated user.
+        bound_to_type:
+          $ref: '#/components/schemas/EnvironmentBoundToType'
+        bound_to_id:
+          type: string
+        lifetime:
+          $ref: '#/components/schemas/EnvironmentLifetime'
+        template_id:
+          type: string
+          enum:
+          - coding-default
+          description: V1 supports only coding-default.
+        spec:
+          type: object
+          additionalProperties: true
+        tags:
+          $ref: '#/components/schemas/TagMap'
+        retention_policy:
+          $ref: '#/components/schemas/EnvironmentRetentionPolicy'
+    UpdateEnvironmentRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        purpose:
+          $ref: '#/components/schemas/EnvironmentPurpose'
+        retention_policy:
+          $ref: '#/components/schemas/EnvironmentRetentionPolicy'
+        scope:
+          type: string
+          allOf:
+          - $ref: '#/components/schemas/ResourceScope'
+          nullable: true
+        owned_by:
+          type: string
+          nullable: true
+        bound_to_type:
+          $ref: '#/components/schemas/EnvironmentBoundToType'
+        bound_to_id:
+          type: string
+          nullable: true
+        tags:
+          $ref: '#/components/schemas/TagMap'
+    AcquireEnvironmentRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        environment_id:
+          type: string
+        template_id:
+          type: string
+          enum:
+          - coding-default
+          description: V1 supports only coding-default.
+        name:
+          type: string
+        scope:
+          $ref: '#/components/schemas/ResourceScope'
+        provider:
+          $ref: '#/components/schemas/EnvironmentProvider'
+        purpose:
+          $ref: '#/components/schemas/EnvironmentPurpose'
+        holder_type:
+          $ref: '#/components/schemas/EnvironmentBoundToType'
+        holder_id:
+          type: string
+        owned_by:
+          type: string
+          description: Canonical user owner ID. Defaults to the authenticated user.
+        bound_to_type:
+          $ref: '#/components/schemas/EnvironmentBoundToType'
+        bound_to_id:
+          type: string
+        lifetime:
+          $ref: '#/components/schemas/EnvironmentLifetime'
+        spec:
+          type: object
+          additionalProperties: true
+        tags:
+          $ref: '#/components/schemas/TagMap'
+        lease_ttl:
+          type: string
+          description: Go duration string, for example 30m or 2h.
+    EnvironmentAcquireResult:
+      type: object
+      additionalProperties: false
+      required:
+      - environment
+      - lease
+      properties:
+        environment:
+          $ref: '#/components/schemas/Environment'
+        lease:
+          $ref: '#/components/schemas/EnvironmentLease'
+    ExecEnvironmentRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - command
+      properties:
+        command:
+          type: array
+          minItems: 1
+          items:
+            type: string
+        dir:
+          type: string
+        env:
+          type: array
+          items:
+            type: string
+        stdin:
+          type: string
+    EnvironmentExecResult:
+      type: object
+      additionalProperties: false
+      required:
+      - stdout
+      - stderr
+      - exit_code
+      properties:
+        stdout:
+          type: string
+        stderr:
+          type: string
+        exit_code:
+          type: integer
+    WriteEnvironmentFileRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - path
+      - content
+      properties:
+        path:
+          type: string
+        content:
+          type: string
+    StartEnvironmentWorkerRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        api_url:
+          type: string
+        command:
+          type: array
+          items:
+            type: string
+        dir:
+          type: string
+    EnvironmentStartWorkerResult:
+      type: object
+      additionalProperties: false
+      required:
+      - environment
+      - api_key_id
+      - key_expires_at
+      - stdout
+      - stderr
+      - exit_code
+      properties:
+        environment:
+          $ref: '#/components/schemas/Environment'
+        api_key_id:
+          type: string
+        key_expires_at:
+          type: string
+          format: date-time
+        stdout:
+          type: string
+        stderr:
+          type: string
+        exit_code:
+          type: integer
     SecretValues:
       type: object
       additionalProperties:
@@ -13506,75 +13188,6 @@ components:
           description: Replacement description.
         values:
           $ref: '#/components/schemas/SecretValues'
-    ReferenceCandidate:
-      type: object
-      additionalProperties: false
-      required:
-      - value
-      - label
-      properties:
-        value:
-          type: string
-          description: Value stored in workflow parameters.
-        label:
-          type: string
-          description: Human-readable display label.
-        description:
-          type: string
-          description: Optional secondary display text.
-        metadata:
-          type: object
-          additionalProperties: true
-          description: Optional display/filtering metadata. Not stored unless the action schema
-            models it.
-    ReferenceLookupResponse:
-      type: object
-      additionalProperties: false
-      required:
-      - items
-      - has_more
-      properties:
-        items:
-          type: array
-          items:
-            $ref: '#/components/schemas/ReferenceCandidate'
-        has_more:
-          type: boolean
-        next_cursor:
-          type: string
-          nullable: true
-    ReferenceResolveRequest:
-      type: object
-      additionalProperties: false
-      required:
-      - values
-      properties:
-        values:
-          type: array
-          minItems: 1
-          maxItems: 100
-          items:
-            type: string
-        integration_id:
-          type: string
-        depends_on:
-          type: object
-          additionalProperties: true
-    ReferenceResolveResponse:
-      type: object
-      additionalProperties: false
-      required:
-      - items
-      - unresolved
-      properties:
-        items:
-          type: array
-          items:
-            $ref: '#/components/schemas/ReferenceCandidate'
-        unresolved:
-          type: array
-          items:
-            type: string
     JobClaimRequest:
       type: object
       additionalProperties: false
@@ -15196,6 +14809,7 @@ components:
           type: string
           description: Replacement human-readable name.
         scope:
+          type: string
           allOf:
           - $ref: '#/components/schemas/ResourceScope'
           nullable: true
@@ -15664,290 +15278,6 @@ components:
         user_id:
           type: string
           description: User ID of the org member to add to this project.
-    GenerateRequest:
-      type: object
-      additionalProperties: true
-      required:
-      - model
-      - messages
-      properties:
-        model:
-          type: string
-          description: Model identifier, for example `claude-sonnet-4-20250514`.
-        provider:
-          type: string
-          enum:
-          - anthropic
-          - openai
-          - google
-          - grok
-          - xai
-          default: anthropic
-          description: Provider used to resolve project integration credentials. Omit for
-            Anthropic. `xai` is accepted as an alias for `grok`.
-        system:
-          oneOf:
-          - type: string
-          - type: array
-            items:
-              $ref: '#/components/schemas/SystemTextBlock'
-          description: System prompt, either a string or Anthropic text blocks.
-        messages:
-          type: array
-          maxItems: 128
-          description: Conversation history in Anthropic Messages format. `content` may be
-            a string or content-block array.
-          items:
-            $ref: '#/components/schemas/GenerateMessage'
-        tools:
-          type: array
-          maxItems: 64
-          description: Anthropic tool definitions.
-          items:
-            $ref: '#/components/schemas/GenerateToolDefinition'
-        tool_choice:
-          $ref: '#/components/schemas/GenerateToolChoice'
-        max_tokens:
-          type: integer
-          minimum: 1
-          default: 4096
-        temperature:
-          type: number
-        stop_sequences:
-          type: array
-          maxItems: 16
-          items:
-            type: string
-        stream:
-          type: boolean
-          default: false
-        metadata:
-          type: object
-          additionalProperties: true
-          description: Optional Anthropic metadata such as `user_id`.
-    SystemTextBlock:
-      type: object
-      additionalProperties: false
-      required:
-      - type
-      - text
-      properties:
-        type:
-          type: string
-          enum:
-          - text
-        text:
-          type: string
-        cache_control:
-          type: object
-          additionalProperties: true
-    GenerateMessage:
-      type: object
-      additionalProperties: false
-      required:
-      - role
-      - content
-      properties:
-        role:
-          type: string
-          enum:
-          - user
-          - assistant
-        content:
-          oneOf:
-          - type: string
-          - type: array
-            items:
-              $ref: '#/components/schemas/ContentBlock'
-    ContentBlock:
-      oneOf:
-      - $ref: '#/components/schemas/TextContentBlock'
-      - $ref: '#/components/schemas/ImageContentBlock'
-      - $ref: '#/components/schemas/ToolUseContentBlock'
-      - $ref: '#/components/schemas/ToolResultContentBlock'
-    TextContentBlock:
-      type: object
-      additionalProperties: false
-      required:
-      - type
-      - text
-      properties:
-        type:
-          type: string
-          enum:
-          - text
-        text:
-          type: string
-        cache_control:
-          type: object
-          additionalProperties: true
-    ImageContentBlock:
-      type: object
-      additionalProperties: false
-      required:
-      - type
-      - source
-      properties:
-        type:
-          type: string
-          enum:
-          - image
-        source:
-          type: object
-          additionalProperties: true
-        cache_control:
-          type: object
-          additionalProperties: true
-    ToolUseContentBlock:
-      type: object
-      additionalProperties: false
-      required:
-      - type
-      - id
-      - name
-      - input
-      properties:
-        type:
-          type: string
-          enum:
-          - tool_use
-        id:
-          type: string
-        name:
-          type: string
-        input:
-          type: object
-          additionalProperties: true
-    ToolResultContentBlock:
-      type: object
-      additionalProperties: false
-      required:
-      - type
-      - tool_use_id
-      - content
-      properties:
-        type:
-          type: string
-          enum:
-          - tool_result
-        tool_use_id:
-          type: string
-        content:
-          oneOf:
-          - type: string
-          - type: array
-            items:
-              $ref: '#/components/schemas/ContentBlock'
-        is_error:
-          type: boolean
-        cache_control:
-          type: object
-          additionalProperties: true
-    GenerateToolDefinition:
-      type: object
-      additionalProperties: true
-      required:
-      - name
-      - input_schema
-      properties:
-        name:
-          type: string
-        description:
-          type: string
-        input_schema:
-          type: object
-          additionalProperties: true
-    GenerateToolChoice:
-      type: object
-      additionalProperties: false
-      required:
-      - type
-      oneOf:
-      - additionalProperties: false
-        required:
-        - type
-        - name
-        properties:
-          type:
-            type: string
-            enum:
-            - tool
-          name:
-            type: string
-      - additionalProperties: false
-        required:
-        - type
-        properties:
-          type:
-            type: string
-            enum:
-            - auto
-            - any
-            - none
-      properties:
-        type:
-          type: string
-          enum:
-          - auto
-          - any
-          - tool
-          - none
-        name:
-          type: string
-    LLMGenerateResponse:
-      type: object
-      additionalProperties: false
-      required:
-      - id
-      - type
-      - role
-      - model
-      - content
-      - stop_reason
-      - usage
-      properties:
-        id:
-          type: string
-        type:
-          type: string
-          enum:
-          - message
-          default: message
-        role:
-          type: string
-          enum:
-          - assistant
-        model:
-          type: string
-        content:
-          type: array
-          items:
-            type: object
-            additionalProperties: true
-        stop_reason:
-          type: string
-          nullable: true
-          description: Why generation stopped.
-        stop_sequence:
-          type: string
-          nullable: true
-        usage:
-          $ref: '#/components/schemas/LLMGenerateUsage'
-    LLMGenerateUsage:
-      type: object
-      additionalProperties: false
-      required:
-      - input_tokens
-      - output_tokens
-      properties:
-        input_tokens:
-          type: integer
-        output_tokens:
-          type: integer
-        cache_creation_input_tokens:
-          type: integer
-        cache_read_input_tokens:
-          type: integer
     WebhookDeliveryStatus:
       type: string
       enum:
@@ -16168,555 +15498,6 @@ components:
         latency_ms:
           type: integer
           description: Round-trip latency in milliseconds.
-    IntegrationStatus:
-      type: string
-      enum:
-      - active
-      - inactive
-      - expired
-      description: '`active` — integration is enabled and usable by workflows. `inactive`
-        — manually disabled; no automatic expiry behavior. `expired` — token/credential has
-        expired (e.g., OAuth token not refreshed).'
-    Integration:
-      type: object
-      additionalProperties: false
-      description: Project-scoped connection to an external provider such as Slack, GitHub,
-        or a model service. Workflows and actions use integrations to find provider configuration
-        without embedding secrets in definitions.
-      required:
-      - id
-      - name
-      - provider
-      - status
-      - created_at
-      - updated_at
-      properties:
-        id:
-          type: string
-          description: Unique identifier for this integration.
-        name:
-          type: string
-          description: Human-readable name, unique per `(project, provider)` tuple.
-        provider:
-          type: string
-          description: Free-form provider identifier (e.g. `openai`, `slack`, `github`). Immutable
-            after creation.
-        config:
-          type: object
-          additionalProperties: true
-          description: Provider-specific credential and configuration blob stored as JSON.
-            The shape is provider-defined.
-        status:
-          $ref: '#/components/schemas/IntegrationStatus'
-          description: 'Current integration state: `connected`, `disconnected`, or `error`.'
-        created_by:
-          type: string
-          description: User ID of the org member who created this integration.
-        tags:
-          $ref: '#/components/schemas/TagMap'
-          description: Resource tags applied to this integration.
-        created_at:
-          type: string
-          format: date-time
-          description: Timestamp when this integration was created.
-        updated_at:
-          type: string
-          format: date-time
-          description: Timestamp when this integration was last updated.
-    ApolloConnectRequest:
-      type: object
-      additionalProperties: false
-      required:
-      - api_key
-      description: Body accepted by `POST /v1/projects/{project}/integrations/apollo/connect`.
-        Apollo authenticates with a paste-an-API-key flow; the key is validated inline against
-        Apollo.io before the integration row is persisted.
-      properties:
-        api_key:
-          type: string
-          description: Apollo.io API key.
-    GoogleSheetsConnectRequest:
-      type: object
-      additionalProperties: false
-      description: Body accepted by `POST /v1/projects/{project}/integrations/google_sheets/connect`.
-        Send an empty body to start the OAuth2 user-grant flow, or provide `service_account_json`
-        to connect with a Google service account key.
-      properties:
-        service_account_json:
-          type: string
-          description: Raw Google service account JSON key used for service-account mode.
-    FirecrawlConnectRequest:
-      type: object
-      additionalProperties: false
-      required:
-      - api_key
-      description: Credential shape used when creating the Firecrawl integration record. The
-        API key is stored under `credentials.api_key` and powers the `firecrawl.*` workflow
-        actions.
-      properties:
-        api_key:
-          type: string
-          description: Firecrawl API key.
-    ScrapeCreatorsConnectRequest:
-      type: object
-      additionalProperties: false
-      required:
-      - api_key
-      description: Credential shape used when creating the ScrapeCreators integration record.
-        The API key is stored under `credentials.api_key` and powers the `scrapecreators.*`
-        workflow actions.
-      properties:
-        api_key:
-          type: string
-          description: ScrapeCreators API key.
-    IntegrationConnectResponse:
-      type: object
-      additionalProperties: false
-      required:
-      - kind
-      description: Unified integration-framework connect response. Redirect-style providers
-        return `kind=redirect` plus `redirect_url`; inline API-key and service-account providers
-        return `kind=complete` plus the persisted integration row.
-      properties:
-        kind:
-          type: string
-          enum:
-          - redirect
-          - complete
-        redirect_url:
-          type: string
-          description: OAuth or install URL to visit when `kind=redirect`.
-        integration:
-          $ref: '#/components/schemas/Integration'
-    IntegrationCategory:
-      type: string
-      description: Stable integration directory grouping.
-      enum:
-      - Code and DevOps
-      - Sales & CRM
-      - Issue Tracking
-      - Productivity
-      - Messaging
-      - Social Media
-      - Email
-      - Actions
-      - Web and Data
-      - Storage
-      - Environments
-    IntegrationProvidersResponse:
-      type: object
-      additionalProperties: false
-      required:
-      - providers
-      description: Integration providers and capabilities available to a project.
-      properties:
-        providers:
-          type: array
-          items:
-            $ref: '#/components/schemas/IntegrationProvider'
-    IntegrationProvider:
-      type: object
-      additionalProperties: false
-      required:
-      - name
-      - display_name
-      - auth_kind
-      - capabilities
-      - connection
-      - events
-      - actions
-      - trigger_patterns
-      properties:
-        name:
-          type: string
-          description: Stable provider identifier (`github`, `slack`, …).
-        display_name:
-          type: string
-        description:
-          type: string
-          description: Human-readable provider summary for directory and detail surfaces.
-        category:
-          allOf:
-          - $ref: '#/components/schemas/IntegrationCategory'
-          description: Human-readable grouping label for directory surfaces.
-        icon:
-          type: string
-          description: Stable icon key that clients may map to their own icon set.
-        auth_kind:
-          type: string
-          description: Authentication mechanism the provider uses (e.g. `github_app_install`,
-            `oauth2`, `api_key`).
-        docs_url:
-          type: string
-          description: Link to upstream provider docs, when known.
-        capabilities:
-          type: object
-          additionalProperties:
-            type: boolean
-          description: Boolean capability flags reflecting which framework interfaces the
-            provider implements (`connect`, `sync`, `live_status`, etc.).
-        connection:
-          $ref: '#/components/schemas/IntegrationProviderConnection'
-        events:
-          type: array
-          items:
-            $ref: '#/components/schemas/IntegrationProviderEventType'
-        webhook_endpoints:
-          type: array
-          description: Provider-owned inbound webhook endpoints and setup status.
-          items:
-            $ref: '#/components/schemas/IntegrationProviderWebhookEndpoint'
-        actions:
-          type: array
-          items:
-            $ref: '#/components/schemas/IntegrationProviderAction'
-        trigger_patterns:
-          type: array
-          description: Provider-owned trigger authoring presets. Empty until trigger patterns
-            are registered for this provider.
-          items:
-            $ref: '#/components/schemas/IntegrationProviderTriggerPattern'
-    IntegrationProviderConnection:
-      type: object
-      additionalProperties: false
-      required:
-      - connected
-      description: Project-local connection summary for a provider.
-      properties:
-        connected:
-          type: boolean
-          description: True when this project has an active integration row for the provider.
-        integration_id:
-          type: string
-          description: Most relevant integration ID for this provider in the project, when
-            one exists.
-        integration_name:
-          type: string
-          description: Most relevant integration name for this provider in the project, when
-            one exists.
-        status:
-          $ref: '#/components/schemas/IntegrationStatus'
-        updated_at:
-          type: string
-          format: date-time
-          description: Timestamp when the most relevant integration row was last updated.
-    IntegrationProviderTriggerPattern:
-      type: object
-      additionalProperties: false
-      required:
-      - id
-      - label
-      description: Catalog descriptor for creating a trigger from a provider-owned event pattern.
-        The array is currently empty for all providers; this schema reserves the response
-        shape for the trigger-pattern rollout.
-      properties:
-        id:
-          type: string
-        label:
-          type: string
-        description:
-          type: string
-        event_type:
-          type: string
-        category:
-          type: string
-    IntegrationProviderEventType:
-      type: object
-      additionalProperties: false
-      required:
-      - name
-      - schema_version
-      - runtime_state
-      properties:
-        name:
-          type: string
-          description: Dotted event-type identifier (`github.pull_request.opened`).
-        schema_version:
-          type: integer
-          description: Integer schema version. Bumps are additive-only by convention.
-        runtime_state:
-          type: string
-          enum:
-          - active
-          - planned
-          - deprecated
-          description: Whether the event type is backed by current ingest. Planned events
-            are catalog/documentation-only and should not be offered for new triggers or wait_event
-            steps.
-        description:
-          type: string
-        payload_schema:
-          type: object
-          additionalProperties: true
-          description: JSON Schema for the event payload. Absent when the registered Go type
-            cannot be reflected meaningfully (for example, `map[string]any` aliases of raw
-            upstream payloads).
-    IntegrationProviderWebhookEndpoint:
-      type: object
-      additionalProperties: false
-      required:
-      - path_suffix
-      - url
-      - delivery
-      - status
-      properties:
-        path_suffix:
-          type: string
-          description: Provider webhook path suffix under `/v1/provider/{provider}/webhook`.
-        url:
-          type: string
-          format: uri
-          description: Fully-qualified endpoint URL for upstream provider setup.
-        delivery:
-          type: string
-          enum:
-          - webhook
-        signature_mode:
-          type: string
-          description: Framework signature verification mode.
-        status:
-          type: string
-          enum:
-          - configured
-          - missing_secret
-          - legacy_route
-          - unavailable
-        notes:
-          type: string
-    IntegrationProviderAction:
-      type: object
-      additionalProperties: false
-      required:
-      - name
-      properties:
-        name:
-          type: string
-          description: Workflow-callable action name (`github.issue.create_comment`).
-        title:
-          type: string
-        description:
-          type: string
-        input_schema:
-          type: object
-          additionalProperties: true
-          description: JSON Schema for the action's parameters object.
-        output_schema:
-          type: object
-          additionalProperties: true
-          description: JSON Schema for the action's result object.
-    RunMetrics:
-      type: object
-      additionalProperties: false
-      description: Workflow run statistics for the rolling window.
-      required:
-      - per_minute
-      - total_window
-      - failure_rate
-      - avg_seconds
-      - p95_step_seconds
-      - queue_depth
-      - running_count
-      - status_breakdown
-      properties:
-        per_minute:
-          type: number
-          format: double
-          description: Average number of new runs started per minute within the window.
-        total_window:
-          type: integer
-          description: Total runs started within the window.
-        failure_rate:
-          type: number
-          format: double
-          description: Fraction of completed runs that ended in `failed` status. Range 0.0–1.0.
-        avg_seconds:
-          type: number
-          format: double
-          description: Mean wall-clock duration of completed runs within the window, in seconds.
-        p95_step_seconds:
-          type: number
-          format: double
-          description: 95th-percentile job duration (claim→terminal) from the 40 most recent
-            completed jobs, in seconds.
-        queue_depth:
-          type: integer
-          description: Number of jobs currently in `pending` state.
-        running_count:
-          type: integer
-          description: Number of runs currently in the `active` lifecycle.
-        status_breakdown:
-          type: object
-          additionalProperties:
-            type: integer
-          description: Map of run status → count across all runs in the project (not windowed).
-    JobMetrics:
-      type: object
-      additionalProperties: false
-      description: Job queue statistics.
-      required:
-      - pending
-      - claimed
-      - failed_window
-      - retry_rate
-      properties:
-        pending:
-          type: integer
-          description: Jobs currently in `pending` state.
-        claimed:
-          type: integer
-          description: Jobs currently in `claimed` state.
-        failed_window:
-          type: integer
-          description: Jobs that reached a terminal failed state within the window.
-        retry_rate:
-          type: number
-          format: double
-          description: Fraction of terminal jobs that required at least one retry within the
-            window.
-    WorkerMetrics:
-      type: object
-      additionalProperties: false
-      description: Worker session health.
-      required:
-      - active
-      - stale
-      properties:
-        active:
-          type: integer
-          description: Workers whose `last_seen_at` is within the staleness threshold.
-        stale:
-          type: integer
-          description: Workers whose `last_seen_at` has exceeded the staleness threshold.
-    InteractionMetrics:
-      type: object
-      additionalProperties: false
-      description: Interaction queue statistics.
-      required:
-      - open_count
-      - claimed_count
-      - p95_response_seconds
-      - status_breakdown
-      properties:
-        open_count:
-          type: integer
-          description: Interactions in `pending` or `claimed` state awaiting response.
-        claimed_count:
-          type: integer
-          description: Interactions currently claimed by a responder.
-        p95_response_seconds:
-          type: number
-          format: double
-          description: 95th-percentile time from creation to resolution for completed interactions
-            within the window.
-        status_breakdown:
-          type: object
-          additionalProperties:
-            type: integer
-          description: Map of interaction status → count across all interactions in the project.
-    ChannelMetrics:
-      type: object
-      additionalProperties: false
-      description: Channel activity statistics.
-      required:
-      - active_count
-      - message_rate
-      properties:
-        active_count:
-          type: integer
-          description: Non-archived channels in the project.
-        message_rate:
-          type: number
-          format: double
-          description: Average messages posted per minute within the window.
-    ProjectMetrics:
-      type: object
-      additionalProperties: false
-      description: Operational health snapshot for a project. Use it to power dashboards,
-        detect stuck queues or stale workers, and summarize run throughput and failure rates
-        over a recent window.
-      required:
-      - generated_at
-      - window_minutes
-      - runs
-      - jobs
-      - workers
-      - interactions
-      - channels
-      - runs_per_minute
-      - total_runs_window
-      - failure_rate
-      - avg_run_seconds
-      - p95_step_seconds
-      - queue_depth
-      - running_count
-      - active_workers
-      - stale_workers
-      - status_breakdown
-      properties:
-        generated_at:
-          type: string
-          format: date-time
-          description: Timestamp when this metrics snapshot was computed.
-        window_minutes:
-          type: integer
-          description: Rolling window width used for rate and failure metrics. Default is
-            60 minutes.
-        runs:
-          $ref: '#/components/schemas/RunMetrics'
-        jobs:
-          $ref: '#/components/schemas/JobMetrics'
-        workers:
-          $ref: '#/components/schemas/WorkerMetrics'
-        interactions:
-          $ref: '#/components/schemas/InteractionMetrics'
-        channels:
-          $ref: '#/components/schemas/ChannelMetrics'
-        runs_per_minute:
-          type: number
-          format: double
-          description: 'Deprecated: use runs.per_minute.'
-          x-deprecated: true
-        total_runs_window:
-          type: integer
-          description: 'Deprecated: use runs.total_window.'
-          x-deprecated: true
-        failure_rate:
-          type: number
-          format: double
-          description: 'Deprecated: use runs.failure_rate.'
-          x-deprecated: true
-        avg_run_seconds:
-          type: number
-          format: double
-          description: 'Deprecated: use runs.avg_seconds.'
-          x-deprecated: true
-        p95_step_seconds:
-          type: number
-          format: double
-          description: 'Deprecated: use runs.p95_step_seconds.'
-          x-deprecated: true
-        queue_depth:
-          type: integer
-          description: 'Deprecated: use runs.queue_depth.'
-          x-deprecated: true
-        running_count:
-          type: integer
-          description: 'Deprecated: use runs.running_count.'
-          x-deprecated: true
-        active_workers:
-          type: integer
-          description: 'Deprecated: use workers.active.'
-          x-deprecated: true
-        stale_workers:
-          type: integer
-          description: 'Deprecated: use workers.stale.'
-          x-deprecated: true
-        status_breakdown:
-          type: object
-          additionalProperties:
-            type: integer
-          description: 'Deprecated: use runs.status_breakdown.'
-          x-deprecated: true
     InteractionListResponse:
       type: object
       additionalProperties: false
@@ -17267,7 +16048,7 @@ components:
         user_id:
           type: string
           description: Canonical user (users.id) backing this agent. Used as the `owned_by`
-            value when filtering or claiming resources owned by this agent.
+            value when filtering or claiming resources owned by this agent's backing user.
         name:
           type: string
           description: Mutable unique name within the project. Free-form human-readable label;
@@ -18195,12 +16976,6 @@ components:
       - agent
       - service_account
       - system
-    UserStateVisibility:
-      type: string
-      enum:
-      - org
-      - project
-      - self
     UserAssignmentStatus:
       type: string
       enum:
@@ -18208,29 +16983,6 @@ components:
       - in_progress
       - blocked
       - done
-    UserAssignmentInput:
-      type: object
-      additionalProperties: false
-      required:
-      - status
-      - headline
-      properties:
-        status:
-          $ref: '#/components/schemas/UserAssignmentStatus'
-        headline:
-          type: string
-          maxLength: 120
-        description:
-          type: string
-          maxLength: 4000
-        started_at:
-          type: string
-          format: date-time
-          description: When the user actually began working on this assignment.
-        due_by:
-          type: string
-          format: date-time
-          description: When the assignment is expected to be completed.
     UserAssignment:
       type: object
       additionalProperties: false
@@ -18264,90 +17016,6 @@ components:
         updated_at:
           type: string
           format: date-time
-    UserState:
-      type: object
-      additionalProperties: false
-      required:
-      - id
-      - user_id
-      - user_kind
-      - availability
-      - visibility
-      - stale
-      - assignments
-      - created_at
-      - updated_at
-      properties:
-        id:
-          type: string
-        user_id:
-          type: string
-        user_kind:
-          $ref: '#/components/schemas/UserKind'
-        availability:
-          $ref: '#/components/schemas/UserAvailability'
-        description:
-          type: string
-        last_seen_at:
-          type: string
-          format: date-time
-        expires_at:
-          type: string
-          format: date-time
-        visibility:
-          $ref: '#/components/schemas/UserStateVisibility'
-        stale:
-          type: boolean
-        assignments:
-          type: array
-          items:
-            $ref: '#/components/schemas/UserAssignment'
-        created_at:
-          type: string
-          format: date-time
-        updated_at:
-          type: string
-          format: date-time
-    UpsertUserStateRequest:
-      type: object
-      additionalProperties: false
-      required:
-      - availability
-      properties:
-        availability:
-          $ref: '#/components/schemas/UserAvailability'
-        description:
-          type: string
-          maxLength: 4000
-        expires_at:
-          type: string
-          format: date-time
-        visibility:
-          $ref: '#/components/schemas/UserStateVisibility'
-        assignments:
-          type: array
-          items:
-            $ref: '#/components/schemas/UserAssignmentInput'
-    UserStateListResponse:
-      type: object
-      additionalProperties: false
-      required:
-      - items
-      properties:
-        items:
-          type: array
-          items:
-            $ref: '#/components/schemas/UserState'
-    UserAssignmentListResponse:
-      type: object
-      additionalProperties: false
-      required:
-      - items
-      properties:
-        items:
-          type: array
-          items:
-            $ref: '#/components/schemas/UserAssignment'
     ProjectTeamMemberLinks:
       type: object
       additionalProperties: false
@@ -18713,6 +17381,7 @@ components:
             $ref: '#/components/schemas/Span'
     LogRecordInput:
       type: object
+      additionalProperties: false
       required:
       - message
       properties:
@@ -18734,6 +17403,7 @@ components:
           additionalProperties: true
     LogIngestResponse:
       type: object
+      additionalProperties: false
       required:
       - accepted
       - rejected
@@ -18744,6 +17414,7 @@ components:
           type: integer
     LogRecord:
       type: object
+      additionalProperties: false
       required:
       - id
       - org_id
@@ -18792,6 +17463,7 @@ components:
           format: date-time
     LogRecordListResponse:
       type: object
+      additionalProperties: false
       required:
       - items
       properties:
@@ -18813,6 +17485,7 @@ components:
       - any
     ColumnDef:
       type: object
+      additionalProperties: false
       required:
       - name
       - type
@@ -18841,6 +17514,7 @@ components:
           default: false
     IndexDef:
       type: object
+      additionalProperties: false
       required:
       - name
       - columns
@@ -18881,6 +17555,7 @@ components:
         owner only (default when an owner is set).
     Table:
       type: object
+      additionalProperties: false
       required:
       - id
       - org_id
@@ -18911,8 +17586,7 @@ components:
             type: string
         owned_by:
           type: string
-          description: Canonical user owner ID. For agent-owned tables, this is the agent's
-            backing user ID.
+          description: Canonical user owner ID. AI-agent owners use their backing user ID.
         access_mode:
           allOf:
           - $ref: '#/components/schemas/TableAccessMode'
@@ -18928,6 +17602,7 @@ components:
           format: date-time
     TableListResponse:
       type: object
+      additionalProperties: false
       required:
       - items
       - has_more
@@ -19013,6 +17688,7 @@ components:
         schema:
           $ref: '#/components/schemas/TableSchema'
         scope:
+          type: string
           allOf:
           - $ref: '#/components/schemas/ResourceScope'
           nullable: true
@@ -19026,6 +17702,7 @@ components:
           $ref: '#/components/schemas/TableAccessMode'
     TableRow:
       type: object
+      additionalProperties: false
       required:
       - id
       - table_id
@@ -19106,6 +17783,7 @@ components:
           description: Opaque cursor from a prior response.
     QueryRowsResponse:
       type: object
+      additionalProperties: false
       required:
       - rows
       - has_more
@@ -19144,6 +17822,7 @@ components:
           description: Opaque cursor from a prior search response.
     SearchRowsResponse:
       type: object
+      additionalProperties: false
       required:
       - rows
       - has_more
@@ -19173,6 +17852,7 @@ components:
             additionalProperties: true
     BulkInsertRowsResponse:
       type: object
+      additionalProperties: false
       required:
       - inserted
       - rows
@@ -19203,6 +17883,7 @@ components:
           description: Full row data. Must include values for all key_columns.
     UpsertRowResponse:
       type: object
+      additionalProperties: false
       required:
       - row
       - created
@@ -19212,690 +17893,6 @@ components:
         created:
           type: boolean
           description: True when a new row was inserted; false when an existing row was updated.
-    ArtifactState:
-      type: string
-      enum:
-      - pending_upload
-      - available
-      - expired
-      - deleted
-      - failed
-    ArtifactStorageBackend:
-      type: string
-      enum:
-      - mobius
-      - s3
-    Artifact:
-      type: object
-      required:
-      - id
-      - org_id
-      - project_id
-      - owner_user_id
-      - name
-      - mime_type
-      - size_bytes
-      - storage
-      - state
-      - created_at
-      additionalProperties: false
-      properties:
-        id:
-          type: string
-        org_id:
-          type: string
-        project_id:
-          type: string
-        owner_user_id:
-          type: string
-          description: User-keyed private artifact-space owner. Humans, agents, service accounts,
-            and system principals all use users.id.
-        run_id:
-          type: string
-        step_id:
-          type: string
-        job_id:
-          type: string
-        attempt:
-          type: integer
-        name:
-          type: string
-        mime_type:
-          type: string
-        size_bytes:
-          type: integer
-          format: int64
-        sha256:
-          type: string
-        storage:
-          $ref: '#/components/schemas/ArtifactStorageBackend'
-        storage_uri:
-          type: string
-        integration_id:
-          type: string
-        metadata:
-          type: object
-          additionalProperties: true
-        tags:
-          type: object
-          additionalProperties:
-            type: string
-        state:
-          $ref: '#/components/schemas/ArtifactState'
-        created_by_credential_kind:
-          type: string
-        created_by_user_id:
-          type: string
-        created_by_name:
-          type: string
-        created_at:
-          type: string
-          format: date-time
-        committed_at:
-          type: string
-          format: date-time
-        expires_at:
-          type: string
-          format: date-time
-        pinned:
-          type: boolean
-        deleted_at:
-          type: string
-          format: date-time
-    ArtifactListResponse:
-      type: object
-      required:
-      - items
-      - has_more
-      additionalProperties: false
-      properties:
-        items:
-          type: array
-          items:
-            $ref: '#/components/schemas/Artifact'
-        has_more:
-          type: boolean
-        next_cursor:
-          type: string
-    CreateArtifactSlotRequest:
-      type: object
-      required:
-      - name
-      - mime
-      - size_bytes
-      additionalProperties: false
-      properties:
-        name:
-          type: string
-          maxLength: 256
-        mime:
-          type: string
-        size_bytes:
-          type: integer
-          format: int64
-          minimum: 1
-        run_id:
-          type: string
-        step_id:
-          type: string
-        job_id:
-          type: string
-        worker_session_token:
-          type: string
-        attempt:
-          type: integer
-          minimum: 0
-        tags:
-          type: object
-          additionalProperties:
-            type: string
-        retain_for_seconds:
-          type: integer
-          format: int64
-          minimum: 0
-          description: Override the project default TTL for this artifact only.
-        retain_until:
-          type: string
-          format: date-time
-        pinned:
-          type: boolean
-          default: false
-        storage_override:
-          $ref: '#/components/schemas/ArtifactStorageBackend'
-    ArtifactSlot:
-      type: object
-      required:
-      - artifact
-      - upload
-      additionalProperties: false
-      properties:
-        artifact:
-          $ref: '#/components/schemas/Artifact'
-        upload:
-          type: object
-          required:
-          - url
-          - method
-          additionalProperties: false
-          properties:
-            url:
-              type: string
-            method:
-              type: string
-            headers:
-              type: object
-              additionalProperties:
-                type: string
-            max_size_bytes:
-              type: integer
-              format: int64
-    ArtifactSignedUrl:
-      type: object
-      required:
-      - url
-      - method
-      - expires_at
-      additionalProperties: false
-      properties:
-        url:
-          type: string
-        method:
-          type: string
-          enum:
-          - GET
-        expires_at:
-          type: string
-          format: date-time
-    CommitArtifactRequest:
-      type: object
-      required:
-      - sha256
-      - size_bytes
-      additionalProperties: false
-      properties:
-        sha256:
-          type: string
-          minLength: 64
-          maxLength: 64
-        size_bytes:
-          type: integer
-          format: int64
-          minimum: 1
-    ArtifactStorageSettings:
-      type: object
-      additionalProperties: false
-      properties:
-        backend:
-          $ref: '#/components/schemas/ArtifactStorageBackend'
-        integration_id:
-          type: string
-        default_ttl_seconds:
-          type: integer
-          format: int64
-          minimum: 0
-        max_artifact_size:
-          type: integer
-          format: int64
-          minimum: 0
-        inline_threshold:
-          type: integer
-          format: int64
-          minimum: 0
-        pending_upload_cap:
-          type: integer
-          minimum: 0
-    ArtifactStorageSettingsUpdate:
-      $ref: '#/components/schemas/ArtifactStorageSettings'
-    ArtifactQuotaUsage:
-      type: object
-      required:
-      - org_id
-      - used_bytes
-      - limit_bytes
-      - artifact_count
-      - pending_count
-      - generated_at
-      additionalProperties: false
-      properties:
-        org_id:
-          type: string
-        used_bytes:
-          type: integer
-          format: int64
-        limit_bytes:
-          type: integer
-          format: int64
-        artifact_count:
-          type: integer
-          format: int64
-        pending_count:
-          type: integer
-          format: int64
-        generated_at:
-          type: string
-          format: date-time
-    JSONDocument:
-      type: object
-      additionalProperties: true
-    ObservableFreshnessStatus:
-      type: string
-      enum:
-      - unknown
-      - fresh
-      - stale
-      - error
-    ObservableReducerKind:
-      type: string
-      enum:
-      - replace
-    ObservableObserverKind:
-      type: string
-      enum:
-      - mobius
-      - worker
-      - cli
-      - integration
-      - internal
-    ObservableObservationStatus:
-      type: string
-      enum:
-      - accepted
-      - rejected
-    ObservableEventType:
-      type: string
-      enum:
-      - observable.changed
-      - observable.freshness_changed
-    ObservableReducerConfig:
-      type: object
-      additionalProperties: false
-      required:
-      - kind
-      properties:
-        kind:
-          $ref: '#/components/schemas/ObservableReducerKind'
-    ObservableFreshnessConfig:
-      type: object
-      additionalProperties: false
-      properties:
-        stale_after_seconds:
-          type: integer
-          format: int64
-          minimum: 0
-    CreateObservableRequest:
-      type: object
-      additionalProperties: false
-      required:
-      - name
-      - state_schema
-      properties:
-        name:
-          type: string
-        subject_kind:
-          type: string
-        subject:
-          $ref: '#/components/schemas/JSONDocument'
-        state_schema:
-          $ref: '#/components/schemas/JSONDocument'
-        update_config:
-          $ref: '#/components/schemas/JSONDocument'
-        reducer_config:
-          $ref: '#/components/schemas/ObservableReducerConfig'
-        freshness_config:
-          $ref: '#/components/schemas/ObservableFreshnessConfig'
-        tags:
-          type: object
-          additionalProperties:
-            type: string
-    UpdateObservableRequest:
-      type: object
-      additionalProperties: false
-      minProperties: 1
-      properties:
-        name:
-          type: string
-        subject_kind:
-          type: string
-        subject:
-          $ref: '#/components/schemas/JSONDocument'
-        state_schema:
-          $ref: '#/components/schemas/JSONDocument'
-        update_config:
-          $ref: '#/components/schemas/JSONDocument'
-        reducer_config:
-          $ref: '#/components/schemas/ObservableReducerConfig'
-        freshness_config:
-          $ref: '#/components/schemas/ObservableFreshnessConfig'
-        tags:
-          type: object
-          additionalProperties:
-            type: string
-    Observable:
-      type: object
-      additionalProperties: false
-      required:
-      - id
-      - org_id
-      - project_id
-      - name
-      - subject_kind
-      - subject
-      - state_schema
-      - update_config
-      - reducer_config
-      - freshness_config
-      - current_version
-      - current_state
-      - current_state_hash
-      - freshness_status
-      - created_at
-      - updated_at
-      properties:
-        id:
-          type: string
-        org_id:
-          type: string
-        project_id:
-          type: string
-        name:
-          type: string
-        subject_kind:
-          type: string
-        subject:
-          $ref: '#/components/schemas/JSONDocument'
-        state_schema:
-          $ref: '#/components/schemas/JSONDocument'
-        update_config:
-          $ref: '#/components/schemas/JSONDocument'
-        reducer_config:
-          $ref: '#/components/schemas/ObservableReducerConfig'
-        freshness_config:
-          $ref: '#/components/schemas/ObservableFreshnessConfig'
-        current_version:
-          type: integer
-          format: int64
-        current_state:
-          $ref: '#/components/schemas/JSONDocument'
-        current_state_hash:
-          type: string
-        freshness_status:
-          $ref: '#/components/schemas/ObservableFreshnessStatus'
-        last_observed_at:
-          type: string
-          format: date-time
-          nullable: true
-        last_changed_at:
-          type: string
-          format: date-time
-          nullable: true
-        last_error_type:
-          type: string
-        last_error_message:
-          type: string
-        tags:
-          type: object
-          additionalProperties:
-            type: string
-        created_by:
-          type: string
-        created_at:
-          type: string
-          format: date-time
-        updated_at:
-          type: string
-          format: date-time
-    ObservableObservation:
-      type: object
-      additionalProperties: false
-      required:
-      - id
-      - observable_id
-      - invocation_id
-      - observer_kind
-      - payload
-      - payload_hash
-      - observed_at
-      - received_at
-      - status
-      properties:
-        id:
-          type: string
-        observable_id:
-          type: string
-        invocation_id:
-          type: string
-        observer_kind:
-          $ref: '#/components/schemas/ObservableObserverKind'
-        observer_id:
-          type: string
-        payload:
-          $ref: '#/components/schemas/JSONDocument'
-        payload_hash:
-          type: string
-        observed_at:
-          type: string
-          format: date-time
-        received_at:
-          type: string
-          format: date-time
-        status:
-          $ref: '#/components/schemas/ObservableObservationStatus'
-        error_type:
-          type: string
-        error_message:
-          type: string
-    ObservableStateVersion:
-      type: object
-      additionalProperties: false
-      required:
-      - id
-      - observable_id
-      - version
-      - state
-      - state_hash
-      - observation_id
-      - observer_kind
-      - observed_at
-      - created_at
-      properties:
-        id:
-          type: string
-        observable_id:
-          type: string
-        version:
-          type: integer
-          format: int64
-        state:
-          $ref: '#/components/schemas/JSONDocument'
-        state_hash:
-          type: string
-        observation_id:
-          type: string
-        observer_kind:
-          $ref: '#/components/schemas/ObservableObserverKind'
-        observer_id:
-          type: string
-        observed_at:
-          type: string
-          format: date-time
-        created_at:
-          type: string
-          format: date-time
-    ObservableEvent:
-      type: object
-      additionalProperties: false
-      required:
-      - id
-      - observable_id
-      - event_type
-      - previous_version
-      - new_version
-      - summary
-      - dispatch_status
-      - created_at
-      properties:
-        id:
-          type: string
-        observable_id:
-          type: string
-        event_type:
-          $ref: '#/components/schemas/ObservableEventType'
-        previous_version:
-          type: integer
-          format: int64
-        new_version:
-          type: integer
-          format: int64
-        summary:
-          $ref: '#/components/schemas/JSONDocument'
-        dispatch_status:
-          type: string
-        created_at:
-          type: string
-          format: date-time
-    ObservableWaiter:
-      type: object
-      additionalProperties: false
-      required:
-      - run_id
-      - workflow_name
-      - run_status
-      - path_id
-      - step_name
-      - observed_version
-      - run_created_at
-      - run_updated_at
-      properties:
-        run_id:
-          type: string
-        workflow_name:
-          type: string
-        run_status:
-          type: string
-          enum:
-          - active
-          - completed
-          - failed
-        path_id:
-          type: string
-        step_name:
-          type: string
-        condition:
-          type: string
-          description: Bare `expr` condition the Observable state must satisfy.
-        observed_version:
-          type: integer
-          format: int64
-          description: Observable version observed when this path suspended.
-        deadline_at:
-          type: string
-          format: date-time
-          nullable: true
-          description: Fixed timeout deadline for the wait, when configured.
-        run_created_at:
-          type: string
-          format: date-time
-        run_updated_at:
-          type: string
-          format: date-time
-    SubmitObservableObservationRequest:
-      type: object
-      additionalProperties: false
-      required:
-      - invocation_id
-      - observer_kind
-      - payload
-      properties:
-        invocation_id:
-          type: string
-        observer_kind:
-          $ref: '#/components/schemas/ObservableObserverKind'
-        observer_id:
-          type: string
-        observed_at:
-          type: string
-          format: date-time
-        payload:
-          $ref: '#/components/schemas/JSONDocument'
-    SubmitObservableObservationResult:
-      type: object
-      additionalProperties: false
-      required:
-      - observable
-      - observation
-      - duplicate
-      - state_changed
-      properties:
-        observable:
-          $ref: '#/components/schemas/Observable'
-        observation:
-          $ref: '#/components/schemas/ObservableObservation'
-        state_version:
-          $ref: '#/components/schemas/ObservableStateVersion'
-        event:
-          $ref: '#/components/schemas/ObservableEvent'
-        duplicate:
-          type: boolean
-        state_changed:
-          type: boolean
-    ObservableListResponse:
-      type: object
-      additionalProperties: false
-      required:
-      - items
-      properties:
-        items:
-          type: array
-          items:
-            $ref: '#/components/schemas/Observable'
-        next_cursor:
-          type: string
-    ObservableObservationListResponse:
-      type: object
-      additionalProperties: false
-      required:
-      - items
-      properties:
-        items:
-          type: array
-          items:
-            $ref: '#/components/schemas/ObservableObservation'
-        next_cursor:
-          type: string
-    ObservableStateVersionListResponse:
-      type: object
-      additionalProperties: false
-      required:
-      - items
-      properties:
-        items:
-          type: array
-          items:
-            $ref: '#/components/schemas/ObservableStateVersion'
-        next_cursor:
-          type: string
-    ObservableEventListResponse:
-      type: object
-      additionalProperties: false
-      required:
-      - items
-      properties:
-        items:
-          type: array
-          items:
-            $ref: '#/components/schemas/ObservableEvent'
-        next_cursor:
-          type: string
-    ObservableWaiterListResponse:
-      type: object
-      additionalProperties: false
-      required:
-      - items
-      properties:
-        items:
-          type: array
-          items:
-            $ref: '#/components/schemas/ObservableWaiter'
 x-tagGroups:
 - name: Channels
   tags:
@@ -19914,12 +17911,12 @@ x-tagGroups:
 - name: Actions
   tags:
   - actions
+- name: Environments
+  tags:
+  - environments
 - name: Secrets
   tags:
   - secrets
-- name: Reference lookup
-  tags:
-  - references
 - name: Jobs (Worker Protocol)
   tags:
   - jobs
@@ -19932,18 +17929,9 @@ x-tagGroups:
 - name: Projects
   tags:
   - projects
-- name: LLM Generation
-  tags:
-  - generate
 - name: Webhooks
   tags:
   - webhooks
-- name: Integrations
-  tags:
-  - integration-providers
-- name: Metrics
-  tags:
-  - metrics
 - name: Interactions
   tags:
   - interactions
@@ -19955,9 +17943,12 @@ x-tagGroups:
   - agents
   - agent-tools
   - agent-capabilities
-- name: User State
+- name: Toolkits
   tags:
-  - user-state
+  - toolkits
+- name: Skills
+  tags:
+  - skills
 - name: Project Team
   tags:
   - team
@@ -19970,9 +17961,3 @@ x-tagGroups:
 - name: Tables
   tags:
   - tables
-- name: Artifacts
-  tags:
-  - artifacts
-- name: Observables
-  tags:
-  - observables

@@ -114,25 +114,6 @@ func registerActionsCommands(app *cli.App) {
 			return printResponse(ctx, "deleteAction", resp.StatusCode(), resp.Body)
 		})
 
-	actionsGrp.Command("get").
-		Description("Get an action by name").
-		Args("action-name").
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			resp, err := client.GetActionWithResponse(ctx.Context(), p0, p1)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "getAction", resp.StatusCode(), resp.Body)
-		})
-
 	actionsGrp.Command("get-catalog").
 		Description("Get one catalog action by name").
 		Args("action-name").
@@ -194,36 +175,6 @@ func registerActionsCommands(app *cli.App) {
 				return err
 			}
 			return printResponse(ctx, "invokeAction", resp.StatusCode(), resp.Body)
-		})
-
-	actionsGrp.Command("list").
-		Description("List actions").
-		Flags(
-			cli.String("cursor", "").Help("cursor"),
-			cli.Int("limit", "").Help("limit"),
-		).
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			params := &api.ListActionsParams{}
-			if ctx.IsSet("cursor") {
-				v := api.CursorParam(ctx.String("cursor"))
-				params.Cursor = &v
-			}
-			if ctx.IsSet("limit") {
-				v := api.LimitParam(ctx.Int("limit"))
-				params.Limit = &v
-			}
-			resp, err := client.ListActionsWithResponse(ctx.Context(), p0, params)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "listActions", resp.StatusCode(), resp.Body)
 		})
 
 	actionsGrp.Command("list-catalog").
@@ -316,7 +267,7 @@ func registerActionsCommands(app *cli.App) {
 		Description("Update an action").
 		Args("action-name").
 		Flags(
-			cli.String("annotations", "").Help("Request hints that describe the safe-use properties of the action. Used by the engine and tooling t… Accepts JSON, @file, or @-."),
+			cli.String("annotations", "").Help("Pass null to clear all annotation flags. Accepts JSON, @file, or @-."),
 			cli.String("description", "").Help("Replacement Markdown description."),
 			cli.String("endpoint-url", "").Help("Replacement endpoint URL."),
 			cli.String("input-schema", "").Help("Replacement JSON Schema for inputs. Replaces the existing schema. Accepts JSON, @file, or @-."),

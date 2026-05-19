@@ -158,14 +158,15 @@ class ChannelCompletionBehavior(StrEnum):
 
 class ChannelMessageSenderType(StrEnum):
     """
-    Authenticated principal that posted the message, derived from the
+    Authenticated user kind that posted the message, derived from the
     credential at send time and never overrideable in the request body
-    (PRD 048 §5). Values align with `users.kind`:
+    (PRD 048 §5). `sender_id` is always `users.id`; values align with
+    `users.kind`:
     - `human` — a human org member's user credential.
     - `agent` — an API key whose service account backs an agent (1:1
-    invariant from PRD 048 §1). `sender_id` is the agent's ID.
+    invariant from PRD 048 §1).
     - `service_account` — an API key whose service account backs no
-    agent. `sender_id` is the service account's ID.
+    agent.
     """
 
     human = 'human'
@@ -458,7 +459,7 @@ class CreateChannelRequest(BaseModel):
     private: bool = Field(False, description='When true, the channel is invite-only.')
     member_ids: list[str] | None = Field(
         None,
-        description='Optional list of user or agent IDs to add as members at creation time. All receive the `member` role; the creator is added as `admin` separately.',
+        description='Optional list of user IDs to add as members at creation time. Agent members use their backing user IDs. All receive the `member` role; the creator is added as `admin` separately.',
     )
     purpose: Purpose1 = Field(
         'general', description='Optional purpose for the channel.'
@@ -520,7 +521,8 @@ class AddChannelMemberRequest(BaseModel):
         extra='forbid',
     )
     participant_id: str = Field(
-        ..., description='User or agent ID to add to the channel.'
+        ...,
+        description='User ID to add to the channel. Agent members use their backing user ID.',
     )
     role: Role1 = Field(
         'member',
@@ -619,7 +621,8 @@ class OpenDirectMessageRequest(BaseModel):
         extra='forbid',
     )
     participant_id: str = Field(
-        ..., description='User or agent ID of the other DM participant.'
+        ...,
+        description='User ID of the other DM participant. Agent participants use their backing user ID.',
     )
     display_name: str | None = Field(
         None,
@@ -717,7 +720,7 @@ class Type(StrEnum):
 
 class InteractionSource(BaseModel):
     """
-    Server-derived actor or system context that requested the interaction. Public create requests do not supply this field.
+    Server-derived user or system context that requested the interaction. For type `user` or `agent`, `id` is always the canonical users.id; `agent` is the backing user for an AI-agent principal. Public create requests do not supply this field.
     """
 
     model_config = ConfigDict(
@@ -991,7 +994,7 @@ class Kind4(StrEnum):
 
 class Consumer(BaseModel):
     """
-    Polymorphic identifier of what is waiting on this interaction's resolution (PRD 077 §3.7). Replaces the previously special-cased `run_id` + `signal_name` pair. When `kind=run`, the legacy fields are also populated for compatibility. `http_subscriber` enqueues a durable callback dispatch to `callback_url` when the interaction resolves; when `secret_ref` is set, the canonical string `{interaction_id}.{unix_timestamp}.{raw_body}` is signed with HMAC-SHA256 against the resolved project secret and the signed dispatch carries `X-Mobius-Signature`, `X-Mobius-Secret-Ref`, `X-Mobius-Secret-Version`, and `X-Mobius-Timestamp`. Signed dispatches also carry `X-Mobius-Signature-Version: v2`. Verifiers should recompute the signature over the exact raw body, reject stale timestamps (for example, older than five minutes), and check all five headers.
+    Polymorphic identifier of what is waiting on this interaction's resolution (PRD 077 §3.7). Replaces the previously special-cased `run_id` + `signal_name` pair. When `kind=run`, the legacy fields are also populated for compatibility. `http_subscriber` enqueues a durable callback dispatch to `callback_url` when the interaction resolves; when `secret_ref` is set, the canonical string `{interaction_id}.{unix_timestamp}.{raw_body}` is signed with HMAC-SHA256 against the resolved project secret and the signed dispatch carries `X-Mobius-Signature`, `X-Mobius-Secret-Ref`, `X-Mobius-Secret-Version`, and `X-Mobius-Timestamp`. Signed dispatches also carry `X-Mobius-Signature-Version: v2`. Every durable dispatch also carries the stable outbox row id in `X-Mobius-Delivery-ID` and `Idempotency-Key`; retries reuse the same value. Verifiers should recompute the signature over the exact raw body, reject stale timestamps (for example, older than five minutes), deduplicate by delivery id, and check all five signing headers.
     """
 
     model_config = ConfigDict(
@@ -1071,17 +1074,6 @@ class Status1(StrEnum):
     completed = 'completed'
     expired = 'expired'
     cancelled = 'cancelled'
-
-
-class Responder(BaseModel):
-    """
-    User or agent that completed the interaction; null until completion.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    user_id: str = Field(..., description='Responder user ID.')
 
 
 class RoutingPolicySnapshot(StrEnum):
@@ -1492,7 +1484,7 @@ class WorkflowAgentInvokeConfig(BaseModel):
     )
     agent_id: str | None = Field(
         None,
-        description='Agent ID or expression to invoke. Defaults to the workflow owner agent when omitted.',
+        description="Agent ID or expression to invoke. Defaults to the run's `default_agent_id` when omitted.",
     )
     prompt: str = Field(..., description='Prompt passed to the `agent.invoke` job.')
     instructions: str | None = Field(
@@ -1667,7 +1659,8 @@ class WorkflowInteractionDiscussionConfig(BaseModel):
     )
     topic: str | None = Field(None, description='Topic for a newly-created channel.')
     member_ids: list[str] | None = Field(
-        None, description='Additional user or agent IDs to invite to the channel.'
+        None,
+        description='Additional user IDs to invite to the channel. Agent participants use their backing user IDs.',
     )
     opening_message: str = Field(
         ...,
@@ -1708,10 +1701,6 @@ class WorkflowDefinitionSummary(BaseModel):
     published_as_tool: bool | None = Field(
         None,
         description='When true, expose this workflow through the action catalog for agent tool manifests.',
-    )
-    owner_agent_id: str | None = Field(
-        None,
-        description="Optional owning agent for this workflow definition. When set, the owner agent's backing service account is the effective actor for saved runs, and `agent.invoke` steps may omit `agent_id` to target this agent.",
     )
     owned_by: str | None = Field(
         None, description='Canonical user owner ID. Required when `scope` is `owner`.'
@@ -2211,6 +2200,9 @@ class IntegrationEventDetail(IntegrationEventReceipt):
 
 
 class IntegrationEventSample(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
     id: str = Field(
         ..., description='Stable sample identifier, unique across providers.'
     )
@@ -2231,6 +2223,9 @@ class IntegrationEventSample(BaseModel):
 
 
 class IntegrationEventSamplesResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
     samples: list[IntegrationEventSample]
 
 
@@ -2262,7 +2257,7 @@ class IntegrationEventFireRequest(BaseModel):
     )
     integration_id: str | None = Field(
         None,
-        description='Optional integration id metadata. Defaults to `synthetic:<provider>`.',
+        description="Optional integration id metadata. Preview mode defaults to `synthetic:<provider>`. Deliver mode defaults to the project's active provider integration; pass an explicit value when no matching integration is connected.",
     )
     dedup_key: str | None = Field(
         None,
@@ -2283,6 +2278,9 @@ class Source1(StrEnum):
 
 
 class IntegrationEventFireEvent(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
     id: str | None = Field(
         None, description='Persisted event id. Present in deliver mode.'
     )
@@ -2296,6 +2294,9 @@ class IntegrationEventFireEvent(BaseModel):
 
 
 class IntegrationEventFireWaiterMatch(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
     run_id: str
     path_id: str | None = None
     step_name: str
@@ -2554,22 +2555,6 @@ class Action1(BaseModel):
     )
 
 
-class ActionListResponse(BaseModel):
-    """
-    Paginated list of project-owned actions.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    items: list[Action1] = Field(..., description='The list of results for this page.')
-    next_cursor: str | None = Field(
-        None,
-        description='Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.',
-    )
-    has_more: bool = Field(..., description='Whether additional pages are available.')
-
-
 class RotateSecretResult(BaseModel):
     """
     New signing secret returned after rotating an action secret.
@@ -2809,6 +2794,278 @@ class ActionInvocationListResponse(BaseModel):
     has_more: bool = Field(..., description='Whether additional pages are available.')
 
 
+class EnvironmentProvider(StrEnum):
+    sprites = 'sprites'
+    cloudflare_containers = 'cloudflare_containers'
+
+
+class EnvironmentStatus(StrEnum):
+    provisioning = 'provisioning'
+    ready = 'ready'
+    running = 'running'
+    retained = 'retained'
+    destroying = 'destroying'
+    destroyed = 'destroyed'
+    failed = 'failed'
+    orphaned = 'orphaned'
+
+
+class EnvironmentLifetime(StrEnum):
+    """
+    Lifecycle owner for automatic cleanup. `run` environments are destroyed during their owning run's Finalize phase; `lease` environments are reaped after lease expiry; `explicit` environments require an explicit destroy call.
+    """
+
+    run = 'run'
+    lease = 'lease'
+    explicit = 'explicit'
+
+
+class EnvironmentPurpose(StrEnum):
+    implementation = 'implementation'
+    review = 'review'
+    verification = 'verification'
+    preview = 'preview'
+    debug = 'debug'
+    worker = 'worker'
+    custom = 'custom'
+
+
+class EnvironmentBoundToType(StrEnum):
+    """
+    Execution or lifecycle object this environment is bound to. Ownership remains in `owned_by`.
+    """
+
+    none = 'none'
+    run = 'run'
+    worker_session = 'worker_session'
+    service = 'service'
+    manual = 'manual'
+
+
+class EnvironmentRetentionPolicy(StrEnum):
+    manual = 'manual'
+    destroy_on_success = 'destroy_on_success'
+    retain_on_failure = 'retain_on_failure'
+    retain_always = 'retain_always'
+
+
+class EnvironmentCleanupStatus(StrEnum):
+    none = 'none'
+    pending = 'pending'
+    succeeded = 'succeeded'
+    failed = 'failed'
+    skipped = 'skipped'
+
+
+class EnvironmentLeaseStatus(StrEnum):
+    active = 'active'
+    released = 'released'
+    expired = 'expired'
+    revoked = 'revoked'
+
+
+class TemplateId(StrEnum):
+    coding_default = 'coding-default'
+
+
+class Environment(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str
+    name: str
+    scope: ResourceScope | None = None
+    provider: EnvironmentProvider
+    provider_resource_id: str | None = None
+    provider_resource_name: str | None = None
+    status: EnvironmentStatus
+    lifetime: EnvironmentLifetime
+    purpose: EnvironmentPurpose | None = None
+    owned_by: str | None = Field(
+        None,
+        description="Canonical user owner ID. For agent-started work, this is the agent's backing user ID.",
+    )
+    bound_to_type: EnvironmentBoundToType | None = None
+    bound_to_id: str | None = Field(
+        None,
+        description='ID of the run, worker session, service, or manual association named by `bound_to_type`.',
+    )
+    created_by: str | None = None
+    run_id: str | None = None
+    job_id: str | None = None
+    current_worker_session_id: str | None = None
+    agent_id: str | None = None
+    template_id: TemplateId | None = None
+    capabilities: list[str] = Field(..., max_length=50)
+    spec_version: int = Field(..., ge=1)
+    spec: dict[str, Any] | None = None
+    runtime: dict[str, Any] = Field(
+        ...,
+        description='Provider-observed runtime data. URLs live under runtime.urls, with runtime.urls.primary as the primary URL when present.',
+    )
+    tags: TagMap | None = None
+    contains_secrets: bool
+    cleanup_status: EnvironmentCleanupStatus
+    retention_policy: EnvironmentRetentionPolicy
+    lease_expires_at: AwareDatetime | None = None
+    last_seen_at: AwareDatetime | None = None
+    last_reconciled_at: AwareDatetime | None = None
+    last_error: str | None = None
+    created_at: AwareDatetime
+    updated_at: AwareDatetime
+    destroyed_at: AwareDatetime | None = None
+
+
+class EnvironmentLease(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str
+    environment_id: str
+    holder_type: EnvironmentBoundToType | None = None
+    holder_id: str | None = None
+    purpose: EnvironmentPurpose | None = None
+    status: EnvironmentLeaseStatus
+    acquired_at: AwareDatetime
+    expires_at: AwareDatetime | None = None
+    released_at: AwareDatetime | None = None
+
+
+class EnvironmentListResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    items: list[Environment]
+    has_more: bool
+    next_cursor: str | None = None
+
+
+class TemplateId1(StrEnum):
+    """
+    V1 supports only coding-default.
+    """
+
+    coding_default = 'coding-default'
+
+
+class CreateEnvironmentRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    name: str | None = None
+    scope: ResourceScope | None = None
+    provider: EnvironmentProvider | None = None
+    purpose: EnvironmentPurpose | None = None
+    owned_by: str | None = Field(
+        None, description='Canonical user owner ID. Defaults to the authenticated user.'
+    )
+    bound_to_type: EnvironmentBoundToType | None = None
+    bound_to_id: str | None = None
+    lifetime: EnvironmentLifetime | None = None
+    template_id: TemplateId1 | None = Field(
+        None, description='V1 supports only coding-default.'
+    )
+    spec: dict[str, Any] | None = None
+    tags: TagMap | None = None
+    retention_policy: EnvironmentRetentionPolicy | None = None
+
+
+class UpdateEnvironmentRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    purpose: EnvironmentPurpose | None = None
+    retention_policy: EnvironmentRetentionPolicy | None = None
+    scope: ResourceScope | None = None
+    owned_by: str | None = None
+    bound_to_type: EnvironmentBoundToType | None = None
+    bound_to_id: str | None = None
+    tags: TagMap | None = None
+
+
+class AcquireEnvironmentRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    environment_id: str | None = None
+    template_id: TemplateId1 | None = Field(
+        None, description='V1 supports only coding-default.'
+    )
+    name: str | None = None
+    scope: ResourceScope | None = None
+    provider: EnvironmentProvider | None = None
+    purpose: EnvironmentPurpose | None = None
+    holder_type: EnvironmentBoundToType | None = None
+    holder_id: str | None = None
+    owned_by: str | None = Field(
+        None, description='Canonical user owner ID. Defaults to the authenticated user.'
+    )
+    bound_to_type: EnvironmentBoundToType | None = None
+    bound_to_id: str | None = None
+    lifetime: EnvironmentLifetime | None = None
+    spec: dict[str, Any] | None = None
+    tags: TagMap | None = None
+    lease_ttl: str | None = Field(
+        None, description='Go duration string, for example 30m or 2h.'
+    )
+
+
+class EnvironmentAcquireResult(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    environment: Environment
+    lease: EnvironmentLease
+
+
+class ExecEnvironmentRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    command: list[str] = Field(..., min_length=1)
+    dir: str | None = None
+    env: list[str] | None = None
+    stdin: str | None = None
+
+
+class EnvironmentExecResult(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    stdout: str
+    stderr: str
+    exit_code: int
+
+
+class WriteEnvironmentFileRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    path: str
+    content: str
+
+
+class StartEnvironmentWorkerRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    api_url: str | None = None
+    command: list[str] | None = None
+    dir: str | None = None
+
+
+class EnvironmentStartWorkerResult(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    environment: Environment
+    api_key_id: str
+    key_expires_at: AwareDatetime
+    stdout: str
+    stderr: str
+    exit_code: int
+
+
 class SecretValues(RootModel[dict[str, str]]):
     """
     JSON key/value payload encrypted as a SecretVersion.
@@ -2911,47 +3168,6 @@ class UpdateSecretRequest(BaseModel):
     )
     description: str | None = Field(None, description='Replacement description.')
     values: SecretValues | None = None
-
-
-class ReferenceCandidate(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    value: str = Field(..., description='Value stored in workflow parameters.')
-    label: str = Field(..., description='Human-readable display label.')
-    description: str | None = Field(
-        None, description='Optional secondary display text.'
-    )
-    metadata: dict[str, Any] | None = Field(
-        None,
-        description='Optional display/filtering metadata. Not stored unless the action schema models it.',
-    )
-
-
-class ReferenceLookupResponse(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    items: list[ReferenceCandidate]
-    has_more: bool
-    next_cursor: str | None = None
-
-
-class ReferenceResolveRequest(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    values: list[str] = Field(..., max_length=100, min_length=1)
-    integration_id: str | None = None
-    depends_on: dict[str, Any] | None = None
-
-
-class ReferenceResolveResponse(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    items: list[ReferenceCandidate]
-    unresolved: list[str]
 
 
 class JobClaimRequest(BaseModel):
@@ -4238,141 +4454,6 @@ class AddProjectMemberRequest(BaseModel):
     )
 
 
-class Provider(StrEnum):
-    """
-    Provider used to resolve project integration credentials. Omit for Anthropic. `xai` is accepted as an alias for `grok`.
-    """
-
-    anthropic = 'anthropic'
-    openai = 'openai'
-    google = 'google'
-    grok = 'grok'
-    xai = 'xai'
-
-
-class Type5(StrEnum):
-    text = 'text'
-
-
-class SystemTextBlock(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    type: Type5
-    text: str
-    cache_control: dict[str, Any] | None = None
-
-
-class Role2(StrEnum):
-    user = 'user'
-    assistant = 'assistant'
-
-
-class TextContentBlock(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    type: Type5
-    text: str
-    cache_control: dict[str, Any] | None = None
-
-
-class Type7(StrEnum):
-    image = 'image'
-
-
-class ImageContentBlock(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    type: Type7
-    source: dict[str, Any]
-    cache_control: dict[str, Any] | None = None
-
-
-class Type8(StrEnum):
-    tool_use = 'tool_use'
-
-
-class ToolUseContentBlock(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    type: Type8
-    id: str
-    name: str
-    input: dict[str, Any]
-
-
-class Type9(StrEnum):
-    tool_result = 'tool_result'
-
-
-class GenerateToolDefinition(BaseModel):
-    model_config = ConfigDict(
-        extra='allow',
-    )
-    name: str
-    description: str | None = None
-    input_schema: dict[str, Any]
-
-
-class Type10(StrEnum):
-    auto = 'auto'
-    any = 'any'
-    tool = 'tool'
-    none = 'none'
-    tool_1 = 'tool'
-
-
-class GenerateToolChoice1(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    type: Type10
-    name: str
-
-
-class Type11(StrEnum):
-    auto = 'auto'
-    any = 'any'
-    tool = 'tool'
-    none = 'none'
-    auto_1 = 'auto'
-    any_1 = 'any'
-    none_1 = 'none'
-
-
-class GenerateToolChoice2(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    type: Type11
-    name: str | None = None
-
-
-class GenerateToolChoice(RootModel[GenerateToolChoice1 | GenerateToolChoice2]):
-    root: GenerateToolChoice1 | GenerateToolChoice2
-
-
-class Type12(StrEnum):
-    message = 'message'
-
-
-class Role3(StrEnum):
-    assistant = 'assistant'
-
-
-class LLMGenerateUsage(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    input_tokens: int
-    output_tokens: int
-    cache_creation_input_tokens: int | None = None
-    cache_read_input_tokens: int | None = None
-
-
 class WebhookDeliveryStatus(StrEnum):
     """
     `pending` — queued, not yet attempted. `processing` — currently being delivered. `delivered` — recipient returned 2xx. `failed` — all retry attempts exhausted.
@@ -4561,412 +4642,6 @@ class PingWebhookResult(BaseModel):
     )
     latency_ms: int | None = Field(
         None, description='Round-trip latency in milliseconds.'
-    )
-
-
-class IntegrationStatus(StrEnum):
-    """
-    `active` — integration is enabled and usable by workflows. `inactive` — manually disabled; no automatic expiry behavior. `expired` — token/credential has expired (e.g., OAuth token not refreshed).
-    """
-
-    active = 'active'
-    inactive = 'inactive'
-    expired = 'expired'
-
-
-class Integration(BaseModel):
-    """
-    Project-scoped connection to an external provider such as Slack, GitHub, or a model service. Workflows and actions use integrations to find provider configuration without embedding secrets in definitions.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    id: str = Field(..., description='Unique identifier for this integration.')
-    name: str = Field(
-        ..., description='Human-readable name, unique per `(project, provider)` tuple.'
-    )
-    provider: str = Field(
-        ...,
-        description='Free-form provider identifier (e.g. `openai`, `slack`, `github`). Immutable after creation.',
-    )
-    config: dict[str, Any] | None = Field(
-        None,
-        description='Provider-specific credential and configuration blob stored as JSON. The shape is provider-defined.',
-    )
-    status: IntegrationStatus = Field(
-        ...,
-        description='Current integration state: `connected`, `disconnected`, or `error`.',
-    )
-    created_by: str | None = Field(
-        None, description='User ID of the org member who created this integration.'
-    )
-    tags: TagMap | None = Field(
-        None, description='Resource tags applied to this integration.'
-    )
-    created_at: AwareDatetime = Field(
-        ..., description='Timestamp when this integration was created.'
-    )
-    updated_at: AwareDatetime = Field(
-        ..., description='Timestamp when this integration was last updated.'
-    )
-
-
-class ApolloConnectRequest(BaseModel):
-    """
-    Body accepted by `POST /v1/projects/{project}/integrations/apollo/connect`. Apollo authenticates with a paste-an-API-key flow; the key is validated inline against Apollo.io before the integration row is persisted.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    api_key: str = Field(..., description='Apollo.io API key.')
-
-
-class GoogleSheetsConnectRequest(BaseModel):
-    """
-    Body accepted by `POST /v1/projects/{project}/integrations/google_sheets/connect`. Send an empty body to start the OAuth2 user-grant flow, or provide `service_account_json` to connect with a Google service account key.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    service_account_json: str | None = Field(
-        None,
-        description='Raw Google service account JSON key used for service-account mode.',
-    )
-
-
-class FirecrawlConnectRequest(BaseModel):
-    """
-    Credential shape used when creating the Firecrawl integration record. The API key is stored under `credentials.api_key` and powers the `firecrawl.*` workflow actions.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    api_key: str = Field(..., description='Firecrawl API key.')
-
-
-class ScrapeCreatorsConnectRequest(BaseModel):
-    """
-    Credential shape used when creating the ScrapeCreators integration record. The API key is stored under `credentials.api_key` and powers the `scrapecreators.*` workflow actions.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    api_key: str = Field(..., description='ScrapeCreators API key.')
-
-
-class Kind41(StrEnum):
-    redirect = 'redirect'
-    complete = 'complete'
-
-
-class IntegrationConnectResponse(BaseModel):
-    """
-    Unified integration-framework connect response. Redirect-style providers return `kind=redirect` plus `redirect_url`; inline API-key and service-account providers return `kind=complete` plus the persisted integration row.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    kind: Kind41
-    redirect_url: str | None = Field(
-        None, description='OAuth or install URL to visit when `kind=redirect`.'
-    )
-    integration: Integration | None = None
-
-
-class IntegrationCategory(StrEnum):
-    """
-    Stable integration directory grouping.
-    """
-
-    Code_and_DevOps = 'Code and DevOps'
-    Sales___CRM = 'Sales & CRM'
-    Issue_Tracking = 'Issue Tracking'
-    Productivity = 'Productivity'
-    Messaging = 'Messaging'
-    Social_Media = 'Social Media'
-    Email = 'Email'
-    Actions = 'Actions'
-    Web_and_Data = 'Web and Data'
-    Storage = 'Storage'
-    Environments = 'Environments'
-
-
-class IntegrationProviderConnection(BaseModel):
-    """
-    Project-local connection summary for a provider.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    connected: bool = Field(
-        ...,
-        description='True when this project has an active integration row for the provider.',
-    )
-    integration_id: str | None = Field(
-        None,
-        description='Most relevant integration ID for this provider in the project, when one exists.',
-    )
-    integration_name: str | None = Field(
-        None,
-        description='Most relevant integration name for this provider in the project, when one exists.',
-    )
-    status: IntegrationStatus | None = None
-    updated_at: AwareDatetime | None = Field(
-        None,
-        description='Timestamp when the most relevant integration row was last updated.',
-    )
-
-
-class IntegrationProviderTriggerPattern(BaseModel):
-    """
-    Catalog descriptor for creating a trigger from a provider-owned event pattern. The array is currently empty for all providers; this schema reserves the response shape for the trigger-pattern rollout.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    id: str
-    label: str
-    description: str | None = None
-    event_type: str | None = None
-    category: str | None = None
-
-
-class RuntimeState(StrEnum):
-    """
-    Whether the event type is backed by current ingest. Planned events are catalog/documentation-only and should not be offered for new triggers or wait_event steps.
-    """
-
-    active = 'active'
-    planned = 'planned'
-    deprecated = 'deprecated'
-
-
-class IntegrationProviderEventType(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    name: str = Field(
-        ..., description='Dotted event-type identifier (`github.pull_request.opened`).'
-    )
-    schema_version: int = Field(
-        ...,
-        description='Integer schema version. Bumps are additive-only by convention.',
-    )
-    runtime_state: RuntimeState = Field(
-        ...,
-        description='Whether the event type is backed by current ingest. Planned events are catalog/documentation-only and should not be offered for new triggers or wait_event steps.',
-    )
-    description: str | None = None
-    payload_schema: dict[str, Any] | None = Field(
-        None,
-        description='JSON Schema for the event payload. Absent when the registered Go type cannot be reflected meaningfully (for example, `map[string]any` aliases of raw upstream payloads).',
-    )
-
-
-class Delivery1(StrEnum):
-    webhook = 'webhook'
-
-
-class Status8(StrEnum):
-    configured = 'configured'
-    missing_secret = 'missing_secret'
-    legacy_route = 'legacy_route'
-    unavailable = 'unavailable'
-
-
-class IntegrationProviderWebhookEndpoint(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    path_suffix: str = Field(
-        ...,
-        description='Provider webhook path suffix under `/v1/provider/{provider}/webhook`.',
-    )
-    url: AnyUrl = Field(
-        ..., description='Fully-qualified endpoint URL for upstream provider setup.'
-    )
-    delivery: Delivery1
-    signature_mode: str | None = Field(
-        None, description='Framework signature verification mode.'
-    )
-    status: Status8
-    notes: str | None = None
-
-
-class IntegrationProviderAction(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    name: str = Field(
-        ...,
-        description='Workflow-callable action name (`github.issue.create_comment`).',
-    )
-    title: str | None = None
-    description: str | None = None
-    input_schema: dict[str, Any] | None = Field(
-        None, description="JSON Schema for the action's parameters object."
-    )
-    output_schema: dict[str, Any] | None = Field(
-        None, description="JSON Schema for the action's result object."
-    )
-
-
-class RunMetrics(BaseModel):
-    """
-    Workflow run statistics for the rolling window.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    per_minute: float = Field(
-        ...,
-        description='Average number of new runs started per minute within the window.',
-    )
-    total_window: int = Field(..., description='Total runs started within the window.')
-    failure_rate: float = Field(
-        ...,
-        description='Fraction of completed runs that ended in `failed` status. Range 0.0–1.0.',
-    )
-    avg_seconds: float = Field(
-        ...,
-        description='Mean wall-clock duration of completed runs within the window, in seconds.',
-    )
-    p95_step_seconds: float = Field(
-        ...,
-        description='95th-percentile job duration (claim→terminal) from the 40 most recent completed jobs, in seconds.',
-    )
-    queue_depth: int = Field(
-        ..., description='Number of jobs currently in `pending` state.'
-    )
-    running_count: int = Field(
-        ..., description='Number of runs currently in the `active` lifecycle.'
-    )
-    status_breakdown: dict[str, int] = Field(
-        ...,
-        description='Map of run status → count across all runs in the project (not windowed).',
-    )
-
-
-class JobMetrics(BaseModel):
-    """
-    Job queue statistics.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    pending: int = Field(..., description='Jobs currently in `pending` state.')
-    claimed: int = Field(..., description='Jobs currently in `claimed` state.')
-    failed_window: int = Field(
-        ..., description='Jobs that reached a terminal failed state within the window.'
-    )
-    retry_rate: float = Field(
-        ...,
-        description='Fraction of terminal jobs that required at least one retry within the window.',
-    )
-
-
-class WorkerMetrics(BaseModel):
-    """
-    Worker session health.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    active: int = Field(
-        ...,
-        description='Workers whose `last_seen_at` is within the staleness threshold.',
-    )
-    stale: int = Field(
-        ...,
-        description='Workers whose `last_seen_at` has exceeded the staleness threshold.',
-    )
-
-
-class InteractionMetrics(BaseModel):
-    """
-    Interaction queue statistics.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    open_count: int = Field(
-        ...,
-        description='Interactions in `pending` or `claimed` state awaiting response.',
-    )
-    claimed_count: int = Field(
-        ..., description='Interactions currently claimed by a responder.'
-    )
-    p95_response_seconds: float = Field(
-        ...,
-        description='95th-percentile time from creation to resolution for completed interactions within the window.',
-    )
-    status_breakdown: dict[str, int] = Field(
-        ...,
-        description='Map of interaction status → count across all interactions in the project.',
-    )
-
-
-class ChannelMetrics(BaseModel):
-    """
-    Channel activity statistics.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    active_count: int = Field(..., description='Non-archived channels in the project.')
-    message_rate: float = Field(
-        ..., description='Average messages posted per minute within the window.'
-    )
-
-
-class ProjectMetrics(BaseModel):
-    """
-    Operational health snapshot for a project. Use it to power dashboards, detect stuck queues or stale workers, and summarize run throughput and failure rates over a recent window.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    generated_at: AwareDatetime = Field(
-        ..., description='Timestamp when this metrics snapshot was computed.'
-    )
-    window_minutes: int = Field(
-        ...,
-        description='Rolling window width used for rate and failure metrics. Default is 60 minutes.',
-    )
-    runs: RunMetrics
-    jobs: JobMetrics
-    workers: WorkerMetrics
-    interactions: InteractionMetrics
-    channels: ChannelMetrics
-    runs_per_minute: float = Field(..., description='Deprecated: use runs.per_minute.')
-    total_runs_window: int = Field(
-        ..., description='Deprecated: use runs.total_window.'
-    )
-    failure_rate: float = Field(..., description='Deprecated: use runs.failure_rate.')
-    avg_run_seconds: float = Field(..., description='Deprecated: use runs.avg_seconds.')
-    p95_step_seconds: float = Field(
-        ..., description='Deprecated: use runs.p95_step_seconds.'
-    )
-    queue_depth: int = Field(..., description='Deprecated: use runs.queue_depth.')
-    running_count: int = Field(..., description='Deprecated: use runs.running_count.')
-    active_workers: int = Field(..., description='Deprecated: use workers.active.')
-    stale_workers: int = Field(..., description='Deprecated: use workers.stale.')
-    status_breakdown: dict[str, int] = Field(
-        ..., description='Deprecated: use runs.status_breakdown.'
     )
 
 
@@ -5488,7 +5163,7 @@ class Source3(StrEnum):
     project = 'project'
 
 
-class Status9(StrEnum):
+class Status8(StrEnum):
     active = 'active'
     archived = 'archived'
 
@@ -5504,7 +5179,7 @@ class Toolkit(BaseModel):
     slug: str | None = None
     description: str | None = None
     source: Source3
-    status: Status9
+    status: Status8
     action_grants: list[ToolkitActionGrant] = Field(
         ...,
         description='Action selectors granted by this toolkit. Each entry is matched against the unified action catalog at manifest-resolution time.',
@@ -5575,7 +5250,7 @@ class Skill(BaseModel):
     slug: str | None = None
     description: str | None = None
     source: Source4
-    status: Status9
+    status: Status8
     instructions: str = Field(
         ..., description='Markdown instructions loaded when the skill is active.'
     )
@@ -5779,7 +5454,7 @@ class CreateAgentRequest(BaseModel):
     tags: TagMap | None = Field(None, description='Initial tag set.')
 
 
-class Status11(StrEnum):
+class Status10(StrEnum):
     """
     Replacement agent status: `active` or `inactive`. Use DELETE to soft-delete.
     """
@@ -5823,7 +5498,7 @@ class UpdateAgentRequest(BaseModel):
     system_prompt: str | None = Field(
         None, description='Replacement system prompt for platform agents.'
     )
-    status: Status11 | None = Field(
+    status: Status10 | None = Field(
         None,
         description='Replacement agent status: `active` or `inactive`. Use DELETE to soft-delete.',
     )
@@ -5865,32 +5540,11 @@ class UserKind(StrEnum):
     system = 'system'
 
 
-class UserStateVisibility(StrEnum):
-    org = 'org'
-    project = 'project'
-    self = 'self'
-
-
 class UserAssignmentStatus(StrEnum):
     todo = 'todo'
     in_progress = 'in_progress'
     blocked = 'blocked'
     done = 'done'
-
-
-class UserAssignmentInput(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    status: UserAssignmentStatus
-    headline: str = Field(..., max_length=120)
-    description: str | None = Field(None, max_length=4000)
-    started_at: AwareDatetime | None = Field(
-        None, description='When the user actually began working on this assignment.'
-    )
-    due_by: AwareDatetime | None = Field(
-        None, description='When the assignment is expected to be completed.'
-    )
 
 
 class UserAssignment(BaseModel):
@@ -5906,49 +5560,6 @@ class UserAssignment(BaseModel):
     due_by: AwareDatetime | None = None
     created_at: AwareDatetime
     updated_at: AwareDatetime
-
-
-class UserState(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    id: str
-    user_id: str
-    user_kind: UserKind
-    availability: UserAvailability
-    description: str | None = None
-    last_seen_at: AwareDatetime | None = None
-    expires_at: AwareDatetime | None = None
-    visibility: UserStateVisibility
-    stale: bool
-    assignments: list[UserAssignment]
-    created_at: AwareDatetime
-    updated_at: AwareDatetime
-
-
-class UpsertUserStateRequest(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    availability: UserAvailability
-    description: str | None = Field(None, max_length=4000)
-    expires_at: AwareDatetime | None = None
-    visibility: UserStateVisibility | None = None
-    assignments: list[UserAssignmentInput] | None = None
-
-
-class UserStateListResponse(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    items: list[UserState]
-
-
-class UserAssignmentListResponse(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    items: list[UserAssignment]
 
 
 class ProjectTeamMemberLinks(BaseModel):
@@ -6212,6 +5823,9 @@ class TraceDetail(BaseModel):
 
 
 class LogRecordInput(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
     timestamp: AwareDatetime | None = None
     severity: str | None = None
     message: str
@@ -6222,11 +5836,17 @@ class LogRecordInput(BaseModel):
 
 
 class LogIngestResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
     accepted: int
     rejected: int
 
 
 class LogRecord(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
     id: str
     org_id: str
     project_id: str
@@ -6245,6 +5865,9 @@ class LogRecord(BaseModel):
 
 
 class LogRecordListResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
     items: list[LogRecord]
     next_cursor: str | None = None
 
@@ -6260,6 +5883,9 @@ class ColumnType(StrEnum):
 
 
 class ColumnDef(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
     name: str
     type: ColumnType
     required: bool = False
@@ -6276,6 +5902,9 @@ class ColumnDef(BaseModel):
 
 
 class IndexDef(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
     name: str
     columns: list[str]
     unique: bool = False
@@ -6299,6 +5928,9 @@ class TableAccessMode(StrEnum):
 
 
 class Table(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
     id: str
     org_id: str
     project_id: str
@@ -6309,7 +5941,7 @@ class Table(BaseModel):
     tags: dict[str, str] | None = None
     owned_by: str | None = Field(
         None,
-        description="Canonical user owner ID. For agent-owned tables, this is the agent's backing user ID.",
+        description='Canonical user owner ID. AI-agent owners use their backing user ID.',
     )
     access_mode: TableAccessMode = Field(
         ...,
@@ -6320,6 +5952,9 @@ class Table(BaseModel):
 
 
 class TableListResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
     items: list[Table]
     has_more: bool
     next_cursor: str | None = None
@@ -6373,6 +6008,9 @@ class UpdateTableRequest(BaseModel):
 
 
 class TableRow(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
     id: str
     table_id: str
     data: dict[str, Any]
@@ -6426,6 +6064,9 @@ class QueryRowsRequest(BaseModel):
 
 
 class QueryRowsResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
     rows: list[TableRow]
     has_more: bool
     limit: int | None = None
@@ -6448,6 +6089,9 @@ class SearchRowsRequest(BaseModel):
 
 
 class SearchRowsResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
     rows: list[TableRow]
     has_more: bool
     limit: int | None = None
@@ -6462,6 +6106,9 @@ class BulkInsertRowsRequest(BaseModel):
 
 
 class BulkInsertRowsResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
     inserted: int
     rows: list[TableRow]
 
@@ -6482,401 +6129,14 @@ class UpsertRowRequest(BaseModel):
 
 
 class UpsertRowResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
     row: TableRow
     created: bool = Field(
         ...,
         description='True when a new row was inserted; false when an existing row was updated.',
     )
-
-
-class ArtifactState(StrEnum):
-    pending_upload = 'pending_upload'
-    available = 'available'
-    expired = 'expired'
-    deleted = 'deleted'
-    failed = 'failed'
-
-
-class ArtifactStorageBackend(StrEnum):
-    mobius = 'mobius'
-    s3 = 's3'
-
-
-class Artifact(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    id: str
-    org_id: str
-    project_id: str
-    owner_user_id: str = Field(
-        ...,
-        description='User-keyed private artifact-space owner. Humans, agents, service accounts, and system principals all use users.id.',
-    )
-    run_id: str | None = None
-    step_id: str | None = None
-    job_id: str | None = None
-    attempt: int | None = None
-    name: str
-    mime_type: str
-    size_bytes: int
-    sha256: str | None = None
-    storage: ArtifactStorageBackend
-    storage_uri: str | None = None
-    integration_id: str | None = None
-    metadata: dict[str, Any] | None = None
-    tags: dict[str, str] | None = None
-    state: ArtifactState
-    created_by_credential_kind: str | None = None
-    created_by_user_id: str | None = None
-    created_by_name: str | None = None
-    created_at: AwareDatetime
-    committed_at: AwareDatetime | None = None
-    expires_at: AwareDatetime | None = None
-    pinned: bool | None = None
-    deleted_at: AwareDatetime | None = None
-
-
-class ArtifactListResponse(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    items: list[Artifact]
-    has_more: bool
-    next_cursor: str | None = None
-
-
-class CreateArtifactSlotRequest(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    name: str = Field(..., max_length=256)
-    mime: str
-    size_bytes: int = Field(..., ge=1)
-    run_id: str | None = None
-    step_id: str | None = None
-    job_id: str | None = None
-    worker_session_token: str | None = None
-    attempt: int | None = Field(None, ge=0)
-    tags: dict[str, str] | None = None
-    retain_for_seconds: int | None = Field(
-        None,
-        description='Override the project default TTL for this artifact only.',
-        ge=0,
-    )
-    retain_until: AwareDatetime | None = None
-    pinned: bool = False
-    storage_override: ArtifactStorageBackend | None = None
-
-
-class Upload(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    url: str
-    method: str
-    headers: dict[str, str] | None = None
-    max_size_bytes: int | None = None
-
-
-class ArtifactSlot(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    artifact: Artifact
-    upload: Upload
-
-
-class Method(StrEnum):
-    GET = 'GET'
-
-
-class ArtifactSignedUrl(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    url: str
-    method: Method
-    expires_at: AwareDatetime
-
-
-class CommitArtifactRequest(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    sha256: str = Field(..., max_length=64, min_length=64)
-    size_bytes: int = Field(..., ge=1)
-
-
-class ArtifactStorageSettings(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    backend: ArtifactStorageBackend | None = None
-    integration_id: str | None = None
-    default_ttl_seconds: int | None = Field(None, ge=0)
-    max_artifact_size: int | None = Field(None, ge=0)
-    inline_threshold: int | None = Field(None, ge=0)
-    pending_upload_cap: int | None = Field(None, ge=0)
-
-
-class ArtifactStorageSettingsUpdate(RootModel[ArtifactStorageSettings]):
-    root: ArtifactStorageSettings
-
-
-class ArtifactQuotaUsage(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    org_id: str
-    used_bytes: int
-    limit_bytes: int
-    artifact_count: int
-    pending_count: int
-    generated_at: AwareDatetime
-
-
-class JSONDocument(BaseModel):
-    model_config = ConfigDict(
-        extra='allow',
-    )
-
-
-class ObservableFreshnessStatus(StrEnum):
-    unknown = 'unknown'
-    fresh = 'fresh'
-    stale = 'stale'
-    error = 'error'
-
-
-class ObservableReducerKind(StrEnum):
-    replace = 'replace'
-
-
-class ObservableObserverKind(StrEnum):
-    mobius = 'mobius'
-    worker = 'worker'
-    cli = 'cli'
-    integration = 'integration'
-    internal = 'internal'
-
-
-class ObservableObservationStatus(StrEnum):
-    accepted = 'accepted'
-    rejected = 'rejected'
-
-
-class ObservableEventType(StrEnum):
-    observable_changed = 'observable.changed'
-    observable_freshness_changed = 'observable.freshness_changed'
-
-
-class ObservableReducerConfig(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    kind: ObservableReducerKind
-
-
-class ObservableFreshnessConfig(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    stale_after_seconds: int | None = Field(None, ge=0)
-
-
-class CreateObservableRequest(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    name: str
-    subject_kind: str | None = None
-    subject: JSONDocument | None = None
-    state_schema: JSONDocument
-    update_config: JSONDocument | None = None
-    reducer_config: ObservableReducerConfig | None = None
-    freshness_config: ObservableFreshnessConfig | None = None
-    tags: dict[str, str] | None = None
-
-
-class UpdateObservableRequest(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    name: str | None = None
-    subject_kind: str | None = None
-    subject: JSONDocument | None = None
-    state_schema: JSONDocument | None = None
-    update_config: JSONDocument | None = None
-    reducer_config: ObservableReducerConfig | None = None
-    freshness_config: ObservableFreshnessConfig | None = None
-    tags: dict[str, str] | None = None
-
-
-class Observable(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    id: str
-    org_id: str
-    project_id: str
-    name: str
-    subject_kind: str
-    subject: JSONDocument
-    state_schema: JSONDocument
-    update_config: JSONDocument
-    reducer_config: ObservableReducerConfig
-    freshness_config: ObservableFreshnessConfig
-    current_version: int
-    current_state: JSONDocument
-    current_state_hash: str
-    freshness_status: ObservableFreshnessStatus
-    last_observed_at: AwareDatetime | None = None
-    last_changed_at: AwareDatetime | None = None
-    last_error_type: str | None = None
-    last_error_message: str | None = None
-    tags: dict[str, str] | None = None
-    created_by: str | None = None
-    created_at: AwareDatetime
-    updated_at: AwareDatetime
-
-
-class ObservableObservation(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    id: str
-    observable_id: str
-    invocation_id: str
-    observer_kind: ObservableObserverKind
-    observer_id: str | None = None
-    payload: JSONDocument
-    payload_hash: str
-    observed_at: AwareDatetime
-    received_at: AwareDatetime
-    status: ObservableObservationStatus
-    error_type: str | None = None
-    error_message: str | None = None
-
-
-class ObservableStateVersion(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    id: str
-    observable_id: str
-    version: int
-    state: JSONDocument
-    state_hash: str
-    observation_id: str
-    observer_kind: ObservableObserverKind
-    observer_id: str | None = None
-    observed_at: AwareDatetime
-    created_at: AwareDatetime
-
-
-class ObservableEvent(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    id: str
-    observable_id: str
-    event_type: ObservableEventType
-    previous_version: int
-    new_version: int
-    summary: JSONDocument
-    dispatch_status: str
-    created_at: AwareDatetime
-
-
-class RunStatus1(StrEnum):
-    active = 'active'
-    completed = 'completed'
-    failed = 'failed'
-
-
-class ObservableWaiter(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    run_id: str
-    workflow_name: str
-    run_status: RunStatus1
-    path_id: str
-    step_name: str
-    condition: str | None = Field(
-        None, description='Bare `expr` condition the Observable state must satisfy.'
-    )
-    observed_version: int = Field(
-        ..., description='Observable version observed when this path suspended.'
-    )
-    deadline_at: AwareDatetime | None = Field(
-        None, description='Fixed timeout deadline for the wait, when configured.'
-    )
-    run_created_at: AwareDatetime
-    run_updated_at: AwareDatetime
-
-
-class SubmitObservableObservationRequest(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    invocation_id: str
-    observer_kind: ObservableObserverKind
-    observer_id: str | None = None
-    observed_at: AwareDatetime | None = None
-    payload: JSONDocument
-
-
-class SubmitObservableObservationResult(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    observable: Observable
-    observation: ObservableObservation
-    state_version: ObservableStateVersion | None = None
-    event: ObservableEvent | None = None
-    duplicate: bool
-    state_changed: bool
-
-
-class ObservableListResponse(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    items: list[Observable]
-    next_cursor: str | None = None
-
-
-class ObservableObservationListResponse(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    items: list[ObservableObservation]
-    next_cursor: str | None = None
-
-
-class ObservableStateVersionListResponse(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    items: list[ObservableStateVersion]
-    next_cursor: str | None = None
-
-
-class ObservableEventListResponse(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    items: list[ObservableEvent]
-    next_cursor: str | None = None
-
-
-class ObservableWaiterListResponse(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    items: list[ObservableWaiter]
 
 
 class VoteRules(BaseModel):
@@ -6944,7 +6204,7 @@ class ChannelMessage(BaseModel):
     )
     sender_id: str = Field(
         ...,
-        description="Sender principal identifier — the user ID for `sender_type=human`, the agent's ID for `sender_type=agent`, or the service account's ID for `sender_type=service_account`.",
+        description="Sender user ID. For `sender_type=agent`, this is the agent's backing `users.id`, not `agents.id`.",
     )
     sender_session_id: str | None = Field(
         None, description='Live agent session that posted the message, when applicable.'
@@ -7164,7 +6424,7 @@ class WorkflowAgentReactConfig1(BaseModel):
     )
     agent_id: str | None = Field(
         None,
-        description='Agent ID or expression to invoke. Defaults to the workflow owner agent when omitted.',
+        description="Agent ID or expression to invoke. Defaults to the run's `default_agent_id` when omitted.",
     )
     prompt: str = Field(
         ...,
@@ -7250,7 +6510,7 @@ class WorkflowAgentReactConfig2(BaseModel):
     )
     agent_id: str | None = Field(
         None,
-        description='Agent ID or expression to invoke. Defaults to the workflow owner agent when omitted.',
+        description="Agent ID or expression to invoke. Defaults to the run's `default_agent_id` when omitted.",
     )
     prompt: str = Field(
         ...,
@@ -7687,6 +6947,9 @@ class JobListResponse(BaseModel):
 
 
 class IntegrationEventFireTriggerMatch(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
     trigger_id: str
     name: str
     target_count: int
@@ -7694,6 +6957,9 @@ class IntegrationEventFireTriggerMatch(BaseModel):
 
 
 class IntegrationEventFireResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
     mode: IntegrationEventFireMode
     sample_id: str | None = None
     event: IntegrationEventFireEvent
@@ -7968,61 +7234,6 @@ class WorkerSessionListResponse(BaseModel):
     )
 
 
-class LLMGenerateResponse(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    id: str
-    type: Type12
-    role: Role3
-    model: str
-    content: list[dict[str, Any]]
-    stop_reason: str | None = Field(..., description='Why generation stopped.')
-    stop_sequence: str | None = None
-    usage: LLMGenerateUsage
-
-
-class IntegrationProvider(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    name: str = Field(
-        ..., description='Stable provider identifier (`github`, `slack`, …).'
-    )
-    display_name: str
-    description: str | None = Field(
-        None,
-        description='Human-readable provider summary for directory and detail surfaces.',
-    )
-    category: IntegrationCategory | None = Field(
-        None, description='Human-readable grouping label for directory surfaces.'
-    )
-    icon: str | None = Field(
-        None, description='Stable icon key that clients may map to their own icon set.'
-    )
-    auth_kind: str = Field(
-        ...,
-        description='Authentication mechanism the provider uses (e.g. `github_app_install`, `oauth2`, `api_key`).',
-    )
-    docs_url: str | None = Field(
-        None, description='Link to upstream provider docs, when known.'
-    )
-    capabilities: dict[str, bool] = Field(
-        ...,
-        description='Boolean capability flags reflecting which framework interfaces the provider implements (`connect`, `sync`, `live_status`, etc.).',
-    )
-    connection: IntegrationProviderConnection
-    events: list[IntegrationProviderEventType]
-    webhook_endpoints: list[IntegrationProviderWebhookEndpoint] | None = Field(
-        None, description='Provider-owned inbound webhook endpoints and setup status.'
-    )
-    actions: list[IntegrationProviderAction]
-    trigger_patterns: list[IntegrationProviderTriggerPattern] = Field(
-        ...,
-        description='Provider-owned trigger authoring presets. Empty until trigger patterns are registered for this provider.',
-    )
-
-
 class Agent(BaseModel):
     """
     Project-scoped automated worker identity backed by a service account. Agents are useful when workflows need to target a named machine actor with capabilities, configuration, and session presence.
@@ -8038,7 +7249,7 @@ class Agent(BaseModel):
     )
     user_id: str | None = Field(
         None,
-        description='Canonical user (users.id) backing this agent. Used as the `owned_by` value when filtering or claiming resources owned by this agent.',
+        description="Canonical user (users.id) backing this agent. Used as the `owned_by` value when filtering or claiming resources owned by this agent's backing user.",
     )
     name: str = Field(
         ...,
@@ -8328,11 +7539,11 @@ class Run(BaseModel):
     )
     owned_by: str | None = Field(
         None,
-        description='Canonical user owner ID for this run. Set to the user who started the run; agent and service-account initiated runs use their associated user. May be omitted for legacy or unresolved system-started rows.',
+        description='Canonical user owner ID for this run. Saved workflow runs inherit the workflow definition owner when present; otherwise runs use the starting user. May be omitted for legacy or unresolved system-started rows.',
     )
-    owner_agent_id: str | None = Field(
+    default_agent_id: str | None = Field(
         None,
-        description='Agent that owned the workflow definition when this run started.',
+        description='Agent ID derived from the owner user when that user is backed by an AI agent. Used as the default `agent.invoke` target when a step omits `agent_id`.',
     )
     effective_user_id: str | None = Field(
         None, description='User ID whose context the run executes under.'
@@ -8610,17 +7821,6 @@ class UpdateTriggerRequest(BaseModel):
         None,
         description='When supplied, replaces the user tag set on the trigger. System tags (`mobius:*`) are preserved.',
     )
-
-
-class IntegrationProvidersResponse(BaseModel):
-    """
-    Integration providers and capabilities available to a project.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    providers: list[IntegrationProvider]
 
 
 class WorkflowExecutableStep(BaseModel):
@@ -9648,10 +8848,6 @@ class CreateWorkflowRequest(BaseModel):
         None,
         description='When true, expose this workflow through the action catalog for agent tool manifests.',
     )
-    owner_agent_id: str | None = Field(
-        None,
-        description='Optional owning agent. Callers with `mobius.workflows.manage` may assign any active agent in the project. Agent-backed service accounts with `mobius.workflows.manage_owned` may omit this field, or set it to their own agent, and the server will store their agent as the owner.',
-    )
     owned_by: str | None = Field(
         None,
         description='Canonical user owner ID. Required when `scope` is `owner`; defaults to the creator when possible.',
@@ -9691,10 +8887,6 @@ class UpdateWorkflowRequest(BaseModel):
     published_as_tool: bool | None = Field(
         None,
         description='When true, expose this workflow through the action catalog for agent tool manifests.',
-    )
-    owner_agent_id: str | None = Field(
-        None,
-        description='Replacement owning agent. Set to an empty string to clear ownership. Requires `mobius.workflows.manage`; owner-scoped workflow managers cannot transfer or clear ownership.',
     )
     spec: WorkflowSpec | None = Field(
         None,
@@ -9873,7 +9065,7 @@ class ResolutionPolicy(BaseModel):
     )
     owner_id: str | None = Field(
         None,
-        description='User/agent ID treated as authoritative when `tie_break` is `owner_decides`.',
+        description='Canonical users.id treated as authoritative when `tie_break` is `owner_decides`.',
     )
     weight_by: WeightBy | None = Field(
         None, description='Where `weighted_vote` reads weights from.'
@@ -9972,7 +9164,7 @@ class Interaction(BaseModel):
     target_user_ids: list[str] = Field(
         ..., description='Resolved user IDs targeted by the interaction.'
     )
-    responder: Responder | None = Field(
+    responder: InteractionResponder | None = Field(
         None,
         description='User or agent that completed the interaction; null until completion.',
     )
@@ -10045,7 +9237,7 @@ class Interaction(BaseModel):
     )
     outcome: InteractionValue | None = Field(
         None,
-        description="Final outcome selected by the resolution policy (not responder-supplied). Shape depends on the policy: `simple_majority` returns the winning option; `all_required` returns the array of every response; `speculative` returns either the proposal or the vetoer's value. Null while the interaction is still pending.",
+        description="Final outcome selected by the resolution policy (not responder-supplied). Shape depends on the policy: `simple_majority` returns the winning option; `all_required` returns the array of every response; `speculative` returns either the proposal or the vetoer's value. Omitted while the interaction is still pending.",
     )
     resolved_by: str | None = Field(
         None,
@@ -10118,57 +9310,6 @@ class CreateJobInteractionRequest(BaseModel):
     expires_at: AwareDatetime | None = Field(
         None, description='Timestamp after which this interaction expires.'
     )
-
-
-class GenerateRequest(BaseModel):
-    model_config = ConfigDict(
-        extra='allow',
-    )
-    model: str = Field(
-        ..., description='Model identifier, for example `claude-sonnet-4-20250514`.'
-    )
-    provider: Provider = Field(
-        'anthropic',
-        description='Provider used to resolve project integration credentials. Omit for Anthropic. `xai` is accepted as an alias for `grok`.',
-    )
-    system: str | list[SystemTextBlock] | None = Field(
-        None, description='System prompt, either a string or Anthropic text blocks.'
-    )
-    messages: list[GenerateMessage] = Field(
-        ...,
-        description='Conversation history in Anthropic Messages format. `content` may be a string or content-block array.',
-        max_length=128,
-    )
-    tools: list[GenerateToolDefinition] | None = Field(
-        None, description='Anthropic tool definitions.', max_length=64
-    )
-    tool_choice: GenerateToolChoice | None = None
-    max_tokens: int = Field(4096, ge=1)
-    temperature: float | None = None
-    stop_sequences: list[str] | None = Field(None, max_length=16)
-    stream: bool = False
-    metadata: dict[str, Any] | None = Field(
-        None, description='Optional Anthropic metadata such as `user_id`.'
-    )
-
-
-class GenerateMessage(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    role: Role2
-    content: str | list[ContentBlock]
-
-
-class ToolResultContentBlock(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    type: Type9
-    tool_use_id: str
-    content: str | list[ContentBlock]
-    is_error: bool | None = None
-    cache_control: dict[str, Any] | None = None
 
 
 class InteractionListResponse(BaseModel):
@@ -10331,22 +9472,6 @@ class CreateRunBackedInteractionRequest(BaseModel):
     )
 
 
-class ContentBlock(
-    RootModel[
-        TextContentBlock
-        | ImageContentBlock
-        | ToolUseContentBlock
-        | ToolResultContentBlock
-    ]
-):
-    root: (
-        TextContentBlock
-        | ImageContentBlock
-        | ToolUseContentBlock
-        | ToolResultContentBlock
-    )
-
-
 class CreateInteractionRequest(
     RootModel[CreateStandaloneInteractionRequest | CreateRunBackedInteractionRequest]
 ):
@@ -10360,6 +9485,3 @@ class CreateInteractionRequest(
 
 ChannelInteractionActionResponse.model_rebuild()
 ResolutionPolicy.model_rebuild()
-GenerateRequest.model_rebuild()
-GenerateMessage.model_rebuild()
-ToolResultContentBlock.model_rebuild()

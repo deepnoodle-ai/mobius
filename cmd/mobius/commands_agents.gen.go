@@ -465,6 +465,44 @@ func registerAgentsCommands(app *cli.App) {
 			return printResponse(ctx, "listAgentSessions", resp.StatusCode(), resp.Body)
 		})
 
+	agentsGrp.Command("list-skill-assignments").
+		Description("List assigned skills").
+		Args("id").
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			p1 := ctx.Arg(0)
+			resp, err := client.ListSkillAssignmentsWithResponse(ctx.Context(), p0, p1)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "listSkillAssignments", resp.StatusCode(), resp.Body)
+		})
+
+	agentsGrp.Command("list-toolkit-assignments").
+		Description("List assigned toolkits").
+		Args("id").
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			p1 := ctx.Arg(0)
+			resp, err := client.ListToolkitAssignmentsWithResponse(ctx.Context(), p0, p1)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "listToolkitAssignments", resp.StatusCode(), resp.Body)
+		})
+
 	agentsGrp.Command("provision-inbox").
 		Description("Provision email inbox").
 		Args("id").
@@ -482,6 +520,80 @@ func registerAgentsCommands(app *cli.App) {
 				return err
 			}
 			return printResponse(ctx, "provisionAgentInbox", resp.StatusCode(), resp.Body)
+		})
+
+	agentsGrp.Command("replace-skills").
+		Description("Replace assigned skills").
+		Args("id").
+		Flags(
+			cli.Strings("skill-ids", "").Help("[required] skill-ids"),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			p1 := ctx.Arg(0)
+			var body api.ReplaceSkillsJSONRequestBody
+			if err := readJSONBody(ctx, &body); err != nil {
+				return err
+			}
+			if ctx.IsSet("skill-ids") {
+				body.SkillIds = ctx.Strings("skill-ids")
+			}
+			if len(body.SkillIds) == 0 {
+				return fmt.Errorf("--skill-ids is required (or supply it via --file)")
+			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
+			}
+			resp, err := client.ReplaceSkillsWithResponse(ctx.Context(), p0, p1, body)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "replaceSkills", resp.StatusCode(), resp.Body)
+		})
+
+	agentsGrp.Command("replace-toolkits").
+		Description("Replace assigned toolkits").
+		Args("id").
+		Flags(
+			cli.Strings("toolkit-ids", "").Help("[required] toolkit-ids"),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			p1 := ctx.Arg(0)
+			var body api.ReplaceToolkitsJSONRequestBody
+			if err := readJSONBody(ctx, &body); err != nil {
+				return err
+			}
+			if ctx.IsSet("toolkit-ids") {
+				body.ToolkitIds = ctx.Strings("toolkit-ids")
+			}
+			if len(body.ToolkitIds) == 0 {
+				return fmt.Errorf("--toolkit-ids is required (or supply it via --file)")
+			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
+			}
+			resp, err := client.ReplaceToolkitsWithResponse(ctx.Context(), p0, p1, body)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "replaceToolkits", resp.StatusCode(), resp.Body)
 		})
 
 	agentsGrp.Command("update").
