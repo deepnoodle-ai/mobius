@@ -21,6 +21,9 @@ tags:
 - name: audit-logs
   x-displayName: Audit Logs
   description: Immutable audit records for security-sensitive project and organization activity.
+- name: api-keys
+  x-displayName: API Keys
+  description: Organization and project API keys used for programmatic authentication.
 - name: workflows
   x-displayName: Workflows
   description: Versioned workflow definitions and their executable specifications.
@@ -55,6 +58,12 @@ tags:
 - name: webhooks
   x-displayName: Webhooks
   description: Outgoing webhook subscriptions, tests, and delivery history.
+- name: permissions
+  x-displayName: Permissions
+  description: Permission definitions and presets used to build project roles.
+- name: roles
+  x-displayName: Roles
+  description: System and custom roles plus user role assignments.
 - name: interactions
   x-displayName: Interactions
   description: Human-in-the-loop requests, responses, and group routing.
@@ -81,6 +90,9 @@ tags:
 - name: team
   x-displayName: Team
   description: Team API operations.
+- name: service-accounts
+  x-displayName: Service Accounts
+  description: Project service accounts used by agents, workers, and automation.
 - name: spans
   x-displayName: Spans
   description: Spans API operations.
@@ -100,6 +112,8 @@ paths:
       description: Creates a new channel or DM thread. The channel `name` must be URL-safe
         and unique within the project — it is immutable after creation. The creator is automatically
         added as an admin member. Supply `member_ids` to seed initial membership atomically.
+        Membership IDs are always `users.id` values; agent participants use their backing
+        `user_id`, not `agents.id`.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       requestBody:
@@ -322,7 +336,8 @@ paths:
       tags:
       - channels
       summary: Add a member to a channel
-      description: Adds a user or agent to the channel. Returns 409 if already a member.
+      description: Adds a user to the channel by `users.id`. Agent participants must be added
+        with their backing `user_id`. Returns 409 if already a member.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/IDParam'
@@ -355,8 +370,8 @@ paths:
       tags:
       - channels
       summary: Remove a member from a channel
-      description: Removes a user or agent from the channel's live membership. Existing messages
-        remain attributed to the removed member, and removing a member does not revoke project-level
+      description: Removes a user from the channel's live membership. Existing messages remain
+        attributed to the removed member, and removing a member does not revoke project-level
         access outside this channel.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
@@ -495,8 +510,9 @@ paths:
         in: query
         schema:
           type: string
-        description: Filter by sender user ID. Humans, agents, and bare service accounts all
-          send as rows in `users`; use `sender_type` only as the kind/display discriminator.
+        description: 'Filter by sender user ID (query param: `sender_id`). `sender_type` is
+          returned in responses as a discriminator/display field and is not an accepted query
+          parameter.'
       - name: reply_to
         in: query
         schema:
@@ -939,6 +955,108 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+  /v1/api-keys:
+    post:
+      operationId: createAPIKey
+      tags:
+      - api-keys
+      summary: Create an API key
+      description: Creates an API key for a service account in one project. The key authenticates
+        as the service account; associated permissions come from that service account's role
+        assignments. The raw key value is returned in `key` and is never retrievable again
+        after this response.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAPIKeyRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIKeyCreateResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    get:
+      operationId: listAPIKeys
+      tags:
+      - api-keys
+      summary: List API keys
+      description: Returns API keys for this organization. When `project_id` is provided,
+        return only keys in that project. When `project_id` is omitted, return keys across
+        all projects visible to the org-level caller.
+      parameters:
+      - $ref: '#/components/parameters/APIKeyProjectIDParam'
+      - $ref: '#/components/parameters/LimitParam'
+      - $ref: '#/components/parameters/CursorParam'
+      - $ref: '#/components/parameters/TagFilterParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIKeyListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/api-keys/{id}:
+    get:
+      operationId: getAPIKey
+      tags:
+      - api-keys
+      summary: Get an API key
+      description: Returns metadata for a single API key without exposing the raw secret.
+        Include `project_id` to resolve the key within a project-scoped request; org-level
+        callers may omit it.
+      parameters:
+      - $ref: '#/components/parameters/IDParam'
+      - $ref: '#/components/parameters/APIKeyProjectIDParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIKey'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      operationId: revokeAPIKey
+      tags:
+      - api-keys
+      summary: Revoke an API key
+      description: Permanently revokes the key. In-flight requests using this key will immediately
+        start receiving 401. Include `project_id` to revoke the key from a project-scoped
+        request; org-level callers may omit it.
+      parameters:
+      - $ref: '#/components/parameters/IDParam'
+      - $ref: '#/components/parameters/APIKeyProjectIDParam'
+      responses:
+        '204':
+          description: No Content
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /v1/projects/{project}/workflows:
     get:
       operationId: listWorkflows
@@ -1998,6 +2116,13 @@ paths:
         - `message_created` — a channel message was persisted; the
         envelope sets `channel_id` and `data` is a full
         ChannelMessage. Live-only — no `?since=<seq>` replay.
+        - `agent_typing` / `member_typing` — a channel participant is
+        composing live-only status. Agent frames carry
+        `{agent_id, agent_name, status, phase?, message?, tool_name?}`;
+        `status` is `started` or `stopped`, `phase` distinguishes
+        automatic states such as `generating_response` and
+        `using_tool`, and `message` can override the displayed
+        status text for the current agent turn.
         - `span_appended` — an OTLP span was persisted against a
         run; `data` carries `{span_id, trace_id, name, ...}`.
         - `custom` — a worker emitted a domain-specific event via
@@ -4008,6 +4133,31 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
+  /v1/projects/{project}/features:
+    get:
+      operationId: listProjectFeatures
+      tags:
+      - projects
+      summary: List effective project feature gates
+      description: Returns the server-resolved feature gates for the active project. Results
+        combine the built-in default, any org-level override, and any project-level override
+        so clients can hide unavailable product areas using the same answer enforced by backend
+        handlers.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      responses:
+        '200':
+          description: Effective feature gates for the project
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeatureGateListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /v1/projects/{id}/archive:
     post:
       operationId: archiveProject
@@ -4471,6 +4621,246 @@ paths:
                   created_at: '2026-04-24T14:44:00Z'
                   delivered_at: '2026-04-24T14:44:01Z'
                 has_more: false
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/projects/{project}/permissions:
+    get:
+      operationId: listProjectPermissions
+      tags:
+      - permissions
+      summary: List project permissions
+      description: Returns the canonical permission definitions, role presets, and action
+        execution permission groups available when building project-scoped roles. Use this
+        endpoint to source the permission IDs accepted by the role creation and update endpoints.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PermissionCatalogResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/projects/{project}/roles:
+    get:
+      operationId: listRoles
+      tags:
+      - roles
+      summary: List roles
+      description: Returns system-defined roles plus custom roles scoped to this project.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/LimitParam'
+      - $ref: '#/components/parameters/CursorParam'
+      - $ref: '#/components/parameters/TagFilterParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      operationId: createRole
+      tags:
+      - roles
+      summary: Create a role
+      description: Creates a custom role scoped to the project. Only system-defined roles
+        exist at the org/global tier and are created automatically by the platform.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRoleRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /v1/projects/{project}/roles/{id}:
+    get:
+      operationId: getRole
+      tags:
+      - roles
+      summary: Get a role
+      description: Returns a role by ID. Both system-defined and custom roles belonging to
+        this project are accessible via this endpoint.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/IDParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      operationId: updateRole
+      tags:
+      - roles
+      summary: Update a role
+      description: Updates description or permissions of a custom role. Role names are immutable.
+        System-defined roles (system_defined=true) cannot be updated and return 403.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/IDParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateRoleRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+    delete:
+      operationId: deleteRole
+      tags:
+      - roles
+      summary: Delete a role
+      description: Hard-deletes the role and all its assignments. System-defined roles cannot
+        be deleted.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/IDParam'
+      responses:
+        '204':
+          description: No Content
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/role-assignments:
+    get:
+      operationId: listRoleAssignments
+      tags:
+      - roles
+      summary: List role assignments
+      description: Returns assignments optionally filtered by user, role, or project scope.
+      parameters:
+      - name: user_id
+        in: query
+        description: Filter to assignments for a specific user.
+        schema:
+          type: string
+      - name: role_id
+        in: query
+        description: Filter to assignments for a specific role.
+        schema:
+          type: string
+      - name: project_id
+        in: query
+        description: Filter to project-scoped assignments for this project.
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleAssignmentListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      operationId: createRoleAssignment
+      tags:
+      - roles
+      summary: Assign a role to a principal user
+      description: Binds a role to a principal User. Supply `project_id` to create a project-scoped
+        assignment; omit it for an org-wide assignment. The assignment records the creating
+        user in `granted_by_user_id`. To manage service-account roles without using the linked
+        principal user ID directly, use `role_ids` on the service-account create and update
+        endpoints.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRoleAssignmentRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleAssignment'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /v1/role-assignments/{id}:
+    delete:
+      operationId: deleteRoleAssignment
+      tags:
+      - roles
+      summary: Remove a role assignment
+      description: Deletes a single role assignment by ID. The underlying role and user are
+        not deleted, but the user immediately loses permissions granted only through this
+        assignment.
+      parameters:
+      - $ref: '#/components/parameters/IDParam'
+      responses:
+        '204':
+          description: No Content
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -6253,6 +6643,145 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /v1/projects/{project}/service-accounts:
+    post:
+      operationId: createServiceAccount
+      tags:
+      - service-accounts
+      summary: Create a service account
+      description: Creates a service account within the project. Supply `role_ids` to atomically
+        assign one or more roles at creation time; requires the caller to hold `mobius.access.manage`.
+        Each role must belong to the same project or be a system-defined role.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateServiceAccountRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceAccount'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+    get:
+      operationId: listServiceAccounts
+      tags:
+      - service-accounts
+      summary: List service accounts
+      description: Returns project service accounts used by workers, agents, and automation.
+        Disabled accounts are included so administrators can audit or re-enable them.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/TagFilterParam'
+      - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceAccountListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/projects/{project}/service-accounts/{id}:
+    get:
+      operationId: getServiceAccount
+      tags:
+      - service-accounts
+      summary: Get a service account
+      description: Returns one service account, including disabled state, owner, metadata,
+        and timestamps. API keys belonging to the account are managed through the API key
+        endpoints.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/IDParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceAccount'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      operationId: updateServiceAccount
+      tags:
+      - service-accounts
+      summary: Update a service account
+      description: Updates mutable fields. To disable without deleting, set `status` to `disabled`.
+        The `name` field is immutable after creation.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/IDParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateServiceAccountRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceAccount'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      operationId: deleteServiceAccount
+      tags:
+      - service-accounts
+      summary: Delete a service account
+      description: |-
+        Hard-deletes the service account and its role assignments.
+
+        Returns `409 Conflict` when the service account is still bound to an agent (the SA↔agent binding is immutable per the 1:1 invariant — delete the agent first) or when active API keys still reference it (revoke them first).
+
+        Consider disabling instead of deleting for audit continuity.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/IDParam'
+      responses:
+        '204':
+          description: No Content
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
   /v1/projects/{project}/spans:
     get:
       operationId: listProjectSpans
@@ -6992,7 +7521,8 @@ components:
       name: member_id
       in: path
       required: true
-      description: User ID of the channel member. Agent members use their backing user ID.
+      description: User ID (`users.id`) of the channel member. Agent members use their backing
+        user ID, not `agents.id`.
       schema:
         type: string
     user_id:
@@ -7465,6 +7995,21 @@ components:
           items:
             type: string
           description: Required when `kind=explicit`.
+    FeatureKey:
+      type: string
+      enum:
+      - feature.apps
+      - feature.observables
+      description: Server-defined product feature key. `feature.apps` controls the Apps product
+        area; `feature.observables` controls Observables.
+    FeatureOverrideScope:
+      type: string
+      enum:
+      - org
+      - project
+      description: Scope for a feature override. Org overrides apply across the organization;
+        project overrides apply only to the specified project and take precedence over org
+        overrides.
     ChannelCompletionBehavior:
       type: string
       enum:
@@ -7478,6 +8023,7 @@ components:
       - human
       - agent
       - service_account
+      - system
       description: |-
         Authenticated user kind that posted the message, derived from the
         credential at send time and never overrideable in the request body
@@ -7488,6 +8034,8 @@ components:
         invariant from PRD 048 §1).
         - `service_account` — an API key whose service account backs no
         agent.
+        - `system` — an internal system user that authored workflow/system
+        messages.
     EntityReferenceType:
       type: string
       enum:
@@ -7620,7 +8168,7 @@ components:
     ChannelMember:
       type: object
       additionalProperties: false
-      description: Live membership record for a user or agent in a channel.
+      description: Live membership record for a `users.id` principal in a channel.
       required:
       - id
       - channel_id
@@ -7636,7 +8184,8 @@ components:
           description: ID of the channel this membership belongs to.
         user_id:
           type: string
-          description: ID of the user or agent who is a member.
+          description: ID from the users table for the member. Agent members use their backing
+            users.id, not agents.id.
         role:
           type: string
           enum:
@@ -7700,12 +8249,13 @@ components:
           description: ID of the channel this message was posted in.
         sender_type:
           $ref: '#/components/schemas/ChannelMessageSenderType'
-          description: Whether the sender is a human, an agent worker, or a bare service account
-            credential.
+          description: Whether the sender is a human, an agent worker, a bare service account
+            credential, or an internal system principal.
         sender_id:
           type: string
           description: Sender user ID. For `sender_type=agent`, this is the agent's backing
-            `users.id`, not `agents.id`.
+            `users.id`, not `agents.id`; for `sender_type=system`, this is the per-org system
+            `users.id`.
         sender_session_id:
           type: string
           nullable: true
@@ -7870,9 +8420,9 @@ components:
           type: array
           items:
             type: string
-          description: Optional list of user IDs to add as members at creation time. Agent
-            members use their backing user IDs. All receive the `member` role; the creator
-            is added as `admin` separately.
+          description: Optional list of `users.id` values to add as members at creation time.
+            Agent members use their backing user IDs, not `agents.id`. All receive the `member`
+            role; the creator is added as `admin` separately.
         purpose:
           type: string
           enum:
@@ -7929,8 +8479,8 @@ components:
       properties:
         participant_id:
           type: string
-          description: User ID to add to the channel. Agent members use their backing user
-            ID.
+          description: User ID (`users.id`) to add to the channel. Agent members use their
+            backing user ID, not `agents.id`.
         role:
           type: string
           enum:
@@ -8083,8 +8633,8 @@ components:
       properties:
         participant_id:
           type: string
-          description: User ID of the other DM participant. Agent participants use their backing
-            user ID.
+          description: User ID (`users.id`) of the other DM participant. Agent participants
+            use their backing user ID, not `agents.id`.
         display_name:
           type: string
           description: Human-facing display name for the channel. Defaults to the participant's
@@ -8981,6 +9531,155 @@ components:
         has_more:
           type: boolean
           description: Whether more results are available
+    APIKey:
+      type: object
+      additionalProperties: false
+      description: Stored API credential metadata for automation and service access. The raw
+        secret is never returned here; use this object to list, audit, expire, or identify
+        keys by prefix without exposing tokens.
+      required:
+      - id
+      - name
+      - key_prefix
+      - project_id
+      - service_account_id
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+          description: Unique identifier for this API key.
+        name:
+          type: string
+          description: Human-readable label, unique within the project.
+        key_prefix:
+          type: string
+          description: First 8 characters of the key, used to identify it without exposing
+            the secret.
+        project_id:
+          $ref: '#/components/schemas/ProjectID'
+          description: Project that owns the service account this key authenticates as.
+        service_account_id:
+          type: string
+          description: Service account this key authenticates as.
+        expires_at:
+          type: string
+          format: date-time
+          description: Hard expiry timestamp. Requests using an expired key receive 401.
+        last_used_at:
+          type: string
+          format: date-time
+          description: Timestamp of the most recent authenticated request using this key.
+        tags:
+          $ref: '#/components/schemas/TagMap'
+          description: Resource tags applied to this API key.
+        created_at:
+          type: string
+          format: date-time
+          description: Timestamp when this key was created.
+        updated_at:
+          type: string
+          format: date-time
+          description: Timestamp when this key was last updated.
+    APIKeyCreateResult:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - name
+      - key_prefix
+      - project_id
+      - service_account_id
+      - created_at
+      - updated_at
+      - key
+      description: Returned only on key creation. Contains the raw `key` value which is not
+        retrievable after this response.
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the created API key.
+        name:
+          type: string
+          description: Human-readable name for the key.
+        key_prefix:
+          type: string
+          description: First 8 characters of the key for identification.
+        project_id:
+          $ref: '#/components/schemas/ProjectID'
+          description: Project that owns the service account this key authenticates as.
+        service_account_id:
+          type: string
+          description: Service account this key authenticates as.
+        expires_at:
+          type: string
+          format: date-time
+          description: Timestamp when this key expires. Omitted if it does not expire.
+        last_used_at:
+          type: string
+          format: date-time
+          description: Timestamp of the most recent authenticated request using this key.
+        tags:
+          $ref: '#/components/schemas/TagMap'
+          description: Resource tags applied to this API key.
+        created_at:
+          type: string
+          format: date-time
+          description: Timestamp when this key was created.
+        updated_at:
+          type: string
+          format: date-time
+          description: Timestamp when this key was last updated.
+        key:
+          type: string
+          description: The raw API key. Returned only once at creation — store it securely
+            immediately.
+    APIKeyListResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - has_more
+      properties:
+        items:
+          type: array
+          description: The list of results for this page.
+          items:
+            $ref: '#/components/schemas/APIKey'
+        next_cursor:
+          type: string
+          description: Opaque cursor to pass as `cursor` on the next request. Absent when
+            `has_more` is false.
+        has_more:
+          type: boolean
+          description: Whether additional pages are available.
+    CreateAPIKeyRequest:
+      type: object
+      required:
+      - name
+      - project_id
+      - service_account_id
+      additionalProperties: false
+      description: Request shape for creating a project API key for a service account. The
+        key authenticates as that service account; permissions are managed by assigning roles
+        to the service account, not by granting permissions to the key.
+      properties:
+        name:
+          type: string
+          description: Human-readable label, unique within the project.
+        project_id:
+          $ref: '#/components/schemas/ProjectID'
+          description: Project that owns both the service account and the new key.
+        service_account_id:
+          type: string
+          description: Service account this key authenticates as.
+        expires_at:
+          type: string
+          format: date-time
+          description: Optional hard expiry. Omit for a non-expiring key.
+        tags:
+          $ref: '#/components/schemas/TagMap'
+          description: Initial tag set.
     WorkflowExpressionValidationMode:
       type: string
       description: '`template` validates strings that may contain `${...}` tokens. `expression`
@@ -10516,8 +11215,8 @@ components:
           type: array
           items:
             type: string
-          description: Additional user IDs to invite to the channel. Agent participants use
-            their backing user IDs.
+          description: Additional `users.id` values to invite to the channel. Agent participants
+            use their backing user IDs, not `agents.id`.
         opening_message:
           type: string
           minLength: 1
@@ -15111,6 +15810,7 @@ components:
       - name
       - handle
       - access_mode
+      - permissions_enabled
       - created_at
       - updated_at
       properties:
@@ -15130,6 +15830,11 @@ components:
         access_mode:
           $ref: '#/components/schemas/ProjectAccessMode'
           description: 'Current project access policy: `org_open` or `restricted`.'
+        permissions_enabled:
+          type: boolean
+          description: Whether role-permission enforcement is enabled for this project. When
+            false, authenticated project members can access project-scoped APIs according
+            to the broader org/project access policy.
         created_by:
           type: string
           description: User ID of the org member who created this project.
@@ -15214,6 +15919,11 @@ components:
             new agent in this project. `null` clears the override and falls through to the
             system `Agent` role floor. Must resolve to a system-defined role or a role scoped
             to this project.
+        permissions_enabled:
+          type: boolean
+          description: Enables or disables role-permission enforcement for this project. This
+            is a project setting; there is no org-wide fallback role for regular users without
+            assignments.
         tags:
           $ref: '#/components/schemas/TagMap'
           description: When supplied, replaces the user tag set on the project.
@@ -15278,6 +15988,72 @@ components:
         user_id:
           type: string
           description: User ID of the org member to add to this project.
+    FeatureGateSource:
+      type: string
+      enum:
+      - default
+      - org_override
+      - project_override
+      description: Source of the effective feature gate decision.
+    FeatureGate:
+      type: object
+      additionalProperties: false
+      required:
+      - key
+      - label
+      - description
+      - enabled
+      - default_enabled
+      - source
+      - allowed_scopes
+      properties:
+        key:
+          $ref: '#/components/schemas/FeatureKey'
+        label:
+          type: string
+          description: Short user-facing name.
+        description:
+          type: string
+          description: User-facing description of the gated product area.
+        enabled:
+          type: boolean
+          description: Effective state after resolving defaults and overrides.
+        default_enabled:
+          type: boolean
+          description: Built-in fallback state when no active override applies.
+        source:
+          $ref: '#/components/schemas/FeatureGateSource'
+        source_scope:
+          $ref: '#/components/schemas/FeatureOverrideScope'
+          description: Override scope that produced this state, omitted for defaults.
+        source_org_id:
+          type: string
+          description: Org ID for the override that produced this state.
+        source_project_id:
+          type: string
+          description: Project ID for the override that produced this state.
+        reason:
+          type: string
+          description: Optional operator-supplied reason from the active override.
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Optional expiry for the active override.
+        allowed_scopes:
+          type: array
+          items:
+            $ref: '#/components/schemas/FeatureOverrideScope'
+    FeatureGateListResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/FeatureGate'
     WebhookDeliveryStatus:
       type: string
       enum:
@@ -15498,6 +16274,324 @@ components:
         latency_ms:
           type: integer
           description: Round-trip latency in milliseconds.
+    PermissionDefinition:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - label
+      - description
+      - scope
+      - category
+      - risk
+      - assignable
+      - user_kinds
+      properties:
+        id:
+          type: string
+          description: Stable permission ID stored on roles.
+        label:
+          type: string
+          description: Human-readable label for product UI.
+        description:
+          type: string
+          description: Short explanation of what the permission grants.
+        scope:
+          type: string
+          enum:
+          - project
+          - org
+          - platform
+          - action
+        category:
+          type: string
+          enum:
+          - project
+          - access
+          - workflows
+          - work
+          - channels
+          - integrations
+          - audit
+          - billing
+          - platform
+          - actions
+        risk:
+          type: string
+          enum:
+          - low
+          - medium
+          - high
+          - critical
+        assignable:
+          type: boolean
+          description: Whether this permission should be selectable in the current project
+            role builder.
+        user_kinds:
+          type: array
+          minItems: 1
+          maxItems: 4
+          uniqueItems: true
+          items:
+            type: string
+            enum:
+            - human
+            - agent
+            - service_account
+            - system
+          description: User kinds this permission is intended for.
+    PermissionPreset:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - label
+      - description
+      - scope
+      - permissions
+      properties:
+        id:
+          type: string
+        label:
+          type: string
+        description:
+          type: string
+        scope:
+          type: string
+          enum:
+          - project
+          - org
+          - platform
+          - action
+        permissions:
+          type: array
+          maxItems: 64
+          items:
+            type: string
+    ActionPermissionGroup:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - label
+      - source
+      - children
+      properties:
+        id:
+          type: string
+          description: Wildcard permission ID, for example `actions.execute.slack.*`.
+        label:
+          type: string
+        source:
+          type: string
+          enum:
+          - platform
+          - integration
+          - custom
+        children:
+          type: array
+          maxItems: 200
+          items:
+            type: string
+          description: Concrete action execution permission IDs included in this group.
+    PermissionCatalogResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - permissions
+      - presets
+      - action_groups
+      properties:
+        permissions:
+          type: array
+          maxItems: 64
+          items:
+            $ref: '#/components/schemas/PermissionDefinition'
+        presets:
+          type: array
+          maxItems: 32
+          items:
+            $ref: '#/components/schemas/PermissionPreset'
+        action_groups:
+          type: array
+          maxItems: 64
+          items:
+            $ref: '#/components/schemas/ActionPermissionGroup'
+    Role:
+      type: object
+      additionalProperties: false
+      description: Named bundle of permissions assignable to users or service accounts. Roles
+        let admins grant workflow, project, and automation capabilities consistently without
+        editing every user individually.
+      required:
+      - id
+      - name
+      - permissions
+      - system_defined
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+          description: Unique identifier for this role.
+        project_id:
+          type: string
+          description: Scoping project. Empty for system-defined roles.
+        name:
+          type: string
+          description: Human-readable role name, unique within org+project scope.
+        description:
+          type: string
+          description: Optional human-readable description of what this role grants.
+        permissions:
+          type: array
+          items:
+            type: string
+          description: Permission strings granted by this role. Source allowed values from
+            `GET /v1/projects/{project}/permissions`; legacy IDs or values not present in
+            that catalog are rejected.
+        system_defined:
+          type: boolean
+          description: True for built-in platform roles that cannot be modified or deleted.
+        tags:
+          $ref: '#/components/schemas/TagMap'
+          description: Resource tags applied to this role.
+        created_at:
+          type: string
+          format: date-time
+          description: Timestamp when this role was created.
+        updated_at:
+          type: string
+          format: date-time
+          description: Timestamp when this role was last updated.
+    RoleAssignment:
+      type: object
+      additionalProperties: false
+      description: Binding between a User and a role, optionally scoped to a project. Use
+        assignments to explain why a user or service account has access and to audit who granted
+        it.
+      required:
+      - id
+      - user_id
+      - role_id
+      - role_name
+      - created_at
+      properties:
+        id:
+          type: string
+          description: Unique identifier for this role assignment.
+        user_id:
+          type: string
+          description: User ID receiving the role.
+        role_id:
+          type: string
+          description: ID of the assigned role.
+        role_name:
+          type: string
+          description: Name of the assigned role.
+        project_id:
+          type: string
+          description: Set for project-scoped assignments; empty for org-wide.
+        granted_by_user_id:
+          type: string
+          description: User ID of the caller who created this assignment.
+        created_at:
+          type: string
+          format: date-time
+          description: Timestamp when this assignment was created.
+    RoleListResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - has_more
+      properties:
+        items:
+          type: array
+          description: The list of results for this page.
+          items:
+            $ref: '#/components/schemas/Role'
+        next_cursor:
+          type: string
+          description: Opaque cursor to pass as `cursor` on the next request. Absent when
+            `has_more` is false.
+        has_more:
+          type: boolean
+          description: Whether additional pages are available.
+    RoleAssignmentListResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      properties:
+        items:
+          type: array
+          description: The list of results for this page.
+          items:
+            $ref: '#/components/schemas/RoleAssignment'
+    CreateRoleRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - name
+      - permissions
+      properties:
+        name:
+          type: string
+          description: Unique name within the project.
+        description:
+          type: string
+          description: Optional human-readable description of what this role grants.
+        permissions:
+          type: array
+          items:
+            type: string
+          description: Permission strings to include. Source allowed values from `GET /v1/projects/{project}/permissions`;
+            legacy IDs or values not present in that catalog are rejected.
+        tags:
+          $ref: '#/components/schemas/TagMap'
+          description: Initial tag set.
+    UpdateRoleRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        description:
+          type: string
+          description: Replacement description.
+        permissions:
+          type: array
+          items:
+            type: string
+          description: Replaces the existing permissions array entirely. Source allowed values
+            from `GET /v1/projects/{project}/permissions`; legacy IDs or values not present
+            in that catalog are rejected.
+        tags:
+          $ref: '#/components/schemas/TagMap'
+          description: When supplied, replaces the user tag set on the role. System tags (`mobius:*`)
+            are preserved.
+    CreateRoleAssignmentRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - user_id
+      oneOf:
+      - required:
+        - role_id
+      - required:
+        - role_name
+      properties:
+        user_id:
+          type: string
+          description: Principal User ID to assign the role to.
+        role_id:
+          type: string
+          description: Mutually exclusive with `role_name`.
+        role_name:
+          type: string
+          description: Resolved to a role ID server-side. Mutually exclusive with `role_id`.
+        project_id:
+          type: string
+          description: Scope this assignment to a project. Omit for org-wide assignment.
     InteractionListResponse:
       type: object
       additionalProperties: false
@@ -17090,6 +18184,139 @@ components:
         truncated:
           type: boolean
           description: True when more than 500 rows matched the query.
+    ServiceAccountStatus:
+      type: string
+      enum:
+      - active
+      - disabled
+      description: '`active` allows authentication and job claims; `disabled` blocks them
+        but preserves the record and its assignments.'
+    ServiceAccount:
+      type: object
+      additionalProperties: false
+      description: Non-human identity used by automation, agents, and API keys. Service accounts
+        make ownership, permissions, and credential rotation explicit without tying machine
+        access to a human user.
+      required:
+      - id
+      - name
+      - status
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+          description: Unique identifier for this service account.
+        name:
+          type: string
+          description: Human-readable name for this service account. Immutable after creation.
+        description:
+          type: string
+          description: Optional human-readable description.
+        status:
+          $ref: '#/components/schemas/ServiceAccountStatus'
+          description: 'Current service account status: `active` or `disabled`.'
+        owner_id:
+          type: string
+          description: Optional org member responsible for this service account.
+        user_id:
+          type: string
+          description: 'Linked User record. For agent-backed service accounts this is the
+            agent''s User (kind: agent); for standalone service accounts this is a dedicated
+            User (kind: service_account). Immutable once set.'
+        role_ids:
+          type: array
+          items:
+            type: string
+          uniqueItems: true
+          description: Role IDs currently assigned to this service account in the project.
+        metadata:
+          type: object
+          additionalProperties: true
+          description: Arbitrary key-value metadata. Subject to size and nesting depth limits.
+        tags:
+          $ref: '#/components/schemas/TagMap'
+          description: 'Resource tags applied to this service account. Distinct from `metadata`:
+            `tags` is the uniform string-to-string field used for filtering and reporting;
+            `metadata` is a free-form caller-defined blob.'
+        created_at:
+          type: string
+          format: date-time
+          description: Timestamp when this service account was created.
+        updated_at:
+          type: string
+          format: date-time
+          description: Timestamp when this service account was last updated.
+    ServiceAccountListResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      properties:
+        items:
+          type: array
+          description: The list of results for this page.
+          items:
+            $ref: '#/components/schemas/ServiceAccount'
+    CreateServiceAccountRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - name
+      properties:
+        name:
+          type: string
+          description: Human-readable name for this service account. Immutable after creation.
+        description:
+          type: string
+          description: Optional human-readable description.
+        owner_id:
+          type: string
+          description: Org member responsible for this service account.
+        metadata:
+          type: object
+          additionalProperties: true
+          description: Arbitrary metadata to attach to the service account.
+        role_ids:
+          type: array
+          items:
+            type: string
+          minItems: 1
+          uniqueItems: true
+          description: One or more role IDs to assign at creation time. All assignments are
+            created atomically with the service account. Requires `mobius.access.manage`.
+            Each role must belong to this project or be org-scoped (project_id empty).
+        tags:
+          $ref: '#/components/schemas/TagMap'
+          description: Initial tag set.
+    UpdateServiceAccountRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        description:
+          type: string
+          description: Replacement description.
+        status:
+          $ref: '#/components/schemas/ServiceAccountStatus'
+          description: 'Replacement service account status: `active` or `disabled`.'
+        owner_id:
+          type: string
+          description: ID of the org member responsible for this service account.
+        metadata:
+          type: object
+          additionalProperties: true
+          description: Replacement metadata.
+        role_ids:
+          type: array
+          items:
+            type: string
+          uniqueItems: true
+          description: Replacement role IDs for this service account in the project. Send
+            an empty array to remove all project role assignments. Requires `mobius.access.manage`.
+        tags:
+          $ref: '#/components/schemas/TagMap'
+          description: When supplied, replaces the user tag set on the service account. System
+            tags (`mobius:*`) are preserved.
     SpanKind:
       type: string
       description: Mirrors the OpenTelemetry `SpanKind` enum. Stored lowercase.
@@ -17901,6 +19128,9 @@ x-tagGroups:
 - name: Audit Logs
   tags:
   - audit-logs
+- name: API Keys
+  tags:
+  - api-keys
 - name: Workflows
   tags:
   - workflows
@@ -17932,6 +19162,12 @@ x-tagGroups:
 - name: Webhooks
   tags:
   - webhooks
+- name: Permissions
+  tags:
+  - permissions
+- name: Roles
+  tags:
+  - roles
 - name: Interactions
   tags:
   - interactions
@@ -17952,6 +19188,9 @@ x-tagGroups:
 - name: Project Team
   tags:
   - team
+- name: Service Accounts
+  tags:
+  - service-accounts
 - name: Spans
   tags:
   - spans

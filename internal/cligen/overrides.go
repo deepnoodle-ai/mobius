@@ -139,6 +139,9 @@ var overrides = map[string]Override{
 	// --- observables ------------------------------------------------------
 	"submitObservableObservation": {Command: "submit-observation"},
 
+	// --- permissions ------------------------------------------------------
+	"listProjectPermissions": {Command: "list"},
+
 	// --- projects ---------------------------------------------------------
 	"archiveProject": {Command: "archive"},
 	"restoreProject": {Command: "restore"},
@@ -248,6 +251,7 @@ var groupDescriptions = map[string]string{
 	"messages":              "Send, list, and update channel messages",
 	"metrics":               "Platform and workflow metrics",
 	"observables":           "Tracked observables, observations, and state",
+	"permissions":           "Permission catalog for project roles",
 	"projects":              "Projects within the organization",
 	"references":            "Reference lookup and resolution",
 	"runs":                  "Workflow runs",

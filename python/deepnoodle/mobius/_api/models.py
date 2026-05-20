@@ -146,6 +146,24 @@ class VoteEligibility(BaseModel):
     )
 
 
+class FeatureKey(StrEnum):
+    """
+    Server-defined product feature key. `feature.apps` controls the Apps product area; `feature.observables` controls Observables.
+    """
+
+    feature_apps = 'feature.apps'
+    feature_observables = 'feature.observables'
+
+
+class FeatureOverrideScope(StrEnum):
+    """
+    Scope for a feature override. Org overrides apply across the organization; project overrides apply only to the specified project and take precedence over org overrides.
+    """
+
+    org = 'org'
+    project = 'project'
+
+
 class ChannelCompletionBehavior(StrEnum):
     """
     Behavior to apply when every purpose-linked interaction is terminal.
@@ -167,11 +185,14 @@ class ChannelMessageSenderType(StrEnum):
     invariant from PRD 048 §1).
     - `service_account` — an API key whose service account backs no
     agent.
+    - `system` — an internal system user that authored workflow/system
+    messages.
     """
 
     human = 'human'
     agent = 'agent'
     service_account = 'service_account'
+    system = 'system'
 
 
 class EntityReferenceType(StrEnum):
@@ -316,7 +337,7 @@ class Role(StrEnum):
 
 class ChannelMember(BaseModel):
     """
-    Live membership record for a user or agent in a channel.
+    Live membership record for a `users.id` principal in a channel.
     """
 
     model_config = ConfigDict(
@@ -326,7 +347,10 @@ class ChannelMember(BaseModel):
     channel_id: str = Field(
         ..., description='ID of the channel this membership belongs to.'
     )
-    user_id: str = Field(..., description='ID of the user or agent who is a member.')
+    user_id: str = Field(
+        ...,
+        description='ID from the users table for the member. Agent members use their backing users.id, not agents.id.',
+    )
     role: Role = Field(
         ...,
         description='`admin` — can update channel settings and manage members. `member` — can post messages and view history. Creators are automatically assigned `admin`.',
@@ -459,7 +483,7 @@ class CreateChannelRequest(BaseModel):
     private: bool = Field(False, description='When true, the channel is invite-only.')
     member_ids: list[str] | None = Field(
         None,
-        description='Optional list of user IDs to add as members at creation time. Agent members use their backing user IDs. All receive the `member` role; the creator is added as `admin` separately.',
+        description='Optional list of `users.id` values to add as members at creation time. Agent members use their backing user IDs, not `agents.id`. All receive the `member` role; the creator is added as `admin` separately.',
     )
     purpose: Purpose1 = Field(
         'general', description='Optional purpose for the channel.'
@@ -522,7 +546,7 @@ class AddChannelMemberRequest(BaseModel):
     )
     participant_id: str = Field(
         ...,
-        description='User ID to add to the channel. Agent members use their backing user ID.',
+        description='User ID (`users.id`) to add to the channel. Agent members use their backing user ID, not `agents.id`.',
     )
     role: Role1 = Field(
         'member',
@@ -622,7 +646,7 @@ class OpenDirectMessageRequest(BaseModel):
     )
     participant_id: str = Field(
         ...,
-        description='User ID of the other DM participant. Agent participants use their backing user ID.',
+        description='User ID (`users.id`) of the other DM participant. Agent participants use their backing user ID, not `agents.id`.',
     )
     display_name: str | None = Field(
         None,
@@ -1157,6 +1181,126 @@ class AuditLogListResponse(BaseModel):
     has_more: bool = Field(..., description='Whether more results are available')
 
 
+class APIKey(BaseModel):
+    """
+    Stored API credential metadata for automation and service access. The raw secret is never returned here; use this object to list, audit, expire, or identify keys by prefix without exposing tokens.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str = Field(..., description='Unique identifier for this API key.')
+    name: str = Field(
+        ..., description='Human-readable label, unique within the project.'
+    )
+    key_prefix: str = Field(
+        ...,
+        description='First 8 characters of the key, used to identify it without exposing the secret.',
+    )
+    project_id: ProjectID = Field(
+        ...,
+        description='Project that owns the service account this key authenticates as.',
+    )
+    service_account_id: str = Field(
+        ..., description='Service account this key authenticates as.'
+    )
+    expires_at: AwareDatetime | None = Field(
+        None,
+        description='Hard expiry timestamp. Requests using an expired key receive 401.',
+    )
+    last_used_at: AwareDatetime | None = Field(
+        None,
+        description='Timestamp of the most recent authenticated request using this key.',
+    )
+    tags: TagMap | None = Field(
+        None, description='Resource tags applied to this API key.'
+    )
+    created_at: AwareDatetime = Field(
+        ..., description='Timestamp when this key was created.'
+    )
+    updated_at: AwareDatetime = Field(
+        ..., description='Timestamp when this key was last updated.'
+    )
+
+
+class APIKeyCreateResult(BaseModel):
+    """
+    Returned only on key creation. Contains the raw `key` value which is not retrievable after this response.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str = Field(..., description='Unique identifier for the created API key.')
+    name: str = Field(..., description='Human-readable name for the key.')
+    key_prefix: str = Field(
+        ..., description='First 8 characters of the key for identification.'
+    )
+    project_id: ProjectID = Field(
+        ...,
+        description='Project that owns the service account this key authenticates as.',
+    )
+    service_account_id: str = Field(
+        ..., description='Service account this key authenticates as.'
+    )
+    expires_at: AwareDatetime | None = Field(
+        None,
+        description='Timestamp when this key expires. Omitted if it does not expire.',
+    )
+    last_used_at: AwareDatetime | None = Field(
+        None,
+        description='Timestamp of the most recent authenticated request using this key.',
+    )
+    tags: TagMap | None = Field(
+        None, description='Resource tags applied to this API key.'
+    )
+    created_at: AwareDatetime = Field(
+        ..., description='Timestamp when this key was created.'
+    )
+    updated_at: AwareDatetime = Field(
+        ..., description='Timestamp when this key was last updated.'
+    )
+    key: str = Field(
+        ...,
+        description='The raw API key. Returned only once at creation — store it securely immediately.',
+    )
+
+
+class APIKeyListResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    items: list[APIKey] = Field(..., description='The list of results for this page.')
+    next_cursor: str | None = Field(
+        None,
+        description='Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.',
+    )
+    has_more: bool = Field(..., description='Whether additional pages are available.')
+
+
+class CreateAPIKeyRequest(BaseModel):
+    """
+    Request shape for creating a project API key for a service account. The key authenticates as that service account; permissions are managed by assigning roles to the service account, not by granting permissions to the key.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    name: str = Field(
+        ..., description='Human-readable label, unique within the project.'
+    )
+    project_id: ProjectID = Field(
+        ..., description='Project that owns both the service account and the new key.'
+    )
+    service_account_id: str = Field(
+        ..., description='Service account this key authenticates as.'
+    )
+    expires_at: AwareDatetime | None = Field(
+        None, description='Optional hard expiry. Omit for a non-expiring key.'
+    )
+    tags: TagMap | None = Field(None, description='Initial tag set.')
+
+
 class WorkflowExpressionValidationMode(StrEnum):
     """
     `template` validates strings that may contain `${...}` tokens. `expression` validates a bare expression or predicate without `${...}` wrapping.
@@ -1660,7 +1804,7 @@ class WorkflowInteractionDiscussionConfig(BaseModel):
     topic: str | None = Field(None, description='Topic for a newly-created channel.')
     member_ids: list[str] | None = Field(
         None,
-        description='Additional user IDs to invite to the channel. Agent participants use their backing user IDs.',
+        description='Additional `users.id` values to invite to the channel. Agent participants use their backing user IDs, not `agents.id`.',
     )
     opening_message: str = Field(
         ...,
@@ -4336,6 +4480,10 @@ class Project(BaseModel):
     access_mode: ProjectAccessMode = Field(
         ..., description='Current project access policy: `org_open` or `restricted`.'
     )
+    permissions_enabled: bool = Field(
+        ...,
+        description='Whether role-permission enforcement is enabled for this project. When false, authenticated project members can access project-scoped APIs according to the broader org/project access policy.',
+    )
     created_by: str | None = Field(
         None, description='User ID of the org member who created this project.'
     )
@@ -4401,6 +4549,10 @@ class UpdateProjectRequest(BaseModel):
         None,
         description='Replacement role assigned to the auto-created service account of any new agent in this project. `null` clears the override and falls through to the system `Agent` role floor. Must resolve to a system-defined role or a role scoped to this project.',
     )
+    permissions_enabled: bool | None = Field(
+        None,
+        description='Enables or disables role-permission enforcement for this project. This is a project setting; there is no org-wide fallback role for regular users without assignments.',
+    )
     tags: TagMap | None = Field(
         None, description='When supplied, replaces the user tag set on the project.'
     )
@@ -4452,6 +4604,58 @@ class AddProjectMemberRequest(BaseModel):
     user_id: str = Field(
         ..., description='User ID of the org member to add to this project.'
     )
+
+
+class FeatureGateSource(StrEnum):
+    """
+    Source of the effective feature gate decision.
+    """
+
+    default = 'default'
+    org_override = 'org_override'
+    project_override = 'project_override'
+
+
+class FeatureGate(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    key: FeatureKey
+    label: str = Field(..., description='Short user-facing name.')
+    description: str = Field(
+        ..., description='User-facing description of the gated product area.'
+    )
+    enabled: bool = Field(
+        ..., description='Effective state after resolving defaults and overrides.'
+    )
+    default_enabled: bool = Field(
+        ..., description='Built-in fallback state when no active override applies.'
+    )
+    source: FeatureGateSource
+    source_scope: FeatureOverrideScope | None = Field(
+        None,
+        description='Override scope that produced this state, omitted for defaults.',
+    )
+    source_org_id: str | None = Field(
+        None, description='Org ID for the override that produced this state.'
+    )
+    source_project_id: str | None = Field(
+        None, description='Project ID for the override that produced this state.'
+    )
+    reason: str | None = Field(
+        None, description='Optional operator-supplied reason from the active override.'
+    )
+    expires_at: AwareDatetime | None = Field(
+        None, description='Optional expiry for the active override.'
+    )
+    allowed_scopes: list[FeatureOverrideScope]
+
+
+class FeatureGateListResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    items: list[FeatureGate]
 
 
 class WebhookDeliveryStatus(StrEnum):
@@ -4643,6 +4847,258 @@ class PingWebhookResult(BaseModel):
     latency_ms: int | None = Field(
         None, description='Round-trip latency in milliseconds.'
     )
+
+
+class Scope(StrEnum):
+    project = 'project'
+    org = 'org'
+    platform = 'platform'
+    action = 'action'
+
+
+class Category(StrEnum):
+    project = 'project'
+    access = 'access'
+    workflows = 'workflows'
+    work = 'work'
+    channels = 'channels'
+    integrations = 'integrations'
+    audit = 'audit'
+    billing = 'billing'
+    platform = 'platform'
+    actions = 'actions'
+
+
+class Risk1(StrEnum):
+    low = 'low'
+    medium = 'medium'
+    high = 'high'
+    critical = 'critical'
+
+
+class UserKind(StrEnum):
+    human = 'human'
+    agent = 'agent'
+    service_account = 'service_account'
+    system = 'system'
+
+
+class PermissionDefinition(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str = Field(..., description='Stable permission ID stored on roles.')
+    label: str = Field(..., description='Human-readable label for product UI.')
+    description: str = Field(
+        ..., description='Short explanation of what the permission grants.'
+    )
+    scope: Scope
+    category: Category
+    risk: Risk1
+    assignable: bool = Field(
+        ...,
+        description='Whether this permission should be selectable in the current project role builder.',
+    )
+    user_kinds: list[UserKind] = Field(
+        ...,
+        description='User kinds this permission is intended for.',
+        max_length=4,
+        min_length=1,
+    )
+
+
+class PermissionPreset(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str
+    label: str
+    description: str
+    scope: Scope
+    permissions: list[str] = Field(..., max_length=64)
+
+
+class Source3(StrEnum):
+    platform = 'platform'
+    integration = 'integration'
+    custom = 'custom'
+
+
+class ActionPermissionGroup(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str = Field(
+        ...,
+        description='Wildcard permission ID, for example `actions.execute.slack.*`.',
+    )
+    label: str
+    source: Source3
+    children: list[str] = Field(
+        ...,
+        description='Concrete action execution permission IDs included in this group.',
+        max_length=200,
+    )
+
+
+class PermissionCatalogResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    permissions: list[PermissionDefinition] = Field(..., max_length=64)
+    presets: list[PermissionPreset] = Field(..., max_length=32)
+    action_groups: list[ActionPermissionGroup] = Field(..., max_length=64)
+
+
+class Role2(BaseModel):
+    """
+    Named bundle of permissions assignable to users or service accounts. Roles let admins grant workflow, project, and automation capabilities consistently without editing every user individually.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str = Field(..., description='Unique identifier for this role.')
+    project_id: str | None = Field(
+        None, description='Scoping project. Empty for system-defined roles.'
+    )
+    name: str = Field(
+        ..., description='Human-readable role name, unique within org+project scope.'
+    )
+    description: str | None = Field(
+        None,
+        description='Optional human-readable description of what this role grants.',
+    )
+    permissions: list[str] = Field(
+        ...,
+        description='Permission strings granted by this role. Source allowed values from `GET /v1/projects/{project}/permissions`; legacy IDs or values not present in that catalog are rejected.',
+    )
+    system_defined: bool = Field(
+        ...,
+        description='True for built-in platform roles that cannot be modified or deleted.',
+    )
+    tags: TagMap | None = Field(None, description='Resource tags applied to this role.')
+    created_at: AwareDatetime = Field(
+        ..., description='Timestamp when this role was created.'
+    )
+    updated_at: AwareDatetime = Field(
+        ..., description='Timestamp when this role was last updated.'
+    )
+
+
+class RoleAssignment(BaseModel):
+    """
+    Binding between a User and a role, optionally scoped to a project. Use assignments to explain why a user or service account has access and to audit who granted it.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str = Field(..., description='Unique identifier for this role assignment.')
+    user_id: str = Field(..., description='User ID receiving the role.')
+    role_id: str = Field(..., description='ID of the assigned role.')
+    role_name: str = Field(..., description='Name of the assigned role.')
+    project_id: str | None = Field(
+        None, description='Set for project-scoped assignments; empty for org-wide.'
+    )
+    granted_by_user_id: str | None = Field(
+        None, description='User ID of the caller who created this assignment.'
+    )
+    created_at: AwareDatetime = Field(
+        ..., description='Timestamp when this assignment was created.'
+    )
+
+
+class RoleListResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    items: list[Role2] = Field(..., description='The list of results for this page.')
+    next_cursor: str | None = Field(
+        None,
+        description='Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.',
+    )
+    has_more: bool = Field(..., description='Whether additional pages are available.')
+
+
+class RoleAssignmentListResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    items: list[RoleAssignment] = Field(
+        ..., description='The list of results for this page.'
+    )
+
+
+class CreateRoleRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    name: str = Field(..., description='Unique name within the project.')
+    description: str | None = Field(
+        None,
+        description='Optional human-readable description of what this role grants.',
+    )
+    permissions: list[str] = Field(
+        ...,
+        description='Permission strings to include. Source allowed values from `GET /v1/projects/{project}/permissions`; legacy IDs or values not present in that catalog are rejected.',
+    )
+    tags: TagMap | None = Field(None, description='Initial tag set.')
+
+
+class UpdateRoleRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    description: str | None = Field(None, description='Replacement description.')
+    permissions: list[str] | None = Field(
+        None,
+        description='Replaces the existing permissions array entirely. Source allowed values from `GET /v1/projects/{project}/permissions`; legacy IDs or values not present in that catalog are rejected.',
+    )
+    tags: TagMap | None = Field(
+        None,
+        description='When supplied, replaces the user tag set on the role. System tags (`mobius:*`) are preserved.',
+    )
+
+
+class CreateRoleAssignmentRequest1(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    user_id: str = Field(..., description='Principal User ID to assign the role to.')
+    role_id: str = Field(..., description='Mutually exclusive with `role_name`.')
+    role_name: str | None = Field(
+        None,
+        description='Resolved to a role ID server-side. Mutually exclusive with `role_id`.',
+    )
+    project_id: str | None = Field(
+        None,
+        description='Scope this assignment to a project. Omit for org-wide assignment.',
+    )
+
+
+class CreateRoleAssignmentRequest2(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    user_id: str = Field(..., description='Principal User ID to assign the role to.')
+    role_id: str | None = Field(
+        None, description='Mutually exclusive with `role_name`.'
+    )
+    role_name: str = Field(
+        ...,
+        description='Resolved to a role ID server-side. Mutually exclusive with `role_id`.',
+    )
+    project_id: str | None = Field(
+        None,
+        description='Scope this assignment to a project. Omit for org-wide assignment.',
+    )
+
+
+class CreateRoleAssignmentRequest(
+    RootModel[CreateRoleAssignmentRequest1 | CreateRoleAssignmentRequest2]
+):
+    root: CreateRoleAssignmentRequest1 | CreateRoleAssignmentRequest2
 
 
 class RespondToInteractionRequest(BaseModel):
@@ -5158,7 +5614,7 @@ class ToolkitActionGrant(BaseModel):
     )
 
 
-class Source3(StrEnum):
+class Source4(StrEnum):
     system = 'system'
     project = 'project'
 
@@ -5178,7 +5634,7 @@ class Toolkit(BaseModel):
     name: str
     slug: str | None = None
     description: str | None = None
-    source: Source3
+    source: Source4
     status: Status8
     action_grants: list[ToolkitActionGrant] = Field(
         ...,
@@ -5233,7 +5689,7 @@ class ToolkitAssignmentListResponse(BaseModel):
     items: list[ToolkitAssignment]
 
 
-class Source4(StrEnum):
+class Source5(StrEnum):
     system = 'system'
     project = 'project'
     imported = 'imported'
@@ -5249,7 +5705,7 @@ class Skill(BaseModel):
     name: str
     slug: str | None = None
     description: str | None = None
-    source: Source4
+    source: Source5
     status: Status8
     instructions: str = Field(
         ..., description='Markdown instructions loaded when the skill is active.'
@@ -5533,13 +5989,6 @@ class UserPresenceSource(StrEnum):
     platform_hosted = 'platform_hosted'
 
 
-class UserKind(StrEnum):
-    human = 'human'
-    agent = 'agent'
-    service_account = 'service_account'
-    system = 'system'
-
-
 class UserAssignmentStatus(StrEnum):
     todo = 'todo'
     in_progress = 'in_progress'
@@ -5606,6 +6055,117 @@ class ProjectTeamListResponse(BaseModel):
     items: list[ProjectTeamMember]
     truncated: bool = Field(
         ..., description='True when more than 500 rows matched the query.'
+    )
+
+
+class ServiceAccountStatus(StrEnum):
+    """
+    `active` allows authentication and job claims; `disabled` blocks them but preserves the record and its assignments.
+    """
+
+    active = 'active'
+    disabled = 'disabled'
+
+
+class ServiceAccount(BaseModel):
+    """
+    Non-human identity used by automation, agents, and API keys. Service accounts make ownership, permissions, and credential rotation explicit without tying machine access to a human user.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str = Field(..., description='Unique identifier for this service account.')
+    name: str = Field(
+        ...,
+        description='Human-readable name for this service account. Immutable after creation.',
+    )
+    description: str | None = Field(
+        None, description='Optional human-readable description.'
+    )
+    status: ServiceAccountStatus = Field(
+        ..., description='Current service account status: `active` or `disabled`.'
+    )
+    owner_id: str | None = Field(
+        None, description='Optional org member responsible for this service account.'
+    )
+    user_id: str | None = Field(
+        None,
+        description="Linked User record. For agent-backed service accounts this is the agent's User (kind: agent); for standalone service accounts this is a dedicated User (kind: service_account). Immutable once set.",
+    )
+    role_ids: list[str] | None = Field(
+        None,
+        description='Role IDs currently assigned to this service account in the project.',
+    )
+    metadata: dict[str, Any] | None = Field(
+        None,
+        description='Arbitrary key-value metadata. Subject to size and nesting depth limits.',
+    )
+    tags: TagMap | None = Field(
+        None,
+        description='Resource tags applied to this service account. Distinct from `metadata`: `tags` is the uniform string-to-string field used for filtering and reporting; `metadata` is a free-form caller-defined blob.',
+    )
+    created_at: AwareDatetime = Field(
+        ..., description='Timestamp when this service account was created.'
+    )
+    updated_at: AwareDatetime = Field(
+        ..., description='Timestamp when this service account was last updated.'
+    )
+
+
+class ServiceAccountListResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    items: list[ServiceAccount] = Field(
+        ..., description='The list of results for this page.'
+    )
+
+
+class CreateServiceAccountRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    name: str = Field(
+        ...,
+        description='Human-readable name for this service account. Immutable after creation.',
+    )
+    description: str | None = Field(
+        None, description='Optional human-readable description.'
+    )
+    owner_id: str | None = Field(
+        None, description='Org member responsible for this service account.'
+    )
+    metadata: dict[str, Any] | None = Field(
+        None, description='Arbitrary metadata to attach to the service account.'
+    )
+    role_ids: list[str] | None = Field(
+        None,
+        description='One or more role IDs to assign at creation time. All assignments are created atomically with the service account. Requires `mobius.access.manage`. Each role must belong to this project or be org-scoped (project_id empty).',
+        min_length=1,
+    )
+    tags: TagMap | None = Field(None, description='Initial tag set.')
+
+
+class UpdateServiceAccountRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    description: str | None = Field(None, description='Replacement description.')
+    status: ServiceAccountStatus | None = Field(
+        None, description='Replacement service account status: `active` or `disabled`.'
+    )
+    owner_id: str | None = Field(
+        None, description='ID of the org member responsible for this service account.'
+    )
+    metadata: dict[str, Any] | None = Field(None, description='Replacement metadata.')
+    role_ids: list[str] | None = Field(
+        None,
+        description='Replacement role IDs for this service account in the project. Send an empty array to remove all project role assignments. Requires `mobius.access.manage`.',
+    )
+    tags: TagMap | None = Field(
+        None,
+        description='When supplied, replaces the user tag set on the service account. System tags (`mobius:*`) are preserved.',
     )
 
 
@@ -6200,11 +6760,11 @@ class ChannelMessage(BaseModel):
     )
     sender_type: ChannelMessageSenderType = Field(
         ...,
-        description='Whether the sender is a human, an agent worker, or a bare service account credential.',
+        description='Whether the sender is a human, an agent worker, a bare service account credential, or an internal system principal.',
     )
     sender_id: str = Field(
         ...,
-        description="Sender user ID. For `sender_type=agent`, this is the agent's backing `users.id`, not `agents.id`.",
+        description="Sender user ID. For `sender_type=agent`, this is the agent's backing `users.id`, not `agents.id`; for `sender_type=system`, this is the per-org system `users.id`.",
     )
     sender_session_id: str | None = Field(
         None, description='Live agent session that posted the message, when applicable.'

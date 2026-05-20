@@ -140,6 +140,27 @@ func (e ActionInvocationResultStatus) Valid() bool {
 	}
 }
 
+// Defines values for ActionPermissionGroupSource.
+const (
+	ActionPermissionGroupSourceCustom      ActionPermissionGroupSource = "custom"
+	ActionPermissionGroupSourceIntegration ActionPermissionGroupSource = "integration"
+	ActionPermissionGroupSourcePlatform    ActionPermissionGroupSource = "platform"
+)
+
+// Valid indicates whether the value is a known member of the ActionPermissionGroupSource enum.
+func (e ActionPermissionGroupSource) Valid() bool {
+	switch e {
+	case ActionPermissionGroupSourceCustom:
+		return true
+	case ActionPermissionGroupSourceIntegration:
+		return true
+	case ActionPermissionGroupSourcePlatform:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for AddChannelMemberRequestRole.
 const (
 	AddChannelMemberRequestRoleAdmin  AddChannelMemberRequestRole = "admin"
@@ -505,6 +526,7 @@ const (
 	ChannelMessageSenderTypeAgent          ChannelMessageSenderType = "agent"
 	ChannelMessageSenderTypeHuman          ChannelMessageSenderType = "human"
 	ChannelMessageSenderTypeServiceAccount ChannelMessageSenderType = "service_account"
+	ChannelMessageSenderTypeSystem         ChannelMessageSenderType = "system"
 )
 
 // Valid indicates whether the value is a known member of the ChannelMessageSenderType enum.
@@ -515,6 +537,8 @@ func (e ChannelMessageSenderType) Valid() bool {
 	case ChannelMessageSenderTypeHuman:
 		return true
 	case ChannelMessageSenderTypeServiceAccount:
+		return true
+	case ChannelMessageSenderTypeSystem:
 		return true
 	default:
 		return false
@@ -1115,6 +1139,63 @@ func (e EnvironmentStatus) Valid() bool {
 	}
 }
 
+// Defines values for FeatureGateSource.
+const (
+	FeatureGateSourceDefault         FeatureGateSource = "default"
+	FeatureGateSourceOrgOverride     FeatureGateSource = "org_override"
+	FeatureGateSourceProjectOverride FeatureGateSource = "project_override"
+)
+
+// Valid indicates whether the value is a known member of the FeatureGateSource enum.
+func (e FeatureGateSource) Valid() bool {
+	switch e {
+	case FeatureGateSourceDefault:
+		return true
+	case FeatureGateSourceOrgOverride:
+		return true
+	case FeatureGateSourceProjectOverride:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for FeatureKey.
+const (
+	FeatureKeyFeatureApps        FeatureKey = "feature.apps"
+	FeatureKeyFeatureObservables FeatureKey = "feature.observables"
+)
+
+// Valid indicates whether the value is a known member of the FeatureKey enum.
+func (e FeatureKey) Valid() bool {
+	switch e {
+	case FeatureKeyFeatureApps:
+		return true
+	case FeatureKeyFeatureObservables:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for FeatureOverrideScope.
+const (
+	FeatureOverrideScopeOrg     FeatureOverrideScope = "org"
+	FeatureOverrideScopeProject FeatureOverrideScope = "project"
+)
+
+// Valid indicates whether the value is a known member of the FeatureOverrideScope enum.
+func (e FeatureOverrideScope) Valid() bool {
+	switch e {
+	case FeatureOverrideScopeOrg:
+		return true
+	case FeatureOverrideScopeProject:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for GroupRoutingPolicy.
 const (
 	GroupRoutingPolicyAllMembers     GroupRoutingPolicy = "all_members"
@@ -1697,6 +1778,144 @@ func (e OutcomeWaitObservedWaitKind) Valid() bool {
 	}
 }
 
+// Defines values for PermissionDefinitionCategory.
+const (
+	PermissionDefinitionCategoryAccess       PermissionDefinitionCategory = "access"
+	PermissionDefinitionCategoryActions      PermissionDefinitionCategory = "actions"
+	PermissionDefinitionCategoryAudit        PermissionDefinitionCategory = "audit"
+	PermissionDefinitionCategoryBilling      PermissionDefinitionCategory = "billing"
+	PermissionDefinitionCategoryChannels     PermissionDefinitionCategory = "channels"
+	PermissionDefinitionCategoryIntegrations PermissionDefinitionCategory = "integrations"
+	PermissionDefinitionCategoryPlatform     PermissionDefinitionCategory = "platform"
+	PermissionDefinitionCategoryProject      PermissionDefinitionCategory = "project"
+	PermissionDefinitionCategoryWork         PermissionDefinitionCategory = "work"
+	PermissionDefinitionCategoryWorkflows    PermissionDefinitionCategory = "workflows"
+)
+
+// Valid indicates whether the value is a known member of the PermissionDefinitionCategory enum.
+func (e PermissionDefinitionCategory) Valid() bool {
+	switch e {
+	case PermissionDefinitionCategoryAccess:
+		return true
+	case PermissionDefinitionCategoryActions:
+		return true
+	case PermissionDefinitionCategoryAudit:
+		return true
+	case PermissionDefinitionCategoryBilling:
+		return true
+	case PermissionDefinitionCategoryChannels:
+		return true
+	case PermissionDefinitionCategoryIntegrations:
+		return true
+	case PermissionDefinitionCategoryPlatform:
+		return true
+	case PermissionDefinitionCategoryProject:
+		return true
+	case PermissionDefinitionCategoryWork:
+		return true
+	case PermissionDefinitionCategoryWorkflows:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PermissionDefinitionRisk.
+const (
+	PermissionDefinitionRiskCritical PermissionDefinitionRisk = "critical"
+	PermissionDefinitionRiskHigh     PermissionDefinitionRisk = "high"
+	PermissionDefinitionRiskLow      PermissionDefinitionRisk = "low"
+	PermissionDefinitionRiskMedium   PermissionDefinitionRisk = "medium"
+)
+
+// Valid indicates whether the value is a known member of the PermissionDefinitionRisk enum.
+func (e PermissionDefinitionRisk) Valid() bool {
+	switch e {
+	case PermissionDefinitionRiskCritical:
+		return true
+	case PermissionDefinitionRiskHigh:
+		return true
+	case PermissionDefinitionRiskLow:
+		return true
+	case PermissionDefinitionRiskMedium:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PermissionDefinitionScope.
+const (
+	PermissionDefinitionScopeAction   PermissionDefinitionScope = "action"
+	PermissionDefinitionScopeOrg      PermissionDefinitionScope = "org"
+	PermissionDefinitionScopePlatform PermissionDefinitionScope = "platform"
+	PermissionDefinitionScopeProject  PermissionDefinitionScope = "project"
+)
+
+// Valid indicates whether the value is a known member of the PermissionDefinitionScope enum.
+func (e PermissionDefinitionScope) Valid() bool {
+	switch e {
+	case PermissionDefinitionScopeAction:
+		return true
+	case PermissionDefinitionScopeOrg:
+		return true
+	case PermissionDefinitionScopePlatform:
+		return true
+	case PermissionDefinitionScopeProject:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PermissionDefinitionUserKinds.
+const (
+	PermissionDefinitionUserKindsAgent          PermissionDefinitionUserKinds = "agent"
+	PermissionDefinitionUserKindsHuman          PermissionDefinitionUserKinds = "human"
+	PermissionDefinitionUserKindsServiceAccount PermissionDefinitionUserKinds = "service_account"
+	PermissionDefinitionUserKindsSystem         PermissionDefinitionUserKinds = "system"
+)
+
+// Valid indicates whether the value is a known member of the PermissionDefinitionUserKinds enum.
+func (e PermissionDefinitionUserKinds) Valid() bool {
+	switch e {
+	case PermissionDefinitionUserKindsAgent:
+		return true
+	case PermissionDefinitionUserKindsHuman:
+		return true
+	case PermissionDefinitionUserKindsServiceAccount:
+		return true
+	case PermissionDefinitionUserKindsSystem:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PermissionPresetScope.
+const (
+	PermissionPresetScopeAction   PermissionPresetScope = "action"
+	PermissionPresetScopeOrg      PermissionPresetScope = "org"
+	PermissionPresetScopePlatform PermissionPresetScope = "platform"
+	PermissionPresetScopeProject  PermissionPresetScope = "project"
+)
+
+// Valid indicates whether the value is a known member of the PermissionPresetScope enum.
+func (e PermissionPresetScope) Valid() bool {
+	switch e {
+	case PermissionPresetScopeAction:
+		return true
+	case PermissionPresetScopeOrg:
+		return true
+	case PermissionPresetScopePlatform:
+		return true
+	case PermissionPresetScopeProject:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ProjectAccessMode.
 const (
 	ProjectAccessModeOrgOpen    ProjectAccessMode = "org_open"
@@ -2273,6 +2492,24 @@ func (e SendChannelMessageRequestDisplay) Valid() bool {
 	case SendChannelMessageRequestDisplayMessage:
 		return true
 	case SendChannelMessageRequestDisplayNotice:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ServiceAccountStatus.
+const (
+	ServiceAccountStatusActive   ServiceAccountStatus = "active"
+	ServiceAccountStatusDisabled ServiceAccountStatus = "disabled"
+)
+
+// Valid indicates whether the value is a known member of the ServiceAccountStatus enum.
+func (e ServiceAccountStatus) Valid() bool {
+	switch e {
+	case ServiceAccountStatusActive:
+		return true
+	case ServiceAccountStatusDisabled:
 		return true
 	default:
 		return false
@@ -3512,6 +3749,87 @@ func (e GetRunStepParamsInclude) Valid() bool {
 	}
 }
 
+// APIKey Stored API credential metadata for automation and service access. The raw secret is never returned here; use this object to list, audit, expire, or identify keys by prefix without exposing tokens.
+type APIKey struct {
+	// CreatedAt Timestamp when this key was created.
+	CreatedAt time.Time `json:"created_at"`
+
+	// ExpiresAt Hard expiry timestamp. Requests using an expired key receive 401.
+	ExpiresAt *time.Time `json:"expires_at,omitempty"`
+
+	// Id Unique identifier for this API key.
+	Id string `json:"id"`
+
+	// KeyPrefix First 8 characters of the key, used to identify it without exposing the secret.
+	KeyPrefix string `json:"key_prefix"`
+
+	// LastUsedAt Timestamp of the most recent authenticated request using this key.
+	LastUsedAt *time.Time `json:"last_used_at,omitempty"`
+
+	// Name Human-readable label, unique within the project.
+	Name string `json:"name"`
+
+	// ProjectId Project ID.
+	ProjectId ProjectID `json:"project_id"`
+
+	// ServiceAccountId Service account this key authenticates as.
+	ServiceAccountId string `json:"service_account_id"`
+
+	// Tags Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints.
+	Tags *TagMap `json:"tags,omitempty"`
+
+	// UpdatedAt Timestamp when this key was last updated.
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+// APIKeyCreateResult Returned only on key creation. Contains the raw `key` value which is not retrievable after this response.
+type APIKeyCreateResult struct {
+	// CreatedAt Timestamp when this key was created.
+	CreatedAt time.Time `json:"created_at"`
+
+	// ExpiresAt Timestamp when this key expires. Omitted if it does not expire.
+	ExpiresAt *time.Time `json:"expires_at,omitempty"`
+
+	// Id Unique identifier for the created API key.
+	Id string `json:"id"`
+
+	// Key The raw API key. Returned only once at creation — store it securely immediately.
+	Key string `json:"key"`
+
+	// KeyPrefix First 8 characters of the key for identification.
+	KeyPrefix string `json:"key_prefix"`
+
+	// LastUsedAt Timestamp of the most recent authenticated request using this key.
+	LastUsedAt *time.Time `json:"last_used_at,omitempty"`
+
+	// Name Human-readable name for the key.
+	Name string `json:"name"`
+
+	// ProjectId Project ID.
+	ProjectId ProjectID `json:"project_id"`
+
+	// ServiceAccountId Service account this key authenticates as.
+	ServiceAccountId string `json:"service_account_id"`
+
+	// Tags Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints.
+	Tags *TagMap `json:"tags,omitempty"`
+
+	// UpdatedAt Timestamp when this key was last updated.
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+// APIKeyListResponse defines model for APIKeyListResponse.
+type APIKeyListResponse struct {
+	// HasMore Whether additional pages are available.
+	HasMore bool `json:"has_more"`
+
+	// Items The list of results for this page.
+	Items []APIKey `json:"items"`
+
+	// NextCursor Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.
+	NextCursor *string `json:"next_cursor,omitempty"`
+}
+
 // AcquireEnvironmentRequest defines model for AcquireEnvironmentRequest.
 type AcquireEnvironmentRequest struct {
 	BoundToId *string `json:"bound_to_id,omitempty"`
@@ -3764,9 +4082,23 @@ type ActionInvocationResult struct {
 // ActionInvocationResultStatus Terminal or in-progress status of the invocation.
 type ActionInvocationResultStatus string
 
+// ActionPermissionGroup defines model for ActionPermissionGroup.
+type ActionPermissionGroup struct {
+	// Children Concrete action execution permission IDs included in this group.
+	Children []string `json:"children"`
+
+	// Id Wildcard permission ID, for example `actions.execute.slack.*`.
+	Id     string                      `json:"id"`
+	Label  string                      `json:"label"`
+	Source ActionPermissionGroupSource `json:"source"`
+}
+
+// ActionPermissionGroupSource defines model for ActionPermissionGroup.Source.
+type ActionPermissionGroupSource string
+
 // AddChannelMemberRequest Member identity and role to add to a channel.
 type AddChannelMemberRequest struct {
-	// ParticipantId User ID to add to the channel. Agent members use their backing user ID.
+	// ParticipantId User ID (`users.id`) to add to the channel. Agent members use their backing user ID, not `agents.id`.
 	ParticipantId string `json:"participant_id"`
 
 	// Role Role to assign the new member, either `member` or `admin`.
@@ -4261,7 +4593,7 @@ type ChannelListResponse struct {
 	NextCursor *string `json:"next_cursor,omitempty"`
 }
 
-// ChannelMember Live membership record for a user or agent in a channel.
+// ChannelMember Live membership record for a `users.id` principal in a channel.
 type ChannelMember struct {
 	// ChannelId ID of the channel this membership belongs to.
 	ChannelId string `json:"channel_id"`
@@ -4284,7 +4616,7 @@ type ChannelMember struct {
 	// Starred Whether this member has starred the channel for quick access.
 	Starred *bool `json:"starred,omitempty"`
 
-	// UserId ID of the user or agent who is a member.
+	// UserId ID from the users table for the member. Agent members use their backing users.id, not agents.id.
 	UserId string `json:"user_id"`
 }
 
@@ -4341,7 +4673,7 @@ type ChannelMessage struct {
 	// ReplyTo ID of the parent message this reply belongs to, or null when this is not a threaded reply.
 	ReplyTo *string `json:"reply_to,omitempty"`
 
-	// SenderId Sender user ID. For `sender_type=agent`, this is the agent's backing `users.id`, not `agents.id`.
+	// SenderId Sender user ID. For `sender_type=agent`, this is the agent's backing `users.id`, not `agents.id`; for `sender_type=system`, this is the per-org system `users.id`.
 	SenderId string `json:"sender_id"`
 
 	// SenderSessionId Live agent session that posted the message, when applicable.
@@ -4356,6 +4688,8 @@ type ChannelMessage struct {
 	// invariant from PRD 048 §1).
 	// - `service_account` — an API key whose service account backs no
 	// agent.
+	// - `system` — an internal system user that authored workflow/system
+	// messages.
 	SenderType ChannelMessageSenderType `json:"sender_type"`
 
 	// Type Dot-namespaced message type identifier, e.g. `user.message`, `ai.response`. Used for filtering and display logic.
@@ -4386,6 +4720,8 @@ type ChannelMessageListResponse struct {
 // invariant from PRD 048 §1).
 // - `service_account` — an API key whose service account backs no
 // agent.
+// - `system` — an internal system user that authored workflow/system
+// messages.
 type ChannelMessageSenderType string
 
 // ChannelMessageSourceConfig Source configuration for `channel_message` triggers.
@@ -4482,6 +4818,24 @@ type Consumer struct {
 
 // ConsumerKind defines model for Consumer.Kind.
 type ConsumerKind string
+
+// CreateAPIKeyRequest Request shape for creating a project API key for a service account. The key authenticates as that service account; permissions are managed by assigning roles to the service account, not by granting permissions to the key.
+type CreateAPIKeyRequest struct {
+	// ExpiresAt Optional hard expiry. Omit for a non-expiring key.
+	ExpiresAt *time.Time `json:"expires_at,omitempty"`
+
+	// Name Human-readable label, unique within the project.
+	Name string `json:"name"`
+
+	// ProjectId Project ID.
+	ProjectId ProjectID `json:"project_id"`
+
+	// ServiceAccountId Service account this key authenticates as.
+	ServiceAccountId string `json:"service_account_id"`
+
+	// Tags Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints.
+	Tags *TagMap `json:"tags,omitempty"`
+}
 
 // CreateActionRequest Registers a project-owned HTTP action endpoint callable from workflow steps.
 type CreateActionRequest struct {
@@ -4600,7 +4954,7 @@ type CreateChannelRequest struct {
 	// Kind Channel kind, either `dm` or `channel`. Cannot be changed after creation.
 	Kind CreateChannelRequestKind `json:"kind"`
 
-	// MemberIds Optional list of user IDs to add as members at creation time. Agent members use their backing user IDs. All receive the `member` role; the creator is added as `admin` separately.
+	// MemberIds Optional list of `users.id` values to add as members at creation time. Agent members use their backing user IDs, not `agents.id`. All receive the `member` role; the creator is added as `admin` separately.
 	MemberIds *[]string `json:"member_ids,omitempty"`
 
 	// Name URL-safe handle, unique within the project. Immutable after creation — choose carefully.
@@ -4841,6 +5195,43 @@ type CreateProjectRequest struct {
 	Tags *TagMap `json:"tags,omitempty"`
 }
 
+// CreateRoleAssignmentRequest defines model for CreateRoleAssignmentRequest.
+type CreateRoleAssignmentRequest struct {
+	// ProjectId Scope this assignment to a project. Omit for org-wide assignment.
+	ProjectId *string `json:"project_id,omitempty"`
+
+	// RoleId Mutually exclusive with `role_name`.
+	RoleId *string `json:"role_id,omitempty"`
+
+	// RoleName Resolved to a role ID server-side. Mutually exclusive with `role_id`.
+	RoleName *string `json:"role_name,omitempty"`
+
+	// UserId Principal User ID to assign the role to.
+	UserId string `json:"user_id"`
+	union  json.RawMessage
+}
+
+// CreateRoleAssignmentRequest0 defines model for .
+type CreateRoleAssignmentRequest0 = interface{}
+
+// CreateRoleAssignmentRequest1 defines model for .
+type CreateRoleAssignmentRequest1 = interface{}
+
+// CreateRoleRequest defines model for CreateRoleRequest.
+type CreateRoleRequest struct {
+	// Description Optional human-readable description of what this role grants.
+	Description *string `json:"description,omitempty"`
+
+	// Name Unique name within the project.
+	Name string `json:"name"`
+
+	// Permissions Permission strings to include. Source allowed values from `GET /v1/projects/{project}/permissions`; legacy IDs or values not present in that catalog are rejected.
+	Permissions []string `json:"permissions"`
+
+	// Tags Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints.
+	Tags *TagMap `json:"tags,omitempty"`
+}
+
 // CreateRunBackedInteractionRequest Creates a run-backed interaction. Completion delivers `signal_name` to `run_id` so a waiting run path can resume.
 type CreateRunBackedInteractionRequest struct {
 	// Consumer Polymorphic identifier of what is waiting on this interaction's resolution (PRD 077 §3.7). Replaces the previously special-cased `run_id` + `signal_name` pair. When `kind=run`, the legacy fields are also populated for compatibility. `http_subscriber` enqueues a durable callback dispatch to `callback_url` when the interaction resolves; when `secret_ref` is set, the canonical string `{interaction_id}.{unix_timestamp}.{raw_body}` is signed with HMAC-SHA256 against the resolved project secret and the signed dispatch carries `X-Mobius-Signature`, `X-Mobius-Secret-Ref`, `X-Mobius-Secret-Version`, and `X-Mobius-Timestamp`. Signed dispatches also carry `X-Mobius-Signature-Version: v2`. Every durable dispatch also carries the stable outbox row id in `X-Mobius-Delivery-ID` and `Idempotency-Key`; retries reuse the same value. Verifiers should recompute the signature over the exact raw body, reject stale timestamps (for example, older than five minutes), deduplicate by delivery id, and check all five signing headers.
@@ -4965,6 +5356,27 @@ type CreateSecretRequest struct {
 
 	// Values JSON key/value payload encrypted as a SecretVersion.
 	Values SecretValues `json:"values"`
+}
+
+// CreateServiceAccountRequest defines model for CreateServiceAccountRequest.
+type CreateServiceAccountRequest struct {
+	// Description Optional human-readable description.
+	Description *string `json:"description,omitempty"`
+
+	// Metadata Arbitrary metadata to attach to the service account.
+	Metadata *map[string]interface{} `json:"metadata,omitempty"`
+
+	// Name Human-readable name for this service account. Immutable after creation.
+	Name string `json:"name"`
+
+	// OwnerId Org member responsible for this service account.
+	OwnerId *string `json:"owner_id,omitempty"`
+
+	// RoleIds One or more role IDs to assign at creation time. All assignments are created atomically with the service account. Requires `mobius.access.manage`. Each role must belong to this project or be org-scoped (project_id empty).
+	RoleIds *[]string `json:"role_ids,omitempty"`
+
+	// Tags Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints.
+	Tags *TagMap `json:"tags,omitempty"`
 }
 
 // CreateStandaloneInteractionRequest Creates a standalone interaction. Completion records the response but does not deliver a workflow signal.
@@ -5433,6 +5845,58 @@ type ExecEnvironmentRequest struct {
 	Env     *[]string `json:"env,omitempty"`
 	Stdin   *string   `json:"stdin,omitempty"`
 }
+
+// FeatureGate defines model for FeatureGate.
+type FeatureGate struct {
+	AllowedScopes []FeatureOverrideScope `json:"allowed_scopes"`
+
+	// DefaultEnabled Built-in fallback state when no active override applies.
+	DefaultEnabled bool `json:"default_enabled"`
+
+	// Description User-facing description of the gated product area.
+	Description string `json:"description"`
+
+	// Enabled Effective state after resolving defaults and overrides.
+	Enabled bool `json:"enabled"`
+
+	// ExpiresAt Optional expiry for the active override.
+	ExpiresAt *time.Time `json:"expires_at,omitempty"`
+
+	// Key Server-defined product feature key. `feature.apps` controls the Apps product area; `feature.observables` controls Observables.
+	Key FeatureKey `json:"key"`
+
+	// Label Short user-facing name.
+	Label string `json:"label"`
+
+	// Reason Optional operator-supplied reason from the active override.
+	Reason *string `json:"reason,omitempty"`
+
+	// Source Source of the effective feature gate decision.
+	Source FeatureGateSource `json:"source"`
+
+	// SourceOrgId Org ID for the override that produced this state.
+	SourceOrgId *string `json:"source_org_id,omitempty"`
+
+	// SourceProjectId Project ID for the override that produced this state.
+	SourceProjectId *string `json:"source_project_id,omitempty"`
+
+	// SourceScope Scope for a feature override. Org overrides apply across the organization; project overrides apply only to the specified project and take precedence over org overrides.
+	SourceScope *FeatureOverrideScope `json:"source_scope,omitempty"`
+}
+
+// FeatureGateListResponse defines model for FeatureGateListResponse.
+type FeatureGateListResponse struct {
+	Items []FeatureGate `json:"items"`
+}
+
+// FeatureGateSource Source of the effective feature gate decision.
+type FeatureGateSource string
+
+// FeatureKey Server-defined product feature key. `feature.apps` controls the Apps product area; `feature.observables` controls Observables.
+type FeatureKey string
+
+// FeatureOverrideScope Scope for a feature override. Org overrides apply across the organization; project overrides apply only to the specified project and take precedence over org overrides.
+type FeatureOverrideScope string
 
 // FinalizerWarning defines model for FinalizerWarning.
 type FinalizerWarning struct {
@@ -6481,7 +6945,7 @@ type OpenDirectMessageRequest struct {
 	// DisplayName Human-facing display name for the channel. Defaults to the participant's name or ID when omitted. Only used on creation; ignored when an existing channel is returned.
 	DisplayName *string `json:"display_name,omitempty"`
 
-	// ParticipantId User ID of the other DM participant. Agent participants use their backing user ID.
+	// ParticipantId User ID (`users.id`) of the other DM participant. Agent participants use their backing user ID, not `agents.id`.
 	ParticipantId string `json:"participant_id"`
 }
 
@@ -6586,6 +7050,58 @@ type PageDelivery struct {
 	PolicyId string `json:"policy_id"`
 }
 
+// PermissionCatalogResponse defines model for PermissionCatalogResponse.
+type PermissionCatalogResponse struct {
+	ActionGroups []ActionPermissionGroup `json:"action_groups"`
+	Permissions  []PermissionDefinition  `json:"permissions"`
+	Presets      []PermissionPreset      `json:"presets"`
+}
+
+// PermissionDefinition defines model for PermissionDefinition.
+type PermissionDefinition struct {
+	// Assignable Whether this permission should be selectable in the current project role builder.
+	Assignable bool                         `json:"assignable"`
+	Category   PermissionDefinitionCategory `json:"category"`
+
+	// Description Short explanation of what the permission grants.
+	Description string `json:"description"`
+
+	// Id Stable permission ID stored on roles.
+	Id string `json:"id"`
+
+	// Label Human-readable label for product UI.
+	Label string                    `json:"label"`
+	Risk  PermissionDefinitionRisk  `json:"risk"`
+	Scope PermissionDefinitionScope `json:"scope"`
+
+	// UserKinds User kinds this permission is intended for.
+	UserKinds []PermissionDefinitionUserKinds `json:"user_kinds"`
+}
+
+// PermissionDefinitionCategory defines model for PermissionDefinition.Category.
+type PermissionDefinitionCategory string
+
+// PermissionDefinitionRisk defines model for PermissionDefinition.Risk.
+type PermissionDefinitionRisk string
+
+// PermissionDefinitionScope defines model for PermissionDefinition.Scope.
+type PermissionDefinitionScope string
+
+// PermissionDefinitionUserKinds defines model for PermissionDefinition.UserKinds.
+type PermissionDefinitionUserKinds string
+
+// PermissionPreset defines model for PermissionPreset.
+type PermissionPreset struct {
+	Description string                `json:"description"`
+	Id          string                `json:"id"`
+	Label       string                `json:"label"`
+	Permissions []string              `json:"permissions"`
+	Scope       PermissionPresetScope `json:"scope"`
+}
+
+// PermissionPresetScope defines model for PermissionPreset.Scope.
+type PermissionPresetScope string
+
 // PingWebhookRequest defines model for PingWebhookRequest.
 type PingWebhookRequest struct {
 	// Url URL to test. When supplied, the ping is sent to this URL instead of the webhook's saved URL — use this to validate a candidate URL before saving it. When omitted, the webhook's current saved URL is used.
@@ -6636,6 +7152,9 @@ type Project struct {
 	// Name Human-readable project name.
 	Name string `json:"name"`
 
+	// PermissionsEnabled Whether role-permission enforcement is enabled for this project. When false, authenticated project members can access project-scoped APIs according to the broader org/project access policy.
+	PermissionsEnabled bool `json:"permissions_enabled"`
+
 	// Tags Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints.
 	Tags *TagMap `json:"tags,omitempty"`
 
@@ -6645,6 +7164,9 @@ type Project struct {
 
 // ProjectAccessMode `org_open`: every org member can see and use the project, subject to role assignments. `restricted`: only listed project members (and org owners/admins) can see or use the project.
 type ProjectAccessMode string
+
+// ProjectID Project ID.
+type ProjectID = string
 
 // ProjectListResponse defines model for ProjectListResponse.
 type ProjectListResponse struct {
@@ -6868,6 +7390,78 @@ type ReviewPolicy struct {
 
 // ReviewPolicyType `none` completes a handoff when submitted. `requester_acceptance_required` moves submitted handoffs to `in_review` until an authorized reviewer accepts or sends back.
 type ReviewPolicyType string
+
+// Role Named bundle of permissions assignable to users or service accounts. Roles let admins grant workflow, project, and automation capabilities consistently without editing every user individually.
+type Role struct {
+	// CreatedAt Timestamp when this role was created.
+	CreatedAt time.Time `json:"created_at"`
+
+	// Description Optional human-readable description of what this role grants.
+	Description *string `json:"description,omitempty"`
+
+	// Id Unique identifier for this role.
+	Id string `json:"id"`
+
+	// Name Human-readable role name, unique within org+project scope.
+	Name string `json:"name"`
+
+	// Permissions Permission strings granted by this role. Source allowed values from `GET /v1/projects/{project}/permissions`; legacy IDs or values not present in that catalog are rejected.
+	Permissions []string `json:"permissions"`
+
+	// ProjectId Scoping project. Empty for system-defined roles.
+	ProjectId *string `json:"project_id,omitempty"`
+
+	// SystemDefined True for built-in platform roles that cannot be modified or deleted.
+	SystemDefined bool `json:"system_defined"`
+
+	// Tags Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints.
+	Tags *TagMap `json:"tags,omitempty"`
+
+	// UpdatedAt Timestamp when this role was last updated.
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+// RoleAssignment Binding between a User and a role, optionally scoped to a project. Use assignments to explain why a user or service account has access and to audit who granted it.
+type RoleAssignment struct {
+	// CreatedAt Timestamp when this assignment was created.
+	CreatedAt time.Time `json:"created_at"`
+
+	// GrantedByUserId User ID of the caller who created this assignment.
+	GrantedByUserId *string `json:"granted_by_user_id,omitempty"`
+
+	// Id Unique identifier for this role assignment.
+	Id string `json:"id"`
+
+	// ProjectId Set for project-scoped assignments; empty for org-wide.
+	ProjectId *string `json:"project_id,omitempty"`
+
+	// RoleId ID of the assigned role.
+	RoleId string `json:"role_id"`
+
+	// RoleName Name of the assigned role.
+	RoleName string `json:"role_name"`
+
+	// UserId User ID receiving the role.
+	UserId string `json:"user_id"`
+}
+
+// RoleAssignmentListResponse defines model for RoleAssignmentListResponse.
+type RoleAssignmentListResponse struct {
+	// Items The list of results for this page.
+	Items []RoleAssignment `json:"items"`
+}
+
+// RoleListResponse defines model for RoleListResponse.
+type RoleListResponse struct {
+	// HasMore Whether additional pages are available.
+	HasMore bool `json:"has_more"`
+
+	// Items The list of results for this page.
+	Items []Role `json:"items"`
+
+	// NextCursor Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.
+	NextCursor *string `json:"next_cursor,omitempty"`
+}
 
 // RotateSecretResult New signing secret returned after rotating an action secret.
 type RotateSecretResult struct {
@@ -7655,6 +8249,51 @@ type SendRunSignalRequest struct {
 	// Payload Arbitrary payload delivered to the waiting step when the signal is received.
 	Payload *map[string]interface{} `json:"payload,omitempty"`
 }
+
+// ServiceAccount Non-human identity used by automation, agents, and API keys. Service accounts make ownership, permissions, and credential rotation explicit without tying machine access to a human user.
+type ServiceAccount struct {
+	// CreatedAt Timestamp when this service account was created.
+	CreatedAt time.Time `json:"created_at"`
+
+	// Description Optional human-readable description.
+	Description *string `json:"description,omitempty"`
+
+	// Id Unique identifier for this service account.
+	Id string `json:"id"`
+
+	// Metadata Arbitrary key-value metadata. Subject to size and nesting depth limits.
+	Metadata *map[string]interface{} `json:"metadata,omitempty"`
+
+	// Name Human-readable name for this service account. Immutable after creation.
+	Name string `json:"name"`
+
+	// OwnerId Optional org member responsible for this service account.
+	OwnerId *string `json:"owner_id,omitempty"`
+
+	// RoleIds Role IDs currently assigned to this service account in the project.
+	RoleIds *[]string `json:"role_ids,omitempty"`
+
+	// Status `active` allows authentication and job claims; `disabled` blocks them but preserves the record and its assignments.
+	Status ServiceAccountStatus `json:"status"`
+
+	// Tags Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints.
+	Tags *TagMap `json:"tags,omitempty"`
+
+	// UpdatedAt Timestamp when this service account was last updated.
+	UpdatedAt time.Time `json:"updated_at"`
+
+	// UserId Linked User record. For agent-backed service accounts this is the agent's User (kind: agent); for standalone service accounts this is a dedicated User (kind: service_account). Immutable once set.
+	UserId *string `json:"user_id,omitempty"`
+}
+
+// ServiceAccountListResponse defines model for ServiceAccountListResponse.
+type ServiceAccountListResponse struct {
+	// Items The list of results for this page.
+	Items []ServiceAccount `json:"items"`
+}
+
+// ServiceAccountStatus `active` allows authentication and job claims; `disabled` blocks them but preserves the record and its assignments.
+type ServiceAccountStatus string
 
 // ShareChannelEntityRequest Entity reference and optional message fields for posting a channel card.
 type ShareChannelEntityRequest struct {
@@ -8609,8 +9248,23 @@ type UpdateProjectRequest struct {
 	// Name Replacement human-readable name.
 	Name *string `json:"name,omitempty"`
 
+	// PermissionsEnabled Enables or disables role-permission enforcement for this project. This is a project setting; there is no org-wide fallback role for regular users without assignments.
+	PermissionsEnabled *bool `json:"permissions_enabled,omitempty"`
+
 	// SeedExistingMembers When transitioning from `org_open` to `restricted`, set true to insert all current org members as project members so nobody loses visibility on the flip. Ignored on other transitions.
 	SeedExistingMembers *bool `json:"seed_existing_members,omitempty"`
+
+	// Tags Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints.
+	Tags *TagMap `json:"tags,omitempty"`
+}
+
+// UpdateRoleRequest defines model for UpdateRoleRequest.
+type UpdateRoleRequest struct {
+	// Description Replacement description.
+	Description *string `json:"description,omitempty"`
+
+	// Permissions Replaces the existing permissions array entirely. Source allowed values from `GET /v1/projects/{project}/permissions`; legacy IDs or values not present in that catalog are rejected.
+	Permissions *[]string `json:"permissions,omitempty"`
 
 	// Tags Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints.
 	Tags *TagMap `json:"tags,omitempty"`
@@ -8631,6 +9285,27 @@ type UpdateSecretRequest struct {
 
 	// Values JSON key/value payload encrypted as a SecretVersion.
 	Values *SecretValues `json:"values,omitempty"`
+}
+
+// UpdateServiceAccountRequest defines model for UpdateServiceAccountRequest.
+type UpdateServiceAccountRequest struct {
+	// Description Replacement description.
+	Description *string `json:"description,omitempty"`
+
+	// Metadata Replacement metadata.
+	Metadata *map[string]interface{} `json:"metadata,omitempty"`
+
+	// OwnerId ID of the org member responsible for this service account.
+	OwnerId *string `json:"owner_id,omitempty"`
+
+	// RoleIds Replacement role IDs for this service account in the project. Send an empty array to remove all project role assignments. Requires `mobius.access.manage`.
+	RoleIds *[]string `json:"role_ids,omitempty"`
+
+	// Status `active` allows authentication and job claims; `disabled` blocks them but preserves the record and its assignments.
+	Status *ServiceAccountStatus `json:"status,omitempty"`
+
+	// Tags Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints.
+	Tags *TagMap `json:"tags,omitempty"`
 }
 
 // UpdateTableRequest defines model for UpdateTableRequest.
@@ -9773,7 +10448,7 @@ type WorkflowInteractionDiscussionConfig struct {
 	// DisplayName Display name for a newly-created channel.
 	DisplayName *string `json:"display_name,omitempty"`
 
-	// MemberIds Additional user IDs to invite to the channel. Agent participants use their backing user IDs.
+	// MemberIds Additional `users.id` values to invite to the channel. Agent participants use their backing user IDs, not `agents.id`.
 	MemberIds *[]string `json:"member_ids,omitempty"`
 
 	// OpeningMessage Opening brief posted into the channel before the workflow suspends.
@@ -10423,6 +11098,9 @@ type WriteEnvironmentFileRequest struct {
 	Path    string `json:"path"`
 }
 
+// APIKeyProjectIDParam Project ID.
+type APIKeyProjectIDParam = ProjectID
+
 // ActionNameParam defines model for ActionNameParam.
 type ActionNameParam = string
 
@@ -10506,6 +11184,37 @@ type bearerAuthContextKey string
 
 // xApiKeyAuthContextKey is the context key for XApiKeyAuth security scheme
 type xApiKeyAuthContextKey string
+
+// ListAPIKeysParams defines parameters for ListAPIKeys.
+type ListAPIKeysParams struct {
+	// ProjectId Optional project filter for this request. When `project_id` is provided, the API key operation is resolved in that project's permission context. When omitted, org-level callers operate across projects.
+	ProjectId *APIKeyProjectIDParam `form:"project_id,omitempty" json:"project_id,omitempty"`
+
+	// Limit Maximum number of items to return
+	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Cursor Cursor for pagination (opaque string from previous response)
+	Cursor *CursorParam `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Tag Filter results by tag. Repeatable; multiple values combine with AND. Format: `Key:Value`, `Key:*` for any value, `Key:a,b,c` for IN.
+	//
+	// Tag values containing `:` or `,` cannot be filtered with this grammar — the parser splits on those literally. Constrain values to plain identifiers when you intend to filter on them.
+	//
+	// Not supported on the runs list — runs are too high-cardinality for ad-hoc tag filtering. To narrow runs by parent workflow, use the workflow-scoped endpoint `GET /v1/projects/{project}/workflows/{id}/runs` and inspect `tags` on each run client-side.
+	Tag *TagFilterParam `form:"tag,omitempty" json:"tag,omitempty"`
+}
+
+// RevokeAPIKeyParams defines parameters for RevokeAPIKey.
+type RevokeAPIKeyParams struct {
+	// ProjectId Optional project filter for this request. When `project_id` is provided, the API key operation is resolved in that project's permission context. When omitted, org-level callers operate across projects.
+	ProjectId *APIKeyProjectIDParam `form:"project_id,omitempty" json:"project_id,omitempty"`
+}
+
+// GetAPIKeyParams defines parameters for GetAPIKey.
+type GetAPIKeyParams struct {
+	// ProjectId Optional project filter for this request. When `project_id` is provided, the API key operation is resolved in that project's permission context. When omitted, org-level callers operate across projects.
+	ProjectId *APIKeyProjectIDParam `form:"project_id,omitempty" json:"project_id,omitempty"`
+}
 
 // ListOrgAuditLogsParams defines parameters for ListOrgAuditLogs.
 type ListOrgAuditLogsParams struct {
@@ -10734,7 +11443,7 @@ type ListChannelMembersParams struct {
 
 // ListMessagesParams defines parameters for ListMessages.
 type ListMessagesParams struct {
-	// SenderId Filter by sender user ID. Humans, agents, and bare service accounts all send as rows in `users`; use `sender_type` only as the kind/display discriminator.
+	// SenderId Filter by sender user ID (query param: `sender_id`). `sender_type` is returned in responses as a discriminator/display field and is not an accepted query parameter.
 	SenderId *string `form:"sender_id,omitempty" json:"sender_id,omitempty"`
 
 	// ReplyTo Return only replies to this message ID (thread view).
@@ -10938,6 +11647,22 @@ type IngestProjectLogsJSONBody = []LogRecordInput
 // IngestProjectLogsOTLPJSONBody defines parameters for IngestProjectLogsOTLP.
 type IngestProjectLogsOTLPJSONBody = map[string]interface{}
 
+// ListRolesParams defines parameters for ListRoles.
+type ListRolesParams struct {
+	// Limit Maximum number of items to return
+	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Cursor Cursor for pagination (opaque string from previous response)
+	Cursor *CursorParam `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Tag Filter results by tag. Repeatable; multiple values combine with AND. Format: `Key:Value`, `Key:*` for any value, `Key:a,b,c` for IN.
+	//
+	// Tag values containing `:` or `,` cannot be filtered with this grammar — the parser splits on those literally. Constrain values to plain identifiers when you intend to filter on them.
+	//
+	// Not supported on the runs list — runs are too high-cardinality for ad-hoc tag filtering. To narrow runs by parent workflow, use the workflow-scoped endpoint `GET /v1/projects/{project}/workflows/{id}/runs` and inspect `tags` on each run client-side.
+	Tag *TagFilterParam `form:"tag,omitempty" json:"tag,omitempty"`
+}
+
 // ListRunsParams defines parameters for ListRuns.
 type ListRunsParams struct {
 	// Status Filter by run status.
@@ -11029,6 +11754,19 @@ type GetRunStepParamsInclude string
 type ListSecretsParams struct {
 	// Cursor Cursor for pagination (opaque string from previous response)
 	Cursor *CursorParam `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Limit Maximum number of items to return
+	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// ListServiceAccountsParams defines parameters for ListServiceAccounts.
+type ListServiceAccountsParams struct {
+	// Tag Filter results by tag. Repeatable; multiple values combine with AND. Format: `Key:Value`, `Key:*` for any value, `Key:a,b,c` for IN.
+	//
+	// Tag values containing `:` or `,` cannot be filtered with this grammar — the parser splits on those literally. Constrain values to plain identifiers when you intend to filter on them.
+	//
+	// Not supported on the runs list — runs are too high-cardinality for ad-hoc tag filtering. To narrow runs by parent workflow, use the workflow-scoped endpoint `GET /v1/projects/{project}/workflows/{id}/runs` and inspect `tags` on each run client-side.
+	Tag *TagFilterParam `form:"tag,omitempty" json:"tag,omitempty"`
 
 	// Limit Maximum number of items to return
 	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
@@ -11345,6 +12083,21 @@ type ListWorkflowsParams struct {
 	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
+// ListRoleAssignmentsParams defines parameters for ListRoleAssignments.
+type ListRoleAssignmentsParams struct {
+	// UserId Filter to assignments for a specific user.
+	UserId *string `form:"user_id,omitempty" json:"user_id,omitempty"`
+
+	// RoleId Filter to assignments for a specific role.
+	RoleId *string `form:"role_id,omitempty" json:"role_id,omitempty"`
+
+	// ProjectId Filter to project-scoped assignments for this project.
+	ProjectId *string `form:"project_id,omitempty" json:"project_id,omitempty"`
+}
+
+// CreateAPIKeyJSONRequestBody defines body for CreateAPIKey for application/json ContentType.
+type CreateAPIKeyJSONRequestBody = CreateAPIKeyRequest
+
 // CreateProjectJSONRequestBody defines body for CreateProject for application/json ContentType.
 type CreateProjectJSONRequestBody = CreateProjectRequest
 
@@ -11492,6 +12245,12 @@ type IngestProjectLogsJSONRequestBody = IngestProjectLogsJSONBody
 // IngestProjectLogsOTLPJSONRequestBody defines body for IngestProjectLogsOTLP for application/json ContentType.
 type IngestProjectLogsOTLPJSONRequestBody = IngestProjectLogsOTLPJSONBody
 
+// CreateRoleJSONRequestBody defines body for CreateRole for application/json ContentType.
+type CreateRoleJSONRequestBody = CreateRoleRequest
+
+// UpdateRoleJSONRequestBody defines body for UpdateRole for application/json ContentType.
+type UpdateRoleJSONRequestBody = UpdateRoleRequest
+
 // StartRunJSONRequestBody defines body for StartRun for application/json ContentType.
 type StartRunJSONRequestBody = StartRunRequest
 
@@ -11506,6 +12265,12 @@ type CreateSecretJSONRequestBody = CreateSecretRequest
 
 // UpdateSecretJSONRequestBody defines body for UpdateSecret for application/json ContentType.
 type UpdateSecretJSONRequestBody = UpdateSecretRequest
+
+// CreateServiceAccountJSONRequestBody defines body for CreateServiceAccount for application/json ContentType.
+type CreateServiceAccountJSONRequestBody = CreateServiceAccountRequest
+
+// UpdateServiceAccountJSONRequestBody defines body for UpdateServiceAccount for application/json ContentType.
+type UpdateServiceAccountJSONRequestBody = UpdateServiceAccountRequest
 
 // CreateSkillJSONRequestBody defines body for CreateSkill for application/json ContentType.
 type CreateSkillJSONRequestBody = SkillRequest
@@ -11581,6 +12346,9 @@ type StartWorkflowRunJSONRequestBody = StartBoundRunRequest
 
 // ValidateWorkflowExpressionsJSONRequestBody defines body for ValidateWorkflowExpressions for application/json ContentType.
 type ValidateWorkflowExpressionsJSONRequestBody = ValidateWorkflowExpressionsRequest
+
+// CreateRoleAssignmentJSONRequestBody defines body for CreateRoleAssignment for application/json ContentType.
+type CreateRoleAssignmentJSONRequestBody = CreateRoleAssignmentRequest
 
 // Getter for additional properties for ActionAnnotationsResponse. Returns the specified
 // element and whether it was found
@@ -14118,6 +14886,143 @@ func (t *CreateInteractionRequest) UnmarshalJSON(b []byte) error {
 	return err
 }
 
+// AsCreateRoleAssignmentRequest0 returns the union data inside the CreateRoleAssignmentRequest as a CreateRoleAssignmentRequest0
+func (t CreateRoleAssignmentRequest) AsCreateRoleAssignmentRequest0() (CreateRoleAssignmentRequest0, error) {
+	var body CreateRoleAssignmentRequest0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromCreateRoleAssignmentRequest0 overwrites any union data inside the CreateRoleAssignmentRequest as the provided CreateRoleAssignmentRequest0
+func (t *CreateRoleAssignmentRequest) FromCreateRoleAssignmentRequest0(v CreateRoleAssignmentRequest0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeCreateRoleAssignmentRequest0 performs a merge with any union data inside the CreateRoleAssignmentRequest, using the provided CreateRoleAssignmentRequest0
+func (t *CreateRoleAssignmentRequest) MergeCreateRoleAssignmentRequest0(v CreateRoleAssignmentRequest0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsCreateRoleAssignmentRequest1 returns the union data inside the CreateRoleAssignmentRequest as a CreateRoleAssignmentRequest1
+func (t CreateRoleAssignmentRequest) AsCreateRoleAssignmentRequest1() (CreateRoleAssignmentRequest1, error) {
+	var body CreateRoleAssignmentRequest1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromCreateRoleAssignmentRequest1 overwrites any union data inside the CreateRoleAssignmentRequest as the provided CreateRoleAssignmentRequest1
+func (t *CreateRoleAssignmentRequest) FromCreateRoleAssignmentRequest1(v CreateRoleAssignmentRequest1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeCreateRoleAssignmentRequest1 performs a merge with any union data inside the CreateRoleAssignmentRequest, using the provided CreateRoleAssignmentRequest1
+func (t *CreateRoleAssignmentRequest) MergeCreateRoleAssignmentRequest1(v CreateRoleAssignmentRequest1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t CreateRoleAssignmentRequest) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	object := make(map[string]json.RawMessage)
+	if t.union != nil {
+		err = json.Unmarshal(b, &object)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if t.ProjectId != nil {
+		object["project_id"], err = json.Marshal(t.ProjectId)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'project_id': %w", err)
+		}
+	}
+
+	if t.RoleId != nil {
+		object["role_id"], err = json.Marshal(t.RoleId)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'role_id': %w", err)
+		}
+	}
+
+	if t.RoleName != nil {
+		object["role_name"], err = json.Marshal(t.RoleName)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'role_name': %w", err)
+		}
+	}
+
+	object["user_id"], err = json.Marshal(t.UserId)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'user_id': %w", err)
+	}
+
+	b, err = json.Marshal(object)
+	return b, err
+}
+
+func (t *CreateRoleAssignmentRequest) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	if err != nil {
+		return err
+	}
+	object := make(map[string]json.RawMessage)
+	err = json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["project_id"]; found {
+		err = json.Unmarshal(raw, &t.ProjectId)
+		if err != nil {
+			return fmt.Errorf("error reading 'project_id': %w", err)
+		}
+	}
+
+	if raw, found := object["role_id"]; found {
+		err = json.Unmarshal(raw, &t.RoleId)
+		if err != nil {
+			return fmt.Errorf("error reading 'role_id': %w", err)
+		}
+	}
+
+	if raw, found := object["role_name"]; found {
+		err = json.Unmarshal(raw, &t.RoleName)
+		if err != nil {
+			return fmt.Errorf("error reading 'role_name': %w", err)
+		}
+	}
+
+	if raw, found := object["user_id"]; found {
+		err = json.Unmarshal(raw, &t.UserId)
+		if err != nil {
+			return fmt.Errorf("error reading 'user_id': %w", err)
+		}
+	}
+
+	return err
+}
+
 // AsCreateScheduleTriggerRequest returns the union data inside the CreateTriggerRequest as a CreateScheduleTriggerRequest
 func (t CreateTriggerRequest) AsCreateScheduleTriggerRequest() (CreateScheduleTriggerRequest, error) {
 	var body CreateScheduleTriggerRequest
@@ -16550,6 +17455,20 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 
 // The interface specification for the client above.
 type ClientInterface interface {
+	// ListAPIKeys request
+	ListAPIKeys(ctx context.Context, params *ListAPIKeysParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateAPIKeyWithBody request with any body
+	CreateAPIKeyWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	CreateAPIKey(ctx context.Context, body CreateAPIKeyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RevokeAPIKey request
+	RevokeAPIKey(ctx context.Context, id IDParam, params *RevokeAPIKeyParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetAPIKey request
+	GetAPIKey(ctx context.Context, id IDParam, params *GetAPIKeyParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListOrgAuditLogs request
 	ListOrgAuditLogs(ctx context.Context, params *ListOrgAuditLogsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -16839,6 +17758,9 @@ type ClientInterface interface {
 	// StreamProjectEvents request
 	StreamProjectEvents(ctx context.Context, project ProjectHandleParam, params *StreamProjectEventsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ListProjectFeatures request
+	ListProjectFeatures(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListGroups request
 	ListGroups(ctx context.Context, project ProjectHandleParam, params *ListGroupsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -16996,6 +17918,28 @@ type ClientInterface interface {
 	// ListMemberGroups request
 	ListMemberGroups(ctx context.Context, project ProjectHandleParam, userId UserId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ListProjectPermissions request
+	ListProjectPermissions(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListRoles request
+	ListRoles(ctx context.Context, project ProjectHandleParam, params *ListRolesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateRoleWithBody request with any body
+	CreateRoleWithBody(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	CreateRole(ctx context.Context, project ProjectHandleParam, body CreateRoleJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DeleteRole request
+	DeleteRole(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetRole request
+	GetRole(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateRoleWithBody request with any body
+	UpdateRoleWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	UpdateRole(ctx context.Context, project ProjectHandleParam, id IDParam, body UpdateRoleJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListRuns request
 	ListRuns(ctx context.Context, project ProjectHandleParam, params *ListRunsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -17059,6 +18003,25 @@ type ClientInterface interface {
 
 	// GetSecretVersion request
 	GetSecretVersion(ctx context.Context, project ProjectHandleParam, secret SecretParam, version SecretVersionParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListServiceAccounts request
+	ListServiceAccounts(ctx context.Context, project ProjectHandleParam, params *ListServiceAccountsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateServiceAccountWithBody request with any body
+	CreateServiceAccountWithBody(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	CreateServiceAccount(ctx context.Context, project ProjectHandleParam, body CreateServiceAccountJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DeleteServiceAccount request
+	DeleteServiceAccount(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetServiceAccount request
+	GetServiceAccount(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateServiceAccountWithBody request with any body
+	UpdateServiceAccountWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	UpdateServiceAccount(ctx context.Context, project ProjectHandleParam, id IDParam, body UpdateServiceAccountJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListSkills request
 	ListSkills(ctx context.Context, project ProjectHandleParam, params *ListSkillsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -17292,6 +18255,77 @@ type ClientInterface interface {
 	ValidateWorkflowExpressionsWithBody(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	ValidateWorkflowExpressions(ctx context.Context, project ProjectHandleParam, body ValidateWorkflowExpressionsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListRoleAssignments request
+	ListRoleAssignments(ctx context.Context, params *ListRoleAssignmentsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateRoleAssignmentWithBody request with any body
+	CreateRoleAssignmentWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	CreateRoleAssignment(ctx context.Context, body CreateRoleAssignmentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DeleteRoleAssignment request
+	DeleteRoleAssignment(ctx context.Context, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+}
+
+func (c *Client) ListAPIKeys(ctx context.Context, params *ListAPIKeysParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListAPIKeysRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateAPIKeyWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateAPIKeyRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateAPIKey(ctx context.Context, body CreateAPIKeyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateAPIKeyRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) RevokeAPIKey(ctx context.Context, id IDParam, params *RevokeAPIKeyParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRevokeAPIKeyRequest(c.Server, id, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetAPIKey(ctx context.Context, id IDParam, params *GetAPIKeyParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetAPIKeyRequest(c.Server, id, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
 }
 
 func (c *Client) ListOrgAuditLogs(ctx context.Context, params *ListOrgAuditLogsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -18566,6 +19600,18 @@ func (c *Client) StreamProjectEvents(ctx context.Context, project ProjectHandleP
 	return c.Client.Do(req)
 }
 
+func (c *Client) ListProjectFeatures(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListProjectFeaturesRequest(c.Server, project)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) ListGroups(ctx context.Context, project ProjectHandleParam, params *ListGroupsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListGroupsRequest(c.Server, project, params)
 	if err != nil {
@@ -19274,6 +20320,102 @@ func (c *Client) ListMemberGroups(ctx context.Context, project ProjectHandlePara
 	return c.Client.Do(req)
 }
 
+func (c *Client) ListProjectPermissions(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListProjectPermissionsRequest(c.Server, project)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListRoles(ctx context.Context, project ProjectHandleParam, params *ListRolesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListRolesRequest(c.Server, project, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateRoleWithBody(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateRoleRequestWithBody(c.Server, project, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateRole(ctx context.Context, project ProjectHandleParam, body CreateRoleJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateRoleRequest(c.Server, project, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) DeleteRole(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteRoleRequest(c.Server, project, id)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetRole(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetRoleRequest(c.Server, project, id)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateRoleWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateRoleRequestWithBody(c.Server, project, id, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateRole(ctx context.Context, project ProjectHandleParam, id IDParam, body UpdateRoleJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateRoleRequest(c.Server, project, id, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) ListRuns(ctx context.Context, project ProjectHandleParam, params *ListRunsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListRunsRequest(c.Server, project, params)
 	if err != nil {
@@ -19540,6 +20682,90 @@ func (c *Client) ListSecretVersions(ctx context.Context, project ProjectHandlePa
 
 func (c *Client) GetSecretVersion(ctx context.Context, project ProjectHandleParam, secret SecretParam, version SecretVersionParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetSecretVersionRequest(c.Server, project, secret, version)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListServiceAccounts(ctx context.Context, project ProjectHandleParam, params *ListServiceAccountsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListServiceAccountsRequest(c.Server, project, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateServiceAccountWithBody(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateServiceAccountRequestWithBody(c.Server, project, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateServiceAccount(ctx context.Context, project ProjectHandleParam, body CreateServiceAccountJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateServiceAccountRequest(c.Server, project, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) DeleteServiceAccount(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteServiceAccountRequest(c.Server, project, id)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetServiceAccount(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetServiceAccountRequest(c.Server, project, id)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateServiceAccountWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateServiceAccountRequestWithBody(c.Server, project, id, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateServiceAccount(ctx context.Context, project ProjectHandleParam, id IDParam, body UpdateServiceAccountJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateServiceAccountRequest(c.Server, project, id, body)
 	if err != nil {
 		return nil, err
 	}
@@ -20580,6 +21806,306 @@ func (c *Client) ValidateWorkflowExpressions(ctx context.Context, project Projec
 		return nil, err
 	}
 	return c.Client.Do(req)
+}
+
+func (c *Client) ListRoleAssignments(ctx context.Context, params *ListRoleAssignmentsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListRoleAssignmentsRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateRoleAssignmentWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateRoleAssignmentRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateRoleAssignment(ctx context.Context, body CreateRoleAssignmentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateRoleAssignmentRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) DeleteRoleAssignment(ctx context.Context, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteRoleAssignmentRequest(c.Server, id)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// NewListAPIKeysRequest generates requests for ListAPIKeys
+func NewListAPIKeysRequest(server string, params *ListAPIKeysParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/api-keys")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.ProjectId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "project_id", *params.ProjectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Cursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "cursor", *params.Cursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Tag != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "tag", *params.Tag, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "array", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCreateAPIKeyRequest calls the generic CreateAPIKey builder with application/json body
+func NewCreateAPIKeyRequest(server string, body CreateAPIKeyJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateAPIKeyRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewCreateAPIKeyRequestWithBody generates requests for CreateAPIKey with any type of body
+func NewCreateAPIKeyRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/api-keys")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewRevokeAPIKeyRequest generates requests for RevokeAPIKey
+func NewRevokeAPIKeyRequest(server string, id IDParam, params *RevokeAPIKeyParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/api-keys/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.ProjectId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "project_id", *params.ProjectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetAPIKeyRequest generates requests for GetAPIKey
+func NewGetAPIKeyRequest(server string, id IDParam, params *GetAPIKeyParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/api-keys/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.ProjectId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "project_id", *params.ProjectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
 }
 
 // NewListOrgAuditLogsRequest generates requests for ListOrgAuditLogs
@@ -25188,6 +26714,40 @@ func NewStreamProjectEventsRequest(server string, project ProjectHandleParam, pa
 	return req, nil
 }
 
+// NewListProjectFeaturesRequest generates requests for ListProjectFeatures
+func NewListProjectFeaturesRequest(server string, project ProjectHandleParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/features", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewListGroupsRequest generates requests for ListGroups
 func NewListGroupsRequest(server string, project ProjectHandleParam, params *ListGroupsParams) (*http.Request, error) {
 	var err error
@@ -27500,6 +29060,308 @@ func NewListMemberGroupsRequest(server string, project ProjectHandleParam, userI
 	return req, nil
 }
 
+// NewListProjectPermissionsRequest generates requests for ListProjectPermissions
+func NewListProjectPermissionsRequest(server string, project ProjectHandleParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/permissions", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewListRolesRequest generates requests for ListRoles
+func NewListRolesRequest(server string, project ProjectHandleParam, params *ListRolesParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/roles", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Cursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "cursor", *params.Cursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Tag != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "tag", *params.Tag, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "array", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCreateRoleRequest calls the generic CreateRole builder with application/json body
+func NewCreateRoleRequest(server string, project ProjectHandleParam, body CreateRoleJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateRoleRequestWithBody(server, project, "application/json", bodyReader)
+}
+
+// NewCreateRoleRequestWithBody generates requests for CreateRole with any type of body
+func NewCreateRoleRequestWithBody(server string, project ProjectHandleParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/roles", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewDeleteRoleRequest generates requests for DeleteRole
+func NewDeleteRoleRequest(server string, project ProjectHandleParam, id IDParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/roles/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetRoleRequest generates requests for GetRole
+func NewGetRoleRequest(server string, project ProjectHandleParam, id IDParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/roles/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewUpdateRoleRequest calls the generic UpdateRole builder with application/json body
+func NewUpdateRoleRequest(server string, project ProjectHandleParam, id IDParam, body UpdateRoleJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpdateRoleRequestWithBody(server, project, id, "application/json", bodyReader)
+}
+
+// NewUpdateRoleRequestWithBody generates requests for UpdateRole with any type of body
+func NewUpdateRoleRequestWithBody(server string, project ProjectHandleParam, id IDParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/roles/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPatch, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewListRunsRequest generates requests for ListRuns
 func NewListRunsRequest(server string, project ProjectHandleParam, params *ListRunsParams) (*http.Request, error) {
 	var err error
@@ -28648,6 +30510,262 @@ func NewGetSecretVersionRequest(server string, project ProjectHandleParam, secre
 	if err != nil {
 		return nil, err
 	}
+
+	return req, nil
+}
+
+// NewListServiceAccountsRequest generates requests for ListServiceAccounts
+func NewListServiceAccountsRequest(server string, project ProjectHandleParam, params *ListServiceAccountsParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/service-accounts", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Tag != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "tag", *params.Tag, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "array", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCreateServiceAccountRequest calls the generic CreateServiceAccount builder with application/json body
+func NewCreateServiceAccountRequest(server string, project ProjectHandleParam, body CreateServiceAccountJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateServiceAccountRequestWithBody(server, project, "application/json", bodyReader)
+}
+
+// NewCreateServiceAccountRequestWithBody generates requests for CreateServiceAccount with any type of body
+func NewCreateServiceAccountRequestWithBody(server string, project ProjectHandleParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/service-accounts", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewDeleteServiceAccountRequest generates requests for DeleteServiceAccount
+func NewDeleteServiceAccountRequest(server string, project ProjectHandleParam, id IDParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/service-accounts/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetServiceAccountRequest generates requests for GetServiceAccount
+func NewGetServiceAccountRequest(server string, project ProjectHandleParam, id IDParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/service-accounts/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewUpdateServiceAccountRequest calls the generic UpdateServiceAccount builder with application/json body
+func NewUpdateServiceAccountRequest(server string, project ProjectHandleParam, id IDParam, body UpdateServiceAccountJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpdateServiceAccountRequestWithBody(server, project, id, "application/json", bodyReader)
+}
+
+// NewUpdateServiceAccountRequestWithBody generates requests for UpdateServiceAccount with any type of body
+func NewUpdateServiceAccountRequestWithBody(server string, project ProjectHandleParam, id IDParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/service-accounts/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPatch, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
 }
@@ -32686,6 +34804,158 @@ func NewValidateWorkflowExpressionsRequestWithBody(server string, project Projec
 	return req, nil
 }
 
+// NewListRoleAssignmentsRequest generates requests for ListRoleAssignments
+func NewListRoleAssignmentsRequest(server string, params *ListRoleAssignmentsParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/role-assignments")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.UserId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "user_id", *params.UserId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.RoleId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "role_id", *params.RoleId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.ProjectId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "project_id", *params.ProjectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCreateRoleAssignmentRequest calls the generic CreateRoleAssignment builder with application/json body
+func NewCreateRoleAssignmentRequest(server string, body CreateRoleAssignmentJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateRoleAssignmentRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewCreateRoleAssignmentRequestWithBody generates requests for CreateRoleAssignment with any type of body
+func NewCreateRoleAssignmentRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/role-assignments")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewDeleteRoleAssignmentRequest generates requests for DeleteRoleAssignment
+func NewDeleteRoleAssignmentRequest(server string, id IDParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/role-assignments/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 func (c *Client) applyEditors(ctx context.Context, req *http.Request, additionalEditors []RequestEditorFn) error {
 	for _, r := range c.RequestEditors {
 		if err := r(ctx, req); err != nil {
@@ -32729,6 +34999,20 @@ func WithBaseURL(baseURL string) ClientOption {
 
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
+	// ListAPIKeysWithResponse request
+	ListAPIKeysWithResponse(ctx context.Context, params *ListAPIKeysParams, reqEditors ...RequestEditorFn) (*ListAPIKeysResponse, error)
+
+	// CreateAPIKeyWithBodyWithResponse request with any body
+	CreateAPIKeyWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateAPIKeyResponse, error)
+
+	CreateAPIKeyWithResponse(ctx context.Context, body CreateAPIKeyJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateAPIKeyResponse, error)
+
+	// RevokeAPIKeyWithResponse request
+	RevokeAPIKeyWithResponse(ctx context.Context, id IDParam, params *RevokeAPIKeyParams, reqEditors ...RequestEditorFn) (*RevokeAPIKeyResponse, error)
+
+	// GetAPIKeyWithResponse request
+	GetAPIKeyWithResponse(ctx context.Context, id IDParam, params *GetAPIKeyParams, reqEditors ...RequestEditorFn) (*GetAPIKeyResponse, error)
+
 	// ListOrgAuditLogsWithResponse request
 	ListOrgAuditLogsWithResponse(ctx context.Context, params *ListOrgAuditLogsParams, reqEditors ...RequestEditorFn) (*ListOrgAuditLogsResponse, error)
 
@@ -33018,6 +35302,9 @@ type ClientWithResponsesInterface interface {
 	// StreamProjectEventsWithResponse request
 	StreamProjectEventsWithResponse(ctx context.Context, project ProjectHandleParam, params *StreamProjectEventsParams, reqEditors ...RequestEditorFn) (*StreamProjectEventsResponse, error)
 
+	// ListProjectFeaturesWithResponse request
+	ListProjectFeaturesWithResponse(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*ListProjectFeaturesResponse, error)
+
 	// ListGroupsWithResponse request
 	ListGroupsWithResponse(ctx context.Context, project ProjectHandleParam, params *ListGroupsParams, reqEditors ...RequestEditorFn) (*ListGroupsResponse, error)
 
@@ -33175,6 +35462,28 @@ type ClientWithResponsesInterface interface {
 	// ListMemberGroupsWithResponse request
 	ListMemberGroupsWithResponse(ctx context.Context, project ProjectHandleParam, userId UserId, reqEditors ...RequestEditorFn) (*ListMemberGroupsResponse, error)
 
+	// ListProjectPermissionsWithResponse request
+	ListProjectPermissionsWithResponse(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*ListProjectPermissionsResponse, error)
+
+	// ListRolesWithResponse request
+	ListRolesWithResponse(ctx context.Context, project ProjectHandleParam, params *ListRolesParams, reqEditors ...RequestEditorFn) (*ListRolesResponse, error)
+
+	// CreateRoleWithBodyWithResponse request with any body
+	CreateRoleWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateRoleResponse, error)
+
+	CreateRoleWithResponse(ctx context.Context, project ProjectHandleParam, body CreateRoleJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateRoleResponse, error)
+
+	// DeleteRoleWithResponse request
+	DeleteRoleWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*DeleteRoleResponse, error)
+
+	// GetRoleWithResponse request
+	GetRoleWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*GetRoleResponse, error)
+
+	// UpdateRoleWithBodyWithResponse request with any body
+	UpdateRoleWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateRoleResponse, error)
+
+	UpdateRoleWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body UpdateRoleJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateRoleResponse, error)
+
 	// ListRunsWithResponse request
 	ListRunsWithResponse(ctx context.Context, project ProjectHandleParam, params *ListRunsParams, reqEditors ...RequestEditorFn) (*ListRunsResponse, error)
 
@@ -33238,6 +35547,25 @@ type ClientWithResponsesInterface interface {
 
 	// GetSecretVersionWithResponse request
 	GetSecretVersionWithResponse(ctx context.Context, project ProjectHandleParam, secret SecretParam, version SecretVersionParam, reqEditors ...RequestEditorFn) (*GetSecretVersionResponse, error)
+
+	// ListServiceAccountsWithResponse request
+	ListServiceAccountsWithResponse(ctx context.Context, project ProjectHandleParam, params *ListServiceAccountsParams, reqEditors ...RequestEditorFn) (*ListServiceAccountsResponse, error)
+
+	// CreateServiceAccountWithBodyWithResponse request with any body
+	CreateServiceAccountWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateServiceAccountResponse, error)
+
+	CreateServiceAccountWithResponse(ctx context.Context, project ProjectHandleParam, body CreateServiceAccountJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateServiceAccountResponse, error)
+
+	// DeleteServiceAccountWithResponse request
+	DeleteServiceAccountWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*DeleteServiceAccountResponse, error)
+
+	// GetServiceAccountWithResponse request
+	GetServiceAccountWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*GetServiceAccountResponse, error)
+
+	// UpdateServiceAccountWithBodyWithResponse request with any body
+	UpdateServiceAccountWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateServiceAccountResponse, error)
+
+	UpdateServiceAccountWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body UpdateServiceAccountJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateServiceAccountResponse, error)
 
 	// ListSkillsWithResponse request
 	ListSkillsWithResponse(ctx context.Context, project ProjectHandleParam, params *ListSkillsParams, reqEditors ...RequestEditorFn) (*ListSkillsResponse, error)
@@ -33471,6 +35799,149 @@ type ClientWithResponsesInterface interface {
 	ValidateWorkflowExpressionsWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ValidateWorkflowExpressionsResponse, error)
 
 	ValidateWorkflowExpressionsWithResponse(ctx context.Context, project ProjectHandleParam, body ValidateWorkflowExpressionsJSONRequestBody, reqEditors ...RequestEditorFn) (*ValidateWorkflowExpressionsResponse, error)
+
+	// ListRoleAssignmentsWithResponse request
+	ListRoleAssignmentsWithResponse(ctx context.Context, params *ListRoleAssignmentsParams, reqEditors ...RequestEditorFn) (*ListRoleAssignmentsResponse, error)
+
+	// CreateRoleAssignmentWithBodyWithResponse request with any body
+	CreateRoleAssignmentWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateRoleAssignmentResponse, error)
+
+	CreateRoleAssignmentWithResponse(ctx context.Context, body CreateRoleAssignmentJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateRoleAssignmentResponse, error)
+
+	// DeleteRoleAssignmentWithResponse request
+	DeleteRoleAssignmentWithResponse(ctx context.Context, id IDParam, reqEditors ...RequestEditorFn) (*DeleteRoleAssignmentResponse, error)
+}
+
+type ListAPIKeysResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *APIKeyListResponse
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r ListAPIKeysResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListAPIKeysResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListAPIKeysResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type CreateAPIKeyResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON201      *APIKeyCreateResult
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateAPIKeyResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateAPIKeyResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CreateAPIKeyResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type RevokeAPIKeyResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r RevokeAPIKeyResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r RevokeAPIKeyResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r RevokeAPIKeyResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetAPIKeyResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *APIKey
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r GetAPIKeyResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetAPIKeyResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetAPIKeyResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
 }
 
 type ListOrgAuditLogsResponse struct {
@@ -36033,6 +38504,39 @@ func (r StreamProjectEventsResponse) ContentType() string {
 	return ""
 }
 
+type ListProjectFeaturesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *FeatureGateListResponse
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r ListProjectFeaturesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListProjectFeaturesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListProjectFeaturesResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type ListGroupsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -37347,6 +39851,205 @@ func (r ListMemberGroupsResponse) ContentType() string {
 	return ""
 }
 
+type ListProjectPermissionsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *PermissionCatalogResponse
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r ListProjectPermissionsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListProjectPermissionsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListProjectPermissionsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ListRolesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *RoleListResponse
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+}
+
+// Status returns HTTPResponse.Status
+func (r ListRolesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListRolesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListRolesResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type CreateRoleResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON201      *Role
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON409      *Conflict
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateRoleResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateRoleResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CreateRoleResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type DeleteRoleResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteRoleResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteRoleResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r DeleteRoleResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetRoleResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Role
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r GetRoleResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetRoleResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetRoleResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type UpdateRoleResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Role
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+	JSON409      *Conflict
+}
+
+// Status returns HTTPResponse.Status
+func (r UpdateRoleResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpdateRoleResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r UpdateRoleResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type ListRunsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -37943,6 +40646,174 @@ func (r GetSecretVersionResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r GetSecretVersionResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ListServiceAccountsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ServiceAccountListResponse
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r ListServiceAccountsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListServiceAccountsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListServiceAccountsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type CreateServiceAccountResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON201      *ServiceAccount
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+	JSON409      *Conflict
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateServiceAccountResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateServiceAccountResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CreateServiceAccountResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type DeleteServiceAccountResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+	JSON409      *Conflict
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteServiceAccountResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteServiceAccountResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r DeleteServiceAccountResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetServiceAccountResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ServiceAccount
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r GetServiceAccountResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetServiceAccountResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetServiceAccountResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type UpdateServiceAccountResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ServiceAccount
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r UpdateServiceAccountResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpdateServiceAccountResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r UpdateServiceAccountResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -39994,6 +42865,149 @@ func (r ValidateWorkflowExpressionsResponse) ContentType() string {
 	return ""
 }
 
+type ListRoleAssignmentsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *RoleAssignmentListResponse
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+}
+
+// Status returns HTTPResponse.Status
+func (r ListRoleAssignmentsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListRoleAssignmentsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListRoleAssignmentsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type CreateRoleAssignmentResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON201      *RoleAssignment
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+	JSON409      *Conflict
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateRoleAssignmentResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateRoleAssignmentResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CreateRoleAssignmentResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type DeleteRoleAssignmentResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteRoleAssignmentResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteRoleAssignmentResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r DeleteRoleAssignmentResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// ListAPIKeysWithResponse request returning *ListAPIKeysResponse
+func (c *ClientWithResponses) ListAPIKeysWithResponse(ctx context.Context, params *ListAPIKeysParams, reqEditors ...RequestEditorFn) (*ListAPIKeysResponse, error) {
+	rsp, err := c.ListAPIKeys(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListAPIKeysResponse(rsp)
+}
+
+// CreateAPIKeyWithBodyWithResponse request with arbitrary body returning *CreateAPIKeyResponse
+func (c *ClientWithResponses) CreateAPIKeyWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateAPIKeyResponse, error) {
+	rsp, err := c.CreateAPIKeyWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateAPIKeyResponse(rsp)
+}
+
+func (c *ClientWithResponses) CreateAPIKeyWithResponse(ctx context.Context, body CreateAPIKeyJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateAPIKeyResponse, error) {
+	rsp, err := c.CreateAPIKey(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateAPIKeyResponse(rsp)
+}
+
+// RevokeAPIKeyWithResponse request returning *RevokeAPIKeyResponse
+func (c *ClientWithResponses) RevokeAPIKeyWithResponse(ctx context.Context, id IDParam, params *RevokeAPIKeyParams, reqEditors ...RequestEditorFn) (*RevokeAPIKeyResponse, error) {
+	rsp, err := c.RevokeAPIKey(ctx, id, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRevokeAPIKeyResponse(rsp)
+}
+
+// GetAPIKeyWithResponse request returning *GetAPIKeyResponse
+func (c *ClientWithResponses) GetAPIKeyWithResponse(ctx context.Context, id IDParam, params *GetAPIKeyParams, reqEditors ...RequestEditorFn) (*GetAPIKeyResponse, error) {
+	rsp, err := c.GetAPIKey(ctx, id, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetAPIKeyResponse(rsp)
+}
+
 // ListOrgAuditLogsWithResponse request returning *ListOrgAuditLogsResponse
 func (c *ClientWithResponses) ListOrgAuditLogsWithResponse(ctx context.Context, params *ListOrgAuditLogsParams, reqEditors ...RequestEditorFn) (*ListOrgAuditLogsResponse, error) {
 	rsp, err := c.ListOrgAuditLogs(ctx, params, reqEditors...)
@@ -40919,6 +43933,15 @@ func (c *ClientWithResponses) StreamProjectEventsWithResponse(ctx context.Contex
 	return ParseStreamProjectEventsResponse(rsp)
 }
 
+// ListProjectFeaturesWithResponse request returning *ListProjectFeaturesResponse
+func (c *ClientWithResponses) ListProjectFeaturesWithResponse(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*ListProjectFeaturesResponse, error) {
+	rsp, err := c.ListProjectFeatures(ctx, project, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListProjectFeaturesResponse(rsp)
+}
+
 // ListGroupsWithResponse request returning *ListGroupsResponse
 func (c *ClientWithResponses) ListGroupsWithResponse(ctx context.Context, project ProjectHandleParam, params *ListGroupsParams, reqEditors ...RequestEditorFn) (*ListGroupsResponse, error) {
 	rsp, err := c.ListGroups(ctx, project, params, reqEditors...)
@@ -41430,6 +44453,76 @@ func (c *ClientWithResponses) ListMemberGroupsWithResponse(ctx context.Context, 
 	return ParseListMemberGroupsResponse(rsp)
 }
 
+// ListProjectPermissionsWithResponse request returning *ListProjectPermissionsResponse
+func (c *ClientWithResponses) ListProjectPermissionsWithResponse(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*ListProjectPermissionsResponse, error) {
+	rsp, err := c.ListProjectPermissions(ctx, project, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListProjectPermissionsResponse(rsp)
+}
+
+// ListRolesWithResponse request returning *ListRolesResponse
+func (c *ClientWithResponses) ListRolesWithResponse(ctx context.Context, project ProjectHandleParam, params *ListRolesParams, reqEditors ...RequestEditorFn) (*ListRolesResponse, error) {
+	rsp, err := c.ListRoles(ctx, project, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListRolesResponse(rsp)
+}
+
+// CreateRoleWithBodyWithResponse request with arbitrary body returning *CreateRoleResponse
+func (c *ClientWithResponses) CreateRoleWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateRoleResponse, error) {
+	rsp, err := c.CreateRoleWithBody(ctx, project, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateRoleResponse(rsp)
+}
+
+func (c *ClientWithResponses) CreateRoleWithResponse(ctx context.Context, project ProjectHandleParam, body CreateRoleJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateRoleResponse, error) {
+	rsp, err := c.CreateRole(ctx, project, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateRoleResponse(rsp)
+}
+
+// DeleteRoleWithResponse request returning *DeleteRoleResponse
+func (c *ClientWithResponses) DeleteRoleWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*DeleteRoleResponse, error) {
+	rsp, err := c.DeleteRole(ctx, project, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteRoleResponse(rsp)
+}
+
+// GetRoleWithResponse request returning *GetRoleResponse
+func (c *ClientWithResponses) GetRoleWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*GetRoleResponse, error) {
+	rsp, err := c.GetRole(ctx, project, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetRoleResponse(rsp)
+}
+
+// UpdateRoleWithBodyWithResponse request with arbitrary body returning *UpdateRoleResponse
+func (c *ClientWithResponses) UpdateRoleWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateRoleResponse, error) {
+	rsp, err := c.UpdateRoleWithBody(ctx, project, id, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateRoleResponse(rsp)
+}
+
+func (c *ClientWithResponses) UpdateRoleWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body UpdateRoleJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateRoleResponse, error) {
+	rsp, err := c.UpdateRole(ctx, project, id, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateRoleResponse(rsp)
+}
+
 // ListRunsWithResponse request returning *ListRunsResponse
 func (c *ClientWithResponses) ListRunsWithResponse(ctx context.Context, project ProjectHandleParam, params *ListRunsParams, reqEditors ...RequestEditorFn) (*ListRunsResponse, error) {
 	rsp, err := c.ListRuns(ctx, project, params, reqEditors...)
@@ -41630,6 +44723,67 @@ func (c *ClientWithResponses) GetSecretVersionWithResponse(ctx context.Context, 
 		return nil, err
 	}
 	return ParseGetSecretVersionResponse(rsp)
+}
+
+// ListServiceAccountsWithResponse request returning *ListServiceAccountsResponse
+func (c *ClientWithResponses) ListServiceAccountsWithResponse(ctx context.Context, project ProjectHandleParam, params *ListServiceAccountsParams, reqEditors ...RequestEditorFn) (*ListServiceAccountsResponse, error) {
+	rsp, err := c.ListServiceAccounts(ctx, project, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListServiceAccountsResponse(rsp)
+}
+
+// CreateServiceAccountWithBodyWithResponse request with arbitrary body returning *CreateServiceAccountResponse
+func (c *ClientWithResponses) CreateServiceAccountWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateServiceAccountResponse, error) {
+	rsp, err := c.CreateServiceAccountWithBody(ctx, project, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateServiceAccountResponse(rsp)
+}
+
+func (c *ClientWithResponses) CreateServiceAccountWithResponse(ctx context.Context, project ProjectHandleParam, body CreateServiceAccountJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateServiceAccountResponse, error) {
+	rsp, err := c.CreateServiceAccount(ctx, project, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateServiceAccountResponse(rsp)
+}
+
+// DeleteServiceAccountWithResponse request returning *DeleteServiceAccountResponse
+func (c *ClientWithResponses) DeleteServiceAccountWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*DeleteServiceAccountResponse, error) {
+	rsp, err := c.DeleteServiceAccount(ctx, project, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteServiceAccountResponse(rsp)
+}
+
+// GetServiceAccountWithResponse request returning *GetServiceAccountResponse
+func (c *ClientWithResponses) GetServiceAccountWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*GetServiceAccountResponse, error) {
+	rsp, err := c.GetServiceAccount(ctx, project, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetServiceAccountResponse(rsp)
+}
+
+// UpdateServiceAccountWithBodyWithResponse request with arbitrary body returning *UpdateServiceAccountResponse
+func (c *ClientWithResponses) UpdateServiceAccountWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateServiceAccountResponse, error) {
+	rsp, err := c.UpdateServiceAccountWithBody(ctx, project, id, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateServiceAccountResponse(rsp)
+}
+
+func (c *ClientWithResponses) UpdateServiceAccountWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body UpdateServiceAccountJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateServiceAccountResponse, error) {
+	rsp, err := c.UpdateServiceAccount(ctx, project, id, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateServiceAccountResponse(rsp)
 }
 
 // ListSkillsWithResponse request returning *ListSkillsResponse
@@ -42379,6 +45533,229 @@ func (c *ClientWithResponses) ValidateWorkflowExpressionsWithResponse(ctx contex
 		return nil, err
 	}
 	return ParseValidateWorkflowExpressionsResponse(rsp)
+}
+
+// ListRoleAssignmentsWithResponse request returning *ListRoleAssignmentsResponse
+func (c *ClientWithResponses) ListRoleAssignmentsWithResponse(ctx context.Context, params *ListRoleAssignmentsParams, reqEditors ...RequestEditorFn) (*ListRoleAssignmentsResponse, error) {
+	rsp, err := c.ListRoleAssignments(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListRoleAssignmentsResponse(rsp)
+}
+
+// CreateRoleAssignmentWithBodyWithResponse request with arbitrary body returning *CreateRoleAssignmentResponse
+func (c *ClientWithResponses) CreateRoleAssignmentWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateRoleAssignmentResponse, error) {
+	rsp, err := c.CreateRoleAssignmentWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateRoleAssignmentResponse(rsp)
+}
+
+func (c *ClientWithResponses) CreateRoleAssignmentWithResponse(ctx context.Context, body CreateRoleAssignmentJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateRoleAssignmentResponse, error) {
+	rsp, err := c.CreateRoleAssignment(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateRoleAssignmentResponse(rsp)
+}
+
+// DeleteRoleAssignmentWithResponse request returning *DeleteRoleAssignmentResponse
+func (c *ClientWithResponses) DeleteRoleAssignmentWithResponse(ctx context.Context, id IDParam, reqEditors ...RequestEditorFn) (*DeleteRoleAssignmentResponse, error) {
+	rsp, err := c.DeleteRoleAssignment(ctx, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteRoleAssignmentResponse(rsp)
+}
+
+// ParseListAPIKeysResponse parses an HTTP response from a ListAPIKeysWithResponse call
+func ParseListAPIKeysResponse(rsp *http.Response) (*ListAPIKeysResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListAPIKeysResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest APIKeyListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateAPIKeyResponse parses an HTTP response from a CreateAPIKeyWithResponse call
+func ParseCreateAPIKeyResponse(rsp *http.Response) (*CreateAPIKeyResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateAPIKeyResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest APIKeyCreateResult
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseRevokeAPIKeyResponse parses an HTTP response from a RevokeAPIKeyWithResponse call
+func ParseRevokeAPIKeyResponse(rsp *http.Response) (*RevokeAPIKeyResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &RevokeAPIKeyResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetAPIKeyResponse parses an HTTP response from a GetAPIKeyWithResponse call
+func ParseGetAPIKeyResponse(rsp *http.Response) (*GetAPIKeyResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetAPIKeyResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest APIKey
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
 }
 
 // ParseListOrgAuditLogsResponse parses an HTTP response from a ListOrgAuditLogsWithResponse call
@@ -46133,6 +49510,53 @@ func ParseStreamProjectEventsResponse(rsp *http.Response) (*StreamProjectEventsR
 	return response, nil
 }
 
+// ParseListProjectFeaturesResponse parses an HTTP response from a ListProjectFeaturesWithResponse call
+func ParseListProjectFeaturesResponse(rsp *http.Response) (*ListProjectFeaturesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListProjectFeaturesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest FeatureGateListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseListGroupsResponse parses an HTTP response from a ListGroupsWithResponse call
 func ParseListGroupsResponse(rsp *http.Response) (*ListGroupsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -48155,6 +51579,295 @@ func ParseListMemberGroupsResponse(rsp *http.Response) (*ListMemberGroupsRespons
 	return response, nil
 }
 
+// ParseListProjectPermissionsResponse parses an HTTP response from a ListProjectPermissionsWithResponse call
+func ParseListProjectPermissionsResponse(rsp *http.Response) (*ListProjectPermissionsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListProjectPermissionsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest PermissionCatalogResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListRolesResponse parses an HTTP response from a ListRolesWithResponse call
+func ParseListRolesResponse(rsp *http.Response) (*ListRolesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListRolesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest RoleListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateRoleResponse parses an HTTP response from a CreateRoleWithResponse call
+func ParseCreateRoleResponse(rsp *http.Response) (*CreateRoleResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateRoleResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest Role
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDeleteRoleResponse parses an HTTP response from a DeleteRoleWithResponse call
+func ParseDeleteRoleResponse(rsp *http.Response) (*DeleteRoleResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteRoleResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetRoleResponse parses an HTTP response from a GetRoleWithResponse call
+func ParseGetRoleResponse(rsp *http.Response) (*GetRoleResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetRoleResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Role
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUpdateRoleResponse parses an HTTP response from a UpdateRoleWithResponse call
+func ParseUpdateRoleResponse(rsp *http.Response) (*UpdateRoleResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpdateRoleResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Role
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseListRunsResponse parses an HTTP response from a ListRunsWithResponse call
 func ParseListRunsResponse(rsp *http.Response) (*ListRunsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -49019,6 +52732,262 @@ func ParseGetSecretVersionResponse(rsp *http.Response) (*GetSecretVersionRespons
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest SecretVersion
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListServiceAccountsResponse parses an HTTP response from a ListServiceAccountsWithResponse call
+func ParseListServiceAccountsResponse(rsp *http.Response) (*ListServiceAccountsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListServiceAccountsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ServiceAccountListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateServiceAccountResponse parses an HTTP response from a CreateServiceAccountWithResponse call
+func ParseCreateServiceAccountResponse(rsp *http.Response) (*CreateServiceAccountResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateServiceAccountResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest ServiceAccount
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDeleteServiceAccountResponse parses an HTTP response from a DeleteServiceAccountWithResponse call
+func ParseDeleteServiceAccountResponse(rsp *http.Response) (*DeleteServiceAccountResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteServiceAccountResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetServiceAccountResponse parses an HTTP response from a GetServiceAccountWithResponse call
+func ParseGetServiceAccountResponse(rsp *http.Response) (*GetServiceAccountResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetServiceAccountResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ServiceAccount
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUpdateServiceAccountResponse parses an HTTP response from a UpdateServiceAccountWithResponse call
+func ParseUpdateServiceAccountResponse(rsp *http.Response) (*UpdateServiceAccountResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpdateServiceAccountResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ServiceAccount
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -52122,6 +56091,147 @@ func ParseValidateWorkflowExpressionsResponse(rsp *http.Response) (*ValidateWork
 		}
 		response.JSON400 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListRoleAssignmentsResponse parses an HTTP response from a ListRoleAssignmentsWithResponse call
+func ParseListRoleAssignmentsResponse(rsp *http.Response) (*ListRoleAssignmentsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListRoleAssignmentsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest RoleAssignmentListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateRoleAssignmentResponse parses an HTTP response from a CreateRoleAssignmentWithResponse call
+func ParseCreateRoleAssignmentResponse(rsp *http.Response) (*CreateRoleAssignmentResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateRoleAssignmentResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest RoleAssignment
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDeleteRoleAssignmentResponse parses an HTTP response from a DeleteRoleAssignmentWithResponse call
+func ParseDeleteRoleAssignmentResponse(rsp *http.Response) (*DeleteRoleAssignmentResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteRoleAssignmentResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
 		var dest Unauthorized
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {

@@ -19,7 +19,7 @@ export interface paths {
         put?: never;
         /**
          * Create a channel
-         * @description Creates a new channel or DM thread. The channel `name` must be URL-safe and unique within the project — it is immutable after creation. The creator is automatically added as an admin member. Supply `member_ids` to seed initial membership atomically.
+         * @description Creates a new channel or DM thread. The channel `name` must be URL-safe and unique within the project — it is immutable after creation. The creator is automatically added as an admin member. Supply `member_ids` to seed initial membership atomically. Membership IDs are always `users.id` values; agent participants use their backing `user_id`, not `agents.id`.
          */
         post: operations["createChannel"];
         delete?: never;
@@ -113,7 +113,7 @@ export interface paths {
         put?: never;
         /**
          * Add a member to a channel
-         * @description Adds a user or agent to the channel. Returns 409 if already a member.
+         * @description Adds a user to the channel by `users.id`. Agent participants must be added with their backing `user_id`. Returns 409 if already a member.
          */
         post: operations["addChannelMember"];
         delete?: never;
@@ -134,7 +134,7 @@ export interface paths {
         post?: never;
         /**
          * Remove a member from a channel
-         * @description Removes a user or agent from the channel's live membership. Existing messages remain attributed to the removed member, and removing a member does not revoke project-level access outside this channel.
+         * @description Removes a user from the channel's live membership. Existing messages remain attributed to the removed member, and removing a member does not revoke project-level access outside this channel.
          */
         delete: operations["removeChannelMember"];
         options?: never;
@@ -394,6 +394,54 @@ export interface paths {
         put?: never;
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/api-keys": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List API keys
+         * @description Returns API keys for this organization. When `project_id` is provided, return only keys in that project. When `project_id` is omitted, return keys across all projects visible to the org-level caller.
+         */
+        get: operations["listAPIKeys"];
+        put?: never;
+        /**
+         * Create an API key
+         * @description Creates an API key for a service account in one project. The key authenticates as the service account; associated permissions come from that service account's role assignments. The raw key value is returned in `key` and is never retrievable again after this response.
+         */
+        post: operations["createAPIKey"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/api-keys/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get an API key
+         * @description Returns metadata for a single API key without exposing the raw secret. Include `project_id` to resolve the key within a project-scoped request; org-level callers may omit it.
+         */
+        get: operations["getAPIKey"];
+        put?: never;
+        post?: never;
+        /**
+         * Revoke an API key
+         * @description Permanently revokes the key. In-flight requests using this key will immediately start receiving 401. Include `project_id` to revoke the key from a project-scoped request; org-level callers may omit it.
+         */
+        delete: operations["revokeAPIKey"];
         options?: never;
         head?: never;
         patch?: never;
@@ -835,6 +883,13 @@ export interface paths {
          *     - `message_created` — a channel message was persisted; the
          *     envelope sets `channel_id` and `data` is a full
          *     ChannelMessage. Live-only — no `?since=<seq>` replay.
+         *     - `agent_typing` / `member_typing` — a channel participant is
+         *     composing live-only status. Agent frames carry
+         *     `{agent_id, agent_name, status, phase?, message?, tool_name?}`;
+         *     `status` is `started` or `stopped`, `phase` distinguishes
+         *     automatic states such as `generating_response` and
+         *     `using_tool`, and `message` can override the displayed
+         *     status text for the current agent turn.
          *     - `span_appended` — an OTLP span was persisted against a
          *     run; `data` carries `{span_id, trace_id, name, ...}`.
          *     - `custom` — a worker emitted a domain-specific event via
@@ -1694,6 +1749,26 @@ export interface paths {
         patch: operations["updateProject"];
         trace?: never;
     };
+    "/v1/projects/{project}/features": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List effective project feature gates
+         * @description Returns the server-resolved feature gates for the active project. Results combine the built-in default, any org-level override, and any project-level override so clients can hide unavailable product areas using the same answer enforced by backend handlers.
+         */
+        get: operations["listProjectFeatures"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/projects/{id}/archive": {
         parameters: {
             query?: never;
@@ -1895,6 +1970,122 @@ export interface paths {
         put?: never;
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project}/permissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List project permissions
+         * @description Returns the canonical permission definitions, role presets, and action execution permission groups available when building project-scoped roles. Use this endpoint to source the permission IDs accepted by the role creation and update endpoints.
+         */
+        get: operations["listProjectPermissions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project}/roles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List roles
+         * @description Returns system-defined roles plus custom roles scoped to this project.
+         */
+        get: operations["listRoles"];
+        put?: never;
+        /**
+         * Create a role
+         * @description Creates a custom role scoped to the project. Only system-defined roles exist at the org/global tier and are created automatically by the platform.
+         */
+        post: operations["createRole"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project}/roles/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a role
+         * @description Returns a role by ID. Both system-defined and custom roles belonging to this project are accessible via this endpoint.
+         */
+        get: operations["getRole"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete a role
+         * @description Hard-deletes the role and all its assignments. System-defined roles cannot be deleted.
+         */
+        delete: operations["deleteRole"];
+        options?: never;
+        head?: never;
+        /**
+         * Update a role
+         * @description Updates description or permissions of a custom role. Role names are immutable. System-defined roles (system_defined=true) cannot be updated and return 403.
+         */
+        patch: operations["updateRole"];
+        trace?: never;
+    };
+    "/v1/role-assignments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List role assignments
+         * @description Returns assignments optionally filtered by user, role, or project scope.
+         */
+        get: operations["listRoleAssignments"];
+        put?: never;
+        /**
+         * Assign a role to a principal user
+         * @description Binds a role to a principal User. Supply `project_id` to create a project-scoped assignment; omit it for an org-wide assignment. The assignment records the creating user in `granted_by_user_id`. To manage service-account roles without using the linked principal user ID directly, use `role_ids` on the service-account create and update endpoints.
+         */
+        post: operations["createRoleAssignment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/role-assignments/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove a role assignment
+         * @description Deletes a single role assignment by ID. The underlying role and user are not deleted, but the user immediately loses permissions granted only through this assignment.
+         */
+        delete: operations["deleteRoleAssignment"];
         options?: never;
         head?: never;
         patch?: never;
@@ -2722,6 +2913,62 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/projects/{project}/service-accounts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List service accounts
+         * @description Returns project service accounts used by workers, agents, and automation. Disabled accounts are included so administrators can audit or re-enable them.
+         */
+        get: operations["listServiceAccounts"];
+        put?: never;
+        /**
+         * Create a service account
+         * @description Creates a service account within the project. Supply `role_ids` to atomically assign one or more roles at creation time; requires the caller to hold `mobius.access.manage`. Each role must belong to the same project or be a system-defined role.
+         */
+        post: operations["createServiceAccount"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project}/service-accounts/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a service account
+         * @description Returns one service account, including disabled state, owner, metadata, and timestamps. API keys belonging to the account are managed through the API key endpoints.
+         */
+        get: operations["getServiceAccount"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete a service account
+         * @description Hard-deletes the service account and its role assignments.
+         *
+         *     Returns `409 Conflict` when the service account is still bound to an agent (the SA↔agent binding is immutable per the 1:1 invariant — delete the agent first) or when active API keys still reference it (revoke them first).
+         *
+         *     Consider disabling instead of deleting for audit continuity.
+         */
+        delete: operations["deleteServiceAccount"];
+        options?: never;
+        head?: never;
+        /**
+         * Update a service account
+         * @description Updates mutable fields. To disable without deleting, set `status` to `disabled`. The `name` field is immutable after creation.
+         */
+        patch: operations["updateServiceAccount"];
+        trace?: never;
+    };
     "/v1/projects/{project}/spans": {
         parameters: {
             query?: never;
@@ -3179,6 +3426,16 @@ export interface components {
             voter_user_ids?: string[];
         };
         /**
+         * @description Server-defined product feature key. `feature.apps` controls the Apps product area; `feature.observables` controls Observables.
+         * @enum {string}
+         */
+        FeatureKey: "feature.apps" | "feature.observables";
+        /**
+         * @description Scope for a feature override. Org overrides apply across the organization; project overrides apply only to the specified project and take precedence over org overrides.
+         * @enum {string}
+         */
+        FeatureOverrideScope: "org" | "project";
+        /**
          * @description Behavior to apply when every purpose-linked interaction is terminal.
          * @enum {string}
          */
@@ -3193,9 +3450,11 @@ export interface components {
          *     invariant from PRD 048 §1).
          *     - `service_account` — an API key whose service account backs no
          *     agent.
+         *     - `system` — an internal system user that authored workflow/system
+         *     messages.
          * @enum {string}
          */
-        ChannelMessageSenderType: "human" | "agent" | "service_account";
+        ChannelMessageSenderType: "human" | "agent" | "service_account" | "system";
         /**
          * @description Mobius entity kind that can be attached to a channel message.
          * @enum {string}
@@ -3271,13 +3530,13 @@ export interface components {
             /** @description Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false. */
             next_cursor?: string;
         };
-        /** @description Live membership record for a user or agent in a channel. */
+        /** @description Live membership record for a `users.id` principal in a channel. */
         ChannelMember: {
             /** @description Unique identifier for this membership record. */
             id: string;
             /** @description ID of the channel this membership belongs to. */
             channel_id: string;
-            /** @description ID of the user or agent who is a member. */
+            /** @description ID from the users table for the member. Agent members use their backing users.id, not agents.id. */
             user_id: string;
             /**
              * @description `admin` — can update channel settings and manage members. `member` — can post messages and view history. Creators are automatically assigned `admin`.
@@ -3311,9 +3570,9 @@ export interface components {
             id: string;
             /** @description ID of the channel this message was posted in. */
             channel_id: string;
-            /** @description Whether the sender is a human, an agent worker, or a bare service account credential. */
+            /** @description Whether the sender is a human, an agent worker, a bare service account credential, or an internal system principal. */
             sender_type: components["schemas"]["ChannelMessageSenderType"];
-            /** @description Sender user ID. For `sender_type=agent`, this is the agent's backing `users.id`, not `agents.id`. */
+            /** @description Sender user ID. For `sender_type=agent`, this is the agent's backing `users.id`, not `agents.id`; for `sender_type=system`, this is the per-org system `users.id`. */
             sender_id: string;
             /** @description Live agent session that posted the message, when applicable. */
             sender_session_id?: string | null;
@@ -3407,7 +3666,7 @@ export interface components {
              * @default false
              */
             private: boolean;
-            /** @description Optional list of user IDs to add as members at creation time. Agent members use their backing user IDs. All receive the `member` role; the creator is added as `admin` separately. */
+            /** @description Optional list of `users.id` values to add as members at creation time. Agent members use their backing user IDs, not `agents.id`. All receive the `member` role; the creator is added as `admin` separately. */
             member_ids?: string[];
             /**
              * @description Optional purpose for the channel.
@@ -3441,7 +3700,7 @@ export interface components {
         };
         /** @description Member identity and role to add to a channel. */
         AddChannelMemberRequest: {
-            /** @description User ID to add to the channel. Agent members use their backing user ID. */
+            /** @description User ID (`users.id`) to add to the channel. Agent members use their backing user ID, not `agents.id`. */
             participant_id: string;
             /**
              * @description Role to assign the new member, either `member` or `admin`.
@@ -3527,7 +3786,7 @@ export interface components {
         };
         /** @description Request body for the idempotent open-DM endpoint. */
         OpenDirectMessageRequest: {
-            /** @description User ID of the other DM participant. Agent participants use their backing user ID. */
+            /** @description User ID (`users.id`) of the other DM participant. Agent participants use their backing user ID, not `agents.id`. */
             participant_id: string;
             /** @description Human-facing display name for the channel. Defaults to the participant's name or ID when omitted. Only used on creation; ignored when an existing channel is returned. */
             display_name?: string;
@@ -3929,6 +4188,102 @@ export interface components {
             next_cursor?: string;
             /** @description Whether more results are available */
             has_more: boolean;
+        };
+        /** @description Stored API credential metadata for automation and service access. The raw secret is never returned here; use this object to list, audit, expire, or identify keys by prefix without exposing tokens. */
+        APIKey: {
+            /** @description Unique identifier for this API key. */
+            id: string;
+            /** @description Human-readable label, unique within the project. */
+            name: string;
+            /** @description First 8 characters of the key, used to identify it without exposing the secret. */
+            key_prefix: string;
+            /** @description Project that owns the service account this key authenticates as. */
+            project_id: components["schemas"]["ProjectID"];
+            /** @description Service account this key authenticates as. */
+            service_account_id: string;
+            /**
+             * Format: date-time
+             * @description Hard expiry timestamp. Requests using an expired key receive 401.
+             */
+            expires_at?: string;
+            /**
+             * Format: date-time
+             * @description Timestamp of the most recent authenticated request using this key.
+             */
+            last_used_at?: string;
+            /** @description Resource tags applied to this API key. */
+            tags?: components["schemas"]["TagMap"];
+            /**
+             * Format: date-time
+             * @description Timestamp when this key was created.
+             */
+            created_at: string;
+            /**
+             * Format: date-time
+             * @description Timestamp when this key was last updated.
+             */
+            updated_at: string;
+        };
+        /** @description Returned only on key creation. Contains the raw `key` value which is not retrievable after this response. */
+        APIKeyCreateResult: {
+            /** @description Unique identifier for the created API key. */
+            id: string;
+            /** @description Human-readable name for the key. */
+            name: string;
+            /** @description First 8 characters of the key for identification. */
+            key_prefix: string;
+            /** @description Project that owns the service account this key authenticates as. */
+            project_id: components["schemas"]["ProjectID"];
+            /** @description Service account this key authenticates as. */
+            service_account_id: string;
+            /**
+             * Format: date-time
+             * @description Timestamp when this key expires. Omitted if it does not expire.
+             */
+            expires_at?: string;
+            /**
+             * Format: date-time
+             * @description Timestamp of the most recent authenticated request using this key.
+             */
+            last_used_at?: string;
+            /** @description Resource tags applied to this API key. */
+            tags?: components["schemas"]["TagMap"];
+            /**
+             * Format: date-time
+             * @description Timestamp when this key was created.
+             */
+            created_at: string;
+            /**
+             * Format: date-time
+             * @description Timestamp when this key was last updated.
+             */
+            updated_at: string;
+            /** @description The raw API key. Returned only once at creation — store it securely immediately. */
+            key: string;
+        };
+        APIKeyListResponse: {
+            /** @description The list of results for this page. */
+            items: components["schemas"]["APIKey"][];
+            /** @description Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false. */
+            next_cursor?: string;
+            /** @description Whether additional pages are available. */
+            has_more: boolean;
+        };
+        /** @description Request shape for creating a project API key for a service account. The key authenticates as that service account; permissions are managed by assigning roles to the service account, not by granting permissions to the key. */
+        CreateAPIKeyRequest: {
+            /** @description Human-readable label, unique within the project. */
+            name: string;
+            /** @description Project that owns both the service account and the new key. */
+            project_id: components["schemas"]["ProjectID"];
+            /** @description Service account this key authenticates as. */
+            service_account_id: string;
+            /**
+             * Format: date-time
+             * @description Optional hard expiry. Omit for a non-expiring key.
+             */
+            expires_at?: string;
+            /** @description Initial tag set. */
+            tags?: components["schemas"]["TagMap"];
         };
         /**
          * @description `template` validates strings that may contain `${...}` tokens. `expression` validates a bare expression or predicate without `${...}` wrapping.
@@ -4716,7 +5071,7 @@ export interface components {
             display_name?: string;
             /** @description Topic for a newly-created channel. */
             topic?: string;
-            /** @description Additional user IDs to invite to the channel. Agent participants use their backing user IDs. */
+            /** @description Additional `users.id` values to invite to the channel. Agent participants use their backing user IDs, not `agents.id`. */
             member_ids?: string[];
             /** @description Opening brief posted into the channel before the workflow suspends. */
             opening_message: string;
@@ -7094,6 +7449,8 @@ export interface components {
             description?: string;
             /** @description Current project access policy: `org_open` or `restricted`. */
             access_mode: components["schemas"]["ProjectAccessMode"];
+            /** @description Whether role-permission enforcement is enabled for this project. When false, authenticated project members can access project-scoped APIs according to the broader org/project access policy. */
+            permissions_enabled: boolean;
             /** @description User ID of the org member who created this project. */
             created_by?: string;
             /**
@@ -7143,6 +7500,8 @@ export interface components {
             seed_existing_members?: boolean;
             /** @description Replacement role assigned to the auto-created service account of any new agent in this project. `null` clears the override and falls through to the system `Agent` role floor. Must resolve to a system-defined role or a role scoped to this project. */
             default_agent_role_id?: string | null;
+            /** @description Enables or disables role-permission enforcement for this project. This is a project setting; there is no org-wide fallback role for regular users without assignments. */
+            permissions_enabled?: boolean;
             /** @description When supplied, replaces the user tag set on the project. */
             tags?: components["schemas"]["TagMap"];
         };
@@ -7175,6 +7534,40 @@ export interface components {
         AddProjectMemberRequest: {
             /** @description User ID of the org member to add to this project. */
             user_id: string;
+        };
+        /**
+         * @description Source of the effective feature gate decision.
+         * @enum {string}
+         */
+        FeatureGateSource: "default" | "org_override" | "project_override";
+        FeatureGate: {
+            key: components["schemas"]["FeatureKey"];
+            /** @description Short user-facing name. */
+            label: string;
+            /** @description User-facing description of the gated product area. */
+            description: string;
+            /** @description Effective state after resolving defaults and overrides. */
+            enabled: boolean;
+            /** @description Built-in fallback state when no active override applies. */
+            default_enabled: boolean;
+            source: components["schemas"]["FeatureGateSource"];
+            /** @description Override scope that produced this state, omitted for defaults. */
+            source_scope?: components["schemas"]["FeatureOverrideScope"];
+            /** @description Org ID for the override that produced this state. */
+            source_org_id?: string;
+            /** @description Project ID for the override that produced this state. */
+            source_project_id?: string;
+            /** @description Optional operator-supplied reason from the active override. */
+            reason?: string;
+            /**
+             * Format: date-time
+             * @description Optional expiry for the active override.
+             */
+            expires_at?: string | null;
+            allowed_scopes: components["schemas"]["FeatureOverrideScope"][];
+        };
+        FeatureGateListResponse: {
+            items: components["schemas"]["FeatureGate"][];
         };
         /**
          * @description `pending` — queued, not yet attempted. `processing` — currently being delivered. `delivered` — recipient returned 2xx. `failed` — all retry attempts exhausted.
@@ -7293,6 +7686,133 @@ export interface components {
             /** @description Round-trip latency in milliseconds. */
             latency_ms?: number;
         };
+        PermissionDefinition: {
+            /** @description Stable permission ID stored on roles. */
+            id: string;
+            /** @description Human-readable label for product UI. */
+            label: string;
+            /** @description Short explanation of what the permission grants. */
+            description: string;
+            /** @enum {string} */
+            scope: "project" | "org" | "platform" | "action";
+            /** @enum {string} */
+            category: "project" | "access" | "workflows" | "work" | "channels" | "integrations" | "audit" | "billing" | "platform" | "actions";
+            /** @enum {string} */
+            risk: "low" | "medium" | "high" | "critical";
+            /** @description Whether this permission should be selectable in the current project role builder. */
+            assignable: boolean;
+            /** @description User kinds this permission is intended for. */
+            user_kinds: ("human" | "agent" | "service_account" | "system")[];
+        };
+        PermissionPreset: {
+            id: string;
+            label: string;
+            description: string;
+            /** @enum {string} */
+            scope: "project" | "org" | "platform" | "action";
+            permissions: string[];
+        };
+        ActionPermissionGroup: {
+            /** @description Wildcard permission ID, for example `actions.execute.slack.*`. */
+            id: string;
+            label: string;
+            /** @enum {string} */
+            source: "platform" | "integration" | "custom";
+            /** @description Concrete action execution permission IDs included in this group. */
+            children: string[];
+        };
+        PermissionCatalogResponse: {
+            permissions: components["schemas"]["PermissionDefinition"][];
+            presets: components["schemas"]["PermissionPreset"][];
+            action_groups: components["schemas"]["ActionPermissionGroup"][];
+        };
+        /** @description Named bundle of permissions assignable to users or service accounts. Roles let admins grant workflow, project, and automation capabilities consistently without editing every user individually. */
+        Role: {
+            /** @description Unique identifier for this role. */
+            id: string;
+            /** @description Scoping project. Empty for system-defined roles. */
+            project_id?: string;
+            /** @description Human-readable role name, unique within org+project scope. */
+            name: string;
+            /** @description Optional human-readable description of what this role grants. */
+            description?: string;
+            /** @description Permission strings granted by this role. Source allowed values from `GET /v1/projects/{project}/permissions`; legacy IDs or values not present in that catalog are rejected. */
+            permissions: string[];
+            /** @description True for built-in platform roles that cannot be modified or deleted. */
+            system_defined: boolean;
+            /** @description Resource tags applied to this role. */
+            tags?: components["schemas"]["TagMap"];
+            /**
+             * Format: date-time
+             * @description Timestamp when this role was created.
+             */
+            created_at: string;
+            /**
+             * Format: date-time
+             * @description Timestamp when this role was last updated.
+             */
+            updated_at: string;
+        };
+        /** @description Binding between a User and a role, optionally scoped to a project. Use assignments to explain why a user or service account has access and to audit who granted it. */
+        RoleAssignment: {
+            /** @description Unique identifier for this role assignment. */
+            id: string;
+            /** @description User ID receiving the role. */
+            user_id: string;
+            /** @description ID of the assigned role. */
+            role_id: string;
+            /** @description Name of the assigned role. */
+            role_name: string;
+            /** @description Set for project-scoped assignments; empty for org-wide. */
+            project_id?: string;
+            /** @description User ID of the caller who created this assignment. */
+            granted_by_user_id?: string;
+            /**
+             * Format: date-time
+             * @description Timestamp when this assignment was created.
+             */
+            created_at: string;
+        };
+        RoleListResponse: {
+            /** @description The list of results for this page. */
+            items: components["schemas"]["Role"][];
+            /** @description Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false. */
+            next_cursor?: string;
+            /** @description Whether additional pages are available. */
+            has_more: boolean;
+        };
+        RoleAssignmentListResponse: {
+            /** @description The list of results for this page. */
+            items: components["schemas"]["RoleAssignment"][];
+        };
+        CreateRoleRequest: {
+            /** @description Unique name within the project. */
+            name: string;
+            /** @description Optional human-readable description of what this role grants. */
+            description?: string;
+            /** @description Permission strings to include. Source allowed values from `GET /v1/projects/{project}/permissions`; legacy IDs or values not present in that catalog are rejected. */
+            permissions: string[];
+            /** @description Initial tag set. */
+            tags?: components["schemas"]["TagMap"];
+        };
+        UpdateRoleRequest: {
+            /** @description Replacement description. */
+            description?: string;
+            /** @description Replaces the existing permissions array entirely. Source allowed values from `GET /v1/projects/{project}/permissions`; legacy IDs or values not present in that catalog are rejected. */
+            permissions?: string[];
+            /** @description When supplied, replaces the user tag set on the role. System tags (`mobius:*`) are preserved. */
+            tags?: components["schemas"]["TagMap"];
+        };
+        CreateRoleAssignmentRequest: {
+            /** @description Principal User ID to assign the role to. */
+            user_id: string;
+            /** @description Mutually exclusive with `role_name`. */
+            role_id?: string;
+            /** @description Resolved to a role ID server-side. Mutually exclusive with `role_id`. */
+            role_name?: string;
+            /** @description Scope this assignment to a project. Omit for org-wide assignment. */
+            project_id?: string;
+        } & (unknown | unknown);
         InteractionListResponse: {
             /** @description The list of results for this page. */
             items: components["schemas"]["Interaction"][];
@@ -8044,6 +8564,80 @@ export interface components {
             truncated: boolean;
         };
         /**
+         * @description `active` allows authentication and job claims; `disabled` blocks them but preserves the record and its assignments.
+         * @enum {string}
+         */
+        ServiceAccountStatus: "active" | "disabled";
+        /** @description Non-human identity used by automation, agents, and API keys. Service accounts make ownership, permissions, and credential rotation explicit without tying machine access to a human user. */
+        ServiceAccount: {
+            /** @description Unique identifier for this service account. */
+            id: string;
+            /** @description Human-readable name for this service account. Immutable after creation. */
+            name: string;
+            /** @description Optional human-readable description. */
+            description?: string;
+            /** @description Current service account status: `active` or `disabled`. */
+            status: components["schemas"]["ServiceAccountStatus"];
+            /** @description Optional org member responsible for this service account. */
+            owner_id?: string;
+            /** @description Linked User record. For agent-backed service accounts this is the agent's User (kind: agent); for standalone service accounts this is a dedicated User (kind: service_account). Immutable once set. */
+            user_id?: string;
+            /** @description Role IDs currently assigned to this service account in the project. */
+            role_ids?: string[];
+            /** @description Arbitrary key-value metadata. Subject to size and nesting depth limits. */
+            metadata?: {
+                [key: string]: unknown;
+            };
+            /** @description Resource tags applied to this service account. Distinct from `metadata`: `tags` is the uniform string-to-string field used for filtering and reporting; `metadata` is a free-form caller-defined blob. */
+            tags?: components["schemas"]["TagMap"];
+            /**
+             * Format: date-time
+             * @description Timestamp when this service account was created.
+             */
+            created_at: string;
+            /**
+             * Format: date-time
+             * @description Timestamp when this service account was last updated.
+             */
+            updated_at: string;
+        };
+        ServiceAccountListResponse: {
+            /** @description The list of results for this page. */
+            items: components["schemas"]["ServiceAccount"][];
+        };
+        CreateServiceAccountRequest: {
+            /** @description Human-readable name for this service account. Immutable after creation. */
+            name: string;
+            /** @description Optional human-readable description. */
+            description?: string;
+            /** @description Org member responsible for this service account. */
+            owner_id?: string;
+            /** @description Arbitrary metadata to attach to the service account. */
+            metadata?: {
+                [key: string]: unknown;
+            };
+            /** @description One or more role IDs to assign at creation time. All assignments are created atomically with the service account. Requires `mobius.access.manage`. Each role must belong to this project or be org-scoped (project_id empty). */
+            role_ids?: string[];
+            /** @description Initial tag set. */
+            tags?: components["schemas"]["TagMap"];
+        };
+        UpdateServiceAccountRequest: {
+            /** @description Replacement description. */
+            description?: string;
+            /** @description Replacement service account status: `active` or `disabled`. */
+            status?: components["schemas"]["ServiceAccountStatus"];
+            /** @description ID of the org member responsible for this service account. */
+            owner_id?: string;
+            /** @description Replacement metadata. */
+            metadata?: {
+                [key: string]: unknown;
+            };
+            /** @description Replacement role IDs for this service account in the project. Send an empty array to remove all project role assignments. Requires `mobius.access.manage`. */
+            role_ids?: string[];
+            /** @description When supplied, replaces the user tag set on the service account. System tags (`mobius:*`) are preserved. */
+            tags?: components["schemas"]["TagMap"];
+        };
+        /**
          * @description Mirrors the OpenTelemetry `SpanKind` enum. Stored lowercase.
          * @enum {string}
          */
@@ -8513,7 +9107,7 @@ export interface components {
         IDParam: string;
         /** @description Project-scoped action name used in workflow step definitions. */
         ActionNameParam: string;
-        /** @description User ID of the channel member. Agent members use their backing user ID. */
+        /** @description User ID (`users.id`) of the channel member. Agent members use their backing user ID, not `agents.id`. */
         member_id: string;
         /** @description User ID. */
         user_id: string;
@@ -8872,7 +9466,7 @@ export interface operations {
                 project: components["parameters"]["ProjectHandleParam"];
                 /** @description Resource ID. */
                 id: components["parameters"]["IDParam"];
-                /** @description User ID of the channel member. Agent members use their backing user ID. */
+                /** @description User ID (`users.id`) of the channel member. Agent members use their backing user ID, not `agents.id`. */
                 member_id: components["parameters"]["member_id"];
             };
             cookie?: never;
@@ -8990,7 +9584,7 @@ export interface operations {
     listMessages: {
         parameters: {
             query?: {
-                /** @description Filter by sender user ID. Humans, agents, and bare service accounts all send as rows in `users`; use `sender_type` only as the kind/display discriminator. */
+                /** @description Filter by sender user ID (query param: `sender_id`). `sender_type` is returned in responses as a discriminator/display field and is not an accepted query parameter. */
                 sender_id?: string;
                 /** @description Return only replies to this message ID (thread view). */
                 reply_to?: string;
@@ -9384,6 +9978,128 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+        };
+    };
+    listAPIKeys: {
+        parameters: {
+            query?: {
+                /** @description Optional project filter for this request. When `project_id` is provided, the API key operation is resolved in that project's permission context. When omitted, org-level callers operate across projects. */
+                project_id?: components["parameters"]["APIKeyProjectIDParam"];
+                /** @description Maximum number of items to return */
+                limit?: components["parameters"]["LimitParam"];
+                /** @description Cursor for pagination (opaque string from previous response) */
+                cursor?: components["parameters"]["CursorParam"];
+                /**
+                 * @description Filter results by tag. Repeatable; multiple values combine with AND. Format: `Key:Value`, `Key:*` for any value, `Key:a,b,c` for IN.
+                 *
+                 *     Tag values containing `:` or `,` cannot be filtered with this grammar — the parser splits on those literally. Constrain values to plain identifiers when you intend to filter on them.
+                 *
+                 *     Not supported on the runs list — runs are too high-cardinality for ad-hoc tag filtering. To narrow runs by parent workflow, use the workflow-scoped endpoint `GET /v1/projects/{project}/workflows/{id}/runs` and inspect `tags` on each run client-side.
+                 */
+                tag?: components["parameters"]["TagFilterParam"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIKeyListResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    createAPIKey: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateAPIKeyRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIKeyCreateResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getAPIKey: {
+        parameters: {
+            query?: {
+                /** @description Optional project filter for this request. When `project_id` is provided, the API key operation is resolved in that project's permission context. When omitted, org-level callers operate across projects. */
+                project_id?: components["parameters"]["APIKeyProjectIDParam"];
+            };
+            header?: never;
+            path: {
+                /** @description Resource ID. */
+                id: components["parameters"]["IDParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIKey"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    revokeAPIKey: {
+        parameters: {
+            query?: {
+                /** @description Optional project filter for this request. When `project_id` is provided, the API key operation is resolved in that project's permission context. When omitted, org-level callers operate across projects. */
+                project_id?: components["parameters"]["APIKeyProjectIDParam"];
+            };
+            header?: never;
+            path: {
+                /** @description Resource ID. */
+                id: components["parameters"]["IDParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
         };
     };
     listWorkflows: {
@@ -12217,6 +12933,32 @@ export interface operations {
             409: components["responses"]["Conflict"];
         };
     };
+    listProjectFeatures: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Effective feature gates for the project */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeatureGateListResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
     archiveProject: {
         parameters: {
             query?: never;
@@ -12725,6 +13467,271 @@ export interface operations {
                      */
                     "application/json": components["schemas"]["WebhookDeliveryListResponse"];
                 };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listProjectPermissions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PermissionCatalogResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listRoles: {
+        parameters: {
+            query?: {
+                /** @description Maximum number of items to return */
+                limit?: components["parameters"]["LimitParam"];
+                /** @description Cursor for pagination (opaque string from previous response) */
+                cursor?: components["parameters"]["CursorParam"];
+                /**
+                 * @description Filter results by tag. Repeatable; multiple values combine with AND. Format: `Key:Value`, `Key:*` for any value, `Key:a,b,c` for IN.
+                 *
+                 *     Tag values containing `:` or `,` cannot be filtered with this grammar — the parser splits on those literally. Constrain values to plain identifiers when you intend to filter on them.
+                 *
+                 *     Not supported on the runs list — runs are too high-cardinality for ad-hoc tag filtering. To narrow runs by parent workflow, use the workflow-scoped endpoint `GET /v1/projects/{project}/workflows/{id}/runs` and inspect `tags` on each run client-side.
+                 */
+                tag?: components["parameters"]["TagFilterParam"];
+            };
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoleListResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    createRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateRoleRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Role"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    getRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
+                id: components["parameters"]["IDParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Role"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    deleteRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
+                id: components["parameters"]["IDParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    updateRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
+                id: components["parameters"]["IDParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateRoleRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Role"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    listRoleAssignments: {
+        parameters: {
+            query?: {
+                /** @description Filter to assignments for a specific user. */
+                user_id?: string;
+                /** @description Filter to assignments for a specific role. */
+                role_id?: string;
+                /** @description Filter to project-scoped assignments for this project. */
+                project_id?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoleAssignmentListResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    createRoleAssignment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateRoleAssignmentRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoleAssignment"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    deleteRoleAssignment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Resource ID. */
+                id: components["parameters"]["IDParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
@@ -14591,6 +15598,163 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProjectTeamListResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listServiceAccounts: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Filter results by tag. Repeatable; multiple values combine with AND. Format: `Key:Value`, `Key:*` for any value, `Key:a,b,c` for IN.
+                 *
+                 *     Tag values containing `:` or `,` cannot be filtered with this grammar — the parser splits on those literally. Constrain values to plain identifiers when you intend to filter on them.
+                 *
+                 *     Not supported on the runs list — runs are too high-cardinality for ad-hoc tag filtering. To narrow runs by parent workflow, use the workflow-scoped endpoint `GET /v1/projects/{project}/workflows/{id}/runs` and inspect `tags` on each run client-side.
+                 */
+                tag?: components["parameters"]["TagFilterParam"];
+                /** @description Maximum number of items to return */
+                limit?: components["parameters"]["LimitParam"];
+            };
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceAccountListResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    createServiceAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateServiceAccountRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceAccount"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    getServiceAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
+                id: components["parameters"]["IDParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceAccount"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    deleteServiceAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
+                id: components["parameters"]["IDParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    updateServiceAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
+                id: components["parameters"]["IDParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateServiceAccountRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceAccount"];
                 };
             };
             400: components["responses"]["BadRequest"];
