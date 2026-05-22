@@ -17,7 +17,7 @@ import (
 
 // registerToolkitsCommands registers every generated subcommand in the "toolkits" group.
 func registerToolkitsCommands(app *cli.App) {
-	toolkitsGrp := app.Group("toolkits").Description("Toolkit templates granting agents access to action selectors")
+	toolkitsGrp := app.Group("toolkits").Description("Sets of tools agents can use to take action")
 	toolkitsGrp.Alias("toolkit")
 	toolkitsGrp.Command("create").
 		Description("Create a toolkit").

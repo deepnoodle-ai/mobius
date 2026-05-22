@@ -280,7 +280,7 @@ var groupDescriptions = map[string]string{
 	"spans":                 "Distributed tracing spans and traces",
 	"tables":                "Project-scoped tables and rows",
 	"team":                  "Project team membership",
-	"toolkits":              "Toolkit templates granting agents access to action selectors",
+	"toolkits":              "Sets of tools agents can use to take action",
 	"tools":                 "Workflows published as callable tools",
 	"triggers":              "Event, schedule, and webhook triggers",
 	"user-state":            "Per-user project state and assignments",
