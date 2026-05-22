@@ -6,6 +6,76 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 
 ## [Unreleased]
 
+## [0.0.21] - 2026-05-22
+
+### Added
+
+- CLI / SDKs: new command groups regenerated from the upstream
+  OpenAPI contract — `api-keys`, `permissions`, `roles`,
+  `service-accounts`, `environments`, `worker-sessions`,
+  `agent-tools` (Skills + Toolkits), `audit-logs` (project-scoped
+  `list` and org-scoped `list-org`), plus channel drafts /
+  scheduled messages / reactions / custom emoji and
+  `channels block-catalog` + `channels dm`. (#81, #84, #86)
+- SDKs: workflow updates now require an `expected_version` for
+  optimistic concurrency. `mobius workflows apply` resolves the
+  current `latest_version` automatically before sending the
+  update. `UpdateWorkflowOptions` in all three SDKs threads the
+  new field. (#81)
+- Go SDK: `Channel` carries new required fields
+  `agent_instructions`, `agent_instructions_version`, and
+  `default_notification_level`. (#86)
+
+### Changed
+
+- CLI: top-level `mobius --help` now shows a one-line
+  description for every command group. Many leaf names were
+  simplified to drop redundant resource tokens
+  (`webhooks ping-webhook` → `webhooks ping`,
+  `team list-team` → `team list`,
+  `runs fork-run` → `runs fork`,
+  `interactions submit-interaction-handoff` →
+  `interactions submit-handoff`, etc.). Project-scoped vs
+  nested-resource list ops are disambiguated with
+  `list-for-<scope>` (`runs list-for-workflow`,
+  `artifacts list-for-run`, `groups list-for-member`). Catalog
+  vs project actions are split into `actions invoke`,
+  `actions get-catalog`, `actions list-catalog`. (#83)
+- CLI: `agent-tools` no longer emits collision-suffixed leaves
+  (`get-2`, `delete-2`); Skills and Toolkits each get explicit
+  `<verb>-skill` / `<verb>-toolkit` leaves
+  (`create-skill`, `create-toolkit`, `list-skill-assignments`,
+  `list-toolkit-assignments`, …) and
+  `get-agent-tool-manifest` is now `get-manifest`. (#83)
+- CLI / SDKs: `Interaction.message` is renamed to
+  `Interaction.title`, with a new optional `description`. The
+  removed field `Interaction.accepted_submission_id` is gone.
+  `send_run_signal` now returns the narrower
+  `RunSignalAccepted` (`source_event_id`). `RunWaitSummary`
+  reshuffles its fields into `wake_counts` /
+  `subject_counts`. (#86)
+- SDKs: `InteractionTarget` is now `{ user_ids, group_id }`;
+  `CreateStandaloneInteractionRequest` and `Interaction` carry
+  flat `target_user_ids` / `target_group_id` instead of a
+  nested target object. (#81)
+- SDKs: event-stream `since` is now an opaque string cursor on
+  both `streamRunEvents` and `streamProjectEvents`. (#81)
+- Build: `oapi-codegen` bumped to v2.7.0. Security-scheme scope
+  constants in the generated Go client (`BearerAuthScopes`,
+  `XApiKeyAuthScopes`) now use typed context keys, and
+  nullable `omitempty` schemas are skipped (instead of emitting
+  `null`) when nil. (#82)
+
+### Removed
+
+- CLI: dropped duplicate `projects delete-config` — use
+  `projects clear-config` (which calls DELETE when
+  `--key-prefix` is unset). (#83)
+- CLI: `artifacts`, `observables`, `references`, `metrics`,
+  `user-state`, `generate`, and `integration-providers` groups,
+  plus `actions get` / `actions list`, were removed or replaced
+  by the renamed surfaces above. (#84)
+
 ## [0.0.20] - 2026-05-06
 
 ### Changed
