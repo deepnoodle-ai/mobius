@@ -27,7 +27,7 @@ from ._api.models import (
     JobReportRequest,
     JobFenceRequest,
     JobHeartbeat,
-    RunSignal,
+    RunSignalAccepted,
     SendChannelMessageRequest,
     SendRunSignalRequest,
     StartBoundRunRequest,
@@ -487,7 +487,7 @@ class Client:
         run_id: str,
         name: str,
         payload: dict[str, Any] | None = None,
-    ) -> RunSignal:
+    ) -> RunSignalAccepted:
         project = quote(self.namespace, safe="")
         run = quote(run_id, safe="")
         req = SendRunSignalRequest(name=name, payload=payload)
@@ -496,7 +496,7 @@ class Client:
             json=_dump(req),
         )
         resp.raise_for_status()
-        return RunSignal.model_validate(resp.json())
+        return RunSignalAccepted.model_validate(resp.json())
 
     def watch_run(self, run_id: str, since: int = 0) -> Iterator[RunEvent]:
         project = quote(self.namespace, safe="")

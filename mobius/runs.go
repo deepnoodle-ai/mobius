@@ -132,7 +132,7 @@ func (c *Client) ResumeRun(ctx context.Context, runID string) error {
 }
 
 // SendRunSignal durably delivers a signal to a workflow run.
-func (c *Client) SendRunSignal(ctx context.Context, runID, name string, payload map[string]interface{}) (*api.RunSignal, error) {
+func (c *Client) SendRunSignal(ctx context.Context, runID, name string, payload map[string]interface{}) (*api.RunSignalAccepted, error) {
 	req := api.SendRunSignalRequest{Name: name}
 	if payload != nil {
 		req.Payload = &payload

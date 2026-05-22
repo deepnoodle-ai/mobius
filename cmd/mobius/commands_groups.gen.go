@@ -60,9 +60,7 @@ func registerGroupsCommands(app *cli.App) {
 		Description("Create a group").
 		Flags(
 			cli.String("description", "").Help("Optional human-readable description."),
-			cli.String("handle", "").Help("URL-safe handle, unique within the project. Auto-derived from name if omitted."),
 			cli.String("name", "").Help("[required] Display name (1–64 chars)."),
-			cli.String("routing-policy", "").Help("How responses are collected from group members: `first_responder` or `all_members`. Defaults to `fi…"),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -82,16 +80,8 @@ func registerGroupsCommands(app *cli.App) {
 				v := ctx.String("description")
 				body.Description = &v
 			}
-			if ctx.IsSet("handle") {
-				v := ctx.String("handle")
-				body.Handle = &v
-			}
 			if ctx.IsSet("name") {
 				body.Name = ctx.String("name")
-			}
-			if ctx.IsSet("routing-policy") {
-				v := api.CreateGroupRequestRoutingPolicy(ctx.String("routing-policy"))
-				body.RoutingPolicy = &v
 			}
 			if body.Name == "" {
 				return fmt.Errorf("--name is required (or supply it via --file)")
@@ -251,7 +241,6 @@ func registerGroupsCommands(app *cli.App) {
 		Flags(
 			cli.String("description", "").Help("Replacement description."),
 			cli.String("name", "").Help("Replacement human-readable name."),
-			cli.String("routing-policy", "").Help("Replacement routing policy, either `first_responder` or `all_members`. Affects future interactions …"),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -276,11 +265,7 @@ func registerGroupsCommands(app *cli.App) {
 				v := ctx.String("name")
 				body.Name = &v
 			}
-			if ctx.IsSet("routing-policy") {
-				v := api.UpdateGroupRequestRoutingPolicy(ctx.String("routing-policy"))
-				body.RoutingPolicy = &v
-			}
-			if ctx.String("file") == "" && !ctx.IsSet("description") && !ctx.IsSet("name") && !ctx.IsSet("routing-policy") {
+			if ctx.String("file") == "" && !ctx.IsSet("description") && !ctx.IsSet("name") {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
 			if ctx.Bool("dry-run") {

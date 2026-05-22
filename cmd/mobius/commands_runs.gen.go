@@ -265,6 +265,7 @@ func registerRunsCommands(app *cli.App) {
 		Flags(
 			cli.String("path-id", "").Help("Filter steps by workflow path identifier."),
 			cli.String("step-name", "").Help("Filter steps by workflow step name."),
+			cli.String("step-execution-id", "").Help("Filter steps to a single materialization visit. Each call to a wait / interaction / code step recor…"),
 			cli.String("status", "").Help("Filter steps by current run-step status."),
 			cli.String("include", "").Help("Pass `run_state_after` to include `run_state_after_b64`; it is omitted otherwise."),
 			cli.String("cursor", "").Help("cursor"),
@@ -287,6 +288,10 @@ func registerRunsCommands(app *cli.App) {
 			if ctx.IsSet("step-name") {
 				v := ctx.String("step-name")
 				params.StepName = &v
+			}
+			if ctx.IsSet("step-execution-id") {
+				v := ctx.String("step-execution-id")
+				params.StepExecutionId = &v
 			}
 			if ctx.IsSet("status") {
 				v := api.RunStepStatus(ctx.String("status"))
@@ -334,7 +339,7 @@ func registerRunsCommands(app *cli.App) {
 		Description("Deliver a run-scoped signal").
 		Args("id").
 		Flags(
-			cli.String("name", "").Help("[required] Signal topic (e.g. \"approval\", \"webhook\")."),
+			cli.String("name", "").Help("[required] Signal name (e.g. \"approval\", \"webhook\")."),
 			cli.String("payload", "").Help("Arbitrary payload delivered to the waiting step when the signal is received. Accepts JSON, @file, or @-."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),

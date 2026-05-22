@@ -55,8 +55,8 @@ func TestStartDiscussionCreatesChannelInteractionAndOpeningMessage(t *testing.T)
 		DisplayName:              "Incident Review",
 		AssociatedInteractionIDs: []string{"iact_existing"},
 		Interactions: []api.CreateStandaloneInteractionRequest{{
-			Kind:    api.InteractionKindReview,
-			Message: "Review the incident notes",
+			Kind:          api.InteractionKindReview,
+			Title:         "Review the incident notes",
 			TargetUserIds: &[]string{"usr_1"},
 		}},
 		OpeningMessage: "Please resolve this together.",
@@ -110,8 +110,8 @@ func TestStartDiscussionCancelsCreatedInteractionsWhenSetupFails(t *testing.T) {
 	_, err := c.StartDiscussion(context.Background(), StartDiscussionOptions{
 		Name: "rollback-review",
 		Interactions: []api.CreateStandaloneInteractionRequest{{
-			Kind:    api.InteractionKindReview,
-			Message: "Review the setup",
+			Kind:          api.InteractionKindReview,
+			Title:         "Review the setup",
 			TargetUserIds: &[]string{"usr_1"},
 		}},
 		OpeningMessage: "This will fail.",

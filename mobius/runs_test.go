@@ -87,7 +87,7 @@ func TestRunControl_HighLevelClient(t *testing.T) {
 			w.WriteHeader(http.StatusNoContent)
 		case r.Method == http.MethodPost && r.URL.Path == "/v1/projects/test-project/runs/run_1/signals":
 			w.WriteHeader(http.StatusAccepted)
-			_, _ = io.WriteString(w, `{"id":"sig_1","run_id":"run_1","name":"approval"}`)
+			_, _ = io.WriteString(w, `{"source_event_id":"evt_1"}`)
 		default:
 			http.NotFound(w, r)
 		}
@@ -114,7 +114,7 @@ func TestRunControl_HighLevelClient(t *testing.T) {
 	assert.NoError(t, c.ResumeRun(context.Background(), "run_1"))
 	signal, err := c.SendRunSignal(context.Background(), "run_1", "approval", map[string]interface{}{"ok": true})
 	assert.NoError(t, err)
-	assert.Equal(t, signal.Id, "sig_1")
+	assert.Equal(t, signal.SourceEventId, "evt_1")
 }
 
 func TestWaitRun_FetchesAfterStreamClosesBeforeTerminal(t *testing.T) {

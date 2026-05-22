@@ -142,7 +142,7 @@ func TestContext_RequestInteraction_BuildsJobScopedRequest(t *testing.T) {
 	got, err := ctx.RequestInteraction(InteractionRequest{
 		Target:  InteractionTarget{UserIDs: []string{"usr_1"}},
 		Kind:    InteractionKindReview,
-		Message: "Please ack",
+		Title:   "Please ack",
 		Timeout: "15m",
 	})
 	assert.NoError(t, err)
@@ -166,9 +166,9 @@ func TestContext_RequestInteraction_ValidatesRequiredFields(t *testing.T) {
 
 	cases := []InteractionRequest{
 		{}, // all empty
-		{Kind: InteractionKindReview, Message: "x", Target: InteractionTarget{}},
+		{Kind: InteractionKindReview, Title: "x", Target: InteractionTarget{}},
 		{Kind: InteractionKindReview, Target: InteractionTarget{UserIDs: []string{"usr_1"}}},
-		{Message: "x", Target: InteractionTarget{UserIDs: []string{"usr_1"}}},
+		{Title: "x", Target: InteractionTarget{UserIDs: []string{"usr_1"}}},
 	}
 	for i, req := range cases {
 		_, err := ctx.RequestInteraction(req)

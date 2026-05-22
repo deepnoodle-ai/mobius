@@ -66,15 +66,14 @@ type StartDiscussionResult struct {
 
 // DiscussionOutcome snapshots a terminal interaction outcome.
 type DiscussionOutcome struct {
-	InteractionID        string
-	Status               api.InteractionStatus
-	Outcome              *api.InteractionValue
-	Responder            *api.InteractionResponder
-	Responses            *[]api.InteractionResponse
-	ResolvedBy           *string
-	ResolvingResponseID  *string
-	AcceptedSubmissionID *string
-	Interaction          *api.Interaction
+	InteractionID       string
+	Status              api.InteractionStatus
+	Outcome             *api.InteractionValue
+	Responder           *api.InteractionResponder
+	Responses           *[]api.InteractionResponse
+	ResolvedBy          *string
+	ResolvingResponseID *string
+	Interaction         *api.Interaction
 }
 
 // Discussions returns high-level helpers for channel discussion flows.
@@ -258,7 +257,7 @@ func (s *DiscussionsService) sendOpeningMessage(ctx context.Context, channelID, 
 		})
 	}
 	req := api.SendChannelMessageRequest{
-		Content:    content,
+		Content:    &content,
 		Metadata:   &metadata,
 		References: &refs,
 		Type:       &messageType,
@@ -340,15 +339,14 @@ func discussionOutcomes(interactions []*api.Interaction) []DiscussionOutcome {
 			continue
 		}
 		outcomes = append(outcomes, DiscussionOutcome{
-			InteractionID:        interaction.Id,
-			Status:               interaction.Status,
-			Outcome:              interaction.Outcome,
-			Responder:            interaction.Responder,
-			Responses:            interaction.Responses,
-			ResolvedBy:           interaction.ResolvedBy,
-			ResolvingResponseID:  interaction.ResolvingResponseId,
-			AcceptedSubmissionID: interaction.AcceptedSubmissionId,
-			Interaction:          interaction,
+			InteractionID:       interaction.Id,
+			Status:              interaction.Status,
+			Outcome:             interaction.Outcome,
+			Responder:           interaction.Responder,
+			Responses:           interaction.Responses,
+			ResolvedBy:          interaction.ResolvedBy,
+			ResolvingResponseID: interaction.ResolvingResponseId,
+			Interaction:         interaction,
 		})
 	}
 	return outcomes

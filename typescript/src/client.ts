@@ -8,7 +8,7 @@ import type {
   JobReportRequest,
   Run,
   RunListResponse,
-  RunSignal,
+  RunSignalAccepted,
   RunStatus,
   SendRunSignalRequest,
   StartBoundRunRequest,
@@ -441,12 +441,12 @@ export class Client {
   async sendRunSignal(
     runId: string,
     req: SendRunSignalRequest,
-  ): Promise<RunSignal> {
+  ): Promise<RunSignalAccepted> {
     const resp = await this.request(
       `/v1/projects/${encodeURIComponent(this.project)}/runs/${encodeURIComponent(runId)}/signals`,
       { method: "POST", body: req },
     );
-    return (await resp.json()) as RunSignal;
+    return (await resp.json()) as RunSignalAccepted;
   }
 
   async *watchRun(
@@ -646,7 +646,7 @@ export type { JobClaim, JobHeartbeat };
 export type {
   Run,
   RunListResponse,
-  RunSignal,
+  RunSignalAccepted,
   RunStatus,
   SendRunSignalRequest,
   WorkflowDefinitionListResponse,

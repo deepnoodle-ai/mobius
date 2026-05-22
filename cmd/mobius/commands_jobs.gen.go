@@ -102,22 +102,23 @@ func registerJobsCommands(app *cli.App) {
 		Description("Create a human-in-the-loop interaction from a claimed workflow job").
 		Args("id").
 		Flags(
-			cli.String("context", "").Help("Additional key-value context surfaced in the UI alongside the message. Accepts JSON, @file, or @-."),
+			cli.String("context", "").Help("Additional key-value context surfaced in the UI alongside the title and description. Accepts JSON, @file, or @-."),
+			cli.String("description", "").Help("Optional longer responder-facing detail or instructions."),
 			cli.String("expires-at", "").Help("Timestamp after which this interaction expires. Accepts JSON, @file, or @-."),
 			cli.String("kind", "").Help("[required] Protocol kind of the interaction (PRD 077). Each value names a distinct multi-party coordination pr…"),
-			cli.String("message", "").Help("[required] Message shown to the responder."),
 			cli.String("properties", "").Help("Free-form structured metadata to attach to the interaction. Accepts JSON, @file, or @-."),
 			cli.String("references", "").Help("Supporting links and related entities. Accepts JSON, @file, or @-."),
-			cli.Bool("require-all", "").Help("When `target_group_id` is set, setting require_all=true means all snapshotted group members must re…"),
+			cli.Bool("require-all", "").Help("When true, all target users must respond before the interaction is considered complete. Defaults to…"),
 			cli.String("resolution-policy", "").Help("Declarative resolution rule attached to an Interaction. Determines how participant responses become… Accepts JSON, @file, or @-."),
 			cli.String("signal-name", "").Help("Optional signal name override. When omitted, the server derives the signal name from step_name or f…"),
 			cli.String("spec", "").Help("Declarative dialog contract for rendering and validating an interaction. Used at both authoring tim… Accepts JSON, @file, or @-."),
 			cli.String("step-name", "").Help("Optional workflow step label for UI/debugging context"),
 			cli.String("subject", "").Help("Pointer to the work item, artifact, external ticket, or Mobius entity this interaction is about. Accepts JSON, @file, or @-."),
-			cli.String("submission-review-policy", "").Help("Reviewability policy for an interaction artifact (PRD 077 §3.5). Carried as a template on `Interac… Accepts JSON, @file, or @-."),
+			cli.String("submission-review-policy", "").Help("Reviewability policy for a handoff response (PRD 077 §3.5). Carried as a template on `Interaction.… Accepts JSON, @file, or @-."),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
 			cli.String("target", "").Help("[required] Identifies who should receive an interaction request. Humans and agents are both users; agent targe… Accepts JSON, @file, or @-."),
 			cli.String("timeout", "").Help("Optional duration string (e.g. \"24h\", \"30m\") specifying how long the interaction should remain open…"),
+			cli.String("title", "").Help("[required] Short non-empty title shown to the responder."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -139,6 +140,10 @@ func registerJobsCommands(app *cli.App) {
 					return err
 				}
 			}
+			if ctx.IsSet("description") {
+				v := ctx.String("description")
+				body.Description = &v
+			}
 			if ctx.IsSet("expires-at") {
 				if err := decodeFlagJSON(ctx, "expires-at", ctx.String("expires-at"), &body.ExpiresAt); err != nil {
 					return err
@@ -146,9 +151,6 @@ func registerJobsCommands(app *cli.App) {
 			}
 			if ctx.IsSet("kind") {
 				body.Kind = api.InteractionKind(ctx.String("kind"))
-			}
-			if ctx.IsSet("message") {
-				body.Message = ctx.String("message")
 			}
 			if ctx.IsSet("properties") {
 				if err := decodeFlagJSON(ctx, "properties", ctx.String("properties"), &body.Properties); err != nil {
@@ -207,14 +209,17 @@ func registerJobsCommands(app *cli.App) {
 				v := ctx.String("timeout")
 				body.Timeout = &v
 			}
+			if ctx.IsSet("title") {
+				body.Title = ctx.String("title")
+			}
 			if body.Kind == "" {
 				return fmt.Errorf("--kind is required (or supply it via --file)")
 			}
-			if body.Message == "" {
-				return fmt.Errorf("--message is required (or supply it via --file)")
-			}
 			if ctx.String("file") == "" && !ctx.IsSet("target") {
 				return fmt.Errorf("--target is required (or supply it via --file)")
+			}
+			if body.Title == "" {
+				return fmt.Errorf("--title is required (or supply it via --file)")
 			}
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
