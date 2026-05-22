@@ -17,7 +17,7 @@ import (
 
 // registerSkillsCommands registers every generated subcommand in the "skills" group.
 func registerSkillsCommands(app *cli.App) {
-	skillsGrp := app.Group("skills").Description("Project-local agent skills")
+	skillsGrp := app.Group("skills").Description("Skill templates that shape agent behavior and tool access")
 	skillsGrp.Alias("skill")
 	skillsGrp.Command("create").
 		Description("Create a skill").
