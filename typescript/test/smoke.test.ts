@@ -350,7 +350,7 @@ test("smoke: run control helpers use project-scoped paths", async () => {
     const path = new URL(url).pathname;
     if (path.endsWith("/signals")) {
       return new Response(
-        JSON.stringify({ id: "sig_1", run_id: "run_1", name: "approval" }),
+        JSON.stringify({ source_event_id: "evt_1" }),
         { status: 202, headers: { "Content-Type": "application/json" } },
       );
     }
@@ -384,8 +384,8 @@ test("smoke: run control helpers use project-scoped paths", async () => {
   await client.cancelRun("run_1");
   await client.resumeRun("run_1");
   assert.equal(
-    (await client.sendRunSignal("run_1", { name: "approval" })).id,
-    "sig_1",
+    (await client.sendRunSignal("run_1", { name: "approval" })).source_event_id,
+    "evt_1",
   );
 
   assert.ok(seen.some((url) => url.includes("/runs?status=completed")));

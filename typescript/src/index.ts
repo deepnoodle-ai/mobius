@@ -73,7 +73,7 @@ export type {
   JobReportRequest,
   Run,
   RunListResponse,
-  RunSignal,
+  RunSignalAccepted,
   RunStatus,
   SendRunSignalRequest,
   WorkflowDefinitionListResponse,

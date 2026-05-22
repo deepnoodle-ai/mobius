@@ -48,7 +48,7 @@ def _interaction_json(id_: str, status: str) -> dict[str, Any]:
         "id": id_,
         "kind": "review",
         "status": status,
-        "origin": "manual",
+        "title": "Review",
         "target_user_ids": ["usr_1"],
         "created_at": _NOW,
         "updated_at": _NOW,
@@ -65,6 +65,9 @@ def _channel_json(id_: str) -> dict[str, Any]:
         "created_by": "usr_creator",
         "purpose": "resolve_interactions",
         "completion_behavior": "none",
+        "agent_instructions": "",
+        "agent_instructions_version": 0,
+        "default_notification_level": "mentions",
         "created_at": _NOW,
         "updated_at": _NOW,
     }
@@ -117,7 +120,7 @@ def test_start_discussion_creates_channel_interaction_and_opening_message() -> N
             interactions=[
                 CreateStandaloneInteractionRequest(
                     kind="review",
-                    message="Review the incident notes",
+                    title="Review the incident notes",
                     target_user_ids=["usr_1"],
                 )
             ],
@@ -180,7 +183,7 @@ def test_start_discussion_cancels_created_interactions_when_setup_fails() -> Non
                 interactions=[
                     CreateStandaloneInteractionRequest(
                         kind="review",
-                        message="Review the setup",
+                        title="Review the setup",
                         target_user_ids=["usr_1"],
                     )
                 ],

@@ -42,23 +42,18 @@ var overrides = map[string]Override{
 	"appendAgentSessionMessages": {Command: "append-session-messages"},
 
 	// --- agent-tools ------------------------------------------------------
-	// Skill and Toolkit ops share verbs (create/get/list/update/delete) and
-	// the generator's collision suffixer would turn one of each pair into
-	// `delete-2`, `get-2`, etc. Spell out the resource so every command in
-	// the group reads as `<verb>-<resource>`.
-	"createSkill":            {Command: "create-skill"},
-	"createToolkit":          {Command: "create-toolkit"},
-	"deleteSkill":            {Command: "delete-skill"},
-	"deleteToolkit":          {Command: "delete-toolkit"},
-	"getSkill":               {Command: "get-skill"},
-	"getToolkit":             {Command: "get-toolkit"},
-	"listSkills":             {Command: "list-skills"},
-	"listToolkits":           {Command: "list-toolkits"},
-	"updateSkill":            {Command: "update-skill"},
-	"updateToolkit":          {Command: "update-toolkit"},
+	"getAgentToolManifest": {Command: "get-manifest"},
+
+	// --- agents (skill/toolkit assignment ops) ----------------------------
+	// These live in the `agents` group; auto-derivation would collapse both
+	// to `list-assignments` and collide. Spell out the resource.
 	"listSkillAssignments":   {Command: "list-skill-assignments"},
 	"listToolkitAssignments": {Command: "list-toolkit-assignments"},
-	"getAgentToolManifest":   {Command: "get-manifest"},
+
+	// --- skills -----------------------------------------------------------
+	// `import` isn't in the verb list, so the auto-derive keeps the
+	// redundant `-skill` suffix; strip it.
+	"importSkill": {Command: "import"},
 
 	// --- artifacts --------------------------------------------------------
 	"pinArtifact":    {Command: "pin"},
@@ -67,6 +62,13 @@ var overrides = map[string]Override{
 	// The auto-derived leaf is `list-artifacts` (strip `Run`), which reads
 	// no differently from `list` and hides the run-scoping. Be explicit.
 	"listRunArtifacts": {Command: "list-for-run"},
+
+	// --- api-keys ---------------------------------------------------------
+	// Drop the redundant `key` token; the group name already carries it.
+	"createAPIKey": {Command: "create"},
+	"listAPIKeys":  {Command: "list"},
+	"getAPIKey":    {Command: "get"},
+	"revokeAPIKey": {Command: "revoke"},
 
 	// --- audit-logs -------------------------------------------------------
 	"listAuditLogs":    {Command: "list"},
@@ -160,6 +162,24 @@ var overrides = map[string]Override{
 	// the relationship to a specific workflow is clear in `mobius runs --help`.
 	"startWorkflowRun": {Command: "start-for-workflow"},
 
+	// --- permissions ------------------------------------------------------
+	"listProjectPermissions": {Command: "list"},
+
+	// --- roles ------------------------------------------------------------
+	// Role-assignment ops live in the same group; spell them out so each
+	// command reads as `<verb>` or `<verb>-assignment`.
+	"createRoleAssignment": {Command: "create-assignment"},
+	"deleteRoleAssignment": {Command: "delete-assignment"},
+	"listRoleAssignments":  {Command: "list-assignments"},
+
+	// --- service-accounts -------------------------------------------------
+	// Drop the redundant `account` token; the group name already carries it.
+	"createServiceAccount": {Command: "create"},
+	"listServiceAccounts":  {Command: "list"},
+	"getServiceAccount":    {Command: "get"},
+	"updateServiceAccount": {Command: "update"},
+	"deleteServiceAccount": {Command: "delete"},
+
 	// --- spans ------------------------------------------------------------
 	"listProjectSpans":         {Command: "list"},
 	"getProjectStepSpanCounts": {Command: "step-counts"},
@@ -232,7 +252,8 @@ var groupDescriptions = map[string]string{
 	"actor-state":           "Reportable actor state and per-target assignments",
 	"agent-invocations":     "Agent invocation lifecycle and results",
 	"agents":                "Agents, sessions, and presence",
-	"agent-tools":           "Skills, toolkits, and resolved agent tool manifests",
+	"agent-tools":           "Resolved agent tool manifests",
+	"api-keys":              "Project and organization API keys",
 	"artifacts":             "Run output artifacts and storage settings",
 	"audit-logs":            "Organization and project audit log entries",
 	"channels":              "Chat channels, members, and messages",
@@ -248,13 +269,18 @@ var groupDescriptions = map[string]string{
 	"messages":              "Send, list, and update channel messages",
 	"metrics":               "Platform and workflow metrics",
 	"observables":           "Tracked observables, observations, and state",
+	"permissions":           "Project permission definitions and presets",
 	"projects":              "Projects within the organization",
 	"references":            "Reference lookup and resolution",
+	"roles":                 "Project roles and role assignments",
 	"runs":                  "Workflow runs",
 	"secrets":               "Project secrets and secret versions",
+	"service-accounts":      "Project service accounts for agents and automation",
+	"skills":                "Skill templates that shape agent behavior and tool access",
 	"spans":                 "Distributed tracing spans and traces",
 	"tables":                "Project-scoped tables and rows",
 	"team":                  "Project team membership",
+	"toolkits":              "Sets of tools agents can use to take action",
 	"tools":                 "Workflows published as callable tools",
 	"triggers":              "Event, schedule, and webhook triggers",
 	"user-state":            "Per-user project state and assignments",

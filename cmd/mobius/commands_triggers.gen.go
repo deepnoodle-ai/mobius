@@ -61,7 +61,7 @@ func registerTriggersCommands(app *cli.App) {
 			cli.String("kind", "").Help("kind"),
 			cli.String("run-selector", "").Help("(signal_run only) Locates an existing run to deliver a signal to. Today only `external_id_template`… Accepts JSON, @file, or @-."),
 			cli.String("signal-payload-mapping", "").Help("(signal_run only) Maps signal payload keys to expressions. Accepts JSON, @file, or @-."),
-			cli.String("signal-topic", "").Help("(signal_run only) `wait_signal` topic to deliver to."),
+			cli.String("signal-topic", "").Help("(signal_run only) Signal name to deliver to the located run. Matches a `wait` step with `subject.ki…"),
 			cli.String("workflow-id", "").Help("(launch_run only) ID of the workflow definition to run. Required when `kind=launch_run`."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),

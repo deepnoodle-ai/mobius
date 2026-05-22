@@ -15,7 +15,7 @@ import (
 
 // registerAgentToolsCommands registers every generated subcommand in the "agent-tools" group.
 func registerAgentToolsCommands(app *cli.App) {
-	agentToolsGrp := app.Group("agent-tools").Description("Skills, toolkits, and resolved agent tool manifests")
+	agentToolsGrp := app.Group("agent-tools").Description("Resolved agent tool manifests")
 	agentToolsGrp.Alias("agent-tool")
 	agentToolsGrp.Command("get-manifest").
 		Description("Resolve an agent tool manifest").

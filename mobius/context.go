@@ -105,8 +105,11 @@ type InteractionRequest struct {
 	// handoff; input is retained as a deprecated alias for request).
 	// Required.
 	Kind InteractionKind
-	// Message is the human-readable prompt shown to the responder. Required.
-	Message string
+	// Title is the short responder-facing prompt. Required.
+	Title string
+	// Description is an optional longer responder-facing detail or
+	// instructions surfaced alongside the title.
+	Description string
 	// SignalName overrides the server-derived resume signal. Optional;
 	// when empty the server derives a name from the step.
 	SignalName string
@@ -201,8 +204,8 @@ func (c *executionContext) RequestInteraction(req InteractionRequest) (*api.Inte
 	if req.Kind == "" {
 		return nil, fmt.Errorf("mobius: RequestInteraction: Kind is required")
 	}
-	if req.Message == "" {
-		return nil, fmt.Errorf("mobius: RequestInteraction: Message is required")
+	if req.Title == "" {
+		return nil, fmt.Errorf("mobius: RequestInteraction: Title is required")
 	}
 	target := api.InteractionTarget{}
 	if len(req.Target.UserIDs) > 0 {
@@ -214,9 +217,13 @@ func (c *executionContext) RequestInteraction(req InteractionRequest) (*api.Inte
 		target.GroupId = &g
 	}
 	body := api.CreateJobInteractionJSONRequestBody{
-		Target:  target,
-		Kind:    api.InteractionKind(req.Kind),
-		Message: req.Message,
+		Target: target,
+		Kind:   api.InteractionKind(req.Kind),
+		Title:  req.Title,
+	}
+	if req.Description != "" {
+		d := req.Description
+		body.Description = &d
 	}
 	if req.SignalName != "" {
 		s := req.SignalName

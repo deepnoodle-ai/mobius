@@ -322,9 +322,7 @@ def test_run_control_helpers_use_project_scoped_paths() -> None:
         seen.append(str(request.url))
         path = request.url.path
         if path.endswith("/signals"):
-            return httpx.Response(
-                202, json={"id": "sig_1", "run_id": "run_1", "name": "approval"}
-            )
+            return httpx.Response(202, json={"source_event_id": "evt_1"})
         if path.endswith("/cancellations") or path.endswith("/resumptions"):
             return httpx.Response(204)
         if path.endswith("/runs/run_1"):
@@ -348,7 +346,7 @@ def test_run_control_helpers_use_project_scoped_paths() -> None:
     )
     client.cancel_run("run_1")
     client.resume_run("run_1")
-    assert client.send_run_signal("run_1", "approval", {"ok": True}).id == "sig_1"
+    assert client.send_run_signal("run_1", "approval", {"ok": True}).source_event_id == "evt_1"
 
     assert any("/runs?status=completed" in url for url in seen)
     assert any(url.endswith("/runs/run_1/cancellations") for url in seen)
@@ -536,10 +534,9 @@ def _run_body(run_id: str, status: str) -> dict[str, object]:
         },
         "wait_summary": {
             "waiting_paths": 0,
-            "kind_counts": {},
+            "wake_counts": {},
+            "subject_counts": {},
             "next_wake_at": None,
-            "waiting_on_signal_names": [],
-            "interaction_ids": [],
         },
         "errors": [],
         "attempt": 1,
