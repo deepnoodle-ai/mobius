@@ -17,9 +17,9 @@ import (
 
 // registerSkillsCommands registers every generated subcommand in the "skills" group.
 func registerSkillsCommands(app *cli.App) {
-	skillsGrp := app.Group("skills")
+	skillsGrp := app.Group("skills").Description("Project-local agent skills")
 	skillsGrp.Alias("skill")
-	skillsGrp.Command("create-skill").
+	skillsGrp.Command("create").
 		Description("Create a skill").
 		Flags(
 			cli.Strings("allowed-tools", "").Help("allowed-tools"),
@@ -92,7 +92,7 @@ func registerSkillsCommands(app *cli.App) {
 			return printResponse(ctx, "createSkill", resp.StatusCode(), resp.Body)
 		})
 
-	skillsGrp.Command("delete-skill").
+	skillsGrp.Command("delete").
 		Description("Delete a skill").
 		Args("skill-id").
 		Use(requireAuth()).
@@ -111,7 +111,7 @@ func registerSkillsCommands(app *cli.App) {
 			return printResponse(ctx, "deleteSkill", resp.StatusCode(), resp.Body)
 		})
 
-	skillsGrp.Command("get-skill").
+	skillsGrp.Command("get").
 		Description("Get a skill").
 		Args("skill-id").
 		Use(requireAuth()).
@@ -130,7 +130,7 @@ func registerSkillsCommands(app *cli.App) {
 			return printResponse(ctx, "getSkill", resp.StatusCode(), resp.Body)
 		})
 
-	skillsGrp.Command("import-skill").
+	skillsGrp.Command("import").
 		Description("Import a skill").
 		Flags(
 			cli.String("content", "").Help("[required] Full skill document, optionally with YAML frontmatter."),
@@ -170,7 +170,7 @@ func registerSkillsCommands(app *cli.App) {
 			return printResponse(ctx, "importSkill", resp.StatusCode(), resp.Body)
 		})
 
-	skillsGrp.Command("list-skills").
+	skillsGrp.Command("list").
 		Description("List skills").
 		Flags(
 			cli.Bool("include-system", "").Help("Include read-only system skill templates."),
@@ -195,7 +195,7 @@ func registerSkillsCommands(app *cli.App) {
 			return printResponse(ctx, "listSkills", resp.StatusCode(), resp.Body)
 		})
 
-	skillsGrp.Command("update-skill").
+	skillsGrp.Command("update").
 		Description("Update a skill").
 		Args("skill-id").
 		Flags(

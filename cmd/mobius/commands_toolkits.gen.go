@@ -17,9 +17,9 @@ import (
 
 // registerToolkitsCommands registers every generated subcommand in the "toolkits" group.
 func registerToolkitsCommands(app *cli.App) {
-	toolkitsGrp := app.Group("toolkits")
+	toolkitsGrp := app.Group("toolkits").Description("Bundles of MCP tools assignable to agents")
 	toolkitsGrp.Alias("toolkit")
-	toolkitsGrp.Command("create-toolkit").
+	toolkitsGrp.Command("create").
 		Description("Create a toolkit").
 		Flags(
 			cli.String("action-grants", "").Help("action-grants Accepts JSON, @file, or @-."),
@@ -70,7 +70,7 @@ func registerToolkitsCommands(app *cli.App) {
 			return printResponse(ctx, "createToolkit", resp.StatusCode(), resp.Body)
 		})
 
-	toolkitsGrp.Command("delete-toolkit").
+	toolkitsGrp.Command("delete").
 		Description("Delete a toolkit").
 		Args("toolkit-id").
 		Use(requireAuth()).
@@ -89,7 +89,7 @@ func registerToolkitsCommands(app *cli.App) {
 			return printResponse(ctx, "deleteToolkit", resp.StatusCode(), resp.Body)
 		})
 
-	toolkitsGrp.Command("get-toolkit").
+	toolkitsGrp.Command("get").
 		Description("Get a toolkit").
 		Args("toolkit-id").
 		Use(requireAuth()).
@@ -108,7 +108,7 @@ func registerToolkitsCommands(app *cli.App) {
 			return printResponse(ctx, "getToolkit", resp.StatusCode(), resp.Body)
 		})
 
-	toolkitsGrp.Command("list-toolkits").
+	toolkitsGrp.Command("list").
 		Description("List toolkits").
 		Flags(
 			cli.Bool("include-system", "").Help("Include read-only system templates."),
@@ -133,7 +133,7 @@ func registerToolkitsCommands(app *cli.App) {
 			return printResponse(ctx, "listToolkits", resp.StatusCode(), resp.Body)
 		})
 
-	toolkitsGrp.Command("update-toolkit").
+	toolkitsGrp.Command("update").
 		Description("Update a toolkit").
 		Args("toolkit-id").
 		Flags(

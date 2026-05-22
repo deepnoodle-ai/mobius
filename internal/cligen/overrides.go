@@ -42,23 +42,18 @@ var overrides = map[string]Override{
 	"appendAgentSessionMessages": {Command: "append-session-messages"},
 
 	// --- agent-tools ------------------------------------------------------
-	// Skill and Toolkit ops share verbs (create/get/list/update/delete) and
-	// the generator's collision suffixer would turn one of each pair into
-	// `delete-2`, `get-2`, etc. Spell out the resource so every command in
-	// the group reads as `<verb>-<resource>`.
-	"createSkill":            {Command: "create-skill"},
-	"createToolkit":          {Command: "create-toolkit"},
-	"deleteSkill":            {Command: "delete-skill"},
-	"deleteToolkit":          {Command: "delete-toolkit"},
-	"getSkill":               {Command: "get-skill"},
-	"getToolkit":             {Command: "get-toolkit"},
-	"listSkills":             {Command: "list-skills"},
-	"listToolkits":           {Command: "list-toolkits"},
-	"updateSkill":            {Command: "update-skill"},
-	"updateToolkit":          {Command: "update-toolkit"},
+	"getAgentToolManifest": {Command: "get-manifest"},
+
+	// --- agents (skill/toolkit assignment ops) ----------------------------
+	// These live in the `agents` group; auto-derivation would collapse both
+	// to `list-assignments` and collide. Spell out the resource.
 	"listSkillAssignments":   {Command: "list-skill-assignments"},
 	"listToolkitAssignments": {Command: "list-toolkit-assignments"},
-	"getAgentToolManifest":   {Command: "get-manifest"},
+
+	// --- skills -----------------------------------------------------------
+	// `import` isn't in the verb list, so the auto-derive keeps the
+	// redundant `-skill` suffix; strip it.
+	"importSkill": {Command: "import"},
 
 	// --- artifacts --------------------------------------------------------
 	"pinArtifact":    {Command: "pin"},
@@ -257,7 +252,7 @@ var groupDescriptions = map[string]string{
 	"actor-state":           "Reportable actor state and per-target assignments",
 	"agent-invocations":     "Agent invocation lifecycle and results",
 	"agents":                "Agents, sessions, and presence",
-	"agent-tools":           "Skills, toolkits, and resolved agent tool manifests",
+	"agent-tools":           "Resolved agent tool manifests",
 	"api-keys":              "Project and organization API keys",
 	"artifacts":             "Run output artifacts and storage settings",
 	"audit-logs":            "Organization and project audit log entries",
@@ -281,9 +276,11 @@ var groupDescriptions = map[string]string{
 	"runs":                  "Workflow runs",
 	"secrets":               "Project secrets and secret versions",
 	"service-accounts":      "Project service accounts for agents and automation",
+	"skills":                "Project-local agent skills",
 	"spans":                 "Distributed tracing spans and traces",
 	"tables":                "Project-scoped tables and rows",
 	"team":                  "Project team membership",
+	"toolkits":              "Bundles of MCP tools assignable to agents",
 	"tools":                 "Workflows published as callable tools",
 	"triggers":              "Event, schedule, and webhook triggers",
 	"user-state":            "Per-user project state and assignments",
