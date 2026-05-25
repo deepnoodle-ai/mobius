@@ -4445,6 +4445,9 @@ type Agent struct {
 	// CreatedAt Timestamp when this agent was created.
 	CreatedAt time.Time `json:"created_at"`
 
+	// CreatedBy User ID of the principal who created this agent.
+	CreatedBy *string `json:"created_by,omitempty"`
+
 	// DeletedAt Set when the agent has been soft-deleted. Soft-deleted agents are excluded from normal listing and lookups but their records are retained so historical chat messages can resolve the sender name.
 	DeletedAt *time.Time `json:"deleted_at,omitempty"`
 
@@ -4484,6 +4487,9 @@ type Agent struct {
 
 	// UpdatedAt Timestamp when this agent was last updated.
 	UpdatedAt time.Time `json:"updated_at"`
+
+	// UpdatedBy User ID of the principal who last updated this agent.
+	UpdatedBy *string `json:"updated_by,omitempty"`
 
 	// UserId Canonical user (users.id) backing this agent. Used as the `owned_by` value when filtering or claiming resources owned by this agent's backing user.
 	UserId *string `json:"user_id,omitempty"`
@@ -4812,7 +4818,7 @@ type Channel struct {
 	// CreatedAt Timestamp when this channel was created.
 	CreatedAt time.Time `json:"created_at"`
 
-	// CreatedBy User ID of the org member who created the channel.
+	// CreatedBy User ID of the principal who created this channel.
 	CreatedBy string `json:"created_by"`
 
 	// CurrentMember Live membership record for a `users.id` principal in a channel.
@@ -4847,6 +4853,9 @@ type Channel struct {
 
 	// UpdatedAt Timestamp when this channel was last updated.
 	UpdatedAt time.Time `json:"updated_at"`
+
+	// UpdatedBy User ID of the principal who last updated this channel.
+	UpdatedBy *string `json:"updated_by,omitempty"`
 }
 
 // ChannelKind `channel` — persistent named room. `dm` — direct-message thread, typically between a small fixed set of participants.
@@ -6300,20 +6309,22 @@ type Environment struct {
 	BoundToId *string `json:"bound_to_id,omitempty"`
 
 	// BoundToType Execution or lifecycle object this environment is bound to. Ownership remains in `owned_by`.
-	BoundToType            *EnvironmentBoundToType  `json:"bound_to_type,omitempty"`
-	Capabilities           []string                 `json:"capabilities"`
-	CleanupStatus          EnvironmentCleanupStatus `json:"cleanup_status"`
-	ContainsSecrets        bool                     `json:"contains_secrets"`
-	CreatedAt              time.Time                `json:"created_at"`
-	CreatedBy              *string                  `json:"created_by,omitempty"`
-	CurrentWorkerSessionId *string                  `json:"current_worker_session_id,omitempty"`
-	DestroyedAt            *time.Time               `json:"destroyed_at,omitempty"`
-	Id                     string                   `json:"id"`
-	JobId                  *string                  `json:"job_id,omitempty"`
-	LastError              *string                  `json:"last_error,omitempty"`
-	LastReconciledAt       *time.Time               `json:"last_reconciled_at,omitempty"`
-	LastSeenAt             *time.Time               `json:"last_seen_at,omitempty"`
-	LeaseExpiresAt         *time.Time               `json:"lease_expires_at,omitempty"`
+	BoundToType     *EnvironmentBoundToType  `json:"bound_to_type,omitempty"`
+	Capabilities    []string                 `json:"capabilities"`
+	CleanupStatus   EnvironmentCleanupStatus `json:"cleanup_status"`
+	ContainsSecrets bool                     `json:"contains_secrets"`
+	CreatedAt       time.Time                `json:"created_at"`
+
+	// CreatedBy User ID of the principal who created this environment.
+	CreatedBy              *string    `json:"created_by,omitempty"`
+	CurrentWorkerSessionId *string    `json:"current_worker_session_id,omitempty"`
+	DestroyedAt            *time.Time `json:"destroyed_at,omitempty"`
+	Id                     string     `json:"id"`
+	JobId                  *string    `json:"job_id,omitempty"`
+	LastError              *string    `json:"last_error,omitempty"`
+	LastReconciledAt       *time.Time `json:"last_reconciled_at,omitempty"`
+	LastSeenAt             *time.Time `json:"last_seen_at,omitempty"`
+	LeaseExpiresAt         *time.Time `json:"lease_expires_at,omitempty"`
 
 	// Lifetime Lifecycle owner for automatic cleanup. `run` environments are destroyed during their owning run's Finalize phase; `lease` environments are reaped after lease expiry; `explicit` environments require an explicit destroy call.
 	Lifetime EnvironmentLifetime `json:"lifetime"`
@@ -6341,6 +6352,9 @@ type Environment struct {
 	Tags       *TagMap                `json:"tags,omitempty"`
 	TemplateId *EnvironmentTemplateId `json:"template_id,omitempty"`
 	UpdatedAt  time.Time              `json:"updated_at"`
+
+	// UpdatedBy User ID of the principal who last updated this environment.
+	UpdatedBy *string `json:"updated_by,omitempty"`
 }
 
 // EnvironmentTemplateId defines model for Environment.TemplateId.
@@ -8724,7 +8738,7 @@ type SearchRowsResponse struct {
 type Secret struct {
 	CreatedAt time.Time `json:"created_at"`
 
-	// CreatedBy User that created the secret, when known.
+	// CreatedBy User ID of the principal who created this secret.
 	CreatedBy *string `json:"created_by,omitempty"`
 
 	// Description Optional human-readable description.
@@ -8739,6 +8753,9 @@ type Secret struct {
 	// Name Project-scoped secret name.
 	Name      string    `json:"name"`
 	UpdatedAt time.Time `json:"updated_at"`
+
+	// UpdatedBy User ID of the principal who last updated this secret.
+	UpdatedBy *string `json:"updated_by,omitempty"`
 
 	// Version Latest version number.
 	Version int64 `json:"version"`
@@ -8903,7 +8920,10 @@ type Skill struct {
 	// AllowedTools Canonical action names, wildcard selectors, or group references that narrow the agent's effective tool set while this skill is active. Uses the same selector vocabulary as toolkit grants.
 	AllowedTools []string  `json:"allowed_tools"`
 	CreatedAt    time.Time `json:"created_at"`
-	Description  *string   `json:"description,omitempty"`
+
+	// CreatedBy User ID of the principal who created this skill.
+	CreatedBy   *string `json:"created_by,omitempty"`
+	Description *string `json:"description,omitempty"`
 
 	// Frontmatter Original imported frontmatter preserved for round-tripping.
 	Frontmatter *map[string]interface{} `json:"frontmatter,omitempty"`
@@ -8923,6 +8943,9 @@ type Skill struct {
 	Source    SkillSource `json:"source"`
 	Status    SkillStatus `json:"status"`
 	UpdatedAt time.Time   `json:"updated_at"`
+
+	// UpdatedBy User ID of the principal who last updated this skill.
+	UpdatedBy *string `json:"updated_by,omitempty"`
 
 	// UserInvocable Whether users may directly request this skill by name.
 	UserInvocable *bool `json:"user_invocable,omitempty"`
@@ -9254,12 +9277,15 @@ type SubscriptionBatch struct {
 // Table defines model for Table.
 type Table struct {
 	// AccessMode Controls read/write access. When access_mode is "private", owned_by MUST be present; the server enforces this invariant. If access_mode is omitted on create, the server defaults to "private" when an owner is set and "project" when no owner is provided.
-	AccessMode  TableAccessMode `json:"access_mode"`
-	CreatedAt   time.Time       `json:"created_at"`
-	Description *string         `json:"description,omitempty"`
-	Id          string          `json:"id"`
-	Name        string          `json:"name"`
-	OrgId       string          `json:"org_id"`
+	AccessMode TableAccessMode `json:"access_mode"`
+	CreatedAt  time.Time       `json:"created_at"`
+
+	// CreatedBy User ID of the principal who created this table.
+	CreatedBy   *string `json:"created_by,omitempty"`
+	Description *string `json:"description,omitempty"`
+	Id          string  `json:"id"`
+	Name        string  `json:"name"`
+	OrgId       string  `json:"org_id"`
 
 	// OwnedBy Canonical user owner ID. AI-agent owners use their backing user ID.
 	OwnedBy   *string     `json:"owned_by,omitempty"`
@@ -9270,6 +9296,9 @@ type Table struct {
 	Scope     *ResourceScope     `json:"scope,omitempty"`
 	Tags      *map[string]string `json:"tags,omitempty"`
 	UpdatedAt time.Time          `json:"updated_at"`
+
+	// UpdatedBy User ID of the principal who last updated this table.
+	UpdatedBy *string `json:"updated_by,omitempty"`
 }
 
 // TableAccessMode Controls read/write access to the table. "project" allows anyone with project table permissions (default for unowned tables). "private" restricts access to the owner only (default when an owner is set).
@@ -9407,7 +9436,10 @@ type Toolkit struct {
 	// ActionGrants Action selectors granted by this toolkit. Each entry is matched against the unified action catalog at manifest-resolution time.
 	ActionGrants []ToolkitActionGrant `json:"action_grants"`
 	CreatedAt    time.Time            `json:"created_at"`
-	Description  *string              `json:"description,omitempty"`
+
+	// CreatedBy User ID of the principal who created this toolkit.
+	CreatedBy   *string `json:"created_by,omitempty"`
+	Description *string `json:"description,omitempty"`
 
 	// Id Toolkit ID (TypeID `kit_...`).
 	Id        string        `json:"id"`
@@ -9418,6 +9450,9 @@ type Toolkit struct {
 	Source    ToolkitSource `json:"source"`
 	Status    ToolkitStatus `json:"status"`
 	UpdatedAt time.Time     `json:"updated_at"`
+
+	// UpdatedBy User ID of the principal who last updated this toolkit.
+	UpdatedBy *string `json:"updated_by,omitempty"`
 }
 
 // ToolkitSource defines model for Toolkit.Source.
@@ -9526,7 +9561,7 @@ type Trigger struct {
 	// CreatedAt Timestamp when this trigger was created.
 	CreatedAt time.Time `json:"created_at"`
 
-	// CreatedBy User ID of the org member who created this trigger.
+	// CreatedBy User ID of the principal who created this trigger.
 	CreatedBy *string `json:"created_by,omitempty"`
 
 	// Enabled When false, the trigger is paused and will not fire.
@@ -9564,6 +9599,9 @@ type Trigger struct {
 
 	// UpdatedAt Timestamp when this trigger was last updated.
 	UpdatedAt time.Time `json:"updated_at"`
+
+	// UpdatedBy User ID of the principal who last updated this trigger.
+	UpdatedBy *string `json:"updated_by,omitempty"`
 }
 
 // TriggerFire A single trigger fire event and its outcome.
@@ -10356,7 +10394,7 @@ type Webhook struct {
 	// CreatedAt Timestamp when this webhook was created.
 	CreatedAt time.Time `json:"created_at"`
 
-	// CreatedBy User ID of the org member who created this webhook.
+	// CreatedBy User ID of the principal who created this webhook.
 	CreatedBy *string `json:"created_by,omitempty"`
 
 	// Enabled When false, matching events are not delivered.
@@ -10376,6 +10414,9 @@ type Webhook struct {
 
 	// UpdatedAt Timestamp when this webhook was last updated.
 	UpdatedAt time.Time `json:"updated_at"`
+
+	// UpdatedBy User ID of the principal who last updated this webhook.
+	UpdatedBy *string `json:"updated_by,omitempty"`
 
 	// Url The customer endpoint Mobius POSTs event payloads to.
 	Url string `json:"url"`
@@ -10698,7 +10739,7 @@ type WorkflowDefinition struct {
 	// CreatedAt Timestamp when this workflow definition was created.
 	CreatedAt time.Time `json:"created_at"`
 
-	// CreatedBy User ID of the org member who created this workflow definition.
+	// CreatedBy User ID of the principal who created this workflow definition.
 	CreatedBy string `json:"created_by"`
 
 	// Description Optional description of the workflow's purpose.
@@ -10747,7 +10788,10 @@ type WorkflowDefinition struct {
 	Tags *TagMap `json:"tags,omitempty"`
 
 	// UpdatedAt Timestamp when this workflow definition was last updated.
-	UpdatedAt            time.Time              `json:"updated_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+
+	// UpdatedBy User ID of the principal who last updated this workflow definition.
+	UpdatedBy            *string                `json:"updated_by,omitempty"`
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
@@ -10768,7 +10812,7 @@ type WorkflowDefinitionSummary struct {
 	// CreatedAt Timestamp when this workflow definition was created.
 	CreatedAt time.Time `json:"created_at"`
 
-	// CreatedBy User ID of the org member who created this workflow definition.
+	// CreatedBy User ID of the principal who created this workflow definition.
 	CreatedBy string `json:"created_by"`
 
 	// Description Optional description of the workflow's purpose.
@@ -10799,7 +10843,10 @@ type WorkflowDefinitionSummary struct {
 	Tags *TagMap `json:"tags,omitempty"`
 
 	// UpdatedAt Timestamp when this workflow definition was last updated.
-	UpdatedAt            time.Time              `json:"updated_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+
+	// UpdatedBy User ID of the principal who last updated this workflow definition.
+	UpdatedBy            *string                `json:"updated_by,omitempty"`
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
@@ -14957,6 +15004,14 @@ func (a *WorkflowDefinition) UnmarshalJSON(b []byte) error {
 		delete(object, "updated_at")
 	}
 
+	if raw, found := object["updated_by"]; found {
+		err = json.Unmarshal(raw, &a.UpdatedBy)
+		if err != nil {
+			return fmt.Errorf("error reading 'updated_by': %w", err)
+		}
+		delete(object, "updated_by")
+	}
+
 	if len(object) != 0 {
 		a.AdditionalProperties = make(map[string]interface{})
 		for fieldName, fieldBuf := range object {
@@ -15049,6 +15104,13 @@ func (a WorkflowDefinition) MarshalJSON() ([]byte, error) {
 	object["updated_at"], err = json.Marshal(a.UpdatedAt)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling 'updated_at': %w", err)
+	}
+
+	if a.UpdatedBy != nil {
+		object["updated_by"], err = json.Marshal(a.UpdatedBy)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'updated_by': %w", err)
+		}
 	}
 
 	for fieldName, field := range a.AdditionalProperties {
@@ -15181,6 +15243,14 @@ func (a *WorkflowDefinitionSummary) UnmarshalJSON(b []byte) error {
 		delete(object, "updated_at")
 	}
 
+	if raw, found := object["updated_by"]; found {
+		err = json.Unmarshal(raw, &a.UpdatedBy)
+		if err != nil {
+			return fmt.Errorf("error reading 'updated_by': %w", err)
+		}
+		delete(object, "updated_by")
+	}
+
 	if len(object) != 0 {
 		a.AdditionalProperties = make(map[string]interface{})
 		for fieldName, fieldBuf := range object {
@@ -15268,6 +15338,13 @@ func (a WorkflowDefinitionSummary) MarshalJSON() ([]byte, error) {
 	object["updated_at"], err = json.Marshal(a.UpdatedAt)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling 'updated_at': %w", err)
+	}
+
+	if a.UpdatedBy != nil {
+		object["updated_by"], err = json.Marshal(a.UpdatedBy)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'updated_by': %w", err)
+		}
 	}
 
 	for fieldName, field := range a.AdditionalProperties {

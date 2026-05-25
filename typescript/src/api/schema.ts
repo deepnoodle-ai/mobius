@@ -3491,6 +3491,10 @@ export interface components {
             email_address?: string;
             /** @description Resource tags applied to this agent. */
             tags?: components["schemas"]["TagMap"];
+            /** @description User ID of the principal who created this agent. */
+            created_by?: string;
+            /** @description User ID of the principal who last updated this agent. */
+            updated_by?: string;
             /**
              * Format: date-time
              * @description Timestamp when this agent was created.
@@ -3659,8 +3663,10 @@ export interface components {
             kind: "dm" | "channel";
             /** @description When true, the channel is invite-only and not visible in public listings. */
             private: boolean;
-            /** @description User ID of the org member who created the channel. */
+            /** @description User ID of the principal who created this channel. */
             created_by: string;
+            /** @description User ID of the principal who last updated this channel. */
+            updated_by?: string;
             /**
              * @description `general` channels are ordinary rooms. `resolve_interactions` channels exist to resolve one or more purpose-linked interactions.
              * @enum {string}
@@ -5256,8 +5262,10 @@ export interface components {
             published_as_tool?: boolean;
             /** @description Canonical user owner ID. Required when `scope` is `owner`. */
             owned_by?: string;
-            /** @description User ID of the org member who created this workflow definition. */
+            /** @description User ID of the principal who created this workflow definition. */
             created_by: string;
+            /** @description User ID of the principal who last updated this workflow definition. */
+            updated_by?: string;
             /** @description Resource tags applied to this workflow. Inherited by runs at start time; see `Run.tags`. */
             tags?: components["schemas"]["TagMap"];
             /**
@@ -6466,7 +6474,10 @@ export interface components {
             bound_to_type?: components["schemas"]["EnvironmentBoundToType"];
             /** @description ID of the run, worker session, service, or manual association named by `bound_to_type`. */
             bound_to_id?: string;
+            /** @description User ID of the principal who created this environment. */
             created_by?: string;
+            /** @description User ID of the principal who last updated this environment. */
+            updated_by?: string;
             run_id?: string;
             job_id?: string;
             current_worker_session_id?: string;
@@ -6631,8 +6642,10 @@ export interface components {
             version: number;
             /** @description Sorted keys present in the latest version. */
             key_names: string[];
-            /** @description User that created the secret, when known. */
+            /** @description User ID of the principal who created this secret. */
             created_by?: string;
+            /** @description User ID of the principal who last updated this secret. */
+            updated_by?: string;
             /** Format: date-time */
             created_at: string;
             /** Format: date-time */
@@ -7564,8 +7577,10 @@ export interface components {
              * @description Computed next scheduled fire time (schedule triggers only).
              */
             next_fire_at?: string;
-            /** @description User ID of the org member who created this trigger. */
+            /** @description User ID of the principal who created this trigger. */
             created_by?: string;
+            /** @description User ID of the principal who last updated this trigger. */
+            updated_by?: string;
             /** @description Resource tags applied to this trigger. */
             tags?: components["schemas"]["TagMap"];
             /**
@@ -8032,8 +8047,10 @@ export interface components {
             events: string[];
             /** @description When false, matching events are not delivered. */
             enabled: boolean;
-            /** @description User ID of the org member who created this webhook. */
+            /** @description User ID of the principal who created this webhook. */
             created_by?: string;
+            /** @description User ID of the principal who last updated this webhook. */
+            updated_by?: string;
             /** @description Resource tags applied to this webhook. */
             tags?: components["schemas"]["TagMap"];
             /**
@@ -8627,6 +8644,10 @@ export interface components {
             status: "active" | "archived";
             /** @description Action selectors granted by this toolkit. Each entry is matched against the unified action catalog at manifest-resolution time. */
             action_grants: components["schemas"]["ToolkitActionGrant"][];
+            /** @description User ID of the principal who created this toolkit. */
+            created_by?: string;
+            /** @description User ID of the principal who last updated this toolkit. */
+            updated_by?: string;
             /** Format: date-time */
             created_at: string;
             /** Format: date-time */
@@ -8680,6 +8701,10 @@ export interface components {
             model_hint?: string;
             /** @description Whether users may directly request this skill by name. */
             user_invocable?: boolean;
+            /** @description User ID of the principal who created this skill. */
+            created_by?: string;
+            /** @description User ID of the principal who last updated this skill. */
+            updated_by?: string;
             /** Format: date-time */
             created_at: string;
             /** Format: date-time */
@@ -9186,6 +9211,10 @@ export interface components {
             owned_by?: string;
             /** @description Controls read/write access. When access_mode is "private", owned_by MUST be present; the server enforces this invariant. If access_mode is omitted on create, the server defaults to "private" when an owner is set and "project" when no owner is provided. */
             access_mode: components["schemas"]["TableAccessMode"];
+            /** @description User ID of the principal who created this table. */
+            created_by?: string;
+            /** @description User ID of the principal who last updated this table. */
+            updated_by?: string;
             /** Format: date-time */
             created_at: string;
             /** Format: date-time */

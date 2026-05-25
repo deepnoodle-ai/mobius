@@ -8333,6 +8333,12 @@ components:
         tags:
           $ref: '#/components/schemas/TagMap'
           description: Resource tags applied to this agent.
+        created_by:
+          type: string
+          description: User ID of the principal who created this agent.
+        updated_by:
+          type: string
+          description: User ID of the principal who last updated this agent.
         created_at:
           type: string
           format: date-time
@@ -8628,7 +8634,10 @@ components:
           description: When true, the channel is invite-only and not visible in public listings.
         created_by:
           type: string
-          description: User ID of the org member who created the channel.
+          description: User ID of the principal who created this channel.
+        updated_by:
+          type: string
+          description: User ID of the principal who last updated this channel.
         purpose:
           type: string
           enum:
@@ -11558,7 +11567,10 @@ components:
           description: Canonical user owner ID. Required when `scope` is `owner`.
         created_by:
           type: string
-          description: User ID of the org member who created this workflow definition.
+          description: User ID of the principal who created this workflow definition.
+        updated_by:
+          type: string
+          description: User ID of the principal who last updated this workflow definition.
         tags:
           $ref: '#/components/schemas/TagMap'
           description: Resource tags applied to this workflow. Inherited by runs at start
@@ -13851,6 +13863,10 @@ components:
             by `bound_to_type`.
         created_by:
           type: string
+          description: User ID of the principal who created this environment.
+        updated_by:
+          type: string
+          description: User ID of the principal who last updated this environment.
         run_id:
           type: string
         job_id:
@@ -14184,7 +14200,10 @@ components:
           description: Sorted keys present in the latest version.
         created_by:
           type: string
-          description: User that created the secret, when known.
+          description: User ID of the principal who created this secret.
+        updated_by:
+          type: string
+          description: User ID of the principal who last updated this secret.
         created_at:
           type: string
           format: date-time
@@ -16139,7 +16158,10 @@ components:
           description: Computed next scheduled fire time (schedule triggers only).
         created_by:
           type: string
-          description: User ID of the org member who created this trigger.
+          description: User ID of the principal who created this trigger.
+        updated_by:
+          type: string
+          description: User ID of the principal who last updated this trigger.
         tags:
           $ref: '#/components/schemas/TagMap'
           description: Resource tags applied to this trigger.
@@ -17040,7 +17062,10 @@ components:
           description: When false, matching events are not delivered.
         created_by:
           type: string
-          description: User ID of the org member who created this webhook.
+          description: User ID of the principal who created this webhook.
+        updated_by:
+          type: string
+          description: User ID of the principal who last updated this webhook.
         tags:
           $ref: '#/components/schemas/TagMap'
           description: Resource tags applied to this webhook.
@@ -18263,6 +18288,12 @@ components:
             the unified action catalog at manifest-resolution time.
           items:
             $ref: '#/components/schemas/ToolkitActionGrant'
+        created_by:
+          type: string
+          description: User ID of the principal who created this toolkit.
+        updated_by:
+          type: string
+          description: User ID of the principal who last updated this toolkit.
         created_at:
           type: string
           format: date-time
@@ -18399,6 +18430,12 @@ components:
         user_invocable:
           type: boolean
           description: Whether users may directly request this skill by name.
+        created_by:
+          type: string
+          description: User ID of the principal who created this skill.
+        updated_by:
+          type: string
+          description: User ID of the principal who last updated this skill.
         created_at:
           type: string
           format: date-time
@@ -19506,6 +19543,12 @@ components:
             MUST be present; the server enforces this invariant. If access_mode is omitted
             on create, the server defaults to "private" when an owner is set and "project"
             when no owner is provided.
+        created_by:
+          type: string
+          description: User ID of the principal who created this table.
+        updated_by:
+          type: string
+          description: User ID of the principal who last updated this table.
         created_at:
           type: string
           format: date-time

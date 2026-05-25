@@ -360,6 +360,12 @@ class Agent(BaseModel):
     tags: TagMap | None = Field(
         None, description='Resource tags applied to this agent.'
     )
+    created_by: str | None = Field(
+        None, description='User ID of the principal who created this agent.'
+    )
+    updated_by: str | None = Field(
+        None, description='User ID of the principal who last updated this agent.'
+    )
     created_at: AwareDatetime = Field(
         ..., description='Timestamp when this agent was created.'
     )
@@ -2191,7 +2197,11 @@ class WorkflowDefinitionSummary(BaseModel):
     )
     created_by: str = Field(
         ...,
-        description='User ID of the org member who created this workflow definition.',
+        description='User ID of the principal who created this workflow definition.',
+    )
+    updated_by: str | None = Field(
+        None,
+        description='User ID of the principal who last updated this workflow definition.',
     )
     tags: TagMap | None = Field(
         None,
@@ -3497,7 +3507,12 @@ class Environment(BaseModel):
         None,
         description='ID of the run, worker session, service, or manual association named by `bound_to_type`.',
     )
-    created_by: str | None = None
+    created_by: str | None = Field(
+        None, description='User ID of the principal who created this environment.'
+    )
+    updated_by: str | None = Field(
+        None, description='User ID of the principal who last updated this environment.'
+    )
     run_id: str | None = None
     job_id: str | None = None
     current_worker_session_id: str | None = None
@@ -3709,7 +3724,10 @@ class Secret(BaseModel):
         ..., description='Sorted keys present in the latest version.'
     )
     created_by: str | None = Field(
-        None, description='User that created the secret, when known.'
+        None, description='User ID of the principal who created this secret.'
+    )
+    updated_by: str | None = Field(
+        None, description='User ID of the principal who last updated this secret.'
     )
     created_at: AwareDatetime
     updated_at: AwareDatetime
@@ -5432,7 +5450,10 @@ class Webhook(BaseModel):
         ..., description='When false, matching events are not delivered.'
     )
     created_by: str | None = Field(
-        None, description='User ID of the org member who created this webhook.'
+        None, description='User ID of the principal who created this webhook.'
+    )
+    updated_by: str | None = Field(
+        None, description='User ID of the principal who last updated this webhook.'
     )
     tags: TagMap | None = Field(
         None, description='Resource tags applied to this webhook.'
@@ -6235,6 +6256,12 @@ class Toolkit(BaseModel):
         ...,
         description='Action selectors granted by this toolkit. Each entry is matched against the unified action catalog at manifest-resolution time.',
     )
+    created_by: str | None = Field(
+        None, description='User ID of the principal who created this toolkit.'
+    )
+    updated_by: str | None = Field(
+        None, description='User ID of the principal who last updated this toolkit.'
+    )
     created_at: AwareDatetime
     updated_at: AwareDatetime
 
@@ -6318,6 +6345,12 @@ class Skill(BaseModel):
     )
     user_invocable: bool | None = Field(
         None, description='Whether users may directly request this skill by name.'
+    )
+    created_by: str | None = Field(
+        None, description='User ID of the principal who created this skill.'
+    )
+    updated_by: str | None = Field(
+        None, description='User ID of the principal who last updated this skill.'
     )
     created_at: AwareDatetime
     updated_at: AwareDatetime
@@ -7089,6 +7122,12 @@ class Table(BaseModel):
         ...,
         description='Controls read/write access. When access_mode is "private", owned_by MUST be present; the server enforces this invariant. If access_mode is omitted on create, the server defaults to "private" when an owner is set and "project" when no owner is provided.',
     )
+    created_by: str | None = Field(
+        None, description='User ID of the principal who created this table.'
+    )
+    updated_by: str | None = Field(
+        None, description='User ID of the principal who last updated this table.'
+    )
     created_at: AwareDatetime
     updated_at: AwareDatetime
 
@@ -7391,7 +7430,10 @@ class Channel(BaseModel):
         description='When true, the channel is invite-only and not visible in public listings.',
     )
     created_by: str = Field(
-        ..., description='User ID of the org member who created the channel.'
+        ..., description='User ID of the principal who created this channel.'
+    )
+    updated_by: str | None = Field(
+        None, description='User ID of the principal who last updated this channel.'
     )
     purpose: Purpose = Field(
         ...,
@@ -8808,7 +8850,10 @@ class Trigger(BaseModel):
         None, description='Computed next scheduled fire time (schedule triggers only).'
     )
     created_by: str | None = Field(
-        None, description='User ID of the org member who created this trigger.'
+        None, description='User ID of the principal who created this trigger.'
+    )
+    updated_by: str | None = Field(
+        None, description='User ID of the principal who last updated this trigger.'
     )
     tags: TagMap | None = Field(
         None, description='Resource tags applied to this trigger.'
