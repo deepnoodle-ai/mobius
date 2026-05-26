@@ -25,7 +25,6 @@ func registerWebhooksCommands(app *cli.App) {
 			cli.Bool("enabled", "").Help("Whether the webhook starts enabled. Defaults to true when omitted."),
 			cli.Strings("events", "").Help("[required] Event types to subscribe to. Use wildcards for broad subscriptions, e.g. `[\"run.*\"]` for all run ev…"),
 			cli.String("name", "").Help("[required] Human-readable name, unique within the project."),
-			cli.String("signing-secret", "").Help("Optional HMAC-SHA256 secret. When set, Mobius signs each POST body and includes `X-Mobius-Signature…"),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
 			cli.String("url", "").Help("The endpoint Mobius will POST event payloads to. May be left empty at creation time so a candidate …"),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
@@ -52,10 +51,6 @@ func registerWebhooksCommands(app *cli.App) {
 			}
 			if ctx.IsSet("name") {
 				body.Name = ctx.String("name")
-			}
-			if ctx.IsSet("signing-secret") {
-				v := ctx.String("signing-secret")
-				body.SigningSecret = &v
 			}
 			if tags, err := parseTagFlags(ctx); err != nil {
 				return err
@@ -226,6 +221,25 @@ func registerWebhooksCommands(app *cli.App) {
 			return printResponse(ctx, "pingWebhook", resp.StatusCode(), resp.Body)
 		})
 
+	webhooksGrp.Command("rotate-secret").
+		Description("Rotate a webhook signing secret").
+		Args("id").
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			p1 := ctx.Arg(0)
+			resp, err := client.RotateWebhookSecretWithResponse(ctx.Context(), p0, p1)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "rotateWebhookSecret", resp.StatusCode(), resp.Body)
+		})
+
 	webhooksGrp.Command("update").
 		Description("Update a webhook").
 		Args("id").
@@ -233,7 +247,6 @@ func registerWebhooksCommands(app *cli.App) {
 			cli.Bool("enabled", "").Help("Set to false to disable delivery without deleting the webhook."),
 			cli.Strings("events", "").Help("Replacement event subscriptions. Replaces the entire current list; an empty list subscribes to all …"),
 			cli.String("name", "").Help("Replacement human-readable name."),
-			cli.String("signing-secret", "").Help("Replace the current signing secret. Set to empty string to disable signing. Omit to leave the curre…"),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
 			cli.String("url", "").Help("Replacement endpoint URL."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
@@ -264,10 +277,6 @@ func registerWebhooksCommands(app *cli.App) {
 				v := ctx.String("name")
 				body.Name = &v
 			}
-			if ctx.IsSet("signing-secret") {
-				v := ctx.String("signing-secret")
-				body.SigningSecret = &v
-			}
 			if tags, err := parseTagFlags(ctx); err != nil {
 				return err
 			} else if tags != nil {
@@ -278,7 +287,7 @@ func registerWebhooksCommands(app *cli.App) {
 				v := ctx.String("url")
 				body.Url = &v
 			}
-			if ctx.String("file") == "" && !ctx.IsSet("enabled") && !ctx.IsSet("events") && !ctx.IsSet("name") && !ctx.IsSet("signing-secret") && !ctx.IsSet("tag") && !ctx.IsSet("url") {
+			if ctx.String("file") == "" && !ctx.IsSet("enabled") && !ctx.IsSet("events") && !ctx.IsSet("name") && !ctx.IsSet("tag") && !ctx.IsSet("url") {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
 			if ctx.Bool("dry-run") {

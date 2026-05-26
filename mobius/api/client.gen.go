@@ -4203,7 +4203,13 @@ type Action struct {
 	// OutputSchema JSON Schema describing the expected output shape.
 	OutputSchema *map[string]interface{} `json:"output_schema,omitempty"`
 
-	// SigningSecret Raw HMAC-SHA256 signing secret. Only populated on create and rotate responses; null on all other reads. Store this value securely on first receipt — it cannot be retrieved again.
+	// SecretRef Project secret reference that stores this action's signing key. Present for HTTP-backed actions.
+	SecretRef *string `json:"secret_ref,omitempty"`
+
+	// SecretVersion Version of `secret_ref` created by this response. Only populated on create and rotate responses.
+	SecretVersion *int64 `json:"secret_version,omitempty"`
+
+	// SigningSecret Base64-encoded 32-byte HMAC-SHA256 signing key. Only populated on create and rotate responses; null on all other reads. Store this value securely on first receipt — it cannot be retrieved again.
 	SigningSecret *string `json:"signing_secret,omitempty"`
 
 	// Tags Arbitrary key-value string tags.
@@ -4356,18 +4362,6 @@ type ActionInvocationListResponse struct {
 
 	// NextCursor Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.
 	NextCursor *string `json:"next_cursor,omitempty"`
-}
-
-// ActionInvocationRequest Request body for user-driven action invocation.
-type ActionInvocationRequest struct {
-	// DryRun When true, validates the input but does not execute. Applies to read-only actions only.
-	DryRun *bool `json:"dry_run,omitempty"`
-
-	// Input Input values matching the action's input_schema.
-	Input *map[string]interface{} `json:"input,omitempty"`
-
-	// TimeoutSeconds How long (in seconds) to wait for synchronous completion. Default 30, max 120. If the run does not complete within this window the response is 202 with status active (workflow-backed only; HTTP-backed actions always complete inline).
-	TimeoutSeconds *int `json:"timeout_seconds,omitempty"`
 }
 
 // ActionInvocationResult Unified invocation result for any action kind. HTTP-backed actions always produce status "completed". Workflow-backed actions may produce status "active" when the run did not complete within `timeout_seconds`.
@@ -5363,7 +5357,7 @@ type ConfigEntry struct {
 	Value string `json:"value"`
 }
 
-// Consumer Polymorphic identifier of what is waiting on this interaction's resolution (PRD 077 §3.7). Replaces the previously special-cased `run_id` + `signal_name` pair. When `kind=run`, the legacy fields are also populated for compatibility. `http_subscriber` enqueues a durable callback dispatch to `callback_url` when the interaction resolves; when `secret_ref` is set, the canonical string `{interaction_id}.{unix_timestamp}.{raw_body}` is signed with HMAC-SHA256 against the resolved project secret and the signed dispatch carries `X-Mobius-Signature`, `X-Mobius-Secret-Ref`, `X-Mobius-Secret-Version`, and `X-Mobius-Timestamp`. Signed dispatches also carry `X-Mobius-Signature-Version: v2`. Every durable dispatch also carries the stable outbox row id in `X-Mobius-Delivery-ID` and `Idempotency-Key`; retries reuse the same value. Verifiers should recompute the signature over the exact raw body, reject stale timestamps (for example, older than five minutes), deduplicate by delivery id, and check all five signing headers.
+// Consumer Polymorphic identifier of what is waiting on this interaction's resolution (PRD 077 §3.7). Replaces the previously special-cased `run_id` + `signal_name` pair. When `kind=run`, the legacy fields are also populated for compatibility. `http_subscriber` requires `secret_ref` and enqueues a durable callback dispatch to `callback_url` when the interaction resolves; the canonical string `v1.{delivery_id}.{unix_timestamp}.{raw_body}` is signed with HMAC-SHA256 against the resolved project signing key and the signed dispatch carries `X-Mobius-Signature`, `X-Mobius-Secret-Ref`, `X-Mobius-Secret-Version`, and `X-Mobius-Timestamp`. Signed dispatches also carry `X-Mobius-Signature-Version: v1`. Every durable dispatch also carries the stable outbox row id in `X-Mobius-Delivery-Id` and `Idempotency-Key`; retries reuse the same value. Verifiers should recompute the signature over the exact raw body, reject stale timestamps (for example, older than five minutes), deduplicate by delivery id, and check the signing headers.
 type Consumer struct {
 	AgentTool      *AgentToolConsumer      `json:"agent_tool,omitempty"`
 	HttpSubscriber *HttpSubscriberConsumer `json:"http_subscriber,omitempty"`
@@ -5806,7 +5800,7 @@ type CreateRoleRequest struct {
 
 // CreateRunBackedInteractionRequest Creates a run-backed interaction. **Deprecated as a resume mechanism.** Under RFC 064 a workflow run only resumes from an interaction response when its materializer registered a `run_subscription` with `Subject{kind:interaction, interaction_id:...}`. That registration only happens for interactions created from within a workflow step (declarative `interaction` step or job-scoped `POST /v1/projects/{project}/jobs/{id}/interactions`). Direct run-backed creates through this endpoint produce a pending interaction record linked to `run_id` for audit, but completion will not wake the run. Use the job-scoped route for resume semantics. `signal_name` is retained on the request shape for backwards compatibility and audit; routing no longer depends on it.
 type CreateRunBackedInteractionRequest struct {
-	// Consumer Polymorphic identifier of what is waiting on this interaction's resolution (PRD 077 §3.7). Replaces the previously special-cased `run_id` + `signal_name` pair. When `kind=run`, the legacy fields are also populated for compatibility. `http_subscriber` enqueues a durable callback dispatch to `callback_url` when the interaction resolves; when `secret_ref` is set, the canonical string `{interaction_id}.{unix_timestamp}.{raw_body}` is signed with HMAC-SHA256 against the resolved project secret and the signed dispatch carries `X-Mobius-Signature`, `X-Mobius-Secret-Ref`, `X-Mobius-Secret-Version`, and `X-Mobius-Timestamp`. Signed dispatches also carry `X-Mobius-Signature-Version: v2`. Every durable dispatch also carries the stable outbox row id in `X-Mobius-Delivery-ID` and `Idempotency-Key`; retries reuse the same value. Verifiers should recompute the signature over the exact raw body, reject stale timestamps (for example, older than five minutes), deduplicate by delivery id, and check all five signing headers.
+	// Consumer Polymorphic identifier of what is waiting on this interaction's resolution (PRD 077 §3.7). Replaces the previously special-cased `run_id` + `signal_name` pair. When `kind=run`, the legacy fields are also populated for compatibility. `http_subscriber` requires `secret_ref` and enqueues a durable callback dispatch to `callback_url` when the interaction resolves; the canonical string `v1.{delivery_id}.{unix_timestamp}.{raw_body}` is signed with HMAC-SHA256 against the resolved project signing key and the signed dispatch carries `X-Mobius-Signature`, `X-Mobius-Secret-Ref`, `X-Mobius-Secret-Version`, and `X-Mobius-Timestamp`. Signed dispatches also carry `X-Mobius-Signature-Version: v1`. Every durable dispatch also carries the stable outbox row id in `X-Mobius-Delivery-Id` and `Idempotency-Key`; retries reuse the same value. Verifiers should recompute the signature over the exact raw body, reject stale timestamps (for example, older than five minutes), deduplicate by delivery id, and check the signing headers.
 	Consumer *Consumer `json:"consumer,omitempty"`
 
 	// Context Additional key-value context surfaced in the UI alongside the title and description.
@@ -5955,7 +5949,7 @@ type CreateServiceAccountRequest struct {
 
 // CreateStandaloneInteractionRequest Creates a standalone interaction. Completion records the response but does not deliver a workflow signal.
 type CreateStandaloneInteractionRequest struct {
-	// Consumer Polymorphic identifier of what is waiting on this interaction's resolution (PRD 077 §3.7). Replaces the previously special-cased `run_id` + `signal_name` pair. When `kind=run`, the legacy fields are also populated for compatibility. `http_subscriber` enqueues a durable callback dispatch to `callback_url` when the interaction resolves; when `secret_ref` is set, the canonical string `{interaction_id}.{unix_timestamp}.{raw_body}` is signed with HMAC-SHA256 against the resolved project secret and the signed dispatch carries `X-Mobius-Signature`, `X-Mobius-Secret-Ref`, `X-Mobius-Secret-Version`, and `X-Mobius-Timestamp`. Signed dispatches also carry `X-Mobius-Signature-Version: v2`. Every durable dispatch also carries the stable outbox row id in `X-Mobius-Delivery-ID` and `Idempotency-Key`; retries reuse the same value. Verifiers should recompute the signature over the exact raw body, reject stale timestamps (for example, older than five minutes), deduplicate by delivery id, and check all five signing headers.
+	// Consumer Polymorphic identifier of what is waiting on this interaction's resolution (PRD 077 §3.7). Replaces the previously special-cased `run_id` + `signal_name` pair. When `kind=run`, the legacy fields are also populated for compatibility. `http_subscriber` requires `secret_ref` and enqueues a durable callback dispatch to `callback_url` when the interaction resolves; the canonical string `v1.{delivery_id}.{unix_timestamp}.{raw_body}` is signed with HMAC-SHA256 against the resolved project signing key and the signed dispatch carries `X-Mobius-Signature`, `X-Mobius-Secret-Ref`, `X-Mobius-Secret-Version`, and `X-Mobius-Timestamp`. Signed dispatches also carry `X-Mobius-Signature-Version: v1`. Every durable dispatch also carries the stable outbox row id in `X-Mobius-Delivery-Id` and `Idempotency-Key`; retries reuse the same value. Verifiers should recompute the signature over the exact raw body, reject stale timestamps (for example, older than five minutes), deduplicate by delivery id, and check the signing headers.
 	Consumer *Consumer `json:"consumer,omitempty"`
 
 	// Context Additional key-value context surfaced in the UI alongside the title and description.
@@ -6124,9 +6118,6 @@ type CreateWebhookRequest struct {
 
 	// Name Human-readable name, unique within the project.
 	Name string `json:"name"`
-
-	// SigningSecret Optional HMAC-SHA256 secret. When set, Mobius signs each POST body and includes `X-Mobius-Signature: sha256=<hex>` in the request headers.
-	SigningSecret *string `json:"signing_secret,omitempty"`
 
 	// Tags Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints.
 	Tags *TagMap `json:"tags,omitempty"`
@@ -6616,8 +6607,8 @@ type HttpSubscriberConsumer struct {
 	// CallbackUrl Absolute http(s) URL the server POSTs to when the interaction resolves. The body is a JSON object with the interaction id, kind, status, outcome value, comment, responder, and `resolved_by`. Delivery is enqueued as a `source_events` dispatch so the worker can retry failed attempts instead of dropping them inline with interaction resolution.
 	CallbackUrl string `json:"callback_url"`
 
-	// SecretRef Reference to a project secret used to sign deliveries with HMAC-SHA256 over the canonical string `{interaction_id}.{unix_timestamp}.{raw_body}`, where `raw_body` is the exact callback request body bytes. Accepts `<name>` for the latest enabled version or `<name>:<version>` to pin a specific positive-integer version. The plaintext signing bytes are taken from the secret's `signing_key`, `secret`, or `hmac_secret` key — or the only key if exactly one is set. The hex signature is forwarded as `X-Mobius-Signature: sha256=<hex>` alongside `X-Mobius-Secret-Ref`, `X-Mobius-Secret-Version`, `X-Mobius-Signature-Version: v2`, and a unix `X-Mobius-Timestamp`. Consumers should reject stale timestamps (for example, older than five minutes). When `secret_ref` resolution fails the dispatch is retried by the event processor rather than sent unsigned.
-	SecretRef *string `json:"secret_ref,omitempty"`
+	// SecretRef Required reference to a project secret used to sign deliveries with HMAC-SHA256 over the canonical string `v1.{delivery_id}.{unix_timestamp}.{raw_body}`, where `delivery_id` is the value in `X-Mobius-Delivery-Id` and `raw_body` is the exact callback request body bytes. Accepts `<name>` for the latest enabled version or `<name>:<version>` to pin a specific positive-integer version. The plaintext signing bytes are taken from the secret's `signing_key_b64` key, which must base64-decode to exactly 32 bytes. The hex signature is forwarded as `X-Mobius-Signature: sha256=<hex>` alongside `X-Mobius-Secret-Ref`, `X-Mobius-Secret-Version`, `X-Mobius-Signature-Version: v1`, and a unix `X-Mobius-Timestamp`. Consumers should reject stale timestamps (for example, older than five minutes). When `secret_ref` resolution fails the dispatch is retried by the event processor rather than sent unsigned.
+	SecretRef string `json:"secret_ref"`
 }
 
 // ImportSkillRequest defines model for ImportSkillRequest.
@@ -7113,6 +7104,18 @@ type InteractionValue3 = float32
 
 // InteractionValue4 defines model for .
 type InteractionValue4 = bool
+
+// InvokeActionRequest Request body for user-driven action invocation.
+type InvokeActionRequest struct {
+	// DryRun When true, validates the input but does not execute. Applies to read-only actions only.
+	DryRun *bool `json:"dry_run,omitempty"`
+
+	// Input Input values matching the action's input_schema.
+	Input *map[string]interface{} `json:"input,omitempty"`
+
+	// TimeoutSeconds How long (in seconds) to wait for synchronous completion. Default 30, max 120. If the run does not complete within this window the response is 202 with status active (workflow-backed only; HTTP-backed actions always complete inline).
+	TimeoutSeconds *int `json:"timeout_seconds,omitempty"`
+}
 
 // Job A claimable unit of work derived from a single workflow step execution.
 type Job struct {
@@ -7980,9 +7983,15 @@ type RoleListResponse struct {
 	NextCursor *string `json:"next_cursor,omitempty"`
 }
 
-// RotateSecretResult New signing secret returned after rotating an action secret.
+// RotateSecretResult New signing key material returned after rotating a signing secret.
 type RotateSecretResult struct {
-	// SigningSecret The new raw signing secret. Store it immediately — this is the only time it is returned.
+	// SecretRef Project secret reference that now stores the action signing key.
+	SecretRef string `json:"secret_ref"`
+
+	// SecretVersion New project-secret version number.
+	SecretVersion int64 `json:"secret_version"`
+
+	// SigningSecret Base64-encoded 32-byte signing key. Store it immediately — this is the only time it is returned.
 	SigningSecret string `json:"signing_secret"`
 }
 
@@ -10115,9 +10124,6 @@ type UpdateWebhookRequest struct {
 	// Name Replacement human-readable name.
 	Name *string `json:"name,omitempty"`
 
-	// SigningSecret Replace the current signing secret. Set to empty string to disable signing. Omit to leave the current secret unchanged.
-	SigningSecret *string `json:"signing_secret,omitempty"`
-
 	// Tags Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints.
 	Tags *TagMap `json:"tags,omitempty"`
 
@@ -10409,6 +10415,15 @@ type Webhook struct {
 	// Name Human-readable name, unique within the project.
 	Name string `json:"name"`
 
+	// SecretRef Project secret reference that stores this webhook's signing key.
+	SecretRef *string `json:"secret_ref,omitempty"`
+
+	// SecretVersion Version of `secret_ref` created by this response. Only populated on create and rotate responses.
+	SecretVersion *int64 `json:"secret_version,omitempty"`
+
+	// SigningSecret Base64-encoded 32-byte HMAC-SHA256 signing key. Only populated on create and rotate responses; null on all other reads. Store this value securely on first receipt — it cannot be retrieved again.
+	SigningSecret *string `json:"signing_secret,omitempty"`
+
 	// Tags Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints.
 	Tags *TagMap `json:"tags,omitempty"`
 
@@ -10422,8 +10437,20 @@ type Webhook struct {
 	Url string `json:"url"`
 }
 
-// WebhookDelivery One delivery record for a webhook event. The daemon claims pending rows, POSTs the payload, and transitions to `delivered` or retries on failure. A delivery reaches `failed` only after exhausting all 10 retry attempts.
-type WebhookDelivery struct {
+// WebhookDeliveryListResponse defines model for WebhookDeliveryListResponse.
+type WebhookDeliveryListResponse struct {
+	// HasMore Whether additional pages are available.
+	HasMore bool `json:"has_more"`
+
+	// Items The list of results for this page.
+	Items *[]WebhookDeliveryRecord `json:"items,omitempty"`
+
+	// NextCursor Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.
+	NextCursor *string `json:"next_cursor,omitempty"`
+}
+
+// WebhookDeliveryRecord One delivery record for a webhook event. The daemon claims pending rows, POSTs the payload, and transitions to `delivered` or retries on failure. A delivery reaches `failed` only after exhausting all 10 retry attempts.
+type WebhookDeliveryRecord struct {
 	// Attempts Number of delivery attempts made so far. Max 10.
 	Attempts int `json:"attempts"`
 
@@ -10450,18 +10477,6 @@ type WebhookDelivery struct {
 
 	// WebhookId ID of the webhook this delivery belongs to.
 	WebhookId string `json:"webhook_id"`
-}
-
-// WebhookDeliveryListResponse defines model for WebhookDeliveryListResponse.
-type WebhookDeliveryListResponse struct {
-	// HasMore Whether additional pages are available.
-	HasMore bool `json:"has_more"`
-
-	// Items The list of results for this page.
-	Items *[]WebhookDelivery `json:"items,omitempty"`
-
-	// NextCursor Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.
-	NextCursor *string `json:"next_cursor,omitempty"`
 }
 
 // WebhookDeliveryStatus `pending` — queued, not yet attempted. `processing` — currently being delivered. `delivered` — recipient returned 2xx. `failed` — all retry attempts exhausted.
@@ -12894,7 +12909,7 @@ type CreateActionJSONRequestBody = CreateActionRequest
 type UpdateActionJSONRequestBody = UpdateActionRequest
 
 // InvokeActionJSONRequestBody defines body for InvokeAction for application/json ContentType.
-type InvokeActionJSONRequestBody = ActionInvocationRequest
+type InvokeActionJSONRequestBody = InvokeActionRequest
 
 // CreateAgentJSONRequestBody defines body for CreateAgent for application/json ContentType.
 type CreateAgentJSONRequestBody = CreateAgentRequest
@@ -18704,6 +18719,9 @@ type ClientInterface interface {
 
 	PingWebhook(ctx context.Context, project ProjectHandleParam, id IDParam, body PingWebhookJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// RotateWebhookSecret request
+	RotateWebhookSecret(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListWorkerSessions request
 	ListWorkerSessions(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -22143,6 +22161,18 @@ func (c *Client) PingWebhookWithBody(ctx context.Context, project ProjectHandleP
 
 func (c *Client) PingWebhook(ctx context.Context, project ProjectHandleParam, id IDParam, body PingWebhookJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewPingWebhookRequest(c.Server, project, id, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) RotateWebhookSecret(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRotateWebhookSecretRequest(c.Server, project, id)
 	if err != nil {
 		return nil, err
 	}
@@ -35023,6 +35053,47 @@ func NewPingWebhookRequestWithBody(server string, project ProjectHandleParam, id
 	return req, nil
 }
 
+// NewRotateWebhookSecretRequest generates requests for RotateWebhookSecret
+func NewRotateWebhookSecretRequest(server string, project ProjectHandleParam, id IDParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/webhooks/%s/secret/rotate", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewListWorkerSessionsRequest generates requests for ListWorkerSessions
 func NewListWorkerSessionsRequest(server string, project ProjectHandleParam) (*http.Request, error) {
 	var err error
@@ -36543,6 +36614,9 @@ type ClientWithResponsesInterface interface {
 	PingWebhookWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PingWebhookResponse, error)
 
 	PingWebhookWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body PingWebhookJSONRequestBody, reqEditors ...RequestEditorFn) (*PingWebhookResponse, error)
+
+	// RotateWebhookSecretWithResponse request
+	RotateWebhookSecretWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*RotateWebhookSecretResponse, error)
 
 	// ListWorkerSessionsWithResponse request
 	ListWorkerSessionsWithResponse(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*ListWorkerSessionsResponse, error)
@@ -43371,6 +43445,39 @@ func (r PingWebhookResponse) ContentType() string {
 	return ""
 }
 
+type RotateWebhookSecretResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *RotateSecretResult
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r RotateWebhookSecretResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r RotateWebhookSecretResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r RotateWebhookSecretResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type ListWorkerSessionsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -46305,6 +46412,15 @@ func (c *ClientWithResponses) PingWebhookWithResponse(ctx context.Context, proje
 		return nil, err
 	}
 	return ParsePingWebhookResponse(rsp)
+}
+
+// RotateWebhookSecretWithResponse request returning *RotateWebhookSecretResponse
+func (c *ClientWithResponses) RotateWebhookSecretWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*RotateWebhookSecretResponse, error) {
+	rsp, err := c.RotateWebhookSecret(ctx, project, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRotateWebhookSecretResponse(rsp)
 }
 
 // ListWorkerSessionsWithResponse request returning *ListWorkerSessionsResponse
@@ -56512,6 +56628,53 @@ func ParsePingWebhookResponse(rsp *http.Response) (*PingWebhookResponse, error) 
 			return nil, err
 		}
 		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseRotateWebhookSecretResponse parses an HTTP response from a RotateWebhookSecretWithResponse call
+func ParseRotateWebhookSecretResponse(rsp *http.Response) (*RotateWebhookSecretResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &RotateWebhookSecretResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest RotateSecretResult
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
 		var dest Unauthorized

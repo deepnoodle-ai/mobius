@@ -24,17 +24,21 @@ from deepnoodle.mobius import (
     StartRunOptions,
     SyntheticWebhookDelivery,
     UpdateWorkflowOptions,
+    MOBIUS_DELIVERY_ID_HEADER,
+    MOBIUS_SECRET_REF_HEADER,
+    MOBIUS_SECRET_VERSION_HEADER,
+    MOBIUS_SIGNATURE_HEADER,
+    MOBIUS_SIGNATURE_VERSION_HEADER,
+    MOBIUS_TIMESTAMP_HEADER,
     WEBHOOK_EVENT_TYPE_HEADER,
-    WEBHOOK_SIGNATURE_HEADER,
     WaitRunOptions,
     WorkerInstanceConflictError,
     WorkflowOptions,
     build_synthetic_webhook_payload,
     deliver_synthetic_webhook,
-    parse_signed_webhook_request,
-    parse_webhook_event,
-    sign_webhook_payload,
-    verify_webhook_signature,
+    parse_webhook_delivery,
+    sign_delivery,
+    verify_signed_delivery,
 )
 from deepnoodle.mobius._api.models import (
     JobClaimRequest,
@@ -378,25 +382,48 @@ def test_wait_run_fetches_after_stream_closes_before_terminal() -> None:
     assert calls["get"] == 2
 
 
-def test_webhook_helpers_verify_and_parse_signed_requests() -> None:
+def test_signing_helpers_verify_and_parse_webhook_deliveries() -> None:
     body = b'{"type":"run.completed","data":{"id":"run_1"}}'
-    signature = sign_webhook_payload("secret", body)
-
-    verify_webhook_signature("secret", body, signature)
-    event = parse_webhook_event(body)
-    assert event.type == "run.completed"
-    assert event.data["id"] == "run_1"
-
-    signed = parse_signed_webhook_request(
+    key = b"01234567890123456789012345678901"
+    signature = sign_delivery(
+        key,
         body,
-        {WEBHOOK_SIGNATURE_HEADER: signature},
-        "secret",
+        delivery_id="delivery_1",
+        timestamp=1710000000,
     )
+
+    signed = verify_signed_delivery(
+        body,
+        {
+            MOBIUS_SIGNATURE_HEADER: signature,
+            MOBIUS_SIGNATURE_VERSION_HEADER: "v1",
+            MOBIUS_TIMESTAMP_HEADER: "1710000000",
+            MOBIUS_DELIVERY_ID_HEADER: "delivery_1",
+            MOBIUS_SECRET_REF_HEADER: "mobius/webhook/test",
+            MOBIUS_SECRET_VERSION_HEADER: "2",
+        },
+        key=key,
+        now=lambda: 1710000005,
+    )
+    event = parse_webhook_delivery(signed)
+    assert event["type"] == "run.completed"
+    assert event["data"]["id"] == "run_1"
     assert signed.body == body
-    assert signed.event.data["id"] == "run_1"
 
     with pytest.raises(ValueError):
-        verify_webhook_signature("secret", body, "sha256=00")
+        verify_signed_delivery(
+            body,
+            {
+                MOBIUS_SIGNATURE_HEADER: "sha256=00",
+                MOBIUS_SIGNATURE_VERSION_HEADER: "v1",
+                MOBIUS_TIMESTAMP_HEADER: "1710000000",
+                MOBIUS_DELIVERY_ID_HEADER: "delivery_1",
+                MOBIUS_SECRET_REF_HEADER: "mobius/webhook/test",
+                MOBIUS_SECRET_VERSION_HEADER: "2",
+            },
+            key=key,
+            now=lambda: 1710000005,
+        )
 
 
 def test_synthetic_webhook_delivery_posts_signed_envelope() -> None:
@@ -406,7 +433,9 @@ def test_synthetic_webhook_delivery_posts_signed_envelope() -> None:
         seen["path"] = request.url.path
         seen["body"] = request.read()
         seen["event_type"] = request.headers[WEBHOOK_EVENT_TYPE_HEADER]
-        seen["signature"] = request.headers[WEBHOOK_SIGNATURE_HEADER]
+        seen["signature"] = request.headers[MOBIUS_SIGNATURE_HEADER]
+        seen["version"] = request.headers[MOBIUS_SIGNATURE_VERSION_HEADER]
+        seen["delivery_id"] = request.headers[MOBIUS_DELIVERY_ID_HEADER]
         return httpx.Response(204)
 
     client = httpx.Client(
@@ -414,10 +443,15 @@ def test_synthetic_webhook_delivery_posts_signed_envelope() -> None:
         base_url="https://api.example.invalid",
     )
 
+    key = b"01234567890123456789012345678901"
     deliver_synthetic_webhook(
         SyntheticWebhookDelivery(
             url="https://api.example.invalid/webhooks/mobius",
-            secret="secret",
+            key=key,
+            secret_ref="mobius/webhook/test",
+            secret_version=2,
+            delivery_id="delivery_2",
+            timestamp=1710000000,
             event_type="run.completed",
             data={"id": "run_1"},
             http_client=client,
@@ -426,7 +460,14 @@ def test_synthetic_webhook_delivery_posts_signed_envelope() -> None:
 
     assert seen["path"] == "/webhooks/mobius"
     assert seen["event_type"] == "run.completed"
-    assert seen["signature"] == sign_webhook_payload("secret", seen["body"])
+    assert seen["version"] == "v1"
+    assert seen["delivery_id"] == "delivery_2"
+    assert seen["signature"] == sign_delivery(
+        key,
+        seen["body"],
+        delivery_id="delivery_2",
+        timestamp=1710000000,
+    )
     assert seen["body"] == build_synthetic_webhook_payload(
         "run.completed",
         {"id": "run_1"},

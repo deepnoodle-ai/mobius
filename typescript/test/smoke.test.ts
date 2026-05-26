@@ -12,14 +12,20 @@ import {
 } from "../src/client.js";
 import {
   WEBHOOK_EVENT_TYPE_HEADER,
-  WEBHOOK_SIGNATURE_HEADER,
   buildSyntheticWebhookPayload,
   deliverSyntheticWebhook,
-  parseSignedWebhookRequest,
-  parseWebhookEvent,
-  signWebhookPayload,
-  verifyWebhookSignature,
 } from "../src/webhook.js";
+import {
+  MOBIUS_DELIVERY_ID_HEADER,
+  MOBIUS_SECRET_REF_HEADER,
+  MOBIUS_SECRET_VERSION_HEADER,
+  MOBIUS_SIGNATURE_HEADER,
+  MOBIUS_SIGNATURE_VERSION_HEADER,
+  MOBIUS_TIMESTAMP_HEADER,
+  parseWebhookDelivery,
+  signDelivery,
+  verifySignedDelivery,
+} from "../src/signing.js";
 
 // Smoke tests for the hand-written Client wrapper: verify the error
 // translation layer around 409 lease-lost responses and 204 empty claims.
@@ -427,30 +433,49 @@ data: {"type":"run_updated","run_id":"run_1","seq":7,"timestamp":"2026-04-27T00:
   assert.equal(getCalls, 2);
 });
 
-test("smoke: webhook helpers verify and parse signed requests", async () => {
+test("smoke: signing helpers verify and parse webhook deliveries", async () => {
   const body = `{"type":"run.completed","data":{"id":"run_1"}}`;
-  const signature = signWebhookPayload("secret", body);
-
-  verifyWebhookSignature("secret", body, signature);
-  const parsed = parseWebhookEvent<{ id: string }>(body);
-  assert.equal(parsed.type, "run.completed");
-  assert.equal(parsed.data.id, "run_1");
+  const key = Buffer.from("01234567890123456789012345678901");
+  const signature = signDelivery(key, Buffer.from(body), {
+    deliveryId: "delivery_1",
+    timestamp: 1710000000,
+  }).signature;
 
   const req = new Request("https://example.invalid/webhooks/mobius", {
     method: "POST",
     body,
-    headers: { [WEBHOOK_SIGNATURE_HEADER]: signature },
+    headers: {
+      [MOBIUS_SIGNATURE_HEADER]: signature,
+      [MOBIUS_SIGNATURE_VERSION_HEADER]: "v1",
+      [MOBIUS_TIMESTAMP_HEADER]: "1710000000",
+      [MOBIUS_DELIVERY_ID_HEADER]: "delivery_1",
+      [MOBIUS_SECRET_REF_HEADER]: "mobius/webhook/test",
+      [MOBIUS_SECRET_VERSION_HEADER]: "2",
+    },
   });
-  const signed = await parseSignedWebhookRequest<{ id: string }>(req, "secret");
-  assert.equal(signed.event.data.id, "run_1");
+  const signed = await verifySignedDelivery(req, {
+    key,
+    now: () => 1710000005,
+  });
+  const parsed = parseWebhookDelivery<{ id: string }>(signed);
+  assert.equal(parsed.type, "run.completed");
+  assert.equal(parsed.data.id, "run_1");
   assert.equal(Buffer.from(signed.body).toString("utf8"), body);
 
-  assert.throws(() =>
-    verifyWebhookSignature(
-      "secret",
-      body,
-      "sha256=0000000000000000000000000000000000000000000000000000000000000000",
-    ),
+  const badReq = new Request("https://example.invalid/webhooks/mobius", {
+    method: "POST",
+    body,
+    headers: {
+      [MOBIUS_SIGNATURE_HEADER]: "sha256=00",
+      [MOBIUS_SIGNATURE_VERSION_HEADER]: "v1",
+      [MOBIUS_TIMESTAMP_HEADER]: "1710000000",
+      [MOBIUS_DELIVERY_ID_HEADER]: "delivery_1",
+      [MOBIUS_SECRET_REF_HEADER]: "mobius/webhook/test",
+      [MOBIUS_SECRET_VERSION_HEADER]: "2",
+    },
+  });
+  await assert.rejects(() =>
+    verifySignedDelivery(badReq, { key, now: () => 1710000005 }),
   );
 });
 
@@ -459,19 +484,28 @@ test("smoke: synthetic webhook delivery posts signed Mobius envelope", async () 
   let requestBody = "";
   let eventType = "";
   let signature = "";
+  let version = "";
+  let deliveryID = "";
 
   const fetchFn = (async (input: RequestInfo | URL, init?: RequestInit) => {
     requestedURL = typeof input === "string" ? input : input.toString();
     requestBody = String(init?.body ?? "");
     const headers = new Headers(init?.headers);
     eventType = headers.get(WEBHOOK_EVENT_TYPE_HEADER) ?? "";
-    signature = headers.get(WEBHOOK_SIGNATURE_HEADER) ?? "";
+    signature = headers.get(MOBIUS_SIGNATURE_HEADER) ?? "";
+    version = headers.get(MOBIUS_SIGNATURE_VERSION_HEADER) ?? "";
+    deliveryID = headers.get(MOBIUS_DELIVERY_ID_HEADER) ?? "";
     return new Response(null, { status: 204 });
   }) as typeof fetch;
 
+  const key = Buffer.from("01234567890123456789012345678901");
   await deliverSyntheticWebhook({
     url: "https://example.invalid/webhooks/mobius",
-    secret: "secret",
+    key,
+    secretRef: "mobius/webhook/test",
+    secretVersion: 2,
+    deliveryId: "delivery_2",
+    timestamp: 1710000000,
     eventType: "run.completed",
     data: { id: "run_1" },
     fetch: fetchFn,
@@ -479,7 +513,15 @@ test("smoke: synthetic webhook delivery posts signed Mobius envelope", async () 
 
   assert.equal(requestedURL, "https://example.invalid/webhooks/mobius");
   assert.equal(eventType, "run.completed");
-  assert.equal(signature, signWebhookPayload("secret", requestBody));
+  assert.equal(version, "v1");
+  assert.equal(deliveryID, "delivery_2");
+  assert.equal(
+    signature,
+    signDelivery(key, Buffer.from(requestBody), {
+      deliveryId: "delivery_2",
+      timestamp: 1710000000,
+    }).signature,
+  );
   assert.equal(
     requestBody,
     buildSyntheticWebhookPayload("run.completed", { id: "run_1" }),

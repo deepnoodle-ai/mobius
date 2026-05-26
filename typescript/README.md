@@ -95,14 +95,15 @@ console.log(terminal.status, terminal.result_b64, terminal.error_message);
 
 ```ts
 import {
-  parseSignedWebhookRequest,
+  parseWebhookDelivery,
+  verifySignedDelivery,
 } from "@deepnoodle/mobius";
 
-const signed = await parseSignedWebhookRequest(
-  request,
-  process.env.MOBIUS_WEBHOOK_SECRET!,
-);
-console.log(signed.event.type, signed.event.data);
+const verified = await verifySignedDelivery(request, {
+  key: Buffer.from(process.env.MOBIUS_SIGNING_KEY_B64!, "base64"),
+});
+const event = parseWebhookDelivery(verified);
+console.log(event.type, event.data);
 ```
 
 ### Saved workflows

@@ -1113,7 +1113,7 @@ export interface paths {
         put?: never;
         /**
          * Rotate an action signing secret
-         * @description Generates a new HMAC-SHA256 signing secret for the action. The previous secret is retained server-side for a brief grace period (typically minutes) so in-flight requests signed with the old key are not immediately rejected. Store the returned secret — it cannot be retrieved again. Only applicable to `endpoint_kind: http` actions.
+         * @description Generates a new HMAC-SHA256 signing key version for the action. Existing deliveries are verified against the version named in their headers; no paired previous-signature header is emitted. Store the returned key immediately — it cannot be retrieved again. Only applicable to `endpoint_kind: http` actions.
          */
         post: operations["rotateActionSecret"];
         delete?: never;
@@ -2010,7 +2010,7 @@ export interface paths {
          * Create a webhook
          * @description Creates a new outgoing webhook subscription. Webhook names must be unique within the project. Returns 409 if the name already exists.
          *
-         *     Treat the `signing_secret` as a shared secret and rotate it via `PATCH` if compromised.
+         *     A signing key is generated automatically and returned in the response; this is the only time the raw key is exposed. Rotate it with `POST /webhooks/{id}/secret/rotate` if compromised.
          */
         post: operations["createWebhook"];
         delete?: never;
@@ -2028,7 +2028,7 @@ export interface paths {
         };
         /**
          * Get a webhook
-         * @description Returns one outgoing webhook subscription and its event filters. The signing secret is never returned; rotate or clear it with the update endpoint if needed.
+         * @description Returns one outgoing webhook subscription and its event filters. The raw signing key is never returned after creation or rotation.
          */
         get: operations["getWebhook"];
         put?: never;
@@ -2042,9 +2042,29 @@ export interface paths {
         head?: never;
         /**
          * Update a webhook
-         * @description Updates the webhook URL, event subscriptions, enabled state, or signing secret. Setting `signing_secret` to an empty string clears the current secret and disables signing. Omitting `signing_secret` leaves the current value unchanged.
+         * @description Updates the webhook name, URL, event subscriptions, enabled state, or tags. Signing key rotation is handled by the dedicated rotate endpoint.
          */
         patch: operations["updateWebhook"];
+        trace?: never;
+    };
+    "/v1/projects/{project}/webhooks/{id}/secret/rotate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Rotate a webhook signing secret
+         * @description Generates a new HMAC-SHA256 signing key version for the webhook. Store the returned key immediately — it cannot be retrieved again.
+         */
+        post: operations["rotateWebhookSecret"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/v1/projects/{project}/webhooks/{id}/ping": {
@@ -2058,7 +2078,7 @@ export interface paths {
         put?: never;
         /**
          * Test a webhook URL
-         * @description Sends a live test POST request to the webhook's saved URL, or to an override URL supplied in the request body, and returns the result. Because the webhook URL may be empty at creation time, the typical flow is: create the webhook without a URL, ping candidate URLs via the override until one succeeds, then persist the chosen URL with `PATCH`. The test payload has `type: "ping"` and is signed with the webhook's secret if one is set.
+         * @description Sends a live test POST request to the webhook's saved URL, or to an override URL supplied in the request body, and returns the result. Because the webhook URL may be empty at creation time, the typical flow is: create the webhook without a URL, ping candidate URLs via the override until one succeeds, then persist the chosen URL with `PATCH`. The test payload has `type: "ping"` and is signed with the webhook's signing key.
          */
         post: operations["pingWebhook"];
         delete?: never;
@@ -6292,7 +6312,14 @@ export interface components {
             tags?: {
                 [key: string]: string;
             };
-            /** @description Raw HMAC-SHA256 signing secret. Only populated on create and rotate responses; null on all other reads. Store this value securely on first receipt — it cannot be retrieved again. */
+            /** @description Project secret reference that stores this action's signing key. Present for HTTP-backed actions. */
+            secret_ref?: string;
+            /**
+             * Format: int64
+             * @description Version of `secret_ref` created by this response. Only populated on create and rotate responses.
+             */
+            secret_version?: number;
+            /** @description Base64-encoded 32-byte HMAC-SHA256 signing key. Only populated on create and rotate responses; null on all other reads. Store this value securely on first receipt — it cannot be retrieved again. */
             signing_secret?: string;
             /**
              * Format: date-time
@@ -6305,9 +6332,16 @@ export interface components {
              */
             updated_at: string;
         };
-        /** @description New signing secret returned after rotating an action secret. */
+        /** @description New signing key material returned after rotating a signing secret. */
         RotateSecretResult: {
-            /** @description The new raw signing secret. Store it immediately — this is the only time it is returned. */
+            /** @description Project secret reference that now stores the action signing key. */
+            secret_ref: string;
+            /**
+             * Format: int64
+             * @description New project-secret version number.
+             */
+            secret_version: number;
+            /** @description Base64-encoded 32-byte signing key. Store it immediately — this is the only time it is returned. */
             signing_secret: string;
         };
         /** @description One built-in, integration, workflow-, or custom-backed action available to agents and workflow authors. */
@@ -6361,7 +6395,7 @@ export interface components {
             items: components["schemas"]["ActionCatalogEntry"][];
         };
         /** @description Request body for user-driven action invocation. */
-        ActionInvocationRequest: {
+        InvokeActionRequest: {
             /** @description Input values matching the action's input_schema. */
             input?: {
                 [key: string]: unknown;
@@ -7202,10 +7236,10 @@ export interface components {
              * @description Absolute http(s) URL the server POSTs to when the interaction resolves. The body is a JSON object with the interaction id, kind, status, outcome value, comment, responder, and `resolved_by`. Delivery is enqueued as a `source_events` dispatch so the worker can retry failed attempts instead of dropping them inline with interaction resolution.
              */
             callback_url: string;
-            /** @description Reference to a project secret used to sign deliveries with HMAC-SHA256 over the canonical string `{interaction_id}.{unix_timestamp}.{raw_body}`, where `raw_body` is the exact callback request body bytes. Accepts `<name>` for the latest enabled version or `<name>:<version>` to pin a specific positive-integer version. The plaintext signing bytes are taken from the secret's `signing_key`, `secret`, or `hmac_secret` key — or the only key if exactly one is set. The hex signature is forwarded as `X-Mobius-Signature: sha256=<hex>` alongside `X-Mobius-Secret-Ref`, `X-Mobius-Secret-Version`, `X-Mobius-Signature-Version: v2`, and a unix `X-Mobius-Timestamp`. Consumers should reject stale timestamps (for example, older than five minutes). When `secret_ref` resolution fails the dispatch is retried by the event processor rather than sent unsigned. */
-            secret_ref?: string;
+            /** @description Required reference to a project secret used to sign deliveries with HMAC-SHA256 over the canonical string `v1.{delivery_id}.{unix_timestamp}.{raw_body}`, where `delivery_id` is the value in `X-Mobius-Delivery-Id` and `raw_body` is the exact callback request body bytes. Accepts `<name>` for the latest enabled version or `<name>:<version>` to pin a specific positive-integer version. The plaintext signing bytes are taken from the secret's `signing_key_b64` key, which must base64-decode to exactly 32 bytes. The hex signature is forwarded as `X-Mobius-Signature: sha256=<hex>` alongside `X-Mobius-Secret-Ref`, `X-Mobius-Secret-Version`, `X-Mobius-Signature-Version: v1`, and a unix `X-Mobius-Timestamp`. Consumers should reject stale timestamps (for example, older than five minutes). When `secret_ref` resolution fails the dispatch is retried by the event processor rather than sent unsigned. */
+            secret_ref: string;
         };
-        /** @description Polymorphic identifier of what is waiting on this interaction's resolution (PRD 077 §3.7). Replaces the previously special-cased `run_id` + `signal_name` pair. When `kind=run`, the legacy fields are also populated for compatibility. `http_subscriber` enqueues a durable callback dispatch to `callback_url` when the interaction resolves; when `secret_ref` is set, the canonical string `{interaction_id}.{unix_timestamp}.{raw_body}` is signed with HMAC-SHA256 against the resolved project secret and the signed dispatch carries `X-Mobius-Signature`, `X-Mobius-Secret-Ref`, `X-Mobius-Secret-Version`, and `X-Mobius-Timestamp`. Signed dispatches also carry `X-Mobius-Signature-Version: v2`. Every durable dispatch also carries the stable outbox row id in `X-Mobius-Delivery-ID` and `Idempotency-Key`; retries reuse the same value. Verifiers should recompute the signature over the exact raw body, reject stale timestamps (for example, older than five minutes), deduplicate by delivery id, and check all five signing headers. */
+        /** @description Polymorphic identifier of what is waiting on this interaction's resolution (PRD 077 §3.7). Replaces the previously special-cased `run_id` + `signal_name` pair. When `kind=run`, the legacy fields are also populated for compatibility. `http_subscriber` requires `secret_ref` and enqueues a durable callback dispatch to `callback_url` when the interaction resolves; the canonical string `v1.{delivery_id}.{unix_timestamp}.{raw_body}` is signed with HMAC-SHA256 against the resolved project signing key and the signed dispatch carries `X-Mobius-Signature`, `X-Mobius-Secret-Ref`, `X-Mobius-Secret-Version`, and `X-Mobius-Timestamp`. Signed dispatches also carry `X-Mobius-Signature-Version: v1`. Every durable dispatch also carries the stable outbox row id in `X-Mobius-Delivery-Id` and `Idempotency-Key`; retries reuse the same value. Verifiers should recompute the signature over the exact raw body, reject stale timestamps (for example, older than five minutes), deduplicate by delivery id, and check the signing headers. */
         Consumer: {
             /** @enum {string} */
             kind: "run" | "agent_tool" | "http_subscriber" | "none";
@@ -8053,6 +8087,15 @@ export interface components {
             updated_by?: string;
             /** @description Resource tags applied to this webhook. */
             tags?: components["schemas"]["TagMap"];
+            /** @description Project secret reference that stores this webhook's signing key. */
+            secret_ref?: string;
+            /**
+             * Format: int64
+             * @description Version of `secret_ref` created by this response. Only populated on create and rotate responses.
+             */
+            secret_version?: number;
+            /** @description Base64-encoded 32-byte HMAC-SHA256 signing key. Only populated on create and rotate responses; null on all other reads. Store this value securely on first receipt — it cannot be retrieved again. */
+            signing_secret?: string;
             /**
              * Format: date-time
              * @description Timestamp when this webhook was created.
@@ -8073,7 +8116,7 @@ export interface components {
             has_more: boolean;
         };
         /** @description One delivery record for a webhook event. The daemon claims pending rows, POSTs the payload, and transitions to `delivered` or retries on failure. A delivery reaches `failed` only after exhausting all 10 retry attempts. */
-        WebhookDelivery: {
+        WebhookDeliveryRecord: {
             /** @description Unique identifier for this delivery record. */
             id: string;
             /** @description ID of the webhook this delivery belongs to. */
@@ -8101,7 +8144,7 @@ export interface components {
         };
         WebhookDeliveryListResponse: {
             /** @description The list of results for this page. */
-            items?: components["schemas"]["WebhookDelivery"][];
+            items?: components["schemas"]["WebhookDeliveryRecord"][];
             /** @description Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false. */
             next_cursor?: string;
             /** @description Whether additional pages are available. */
@@ -8112,8 +8155,6 @@ export interface components {
             name: string;
             /** @description The endpoint Mobius will POST event payloads to. May be left empty at creation time so a candidate URL can be tested via the ping endpoint before it is saved; events do not fire for webhooks with an empty URL. */
             url?: string;
-            /** @description Optional HMAC-SHA256 secret. When set, Mobius signs each POST body and includes `X-Mobius-Signature: sha256=<hex>` in the request headers. */
-            signing_secret?: string;
             /** @description Event types to subscribe to. Use wildcards for broad subscriptions, e.g. `["run.*"]` for all run events. An empty list subscribes to all event types. */
             events: string[];
             /** @description Whether the webhook starts enabled. Defaults to true when omitted. */
@@ -8126,8 +8167,6 @@ export interface components {
             name?: string;
             /** @description Replacement endpoint URL. */
             url?: string;
-            /** @description Replace the current signing secret. Set to empty string to disable signing. Omit to leave the current secret unchanged. */
-            signing_secret?: string;
             /** @description Replacement event subscriptions. Replaces the entire current list; an empty list subscribes to all event types. */
             events?: string[];
             /** @description Set to false to disable delivery without deleting the webhook. */
@@ -12092,7 +12131,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["ActionInvocationRequest"];
+                "application/json": components["schemas"]["InvokeActionRequest"];
             };
         };
         responses: {
@@ -13962,7 +14001,6 @@ export interface operations {
                  * @example {
                  *       "name": "Run status sink",
                  *       "url": "https://hooks.example.test/mobius/run-status",
-                 *       "signing_secret": "whsec_0123456789abcdef",
                  *       "events": [
                  *         "run.completed",
                  *         "run.failed"
@@ -13990,6 +14028,9 @@ export interface operations {
                      *         "run.failed"
                      *       ],
                      *       "enabled": true,
+                     *       "secret_ref": "mobius/webhook/wbh_01hw1t2u3v4w5x6y7z8a9b0c1d",
+                     *       "secret_version": 1,
+                     *       "signing_secret": "base64-encoded-32-byte-key",
                      *       "created_by": "user_2f9s3k4m5n6p7q8r9s0t1u2v3w",
                      *       "created_at": "2026-04-24T14:38:00Z",
                      *       "updated_at": "2026-04-24T14:38:00Z"
@@ -14091,6 +14132,34 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+        };
+    };
+    rotateWebhookSecret: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
+                id: components["parameters"]["IDParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RotateSecretResult"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
         };
     };
     pingWebhook: {
