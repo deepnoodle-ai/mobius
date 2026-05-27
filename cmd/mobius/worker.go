@@ -14,7 +14,7 @@ import (
 // registerWorkerCommand attaches the `mobius worker` subcommand, which claims
 // and executes jobs from one or more queues in the configured project. The
 // worker ships with every stock action from github.com/deepnoodle-ai/mobius/mobius/action
-// registered, so it can run trivial and test workflows out of the box.
+// registered, so it can run trivial and test automations out of the box.
 //
 // The default mode is one worker process serving up to `--concurrency` jobs
 // concurrently — that's the right shape for most operators because it
@@ -109,7 +109,7 @@ func registerWorkerCommand(app *cli.App) {
 
 // registerStockActions attaches every general-purpose action from
 // github.com/deepnoodle-ai/mobius/mobius/action to the worker. These cover most trivial and
-// test workflows without requiring custom code.
+// test automations without requiring custom code.
 type actionRegistrar interface {
 	Register(mobius.Action)
 }

@@ -123,9 +123,13 @@ var overrides = map[string]Override{
 	"respondToInteraction":       {Command: "respond"},
 
 	// --- jobs -------------------------------------------------------------
-	"reportJob":     {Command: "report"},
-	"runJobAction":  {Command: "run-action"},
-	"emitJobEvents": {Command: "emit-events"},
+	// The worker socket is a WebSocket transport endpoint, not a normal JSON
+	// request/response operation. The hand-written `mobius worker` command is
+	// the public CLI entrypoint for this path.
+	"openWorkerSocket": {Skip: true},
+	"reportJob":        {Command: "report"},
+	"runJobAction":     {Command: "run-action"},
+	"emitJobEvents":    {Command: "emit-events"},
 
 	// --- logs -------------------------------------------------------------
 	"ingestProjectLogs":     {Command: "ingest"},
@@ -248,7 +252,7 @@ var overrides = map[string]Override{
 // well when listed vertically in `mobius --help`. Prefer consistent
 // grammatical shape across entries.
 var groupDescriptions = map[string]string{
-	"actions":               "Custom HTTP actions called by workflow steps",
+	"actions":               "Actions available to automations and agents",
 	"actor-state":           "Reportable actor state and per-target assignments",
 	"agent-invocations":     "Agent invocation lifecycle and results",
 	"agents":                "Agents, sessions, and presence",
@@ -264,7 +268,7 @@ var groupDescriptions = map[string]string{
 	"integration-catalog":   "Available integration providers and capabilities",
 	"integration-providers": "Connect and manage third-party integration providers",
 	"interactions":          "Approval, review, vote, and handoff prompts",
-	"jobs":                  "Worker runtime — claim, heartbeat, complete",
+	"jobs":                  "Internal worker runtime operations",
 	"logs":                  "Structured log ingestion and retrieval",
 	"messages":              "Send, list, and update channel messages",
 	"metrics":               "Platform and workflow metrics",
@@ -273,7 +277,7 @@ var groupDescriptions = map[string]string{
 	"projects":              "Projects within the organization",
 	"references":            "Reference lookup and resolution",
 	"roles":                 "Project roles and role assignments",
-	"runs":                  "Workflow runs",
+	"runs":                  "Automation runs",
 	"secrets":               "Project secrets and secret versions",
 	"service-accounts":      "Project service accounts for agents and automation",
 	"skills":                "Skill templates that shape agent behavior and tool access",

@@ -17,7 +17,7 @@ import (
 
 // registerActionsCommands registers every generated subcommand in the "actions" group.
 func registerActionsCommands(app *cli.App) {
-	actionsGrp := app.Group("actions").Description("Custom HTTP actions called by workflow steps")
+	actionsGrp := app.Group("actions").Description("Actions available to automations and agents")
 	actionsGrp.Alias("action")
 	actionsGrp.Command("create").
 		Description("Create an action").
