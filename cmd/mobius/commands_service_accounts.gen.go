@@ -26,6 +26,7 @@ func registerServiceAccountsCommands(app *cli.App) {
 			cli.String("metadata", "").Help("Arbitrary metadata to attach to the service account. Accepts JSON, @file, or @-."),
 			cli.String("name", "").Help("[required] Human-readable name for this service account. Immutable after creation."),
 			cli.String("owner-id", "").Help("Org member responsible for this service account."),
+			cli.String("purpose", "").Help("Why this service account exists. `api_client` is the normal user-facing machine identity. `agent` a…"),
 			cli.Strings("role-ids", "").Help("One or more role IDs to assign at creation time. All assignments are created atomically with the se…"),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
@@ -58,6 +59,10 @@ func registerServiceAccountsCommands(app *cli.App) {
 			if ctx.IsSet("owner-id") {
 				v := ctx.String("owner-id")
 				body.OwnerId = &v
+			}
+			if ctx.IsSet("purpose") {
+				v := api.ServiceAccountPurpose(ctx.String("purpose"))
+				body.Purpose = &v
 			}
 			if ctx.IsSet("role-ids") {
 				v := ctx.Strings("role-ids")
@@ -123,6 +128,7 @@ func registerServiceAccountsCommands(app *cli.App) {
 	serviceAccountsGrp.Command("list").
 		Description("List service accounts").
 		Flags(
+			cli.String("purpose", "").Help("Filter service accounts by purpose."),
 			cli.Int("limit", "").Help("limit"),
 		).
 		Use(requireAuth()).
@@ -134,6 +140,10 @@ func registerServiceAccountsCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			params := &api.ListServiceAccountsParams{}
+			if ctx.IsSet("purpose") {
+				v := api.ServiceAccountPurpose(ctx.String("purpose"))
+				params.Purpose = &v
+			}
 			if ctx.IsSet("limit") {
 				v := api.LimitParam(ctx.Int("limit"))
 				params.Limit = &v

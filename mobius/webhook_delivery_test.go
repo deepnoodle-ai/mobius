@@ -8,13 +8,12 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"github.com/deepnoodle-ai/wonton/assert"
 )
 
 func TestBuildSyntheticWebhookPayload(t *testing.T) {
 	payload, err := BuildSyntheticWebhookPayload("run.completed", map[string]any{"id": "run_1"})
-	require.NoError(t, err)
+	assert.NoError(t, err)
 
 	assert.JSONEq(t, `{"type":"run.completed","data":{"id":"run_1"}}`, string(payload))
 }
@@ -41,7 +40,7 @@ func TestDeliverSyntheticWebhook(t *testing.T) {
 		gotSecretVersion = r.Header.Get(MobiusSecretVersionHeader)
 		var err error
 		gotBody, err = io.ReadAll(r.Body)
-		require.NoError(t, err)
+		assert.NoError(t, err)
 		w.WriteHeader(http.StatusNoContent)
 	}))
 	defer server.Close()
@@ -57,7 +56,7 @@ func TestDeliverSyntheticWebhook(t *testing.T) {
 		EventType:     "run.completed",
 		Data:          map[string]any{"id": "run_1"},
 	})
-	require.NoError(t, err)
+	assert.NoError(t, err)
 
 	assert.Equal(t, "run.completed", gotEventType)
 	assert.Equal(t, syntheticWebhookUserAgent, gotUserAgent)
@@ -84,7 +83,7 @@ func TestDeliverSyntheticWebhookReturnsReceiverError(t *testing.T) {
 		EventType:     "run.failed",
 		Data:          json.RawMessage(`{"id":"run_1"}`),
 	})
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "502")
-	assert.Contains(t, err.Error(), "nope")
+	assert.Error(t, err)
+	assert.ErrorContains(t, err, "502")
+	assert.ErrorContains(t, err, "nope")
 }

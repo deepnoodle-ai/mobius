@@ -1,46 +1,70 @@
 {
   "fixtures": [
     {
-      "file": "claim_request_minimal.json",
-      "schema": "JobClaimRequest",
-      "kind": "request",
-      "endpoint": "POST /v1/projects/{project}/jobs/claim"
+      "file": "worker_register_minimal.json",
+      "schema": "WorkerSocketRegisterFrame",
+      "kind": "websocket_frame",
+      "endpoint": "WS /v1/projects/{project}/workers/socket"
     },
     {
-      "file": "claim_request_full.json",
-      "schema": "JobClaimRequest",
-      "kind": "request",
-      "endpoint": "POST /v1/projects/{project}/jobs/claim"
+      "file": "worker_register_full.json",
+      "schema": "WorkerSocketRegisterFrame",
+      "kind": "websocket_frame",
+      "endpoint": "WS /v1/projects/{project}/workers/socket"
     },
     {
-      "file": "claim_response.json",
-      "schema": "JobClaim",
-      "kind": "response",
-      "endpoint": "POST /v1/projects/{project}/jobs/claim"
+      "file": "worker_registered.json",
+      "schema": "WorkerSocketRegisteredFrame",
+      "kind": "websocket_frame",
+      "endpoint": "WS /v1/projects/{project}/workers/socket"
     },
     {
-      "file": "heartbeat_job_request.json",
-      "schema": "JobFenceRequest",
-      "kind": "request",
-      "endpoint": "POST /v1/projects/{project}/jobs/{id}/heartbeat"
+      "file": "jobs_claim.json",
+      "schema": "WorkerSocketJobsClaimFrame",
+      "kind": "websocket_frame",
+      "endpoint": "WS /v1/projects/{project}/workers/socket"
     },
     {
-      "file": "heartbeat_job_response.json",
-      "schema": "JobHeartbeat",
-      "kind": "response",
-      "endpoint": "POST /v1/projects/{project}/jobs/{id}/heartbeat"
+      "file": "jobs_claimed_action.json",
+      "schema": "WorkerSocketJobsClaimedFrame",
+      "kind": "websocket_frame",
+      "endpoint": "WS /v1/projects/{project}/workers/socket"
     },
     {
-      "file": "report_job_request_action_completed.json",
-      "schema": "JobReportRequest",
-      "kind": "request",
-      "endpoint": "POST /v1/projects/{project}/jobs/{id}/report"
+      "file": "job_heartbeat.json",
+      "schema": "WorkerSocketJobHeartbeatFrame",
+      "kind": "websocket_frame",
+      "endpoint": "WS /v1/projects/{project}/workers/socket"
     },
     {
-      "file": "report_job_request_action_failed.json",
-      "schema": "JobReportRequest",
-      "kind": "request",
-      "endpoint": "POST /v1/projects/{project}/jobs/{id}/report"
+      "file": "job_heartbeat_ack_cancel.json",
+      "schema": "WorkerSocketJobHeartbeatAckFrame",
+      "kind": "websocket_frame",
+      "endpoint": "WS /v1/projects/{project}/workers/socket"
+    },
+    {
+      "file": "job_report_completed.json",
+      "schema": "WorkerSocketJobReportFrame",
+      "kind": "websocket_frame",
+      "endpoint": "WS /v1/projects/{project}/workers/socket"
+    },
+    {
+      "file": "job_report_failed.json",
+      "schema": "WorkerSocketJobReportFrame",
+      "kind": "websocket_frame",
+      "endpoint": "WS /v1/projects/{project}/workers/socket"
+    },
+    {
+      "file": "generation_delta.json",
+      "schema": "WorkerSocketGenerationDeltaFrame",
+      "kind": "websocket_frame",
+      "endpoint": "WS /v1/projects/{project}/workers/socket"
+    },
+    {
+      "file": "job_cancel.json",
+      "schema": "WorkerSocketJobCancelFrame",
+      "kind": "websocket_frame",
+      "endpoint": "WS /v1/projects/{project}/workers/socket"
     }
   ]
 }

@@ -1,0 +1,1 @@
+{"type":"job.report","message_id":"msg_5","job_id":"job_1","lease_token":"session-1:1","status":"failed","error_type":"ActionError","error_message":"SMTP unavailable"}

@@ -22,9 +22,9 @@ func registerToolkitsCommands(app *cli.App) {
 	toolkitsGrp.Command("create").
 		Description("Create a toolkit").
 		Flags(
-			cli.String("action-grants", "").Help("action-grants Accepts JSON, @file, or @-."),
-			cli.String("description", "").Help("description"),
-			cli.String("name", "").Help("[required] name"),
+			cli.String("action-grants", "").Help("Action selectors granted by this toolkit. Accepts JSON, @file, or @-."),
+			cli.String("description", "").Help("Markdown description of the toolkit's purpose."),
+			cli.String("name", "").Help("[required] Human-readable toolkit name."),
 			cli.String("slug", "").Help("Optional stable slug. When omitted, the server derives one from `name`."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
@@ -137,9 +137,9 @@ func registerToolkitsCommands(app *cli.App) {
 		Description("Update a toolkit").
 		Args("toolkit-id").
 		Flags(
-			cli.String("action-grants", "").Help("action-grants Accepts JSON, @file, or @-."),
-			cli.String("description", "").Help("description"),
-			cli.String("name", "").Help("[required] name"),
+			cli.String("action-grants", "").Help("Action selectors granted by this toolkit. Accepts JSON, @file, or @-."),
+			cli.String("description", "").Help("Markdown description of the toolkit's purpose."),
+			cli.String("name", "").Help("[required] Human-readable toolkit name."),
 			cli.String("slug", "").Help("Optional stable slug. When omitted, the server derives one from `name`."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),

@@ -40,7 +40,7 @@ func responseRendererFor(opID string) ResponseRenderer {
 }
 
 func init() {
-	RegisterResponseRenderer("getRun", renderRunDetail)
+	RegisterResponseRenderer("getAutomationRun", renderRunDetail)
 }
 
 // renderRunDetail renders a RunDetail as a status header followed by
@@ -59,11 +59,10 @@ func renderRunDetail(ctx *cli.Context, body []byte) error {
 	}
 
 	header := tui.Stack(
-		tui.KeyValue("workflow", asString(run["workflow_name"])),
+		tui.KeyValue("automation", asString(run["automation_id"])),
 		tui.KeyValue("run id", asString(run["id"])),
 		tui.KeyValue("status", colorizeRunStatus(status)),
-		tui.KeyValue("attempt", asString(run["attempt"])),
-		tui.KeyValue("queue", orDash(asString(run["queue"]))),
+		tui.KeyValue("version", asString(run["automation_version"])),
 	)
 
 	views := []tui.View{header}

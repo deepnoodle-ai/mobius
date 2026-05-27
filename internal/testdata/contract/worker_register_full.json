@@ -1,0 +1,1 @@
+{"type":"worker.register","message_id":"msg_1","worker_instance_id":"worker-1","worker_session_token":"session-1","name":"laptop","version":"1.2.3","concurrency_limit":8,"available_slots":6,"queues":["default","gpu"],"action_names":["send_email","fetch_url"],"models":[{"provider":"ollama","model":"llama3"}],"capabilities":["local-network"]}

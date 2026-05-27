@@ -138,7 +138,7 @@ func registerActionsCommands(app *cli.App) {
 		Args("action-name").
 		Flags(
 			cli.String("input", "").Help("Input values matching the action's input_schema. Accepts JSON, @file, or @-."),
-			cli.Int("timeout-seconds", "").Help("How long (in seconds) to wait for synchronous completion. Default 30, max 120. If the run does not …"),
+			cli.Int("timeout-seconds", "").Help("How long (in seconds) to wait for synchronous completion. Default 30, max 120. HTTP-backed actions …"),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).

@@ -1,0 +1,1 @@
+{"type":"job.heartbeat.ack","message_id":"msg_3","job_id":"job_1","cancel":{"job_id":"job_1","reason":"user requested","requested_at":"2026-05-27T00:00:00Z"}}

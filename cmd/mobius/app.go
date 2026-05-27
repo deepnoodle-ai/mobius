@@ -60,7 +60,6 @@ func newApp() *cli.App {
 	registerAuthCommands(app)
 	registerGeneratedCommands(app)
 	registerConfigExtensions(app)
-	registerWorkflowsExtras(app)
 
 	return app
 }

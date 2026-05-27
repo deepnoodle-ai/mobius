@@ -22,14 +22,14 @@ func registerSkillsCommands(app *cli.App) {
 	skillsGrp.Command("create").
 		Description("Create a skill").
 		Flags(
-			cli.Strings("allowed-tools", "").Help("allowed-tools"),
-			cli.String("description", "").Help("description"),
-			cli.String("frontmatter", "").Help("frontmatter Accepts JSON, @file, or @-."),
-			cli.String("instructions", "").Help("[required] instructions"),
-			cli.String("model-hint", "").Help("model-hint"),
-			cli.String("name", "").Help("[required] name"),
-			cli.String("slug", "").Help("slug"),
-			cli.Bool("user-invocable", "").Help("user-invocable"),
+			cli.Strings("allowed-tools", "").Help("Tool selectors that narrow the agent's effective tool set while this skill is active."),
+			cli.String("description", "").Help("Markdown description of the skill's purpose."),
+			cli.String("frontmatter", "").Help("Original imported frontmatter preserved for round-tripping. Accepts JSON, @file, or @-."),
+			cli.String("instructions", "").Help("[required] Markdown instructions loaded when the skill is active."),
+			cli.String("model-hint", "").Help("Advisory model preference; does not override the agent's default model."),
+			cli.String("name", "").Help("[required] Human-readable skill name."),
+			cli.String("slug", "").Help("Optional stable slug. When omitted, the server derives one from `name`."),
+			cli.Bool("user-invocable", "").Help("Whether users may directly request this skill by name."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -199,14 +199,14 @@ func registerSkillsCommands(app *cli.App) {
 		Description("Update a skill").
 		Args("skill-id").
 		Flags(
-			cli.Strings("allowed-tools", "").Help("allowed-tools"),
-			cli.String("description", "").Help("description"),
-			cli.String("frontmatter", "").Help("frontmatter Accepts JSON, @file, or @-."),
-			cli.String("instructions", "").Help("[required] instructions"),
-			cli.String("model-hint", "").Help("model-hint"),
-			cli.String("name", "").Help("[required] name"),
-			cli.String("slug", "").Help("slug"),
-			cli.Bool("user-invocable", "").Help("user-invocable"),
+			cli.Strings("allowed-tools", "").Help("Tool selectors that narrow the agent's effective tool set while this skill is active."),
+			cli.String("description", "").Help("Markdown description of the skill's purpose."),
+			cli.String("frontmatter", "").Help("Original imported frontmatter preserved for round-tripping. Accepts JSON, @file, or @-."),
+			cli.String("instructions", "").Help("[required] Markdown instructions loaded when the skill is active."),
+			cli.String("model-hint", "").Help("Advisory model preference; does not override the agent's default model."),
+			cli.String("name", "").Help("[required] Human-readable skill name."),
+			cli.String("slug", "").Help("Optional stable slug. When omitted, the server derives one from `name`."),
+			cli.Bool("user-invocable", "").Help("Whether users may directly request this skill by name."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).

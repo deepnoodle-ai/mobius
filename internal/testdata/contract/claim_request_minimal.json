@@ -1,5 +1,0 @@
-{
-  "worker_instance_id": "worker-abc",
-  "worker_session_token": "tok-1",
-  "concurrency_limit": 1
-}

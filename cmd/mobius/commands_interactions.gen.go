@@ -133,8 +133,7 @@ func registerInteractionsCommands(app *cli.App) {
 			cli.String("kind", "").Help("Filter by interaction protocol kind"),
 			cli.String("run-id", "").Help("Filter by originating run ID"),
 			cli.String("target-user-id", "").Help("Filter by resolved target user ID."),
-			cli.Bool("inbox", "").Help("When true, returns only interactions visible to the authenticated user (direct + group membership)"),
-			cli.String("reviewer-user-id", "").Help("Filter handoffs awaiting review by the specified reviewer user."),
+			cli.Bool("inbox", "").Help("When true, returns only interactions visible to the authenticated user."),
 			cli.String("cursor", "").Help("cursor"),
 			cli.Int("limit", "").Help("limit"),
 		).
@@ -167,10 +166,6 @@ func registerInteractionsCommands(app *cli.App) {
 				v := ctx.Bool("inbox")
 				params.Inbox = &v
 			}
-			if ctx.IsSet("reviewer-user-id") {
-				v := ctx.String("reviewer-user-id")
-				params.ReviewerUserId = &v
-			}
 			if ctx.IsSet("cursor") {
 				v := api.CursorParam(ctx.String("cursor"))
 				params.Cursor = &v
@@ -190,8 +185,7 @@ func registerInteractionsCommands(app *cli.App) {
 		Description("Submit a response to an interaction").
 		Args("id").
 		Flags(
-			cli.String("channel-id", "").Help("Optional channel context. When provided, the server appends a channel-visible activity message afte…"),
-			cli.String("action", "").Help("Operation to perform through the canonical response endpoint. `submit` answers ordinary interaction…"),
+			cli.String("action", "").Help("Operation to perform through the canonical response endpoint. `submit` answers the interaction."),
 			cli.String("comment", "").Help("Optional free-text comment accompanying the action. Available on every interaction kind and never g…"),
 			cli.String("value", "").Help("Free-form JSON payload. Used both for responder-supplied values and for policy-derived values (e.g.… Accepts JSON, @file, or @-."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
@@ -206,11 +200,6 @@ func registerInteractionsCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			params := &api.RespondToInteractionParams{}
-			if ctx.IsSet("channel-id") {
-				v := ctx.String("channel-id")
-				params.ChannelId = &v
-			}
 			var body api.RespondToInteractionJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -234,7 +223,7 @@ func registerInteractionsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.RespondToInteractionWithResponse(ctx.Context(), p0, p1, params, body)
+			resp, err := client.RespondToInteractionWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}

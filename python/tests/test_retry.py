@@ -230,5 +230,5 @@ def test_client_constructor_installs_retrying_transport() -> None:
     )
     # Replace the inner base to avoid hitting the network but keep the
     # RetryingTransport wrapper that the constructor installed.
-    assert isinstance(client._http._transport, RetryingTransport)
+    assert isinstance(client._client._transport, RetryingTransport)
     client.close()

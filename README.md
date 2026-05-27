@@ -1,6 +1,6 @@
 # Mobius
 
-Mobius is a workflow orchestration platform for humans, systems, and AI agents. This repo contains the `mobius` CLI plus generated SDKs for Go, Python, and TypeScript.
+Mobius is an agent automation platform for humans, systems, and AI agents. This repo contains the `mobius` CLI plus generated SDKs for Go, Python, and TypeScript.
 
 ## Installation
 
@@ -37,9 +37,9 @@ mobius --help
 Inspect the resources available in your project:
 
 ```bash
-mobius workflows list
-mobius runs list
-mobius workers list
+mobius automations list
+mobius automations list-runs
+mobius worker-sessions list
 ```
 
 Start the stock worker:
@@ -79,7 +79,6 @@ The stock worker registers built-in actions like `print`, `fail`, `json`, `time`
 
 - [Go API reference](https://pkg.go.dev/github.com/deepnoodle-ai/mobius/mobius)
 - [Mobius docs](https://docs.mobiusops.ai/)
-- [Workflow specification](https://docs.mobiusops.ai/workflows)
 
 ## SDKs
 
@@ -89,16 +88,16 @@ The stock worker registers built-in actions like `print`, `fail`, `json`, `time`
 
 The SDKs expose two layers:
 
-- A high-level surface for common application and worker workflows: start runs,
-  get/list/cancel/resume runs, send signals, watch run events, wait for terminal
-  completion, claim jobs, heartbeat, complete jobs, emit job events, verify and
-  parse webhook deliveries, deliver synthetic local webhooks, and reconcile
-  saved workflow definitions.
+- A high-level surface for common automation and worker flows: create and
+  publish automations, start runs, get/list/cancel/signal runs, watch run
+  events, wait for terminal completion, run WebSocket workers that execute
+  action jobs and LLM generation jobs, verify and parse webhook deliveries,
+  and deliver synthetic local webhooks.
 - Generated OpenAPI bindings for the full API contract when you need a lower
   level escape hatch.
 
 See [`docs/sdk-helpers.md`](./docs/sdk-helpers.md) for cross-language examples
-of the webhook and saved-workflow helpers.
+of the webhook, automation, run, and worker helpers.
 
 All three SDKs share the same retry and rate-limit handling: `429` and
 `503` responses are retried transparently (respecting `Retry-After`), and

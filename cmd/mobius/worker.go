@@ -44,9 +44,6 @@ func registerWorkerCommand(app *cli.App) {
 			cli.Int("workers", "").
 				Default(0).
 				Help("Run N independent worker instances (advanced; mutually exclusive with --concurrency)"),
-			cli.Int("poll-wait", "").
-				Default(20).
-				Help("Long-poll window in seconds (0-30)"),
 		).
 		Run(func(ctx *cli.Context) error {
 			client, err := clientFromContext(ctx)
@@ -76,7 +73,6 @@ func registerWorkerCommand(app *cli.App) {
 				Version:          ctx.String("worker-version"),
 				Queues:           queues,
 				Concurrency:      concurrency,
-				PollWaitSeconds:  ctx.Int("poll-wait"),
 				Logger:           logger,
 			}
 

@@ -1,0 +1,1 @@
+{"type":"worker.registered","message_id":"msg_1","worker_session_token":"session-1","lease":{"heartbeat_cadence_seconds":20,"lease_duration_seconds":60}}

@@ -10,81 +10,52 @@ import (
 
 const defaultWaitRunReconnectDelay = time.Second
 
-// StartRunOptions contains common fields for starting inline or saved workflow
-// runs. ExternalID is a caller-supplied correlation or idempotency key.
+// StartRunOptions contains common fields for starting automation runs.
+// ExternalID is a caller-supplied correlation and idempotency key.
 type StartRunOptions struct {
-	Queue      string
 	Inputs     map[string]interface{}
-	Metadata   map[string]string
-	Tags       map[string]string
+	Source     *api.AutomationRunSource
 	ExternalID string
-	Config     *api.ConfigEntries
 }
 
-// ListRunsOptions filters and paginates project workflow runs.
+// ListRunsOptions filters and paginates project automation runs.
 type ListRunsOptions struct {
-	Status       api.RunStatus
-	WorkflowType string
-	Queue        string
-	ParentRunID  string
-	SourceType   string
-	SourceID     string
-	ExternalID   string
-	ForkedFrom   string
+	Status       api.AutomationRunStatus
+	AutomationID string
 	Cursor       string
 	Limit        int
 }
 
 // WaitRunOptions configures WaitRun.
 type WaitRunOptions struct {
-	// Since is the durable SSE cursor to resume from. Zero starts live.
+	// Since is the durable SSE sequence cursor to resume from. Zero starts live.
 	Since int64
 	// ReconnectDelay is used when the SSE stream closes before the run
 	// terminalizes. Defaults to one second.
 	ReconnectDelay time.Duration
 }
 
-// StartRun starts an ephemeral workflow run from a workflow spec supplied by
-// the caller. No workflow definition is persisted.
-func (c *Client) StartRun(ctx context.Context, spec api.WorkflowSpec, opts *StartRunOptions) (*api.Run, error) {
-	req := api.StartInlineRunRequest{
-		Mode: api.StartInlineRunRequestModeInline,
-		Spec: spec,
-	}
-	applyStartRunOptions(&req.Queue, &req.Inputs, &req.Metadata, &req.Tags, &req.ExternalId, &req.Config, opts)
+// StartRun starts a published automation by handle.
+func (c *Client) StartRun(ctx context.Context, automationHandle string, opts *StartRunOptions) (*api.AutomationRun, error) {
+	return c.StartAutomationRun(ctx, automationHandle, opts)
+}
 
-	var body api.StartRunRequest
-	if err := body.FromStartInlineRunRequest(req); err != nil {
-		return nil, fmt.Errorf("mobius: start run request: %w", err)
-	}
-	resp, err := c.ac.StartRunWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), body)
+// StartAutomationRun starts a published automation by handle.
+func (c *Client) StartAutomationRun(ctx context.Context, automationHandle string, opts *StartRunOptions) (*api.AutomationRun, error) {
+	req := startAutomationRunRequest(opts)
+	resp, err := c.ac.StartAutomationRunWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), automationHandle, req)
 	if err != nil {
-		return nil, fmt.Errorf("mobius: start run: %w", err)
+		return nil, fmt.Errorf("mobius: start automation run: %w", err)
 	}
 	if resp.JSON202 == nil {
-		return nil, unexpectedRunStatus("start run", resp.Status(), resp.Body)
+		return nil, unexpectedRunStatus("start automation run", resp.Status(), resp.Body)
 	}
 	return resp.JSON202, nil
 }
 
-// StartWorkflowRun starts a run from an existing workflow definition.
-func (c *Client) StartWorkflowRun(ctx context.Context, workflowID string, opts *StartRunOptions) (*api.Run, error) {
-	req := api.StartBoundRunRequest{}
-	applyStartRunOptions(&req.Queue, &req.Inputs, &req.Metadata, &req.Tags, &req.ExternalId, &req.Config, opts)
-	resp, err := c.ac.StartWorkflowRunWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.IDParam(workflowID), req)
-	if err != nil {
-		return nil, fmt.Errorf("mobius: start workflow run: %w", err)
-	}
-	if resp.JSON202 == nil {
-		return nil, unexpectedRunStatus("start workflow run", resp.Status(), resp.Body)
-	}
-	return resp.JSON202, nil
-}
-
-// ListRuns returns project workflow runs matching opts.
-func (c *Client) ListRuns(ctx context.Context, opts *ListRunsOptions) (*api.RunListResponse, error) {
-	params := listRunsParams(opts)
-	resp, err := c.ac.ListRunsWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), params)
+// ListRuns returns project automation runs matching opts.
+func (c *Client) ListRuns(ctx context.Context, opts *ListRunsOptions) (*api.AutomationRunListResponse, error) {
+	resp, err := c.ac.ListAutomationRunsWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), listRunsParams(opts))
 	if err != nil {
 		return nil, fmt.Errorf("mobius: list runs: %w", err)
 	}
@@ -94,10 +65,9 @@ func (c *Client) ListRuns(ctx context.Context, opts *ListRunsOptions) (*api.RunL
 	return resp.JSON200, nil
 }
 
-// GetRun returns the current run detail, including terminal result/error fields
-// and spawned jobs when available.
-func (c *Client) GetRun(ctx context.Context, runID string) (*api.RunDetail, error) {
-	resp, err := c.ac.GetRunWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.IDParam(runID))
+// GetRun returns the current automation run detail.
+func (c *Client) GetRun(ctx context.Context, runID string) (*api.AutomationRun, error) {
+	resp, err := c.ac.GetAutomationRunWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.IDParam(runID))
 	if err != nil {
 		return nil, fmt.Errorf("mobius: get run: %w", err)
 	}
@@ -107,50 +77,48 @@ func (c *Client) GetRun(ctx context.Context, runID string) (*api.RunDetail, erro
 	return resp.JSON200, nil
 }
 
-// CancelRun requests cancellation of an in-flight run.
-func (c *Client) CancelRun(ctx context.Context, runID string) error {
-	resp, err := c.ac.CancelRunWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.IDParam(runID))
+// CancelRun requests cancellation of an in-flight automation run.
+func (c *Client) CancelRun(ctx context.Context, runID string, reason string) (*api.AutomationRun, error) {
+	req := api.CancelAutomationRunRequest{}
+	if reason != "" {
+		req.Reason = &reason
+	}
+	resp, err := c.ac.CancelAutomationRunWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.IDParam(runID), req)
 	if err != nil {
-		return fmt.Errorf("mobius: cancel run: %w", err)
+		return nil, fmt.Errorf("mobius: cancel run: %w", err)
 	}
-	if resp.StatusCode() != 204 {
-		return unexpectedRunStatus("cancel run", resp.Status(), resp.Body)
+	if resp.JSON200 == nil {
+		return nil, unexpectedRunStatus("cancel run", resp.Status(), resp.Body)
 	}
-	return nil
+	return resp.JSON200, nil
 }
 
-// ResumeRun re-enters any resumable waiting paths for a run.
-func (c *Client) ResumeRun(ctx context.Context, runID string) error {
-	resp, err := c.ac.ResumeRunWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.IDParam(runID))
+// SignalRun durably resumes a suspended automation step.
+func (c *Client) SignalRun(ctx context.Context, runID, stepKey string, result map[string]interface{}) (*api.AutomationRun, error) {
+	req := api.SignalAutomationRunRequest{StepKey: stepKey}
+	if result != nil {
+		req.Result = &result
+	}
+	resp, err := c.ac.SignalAutomationRunWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.IDParam(runID), req)
 	if err != nil {
-		return fmt.Errorf("mobius: resume run: %w", err)
+		return nil, fmt.Errorf("mobius: signal run: %w", err)
 	}
-	if resp.StatusCode() != 204 {
-		return unexpectedRunStatus("resume run", resp.Status(), resp.Body)
+	if resp.JSON200 == nil {
+		return nil, unexpectedRunStatus("signal run", resp.Status(), resp.Body)
 	}
-	return nil
+	return resp.JSON200, nil
 }
 
-// SendRunSignal durably delivers a signal to a workflow run.
-func (c *Client) SendRunSignal(ctx context.Context, runID, name string, payload map[string]interface{}) (*api.RunSignalAccepted, error) {
-	req := api.SendRunSignalRequest{Name: name}
-	if payload != nil {
-		req.Payload = &payload
-	}
-	resp, err := c.ac.SendRunSignalWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.IDParam(runID), req)
-	if err != nil {
-		return nil, fmt.Errorf("mobius: send run signal: %w", err)
-	}
-	if resp.JSON202 == nil {
-		return nil, unexpectedRunStatus("send run signal", resp.Status(), resp.Body)
-	}
-	return resp.JSON202, nil
+// SendRunSignal is retained as a source-compatible alias for SignalRun. The
+// name argument is interpreted as the suspended step key.
+func (c *Client) SendRunSignal(ctx context.Context, runID, name string, payload map[string]interface{}) (*api.AutomationRun, error) {
+	return c.SignalRun(ctx, runID, name, payload)
 }
 
 // WaitRun waits until runID reaches a terminal state and returns a fresh run
 // detail. It combines the run SSE stream with GetRun fallback so callers can
 // recover when a stream closes before the terminal event is observed.
-func (c *Client) WaitRun(ctx context.Context, runID string, opts *WaitRunOptions) (*api.RunDetail, error) {
+func (c *Client) WaitRun(ctx context.Context, runID string, opts *WaitRunOptions) (*api.AutomationRun, error) {
 	since := int64(0)
 	reconnectDelay := defaultWaitRunReconnectDelay
 	if opts != nil {
@@ -178,13 +146,13 @@ func (c *Client) WaitRun(ctx context.Context, runID string, opts *WaitRunOptions
 		}
 
 		for ev := range events {
-			if ev.Seq > since {
-				since = ev.Seq
+			if ev.Sequence > since {
+				since = ev.Sequence
 			}
-			if ev.Type != RunEventTypeRunUpdated {
+			if ev.Payload == nil {
 				continue
 			}
-			status, _ := ev.Data["status"].(string)
+			status, _ := (*ev.Payload)["status"].(string)
 			if isTerminalStatusString(status) {
 				return c.GetRun(ctx, runID)
 			}
@@ -196,82 +164,62 @@ func (c *Client) WaitRun(ctx context.Context, runID string, opts *WaitRunOptions
 	}
 }
 
-// IsTerminalRunStatus reports whether status is completed or failed.
-func IsTerminalRunStatus(status api.RunStatus) bool {
-	return status == api.RunStatusCompleted || status == api.RunStatusFailed
+// IsTerminalRunStatus reports whether status is completed, failed, or
+// cancelled.
+func IsTerminalRunStatus(status api.AutomationRunStatus) bool {
+	return status == api.AutomationRunStatusCompleted ||
+		status == api.AutomationRunStatusFailed ||
+		status == api.AutomationRunStatusCancelled
 }
 
-func applyStartRunOptions(queue **string, inputs **map[string]interface{}, metadata **map[string]string, tags **api.TagMap, externalID **string, config **api.ConfigEntries, opts *StartRunOptions) {
+func startAutomationRunRequest(opts *StartRunOptions) api.StartAutomationRunRequest {
+	req := api.StartAutomationRunRequest{}
 	if opts == nil {
-		return
-	}
-	if opts.Queue != "" {
-		*queue = &opts.Queue
+		return req
 	}
 	if opts.Inputs != nil {
-		*inputs = &opts.Inputs
+		req.Inputs = &opts.Inputs
 	}
-	if opts.Metadata != nil {
-		*metadata = &opts.Metadata
-	}
-	if opts.Tags != nil {
-		tagMap := api.TagMap(opts.Tags)
-		*tags = &tagMap
+	if opts.Source != nil {
+		req.Source = opts.Source
 	}
 	if opts.ExternalID != "" {
-		*externalID = &opts.ExternalID
+		req.ExternalId = &opts.ExternalID
 	}
-	if opts.Config != nil {
-		*config = opts.Config
-	}
+	return req
 }
 
-func listRunsParams(opts *ListRunsOptions) *api.ListRunsParams {
+func listRunsParams(opts *ListRunsOptions) *api.ListAutomationRunsParams {
 	if opts == nil {
 		return nil
 	}
-	params := &api.ListRunsParams{}
+	params := &api.ListAutomationRunsParams{}
 	if opts.Status != "" {
 		params.Status = &opts.Status
 	}
-	if opts.WorkflowType != "" {
-		params.WorkflowType = &opts.WorkflowType
-	}
-	if opts.Queue != "" {
-		params.Queue = &opts.Queue
-	}
-	if opts.ParentRunID != "" {
-		params.ParentRunId = &opts.ParentRunID
-	}
-	if opts.SourceType != "" {
-		params.SourceType = &opts.SourceType
-	}
-	if opts.SourceID != "" {
-		params.SourceId = &opts.SourceID
-	}
-	if opts.ExternalID != "" {
-		params.ExternalId = &opts.ExternalID
-	}
-	if opts.ForkedFrom != "" {
-		params.ForkedFrom = &opts.ForkedFrom
+	if opts.AutomationID != "" {
+		params.AutomationId = &opts.AutomationID
 	}
 	if opts.Cursor != "" {
-		cursor := api.CursorParam(opts.Cursor)
-		params.Cursor = &cursor
+		params.Cursor = &opts.Cursor
 	}
 	if opts.Limit > 0 {
-		limit := api.LimitParam(opts.Limit)
-		params.Limit = &limit
+		params.Limit = &opts.Limit
 	}
 	return params
 }
 
 func unexpectedRunStatus(op, status string, body []byte) error {
-	return fmt.Errorf("mobius: %s: unexpected status %s: %s", op, status, string(body))
+	if len(body) > 0 {
+		return fmt.Errorf("mobius: %s: unexpected status %s: %s", op, status, string(body))
+	}
+	return fmt.Errorf("mobius: %s: unexpected status %s", op, status)
 }
 
 func isTerminalStatusString(status string) bool {
-	return status == string(api.RunStatusCompleted) || status == string(api.RunStatusFailed)
+	return status == string(api.AutomationRunStatusCompleted) ||
+		status == string(api.AutomationRunStatusFailed) ||
+		status == string(api.AutomationRunStatusCancelled)
 }
 
 func sleepContext(ctx context.Context, d time.Duration) error {

@@ -1,10 +1,11 @@
 // Package mobius provides the Go SDK for building Mobius workers and for
-// managing workflows, runs, triggers, webhooks, and other Mobius resources.
+// managing automations, runs, workers, webhooks, and other Mobius resources.
 //
 // Workers claim individual jobs — one action invocation on behalf of a
-// workflow run — from the Mobius runtime API, execute the corresponding
-// registered action locally, and report the result back. The backend
-// owns the workflow engine; the SDK only defines and runs actions.
+// automation run or agent turn — from the Mobius runtime API, execute the
+// corresponding registered action locally, and report the result back. The
+// backend owns the agent loop and automation engine; the SDK only defines and
+// runs actions.
 //
 // Typical usage:
 //
