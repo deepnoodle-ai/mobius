@@ -134,7 +134,7 @@ export interface paths {
         post?: never;
         /**
          * Delete an action
-         * @description Rejected with 409 if any workflow step currently references this action by name (`ErrActionInUse`). Remove all references before deleting.
+         * @description Rejected with 409 if any automation step currently references this action by name (`ErrActionInUse`). Remove all references before deleting.
          */
         delete: operations["deleteAction"];
         options?: never;
@@ -175,7 +175,7 @@ export interface paths {
         };
         /**
          * List action invocation records
-         * @description Returns per-invocation telemetry records for action executions in the project. Each record captures the action name, input parameters, output summary, final status, error details, and retry count. Filter by `run_id` to inspect all action calls within a single workflow run, by `job_id` to scope to a specific job, or by `action_name` for cross-run analysis.
+         * @description Returns per-invocation telemetry records for action executions in the project. Each record captures the action name, input parameters, output summary, final status, error details, and retry count. Filter by `run_id` to inspect all action calls within a single automation run, by `job_id` to scope to a specific job, or by `action_name` for cross-run analysis.
          */
         get: operations["listActionInvocations"];
         put?: never;
@@ -554,7 +554,7 @@ export interface paths {
         post?: never;
         /**
          * Delete a project
-         * @description Permanently deletes the project and all child resources (workflows, runs, jobs, triggers, webhooks, interactions, actions, agents, service accounts). This operation is irreversible.
+         * @description Permanently deletes the project and all child resources (automations, runs, jobs, triggers, webhooks, interactions, actions, agents, service accounts). This operation is irreversible.
          *
          *     The project must be archived first; calling delete on an active project returns `409 project_not_archived`. Archive via `POST /v1/projects/{id}/archive`.
          */
@@ -945,7 +945,7 @@ export interface paths {
         put?: never;
         /**
          * Create an interaction
-         * @description Creates a standalone or run-backed interaction. When `run_id` is provided, completing the interaction enqueues an `interaction.responded` source event that the SubscriptionRouter (RFC 064) matches to the run's `interaction` step by `interaction_id` — not by signal name. The `signal_name` field is retained for historical request shape and audit logging; routing no longer depends on it. Omit both `run_id` and `signal_name` for a standalone interaction that completes with no workflow side effect. Workers creating interactions from within a job should use the job-scoped route (`POST /v1/projects/{project}/jobs/{id}/interactions`) instead, which derives the run automatically.
+         * @description Creates a standalone or run-backed interaction. When `run_id` is provided, completing the interaction enqueues an `interaction.responded` source event that the SubscriptionRouter (RFC 064) matches to the run's `interaction` step by `interaction_id` — not by signal name. The `signal_name` field is retained for historical request shape and audit logging; routing no longer depends on it. Omit both `run_id` and `signal_name` for a standalone interaction that completes with no automation-run side effect. Workers creating interactions from within a job should use the job-scoped route (`POST /v1/projects/{project}/jobs/{id}/interactions`) instead, which derives the run automatically.
          */
         post: operations["createInteraction"];
         delete?: never;
@@ -963,14 +963,14 @@ export interface paths {
         };
         /**
          * Get an interaction
-         * @description Returns one interaction with target, response, and completion metadata. Run-backed interactions include the run and signal identifiers used to resume workflow execution.
+         * @description Returns one interaction with target, response, and completion metadata. Run-backed interactions include the run and signal identifiers used to resume automation execution.
          */
         get: operations["getInteraction"];
         put?: never;
         post?: never;
         /**
          * Delete an interaction
-         * @description Soft-deletes an interaction so it disappears from inbox and project listings. The row is retained for audit history. Only terminal interactions (`completed`, `cancelled`, `expired`) may be deleted; pending or in-review interactions must be cancelled first so any waiting workflow run can route to a fallback.
+         * @description Soft-deletes an interaction so it disappears from inbox and project listings. The row is retained for audit history. Only terminal interactions (`completed`, `cancelled`, `expired`) may be deleted; pending or in-review interactions must be cancelled first so any waiting automation run can route to a fallback.
          */
         delete: operations["deleteInteraction"];
         options?: never;
@@ -1011,7 +1011,7 @@ export interface paths {
         put?: never;
         /**
          * Cancel an open interaction
-         * @description Cancels an open interaction, recording who cancelled and an optional reason. Run-backed interactions resume the waiting workflow path with a `{status: cancelled, reason}` signal payload so workflows can route to a fallback. Only humans may cancel by default — agents must request cancellation through an interaction.
+         * @description Cancels an open interaction, recording who cancelled and an optional reason. Run-backed interactions resume the waiting automation step with a `{status: cancelled, reason}` signal payload so automations can route to a fallback. Only humans may cancel by default — agents must request cancellation through an interaction.
          */
         post: operations["cancelInteraction"];
         delete?: never;
@@ -1066,7 +1066,7 @@ export interface paths {
         post?: never;
         /**
          * Delete an agent
-         * @description Soft-deletes the agent by setting `deleted_at`. The agent record is retained so historical channel messages can still resolve the sender name, but the agent is excluded from all listings and lookups. The backing service account is disabled. In-flight jobs claiming this agent are not automatically cancelled.
+         * @description Soft-deletes the agent by setting `deleted_at`. The agent record is retained for audit and attribution history, but the agent is excluded from all listings and lookups. The backing service account is disabled. In-flight jobs claiming this agent are not automatically cancelled.
          */
         delete: operations["deleteAgent"];
         options?: never;
@@ -2123,7 +2123,7 @@ export interface components {
             description?: string;
         };
         /**
-         * @description Declarative dialog contract for rendering and validating an interaction. Used at both authoring time (inside a workflow definition) and runtime (persisted on an interaction). PRD 077 decouples protocol kind from input shape: each kind declares which spec modes are *allowed*, not which is *implied*. An approval may now legitimately use `select` mode (approve/deny/defer), for example.
+         * @description Declarative dialog contract for rendering and validating an interaction. Used at both authoring time (inside an automation definition) and runtime (persisted on an interaction). PRD 077 decouples protocol kind from input shape: each kind declares which spec modes are *allowed*, not which is *implied*. An approval may now legitimately use `select` mode (approve/deny/defer), for example.
          *
          *     Allowed combinations:
          *     * `approval` → `confirm`, `select`
@@ -2148,11 +2148,8 @@ export interface components {
             /** @description When true, render `input` mode as a multiline text area. */
             multiline?: boolean;
         };
-        /**
-         * @description Server-defined product feature key. `feature.apps` controls the Apps product area; `feature.observables` controls Observables.
-         * @enum {string}
-         */
-        FeatureKey: "feature.apps" | "feature.observables";
+        /** @description Server-defined product feature key. The launch product currently has no public/developer feature gates; this string type remains for internal operator override plumbing. */
+        FeatureKey: string;
         /**
          * @description Scope for a feature override. Org overrides apply across the organization; project overrides apply only to the specified project and take precedence over org overrides.
          * @enum {string}
@@ -2233,7 +2230,7 @@ export interface components {
          * @enum {string}
          */
         AgentStatus: "active" | "inactive";
-        /** @description Project-scoped automated worker identity backed by a service account. Agents are useful when workflows need to target a named machine actor with capabilities, configuration, and session presence. */
+        /** @description Project-scoped AI actor identity backed by a service account. Agents are useful when automations need a named actor with instructions, capabilities, configuration, and session presence. */
         Agent: {
             /** @description Unique identifier for this agent. */
             id: string;
@@ -2247,7 +2244,7 @@ export interface components {
             description?: string;
             /** @description Freeform agent classification for tooling and filtering (e.g. "llm", "rpa"). */
             kind?: string;
-            /** @description Display color for this agent in UI surfaces such as channel avatars and message rails. One of the Mantine color palette keys (e.g. `indigo`, `teal`, `grape`); empty string falls back to a hash-derived color. */
+            /** @description Display color for this agent in UI surfaces. One of the Mantine color palette keys (e.g. `indigo`, `teal`, `grape`); empty string falls back to a hash-derived color. */
             color?: string;
             /** @description Arbitrary capability map used by orchestrators to select suitable agents. */
             capabilities?: {
@@ -2306,7 +2303,7 @@ export interface components {
              * @enum {string}
              */
             action: "create" | "update" | "delete" | "archive" | "restore";
-            /** @description Type of resource affected (e.g., job, channel, document) */
+            /** @description Type of resource affected (e.g., automation, job, artifact) */
             resource_type: string;
             /** @description ID of the affected resource */
             resource_id: string;
@@ -2450,7 +2447,7 @@ export interface components {
         };
         /** @description Registers a project-owned HTTP action endpoint callable from automations. */
         CreateActionRequest: {
-            /** @description Project-scoped identifier used in workflow step definitions. Lowercase alphanumeric + hyphens, e.g. "send-email". Must be unique within the project. Cannot start with "mobius." (reserved prefix). */
+            /** @description Project-scoped identifier used in automation step definitions. Lowercase alphanumeric + hyphens, e.g. "send-email". Must be unique within the project. Cannot start with "mobius." (reserved prefix). */
             name: string;
             /** @description Human-readable display name shown in the UI and catalog. */
             title?: string;
@@ -2570,7 +2567,7 @@ export interface components {
         };
         /** @description One built-in, integration, or custom-backed action available to agents and automation authors. */
         ActionCatalogEntry: {
-            /** @description Canonical dotted action name (e.g. `mobius.channel.send_message`). Translated to the provider-safe form (`mobius_channel_send_message`) only at the LLM boundary. */
+            /** @description Canonical dotted action name (e.g. `slack.post_message`). Translated to the provider-safe form (`slack_post_message`) only at the LLM boundary. */
             name: string;
             /** @description Human-readable display title for the action. */
             title?: string;
@@ -2647,15 +2644,15 @@ export interface components {
         ActionInvocationEntry: {
             /** @description Unique identifier for this invocation record. */
             id: string;
-            /** @description Workflow run that triggered this invocation, if run-backed. */
+            /** @description Automation run that triggered this invocation, if run-backed. */
             run_id?: string;
             /** @description Job that triggered this invocation, if job-backed. */
             job_id?: string;
-            /** @description Workflow step name that triggered this invocation. */
+            /** @description Automation step name that triggered this invocation. */
             step_name?: string;
             /** @description Name of the action that was invoked. */
             action_name: string;
-            /** @description Invocation source ("workflow", "direct", etc.). */
+            /** @description Invocation source ("automation", "direct", etc.). */
             source: string;
             /** @description Input parameters passed to the action. */
             parameters?: {
@@ -3008,9 +3005,9 @@ export interface components {
         WorkerSessionJobRef: {
             /** @description Job ID. */
             id: string;
-            /** @description Workflow run that owns the job. */
+            /** @description Automation run that owns the job. */
             run_id: string;
-            /** @description Workflow step name. */
+            /** @description Automation step name. */
             step_name: string;
             /** @description Action executed by the worker. */
             action: string;
@@ -3740,7 +3737,7 @@ export interface components {
         Interaction: {
             /** @description Unique identifier for this interaction. */
             id: string;
-            /** @description Originating workflow run when the interaction is run-backed. */
+            /** @description Originating automation run when the interaction is run-backed. */
             run_id?: string | null;
             /** @description Signal name used to resume the originating run when run-backed. */
             signal_name?: string | null;
@@ -3824,9 +3821,9 @@ export interface components {
             /** @description Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false. */
             next_cursor?: string;
         };
-        /** @description Creates an interaction directly. Use the standalone variant with no workflow side effect, or the run-backed variant that requires both `run_id` and `signal_name` so completion can resume the run. For worker/job usage, prefer the job-scoped route so the server can derive the owning run from the claimed job context. */
+        /** @description Creates an interaction directly. Use the standalone variant with no automation-run side effect, or the run-backed variant that requires both `run_id` and `signal_name` so completion can resume the run. For worker/job usage, prefer the job-scoped route so the server can derive the owning run from the claimed job context. */
         CreateInteractionRequest: components["schemas"]["CreateStandaloneInteractionRequest"] | components["schemas"]["CreateRunBackedInteractionRequest"];
-        /** @description Creates a standalone interaction. Completion records the response but does not deliver a workflow signal. */
+        /** @description Creates a standalone interaction. Completion records the response but does not deliver an automation signal. */
         CreateStandaloneInteractionRequest: {
             /** @description Resolved user IDs to target directly. Agents use their backing user IDs. */
             target_user_ids?: string[];
@@ -3866,9 +3863,9 @@ export interface components {
              */
             expires_at?: string;
         };
-        /** @description Creates a run-backed interaction. **Deprecated as a resume mechanism.** Under RFC 064 a workflow run only resumes from an interaction response when its materializer registered a `run_subscription` with `Subject{kind:interaction, interaction_id:...}`. That registration only happens for interactions created from within a workflow step (declarative `interaction` step or job-scoped `POST /v1/projects/{project}/jobs/{id}/interactions`). Direct run-backed creates through this endpoint produce a pending interaction record linked to `run_id` for audit, but completion will not wake the run. Use the job-scoped route for resume semantics. `signal_name` is retained on the request shape for backwards compatibility and audit; routing no longer depends on it. */
+        /** @description Creates a run-backed interaction. **Deprecated as a resume mechanism.** Under RFC 064 an automation run only resumes from an interaction response when its materializer registered a `run_subscription` with `Subject{kind:interaction, interaction_id:...}`. That registration only happens for interactions created from within an automation step (declarative `interaction` step or job-scoped `POST /v1/projects/{project}/jobs/{id}/interactions`). Direct run-backed creates through this endpoint produce a pending interaction record linked to `run_id` for audit, but completion will not wake the run. Use the job-scoped route for resume semantics. `signal_name` is retained on the request shape for backwards compatibility and audit; routing no longer depends on it. */
         CreateRunBackedInteractionRequest: {
-            /** @description ID of the workflow run to resume when this interaction is completed. */
+            /** @description ID of the automation run to resume when this interaction is completed. */
             run_id: string;
             /** @description Signal name the interaction will complete against when run-backed. */
             signal_name: string;
@@ -3921,7 +3918,7 @@ export interface components {
             /** @description Optional free-text comment accompanying the action. Available on every interaction kind and never gated by the spec; the responder may always attach reasoning, caveats, or follow-up notes alongside `value`. */
             comment?: string;
         };
-        /** @description Optional payload accompanying a cancel request. The reason is recorded on the interaction and forwarded in the cancellation signal so workflows can route to a fallback. */
+        /** @description Optional payload accompanying a cancel request. The reason is recorded on the interaction and forwarded in the cancellation signal so automations can route to a fallback. */
         CancelInteractionRequest: {
             /** @description Free-text reason recorded on the interaction. */
             reason?: string;
@@ -4325,7 +4322,7 @@ export interface components {
             policy_hash: string;
             /** @description Toolkit IDs that contributed to the resolved manifest. */
             toolkit_ids: string[];
-            /** @description Catalog entries the agent can invoke. Each entry surfaces to the LLM as its own named tool. Built-in, integration, workflow, and custom-HTTP actions are intermingled here. */
+            /** @description Catalog entries the agent can invoke. Each entry surfaces to the LLM as its own named tool. Built-in, integration, automation, and custom-HTTP actions are intermingled here. */
             tools: components["schemas"]["ActionCatalogEntry"][];
             /** @description Audit trail of group selectors that contributed to the resolved tool set. Operators see groups; the LLM only sees the flat `tools` list. */
             groups_resolved?: components["schemas"]["ResolvedActionGroup"][];
@@ -5405,7 +5402,7 @@ export interface components {
         ProjectHandleParam: string;
         /** @description Resource ID. */
         IDParam: string;
-        /** @description Project-scoped action name used in workflow step definitions. */
+        /** @description Project-scoped action name used in automation step definitions. */
         ActionNameParam: string;
         /** @description User ID. */
         user_id: string;
@@ -5442,7 +5439,7 @@ export interface components {
         TableOwnedByMeParam: boolean;
         /** @description TypeID of the artifact (`art_...`) */
         ArtifactIdParam: string;
-        /** @description Workflow run ID */
+        /** @description Automation run ID */
         RunIdParam: string;
     };
     requestBodies: never;
@@ -5721,7 +5718,7 @@ export interface operations {
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
-                /** @description Project-scoped action name used in workflow step definitions. */
+                /** @description Project-scoped action name used in automation step definitions. */
                 action_name: components["parameters"]["ActionNameParam"];
             };
             cookie?: never;
@@ -5749,7 +5746,7 @@ export interface operations {
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
-                /** @description Project-scoped action name used in workflow step definitions. */
+                /** @description Project-scoped action name used in automation step definitions. */
                 action_name: components["parameters"]["ActionNameParam"];
             };
             cookie?: never;
@@ -5770,7 +5767,7 @@ export interface operations {
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
-                /** @description Project-scoped action name used in workflow step definitions. */
+                /** @description Project-scoped action name used in automation step definitions. */
                 action_name: components["parameters"]["ActionNameParam"];
             };
             cookie?: never;
@@ -5803,7 +5800,7 @@ export interface operations {
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
-                /** @description Project-scoped action name used in workflow step definitions. */
+                /** @description Project-scoped action name used in automation step definitions. */
                 action_name: components["parameters"]["ActionNameParam"];
             };
             cookie?: never;
@@ -5831,7 +5828,7 @@ export interface operations {
                 cursor?: components["parameters"]["CursorParam"];
                 /** @description Maximum number of items to return */
                 limit?: components["parameters"]["LimitParam"];
-                /** @description Filter to invocations from a specific workflow run. */
+                /** @description Filter to invocations from a specific automation run. */
                 run_id?: string;
                 /** @description Filter to invocations from a specific job. */
                 job_id?: string;
@@ -5869,7 +5866,7 @@ export interface operations {
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
-                /** @description Project-scoped action name used in workflow step definitions. */
+                /** @description Project-scoped action name used in automation step definitions. */
                 action_name: components["parameters"]["ActionNameParam"];
             };
             cookie?: never;

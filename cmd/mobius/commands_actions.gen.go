@@ -26,7 +26,7 @@ func registerActionsCommands(app *cli.App) {
 			cli.String("description", "").Help("Markdown-safe description of what the action does."),
 			cli.String("endpoint-url", "").Help("[required] HTTP/HTTPS URL Mobius will POST to when invoking the action."),
 			cli.String("input-schema", "").Help("JSON Schema describing the expected input parameters. Accepts JSON, @file, or @-."),
-			cli.String("name", "").Help("[required] Project-scoped identifier used in workflow step definitions. Lowercase alphanumeric + hyphens, e.g.…"),
+			cli.String("name", "").Help("[required] Project-scoped identifier used in automation step definitions. Lowercase alphanumeric + hyphens, e.…"),
 			cli.String("output-schema", "").Help("JSON Schema describing the expected output shape. Accepts JSON, @file, or @-."),
 			cli.String("tags", "").Help("Arbitrary key-value string tags for filtering and organization. Accepts JSON, @file, or @-."),
 			cli.String("title", "").Help("Human-readable display name shown in the UI and catalog."),
@@ -199,7 +199,7 @@ func registerActionsCommands(app *cli.App) {
 		Flags(
 			cli.String("cursor", "").Help("cursor"),
 			cli.Int("limit", "").Help("limit"),
-			cli.String("run-id", "").Help("Filter to invocations from a specific workflow run."),
+			cli.String("run-id", "").Help("Filter to invocations from a specific automation run."),
 			cli.String("job-id", "").Help("Filter to invocations from a specific job."),
 			cli.String("action-name", "").Help("Filter to invocations of a specific action."),
 			cli.String("status", "").Help("Filter by terminal status (e.g. \"success\", \"failed\")."),

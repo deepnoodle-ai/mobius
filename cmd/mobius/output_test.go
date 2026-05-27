@@ -8,9 +8,9 @@ import (
 func TestPickColumnsHonorsPriorityOrder(t *testing.T) {
 	items := []any{
 		map[string]any{
-			"id":         "wf_1",
-			"name":       "Workflow",
-			"handle":     "wf",
+			"id":         "aut_1",
+			"name":       "Automation",
+			"handle":     "automation",
 			"created_at": "2025-01-01T00:00:00Z",
 			"spec":       map[string]any{"steps": []any{}}, // non-scalar — excluded
 			"weird_key":  "x",

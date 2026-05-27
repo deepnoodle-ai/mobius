@@ -17,7 +17,7 @@ type Plan struct {
 // PlannedCommand is one CLI command the generator is going to write.
 type PlannedCommand struct {
 	OperationID string
-	Group       string // subcommand group (e.g. "workflows"); empty for root-level
+	Group       string // subcommand group (e.g. "automations"); empty for root-level
 	Command     string // leaf command name (e.g. "list")
 	Description string
 
@@ -364,7 +364,7 @@ func groupFromSpec(op *SpecOp) string {
 
 // commandLeaf turns an operationId into a short command name by stripping the
 // verb-like prefix (list/get/create/update/delete) and everything after it.
-// Example: "listWorkflows" -> "list", "getChannelMessage" -> "get-message"
+// Example: "listAutomations" -> "list", "getChannelMessage" -> "get-message"
 // (we keep any noun suffix past the resource name so sibling operations on
 // the same resource don't collide).
 func commandLeaf(opID string) string {
@@ -424,7 +424,7 @@ func stripLeadingWord(s string) string {
 // commands.gen.go that dispatches to them and defines shared helpers.
 //
 // The returned map is keyed by file basename (e.g. "commands.gen.go",
-// "commands_workflows.gen.go") so callers can write them into the same
+// "commands_automations.gen.go") so callers can write them into the same
 // output directory.
 func render(plan *Plan, groupDescriptions map[string]string) (map[string][]byte, error) {
 	// Group commands by their parent group and dedupe leaf names within each.
@@ -1113,7 +1113,7 @@ func displayPath(p string) string {
 }
 
 // applyVars performs ${KEY} substitution on data using --var KEY=VALUE pairs.
-// Unknown keys are left intact (so workflow specs with intentional ${...}
+// Unknown keys are left intact (so automation specs with intentional ${...}
 // placeholders pass through untouched). Returns data unchanged when no --var
 // flag was set.
 func applyVars(ctx *cli.Context, data []byte) ([]byte, error) {

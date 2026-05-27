@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: mobius API
   version: 0.1.0
-  description: Mobius is a work coordination platform for mixed teams of humans, systems,
+  description: Mobius is an agent automation platform for mixed teams of humans, systems,
     and AI agents
 servers:
 - url: https://api.mobiusops.ai
@@ -413,7 +413,7 @@ paths:
       tags:
       - actions
       summary: Delete an action
-      description: Rejected with 409 if any workflow step currently references this action
+      description: Rejected with 409 if any automation step currently references this action
         by name (`ErrActionInUse`). Remove all references before deleting.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
@@ -464,7 +464,7 @@ paths:
       description: Returns per-invocation telemetry records for action executions in the project.
         Each record captures the action name, input parameters, output summary, final status,
         error details, and retry count. Filter by `run_id` to inspect all action calls within
-        a single workflow run, by `job_id` to scope to a specific job, or by `action_name`
+        a single automation run, by `job_id` to scope to a specific job, or by `action_name`
         for cross-run analysis.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
@@ -472,7 +472,7 @@ paths:
       - $ref: '#/components/parameters/LimitParam'
       - name: run_id
         in: query
-        description: Filter to invocations from a specific workflow run.
+        description: Filter to invocations from a specific automation run.
         schema:
           type: string
       - name: job_id
@@ -1278,7 +1278,7 @@ paths:
       - projects
       summary: Delete a project
       description: |-
-        Permanently deletes the project and all child resources (workflows, runs, jobs, triggers, webhooks, interactions, actions, agents, service accounts). This operation is irreversible.
+        Permanently deletes the project and all child resources (automations, runs, jobs, triggers, webhooks, interactions, actions, agents, service accounts). This operation is irreversible.
 
         The project must be archived first; calling delete on an active project returns `409 project_not_archived`. Archive via `POST /v1/projects/{id}/archive`.
       parameters:
@@ -2062,7 +2062,7 @@ paths:
         SubscriptionRouter (RFC 064) matches to the run's `interaction` step by `interaction_id`
         — not by signal name. The `signal_name` field is retained for historical request shape
         and audit logging; routing no longer depends on it. Omit both `run_id` and `signal_name`
-        for a standalone interaction that completes with no workflow side effect. Workers
+        for a standalone interaction that completes with no automation-run side effect. Workers
         creating interactions from within a job should use the job-scoped route (`POST /v1/projects/{project}/jobs/{id}/interactions`)
         instead, which derives the run automatically.
       parameters:
@@ -2182,7 +2182,7 @@ paths:
       - interactions
       summary: Get an interaction
       description: Returns one interaction with target, response, and completion metadata.
-        Run-backed interactions include the run and signal identifiers used to resume workflow
+        Run-backed interactions include the run and signal identifiers used to resume automation
         execution.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
@@ -2208,7 +2208,7 @@ paths:
       description: Soft-deletes an interaction so it disappears from inbox and project listings.
         The row is retained for audit history. Only terminal interactions (`completed`, `cancelled`,
         `expired`) may be deleted; pending or in-review interactions must be cancelled first
-        so any waiting workflow run can route to a fallback.
+        so any waiting automation run can route to a fallback.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/IDParam'
@@ -2309,8 +2309,8 @@ paths:
       - interactions
       summary: Cancel an open interaction
       description: 'Cancels an open interaction, recording who cancelled and an optional reason.
-        Run-backed interactions resume the waiting workflow path with a `{status: cancelled,
-        reason}` signal payload so workflows can route to a fallback. Only humans may cancel
+        Run-backed interactions resume the waiting automation step with a `{status: cancelled,
+        reason}` signal payload so automations can route to a fallback. Only humans may cancel
         by default — agents must request cancellation through an interaction.'
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
@@ -2474,9 +2474,9 @@ paths:
       - agents
       summary: Delete an agent
       description: Soft-deletes the agent by setting `deleted_at`. The agent record is retained
-        so historical channel messages can still resolve the sender name, but the agent is
-        excluded from all listings and lookups. The backing service account is disabled. In-flight
-        jobs claiming this agent are not automatically cancelled.
+        for audit and attribution history, but the agent is excluded from all listings and
+        lookups. The backing service account is disabled. In-flight jobs claiming this agent
+        are not automatically cancelled.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/IDParam'
@@ -4678,7 +4678,7 @@ components:
       description: |-
         Bearer credential supplied via the `Authorization: Bearer <credential>` header. Two credential types are accepted:
 
-        - **API keys** — prefix `mbx_`. Issued from the dashboard or via the
+        - **API keys** — prefix `mbx_`. Issued from the Mobius app or via the
         API key endpoints. API keys authenticate as a service account in one
         project. Send the raw `mbx_...` secret for normal requests. A
         trailing `.<project_handle>` suffix is accepted for compatibility and
@@ -4714,7 +4714,7 @@ components:
       name: action_name
       in: path
       required: true
-      description: Project-scoped action name used in workflow step definitions.
+      description: Project-scoped action name used in automation step definitions.
       schema:
         type: string
     user_id:
@@ -4844,7 +4844,7 @@ components:
       required: true
       schema:
         type: string
-      description: Workflow run ID
+      description: Automation run ID
   responses:
     BadRequest:
       description: Bad Request
@@ -5010,7 +5010,7 @@ components:
       - mode
       additionalProperties: false
       description: |-
-        Declarative dialog contract for rendering and validating an interaction. Used at both authoring time (inside a workflow definition) and runtime (persisted on an interaction). PRD 077 decouples protocol kind from input shape: each kind declares which spec modes are *allowed*, not which is *implied*. An approval may now legitimately use `select` mode (approve/deny/defer), for example.
+        Declarative dialog contract for rendering and validating an interaction. Used at both authoring time (inside an automation definition) and runtime (persisted on an interaction). PRD 077 decouples protocol kind from input shape: each kind declares which spec modes are *allowed*, not which is *implied*. An approval may now legitimately use `select` mode (approve/deny/defer), for example.
 
         Allowed combinations:
         * `approval` → `confirm`, `select`
@@ -5049,11 +5049,9 @@ components:
           description: When true, render `input` mode as a multiline text area.
     FeatureKey:
       type: string
-      enum:
-      - feature.apps
-      - feature.observables
-      description: Server-defined product feature key. `feature.apps` controls the Apps product
-        area; `feature.observables` controls Observables.
+      description: Server-defined product feature key. The launch product currently has no
+        public/developer feature gates; this string type remains for internal operator override
+        plumbing.
     FeatureOverrideScope:
       type: string
       enum:
@@ -5191,9 +5189,9 @@ components:
     Agent:
       type: object
       additionalProperties: false
-      description: Project-scoped automated worker identity backed by a service account. Agents
-        are useful when workflows need to target a named machine actor with capabilities,
-        configuration, and session presence.
+      description: Project-scoped AI actor identity backed by a service account. Agents are
+        useful when automations need a named actor with instructions, capabilities, configuration,
+        and session presence.
       required:
       - id
       - service_account_id
@@ -5230,9 +5228,9 @@ components:
             "rpa").
         color:
           type: string
-          description: Display color for this agent in UI surfaces such as channel avatars
-            and message rails. One of the Mantine color palette keys (e.g. `indigo`, `teal`,
-            `grape`); empty string falls back to a hash-derived color.
+          description: Display color for this agent in UI surfaces. One of the Mantine color
+            palette keys (e.g. `indigo`, `teal`, `grape`); empty string falls back to a hash-derived
+            color.
           maxLength: 24
         capabilities:
           type: object
@@ -5335,7 +5333,7 @@ components:
             or `restore`.'
         resource_type:
           type: string
-          description: Type of resource affected (e.g., job, channel, document)
+          description: Type of resource affected (e.g., automation, job, artifact)
         resource_id:
           type: string
           description: ID of the affected resource
@@ -5565,7 +5563,7 @@ components:
       properties:
         name:
           type: string
-          description: Project-scoped identifier used in workflow step definitions. Lowercase
+          description: Project-scoped identifier used in automation step definitions. Lowercase
             alphanumeric + hyphens, e.g. "send-email". Must be unique within the project.
             Cannot start with "mobius." (reserved prefix).
         title:
@@ -5738,9 +5736,8 @@ components:
       properties:
         name:
           type: string
-          description: Canonical dotted action name (e.g. `mobius.channel.send_message`).
-            Translated to the provider-safe form (`mobius_channel_send_message`) only at the
-            LLM boundary.
+          description: Canonical dotted action name (e.g. `slack.post_message`). Translated
+            to the provider-safe form (`slack_post_message`) only at the LLM boundary.
         title:
           type: string
           description: Human-readable display title for the action.
@@ -5872,19 +5869,19 @@ components:
           description: Unique identifier for this invocation record.
         run_id:
           type: string
-          description: Workflow run that triggered this invocation, if run-backed.
+          description: Automation run that triggered this invocation, if run-backed.
         job_id:
           type: string
           description: Job that triggered this invocation, if job-backed.
         step_name:
           type: string
-          description: Workflow step name that triggered this invocation.
+          description: Automation step name that triggered this invocation.
         action_name:
           type: string
           description: Name of the action that was invoked.
         source:
           type: string
-          description: Invocation source ("workflow", "direct", etc.).
+          description: Invocation source ("automation", "direct", etc.).
         parameters:
           type: object
           additionalProperties: true
@@ -6609,10 +6606,10 @@ components:
           description: Job ID.
         run_id:
           type: string
-          description: Workflow run that owns the job.
+          description: Automation run that owns the job.
         step_name:
           type: string
-          description: Workflow step name.
+          description: Automation step name.
         action:
           type: string
           description: Action executed by the worker.
@@ -8243,7 +8240,7 @@ components:
         run_id:
           type: string
           nullable: true
-          description: Originating workflow run when the interaction is run-backed.
+          description: Originating automation run when the interaction is run-backed.
         signal_name:
           type: string
           nullable: true
@@ -8401,7 +8398,7 @@ components:
           description: Opaque cursor to pass as `cursor` on the next request. Absent when
             `has_more` is false.
     CreateInteractionRequest:
-      description: Creates an interaction directly. Use the standalone variant with no workflow
+      description: Creates an interaction directly. Use the standalone variant with no automation-run
         side effect, or the run-backed variant that requires both `run_id` and `signal_name`
         so completion can resume the run. For worker/job usage, prefer the job-scoped route
         so the server can derive the owning run from the claimed job context.
@@ -8415,7 +8412,7 @@ components:
       - kind
       - title
       description: Creates a standalone interaction. Completion records the response but does
-        not deliver a workflow signal.
+        not deliver an automation signal.
       properties:
         target_user_ids:
           type: array
@@ -8486,10 +8483,10 @@ components:
       - kind
       - title
       description: Creates a run-backed interaction. **Deprecated as a resume mechanism.**
-        Under RFC 064 a workflow run only resumes from an interaction response when its materializer
-        registered a `run_subscription` with `Subject{kind:interaction, interaction_id:...}`.
-        That registration only happens for interactions created from within a workflow step
-        (declarative `interaction` step or job-scoped `POST /v1/projects/{project}/jobs/{id}/interactions`).
+        Under RFC 064 an automation run only resumes from an interaction response when its
+        materializer registered a `run_subscription` with `Subject{kind:interaction, interaction_id:...}`.
+        That registration only happens for interactions created from within an automation
+        step (declarative `interaction` step or job-scoped `POST /v1/projects/{project}/jobs/{id}/interactions`).
         Direct run-backed creates through this endpoint produce a pending interaction record
         linked to `run_id` for audit, but completion will not wake the run. Use the job-scoped
         route for resume semantics. `signal_name` is retained on the request shape for backwards
@@ -8497,7 +8494,7 @@ components:
       properties:
         run_id:
           type: string
-          description: ID of the workflow run to resume when this interaction is completed.
+          description: ID of the automation run to resume when this interaction is completed.
         signal_name:
           type: string
           description: Signal name the interaction will complete against when run-backed.
@@ -8583,7 +8580,7 @@ components:
       type: object
       additionalProperties: false
       description: Optional payload accompanying a cancel request. The reason is recorded
-        on the interaction and forwarded in the cancellation signal so workflows can route
+        on the interaction and forwarded in the cancellation signal so automations can route
         to a fallback.
       properties:
         reason:
@@ -9340,7 +9337,7 @@ components:
         tools:
           type: array
           description: Catalog entries the agent can invoke. Each entry surfaces to the LLM
-            as its own named tool. Built-in, integration, workflow, and custom-HTTP actions
+            as its own named tool. Built-in, integration, automation, and custom-HTTP actions
             are intermingled here.
           items:
             $ref: '#/components/schemas/ActionCatalogEntry'

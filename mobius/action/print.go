@@ -1,6 +1,6 @@
 // Package action provides a small set of general-purpose actions
 // that workers can register out of the box: print, fail, json, time, and
-// random. They cover most trivial and test workflows without requiring
+// random. They cover most trivial and test automations without requiring
 // custom code.
 package action
 

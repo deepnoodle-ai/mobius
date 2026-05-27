@@ -8,7 +8,7 @@ package main
 //   - Group overrides the subcommand group (default: the operation's first
 //     OpenAPI tag).
 //   - Command overrides the leaf command name (default: derived from the
-//     operationId, e.g. `listWorkflows` -> `list`, `getWorkflow` -> `get`).
+//     operationId, e.g. `listAutomations` -> `list`, `getAutomation` -> `get`).
 //   - Description overrides the short help string (default: the OpenAPI
 //     operation summary).
 type Override struct {
@@ -157,15 +157,6 @@ var overrides = map[string]Override{
 	"lookupReferences":  {Command: "lookup"},
 	"resolveReferences": {Command: "resolve"},
 
-	// --- runs -------------------------------------------------------------
-	"startRun":            {Command: "start"},
-	"resumeRun":           {Command: "resume"},
-	"forkRun":             {Command: "fork"},
-	"listRunsForWorkflow": {Command: "list-for-workflow"},
-	// startWorkflowRun is the path-bound variant of `runs start`; rename so
-	// the relationship to a specific workflow is clear in `mobius runs --help`.
-	"startWorkflowRun": {Command: "start-for-workflow"},
-
 	// --- permissions ------------------------------------------------------
 	"listProjectPermissions": {Command: "list"},
 
@@ -216,9 +207,6 @@ var overrides = map[string]Override{
 
 	// --- worker-sessions --------------------------------------------------
 	"listWorkerSessions": {Command: "list"},
-
-	// --- workflows --------------------------------------------------------
-	"validateWorkflowExpressions": {Command: "validate-expressions"},
 
 	// --- Skipped: hand-written in cmd/mobius -----------------------------
 	// The browser-based CLI login flow is hand-written in auth.go because it
@@ -271,7 +259,7 @@ var groupDescriptions = map[string]string{
 	"jobs":                  "Internal worker runtime operations",
 	"logs":                  "Structured log ingestion and retrieval",
 	"messages":              "Send, list, and update channel messages",
-	"metrics":               "Platform and workflow metrics",
+	"metrics":               "Platform and automation metrics",
 	"observables":           "Tracked observables, observations, and state",
 	"permissions":           "Project permission definitions and presets",
 	"projects":              "Projects within the organization",
@@ -285,10 +273,9 @@ var groupDescriptions = map[string]string{
 	"tables":                "Project-scoped tables and rows",
 	"team":                  "Project team membership",
 	"toolkits":              "Sets of tools agents can use to take action",
-	"tools":                 "Workflows published as callable tools",
+	"tools":                 "Automations published as callable tools",
 	"triggers":              "Event, schedule, and webhook triggers",
 	"user-state":            "Per-user project state and assignments",
 	"webhooks":              "Outgoing webhook subscriptions",
 	"worker-sessions":       "Registered worker sessions",
-	"workflows":             "Workflow definitions",
 }

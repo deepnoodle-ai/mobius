@@ -96,7 +96,7 @@ class InteractionOption(BaseModel):
 
 class InteractionSpec(BaseModel):
     """
-    Declarative dialog contract for rendering and validating an interaction. Used at both authoring time (inside a workflow definition) and runtime (persisted on an interaction). PRD 077 decouples protocol kind from input shape: each kind declares which spec modes are *allowed*, not which is *implied*. An approval may now legitimately use `select` mode (approve/deny/defer), for example.
+    Declarative dialog contract for rendering and validating an interaction. Used at both authoring time (inside an automation definition) and runtime (persisted on an interaction). PRD 077 decouples protocol kind from input shape: each kind declares which spec modes are *allowed*, not which is *implied*. An approval may now legitimately use `select` mode (approve/deny/defer), for example.
 
     Allowed combinations:
     * `approval` → `confirm`, `select`
@@ -137,13 +137,11 @@ class InteractionSpec(BaseModel):
     )
 
 
-class FeatureKey(StrEnum):
-    """
-    Server-defined product feature key. `feature.apps` controls the Apps product area; `feature.observables` controls Observables.
-    """
-
-    feature_apps = 'feature.apps'
-    feature_observables = 'feature.observables'
+class FeatureKey(RootModel[str]):
+    root: str = Field(
+        ...,
+        description='Server-defined product feature key. The launch product currently has no public/developer feature gates; this string type remains for internal operator override plumbing.',
+    )
 
 
 class FeatureOverrideScope(StrEnum):
@@ -262,7 +260,7 @@ class AgentStatus(StrEnum):
 
 class Agent(BaseModel):
     """
-    Project-scoped automated worker identity backed by a service account. Agents are useful when workflows need to target a named machine actor with capabilities, configuration, and session presence.
+    Project-scoped AI actor identity backed by a service account. Agents are useful when automations need a named actor with instructions, capabilities, configuration, and session presence.
     """
 
     model_config = ConfigDict(
@@ -292,7 +290,7 @@ class Agent(BaseModel):
     )
     color: str | None = Field(
         None,
-        description='Display color for this agent in UI surfaces such as channel avatars and message rails. One of the Mantine color palette keys (e.g. `indigo`, `teal`, `grape`); empty string falls back to a hash-derived color.',
+        description='Display color for this agent in UI surfaces. One of the Mantine color palette keys (e.g. `indigo`, `teal`, `grape`); empty string falls back to a hash-derived color.',
         max_length=24,
     )
     capabilities: dict[str, Any] | None = Field(
@@ -385,7 +383,7 @@ class AuditLogEntry(BaseModel):
         description='Type of action performed: `create`, `update`, `delete`, `archive`, or `restore`.',
     )
     resource_type: str = Field(
-        ..., description='Type of resource affected (e.g., job, channel, document)'
+        ..., description='Type of resource affected (e.g., automation, job, artifact)'
     )
     resource_id: str = Field(..., description='ID of the affected resource')
     resource_name: str | None = Field(
@@ -585,7 +583,7 @@ class CreateActionRequest(BaseModel):
     )
     name: str = Field(
         ...,
-        description='Project-scoped identifier used in workflow step definitions. Lowercase alphanumeric + hyphens, e.g. "send-email". Must be unique within the project. Cannot start with "mobius." (reserved prefix).',
+        description='Project-scoped identifier used in automation step definitions. Lowercase alphanumeric + hyphens, e.g. "send-email". Must be unique within the project. Cannot start with "mobius." (reserved prefix).',
     )
     title: str | None = Field(
         None, description='Human-readable display name shown in the UI and catalog.'
@@ -766,7 +764,7 @@ class ActionCatalogEntry(BaseModel):
     )
     name: str = Field(
         ...,
-        description='Canonical dotted action name (e.g. `mobius.channel.send_message`). Translated to the provider-safe form (`mobius_channel_send_message`) only at the LLM boundary.',
+        description='Canonical dotted action name (e.g. `slack.post_message`). Translated to the provider-safe form (`slack_post_message`) only at the LLM boundary.',
     )
     title: str | None = Field(
         None, description='Human-readable display title for the action.'
@@ -889,17 +887,18 @@ class ActionInvocationEntry(BaseModel):
     )
     id: str = Field(..., description='Unique identifier for this invocation record.')
     run_id: str | None = Field(
-        None, description='Workflow run that triggered this invocation, if run-backed.'
+        None,
+        description='Automation run that triggered this invocation, if run-backed.',
     )
     job_id: str | None = Field(
         None, description='Job that triggered this invocation, if job-backed.'
     )
     step_name: str | None = Field(
-        None, description='Workflow step name that triggered this invocation.'
+        None, description='Automation step name that triggered this invocation.'
     )
     action_name: str = Field(..., description='Name of the action that was invoked.')
     source: str = Field(
-        ..., description='Invocation source ("workflow", "direct", etc.).'
+        ..., description='Invocation source ("automation", "direct", etc.).'
     )
     parameters: dict[str, Any] | None = Field(
         None, description='Input parameters passed to the action.'
@@ -1364,8 +1363,8 @@ class WorkerSessionJobRef(BaseModel):
         extra='forbid',
     )
     id: str = Field(..., description='Job ID.')
-    run_id: str = Field(..., description='Workflow run that owns the job.')
-    step_name: str = Field(..., description='Workflow step name.')
+    run_id: str = Field(..., description='Automation run that owns the job.')
+    step_name: str = Field(..., description='Automation step name.')
     action: str = Field(..., description='Action executed by the worker.')
     status: Status1 = Field(..., description='Current job lifecycle state.')
     claimed_at: AwareDatetime | None = Field(
@@ -2621,7 +2620,7 @@ class RespondToInteractionRequest(BaseModel):
 
 class CancelInteractionRequest(BaseModel):
     """
-    Optional payload accompanying a cancel request. The reason is recorded on the interaction and forwarded in the cancellation signal so workflows can route to a fallback.
+    Optional payload accompanying a cancel request. The reason is recorded on the interaction and forwarded in the cancellation signal so automations can route to a fallback.
     """
 
     model_config = ConfigDict(
@@ -3202,7 +3201,7 @@ class AgentToolManifest(BaseModel):
     )
     tools: list[ActionCatalogEntry] = Field(
         ...,
-        description='Catalog entries the agent can invoke. Each entry surfaces to the LLM as its own named tool. Built-in, integration, workflow, and custom-HTTP actions are intermingled here.',
+        description='Catalog entries the agent can invoke. Each entry surfaces to the LLM as its own named tool. Built-in, integration, automation, and custom-HTTP actions are intermingled here.',
     )
     groups_resolved: list[ResolvedActionGroup] | None = Field(
         None,
@@ -4754,7 +4753,8 @@ class Interaction(BaseModel):
     )
     id: str = Field(..., description='Unique identifier for this interaction.')
     run_id: str | None = Field(
-        None, description='Originating workflow run when the interaction is run-backed.'
+        None,
+        description='Originating automation run when the interaction is run-backed.',
     )
     signal_name: str | None = Field(
         None,
@@ -4869,7 +4869,7 @@ class InteractionListResponse(BaseModel):
 
 class CreateStandaloneInteractionRequest(BaseModel):
     """
-    Creates a standalone interaction. Completion records the response but does not deliver a workflow signal.
+    Creates a standalone interaction. Completion records the response but does not deliver an automation signal.
     """
 
     model_config = ConfigDict(
@@ -4932,7 +4932,7 @@ class CreateStandaloneInteractionRequest(BaseModel):
 
 class CreateRunBackedInteractionRequest(BaseModel):
     """
-    Creates a run-backed interaction. **Deprecated as a resume mechanism.** Under RFC 064 a workflow run only resumes from an interaction response when its materializer registered a `run_subscription` with `Subject{kind:interaction, interaction_id:...}`. That registration only happens for interactions created from within a workflow step (declarative `interaction` step or job-scoped `POST /v1/projects/{project}/jobs/{id}/interactions`). Direct run-backed creates through this endpoint produce a pending interaction record linked to `run_id` for audit, but completion will not wake the run. Use the job-scoped route for resume semantics. `signal_name` is retained on the request shape for backwards compatibility and audit; routing no longer depends on it.
+    Creates a run-backed interaction. **Deprecated as a resume mechanism.** Under RFC 064 an automation run only resumes from an interaction response when its materializer registered a `run_subscription` with `Subject{kind:interaction, interaction_id:...}`. That registration only happens for interactions created from within an automation step (declarative `interaction` step or job-scoped `POST /v1/projects/{project}/jobs/{id}/interactions`). Direct run-backed creates through this endpoint produce a pending interaction record linked to `run_id` for audit, but completion will not wake the run. Use the job-scoped route for resume semantics. `signal_name` is retained on the request shape for backwards compatibility and audit; routing no longer depends on it.
     """
 
     model_config = ConfigDict(
@@ -4940,7 +4940,7 @@ class CreateRunBackedInteractionRequest(BaseModel):
     )
     run_id: str = Field(
         ...,
-        description='ID of the workflow run to resume when this interaction is completed.',
+        description='ID of the automation run to resume when this interaction is completed.',
     )
     signal_name: str = Field(
         ...,
@@ -5007,6 +5007,6 @@ class CreateInteractionRequest(
     root: CreateStandaloneInteractionRequest | CreateRunBackedInteractionRequest = (
         Field(
             ...,
-            description='Creates an interaction directly. Use the standalone variant with no workflow side effect, or the run-backed variant that requires both `run_id` and `signal_name` so completion can resume the run. For worker/job usage, prefer the job-scoped route so the server can derive the owning run from the claimed job context.',
+            description='Creates an interaction directly. Use the standalone variant with no automation-run side effect, or the run-backed variant that requires both `run_id` and `signal_name` so completion can resume the run. For worker/job usage, prefer the job-scoped route so the server can derive the owning run from the claimed job context.',
         )
     )

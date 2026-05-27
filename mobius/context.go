@@ -19,6 +19,10 @@ type Context interface {
 	ProjectID() string
 	RunID() string
 	JobID() string
+	// WorkflowName is retained for source compatibility with pre-automation
+	// workers. Worker jobs no longer carry a workflow name, so this returns "".
+	//
+	// Deprecated: use RunID, JobID, and StepName for job identity.
 	WorkflowName() string
 	StepName() string
 	Attempt() int

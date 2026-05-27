@@ -5,8 +5,9 @@ code in this repository.
 
 ## What this is
 
-Public client side of Mobius (workflows / runs / tasks / workers). Three SDKs
-(Go, Python, TypeScript) plus the `mobius` CLI, all generated from `openapi.yaml`.
+Public client side of Mobius (automations / runs / actions / workers). Three
+SDKs (Go, Python, TypeScript) plus the `mobius` CLI, all generated from
+`openapi.yaml`.
 
 ## Commands
 
@@ -40,10 +41,9 @@ an override in the same change as the spec edit.
 **`internal/testdata/contract/` is the cross-language wire-format contract.**
 Each SDK round-trips every fixture through its generated types and asserts
 byte-equivalence. If a fixture fails in one SDK, fix the SDK or the spec —
-never edit the fixture to match current SDK behavior. The runtime job
-endpoints (claim / heartbeat / complete) are hand-written in each SDK and
-validated *only* by these fixtures, so contract-test failures are real wire
-bugs.
+never edit the fixture to match current SDK behavior. The worker WebSocket
+runtime frames are hand-written in each SDK and validated *only* by these
+fixtures, so contract-test failures are real wire bugs.
 
 When adding a schema to `manifest.json`, also add a case to `newForSchema` in
 `mobius/api/contract_test.go` — a missing binding fails the test by design.

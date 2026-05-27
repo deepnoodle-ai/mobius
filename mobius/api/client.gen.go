@@ -823,24 +823,6 @@ func (e FeatureGateSource) Valid() bool {
 	}
 }
 
-// Defines values for FeatureKey.
-const (
-	FeatureKeyFeatureApps        FeatureKey = "feature.apps"
-	FeatureKeyFeatureObservables FeatureKey = "feature.observables"
-)
-
-// Valid indicates whether the value is a known member of the FeatureKey enum.
-func (e FeatureKey) Valid() bool {
-	switch e {
-	case FeatureKeyFeatureApps:
-		return true
-	case FeatureKeyFeatureObservables:
-		return true
-	default:
-		return false
-	}
-}
-
 // Defines values for FeatureOverrideScope.
 const (
 	FeatureOverrideScopeOrg     FeatureOverrideScope = "org"
@@ -2232,7 +2214,7 @@ type ActionCatalogEntry struct {
 	// Integration Integration slug this action belongs to (e.g. "slack"), if platform-provided.
 	Integration *string `json:"integration,omitempty"`
 
-	// Name Canonical dotted action name (e.g. `mobius.channel.send_message`). Translated to the provider-safe form (`mobius_channel_send_message`) only at the LLM boundary.
+	// Name Canonical dotted action name (e.g. `slack.post_message`). Translated to the provider-safe form (`slack_post_message`) only at the LLM boundary.
 	Name string `json:"name"`
 
 	// OutputSchema JSON Schema describing the expected output shape.
@@ -2292,10 +2274,10 @@ type ActionInvocationEntry struct {
 	// RetryCount Number of retry attempts before this terminal status was reached.
 	RetryCount int `json:"retry_count"`
 
-	// RunId Workflow run that triggered this invocation, if run-backed.
+	// RunId Automation run that triggered this invocation, if run-backed.
 	RunId *string `json:"run_id,omitempty"`
 
-	// Source Invocation source ("workflow", "direct", etc.).
+	// Source Invocation source ("automation", "direct", etc.).
 	Source string `json:"source"`
 
 	// StartedAt Timestamp when this invocation started.
@@ -2304,7 +2286,7 @@ type ActionInvocationEntry struct {
 	// Status Terminal invocation status ("success", "failed", etc.).
 	Status string `json:"status"`
 
-	// StepName Workflow step name that triggered this invocation.
+	// StepName Automation step name that triggered this invocation.
 	StepName *string `json:"step_name,omitempty"`
 }
 
@@ -2358,12 +2340,12 @@ type AddProjectMemberRequest struct {
 	UserId string `json:"user_id"`
 }
 
-// Agent Project-scoped automated worker identity backed by a service account. Agents are useful when workflows need to target a named machine actor with capabilities, configuration, and session presence.
+// Agent Project-scoped AI actor identity backed by a service account. Agents are useful when automations need a named actor with instructions, capabilities, configuration, and session presence.
 type Agent struct {
 	// Capabilities Arbitrary capability map used by orchestrators to select suitable agents.
 	Capabilities *map[string]interface{} `json:"capabilities,omitempty"`
 
-	// Color Display color for this agent in UI surfaces such as channel avatars and message rails. One of the Mantine color palette keys (e.g. `indigo`, `teal`, `grape`); empty string falls back to a hash-derived color.
+	// Color Display color for this agent in UI surfaces. One of the Mantine color palette keys (e.g. `indigo`, `teal`, `grape`); empty string falls back to a hash-derived color.
 	Color *string `json:"color,omitempty"`
 
 	// CreatedAt Timestamp when this agent was created.
@@ -2492,7 +2474,7 @@ type AgentToolManifest struct {
 	// ToolkitIds Toolkit IDs that contributed to the resolved manifest.
 	ToolkitIds []string `json:"toolkit_ids"`
 
-	// Tools Catalog entries the agent can invoke. Each entry surfaces to the LLM as its own named tool. Built-in, integration, workflow, and custom-HTTP actions are intermingled here.
+	// Tools Catalog entries the agent can invoke. Each entry surfaces to the LLM as its own named tool. Built-in, integration, automation, and custom-HTTP actions are intermingled here.
 	Tools []ActionCatalogEntry `json:"tools"`
 
 	// Warnings Non-fatal issues encountered while resolving the manifest.
@@ -2662,7 +2644,7 @@ type AuditLogEntry struct {
 	// ResourceName Human-readable name of the affected resource
 	ResourceName *string `json:"resource_name,omitempty"`
 
-	// ResourceType Type of resource affected (e.g., job, channel, document)
+	// ResourceType Type of resource affected (e.g., automation, job, artifact)
 	ResourceType string `json:"resource_type"`
 
 	// UserAgent User agent of the request
@@ -3130,7 +3112,7 @@ type CancelAutomationRunRequest struct {
 	Reason *string `json:"reason,omitempty"`
 }
 
-// CancelInteractionRequest Optional payload accompanying a cancel request. The reason is recorded on the interaction and forwarded in the cancellation signal so workflows can route to a fallback.
+// CancelInteractionRequest Optional payload accompanying a cancel request. The reason is recorded on the interaction and forwarded in the cancellation signal so automations can route to a fallback.
 type CancelInteractionRequest struct {
 	// Reason Free-text reason recorded on the interaction.
 	Reason *string `json:"reason,omitempty"`
@@ -3203,7 +3185,7 @@ type CreateActionRequest struct {
 	// InputSchema JSON Schema describing the expected input parameters.
 	InputSchema *map[string]interface{} `json:"input_schema,omitempty"`
 
-	// Name Project-scoped identifier used in workflow step definitions. Lowercase alphanumeric + hyphens, e.g. "send-email". Must be unique within the project. Cannot start with "mobius." (reserved prefix).
+	// Name Project-scoped identifier used in automation step definitions. Lowercase alphanumeric + hyphens, e.g. "send-email". Must be unique within the project. Cannot start with "mobius." (reserved prefix).
 	Name string `json:"name"`
 
 	// OutputSchema JSON Schema describing the expected output shape.
@@ -3342,7 +3324,7 @@ type CreateEnvironmentRequest struct {
 // CreateEnvironmentRequestTemplateId V1 supports only coding-default.
 type CreateEnvironmentRequestTemplateId string
 
-// CreateInteractionRequest Creates an interaction directly. Use the standalone variant with no workflow side effect, or the run-backed variant that requires both `run_id` and `signal_name` so completion can resume the run. For worker/job usage, prefer the job-scoped route so the server can derive the owning run from the claimed job context.
+// CreateInteractionRequest Creates an interaction directly. Use the standalone variant with no automation-run side effect, or the run-backed variant that requires both `run_id` and `signal_name` so completion can resume the run. For worker/job usage, prefer the job-scoped route so the server can derive the owning run from the claimed job context.
 type CreateInteractionRequest struct {
 	union json.RawMessage
 }
@@ -3399,7 +3381,7 @@ type CreateRoleRequest struct {
 	Tags *TagMap `json:"tags,omitempty"`
 }
 
-// CreateRunBackedInteractionRequest Creates a run-backed interaction. **Deprecated as a resume mechanism.** Under RFC 064 a workflow run only resumes from an interaction response when its materializer registered a `run_subscription` with `Subject{kind:interaction, interaction_id:...}`. That registration only happens for interactions created from within a workflow step (declarative `interaction` step or job-scoped `POST /v1/projects/{project}/jobs/{id}/interactions`). Direct run-backed creates through this endpoint produce a pending interaction record linked to `run_id` for audit, but completion will not wake the run. Use the job-scoped route for resume semantics. `signal_name` is retained on the request shape for backwards compatibility and audit; routing no longer depends on it.
+// CreateRunBackedInteractionRequest Creates a run-backed interaction. **Deprecated as a resume mechanism.** Under RFC 064 an automation run only resumes from an interaction response when its materializer registered a `run_subscription` with `Subject{kind:interaction, interaction_id:...}`. That registration only happens for interactions created from within an automation step (declarative `interaction` step or job-scoped `POST /v1/projects/{project}/jobs/{id}/interactions`). Direct run-backed creates through this endpoint produce a pending interaction record linked to `run_id` for audit, but completion will not wake the run. Use the job-scoped route for resume semantics. `signal_name` is retained on the request shape for backwards compatibility and audit; routing no longer depends on it.
 type CreateRunBackedInteractionRequest struct {
 	// Consumer Polymorphic identifier of what is waiting on this interaction's resolution (PRD 077 §3.7). Replaces the previously special-cased `run_id` + `signal_name` pair. When `kind=run`, the legacy fields are also populated for compatibility. `http_subscriber` requires `secret_ref` and enqueues a durable callback dispatch to `callback_url` when the interaction resolves; the canonical string `v1.{delivery_id}.{unix_timestamp}.{raw_body}` is signed with HMAC-SHA256 against the resolved project signing key and the signed dispatch carries `X-Mobius-Signature`, `X-Mobius-Secret-Ref`, `X-Mobius-Secret-Version`, and `X-Mobius-Timestamp`. Signed dispatches also carry `X-Mobius-Signature-Version: v1`. Every durable dispatch also carries the stable outbox row id in `X-Mobius-Delivery-Id` and `Idempotency-Key`; retries reuse the same value. Verifiers should recompute the signature over the exact raw body, reject stale timestamps (for example, older than five minutes), deduplicate by delivery id, and check the signing headers.
 	Consumer *Consumer `json:"consumer,omitempty"`
@@ -3438,13 +3420,13 @@ type CreateRunBackedInteractionRequest struct {
 	// ResolutionPolicy Declarative resolution rule attached to an Interaction. Determines how participant responses become a final outcome.
 	ResolutionPolicy *ResolutionPolicy `json:"resolution_policy,omitempty"`
 
-	// RunId ID of the workflow run to resume when this interaction is completed.
+	// RunId ID of the automation run to resume when this interaction is completed.
 	RunId string `json:"run_id"`
 
 	// SignalName Signal name the interaction will complete against when run-backed.
 	SignalName string `json:"signal_name"`
 
-	// Spec Declarative dialog contract for rendering and validating an interaction. Used at both authoring time (inside a workflow definition) and runtime (persisted on an interaction). PRD 077 decouples protocol kind from input shape: each kind declares which spec modes are *allowed*, not which is *implied*. An approval may now legitimately use `select` mode (approve/deny/defer), for example.
+	// Spec Declarative dialog contract for rendering and validating an interaction. Used at both authoring time (inside an automation definition) and runtime (persisted on an interaction). PRD 077 decouples protocol kind from input shape: each kind declares which spec modes are *allowed*, not which is *implied*. An approval may now legitimately use `select` mode (approve/deny/defer), for example.
 	//
 	// Allowed combinations:
 	// * `approval` → `confirm`, `select`
@@ -3501,7 +3483,7 @@ type CreateServiceAccountRequest struct {
 	Tags *TagMap `json:"tags,omitempty"`
 }
 
-// CreateStandaloneInteractionRequest Creates a standalone interaction. Completion records the response but does not deliver a workflow signal.
+// CreateStandaloneInteractionRequest Creates a standalone interaction. Completion records the response but does not deliver an automation signal.
 type CreateStandaloneInteractionRequest struct {
 	// Consumer Polymorphic identifier of what is waiting on this interaction's resolution (PRD 077 §3.7). Replaces the previously special-cased `run_id` + `signal_name` pair. When `kind=run`, the legacy fields are also populated for compatibility. `http_subscriber` requires `secret_ref` and enqueues a durable callback dispatch to `callback_url` when the interaction resolves; the canonical string `v1.{delivery_id}.{unix_timestamp}.{raw_body}` is signed with HMAC-SHA256 against the resolved project signing key and the signed dispatch carries `X-Mobius-Signature`, `X-Mobius-Secret-Ref`, `X-Mobius-Secret-Version`, and `X-Mobius-Timestamp`. Signed dispatches also carry `X-Mobius-Signature-Version: v1`. Every durable dispatch also carries the stable outbox row id in `X-Mobius-Delivery-Id` and `Idempotency-Key`; retries reuse the same value. Verifiers should recompute the signature over the exact raw body, reject stale timestamps (for example, older than five minutes), deduplicate by delivery id, and check the signing headers.
 	Consumer *Consumer `json:"consumer,omitempty"`
@@ -3540,7 +3522,7 @@ type CreateStandaloneInteractionRequest struct {
 	// ResolutionPolicy Declarative resolution rule attached to an Interaction. Determines how participant responses become a final outcome.
 	ResolutionPolicy *ResolutionPolicy `json:"resolution_policy,omitempty"`
 
-	// Spec Declarative dialog contract for rendering and validating an interaction. Used at both authoring time (inside a workflow definition) and runtime (persisted on an interaction). PRD 077 decouples protocol kind from input shape: each kind declares which spec modes are *allowed*, not which is *implied*. An approval may now legitimately use `select` mode (approve/deny/defer), for example.
+	// Spec Declarative dialog contract for rendering and validating an interaction. Used at both authoring time (inside an automation definition) and runtime (persisted on an interaction). PRD 077 decouples protocol kind from input shape: each kind declares which spec modes are *allowed*, not which is *implied*. An approval may now legitimately use `select` mode (approve/deny/defer), for example.
 	//
 	// Allowed combinations:
 	// * `approval` → `confirm`, `select`
@@ -3780,7 +3762,7 @@ type FeatureGate struct {
 	// ExpiresAt Optional expiry for the active override.
 	ExpiresAt *time.Time `json:"expires_at,omitempty"`
 
-	// Key Server-defined product feature key. `feature.apps` controls the Apps product area; `feature.observables` controls Observables.
+	// Key Server-defined product feature key. The launch product currently has no public/developer feature gates; this string type remains for internal operator override plumbing.
 	Key FeatureKey `json:"key"`
 
 	// Label Short user-facing name.
@@ -3810,8 +3792,8 @@ type FeatureGateListResponse struct {
 // FeatureGateSource Source of the effective feature gate decision.
 type FeatureGateSource string
 
-// FeatureKey Server-defined product feature key. `feature.apps` controls the Apps product area; `feature.observables` controls Observables.
-type FeatureKey string
+// FeatureKey Server-defined product feature key. The launch product currently has no public/developer feature gates; this string type remains for internal operator override plumbing.
+type FeatureKey = string
 
 // FeatureOverrideScope Scope for a feature override. Org overrides apply across the organization; project overrides apply only to the specified project and take precedence over org overrides.
 type FeatureOverrideScope string
@@ -3915,13 +3897,13 @@ type Interaction struct {
 	// Responses All response artifacts recorded against this interaction in arrival order.
 	Responses *[]InteractionResponse `json:"responses,omitempty"`
 
-	// RunId Originating workflow run when the interaction is run-backed.
+	// RunId Originating automation run when the interaction is run-backed.
 	RunId *string `json:"run_id,omitempty"`
 
 	// SignalName Signal name used to resume the originating run when run-backed.
 	SignalName *string `json:"signal_name,omitempty"`
 
-	// Spec Declarative dialog contract for rendering and validating an interaction. Used at both authoring time (inside a workflow definition) and runtime (persisted on an interaction). PRD 077 decouples protocol kind from input shape: each kind declares which spec modes are *allowed*, not which is *implied*. An approval may now legitimately use `select` mode (approve/deny/defer), for example.
+	// Spec Declarative dialog contract for rendering and validating an interaction. Used at both authoring time (inside an automation definition) and runtime (persisted on an interaction). PRD 077 decouples protocol kind from input shape: each kind declares which spec modes are *allowed*, not which is *implied*. An approval may now legitimately use `select` mode (approve/deny/defer), for example.
 	//
 	// Allowed combinations:
 	// * `approval` → `confirm`, `select`
@@ -4057,7 +4039,7 @@ type InteractionResponseResponseKind string
 // InteractionResponseState Lifecycle state for this response row.
 type InteractionResponseState string
 
-// InteractionSpec Declarative dialog contract for rendering and validating an interaction. Used at both authoring time (inside a workflow definition) and runtime (persisted on an interaction). PRD 077 decouples protocol kind from input shape: each kind declares which spec modes are *allowed*, not which is *implied*. An approval may now legitimately use `select` mode (approve/deny/defer), for example.
+// InteractionSpec Declarative dialog contract for rendering and validating an interaction. Used at both authoring time (inside an automation definition) and runtime (persisted on an interaction). PRD 077 decouples protocol kind from input shape: each kind declares which spec modes are *allowed*, not which is *implied*. An approval may now legitimately use `select` mode (approve/deny/defer), for example.
 //
 // Allowed combinations:
 // * `approval` → `confirm`, `select`
@@ -5534,13 +5516,13 @@ type WorkerSessionJobRef struct {
 	// Id Job ID.
 	Id string `json:"id"`
 
-	// RunId Workflow run that owns the job.
+	// RunId Automation run that owns the job.
 	RunId string `json:"run_id"`
 
 	// Status Current job lifecycle state.
 	Status WorkerSessionJobRefStatus `json:"status"`
 
-	// StepName Workflow step name.
+	// StepName Automation step name.
 	StepName string `json:"step_name"`
 
 	// UpdatedAt Last job update timestamp.
@@ -6057,7 +6039,7 @@ type ListActionInvocationsParams struct {
 	// Limit Maximum number of items to return
 	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
 
-	// RunId Filter to invocations from a specific workflow run.
+	// RunId Filter to invocations from a specific automation run.
 	RunId *string `form:"run_id,omitempty" json:"run_id,omitempty"`
 
 	// JobId Filter to invocations from a specific job.
