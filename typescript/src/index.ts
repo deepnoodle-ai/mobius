@@ -83,7 +83,7 @@ export type {
 
 export type {
   AutomationStatus,
-  AutomationTriggerInput,
+  AutomationTrigger,
   CancelAutomationRunRequest,
   CreateAutomationRequest,
   CreateAutomationVersionRequest,

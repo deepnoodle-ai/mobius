@@ -165,7 +165,7 @@ test("smoke: waitRun fetches after stream closes before terminal", async () => {
   globalThis.fetch = (async (input: RequestInfo | URL) => {
     const url = typeof input === "string" ? input : input.toString();
     const path = new URL(url).pathname;
-    if (path.endsWith("/events")) {
+    if (path.endsWith("/events.stream")) {
       return new Response(
         `event: run_updated
 id: 7
@@ -177,7 +177,7 @@ data: {"type":"run_updated","run_id":"run_1","seq":7,"timestamp":"2026-04-27T00:
     }
     getCalls += 1;
     return new Response(
-      JSON.stringify(runDetailBody("run_1", getCalls === 1 ? "active" : "completed")),
+      JSON.stringify(automationRun("run_1", getCalls === 1 ? "running" : "completed")),
       { status: 200, headers: { "Content-Type": "application/json" } },
     );
   }) as typeof fetch;

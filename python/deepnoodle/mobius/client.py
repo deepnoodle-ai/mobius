@@ -19,7 +19,7 @@ from ._api.models import (
     AutomationRunSource,
     AutomationRunStatus,
     AutomationStatus,
-    AutomationTriggerInput,
+    AutomationTrigger,
     AutomationVersion,
     AutomationVersionListResponse,
     CancelAutomationRunRequest,
@@ -61,7 +61,7 @@ class AutomationOptions:
     default_inputs: dict[str, Any] | None = None
     settings: dict[str, Any] | None = None
     tags: TagMap | dict[str, str] | None = None
-    triggers: list[AutomationTriggerInput] | None = None
+    triggers: list[AutomationTrigger] | None = None
 
 
 @dataclass
@@ -73,7 +73,7 @@ class UpdateAutomationOptions:
     settings: dict[str, Any] | None = None
     status: AutomationStatus | None = None
     tags: TagMap | dict[str, str] | None = None
-    triggers: list[AutomationTriggerInput] | None = None
+    triggers: list[AutomationTrigger] | None = None
 
 
 @dataclass

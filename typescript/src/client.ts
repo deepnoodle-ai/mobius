@@ -7,7 +7,7 @@ import type {
   AutomationRunSource,
   AutomationRunStatus,
   AutomationStatus,
-  AutomationTriggerInput,
+  AutomationTrigger,
   AutomationVersion,
   AutomationVersionListResponse,
   CancelAutomationRunRequest,
@@ -126,7 +126,7 @@ export interface AutomationOptions {
   default_inputs?: Record<string, unknown>;
   settings?: Record<string, unknown>;
   tags?: TagMap;
-  triggers?: AutomationTriggerInput[];
+  triggers?: AutomationTrigger[];
 }
 
 export interface UpdateAutomationOptions {
@@ -137,7 +137,7 @@ export interface UpdateAutomationOptions {
   settings?: Record<string, unknown>;
   status?: AutomationStatus;
   tags?: TagMap;
-  triggers?: AutomationTriggerInput[];
+  triggers?: AutomationTrigger[];
 }
 
 export interface AutomationVersionOptions {
@@ -290,7 +290,7 @@ export class Client {
     opts: AutomationVersionOptions = {},
   ): Promise<AutomationVersion> {
     const body: CreateAutomationVersionRequest = removeUndefined({
-      spec,
+      spec: spec as CreateAutomationVersionRequest["spec"],
       compiled_plan: opts.compiled_plan,
     });
     const resp = await this.request(

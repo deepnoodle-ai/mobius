@@ -2619,7 +2619,7 @@ export interface components {
         };
         /** @description New signing key material returned after rotating a signing secret. */
         RotateSecretResult: {
-            /** @description Project secret reference that now stores the action signing key. */
+            /** @description Project secret reference that now stores the rotated signing key. */
             secret_ref: string;
             /**
              * Format: int64
