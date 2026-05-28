@@ -868,8 +868,12 @@ func renderCommand(b *bytes.Buffer, group string, c PlannedCommand) error {
 				}
 				conds = append(conds, fmt.Sprintf("!ctx.IsSet(%q)", flagName))
 			}
-			fmt.Fprintf(b, "\t\t\tif %s { return fmt.Errorf(\"at least one flag or --file is required\") }\n",
-				strings.Join(conds, " && "))
+			msg := "at least one flag or --file is required"
+			if len(conds) == 1 {
+				msg = "--file is required"
+			}
+			fmt.Fprintf(b, "\t\t\tif %s { return fmt.Errorf(%q) }\n",
+				strings.Join(conds, " && "), msg)
 		}
 		// --dry-run: print the assembled body and exit before HTTP. For
 		// secret-bearing commands, pass the JSON field names whose contents

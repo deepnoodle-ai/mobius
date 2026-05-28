@@ -63,7 +63,7 @@ func registerWorkerCommand(app *cli.App) {
 			name := ctx.String("name")
 			instanceID := ctx.String("instance-id")
 			queues := firstNonEmptyStrings(ctx.Strings("queues"), splitEnv("MOBIUS_WORKER_QUEUES"))
-			actions := firstNonEmptyStrings(ctx.Strings("actions"), splitEnv("MOBIUS_ACTION_NAMES"))
+			actions := firstNonEmptyStrings(ctx.Strings("actions"), splitEnv("MOBIUS_WORKER_ACTION_NAMES"))
 			environmentID := ctx.String("environment-id")
 			concurrency := ctx.Int("concurrency")
 			workers := ctx.Int("workers")

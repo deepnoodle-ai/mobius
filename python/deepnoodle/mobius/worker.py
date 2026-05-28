@@ -60,7 +60,10 @@ class ActionContext:
     def emit_event(self, _type: str, _payload: dict[str, Any]) -> None:
         # The WebSocket worker protocol currently has generation.delta for
         # token streams, but no general custom-event frame.
-        return None
+        raise NotImplementedError(
+            "ActionContext.emit_event is not supported on the WebSocket worker "
+            "protocol; the only streaming frame is generation.delta"
+        )
 
 
 @dataclass
@@ -88,6 +91,7 @@ class Worker:
         self.generators: dict[str, GenerationFunc] = {}
         self.session_token = ""
         self._stopping = False
+        self._claim_outstanding = False
         self.logger = self.config.logger or logging.getLogger("mobius.worker")
 
     def register(self, name: str, fn: ActionFunc) -> Worker:
@@ -122,24 +126,31 @@ class Worker:
         async with websockets.connect(self.client.worker_socket_url(), additional_headers=headers) as ws:
             await ws.send(self._register_frame().model_dump_json(exclude_none=True))
             running: dict[str, asyncio.Task[None]] = {}
-            claim_outstanding = False
+            self._claim_outstanding = False
+
+            def _on_job_done(task: asyncio.Task[None], job_id: str) -> None:
+                running.pop(job_id, None)
+                if self._stopping:
+                    return
+                asyncio.create_task(self._reclaim_after_done(ws, running))
+
             async for raw in ws:
                 frame = json.loads(raw)
                 kind = frame.get("type")
                 if kind == "worker.registered":
                     self.session_token = frame["worker_session_token"]
-                    claim_outstanding = await self._claim(ws, running, claim_outstanding)
+                    self._claim_outstanding = await self._claim(ws, running, self._claim_outstanding)
                 elif kind == "jobs.claimed":
-                    claim_outstanding = False
+                    self._claim_outstanding = False
                     for raw_job in frame.get("jobs", []):
                         if len(running) >= max(1, self.config.concurrency):
                             break
                         job = WorkerSocketClaimedJob.model_validate(raw_job)
                         task = asyncio.create_task(self._execute_job(ws, job))
                         running[job.id] = task
-                        task.add_done_callback(lambda _task, job_id=job.id: running.pop(job_id, None))
+                        task.add_done_callback(lambda t, job_id=job.id: _on_job_done(t, job_id))
                 elif kind == "work.available":
-                    claim_outstanding = await self._claim(ws, running, claim_outstanding)
+                    self._claim_outstanding = await self._claim(ws, running, self._claim_outstanding)
                 elif kind == "job.heartbeat.ack":
                     cancel = frame.get("cancel")
                     task = running.get(frame.get("job_id")) if cancel else None
@@ -171,6 +182,11 @@ class Worker:
             action_names=action_names or None,
             models=[m.__dict__ for m in self.config.models] or None,
         )
+
+    async def _reclaim_after_done(self, ws: Any, running: dict[str, asyncio.Task[None]]) -> None:
+        if self._claim_outstanding or self._stopping:
+            return
+        self._claim_outstanding = await self._claim(ws, running, self._claim_outstanding)
 
     async def _claim(self, ws: Any, running: dict[str, asyncio.Task[None]], outstanding: bool) -> bool:
         if outstanding or self._stopping:

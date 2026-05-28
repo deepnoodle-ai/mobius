@@ -217,7 +217,7 @@ func registerAutomationsCommands(app *cli.App) {
 				return err
 			}
 			if ctx.String("file") == "" {
-				return fmt.Errorf("at least one flag or --file is required")
+				return fmt.Errorf("--file is required")
 			}
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)

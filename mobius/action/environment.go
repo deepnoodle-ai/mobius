@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -452,14 +453,28 @@ func workspacePath(path string) (string, error) {
 	} else {
 		target = filepath.Clean(filepath.Join(root, path))
 	}
-	rel, err := filepath.Rel(root, target)
-	if err != nil {
+	if err := assertInsideWorkspace(root, target); err != nil {
 		return "", err
 	}
-	if rel == ".." || strings.HasPrefix(rel, ".."+string(os.PathSeparator)) {
-		return "", fmt.Errorf("path escapes environment workspace")
+	// Resolve symlinks where the target exists to defeat boundary bypass via
+	// in-workspace symlinks that point outside the workspace.
+	if resolved, err := filepath.EvalSymlinks(target); err == nil {
+		if err := assertInsideWorkspace(root, resolved); err != nil {
+			return "", err
+		}
 	}
 	return target, nil
+}
+
+func assertInsideWorkspace(root, target string) error {
+	rel, err := filepath.Rel(root, target)
+	if err != nil {
+		return err
+	}
+	if rel == ".." || strings.HasPrefix(rel, ".."+string(os.PathSeparator)) {
+		return fmt.Errorf("path escapes environment workspace")
+	}
+	return nil
 }
 
 func workspaceRootAbs() string {
@@ -575,14 +590,10 @@ func tailFile(path string, lines int) (string, error) {
 	return strings.Join(parts, "\n"), nil
 }
 
+var secretRedactionPattern = regexp.MustCompile(`(mbx_|github_pat_|ghp_|gho_|ghu_|ghs_|ghr_)[A-Za-z0-9_]+`)
+
 func redactSecrets(s string) string {
-	words := strings.Fields(s)
-	for _, word := range words {
-		if strings.HasPrefix(word, "mbx_") || strings.HasPrefix(word, "github_pat_") || strings.HasPrefix(word, "ghp_") || strings.HasPrefix(word, "gho_") || strings.HasPrefix(word, "ghu_") || strings.HasPrefix(word, "ghs_") || strings.HasPrefix(word, "ghr_") {
-			s = strings.ReplaceAll(s, word, "[redacted]")
-		}
-	}
-	return s
+	return secretRedactionPattern.ReplaceAllString(s, "[redacted]")
 }
 
 type limitedBuffer struct {

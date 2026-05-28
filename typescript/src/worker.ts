@@ -150,6 +150,7 @@ export class Worker {
   private readonly generators = new Map<string, GenerationFn>();
   private sessionToken = "";
   private stopping = false;
+  private readonly stopController = new AbortController();
 
   constructor(
     private readonly client: Client,
@@ -175,19 +176,21 @@ export class Worker {
 
   stop(): void {
     this.stopping = true;
+    this.stopController.abort();
   }
 
   async run(signal?: AbortSignal): Promise<void> {
     const { id, source } = await resolveInstanceID(this.config.workerInstanceId);
     this.config.workerInstanceId = id;
     this.logger.info(`[mobius] worker instance id ${id} (source: ${source})`);
-    while (!this.stopping && !signal?.aborted) {
+    const runSignal = mergeSignals(this.stopController.signal, signal);
+    while (!this.stopping && !runSignal.aborted) {
       try {
-        await this.runSocket(signal);
+        await this.runSocket(runSignal);
       } catch (err) {
-        if (signal?.aborted || this.stopping) return;
+        if (runSignal.aborted || this.stopping) return;
         this.logger.warn("[mobius] worker socket disconnected; reconnecting", err);
-        await sleep(this.config.reconnectDelayMs ?? 2000, signal);
+        await sleep(this.config.reconnectDelayMs ?? 2000, runSignal);
       }
     }
   }
@@ -416,6 +419,7 @@ export interface WorkerPoolConfig extends Omit<WorkerConfig, "workerInstanceId">
 
 export class WorkerPool {
   private readonly actions = new Map<string, ActionFn>();
+  private readonly generators = new Map<string, GenerationFn>();
   constructor(
     private readonly client: Client,
     private readonly config: WorkerPoolConfig,
@@ -426,15 +430,25 @@ export class WorkerPool {
     return this;
   }
 
+  registerGenerator(provider: string, model: string, fn: GenerationFn): this {
+    this.generators.set(`${provider}/${model}`, fn);
+    return this;
+  }
+
   async run(signal?: AbortSignal): Promise<void> {
     const count = this.config.count && this.config.count > 0 ? this.config.count : 1;
     const prefix = this.config.workerInstanceIdPrefix ?? `worker-${randomUUID()}`;
     const workers = Array.from({ length: count }, (_, i) => {
-      return new Worker(
+      const worker = new Worker(
         this.client,
         { ...this.config, workerInstanceId: `${prefix}-${i + 1}` },
         this.actions,
-      ).run(signal);
+      );
+      for (const [key, fn] of this.generators) {
+        const [provider, model] = key.split("/", 2);
+        worker.registerGenerator(provider, model, fn);
+      }
+      return worker.run(signal);
     });
     await Promise.all(workers);
   }
@@ -462,6 +476,21 @@ function removeUndefined<T extends object>(obj: T): T {
   return Object.fromEntries(
     Object.entries(obj).filter(([, v]) => v !== undefined),
   ) as T;
+}
+
+function mergeSignals(...signals: (AbortSignal | undefined)[]): AbortSignal {
+  const controller = new AbortController();
+  for (const signal of signals) {
+    if (!signal) continue;
+    if (signal.aborted) {
+      controller.abort(signal.reason);
+      break;
+    }
+    signal.addEventListener("abort", () => controller.abort(signal.reason), {
+      once: true,
+    });
+  }
+  return controller.signal;
 }
 
 function waitForOpen(ws: WebSocket, signal?: AbortSignal): Promise<void> {

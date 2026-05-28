@@ -280,7 +280,7 @@ func newWorkerSocketTestClient(t *testing.T, fn func(t *testing.T, conn *websock
 		assert.Equal(t, r.Header.Get("Authorization"), "Bearer mbx_test")
 		conn, err := upgrader.Upgrade(w, r, nil)
 		assert.NoError(t, err)
-		defer conn.Close()
+		defer func() { _ = conn.Close() }()
 		fn(t, conn)
 	}))
 	t.Cleanup(srv.Close)

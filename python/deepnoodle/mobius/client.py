@@ -322,6 +322,8 @@ class Client:
                 status = (event.payload or {}).get("status")
                 if isinstance(status, str) and is_terminal_run_status(status):
                     return self.get_run(run_id)
+                if deadline is not None and time.monotonic() >= deadline:
+                    raise TimeoutError(f"timed out waiting for run {run_id}")
             if deadline is not None and time.monotonic() >= deadline:
                 raise TimeoutError(f"timed out waiting for run {run_id}")
             time.sleep(opts.reconnect_delay)

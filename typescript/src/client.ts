@@ -411,7 +411,7 @@ export class Client {
       const run = await this.getRun(runId);
       if (isTerminalRunStatus(run.status)) return run;
       try {
-        for await (const ev of this.watchRun(runId, opts)) {
+        for await (const ev of this.watchRun(runId, { ...opts, since })) {
           if (ev.sequence > since) since = ev.sequence;
           const status = ev.payload?.status;
           if (typeof status === "string" && isTerminalRunStatus(status)) {
@@ -530,10 +530,11 @@ async function* parseSSE(body: ReadableStream<Uint8Array>): AsyncGenerator<SSEEv
       const { value, done } = await reader.read();
       if (done) break;
       buffer += decoder.decode(value, { stream: true });
-      let idx;
-      while ((idx = buffer.indexOf("\n\n")) >= 0) {
-        const raw = buffer.slice(0, idx);
-        buffer = buffer.slice(idx + 2);
+      for (;;) {
+        const match = /\r?\n\r?\n/.exec(buffer);
+        if (!match) break;
+        const raw = buffer.slice(0, match.index);
+        buffer = buffer.slice(match.index + match[0].length);
         const data = raw
           .split(/\r?\n/)
           .filter((line) => line.startsWith("data:"))
