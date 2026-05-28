@@ -360,6 +360,12 @@ class Agent(BaseModel):
     tags: TagMap | None = Field(
         None, description='Resource tags applied to this agent.'
     )
+    created_by: str | None = Field(
+        None, description='User ID of the principal who created this agent.'
+    )
+    updated_by: str | None = Field(
+        None, description='User ID of the principal who last updated this agent.'
+    )
     created_at: AwareDatetime = Field(
         ..., description='Timestamp when this agent was created.'
     )
@@ -2191,7 +2197,11 @@ class WorkflowDefinitionSummary(BaseModel):
     )
     created_by: str = Field(
         ...,
-        description='User ID of the org member who created this workflow definition.',
+        description='User ID of the principal who created this workflow definition.',
+    )
+    updated_by: str | None = Field(
+        None,
+        description='User ID of the principal who last updated this workflow definition.',
     )
     tags: TagMap | None = Field(
         None,
@@ -3150,9 +3160,17 @@ class Action1(BaseModel):
     tags: dict[str, str] | None = Field(
         None, description='Arbitrary key-value string tags.'
     )
+    secret_ref: str | None = Field(
+        None,
+        description="Project secret reference that stores this action's signing key. Present for HTTP-backed actions.",
+    )
+    secret_version: int | None = Field(
+        None,
+        description='Version of `secret_ref` created by this response. Only populated on create and rotate responses.',
+    )
     signing_secret: str | None = Field(
         None,
-        description='Raw HMAC-SHA256 signing secret. Only populated on create and rotate responses; null on all other reads. Store this value securely on first receipt — it cannot be retrieved again.',
+        description='Base64-encoded 32-byte HMAC-SHA256 signing key. Only populated on create and rotate responses; null on all other reads. Store this value securely on first receipt — it cannot be retrieved again.',
     )
     created_at: AwareDatetime = Field(
         ..., description='Timestamp when this action was created.'
@@ -3164,15 +3182,20 @@ class Action1(BaseModel):
 
 class RotateSecretResult(BaseModel):
     """
-    New signing secret returned after rotating an action secret.
+    New signing key material returned after rotating a signing secret.
     """
 
     model_config = ConfigDict(
         extra='forbid',
     )
+    secret_ref: str = Field(
+        ...,
+        description='Project secret reference that now stores the rotated signing key.',
+    )
+    secret_version: int = Field(..., description='New project-secret version number.')
     signing_secret: str = Field(
         ...,
-        description='The new raw signing secret. Store it immediately — this is the only time it is returned.',
+        description='Base64-encoded 32-byte signing key. Store it immediately — this is the only time it is returned.',
     )
 
 
@@ -3277,7 +3300,7 @@ class ActionCatalogListResponse(BaseModel):
     )
 
 
-class ActionInvocationRequest(BaseModel):
+class InvokeActionRequest(BaseModel):
     """
     Request body for user-driven action invocation.
     """
@@ -3497,7 +3520,12 @@ class Environment(BaseModel):
         None,
         description='ID of the run, worker session, service, or manual association named by `bound_to_type`.',
     )
-    created_by: str | None = None
+    created_by: str | None = Field(
+        None, description='User ID of the principal who created this environment.'
+    )
+    updated_by: str | None = Field(
+        None, description='User ID of the principal who last updated this environment.'
+    )
     run_id: str | None = None
     job_id: str | None = None
     current_worker_session_id: str | None = None
@@ -3709,7 +3737,10 @@ class Secret(BaseModel):
         ..., description='Sorted keys present in the latest version.'
     )
     created_by: str | None = Field(
-        None, description='User that created the secret, when known.'
+        None, description='User ID of the principal who created this secret.'
+    )
+    updated_by: str | None = Field(
+        None, description='User ID of the principal who last updated this secret.'
     )
     created_at: AwareDatetime
     updated_at: AwareDatetime
@@ -4415,9 +4446,9 @@ class HttpSubscriberConsumer(BaseModel):
         ...,
         description='Absolute http(s) URL the server POSTs to when the interaction resolves. The body is a JSON object with the interaction id, kind, status, outcome value, comment, responder, and `resolved_by`. Delivery is enqueued as a `source_events` dispatch so the worker can retry failed attempts instead of dropping them inline with interaction resolution.',
     )
-    secret_ref: str | None = Field(
-        None,
-        description="Reference to a project secret used to sign deliveries with HMAC-SHA256 over the canonical string `{interaction_id}.{unix_timestamp}.{raw_body}`, where `raw_body` is the exact callback request body bytes. Accepts `<name>` for the latest enabled version or `<name>:<version>` to pin a specific positive-integer version. The plaintext signing bytes are taken from the secret's `signing_key`, `secret`, or `hmac_secret` key — or the only key if exactly one is set. The hex signature is forwarded as `X-Mobius-Signature: sha256=<hex>` alongside `X-Mobius-Secret-Ref`, `X-Mobius-Secret-Version`, `X-Mobius-Signature-Version: v2`, and a unix `X-Mobius-Timestamp`. Consumers should reject stale timestamps (for example, older than five minutes). When `secret_ref` resolution fails the dispatch is retried by the event processor rather than sent unsigned.",
+    secret_ref: str = Field(
+        ...,
+        description="Required reference to a project secret used to sign deliveries with HMAC-SHA256 over the canonical string `v1.{delivery_id}.{unix_timestamp}.{raw_body}`, where `delivery_id` is the value in `X-Mobius-Delivery-Id` and `raw_body` is the exact callback request body bytes. Accepts `<name>` for the latest enabled version or `<name>:<version>` to pin a specific positive-integer version. The plaintext signing bytes are taken from the secret's `signing_key_b64` key, which must base64-decode to exactly 32 bytes. The hex signature is forwarded as `X-Mobius-Signature: sha256=<hex>` alongside `X-Mobius-Secret-Ref`, `X-Mobius-Secret-Version`, `X-Mobius-Signature-Version: v1`, and a unix `X-Mobius-Timestamp`. Consumers should reject stale timestamps (for example, older than five minutes). When `secret_ref` resolution fails the dispatch is retried by the event processor rather than sent unsigned.",
     )
 
 
@@ -4430,7 +4461,7 @@ class Kind34(StrEnum):
 
 class Consumer(BaseModel):
     """
-    Polymorphic identifier of what is waiting on this interaction's resolution (PRD 077 §3.7). Replaces the previously special-cased `run_id` + `signal_name` pair. When `kind=run`, the legacy fields are also populated for compatibility. `http_subscriber` enqueues a durable callback dispatch to `callback_url` when the interaction resolves; when `secret_ref` is set, the canonical string `{interaction_id}.{unix_timestamp}.{raw_body}` is signed with HMAC-SHA256 against the resolved project secret and the signed dispatch carries `X-Mobius-Signature`, `X-Mobius-Secret-Ref`, `X-Mobius-Secret-Version`, and `X-Mobius-Timestamp`. Signed dispatches also carry `X-Mobius-Signature-Version: v2`. Every durable dispatch also carries the stable outbox row id in `X-Mobius-Delivery-ID` and `Idempotency-Key`; retries reuse the same value. Verifiers should recompute the signature over the exact raw body, reject stale timestamps (for example, older than five minutes), deduplicate by delivery id, and check all five signing headers.
+    Polymorphic identifier of what is waiting on this interaction's resolution (PRD 077 §3.7). Replaces the previously special-cased `run_id` + `signal_name` pair. When `kind=run`, the legacy fields are also populated for compatibility. `http_subscriber` requires `secret_ref` and enqueues a durable callback dispatch to `callback_url` when the interaction resolves; the canonical string `v1.{delivery_id}.{unix_timestamp}.{raw_body}` is signed with HMAC-SHA256 against the resolved project signing key and the signed dispatch carries `X-Mobius-Signature`, `X-Mobius-Secret-Ref`, `X-Mobius-Secret-Version`, and `X-Mobius-Timestamp`. Signed dispatches also carry `X-Mobius-Signature-Version: v1`. Every durable dispatch also carries the stable outbox row id in `X-Mobius-Delivery-Id` and `Idempotency-Key`; retries reuse the same value. Verifiers should recompute the signature over the exact raw body, reject stale timestamps (for example, older than five minutes), deduplicate by delivery id, and check the signing headers.
     """
 
     model_config = ConfigDict(
@@ -5432,10 +5463,25 @@ class Webhook(BaseModel):
         ..., description='When false, matching events are not delivered.'
     )
     created_by: str | None = Field(
-        None, description='User ID of the org member who created this webhook.'
+        None, description='User ID of the principal who created this webhook.'
+    )
+    updated_by: str | None = Field(
+        None, description='User ID of the principal who last updated this webhook.'
     )
     tags: TagMap | None = Field(
         None, description='Resource tags applied to this webhook.'
+    )
+    secret_ref: str | None = Field(
+        None,
+        description="Project secret reference that stores this webhook's signing key.",
+    )
+    secret_version: int | None = Field(
+        None,
+        description='Version of `secret_ref` created by this response. Only populated on create and rotate responses.',
+    )
+    signing_secret: str | None = Field(
+        None,
+        description='Base64-encoded 32-byte HMAC-SHA256 signing key. Only populated on create and rotate responses; null on all other reads. Store this value securely on first receipt — it cannot be retrieved again.',
     )
     created_at: AwareDatetime = Field(
         ..., description='Timestamp when this webhook was created.'
@@ -5459,7 +5505,7 @@ class WebhookListResponse(BaseModel):
     has_more: bool = Field(..., description='Whether additional pages are available.')
 
 
-class WebhookDelivery(BaseModel):
+class WebhookDeliveryRecord(BaseModel):
     """
     One delivery record for a webhook event. The daemon claims pending rows, POSTs the payload, and transitions to `delivered` or retries on failure. A delivery reaches `failed` only after exhausting all 10 retry attempts.
     """
@@ -5500,7 +5546,7 @@ class WebhookDeliveryListResponse(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    items: list[WebhookDelivery] | None = Field(
+    items: list[WebhookDeliveryRecord] | None = Field(
         None, description='The list of results for this page.'
     )
     next_cursor: str | None = Field(
@@ -5521,10 +5567,6 @@ class CreateWebhookRequest(BaseModel):
         None,
         description='The endpoint Mobius will POST event payloads to. May be left empty at creation time so a candidate URL can be tested via the ping endpoint before it is saved; events do not fire for webhooks with an empty URL.',
     )
-    signing_secret: str | None = Field(
-        None,
-        description='Optional HMAC-SHA256 secret. When set, Mobius signs each POST body and includes `X-Mobius-Signature: sha256=<hex>` in the request headers.',
-    )
     events: list[str] = Field(
         ...,
         description='Event types to subscribe to. Use wildcards for broad subscriptions, e.g. `["run.*"]` for all run events. An empty list subscribes to all event types.',
@@ -5542,10 +5584,6 @@ class UpdateWebhookRequest(BaseModel):
     )
     name: str | None = Field(None, description='Replacement human-readable name.')
     url: str | None = Field(None, description='Replacement endpoint URL.')
-    signing_secret: str | None = Field(
-        None,
-        description='Replace the current signing secret. Set to empty string to disable signing. Omit to leave the current secret unchanged.',
-    )
     events: list[str] | None = Field(
         None,
         description='Replacement event subscriptions. Replaces the entire current list; an empty list subscribes to all event types.',
@@ -6235,6 +6273,12 @@ class Toolkit(BaseModel):
         ...,
         description='Action selectors granted by this toolkit. Each entry is matched against the unified action catalog at manifest-resolution time.',
     )
+    created_by: str | None = Field(
+        None, description='User ID of the principal who created this toolkit.'
+    )
+    updated_by: str | None = Field(
+        None, description='User ID of the principal who last updated this toolkit.'
+    )
     created_at: AwareDatetime
     updated_at: AwareDatetime
 
@@ -6318,6 +6362,12 @@ class Skill(BaseModel):
     )
     user_invocable: bool | None = Field(
         None, description='Whether users may directly request this skill by name.'
+    )
+    created_by: str | None = Field(
+        None, description='User ID of the principal who created this skill.'
+    )
+    updated_by: str | None = Field(
+        None, description='User ID of the principal who last updated this skill.'
     )
     created_at: AwareDatetime
     updated_at: AwareDatetime
@@ -7089,6 +7139,12 @@ class Table(BaseModel):
         ...,
         description='Controls read/write access. When access_mode is "private", owned_by MUST be present; the server enforces this invariant. If access_mode is omitted on create, the server defaults to "private" when an owner is set and "project" when no owner is provided.',
     )
+    created_by: str | None = Field(
+        None, description='User ID of the principal who created this table.'
+    )
+    updated_by: str | None = Field(
+        None, description='User ID of the principal who last updated this table.'
+    )
     created_at: AwareDatetime
     updated_at: AwareDatetime
 
@@ -7391,7 +7447,10 @@ class Channel(BaseModel):
         description='When true, the channel is invite-only and not visible in public listings.',
     )
     created_by: str = Field(
-        ..., description='User ID of the org member who created the channel.'
+        ..., description='User ID of the principal who created this channel.'
+    )
+    updated_by: str | None = Field(
+        None, description='User ID of the principal who last updated this channel.'
     )
     purpose: Purpose = Field(
         ...,
@@ -8808,7 +8867,10 @@ class Trigger(BaseModel):
         None, description='Computed next scheduled fire time (schedule triggers only).'
     )
     created_by: str | None = Field(
-        None, description='User ID of the org member who created this trigger.'
+        None, description='User ID of the principal who created this trigger.'
+    )
+    updated_by: str | None = Field(
+        None, description='User ID of the principal who last updated this trigger.'
     )
     tags: TagMap | None = Field(
         None, description='Resource tags applied to this trigger.'

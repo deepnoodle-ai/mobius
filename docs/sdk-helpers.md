@@ -12,21 +12,24 @@ three common integration tasks:
 Verify the exact request body before parsing it:
 
 ```go
-event, body, err := mobius.ParseSignedWebhookRequest(r, secret)
+verified, err := mobius.VerifySignedDelivery(r, mobius.VerifySignedDeliveryOptions{
+	Key: signingKey,
+})
+event, err := mobius.ParseWebhookDelivery(verified)
 ```
 
 ```python
-signed = mobius.parse_signed_webhook_request(body, headers, secret)
+verified = mobius.verify_signed_delivery(body, headers, key=signing_key)
+event = mobius.parse_webhook_delivery(verified)
 ```
 
 ```ts
-const signed = await parseSignedWebhookRequest(request, secret);
+const verified = await verifySignedDelivery(request, { key: signingKey });
+const event = parseWebhookDelivery(verified);
 ```
 
-For lower-level framework integration, use `SignWebhookPayload` /
-`sign_webhook_payload` / `signWebhookPayload`, `VerifyWebhookSignature` /
-`verify_webhook_signature` / `verifyWebhookSignature`, and
-`ParseWebhookEvent` / `parse_webhook_event` / `parseWebhookEvent`.
+When the key must be selected from the delivery headers, use the resolver form:
+`ResolveKey` in Go, `resolve_key` in Python, or `resolveKey` in TypeScript.
 
 ## Synthetic Webhooks
 
@@ -35,17 +38,21 @@ hosted Mobius cannot reach localhost:
 
 ```go
 err := mobius.DeliverSyntheticWebhook(ctx, mobius.SyntheticWebhookDelivery{
-	URL:       "http://127.0.0.1:8080/webhooks/mobius",
-	Secret:    secret,
-	EventType: string(mobius.WebhookEventRunCompleted),
-	Data:      run,
+	URL:           "http://127.0.0.1:8080/webhooks/mobius",
+	Key:           signingKey,
+	SecretRef:     "mobius/webhook/local",
+	SecretVersion: 1,
+	EventType:     string(mobius.WebhookEventRunCompleted),
+	Data:          run,
 })
 ```
 
 ```python
 mobius.deliver_synthetic_webhook(mobius.SyntheticWebhookDelivery(
     url="http://127.0.0.1:8080/webhooks/mobius",
-    secret=secret,
+    key=signing_key,
+    secret_ref="mobius/webhook/local",
+    secret_version=1,
     event_type=mobius.WEBHOOK_EVENT_RUN_COMPLETED,
     data=run,
 ))
@@ -54,7 +61,9 @@ mobius.deliver_synthetic_webhook(mobius.SyntheticWebhookDelivery(
 ```ts
 await deliverSyntheticWebhook({
   url: "http://127.0.0.1:8080/webhooks/mobius",
-  secret,
+  key: signingKey,
+  secretRef: "mobius/webhook/local",
+  secretVersion: 1,
   eventType: WEBHOOK_EVENT_RUN_COMPLETED,
   data: run,
 });

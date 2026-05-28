@@ -1,93 +1,45 @@
 from __future__ import annotations
 
-import hashlib
-import hmac
 import json
+import time
+import uuid
 from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any
 
 import httpx
 
-WEBHOOK_SIGNATURE_HEADER = "X-Mobius-Signature"
+from .signing import (
+    MOBIUS_DELIVERY_ID_HEADER,
+    MOBIUS_SECRET_REF_HEADER,
+    MOBIUS_SECRET_VERSION_HEADER,
+    MOBIUS_SIGNATURE_HEADER,
+    MOBIUS_SIGNATURE_VERSION_HEADER,
+    MOBIUS_TIMESTAMP_HEADER,
+    sign_delivery,
+)
+
 WEBHOOK_EVENT_TYPE_HEADER = "X-Mobius-Event-Type"
 
 WEBHOOK_EVENT_RUN_COMPLETED = "run.completed"
 WEBHOOK_EVENT_RUN_FAILED = "run.failed"
 WEBHOOK_EVENT_PING = "ping"
 
-_SIGNATURE_PREFIX = "sha256="
 _SYNTHETIC_WEBHOOK_USER_AGENT = "mobius-sdk-webhook-delivery/1"
-
-
-class InvalidWebhookSignatureError(ValueError):
-    """Raised when a Mobius webhook signature is missing or invalid."""
-
-
-@dataclass(frozen=True)
-class WebhookEvent:
-    type: str
-    data: Any
-
-
-@dataclass(frozen=True)
-class ParsedSignedWebhookRequest:
-    event: WebhookEvent
-    body: bytes
 
 
 @dataclass
 class SyntheticWebhookDelivery:
     url: str
-    secret: str
+    key: bytes
+    secret_ref: str
+    secret_version: int
     event_type: str
     data: Any
+    delivery_id: str | None = None
+    timestamp: int | None = None
     http_client: httpx.Client | None = None
     headers: Mapping[str, str] | None = None
-
-
-def sign_webhook_payload(secret: str, body: bytes | str) -> str:
-    payload = _body_bytes(body)
-    signature = hmac.new(secret.encode(), payload, hashlib.sha256).hexdigest()
-    return f"{_SIGNATURE_PREFIX}{signature}"
-
-
-def verify_webhook_signature(
-    secret: str,
-    body: bytes | str,
-    signature_header: str | None,
-) -> None:
-    if not secret:
-        raise InvalidWebhookSignatureError("secret is empty")
-    if not signature_header or not signature_header.startswith(_SIGNATURE_PREFIX):
-        raise InvalidWebhookSignatureError("missing sha256 prefix")
-    raw = signature_header[len(_SIGNATURE_PREFIX) :]
-    try:
-        bytes.fromhex(raw)
-    except ValueError as exc:
-        raise InvalidWebhookSignatureError("signature is not hex") from exc
-    expected = sign_webhook_payload(secret, body)
-    if not hmac.compare_digest(signature_header, expected):
-        raise InvalidWebhookSignatureError("mismatch")
-
-
-def parse_webhook_event(body: bytes | str) -> WebhookEvent:
-    payload = json.loads(_body_bytes(body).decode())
-    event_type = payload.get("type")
-    if not event_type:
-        raise ValueError("mobius: parse webhook event: missing type")
-    return WebhookEvent(type=str(event_type), data=payload.get("data"))
-
-
-def parse_signed_webhook_request(
-    body: bytes | str,
-    headers: Mapping[str, str],
-    secret: str,
-) -> ParsedSignedWebhookRequest:
-    payload = _body_bytes(body)
-    signature = _header_get(headers, WEBHOOK_SIGNATURE_HEADER)
-    verify_webhook_signature(secret, payload, signature)
-    return ParsedSignedWebhookRequest(event=parse_webhook_event(payload), body=payload)
 
 
 def build_synthetic_webhook_payload(event_type: str, data: Any) -> bytes:
@@ -102,15 +54,42 @@ def build_synthetic_webhook_payload(event_type: str, data: Any) -> bytes:
 def deliver_synthetic_webhook(delivery: SyntheticWebhookDelivery) -> None:
     if not delivery.url:
         raise ValueError("mobius: synthetic webhook URL is required")
-    if not delivery.secret:
-        raise ValueError("mobius: synthetic webhook secret is required")
+    if not delivery.key:
+        raise ValueError("mobius: synthetic webhook signing key is required")
+    if not delivery.secret_ref:
+        raise ValueError("mobius: synthetic webhook secret ref is required")
+    if delivery.secret_version <= 0:
+        raise ValueError("mobius: synthetic webhook secret version is required")
 
     payload = build_synthetic_webhook_payload(delivery.event_type, delivery.data)
+    if delivery.delivery_id is None:
+        delivery_id = str(uuid.uuid4())
+    else:
+        if not isinstance(delivery.delivery_id, str) or not delivery.delivery_id:
+            raise ValueError("mobius: synthetic webhook delivery_id must be a non-empty string")
+        delivery_id = delivery.delivery_id
+    if delivery.timestamp is None:
+        timestamp = int(time.time())
+    else:
+        if not isinstance(delivery.timestamp, int) or isinstance(delivery.timestamp, bool) or delivery.timestamp < 1:
+            raise ValueError("mobius: synthetic webhook timestamp must be a positive integer")
+        timestamp = delivery.timestamp
     headers = dict(delivery.headers or {})
     headers["Content-Type"] = "application/json"
     headers["User-Agent"] = _SYNTHETIC_WEBHOOK_USER_AGENT
     headers[WEBHOOK_EVENT_TYPE_HEADER] = delivery.event_type
-    headers[WEBHOOK_SIGNATURE_HEADER] = sign_webhook_payload(delivery.secret, payload)
+    headers[MOBIUS_SIGNATURE_HEADER] = sign_delivery(
+        delivery.key,
+        payload,
+        delivery_id=delivery_id,
+        timestamp=timestamp,
+    )
+    headers[MOBIUS_SIGNATURE_VERSION_HEADER] = "v1"
+    headers[MOBIUS_TIMESTAMP_HEADER] = str(timestamp)
+    headers[MOBIUS_DELIVERY_ID_HEADER] = delivery_id
+    headers[MOBIUS_SECRET_REF_HEADER] = delivery.secret_ref
+    headers[MOBIUS_SECRET_VERSION_HEADER] = str(delivery.secret_version)
+    headers["Idempotency-Key"] = delivery_id
 
     if delivery.http_client is not None:
         resp = delivery.http_client.post(delivery.url, content=payload, headers=headers)
@@ -121,14 +100,3 @@ def deliver_synthetic_webhook(delivery: SyntheticWebhookDelivery) -> None:
         raise RuntimeError(
             f"mobius: synthetic webhook returned {resp.status_code}: {resp.text}"
         )
-
-
-def _body_bytes(body: bytes | str) -> bytes:
-    return body.encode() if isinstance(body, str) else body
-
-
-def _header_get(headers: Mapping[str, str], key: str) -> str | None:
-    for name, value in headers.items():
-        if name.lower() == key.lower():
-            return value
-    return None

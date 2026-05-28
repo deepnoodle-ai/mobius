@@ -3,14 +3,15 @@ package mobius
 import (
 	"bytes"
 	"context"
-	"crypto/hmac"
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
+	"time"
+
+	"github.com/google/uuid"
 )
 
 const syntheticWebhookUserAgent = "mobius-sdk-webhook-delivery/1"
@@ -20,8 +21,18 @@ const syntheticWebhookUserAgent = "mobius-sdk-webhook-delivery/1"
 type SyntheticWebhookDelivery struct {
 	// URL is the receiver endpoint to POST to.
 	URL string
-	// Secret signs the JSON body with HMAC-SHA256.
-	Secret string
+	// Key signs the JSON body with the v1 Mobius signed-delivery format.
+	Key []byte
+	// SecretRef is written to X-Mobius-Secret-Ref.
+	SecretRef string
+	// SecretVersion is written to X-Mobius-Secret-Version.
+	SecretVersion int64
+	// DeliveryID is written to X-Mobius-Delivery-Id and Idempotency-Key.
+	// When empty, the SDK generates a UUID for local test delivery.
+	DeliveryID string
+	// Timestamp is written to X-Mobius-Timestamp. When zero, the current unix
+	// timestamp is used.
+	Timestamp int64
 	// EventType is written to the envelope's "type" field and the
 	// X-Mobius-Event-Type header.
 	EventType string
@@ -59,12 +70,29 @@ func DeliverSyntheticWebhook(ctx context.Context, delivery SyntheticWebhookDeliv
 	if delivery.URL == "" {
 		return errors.New("mobius: synthetic webhook URL is required")
 	}
-	if delivery.Secret == "" {
-		return errors.New("mobius: synthetic webhook secret is required")
+	if len(delivery.Key) == 0 {
+		return errors.New("mobius: synthetic webhook signing key is required")
+	}
+	if delivery.SecretRef == "" {
+		return errors.New("mobius: synthetic webhook secret ref is required")
+	}
+	if delivery.SecretVersion <= 0 {
+		return errors.New("mobius: synthetic webhook secret version is required")
 	}
 	payload, err := BuildSyntheticWebhookPayload(delivery.EventType, delivery.Data)
 	if err != nil {
 		return err
+	}
+	deliveryID := delivery.DeliveryID
+	if deliveryID == "" {
+		deliveryID = uuid.NewString()
+	}
+	timestamp := delivery.Timestamp
+	if timestamp < 0 {
+		return errors.New("mobius: synthetic webhook timestamp must be non-negative")
+	}
+	if timestamp == 0 {
+		timestamp = time.Now().Unix()
 	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, delivery.URL, bytes.NewReader(payload))
@@ -79,7 +107,13 @@ func DeliverSyntheticWebhook(ctx context.Context, delivery SyntheticWebhookDeliv
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("User-Agent", syntheticWebhookUserAgent)
 	req.Header.Set("X-Mobius-Event-Type", delivery.EventType)
-	req.Header.Set("X-Mobius-Signature", signSyntheticWebhookPayload(delivery.Secret, payload))
+	req.Header.Set(MobiusSignatureHeader, SignDelivery(delivery.Key, payload, deliveryID, timestamp))
+	req.Header.Set(MobiusSignatureVersionHeader, "v1")
+	req.Header.Set(MobiusTimestampHeader, strconv.FormatInt(timestamp, 10))
+	req.Header.Set(MobiusDeliveryIDHeader, deliveryID)
+	req.Header.Set(MobiusSecretRefHeader, delivery.SecretRef)
+	req.Header.Set(MobiusSecretVersionHeader, strconv.FormatInt(delivery.SecretVersion, 10))
+	req.Header.Set("Idempotency-Key", deliveryID)
 
 	client := delivery.HTTPClient
 	if client == nil {
@@ -95,10 +129,4 @@ func DeliverSyntheticWebhook(ctx context.Context, delivery SyntheticWebhookDeliv
 		return fmt.Errorf("mobius: synthetic webhook returned %d: %s", resp.StatusCode, string(body))
 	}
 	return nil
-}
-
-func signSyntheticWebhookPayload(secret string, payload []byte) string {
-	mac := hmac.New(sha256.New, []byte(secret))
-	_, _ = mac.Write(payload)
-	return "sha256=" + hex.EncodeToString(mac.Sum(nil))
 }

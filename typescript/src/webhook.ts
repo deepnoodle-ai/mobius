@@ -1,6 +1,15 @@
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { randomUUID } from "node:crypto";
 
-export const WEBHOOK_SIGNATURE_HEADER = "X-Mobius-Signature";
+import {
+  MOBIUS_DELIVERY_ID_HEADER,
+  MOBIUS_SECRET_REF_HEADER,
+  MOBIUS_SECRET_VERSION_HEADER,
+  MOBIUS_SIGNATURE_HEADER,
+  MOBIUS_SIGNATURE_VERSION_HEADER,
+  MOBIUS_TIMESTAMP_HEADER,
+  signDelivery,
+} from "./signing.js";
+
 export const WEBHOOK_EVENT_TYPE_HEADER = "X-Mobius-Event-Type";
 
 export type WebhookEventType = "run.completed" | "run.failed" | "ping" | string;
@@ -9,91 +18,20 @@ export const WEBHOOK_EVENT_RUN_COMPLETED = "run.completed";
 export const WEBHOOK_EVENT_RUN_FAILED = "run.failed";
 export const WEBHOOK_EVENT_PING = "ping";
 
-const SIGNATURE_PREFIX = "sha256=";
 const SYNTHETIC_WEBHOOK_USER_AGENT = "mobius-sdk-webhook-delivery/1";
-
-export class InvalidWebhookSignatureError extends Error {
-  constructor(message: string) {
-    super(`mobius: invalid webhook signature: ${message}`);
-    this.name = "InvalidWebhookSignatureError";
-  }
-}
-
-export interface WebhookEvent<T = unknown> {
-  type: WebhookEventType;
-  data: T;
-}
-
-export interface ParsedSignedWebhookRequest<T = unknown> {
-  event: WebhookEvent<T>;
-  body: Uint8Array;
-}
 
 export interface SyntheticWebhookDelivery {
   url: string;
-  secret: string;
+  key: Uint8Array;
+  secretRef: string;
+  secretVersion: number;
+  deliveryId?: string;
+  timestamp?: number;
   eventType: WebhookEventType;
   data: unknown;
   fetch?: typeof globalThis.fetch;
   headers?: HeadersInit;
   signal?: AbortSignal;
-}
-
-export function signWebhookPayload(
-  secret: string,
-  body: string | Uint8Array,
-): string {
-  return `${SIGNATURE_PREFIX}${createHmac("sha256", secret)
-    .update(bodyBytes(body))
-    .digest("hex")}`;
-}
-
-export function verifyWebhookSignature(
-  secret: string,
-  body: string | Uint8Array,
-  signatureHeader: string | null | undefined,
-): void {
-  if (!secret) {
-    throw new InvalidWebhookSignatureError("secret is empty");
-  }
-  if (!signatureHeader?.startsWith(SIGNATURE_PREFIX)) {
-    throw new InvalidWebhookSignatureError("missing sha256 prefix");
-  }
-  const raw = signatureHeader.slice(SIGNATURE_PREFIX.length);
-  if (!/^[0-9a-fA-F]+$/.test(raw) || raw.length % 2 !== 0) {
-    throw new InvalidWebhookSignatureError("signature is not hex");
-  }
-  const got = Buffer.from(raw, "hex");
-  const expected = Buffer.from(
-    signWebhookPayload(secret, body).slice(SIGNATURE_PREFIX.length),
-    "hex",
-  );
-  if (got.length !== expected.length || !timingSafeEqual(got, expected)) {
-    throw new InvalidWebhookSignatureError("mismatch");
-  }
-}
-
-export function parseWebhookEvent<T = unknown>(
-  body: string | Uint8Array,
-): WebhookEvent<T> {
-  const event = JSON.parse(bodyText(body)) as WebhookEvent<T>;
-  if (!event.type) {
-    throw new Error("mobius: parse webhook event: missing type");
-  }
-  return event;
-}
-
-export async function parseSignedWebhookRequest<T = unknown>(
-  request: Request,
-  secret: string,
-): Promise<ParsedSignedWebhookRequest<T>> {
-  const body = new Uint8Array(await request.arrayBuffer());
-  verifyWebhookSignature(
-    secret,
-    body,
-    request.headers.get(WEBHOOK_SIGNATURE_HEADER),
-  );
-  return { event: parseWebhookEvent<T>(body), body };
 }
 
 export function buildSyntheticWebhookPayload(
@@ -112,15 +50,35 @@ export async function deliverSyntheticWebhook(
   if (!delivery.url) {
     throw new Error("mobius: synthetic webhook URL is required");
   }
-  if (!delivery.secret) {
-    throw new Error("mobius: synthetic webhook secret is required");
+  if (!delivery.key?.byteLength) {
+    throw new Error("mobius: synthetic webhook signing key is required");
+  }
+  if (!delivery.secretRef) {
+    throw new Error("mobius: synthetic webhook secret ref is required");
+  }
+  if (!Number.isInteger(delivery.secretVersion) || delivery.secretVersion <= 0) {
+    throw new Error("mobius: synthetic webhook secret version is required");
   }
   const payload = buildSyntheticWebhookPayload(delivery.eventType, delivery.data);
+  const deliveryId = resolveDeliveryId(delivery.deliveryId);
+  const timestamp = resolveTimestamp(delivery.timestamp);
   const headers = new Headers(delivery.headers);
   headers.set("Content-Type", "application/json");
   headers.set("User-Agent", SYNTHETIC_WEBHOOK_USER_AGENT);
   headers.set(WEBHOOK_EVENT_TYPE_HEADER, delivery.eventType);
-  headers.set(WEBHOOK_SIGNATURE_HEADER, signWebhookPayload(delivery.secret, payload));
+  headers.set(
+    MOBIUS_SIGNATURE_HEADER,
+    signDelivery(delivery.key, Buffer.from(payload), {
+      deliveryId,
+      timestamp,
+    }).signature,
+  );
+  headers.set(MOBIUS_SIGNATURE_VERSION_HEADER, "v1");
+  headers.set(MOBIUS_TIMESTAMP_HEADER, String(timestamp));
+  headers.set(MOBIUS_DELIVERY_ID_HEADER, deliveryId);
+  headers.set(MOBIUS_SECRET_REF_HEADER, delivery.secretRef);
+  headers.set(MOBIUS_SECRET_VERSION_HEADER, String(delivery.secretVersion));
+  headers.set("Idempotency-Key", deliveryId);
 
   const fetchFn = delivery.fetch ?? globalThis.fetch;
   const resp = await fetchFn(delivery.url, {
@@ -137,10 +95,22 @@ export async function deliverSyntheticWebhook(
   }
 }
 
-function bodyBytes(body: string | Uint8Array): Uint8Array {
-  return typeof body === "string" ? Buffer.from(body) : body;
+function resolveDeliveryId(value: string | undefined): string {
+  if (value === undefined) {
+    return randomUUID();
+  }
+  if (typeof value !== "string" || value.length === 0) {
+    throw new Error("mobius: synthetic webhook deliveryId must be a non-empty string");
+  }
+  return value;
 }
 
-function bodyText(body: string | Uint8Array): string {
-  return typeof body === "string" ? body : Buffer.from(body).toString("utf8");
+function resolveTimestamp(value: number | undefined): number {
+  if (value === undefined) {
+    return Math.floor(Date.now() / 1000);
+  }
+  if (!Number.isInteger(value) || value <= 0) {
+    throw new Error("mobius: synthetic webhook timestamp must be a positive integer");
+  }
+  return value;
 }
