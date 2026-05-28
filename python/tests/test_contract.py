@@ -14,11 +14,15 @@ import pytest
 from pydantic import BaseModel
 
 from deepnoodle.mobius._api.models import (
-    JobClaim,
-    JobClaimRequest,
-    JobFenceRequest,
-    JobHeartbeat,
-    JobReportRequest,
+    WorkerSocketGenerationDeltaFrame,
+    WorkerSocketJobCancelFrame,
+    WorkerSocketJobHeartbeatAckFrame,
+    WorkerSocketJobHeartbeatFrame,
+    WorkerSocketJobReportFrame,
+    WorkerSocketJobsClaimFrame,
+    WorkerSocketJobsClaimedFrame,
+    WorkerSocketRegisterFrame,
+    WorkerSocketRegisteredFrame,
 )
 
 from .conftest import canonicalize, load_fixture, load_manifest
@@ -26,11 +30,15 @@ from .conftest import canonicalize, load_fixture, load_manifest
 # Map OpenAPI schema name to the Pydantic model. Missing entries fail the test
 # so new fixtures must come with a Python binding.
 SCHEMA_BINDINGS: dict[str, type[BaseModel]] = {
-    "JobClaimRequest": JobClaimRequest,
-    "JobClaim": JobClaim,
-    "JobFenceRequest": JobFenceRequest,
-    "JobHeartbeat": JobHeartbeat,
-    "JobReportRequest": JobReportRequest,
+    "WorkerSocketRegisterFrame": WorkerSocketRegisterFrame,
+    "WorkerSocketRegisteredFrame": WorkerSocketRegisteredFrame,
+    "WorkerSocketJobsClaimFrame": WorkerSocketJobsClaimFrame,
+    "WorkerSocketJobsClaimedFrame": WorkerSocketJobsClaimedFrame,
+    "WorkerSocketJobHeartbeatFrame": WorkerSocketJobHeartbeatFrame,
+    "WorkerSocketJobHeartbeatAckFrame": WorkerSocketJobHeartbeatAckFrame,
+    "WorkerSocketJobReportFrame": WorkerSocketJobReportFrame,
+    "WorkerSocketGenerationDeltaFrame": WorkerSocketGenerationDeltaFrame,
+    "WorkerSocketJobCancelFrame": WorkerSocketJobCancelFrame,
 }
 
 

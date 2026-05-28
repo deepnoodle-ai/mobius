@@ -23,11 +23,11 @@ func registerAgentsCommands(app *cli.App) {
 		Description("Append conversation session messages").
 		Args("id", "session-id").
 		Flags(
-			cli.String("messages", "").Help("[required] messages Accepts JSON, @file, or @-."),
-			cli.String("model", "").Help("model"),
-			cli.String("model-provider", "").Help("model-provider"),
-			cli.Int("token-input-total", "").Help("token-input-total"),
-			cli.Int("token-output-total", "").Help("token-output-total"),
+			cli.String("messages", "").Help("[required] Messages to append to the session, in order. Accepts JSON, @file, or @-."),
+			cli.String("model", "").Help("Model that produced these messages."),
+			cli.String("model-provider", "").Help("Provider for the supplied `model`."),
+			cli.Int("token-input-total", "").Help("Updated lifetime input-token total for this session."),
+			cli.Int("token-output-total", "").Help("Updated lifetime output-token total for this session."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -41,7 +41,7 @@ func registerAgentsCommands(app *cli.App) {
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			p2 := ctx.Arg(1)
-			var body api.AppendAgentSessionMessagesJSONRequestBody
+			var body api.AppendSessionMessagesJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
 			}
@@ -72,11 +72,11 @@ func registerAgentsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.AppendAgentSessionMessagesWithResponse(ctx.Context(), p0, p1, p2, body)
+			resp, err := client.AppendSessionMessagesWithResponse(ctx.Context(), p0, p1, p2, body)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, "appendAgentSessionMessages", resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "appendSessionMessages", resp.StatusCode(), resp.Body)
 		})
 
 	agentsGrp.Command("create").
@@ -162,49 +162,6 @@ func registerAgentsCommands(app *cli.App) {
 			return printResponse(ctx, "createAgent", resp.StatusCode(), resp.Body)
 		})
 
-	agentsGrp.Command("create-presence").
-		Description("Register a new agent presence").
-		Args("id").
-		Flags(
-			cli.String("metadata", "").Help("Optional metadata such as hostname, SDK version, or region. Accepts JSON, @file, or @-."),
-			cli.String("transport", "").Help("[required] Connection mechanism identifier (e.g. \"sse\", \"polling\")."),
-			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
-			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
-		).
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			var body api.CreateAgentPresenceJSONRequestBody
-			if err := readJSONBody(ctx, &body); err != nil {
-				return err
-			}
-			if ctx.IsSet("metadata") {
-				if err := decodeFlagJSON(ctx, "metadata", ctx.String("metadata"), &body.Metadata); err != nil {
-					return err
-				}
-			}
-			if ctx.IsSet("transport") {
-				body.Transport = ctx.String("transport")
-			}
-			if body.Transport == "" {
-				return fmt.Errorf("--transport is required (or supply it via --file)")
-			}
-			if ctx.Bool("dry-run") {
-				return printDryRun(ctx, body)
-			}
-			resp, err := client.CreateAgentPresenceWithResponse(ctx.Context(), p0, p1, body)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "createAgentPresence", resp.StatusCode(), resp.Body)
-		})
-
 	agentsGrp.Command("delete").
 		Description("Delete an agent").
 		Args("id").
@@ -222,26 +179,6 @@ func registerAgentsCommands(app *cli.App) {
 				return err
 			}
 			return printResponse(ctx, "deleteAgent", resp.StatusCode(), resp.Body)
-		})
-
-	agentsGrp.Command("disconnect-presence").
-		Description("Mark an agent presence as disconnected").
-		Args("id", "presence-id").
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			p2 := ctx.Arg(1)
-			resp, err := client.DisconnectAgentPresenceWithResponse(ctx.Context(), p0, p1, p2)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "disconnectAgentPresence", resp.StatusCode(), resp.Body)
 		})
 
 	agentsGrp.Command("get").
@@ -263,26 +200,6 @@ func registerAgentsCommands(app *cli.App) {
 			return printResponse(ctx, "getAgent", resp.StatusCode(), resp.Body)
 		})
 
-	agentsGrp.Command("get-presence").
-		Description("Get an agent presence record").
-		Args("id", "presence-id").
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			p2 := ctx.Arg(1)
-			resp, err := client.GetAgentPresenceWithResponse(ctx.Context(), p0, p1, p2)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "getAgentPresence", resp.StatusCode(), resp.Body)
-		})
-
 	agentsGrp.Command("get-session").
 		Description("Get a conversation session").
 		Args("id", "session-id").
@@ -301,26 +218,6 @@ func registerAgentsCommands(app *cli.App) {
 				return err
 			}
 			return printResponse(ctx, "getAgentSession", resp.StatusCode(), resp.Body)
-		})
-
-	agentsGrp.Command("heartbeat-presence").
-		Description("Refresh an agent presence heartbeat").
-		Args("id", "presence-id").
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			p2 := ctx.Arg(1)
-			resp, err := client.HeartbeatAgentPresenceWithResponse(ctx.Context(), p0, p1, p2)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "heartbeatAgentPresence", resp.StatusCode(), resp.Body)
 		})
 
 	agentsGrp.Command("list").
@@ -358,44 +255,7 @@ func registerAgentsCommands(app *cli.App) {
 			return printResponse(ctx, "listAgents", resp.StatusCode(), resp.Body)
 		})
 
-	agentsGrp.Command("list-presences").
-		Description("List presence records for an agent").
-		Args("id").
-		Flags(
-			cli.String("status", "").Help("Filter by presence status."),
-			cli.String("transport", "").Help("Filter by transport type (e.g. \"sse\", \"polling\")."),
-			cli.Int("limit", "").Help("limit"),
-		).
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			params := &api.ListAgentPresencesParams{}
-			if ctx.IsSet("status") {
-				v := api.AgentPresenceStatus(ctx.String("status"))
-				params.Status = &v
-			}
-			if ctx.IsSet("transport") {
-				v := ctx.String("transport")
-				params.Transport = &v
-			}
-			if ctx.IsSet("limit") {
-				v := api.LimitParam(ctx.Int("limit"))
-				params.Limit = &v
-			}
-			resp, err := client.ListAgentPresencesWithResponse(ctx.Context(), p0, p1, params)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "listAgentPresences", resp.StatusCode(), resp.Body)
-		})
-
-	agentsGrp.Command("list-session-messages").
+	agentsGrp.Command("list-messages").
 		Description("List conversation session messages").
 		Args("id", "session-id").
 		Flags(
@@ -412,7 +272,7 @@ func registerAgentsCommands(app *cli.App) {
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			p2 := ctx.Arg(1)
-			params := &api.ListAgentSessionMessagesParams{}
+			params := &api.ListSessionMessagesParams{}
 			if ctx.IsSet("after-sequence") {
 				v := ctx.Int("after-sequence")
 				params.AfterSequence = &v
@@ -421,11 +281,11 @@ func registerAgentsCommands(app *cli.App) {
 				v := api.LimitParam(ctx.Int("limit"))
 				params.Limit = &v
 			}
-			resp, err := client.ListAgentSessionMessagesWithResponse(ctx.Context(), p0, p1, p2, params)
+			resp, err := client.ListSessionMessagesWithResponse(ctx.Context(), p0, p1, p2, params)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, "listAgentSessionMessages", resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "listSessionMessages", resp.StatusCode(), resp.Body)
 		})
 
 	agentsGrp.Command("list-sessions").
@@ -447,11 +307,11 @@ func registerAgentsCommands(app *cli.App) {
 			p1 := ctx.Arg(0)
 			params := &api.ListAgentSessionsParams{}
 			if ctx.IsSet("status") {
-				v := api.AgentConversationSessionStatus(ctx.String("status"))
+				v := api.SessionStatus(ctx.String("status"))
 				params.Status = &v
 			}
 			if ctx.IsSet("scope") {
-				v := api.AgentConversationSessionScope(ctx.String("scope"))
+				v := api.SessionScope(ctx.String("scope"))
 				params.Scope = &v
 			}
 			if ctx.IsSet("limit") {
@@ -482,6 +342,25 @@ func registerAgentsCommands(app *cli.App) {
 				return err
 			}
 			return printResponse(ctx, "listSkillAssignments", resp.StatusCode(), resp.Body)
+		})
+
+	agentsGrp.Command("list-table-grants").
+		Description("List agent table grants").
+		Args("id").
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			p1 := ctx.Arg(0)
+			resp, err := client.ListAgentTableGrantsWithResponse(ctx.Context(), p0, p1)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "listAgentTableGrants", resp.StatusCode(), resp.Body)
 		})
 
 	agentsGrp.Command("list-toolkit-assignments").
@@ -522,11 +401,50 @@ func registerAgentsCommands(app *cli.App) {
 			return printResponse(ctx, "provisionAgentInbox", resp.StatusCode(), resp.Body)
 		})
 
+	agentsGrp.Command("replace-agent-table-grants").
+		Description("Replace agent table grants").
+		Args("id").
+		Flags(
+			cli.String("grants", "").Help("[required] Full replacement set of table grants for the agent. Accepts JSON, @file, or @-."),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			p1 := ctx.Arg(0)
+			var body api.ReplaceAgentTableGrantsJSONRequestBody
+			if err := readJSONBody(ctx, &body); err != nil {
+				return err
+			}
+			if ctx.IsSet("grants") {
+				if err := decodeFlagJSON(ctx, "grants", ctx.String("grants"), &body.Grants); err != nil {
+					return err
+				}
+			}
+			if ctx.String("file") == "" && !ctx.IsSet("grants") {
+				return fmt.Errorf("--grants is required (or supply it via --file)")
+			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
+			}
+			resp, err := client.ReplaceAgentTableGrantsWithResponse(ctx.Context(), p0, p1, body)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "replaceAgentTableGrants", resp.StatusCode(), resp.Body)
+		})
+
 	agentsGrp.Command("replace-skills").
 		Description("Replace assigned skills").
 		Args("id").
 		Flags(
-			cli.Strings("skill-ids", "").Help("[required] skill-ids"),
+			cli.Strings("skill-ids", "").Help("[required] Full replace-set of skill IDs to assign to the agent, in desired order."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -563,7 +481,7 @@ func registerAgentsCommands(app *cli.App) {
 		Description("Replace assigned toolkits").
 		Args("id").
 		Flags(
-			cli.Strings("toolkit-ids", "").Help("[required] toolkit-ids"),
+			cli.Strings("toolkit-ids", "").Help("[required] Full replace-set of toolkit IDs to assign to the agent, in desired order."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -594,6 +512,26 @@ func registerAgentsCommands(app *cli.App) {
 				return err
 			}
 			return printResponse(ctx, "replaceToolkits", resp.StatusCode(), resp.Body)
+		})
+
+	agentsGrp.Command("stream-session-events").
+		Description("Stream live conversation session events").
+		Args("id", "session-id").
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			p1 := ctx.Arg(0)
+			p2 := ctx.Arg(1)
+			resp, err := client.StreamSessionEventsWithResponse(ctx.Context(), p0, p1, p2)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "streamSessionEvents", resp.StatusCode(), resp.Body)
 		})
 
 	agentsGrp.Command("update").

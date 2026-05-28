@@ -17,7 +17,7 @@ import (
 
 // registerActionsCommands registers every generated subcommand in the "actions" group.
 func registerActionsCommands(app *cli.App) {
-	actionsGrp := app.Group("actions").Description("Custom HTTP actions called by workflow steps")
+	actionsGrp := app.Group("actions").Description("Actions available to automations and agents")
 	actionsGrp.Alias("action")
 	actionsGrp.Command("create").
 		Description("Create an action").
@@ -26,7 +26,7 @@ func registerActionsCommands(app *cli.App) {
 			cli.String("description", "").Help("Markdown-safe description of what the action does."),
 			cli.String("endpoint-url", "").Help("[required] HTTP/HTTPS URL Mobius will POST to when invoking the action."),
 			cli.String("input-schema", "").Help("JSON Schema describing the expected input parameters. Accepts JSON, @file, or @-."),
-			cli.String("name", "").Help("[required] Project-scoped identifier used in workflow step definitions. Lowercase alphanumeric + hyphens, e.g.…"),
+			cli.String("name", "").Help("[required] Project-scoped identifier used in automation step definitions. Lowercase alphanumeric + hyphens, e.…"),
 			cli.String("output-schema", "").Help("JSON Schema describing the expected output shape. Accepts JSON, @file, or @-."),
 			cli.String("tags", "").Help("Arbitrary key-value string tags for filtering and organization. Accepts JSON, @file, or @-."),
 			cli.String("title", "").Help("Human-readable display name shown in the UI and catalog."),
@@ -138,7 +138,7 @@ func registerActionsCommands(app *cli.App) {
 		Args("action-name").
 		Flags(
 			cli.String("input", "").Help("Input values matching the action's input_schema. Accepts JSON, @file, or @-."),
-			cli.Int("timeout-seconds", "").Help("How long (in seconds) to wait for synchronous completion. Default 30, max 120. If the run does not …"),
+			cli.Int("timeout-seconds", "").Help("How long (in seconds) to wait for synchronous completion. Default 30, max 120. HTTP-backed actions …"),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -199,7 +199,7 @@ func registerActionsCommands(app *cli.App) {
 		Flags(
 			cli.String("cursor", "").Help("cursor"),
 			cli.Int("limit", "").Help("limit"),
-			cli.String("run-id", "").Help("Filter to invocations from a specific workflow run."),
+			cli.String("run-id", "").Help("Filter to invocations from a specific automation run."),
 			cli.String("job-id", "").Help("Filter to invocations from a specific job."),
 			cli.String("action-name", "").Help("Filter to invocations of a specific action."),
 			cli.String("status", "").Help("Filter by terminal status (e.g. \"success\", \"failed\")."),

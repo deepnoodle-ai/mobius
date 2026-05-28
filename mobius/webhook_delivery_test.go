@@ -6,17 +6,31 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"github.com/deepnoodle-ai/wonton/assert"
 )
 
 func TestBuildSyntheticWebhookPayload(t *testing.T) {
 	payload, err := BuildSyntheticWebhookPayload("run.completed", map[string]any{"id": "run_1"})
-	require.NoError(t, err)
+	assert.NoError(t, err)
 
-	assert.JSONEq(t, `{"type":"run.completed","data":{"id":"run_1"}}`, string(payload))
+	assertJSONEqual(t, payload, []byte(`{"type":"run.completed","data":{"id":"run_1"}}`))
+}
+
+func assertJSONEqual(t *testing.T, got, want []byte) {
+	t.Helper()
+	var gotV, wantV any
+	if err := json.Unmarshal(got, &gotV); err != nil {
+		t.Fatalf("got is not valid JSON: %v: %s", err, string(got))
+	}
+	if err := json.Unmarshal(want, &wantV); err != nil {
+		t.Fatalf("want is not valid JSON: %v: %s", err, string(want))
+	}
+	if !reflect.DeepEqual(gotV, wantV) {
+		t.Fatalf("JSON not equal:\n got: %s\nwant: %s", string(got), string(want))
+	}
 }
 
 func TestDeliverSyntheticWebhook(t *testing.T) {
@@ -41,7 +55,7 @@ func TestDeliverSyntheticWebhook(t *testing.T) {
 		gotSecretVersion = r.Header.Get(MobiusSecretVersionHeader)
 		var err error
 		gotBody, err = io.ReadAll(r.Body)
-		require.NoError(t, err)
+		assert.NoError(t, err)
 		w.WriteHeader(http.StatusNoContent)
 	}))
 	defer server.Close()
@@ -57,7 +71,7 @@ func TestDeliverSyntheticWebhook(t *testing.T) {
 		EventType:     "run.completed",
 		Data:          map[string]any{"id": "run_1"},
 	})
-	require.NoError(t, err)
+	assert.NoError(t, err)
 
 	assert.Equal(t, "run.completed", gotEventType)
 	assert.Equal(t, syntheticWebhookUserAgent, gotUserAgent)
@@ -67,7 +81,7 @@ func TestDeliverSyntheticWebhook(t *testing.T) {
 	assert.Equal(t, "mobius/webhook/test", gotSecretRef)
 	assert.Equal(t, "2", gotSecretVersion)
 	assert.Equal(t, SignDelivery(key, gotBody, "delivery_1", 1710000000), gotSignature)
-	assert.JSONEq(t, `{"type":"run.completed","data":{"id":"run_1"}}`, string(gotBody))
+	assertJSONEqual(t, gotBody, []byte(`{"type":"run.completed","data":{"id":"run_1"}}`))
 }
 
 func TestDeliverSyntheticWebhookReturnsReceiverError(t *testing.T) {
@@ -84,7 +98,7 @@ func TestDeliverSyntheticWebhookReturnsReceiverError(t *testing.T) {
 		EventType:     "run.failed",
 		Data:          json.RawMessage(`{"id":"run_1"}`),
 	})
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "502")
-	assert.Contains(t, err.Error(), "nope")
+	assert.Error(t, err)
+	assert.ErrorContains(t, err, "502")
+	assert.ErrorContains(t, err, "nope")
 }

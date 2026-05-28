@@ -1,190 +1,147 @@
 from __future__ import annotations
 
-import base64
+import asyncio
 import json
-import threading
-import time
-from types import SimpleNamespace
 
-from deepnoodle.mobius._api.models import JobActionSpec, JobReportRequest, JobSpec
-from deepnoodle.mobius.worker import Worker, WorkerConfig, WorkerPool, WorkerPoolConfig
+import httpx
+import pytest
 
-
-class FakeClient:
-    def __init__(self, job) -> None:
-        self.job = job
-        self.project = "prj_1"
-        self.claims = 0
-        self.emitted: list[tuple[str, str, dict[str, object]]] = []
-        self.reported: list[JobReportRequest] = []
-
-    def claim_job(self, _req):
-        self.claims += 1
-        if self.claims == 1:
-            return self.job
-        return None
-
-    def heartbeat_job(self, *_args, **_kwargs):
-        class Envelope:
-            directives = type("Directives", (), {"should_cancel": False})()
-
-        return Envelope()
-
-    def emit_job_events(self, job_id, req):
-        for event in req.events:
-            self.emitted.append((job_id, event.type, event.payload))
-
-    def report_job(self, _job_id, req):
-        self.reported.append(req)
+from deepnoodle.mobius import Client, ClientOptions
+from deepnoodle.mobius._api.models import WorkerSocketClaimedJob
+from deepnoodle.mobius.worker import (
+    Worker,
+    WorkerConfig,
+    WorkerPool,
+    WorkerPoolConfig,
+    _worker_config_values,
+)
 
 
-def _action_spec(name, parameters):
-    return JobSpec(root=JobActionSpec(kind="action", name=name, parameters=parameters))
+class FakeWebSocket:
+    def __init__(self) -> None:
+        self.sent: list[dict[str, object]] = []
+
+    async def send(self, message: str) -> None:
+        self.sent.append(json.loads(message))
 
 
-def test_worker_supports_action_context_emit_event() -> None:
-    job = SimpleNamespace(
-        job_id="job_1",
-        run_id="run_1",
-        workflow_name="demo",
-        step_name="scrape",
-        spec=_action_spec("demo.action", {"url": "https://example.com"}),
-        attempt_number=1,
-        queue="default",
-        lease_token="lease-1",
-        heartbeat_interval_seconds=60,
-    )
-    client = FakeClient(job)
-    worker = Worker(
-        client,  # type: ignore[arg-type]
-        WorkerConfig(
-            worker_instance_id="worker-1",
-            poll_wait_seconds=0,
-            event_batch_size=10,
+def _client() -> Client:
+    return Client(
+        ClientOptions(
+            api_key="mbx_test",
+            base_url="https://api.example.invalid",
+            project="test-project",
         ),
+        transport=httpx.MockTransport(lambda _: httpx.Response(500)),
     )
 
-    def action(ctx, params):
-        ctx.emit_event("scrape.started", {"url": params["url"]})
-        ctx.emit_event("scrape.done", {"pages": 1})
-        worker.stop()
+
+def _job(job_id: str = "job_1", action_name: str = "demo.action") -> WorkerSocketClaimedJob:
+    return WorkerSocketClaimedJob(
+        id=job_id,
+        kind="action_execution",
+        origin="automation_action_step",
+        executor_kind="customer_worker",
+        queue="default",
+        action_name=action_name,
+        run_id="run_1",
+        step_id="step_1",
+        spec={"parameters": {"topic": "sdk"}},
+        lease_token="lease-1",
+        claim_attempt=1,
+        lease_duration_seconds=60,
+        heartbeat_cadence_seconds=60,
+    )
+
+
+def test_register_frame_uses_configured_capacity_and_registered_actions() -> None:
+    worker = Worker(
+        _client(),
+        WorkerConfig(worker_instance_id="worker-1", concurrency=8, queues=["gpu"]),
+    )
+    worker.register("demo.action", lambda params: params)
+
+    frame = worker._register_frame().model_dump(mode="json", exclude_none=True)
+
+    assert frame["type"] == "worker.register"
+    assert frame["worker_instance_id"] == "worker-1"
+    assert frame["concurrency_limit"] == 8
+    assert frame["available_slots"] == 8
+    assert frame["queues"] == ["gpu"]
+    assert frame["action_names"] == ["demo.action"]
+
+
+@pytest.mark.asyncio
+async def test_worker_executes_action_job_and_reports_result() -> None:
+    worker = Worker(_client(), WorkerConfig(worker_instance_id="worker-1"))
+    seen: dict[str, object] = {}
+
+    def action(params, ctx):
+        seen["params"] = params
+        seen["job_id"] = ctx.job_id
         return {"ok": True}
 
     worker.register("demo.action", action)
-    worker.run()
+    ws = FakeWebSocket()
+    await worker._execute_job(ws, _job())
 
-    assert client.emitted == [
-        ("job_1", "scrape.started", {"url": "https://example.com"}),
-        ("job_1", "scrape.done", {"pages": 1}),
+    reports = [frame for frame in ws.sent if frame["type"] == "job.report"]
+    assert seen == {"params": {"topic": "sdk"}, "job_id": "job_1"}
+    assert reports == [
+        {
+            "type": "job.report",
+            "message_id": reports[0]["message_id"],
+            "job_id": "job_1",
+            "lease_token": "lease-1",
+            "status": "completed",
+            "result": {"ok": True},
+        }
     ]
-    assert len(client.reported) == 1
-    outcome = client.reported[0].outcomes[0].root
-    assert outcome.kind == "complete"
-    result = json.loads(base64.b64decode(outcome.result_b64))
-    assert result == {"ok": True}
 
 
-class SequencedClient(FakeClient):
-    def __init__(self, jobs) -> None:
-        super().__init__(None)
-        self.jobs = list(jobs)
-        self.lock = threading.Lock()
-        self.worker_ids: list[str] = []
-        # Capture the new fence + capacity fields too so any future
-        # drift in the claim contract surfaces in this test suite.
-        self.session_tokens: list[str | None] = []
-        self.concurrency_limits: list[int] = []
+@pytest.mark.asyncio
+async def test_worker_reports_cancelled_when_action_task_is_cancelled() -> None:
+    worker = Worker(_client(), WorkerConfig(worker_instance_id="worker-1"))
+    started = asyncio.Event()
 
-    def claim_job(self, req):
-        with self.lock:
-            self.claims += 1
-            self.worker_ids.append(req.worker_instance_id)
-            self.session_tokens.append(req.worker_session_token)
-            self.concurrency_limits.append(req.concurrency_limit)
-            if self.jobs:
-                return self.jobs.pop(0)
-        return None
-
-
-def _block_job(job_id: str):
-    return SimpleNamespace(
-        job_id=job_id,
-        run_id="run_1",
-        workflow_name="demo",
-        step_name="scrape",
-        spec=_action_spec("demo.block", {}),
-        attempt_number=1,
-        queue="default",
-        lease_token=f"lease-{job_id}",
-        heartbeat_interval_seconds=60,
-    )
-
-
-def test_worker_claims_next_job_only_after_current_completes() -> None:
-    client = SequencedClient([_block_job("job_1")])
-    worker = Worker(
-        client,  # type: ignore[arg-type]
-        WorkerConfig(worker_instance_id="worker-1", poll_wait_seconds=0),
-    )
-    started = threading.Event()
-    release = threading.Event()
-
-    def action(_params):
+    async def action(_params):
         started.set()
-        release.wait(timeout=2)
-        worker.stop()
-        return {"ok": True}
+        await asyncio.sleep(60)
 
-    worker.register("demo.block", action)
-    thread = threading.Thread(target=worker.run)
-    thread.start()
-    assert started.wait(timeout=2)
-    time.sleep(0.05)
-    assert client.claims == 1
-    release.set()
-    thread.join(timeout=2)
-    assert not thread.is_alive()
+    worker.register("demo.action", action)
+    ws = FakeWebSocket()
+    task = asyncio.create_task(worker._execute_job(ws, _job()))
+    await started.wait()
+    task.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await task
+
+    reports = [frame for frame in ws.sent if frame["type"] == "job.report"]
+    assert reports[-1]["status"] == "cancelled"
+    assert reports[-1]["error_type"] == "Cancelled"
 
 
-def test_worker_pool_uses_distinct_single_job_workers() -> None:
-    client = SequencedClient([
-        _block_job("job_1"),
-        _block_job("job_2"),
-        _block_job("job_3"),
-    ])
-    pool = WorkerPool(
-        client,  # type: ignore[arg-type]
-        WorkerPoolConfig(
-            worker_instance_id_prefix="pool-worker",
-            count=3,
-            poll_wait_seconds=0,
-        ),
+def test_worker_pool_config_drops_pool_only_fields() -> None:
+    config = WorkerPoolConfig(
+        worker_instance_id_prefix="pool-worker",
+        count=3,
+        concurrency=2,
+        queues=["default"],
     )
-    started = threading.Barrier(4)
-    release = threading.Event()
 
-    def action(_params):
-        started.wait(timeout=2)
-        release.wait(timeout=2)
-        return {"ok": True}
+    values = _worker_config_values(config)
 
-    pool.register("demo.block", action)
-    thread = threading.Thread(target=pool.run)
-    thread.start()
-    started.wait(timeout=2)
-    assert set(client.worker_ids[:3]) == {
-        "pool-worker-1",
-        "pool-worker-2",
-        "pool-worker-3",
-    }
-    # Each pool child generates its own per-boot session token; three
-    # children → three distinct tokens, all non-empty.
-    tokens = client.session_tokens[:3]
-    assert all(tok for tok in tokens)
-    assert len(set(tokens)) == 3
-    # concurrency_limit defaults to 1 per child unless overridden.
-    assert client.concurrency_limits[:3] == [1, 1, 1]
-    release.set()
-    pool.stop()
-    thread.join(timeout=2)
-    assert not thread.is_alive()
+    assert values["concurrency"] == 2
+    assert values["queues"] == ["default"]
+    assert "count" not in values
+    assert "worker_instance_id_prefix" not in values
+
+
+def test_worker_pool_registers_actions_for_children() -> None:
+    pool = WorkerPool(_client(), WorkerPoolConfig(count=2))
+
+    def action(params):
+        return params
+
+    assert pool.register("demo.action", action) is pool
+    assert pool.actions["demo.action"] is action

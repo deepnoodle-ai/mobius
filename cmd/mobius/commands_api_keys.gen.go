@@ -24,7 +24,6 @@ func registerApiKeysCommands(app *cli.App) {
 		Flags(
 			cli.String("expires-at", "").Help("Optional hard expiry. Omit for a non-expiring key. Accepts JSON, @file, or @-."),
 			cli.String("name", "").Help("[required] Human-readable label, unique within the project."),
-			cli.String("project-id", "").Help("[required] Project ID."),
 			cli.String("service-account-id", "").Help("[required] Service account this key authenticates as."),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
@@ -37,6 +36,7 @@ func registerApiKeysCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
+			p0 := authFor(ctx).Project
 			var body api.CreateAPIKeyJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -48,9 +48,6 @@ func registerApiKeysCommands(app *cli.App) {
 			}
 			if ctx.IsSet("name") {
 				body.Name = ctx.String("name")
-			}
-			if ctx.IsSet("project-id") {
-				body.ProjectId = api.ProjectID(ctx.String("project-id"))
 			}
 			if ctx.IsSet("service-account-id") {
 				body.ServiceAccountId = ctx.String("service-account-id")
@@ -64,16 +61,13 @@ func registerApiKeysCommands(app *cli.App) {
 			if body.Name == "" {
 				return fmt.Errorf("--name is required (or supply it via --file)")
 			}
-			if body.ProjectId == "" {
-				return fmt.Errorf("--project-id is required (or supply it via --file)")
-			}
 			if body.ServiceAccountId == "" {
 				return fmt.Errorf("--service-account-id is required (or supply it via --file)")
 			}
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.CreateAPIKeyWithResponse(ctx.Context(), body)
+			resp, err := client.CreateAPIKeyWithResponse(ctx.Context(), p0, body)
 			if err != nil {
 				return err
 			}
@@ -83,9 +77,6 @@ func registerApiKeysCommands(app *cli.App) {
 	apiKeysGrp.Command("get").
 		Description("Get an API key").
 		Args("id").
-		Flags(
-			cli.String("project-id", "").Help("project-id"),
-		).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -93,13 +84,9 @@ func registerApiKeysCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.Arg(0)
-			params := &api.GetAPIKeyParams{}
-			if ctx.IsSet("project-id") {
-				v := api.APIKeyProjectIDParam(ctx.String("project-id"))
-				params.ProjectId = &v
-			}
-			resp, err := client.GetAPIKeyWithResponse(ctx.Context(), p0, params)
+			p0 := authFor(ctx).Project
+			p1 := ctx.Arg(0)
+			resp, err := client.GetAPIKeyWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}
@@ -109,7 +96,6 @@ func registerApiKeysCommands(app *cli.App) {
 	apiKeysGrp.Command("list").
 		Description("List API keys").
 		Flags(
-			cli.String("project-id", "").Help("project-id"),
 			cli.Int("limit", "").Help("limit"),
 			cli.String("cursor", "").Help("cursor"),
 		).
@@ -120,11 +106,8 @@ func registerApiKeysCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
+			p0 := authFor(ctx).Project
 			params := &api.ListAPIKeysParams{}
-			if ctx.IsSet("project-id") {
-				v := api.APIKeyProjectIDParam(ctx.String("project-id"))
-				params.ProjectId = &v
-			}
 			if ctx.IsSet("limit") {
 				v := api.LimitParam(ctx.Int("limit"))
 				params.Limit = &v
@@ -133,7 +116,7 @@ func registerApiKeysCommands(app *cli.App) {
 				v := api.CursorParam(ctx.String("cursor"))
 				params.Cursor = &v
 			}
-			resp, err := client.ListAPIKeysWithResponse(ctx.Context(), params)
+			resp, err := client.ListAPIKeysWithResponse(ctx.Context(), p0, params)
 			if err != nil {
 				return err
 			}
@@ -143,9 +126,6 @@ func registerApiKeysCommands(app *cli.App) {
 	apiKeysGrp.Command("revoke").
 		Description("Revoke an API key").
 		Args("id").
-		Flags(
-			cli.String("project-id", "").Help("project-id"),
-		).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -153,13 +133,9 @@ func registerApiKeysCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.Arg(0)
-			params := &api.RevokeAPIKeyParams{}
-			if ctx.IsSet("project-id") {
-				v := api.APIKeyProjectIDParam(ctx.String("project-id"))
-				params.ProjectId = &v
-			}
-			resp, err := client.RevokeAPIKeyWithResponse(ctx.Context(), p0, params)
+			p0 := authFor(ctx).Project
+			p1 := ctx.Arg(0)
+			resp, err := client.RevokeAPIKeyWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}

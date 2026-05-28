@@ -9,8 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"github.com/deepnoodle-ai/wonton/assert"
 )
 
 func signedDeliveryRequest(body []byte, key []byte, deliveryID string, timestamp int64) *http.Request {
@@ -33,13 +32,13 @@ func TestVerifySignedDeliveryWithKey(t *testing.T) {
 		Key: key,
 		Now: func() time.Time { return time.Unix(1710000005, 0) },
 	})
-	require.NoError(t, err)
+	assert.NoError(t, err)
 
 	assert.Equal(t, "delivery_1", got.DeliveryID)
 	assert.Equal(t, int64(3), got.SecretVersion)
 	assert.Equal(t, body, got.Body)
 	event, err := ParseWebhookDelivery(got)
-	require.NoError(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, WebhookEventRunCompleted, event.Type)
 }
 
@@ -56,7 +55,7 @@ func TestVerifySignedDeliveryWithResolver(t *testing.T) {
 		},
 		Now: func() time.Time { return time.Unix(1710000005, 0) },
 	})
-	require.NoError(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, "delivery_2", got.DeliveryID)
 }
 
@@ -69,8 +68,8 @@ func TestVerifySignedDeliveryRejectsTampering(t *testing.T) {
 		Key: key,
 		Now: func() time.Time { return time.Unix(1710000005, 0) },
 	})
-	require.NoError(t, err)
-	require.Equal(t, body, got.Body)
+	assert.NoError(t, err)
+	assert.Equal(t, body, got.Body)
 
 	req = signedDeliveryRequest([]byte(`{"ok":false}`), key, "delivery_3", 1710000000)
 	req.Header.Set(MobiusSignatureHeader, SignDelivery(key, body, "delivery_3", 1710000000))
@@ -86,7 +85,7 @@ func TestVerifySignedDeliveryRejectsStaleTimestamp(t *testing.T) {
 		Key: key,
 		Now: func() time.Time { return time.Unix(1710000601, 0) },
 	})
-	require.Error(t, err)
+	assert.Error(t, err)
 	assert.True(t, errors.Is(err, ErrInvalidSignedDelivery))
 }
 
@@ -96,6 +95,6 @@ func expectSignedDeliveryError(t *testing.T, req *http.Request, key []byte) erro
 		Key: key,
 		Now: func() time.Time { return time.Unix(1710000005, 0) },
 	})
-	require.Error(t, err)
+	assert.Error(t, err)
 	return err
 }

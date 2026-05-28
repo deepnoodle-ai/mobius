@@ -15,6 +15,11 @@ import (
 	"github.com/deepnoodle-ai/wonton/assert"
 )
 
+type stubResponse struct {
+	status int
+	body   string
+}
+
 // --- transport fixtures ----------------------------------------------------
 
 // sequencedServer returns stubs from a list on each successive request to
@@ -350,33 +355,4 @@ func TestRetryingTransport_ContextCancelledDuringSleep(t *testing.T) {
 func TestRateLimitError_UnwrapsToSentinel(t *testing.T) {
 	e := &RateLimitError{Scope: "key"}
 	assert.True(t, errors.Is(e, ErrRateLimited))
-}
-
-// --- integration with Client: runtimeEmitEvents produces RateLimitError ---
-
-func TestClient_EmitEvents_Returns_RateLimitError_WithHeaders(t *testing.T) {
-	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Retry-After", "5")
-		w.Header().Set("X-RateLimit-Limit", "100")
-		w.Header().Set("X-RateLimit-Remaining", "0")
-		w.Header().Set("X-RateLimit-Reset", strconv.FormatInt(time.Now().Add(time.Minute).Unix(), 10))
-		w.Header().Set("X-RateLimit-Scope", "key")
-		w.Header().Set("X-RateLimit-Policy", "100;w=60")
-		w.WriteHeader(429)
-	})
-	srv := httptest.NewServer(h)
-	t.Cleanup(srv.Close)
-
-	c, err := NewClient(WithBaseURL(srv.URL), WithAPIKey("mbx_test"), WithProjectHandle("p1"), WithRetry(0))
-	assert.NoError(t, err)
-	err = c.runtimeEmitEvents(context.Background(), &runtimeJob{JobID: "j1", WorkerInstanceID: "w1", LeaseToken: "lease-1", Attempt: 1}, []jobEventEntry{
-		{Type: "x", Payload: map[string]any{"k": "v"}},
-	})
-	assert.Error(t, err)
-	assert.True(t, errors.Is(err, ErrRateLimited))
-	var rle *RateLimitError
-	assert.True(t, errors.As(err, &rle))
-	assert.Equal(t, rle.Limit, 100)
-	assert.Equal(t, rle.Scope, "key")
-	assert.Equal(t, rle.RetryAfter, 5*time.Second)
 }

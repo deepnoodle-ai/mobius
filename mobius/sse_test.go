@@ -1,94 +1,38 @@
 package mobius
 
 import (
+	"context"
+	"io"
+	"strings"
 	"testing"
-	"time"
 
 	"github.com/deepnoodle-ai/wonton/assert"
 )
 
-func TestRunEvent_AsCustom_RoundTripsServerEnvelope(t *testing.T) {
-	// Mirror the wire shape produced by jobs_events.go on the server:
-	// the outer SSE Type is "custom" and Data carries an envelope with
-	// `type` (the user-supplied subtype), job_id/step_id/path_id, and
-	// `data` (the user payload).
-	ev := RunEvent{
-		Type:      RunEventTypeCustom,
-		RunID:     "run_1",
-		JobID:     "job_1",
-		Seq:       42,
-		Timestamp: time.Now(),
-		Data: map[string]interface{}{
-			"kind":    "custom",
-			"type":    "progress",
-			"job_id":  "job_1",
-			"step_id": "step_1",
-			"path_id": "main",
-			"data": map[string]interface{}{
-				"step": float64(2),
-				"of":   float64(3),
-				"note": "halfway",
-			},
-		},
-	}
-	subtype, payload, ok := ev.AsCustom()
+func TestSinceSequenceParam(t *testing.T) {
+	assert.Nil(t, sinceSequenceParam(0))
+	got := sinceSequenceParam(42)
+	assert.NotNil(t, got)
+	assert.Equal(t, *got, int64(42))
+}
+
+func TestReadSSEStream_DecodesAutomationRunEvent(t *testing.T) {
+	c, _ := NewClient()
+	body := io.NopCloser(strings.NewReader(`event: run.updated
+id: 7
+data: {"id":"evt_1","org_id":"org_1","project_id":"proj_1","run_id":"run_1","event_type":"run.updated","sequence":7,"payload":{"status":"running"},"created_at":"2026-05-27T00:00:00Z"}
+
+`))
+	ch := make(chan RunEvent)
+	go c.readSSEStream(context.Background(), body, ch)
+
+	event, ok := <-ch
 	assert.True(t, ok)
-	assert.Equal(t, subtype, "progress")
-	assert.Equal(t, payload["step"], float64(2))
-	assert.Equal(t, payload["note"], "halfway")
-}
-
-func TestRunEvent_AsCustom_NonCustomReturnsFalse(t *testing.T) {
-	ev := RunEvent{Type: RunEventTypeRunUpdated, Data: map[string]interface{}{"status": "completed"}}
-	subtype, payload, ok := ev.AsCustom()
+	assert.Equal(t, event.Id, "evt_1")
+	assert.Equal(t, event.RunId, "run_1")
+	assert.Equal(t, event.Sequence, int64(7))
+	assert.NotNil(t, event.Payload)
+	assert.Equal(t, (*event.Payload)["status"], "running")
+	_, ok = <-ch
 	assert.False(t, ok)
-	assert.Equal(t, subtype, "")
-	assert.Nil(t, payload)
-}
-
-func TestRunEvent_AsCustom_MissingSubtypeReturnsFalse(t *testing.T) {
-	// A custom event without an inner `type` is malformed; AsCustom
-	// should not silently return an empty subtype.
-	ev := RunEvent{
-		Type: RunEventTypeCustom,
-		Data: map[string]interface{}{"data": map[string]interface{}{"x": 1}},
-	}
-	_, _, ok := ev.AsCustom()
-	assert.False(t, ok)
-}
-
-func TestRunEvent_AsCustom_MissingPayloadReturnsFalse(t *testing.T) {
-	// Subtype present but inner `data` missing entirely — wire format
-	// always carries the user payload, so missing data is malformed.
-	ev := RunEvent{
-		Type: RunEventTypeCustom,
-		Data: map[string]interface{}{"type": "progress"},
-	}
-	_, payload, ok := ev.AsCustom()
-	assert.False(t, ok)
-	assert.Nil(t, payload)
-}
-
-func TestRunEvent_AsCustom_NonObjectPayloadReturnsFalse(t *testing.T) {
-	// `data` present but not a JSON object (e.g. user erroneously
-	// emitted a string) — AsCustom contract is to return ok=false so
-	// callers don't dereference a nil map.
-	ev := RunEvent{
-		Type: RunEventTypeCustom,
-		Data: map[string]interface{}{"type": "progress", "data": "not-a-map"},
-	}
-	_, payload, ok := ev.AsCustom()
-	assert.False(t, ok)
-	assert.Nil(t, payload)
-}
-
-func TestRunEventTypeConstants_CoverServerEmittedKinds(t *testing.T) {
-	// Pin the wire-string values so a rename of a constant in Go does
-	// not silently change the SSE type clients dispatch on. Update both
-	// the SDK constant and this test (and the server emitter) when an
-	// event kind is renamed.
-	assert.Equal(t, string(RunEventTypeRunUpdated), "run_updated")
-	assert.Equal(t, string(RunEventTypeJobUpdated), "job_updated")
-	assert.Equal(t, string(RunEventTypeRunStepUpdated), "run_step_updated")
-	assert.Equal(t, string(RunEventTypeCustom), "custom")
 }

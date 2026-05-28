@@ -1,23 +1,15 @@
 import { randomUUID } from "node:crypto";
 import { hostname as systemHostname } from "node:os";
 import type {
-  JobActionSpec,
-  JobClaim,
-  JobClaimRequest,
-  JobReportRequest,
-  Outcome,
-  OutcomeComplete,
-  OutcomeFail,
+  WorkerSocketClaimedJob,
+  WorkerSocketGenerationDeltaFrame,
+  WorkerSocketJobHeartbeatFrame,
+  WorkerSocketJobReportFrame,
+  WorkerSocketJobsClaimFrame,
+  WorkerSocketModelCapability,
+  WorkerSocketRegisterFrame,
 } from "./api/index.js";
-import {
-  AuthRevokedError,
-  Client,
-  LeaseLostError,
-  PayloadTooLargeError,
-  RateLimitedError,
-  WorkerInstanceConflictError,
-  type JobEventEntry,
-} from "./client.js";
+import { Client } from "./client.js";
 
 export type InstanceIDSource =
   | "configured"
@@ -30,39 +22,12 @@ export type InstanceIDSource =
   | "generated_uuid";
 
 const CLOUD_RUN_METADATA_TIMEOUT_MS = 1000;
-
-// Generated once per process and reused by both the system_hostname
-// rung (as an 8-char suffix) and the generated_uuid rung (full value).
-// worker_instance_id is process identity and must be stable across
-// calls within the same boot — without the cache, a caller that
-// resolved twice would observe two different IDs.
 const BOOT_INSTANCE_ID = randomUUID();
 
-/**
- * Resolve a per-process `worker_instance_id` from the runtime
- * environment. Order: explicit → Cloud Run K_REVISION + metadata →
- * HOSTNAME env → FLY_MACHINE_ID → RAILWAY_REPLICA_ID →
- * RENDER_INSTANCE_ID → `os.hostname()` suffixed with a per-boot
- * random tag (laptops and bare metal) → generated UUID.
- *
- * The system_hostname rung carries a random suffix because
- * `os.hostname()` identifies the host, not the process — two
- * processes started on the same machine would otherwise auto-detect
- * the same identifier and collide on the server's conflict detector.
- * Set {@link WorkerConfig.workerInstanceId} explicitly only when a
- * stable identity across restarts is desired (named singleton
- * workers).
- *
- * The returned source is informational only — workers log it once at
- * startup so operators can confirm the right platform was picked up.
- */
 export async function resolveInstanceID(
   explicit: string | undefined,
 ): Promise<{ id: string; source: InstanceIDSource }> {
-  if (explicit) {
-    const trimmed = explicit.trim();
-    if (trimmed) return { id: trimmed, source: "configured" };
-  }
+  if (explicit?.trim()) return { id: explicit.trim(), source: "configured" };
   const cloudRun = await cloudRunInstanceID();
   if (cloudRun) return { id: cloudRun, source: "cloud_run_revision_instance" };
   const hostname = (process.env.HOSTNAME ?? "").trim();
@@ -76,21 +41,18 @@ export async function resolveInstanceID(
   try {
     const host = systemHostname().trim();
     if (host) {
-      const suffix = BOOT_INSTANCE_ID.replace(/-/g, "").slice(0, 8);
-      return { id: `${host}-${suffix}`, source: "system_hostname" };
+      return {
+        id: `${host}-${BOOT_INSTANCE_ID.replace(/-/g, "").slice(0, 8)}`,
+        source: "system_hostname",
+      };
     }
   } catch {
-    // fall through to UUID
+    // fall through
   }
   return { id: BOOT_INSTANCE_ID, source: "generated_uuid" };
 }
 
 async function cloudRunInstanceID(): Promise<string | null> {
-  // Returns null on any metadata-server failure rather than the bare
-  // revision — every replica sharing the same revision string would
-  // otherwise collapse onto one row and trip the conflict detector.
-  // The next strategy (HOSTNAME, which Cloud Run sets per-instance)
-  // takes over.
   const revision = (process.env.K_REVISION ?? "").trim();
   if (!revision) return null;
   try {
@@ -112,709 +74,486 @@ async function cloudRunInstanceID(): Promise<string | null> {
   }
 }
 
-/**
- * Logger interface used by Worker for status and error output. Compatible with
- * the global `console` object, so `console` is a valid logger. Pass `null` to
- * `WorkerConfig.logger` to silence all output.
- */
 export interface Logger {
   info(...args: unknown[]): void;
   warn(...args: unknown[]): void;
   error(...args: unknown[]): void;
 }
 
-const silentLogger: Logger = {
-  info: () => {},
-  warn: () => {},
-  error: () => {},
-};
-
+const silentLogger: Logger = { info: () => {}, warn: () => {}, error: () => {} };
 const defaultLogger: Logger = {
   info: (...args) => console.log(...args),
   warn: (...args) => console.warn(...args),
   error: (...args) => console.error(...args),
 };
 
-export interface WorkerConfig {
-  /**
-   * Identifier for this worker process. Leave omitted for the
-   * common case: the SDK auto-detects an identifier that is unique
-   * per running process. Resolution prefers platform-native IDs
-   * that are unique-per-replica by design (Cloud Run revision
-   * instance, Kubernetes HOSTNAME, Fly machine, Railway replica,
-   * Render instance), then falls back to OS hostname plus a
-   * per-boot random suffix so two processes on the same host
-   * (back-to-back tests, parallel CI workers) cannot collide.
-   *
-   * Set this explicitly only when you want a stable identity
-   * across restarts of a named singleton worker. Two live
-   * processes using the same explicit value in the same project
-   * will collide and the second will fail with
-   * {@link WorkerInstanceConflictError}.
-   */
-  workerInstanceId?: string;
-  /**
-   * Maximum number of jobs this worker holds in flight simultaneously.
-   * Defaults to 1; raise to claim several jobs from one worker process
-   * while still surfacing as a single row on the workers page.
-   */
-  concurrency?: number;
-  /** Human-readable name reported to Mobius (e.g. "billing-worker"). */
-  name?: string;
-  /** Version string reported to Mobius (e.g. "1.0.0"). */
-  version?: string;
-  /**
-   * Queue names this worker subscribes to. Empty (or omitted) means claim
-   * jobs from any queue in the project. Runs default to the "default"
-   * queue.
-   */
-  queues?: string[];
-  /**
-   * Optional filter of action names this worker will claim. When empty the
-   * worker will only claim jobs for actions it has registered.
-   */
-  actions?: string[];
-  /** Long-poll window per claim request in seconds (0–30). Defaults to 20. */
-  pollWaitSeconds?: number;
-  /**
-   * Heartbeat interval in milliseconds. When unset, the SDK uses the interval
-   * advertised by the server in the claim response, falling back to 10_000.
-   */
-  heartbeatIntervalMs?: number;
-  /**
-   * Logger for worker status and error output. Defaults to `console`. Pass
-   * `null` to silence all worker output, or supply a custom {@link Logger}
-   * (e.g. pino, winston) to route messages elsewhere.
-   */
-  logger?: Logger | null;
-  /** Max buffered custom events per in-flight job before dropping oldest. */
-  eventQueueSize?: number;
-  /** Max custom events per HTTP batch. Defaults to 20. */
-  eventBatchSize?: number;
+export interface ModelCapability {
+  provider: string;
+  model: string;
 }
 
-/**
- * ActionFn implements a single Mobius action. Receives the JSON-decoded
- * parameters delivered with the job claim and returns a JSON-serialisable
- * result.
- */
+export interface WorkerConfig {
+  workerInstanceId?: string;
+  concurrency?: number;
+  name?: string;
+  version?: string;
+  queues?: string[];
+  actions?: string[];
+  models?: ModelCapability[];
+  reconnectDelayMs?: number;
+  heartbeatIntervalMs?: number;
+  logger?: Logger | null;
+}
+
+export interface ActionContext {
+  jobId: string;
+  runId?: string;
+  sessionId?: string;
+  agentTurnId?: string;
+  toolCallId?: string;
+  projectId?: string;
+  workerInstanceId: string;
+  attempt: number;
+  queue?: string;
+  stepId?: string;
+  action?: string;
+  emitEvent(type: string, payload: Record<string, unknown>): void;
+}
+
 export type ActionFn = (
   params: Record<string, unknown>,
   signal: AbortSignal,
   ctx: ActionContext,
 ) => Promise<unknown>;
 
-export interface ActionContext {
+export interface GenerationJob {
   jobId: string;
-  runId: string;
-  projectId?: string;
-  workerInstanceId: string;
-  attempt: number;
-  queue?: string;
-  workflowName?: string;
-  stepName?: string;
-  action?: string;
-  emitEvent(type: string, payload: Record<string, unknown>): void;
+  runId?: string;
+  sessionId?: string;
+  agentTurnId?: string;
+  toolCallId?: string;
+  provider?: string;
+  model?: string;
+  spec: Record<string, unknown>;
 }
 
-/**
- * Worker claims jobs from Mobius and dispatches each to the corresponding
- * registered action function. A *job* is a single action invocation on
- * behalf of a workflow run; the backend owns the workflow engine.
- *
- * With `concurrency > 1` the worker holds up to N jobs in flight
- * simultaneously, all reporting the same `worker_instance_id` and
- * session token; the admin UI shows one row with a saturation bar
- * rather than N independent rows.
- */
+export type GenerationEmitter = (delta: Record<string, unknown>) => void;
+export type GenerationFn = (
+  ctx: ActionContext,
+  job: GenerationJob,
+  emit: GenerationEmitter,
+) => Promise<Record<string, unknown>>;
+
 export class Worker {
-  private readonly config: Required<
-    Omit<WorkerConfig, "logger" | "heartbeatIntervalMs">
-  > & {
-    heartbeatIntervalMs: number | undefined;
-  };
   private readonly logger: Logger;
-  private readonly actions: Map<string, ActionFn>;
-  private readonly sessionToken: string;
-  private instanceIDResolved = false;
-  private abortController = new AbortController();
-  private authRevoked = false;
+  private readonly actions = new Map<string, ActionFn>();
+  private readonly generators = new Map<string, GenerationFn>();
+  private sessionToken = "";
+  private stopping = false;
+  private readonly stopController = new AbortController();
 
   constructor(
     private readonly client: Client,
-    config: WorkerConfig,
+    private readonly config: WorkerConfig = {},
     actions?: Map<string, ActionFn>,
   ) {
-    const logger =
+    this.logger =
       config.logger === null ? silentLogger : (config.logger ?? defaultLogger);
-    this.config = {
-      workerInstanceId: config.workerInstanceId ?? "",
-      concurrency: config.concurrency && config.concurrency > 0 ? config.concurrency : 1,
-      name: config.name ?? "",
-      version: config.version ?? "",
-      queues: config.queues ?? [],
-      actions: config.actions ?? [],
-      pollWaitSeconds: config.pollWaitSeconds ?? 20,
-      heartbeatIntervalMs: config.heartbeatIntervalMs,
-      eventQueueSize: config.eventQueueSize ?? 256,
-      eventBatchSize: config.eventBatchSize ?? 20,
-    };
-    this.logger = logger;
-    this.actions = actions ?? new Map<string, ActionFn>();
-    this.sessionToken = randomUUID();
+    if (actions) {
+      for (const [name, fn] of actions) this.actions.set(name, fn);
+    }
   }
 
-  /** Register an action function under the given name. */
   register(name: string, fn: ActionFn): this {
     this.actions.set(name, fn);
     return this;
   }
 
-  /**
-   * Start the claim loop. Returns a promise that resolves when the worker is
-   * stopped via {@link stop} or the given signal is aborted. Throws
-   * {@link AuthRevokedError} when the credential is revoked mid-flight
-   * and {@link WorkerInstanceConflictError} when another live process
-   * has already registered this worker_instance_id.
-   *
-   * Cancellation has two distinct shapes:
-   *
-   * - {@link stop} aborts the claim loop only — in-flight jobs continue
-   *   to run to natural completion and the returned promise resolves
-   *   once they all settle. This is graceful drain.
-   * - The caller's `signal`, when aborted, propagates into both the
-   *   claim loop and every running action. This is the emergency-stop
-   *   path (e.g. SIGTERM with a hard deadline).
-   */
-  async run(signal?: AbortSignal): Promise<void> {
-    this.abortController = new AbortController();
-    // The claim loop watches both signals so stop() and the caller's
-    // emergency abort both halt new claims; executeJob only watches the
-    // caller's signal so stop() doesn't kill jobs that have already
-    // been claimed.
-    const callerSignal = signal;
-    const combined = callerSignal
-      ? anySignal(callerSignal, this.abortController.signal)
-      : this.abortController.signal;
-
-    if (!this.instanceIDResolved) {
-      const { id, source } = await resolveInstanceID(
-        this.config.workerInstanceId || undefined,
-      );
-      this.config.workerInstanceId = id;
-      this.instanceIDResolved = true;
-      this.logger.info(
-        `[mobius] worker instance id ${id} (source: ${source})`,
-      );
-    }
-
-    this.logger.info(
-      `[mobius] worker ${this.config.workerInstanceId} started (concurrency=${this.config.concurrency})`,
-    );
-
-    const inflight = new Set<Promise<void>>();
-    while (!combined.aborted) {
-      if (this.authRevoked) break;
-      while (inflight.size >= this.config.concurrency && !combined.aborted) {
-        const aborted = abortAsPromise(combined);
-        try {
-          await Promise.race([...inflight, aborted.promise]);
-        } finally {
-          aborted.cancel();
-        }
-      }
-      if (combined.aborted) break;
-
-      let job: JobClaim | null;
-      try {
-        const claimReq: JobClaimRequest = {
-          worker_instance_id: this.config.workerInstanceId,
-          worker_session_token: this.sessionToken,
-          concurrency_limit: this.config.concurrency,
-          wait_seconds: this.config.pollWaitSeconds,
-        };
-        if (this.config.name) claimReq.worker_name = this.config.name;
-        if (this.config.version) claimReq.worker_version = this.config.version;
-        if (this.config.queues.length > 0) claimReq.queues = this.config.queues;
-        if (this.config.actions.length > 0)
-          claimReq.actions = this.config.actions;
-        job = await this.client.claimJob(claimReq, combined);
-      } catch (err) {
-        if (combined.aborted) break;
-        if (err instanceof AuthRevokedError) {
-          this.logger.error("[mobius] claim rejected: credential revoked");
-          throw err;
-        }
-        if (err instanceof WorkerInstanceConflictError) {
-          this.logger.error(
-            `[mobius] claim rejected: worker_instance_id ${this.config.workerInstanceId} is already in use by another live process`,
-          );
-          throw err;
-        }
-        this.logger.error("[mobius] claim error:", err);
-        await sleep(2000, combined);
-        continue;
-      }
-
-      if (job == null) {
-        await sleep(0, combined);
-        continue;
-      }
-
-      const task = this.executeJob(job, callerSignal).finally(() => {
-        inflight.delete(task);
-      });
-      inflight.add(task);
-    }
-
-    await Promise.allSettled(inflight);
-    this.logger.info(`[mobius] worker ${this.config.workerInstanceId} stopped`);
-    if (this.authRevoked) {
-      throw new AuthRevokedError();
-    }
+  registerGenerator(provider: string, model: string, fn: GenerationFn): this {
+    this.generators.set(`${provider}/${model}`, fn);
+    return this;
   }
 
-  /** Gracefully stop the worker after in-flight jobs complete. */
   stop(): void {
-    this.abortController.abort();
+    this.stopping = true;
+    this.stopController.abort();
   }
 
-  // ---------------------------------------------------------------------------
+  async run(signal?: AbortSignal): Promise<void> {
+    const { id, source } = await resolveInstanceID(this.config.workerInstanceId);
+    this.config.workerInstanceId = id;
+    this.logger.info(`[mobius] worker instance id ${id} (source: ${source})`);
+    const runSignal = mergeSignals(this.stopController.signal, signal);
+    while (!this.stopping && !runSignal.aborted) {
+      try {
+        await this.runSocket(runSignal);
+      } catch (err) {
+        if (runSignal.aborted || this.stopping) return;
+        this.logger.warn("[mobius] worker socket disconnected; reconnecting", err);
+        await sleep(this.config.reconnectDelayMs ?? 2000, runSignal);
+      }
+    }
+  }
+
+  private async runSocket(signal?: AbortSignal): Promise<void> {
+    const ws = new WebSocket(this.client.workerSocketURL());
+    const concurrency = this.config.concurrency && this.config.concurrency > 0
+      ? this.config.concurrency
+      : 1;
+    const running = new Map<string, AbortController>();
+    let claimOutstanding = false;
+
+    await waitForOpen(ws, signal);
+    ws.send(JSON.stringify(this.registerFrame(concurrency)));
+
+    for await (const frame of socketFrames(ws, signal)) {
+      switch (frame.type) {
+        case "worker.registered":
+          this.sessionToken = String(frame.worker_session_token ?? "");
+          this.claim(ws, concurrency, running.size, claimOutstanding);
+          claimOutstanding = true;
+          break;
+        case "jobs.claimed":
+          claimOutstanding = false;
+          for (const job of (frame.jobs ?? []) as WorkerSocketClaimedJob[]) {
+            if (running.size >= concurrency) break;
+            const ctrl = new AbortController();
+            running.set(job.id, ctrl);
+            void this.executeJob(ws, job, ctrl.signal).finally(() => {
+              running.delete(job.id);
+              this.claim(ws, concurrency, running.size, claimOutstanding);
+              claimOutstanding = true;
+            });
+          }
+          break;
+        case "work.available":
+          this.claim(ws, concurrency, running.size, claimOutstanding);
+          claimOutstanding = true;
+          break;
+        case "job.cancel": {
+          const ctrl = running.get(String(frame.job_id));
+          ctrl?.abort();
+          break;
+        }
+        case "job.heartbeat.ack": {
+          const cancel = frame.cancel as { job_id?: string } | undefined;
+          if (cancel?.job_id) running.get(cancel.job_id)?.abort();
+          break;
+        }
+        case "worker.drain":
+          this.stopping = true;
+          ws.send(JSON.stringify({ type: "worker.draining", message_id: msgID() }));
+          break;
+        case "keepalive":
+          ws.send(JSON.stringify({ type: "keepalive", message_id: msgID() }));
+          break;
+        case "error":
+          this.logger.error("[mobius] worker socket protocol error", frame.error);
+          break;
+      }
+      if (this.stopping && running.size === 0) {
+        ws.close();
+        return;
+      }
+    }
+  }
+
+  private registerFrame(concurrency: number): WorkerSocketRegisterFrame {
+    const actions = this.config.actions?.length
+      ? this.config.actions
+      : [...this.actions.keys()].sort();
+    return removeUndefined({
+      type: "worker.register",
+      message_id: msgID(),
+      worker_instance_id: this.config.workerInstanceId ?? "",
+      worker_session_token: this.sessionToken || undefined,
+      concurrency_limit: concurrency,
+      available_slots: concurrency,
+      name: this.config.name,
+      version: this.config.version,
+      queues: this.config.queues?.length ? this.config.queues : undefined,
+      action_names: actions.length ? actions : undefined,
+      models: this.modelCapabilities(),
+    }) as WorkerSocketRegisterFrame;
+  }
+
+  private claim(
+    ws: WebSocket,
+    concurrency: number,
+    running: number,
+    outstanding: boolean,
+  ): void {
+    if (outstanding || this.stopping) return;
+    const available = concurrency - running;
+    if (available <= 0) return;
+    const actions = this.config.actions?.length
+      ? this.config.actions
+      : [...this.actions.keys()].sort();
+    const frame: WorkerSocketJobsClaimFrame = removeUndefined({
+      type: "jobs.claim",
+      message_id: msgID(),
+      available_slots: available,
+      queues: this.config.queues?.length ? this.config.queues : undefined,
+      action_names: actions.length ? actions : undefined,
+      models: this.modelCapabilities(),
+    }) as WorkerSocketJobsClaimFrame;
+    ws.send(JSON.stringify(frame));
+  }
+
+  private modelCapabilities(): WorkerSocketModelCapability[] | undefined {
+    const models = this.config.models
+      ?.filter((m) => m.provider && m.model)
+      .map((m) => ({ provider: m.provider, model: m.model }));
+    return models && models.length > 0 ? models : undefined;
+  }
 
   private async executeJob(
-    job: JobClaim,
-    signal: AbortSignal | undefined,
+    ws: WebSocket,
+    job: WorkerSocketClaimedJob,
+    signal: AbortSignal,
   ): Promise<void> {
-    const jobId = job.job_id;
-    const workerInstanceId = this.config.workerInstanceId;
-    const leaseToken = job.lease_token;
-    const attempt = job.attempt_number ?? 1;
-    if (job.spec.kind !== "action") {
-      const msg = `unsupported job spec kind ${JSON.stringify(job.spec.kind)} (this SDK only handles action jobs)`;
-      this.logger.error(`[mobius] ${msg}`);
-      await this.failJob(jobId, workerInstanceId, leaseToken, "UnsupportedSpec", msg);
-      return;
-    }
-    const actionSpec = job.spec as JobActionSpec;
-    const actionName = actionSpec.name;
-    const parameters = actionSpec.parameters ?? {};
-    this.logger.info(
-      `[mobius] job ${jobId} claimed (workflow=${job.workflow_name}, step=${job.step_name}, action=${actionName}, attempt=${attempt})`,
-    );
+    const heartbeat = setInterval(() => {
+      const frame: WorkerSocketJobHeartbeatFrame = {
+        type: "job.heartbeat",
+        message_id: msgID(),
+        job_id: job.id,
+        lease_token: job.lease_token,
+      };
+      ws.send(JSON.stringify(frame));
+    }, this.config.heartbeatIntervalMs ?? job.heartbeat_cadence_seconds * 1000);
 
-    const fn = this.actions.get(actionName);
-    if (!fn) {
-      const msg = `action ${JSON.stringify(actionName)} not registered on this worker`;
-      this.logger.error(`[mobius] ${msg}`);
-      await this.failJob(
-        jobId,
-        workerInstanceId,
-        leaseToken,
-        "ActionNotRegistered",
-        msg,
-      );
-      return;
-    }
-
-    const actionController = new AbortController();
-    const onAbort = () => actionController.abort();
-    // Only the caller's signal (passed to run()) propagates into actions.
-    // stop() does not flow through here — that's how graceful drain works.
-    signal?.addEventListener("abort", onAbort, { once: true });
-    const eventer = new JobEventer(this.client, job, {
-      workerInstanceId,
-      leaseToken,
-      queueSize: this.config.eventQueueSize,
-      batchSize: this.config.eventBatchSize,
-      logger: this.logger,
-    });
-    const eventerPromise = eventer.run();
-    const actionContext: ActionContext = {
-      jobId,
-      runId: job.run_id,
-      projectId: this.client.project,
-      workerInstanceId,
-      attempt,
-      queue: job.queue,
-      workflowName: job.workflow_name,
-      stepName: job.step_name,
-      action: actionName,
-      emitEvent: (type, payload) => eventer.emit(type, payload),
-    };
-
-    const interval = this.heartbeatInterval(job);
-    let hbLost = false;
-    const heartbeatTimer = setInterval(async () => {
-      try {
-        const hb = await this.client.heartbeatJob(jobId, {
-          worker_instance_id: workerInstanceId,
-          lease_token: leaseToken,
+    const ctx = this.actionContext(job);
+    try {
+      let result: unknown;
+      if (job.kind === "action_execution") {
+        const actionName = job.action_name ?? String(job.spec.action_name ?? "");
+        const fn = this.actions.get(actionName);
+        if (!fn) throw new Error(`action ${JSON.stringify(actionName)} is not registered`);
+        result = await fn(parameters(job), signal, ctx);
+      } else if (job.kind === "llm_generation") {
+        const fn = this.generator(job.provider, job.model);
+        if (!fn) throw new Error(`generation ${job.provider}/${job.model} is not registered`);
+        let seq = 0;
+        result = await fn(ctx, {
+          jobId: job.id,
+          runId: job.run_id,
+          sessionId: job.session_id,
+          agentTurnId: job.agent_turn_id,
+          toolCallId: job.tool_call_id,
+          provider: job.provider,
+          model: job.model,
+          spec: job.spec,
+        }, (delta) => {
+          seq += 1;
+          const frame: WorkerSocketGenerationDeltaFrame = {
+            type: "generation.delta",
+            message_id: msgID(),
+            job_id: job.id,
+            lease_token: job.lease_token,
+            sequence: seq,
+            delta,
+          };
+          ws.send(JSON.stringify(frame));
         });
-        if (hb.directives.should_cancel) {
-          this.logger.warn(`[mobius] job ${jobId}: cancel directive received`);
-          actionController.abort();
-        }
-      } catch (err) {
-        if (err instanceof AuthRevokedError) {
-          this.logger.warn(
-            `[mobius] job ${jobId}: credential revoked; cancelling action`,
-          );
-          this.authRevoked = true;
-          actionController.abort();
-        } else if (err instanceof LeaseLostError) {
-          this.logger.warn(
-            `[mobius] job ${jobId}: lease lost during heartbeat`,
-          );
-          hbLost = true;
-          actionController.abort();
-        } else {
-          this.logger.error(`[mobius] job ${jobId}: heartbeat error:`, err);
-        }
+      } else {
+        throw new Error(`unsupported job kind ${job.kind}`);
       }
-    }, interval);
-
-    try {
-      const result = await fn(parameters, actionController.signal, actionContext);
-      clearInterval(heartbeatTimer);
-      signal?.removeEventListener("abort", onAbort);
-      eventer.stop();
-      await eventerPromise;
-      if (hbLost) return;
-      const complete: OutcomeComplete = { kind: "complete" };
-      if (result != null) {
-        complete.result_b64 = Buffer.from(JSON.stringify(result)).toString(
-          "base64",
-        );
-      }
-      const reportReq: JobReportRequest = {
-        worker_instance_id: workerInstanceId,
-        lease_token: leaseToken,
-        outcomes: [complete as Outcome],
-      };
-      await this.client.reportJob(jobId, reportReq);
-      this.logger.info(`[mobius] job ${jobId} completed`);
+      this.report(ws, job, "completed", result);
     } catch (err) {
-      clearInterval(heartbeatTimer);
-      signal?.removeEventListener("abort", onAbort);
-      eventer.stop();
-      await eventerPromise;
-      if (err instanceof AuthRevokedError) {
-        this.logger.warn(
-          `[mobius] job ${jobId}: credential revoked during complete; worker will exit`,
-        );
-        this.authRevoked = true;
-        return;
-      }
-      if (err instanceof LeaseLostError || hbLost) {
-        this.logger.warn(`[mobius] job ${jobId}: lease lost — will be retried`);
-        return;
-      }
-      this.logger.error(`[mobius] job ${jobId} failed:`, err);
-      const errType = actionController.signal.aborted ? "Timeout" : "Error";
-      await this.failJob(
-        jobId,
-        workerInstanceId,
-        leaseToken,
-        errType,
-        String(err),
-      );
+      this.report(ws, job, "failed", undefined, signal.aborted ? "Cancelled" : "Error", String(err));
+    } finally {
+      clearInterval(heartbeat);
     }
   }
 
-  private heartbeatInterval(job: JobClaim): number {
-    if (this.config.heartbeatIntervalMs != null)
-      return this.config.heartbeatIntervalMs;
-    if (job.heartbeat_interval_seconds != null) {
-      return job.heartbeat_interval_seconds * 1000;
-    }
-    return 10_000;
+  private generator(provider?: string, model?: string): GenerationFn | undefined {
+    if (!provider || !model) return undefined;
+    return this.generators.get(`${provider}/${model}`) ?? this.generators.get(`${provider}/*`);
   }
 
-  private async failJob(
-    jobId: string,
-    workerInstanceId: string,
-    leaseToken: string,
-    errorType: string,
-    msg: string,
-  ): Promise<void> {
-    try {
-      const fail: OutcomeFail = {
-        kind: "fail",
-        error_type: errorType,
-        error_message: msg,
-      };
-      await this.client.reportJob(jobId, {
-        worker_instance_id: workerInstanceId,
-        lease_token: leaseToken,
-        outcomes: [fail as Outcome],
-      });
-    } catch (err) {
-      this.logger.error(
-        `[mobius] failed to report failure for job ${jobId}:`,
-        err,
-      );
-    }
+  private actionContext(job: WorkerSocketClaimedJob): ActionContext {
+    return {
+      jobId: job.id,
+      runId: job.run_id,
+      sessionId: job.session_id,
+      agentTurnId: job.agent_turn_id,
+      toolCallId: job.tool_call_id,
+      projectId: this.client.project,
+      workerInstanceId: this.config.workerInstanceId ?? "",
+      attempt: job.claim_attempt,
+      queue: job.queue,
+      stepId: job.step_id,
+      action: job.action_name,
+      emitEvent: () => {
+        this.logger.warn("[mobius] custom worker events are not supported by the WebSocket protocol yet");
+      },
+    };
+  }
+
+  private report(
+    ws: WebSocket,
+    job: WorkerSocketClaimedJob,
+    status: "completed" | "failed",
+    result?: unknown,
+    errorType?: string,
+    errorMessage?: string,
+  ): void {
+    const frame: WorkerSocketJobReportFrame = removeUndefined({
+      type: "job.report",
+      message_id: msgID(),
+      job_id: job.id,
+      lease_token: job.lease_token,
+      status,
+      result: status === "completed" ? resultMap(result) : undefined,
+      error_type: errorType,
+      error_message: errorMessage,
+    }) as WorkerSocketJobReportFrame;
+    ws.send(JSON.stringify(frame));
   }
 }
 
 export interface WorkerPoolConfig extends Omit<WorkerConfig, "workerInstanceId"> {
-  /** Number of worker instances to run. Defaults to 1. */
   count?: number;
-  /**
-   * Prefix used to derive child instance IDs as `<prefix>-<index>`.
-   * When omitted, the SDK generates a per-boot prefix; child workers
-   * each get their own session token, so a pool of N produces N rows
-   * on the workers page.
-   */
   workerInstanceIdPrefix?: string;
 }
 
-/**
- * Runs multiple worker instances in one process. Most callers do not
- * need a pool — to run several jobs from one process, set
- * {@link WorkerConfig.concurrency} on a single {@link Worker} and the
- * admin UI will show one row with a saturation bar. Reach for a pool
- * only when each child should surface as its own row on the workers
- * page (independent draining, in-flight isolation).
- */
 export class WorkerPool {
-  private readonly config: Required<
-    Omit<
-      WorkerPoolConfig,
-      "logger" | "heartbeatIntervalMs" | "workerInstanceIdPrefix"
-    >
-  > & {
-    workerInstanceIdPrefix: string;
-    heartbeatIntervalMs: number | undefined;
-    logger: Logger | null | undefined;
-  };
   private readonly actions = new Map<string, ActionFn>();
-  private abortController = new AbortController();
-
+  private readonly generators = new Map<string, GenerationFn>();
   constructor(
     private readonly client: Client,
-    config: WorkerPoolConfig,
-  ) {
-    const prefix =
-      config.workerInstanceIdPrefix && config.workerInstanceIdPrefix !== ""
-        ? config.workerInstanceIdPrefix
-        : `worker-${randomUUID()}`;
-    this.config = {
-      workerInstanceIdPrefix: prefix,
-      concurrency: config.concurrency && config.concurrency > 0 ? config.concurrency : 1,
-      name: config.name ?? "",
-      version: config.version ?? "",
-      queues: config.queues ?? [],
-      actions: config.actions ?? [],
-      count: config.count && config.count > 0 ? config.count : 1,
-      pollWaitSeconds: config.pollWaitSeconds ?? 20,
-      heartbeatIntervalMs: config.heartbeatIntervalMs,
-      logger: config.logger,
-      eventQueueSize: config.eventQueueSize ?? 256,
-      eventBatchSize: config.eventBatchSize ?? 20,
-    };
-  }
+    private readonly config: WorkerPoolConfig,
+  ) {}
 
-  /** Register an action function under the given name for every pool worker. */
   register(name: string, fn: ActionFn): this {
     this.actions.set(name, fn);
     return this;
   }
 
-  /**
-   * Start all workers in the pool. Rejects with AuthRevokedError if any child
-   * worker sees credential revocation.
-   */
-  async run(signal?: AbortSignal): Promise<void> {
-    this.abortController = new AbortController();
-    const combined = signal
-      ? anySignal(signal, this.abortController.signal)
-      : this.abortController.signal;
+  registerGenerator(provider: string, model: string, fn: GenerationFn): this {
+    this.generators.set(`${provider}/${model}`, fn);
+    return this;
+  }
 
-    let authRevoked = false;
-    let firstError: unknown;
-    const workers = Array.from({ length: this.config.count }, (_, i) => {
-      return new Worker(
+  async run(signal?: AbortSignal): Promise<void> {
+    const count = this.config.count && this.config.count > 0 ? this.config.count : 1;
+    const prefix = this.config.workerInstanceIdPrefix ?? `worker-${randomUUID()}`;
+    const workers = Array.from({ length: count }, (_, i) => {
+      const worker = new Worker(
         this.client,
-        {
-          workerInstanceId: `${this.config.workerInstanceIdPrefix}-${i + 1}`,
-          concurrency: this.config.concurrency,
-          name: this.config.name,
-          version: this.config.version,
-          queues: this.config.queues,
-          actions: this.config.actions,
-          pollWaitSeconds: this.config.pollWaitSeconds,
-          heartbeatIntervalMs: this.config.heartbeatIntervalMs,
-          logger: this.config.logger,
-          eventQueueSize: this.config.eventQueueSize,
-          eventBatchSize: this.config.eventBatchSize,
-        },
+        { ...this.config, workerInstanceId: `${prefix}-${i + 1}` },
         this.actions,
       );
+      for (const [key, fn] of this.generators) {
+        const [provider, model] = key.split("/", 2);
+        worker.registerGenerator(provider, model, fn);
+      }
+      return worker.run(signal);
     });
-
-    await Promise.allSettled(
-      workers.map(async (worker) => {
-        try {
-          await worker.run(combined);
-        } catch (err) {
-          if (err instanceof AuthRevokedError) {
-            authRevoked = true;
-            this.abortController.abort();
-          } else if (!combined.aborted) {
-            firstError ??= err;
-            this.abortController.abort();
-          }
-        }
-      }),
-    );
-
-    if (authRevoked) {
-      throw new AuthRevokedError();
-    }
-    if (firstError != null) {
-      throw firstError;
-    }
-  }
-
-  /** Gracefully stop every worker in the pool after in-flight jobs complete. */
-  stop(): void {
-    this.abortController.abort();
+    await Promise.all(workers);
   }
 }
 
-// sleep resolves after ms or when the signal aborts, whichever comes
-// first. Detaches the abort listener on the natural-resolution path
-// so it doesn't accumulate on a long-lived signal across thousands of
-// poll cycles.
-function sleep(ms: number, signal: AbortSignal): Promise<void> {
-  // AbortSignal does not retroactively dispatch abort to listeners
-  // added after the signal already fired, so an already-aborted signal
-  // would otherwise wait the full ms before resolving.
-  if (signal.aborted) return Promise.resolve();
-  return new Promise((resolve) => {
-    const onAbort = () => {
-      clearTimeout(t);
-      resolve();
-    };
-    const t = setTimeout(() => {
-      signal.removeEventListener("abort", onAbort);
-      resolve();
-    }, ms);
-    signal.addEventListener("abort", onAbort, { once: true });
-  });
+function parameters(job: WorkerSocketClaimedJob): Record<string, unknown> {
+  const raw = job.spec.parameters;
+  return raw && typeof raw === "object" && !Array.isArray(raw)
+    ? (raw as Record<string, unknown>)
+    : {};
 }
 
-// abortAsPromise returns a promise that resolves when the signal
-// aborts, plus a cancel function the caller invokes when the promise
-// is no longer needed (e.g. when something else won a Promise.race).
-// Without the cancel handle, every Promise.race in the concurrency
-// loop would leak a listener on the long-lived worker signal.
-function abortAsPromise(signal: AbortSignal): {
-  promise: Promise<void>;
-  cancel: () => void;
-} {
-  if (signal.aborted) return { promise: Promise.resolve(), cancel: () => {} };
-  let resolveFn!: () => void;
-  const promise = new Promise<void>((resolve) => {
-    resolveFn = resolve;
-  });
-  const onAbort = () => resolveFn();
-  signal.addEventListener("abort", onAbort, { once: true });
-  return {
-    promise,
-    cancel: () => signal.removeEventListener("abort", onAbort),
-  };
+function resultMap(result: unknown): Record<string, unknown> {
+  if (result && typeof result === "object" && !Array.isArray(result)) {
+    return result as Record<string, unknown>;
+  }
+  return { output: result };
 }
 
-function anySignal(...signals: AbortSignal[]): AbortSignal {
+function msgID(): string {
+  return `msg_${randomUUID()}`;
+}
+
+function removeUndefined<T extends object>(obj: T): T {
+  return Object.fromEntries(
+    Object.entries(obj).filter(([, v]) => v !== undefined),
+  ) as T;
+}
+
+function mergeSignals(...signals: (AbortSignal | undefined)[]): AbortSignal {
   const controller = new AbortController();
-  for (const s of signals) {
-    if (s.aborted) {
-      controller.abort();
+  for (const signal of signals) {
+    if (!signal) continue;
+    if (signal.aborted) {
+      controller.abort(signal.reason);
       break;
     }
-    s.addEventListener("abort", () => controller.abort(), { once: true });
+    signal.addEventListener("abort", () => controller.abort(signal.reason), {
+      once: true,
+    });
   }
   return controller.signal;
 }
 
-class JobEventer {
-  private readonly queue: JobEventEntry[] = [];
-  private closed = false;
-  private wake: (() => void) | null = null;
-
-  constructor(
-    private readonly client: Client,
-    private readonly job: JobClaim,
-    private readonly options: {
-      workerInstanceId: string;
-      leaseToken: string;
-      queueSize: number;
-      batchSize: number;
-      logger: Logger;
-    },
-  ) {}
-
-  emit(type: string, payload: Record<string, unknown>): void {
-    if (!type || this.closed) return;
-    if (this.queue.length >= this.options.queueSize) {
-      this.queue.shift();
-      this.options.logger.warn(
-        "[mobius] custom event queue full; dropping oldest event",
-      );
+function waitForOpen(ws: WebSocket, signal?: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (ws.readyState === WebSocket.OPEN) {
+      resolve();
+      return;
     }
-    this.queue.push({ type, payload });
-    this.wake?.();
-  }
+    const onOpen = () => resolve();
+    const onError = () => reject(new Error("worker socket failed to open"));
+    ws.addEventListener("open", onOpen, { once: true });
+    ws.addEventListener("error", onError, { once: true });
+    signal?.addEventListener("abort", () => reject(signal.reason), { once: true });
+  });
+}
 
-  stop(): void {
-    this.closed = true;
-    this.wake?.();
-  }
-
-  async run(): Promise<void> {
-    while (!this.closed || this.queue.length > 0) {
-      const batch = this.queue.splice(0, this.options.batchSize);
-      if (batch.length === 0) {
-        await new Promise<void>((resolve) => {
-          this.wake = () => {
-            this.wake = null;
-            resolve();
-          };
-        });
-        continue;
-      }
-      try {
-        await this.client.emitJobEvents(this.job.job_id, {
-          worker_instance_id: this.options.workerInstanceId,
-          lease_token: this.options.leaseToken,
-          events: batch,
-        });
-      } catch (err) {
-        if (err instanceof LeaseLostError) {
-          this.options.logger.warn(
-            `[mobius] job ${this.job.job_id}: lease lost during custom event emit`,
-          );
-          return;
-        }
-        if (err instanceof PayloadTooLargeError) {
-          this.options.logger.warn(
-            `[mobius] job ${this.job.job_id}: custom event payload too large`,
-          );
-          continue;
-        }
-        if (err instanceof RateLimitedError) {
-          this.options.logger.warn(
-            `[mobius] job ${this.job.job_id}: custom event rate limited`,
-          );
-          continue;
-        }
-        this.options.logger.error(
-          `[mobius] job ${this.job.job_id}: custom event emit failed:`,
-          err,
-        );
-      }
+async function* socketFrames(
+  ws: WebSocket,
+  signal?: AbortSignal,
+): AsyncGenerator<Record<string, unknown>> {
+  const queue: Record<string, unknown>[] = [];
+  let wake: (() => void) | undefined;
+  let done = false;
+  ws.addEventListener("message", (event) => {
+    queue.push(JSON.parse(String(event.data)) as Record<string, unknown>);
+    wake?.();
+  });
+  ws.addEventListener("close", () => {
+    done = true;
+    wake?.();
+  });
+  signal?.addEventListener("abort", () => {
+    done = true;
+    try {
+      ws.close();
+    } catch {
+      // ignore
     }
+    wake?.();
+  });
+  while (!done || queue.length > 0) {
+    if (queue.length === 0) {
+      await new Promise<void>((resolve) => {
+        wake = resolve;
+      });
+      wake = undefined;
+      continue;
+    }
+    yield queue.shift()!;
   }
+}
+
+async function sleep(ms: number, signal?: AbortSignal): Promise<void> {
+  if (ms <= 0) return;
+  await new Promise<void>((resolve, reject) => {
+    const timer = setTimeout(resolve, ms);
+    signal?.addEventListener(
+      "abort",
+      () => {
+        clearTimeout(timer);
+        reject(signal.reason ?? new Error("aborted"));
+      },
+      { once: true },
+    );
+  });
 }

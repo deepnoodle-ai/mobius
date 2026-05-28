@@ -25,6 +25,7 @@ func registerEnvironmentsCommands(app *cli.App) {
 			cli.String("bound-to-id", "").Help("bound-to-id"),
 			cli.String("bound-to-type", "").Help("Execution or lifecycle object this environment is bound to. Ownership remains in `owned_by`."),
 			cli.String("environment-id", "").Help("environment-id"),
+			cli.String("environment-mode", "").Help("High-level ownership policy for how Mobius plans to use the environment. `run` is one-shot and auto…"),
 			cli.String("holder-id", "").Help("holder-id"),
 			cli.String("holder-type", "").Help("Execution or lifecycle object this environment is bound to. Ownership remains in `owned_by`."),
 			cli.String("lease-ttl", "").Help("Go duration string, for example 30m or 2h."),
@@ -63,6 +64,10 @@ func registerEnvironmentsCommands(app *cli.App) {
 			if ctx.IsSet("environment-id") {
 				v := ctx.String("environment-id")
 				body.EnvironmentId = &v
+			}
+			if ctx.IsSet("environment-mode") {
+				v := api.EnvironmentMode(ctx.String("environment-mode"))
+				body.EnvironmentMode = &v
 			}
 			if ctx.IsSet("holder-id") {
 				v := ctx.String("holder-id")
@@ -115,7 +120,7 @@ func registerEnvironmentsCommands(app *cli.App) {
 				v := api.AcquireEnvironmentRequestTemplateId(ctx.String("template-id"))
 				body.TemplateId = &v
 			}
-			if ctx.String("file") == "" && !ctx.IsSet("bound-to-id") && !ctx.IsSet("bound-to-type") && !ctx.IsSet("environment-id") && !ctx.IsSet("holder-id") && !ctx.IsSet("holder-type") && !ctx.IsSet("lease-ttl") && !ctx.IsSet("lifetime") && !ctx.IsSet("name") && !ctx.IsSet("owned-by") && !ctx.IsSet("provider") && !ctx.IsSet("purpose") && !ctx.IsSet("scope") && !ctx.IsSet("spec") && !ctx.IsSet("tag") && !ctx.IsSet("template-id") {
+			if ctx.String("file") == "" && !ctx.IsSet("bound-to-id") && !ctx.IsSet("bound-to-type") && !ctx.IsSet("environment-id") && !ctx.IsSet("environment-mode") && !ctx.IsSet("holder-id") && !ctx.IsSet("holder-type") && !ctx.IsSet("lease-ttl") && !ctx.IsSet("lifetime") && !ctx.IsSet("name") && !ctx.IsSet("owned-by") && !ctx.IsSet("provider") && !ctx.IsSet("purpose") && !ctx.IsSet("scope") && !ctx.IsSet("spec") && !ctx.IsSet("tag") && !ctx.IsSet("template-id") {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
 			if ctx.Bool("dry-run") {
@@ -133,6 +138,7 @@ func registerEnvironmentsCommands(app *cli.App) {
 		Flags(
 			cli.String("bound-to-id", "").Help("bound-to-id"),
 			cli.String("bound-to-type", "").Help("Execution or lifecycle object this environment is bound to. Ownership remains in `owned_by`."),
+			cli.String("environment-mode", "").Help("High-level ownership policy for how Mobius plans to use the environment. `run` is one-shot and auto…"),
 			cli.String("lifetime", "").Help("Lifecycle owner for automatic cleanup. `run` environments are destroyed during their owning run's F…"),
 			cli.String("name", "").Help("name"),
 			cli.String("owned-by", "").Help("Canonical user owner ID. Defaults to the authenticated user."),
@@ -165,6 +171,10 @@ func registerEnvironmentsCommands(app *cli.App) {
 			if ctx.IsSet("bound-to-type") {
 				v := api.EnvironmentBoundToType(ctx.String("bound-to-type"))
 				body.BoundToType = &v
+			}
+			if ctx.IsSet("environment-mode") {
+				v := api.EnvironmentMode(ctx.String("environment-mode"))
+				body.EnvironmentMode = &v
 			}
 			if ctx.IsSet("lifetime") {
 				v := api.EnvironmentLifetime(ctx.String("lifetime"))
@@ -209,7 +219,7 @@ func registerEnvironmentsCommands(app *cli.App) {
 				v := api.CreateEnvironmentRequestTemplateId(ctx.String("template-id"))
 				body.TemplateId = &v
 			}
-			if ctx.String("file") == "" && !ctx.IsSet("bound-to-id") && !ctx.IsSet("bound-to-type") && !ctx.IsSet("lifetime") && !ctx.IsSet("name") && !ctx.IsSet("owned-by") && !ctx.IsSet("provider") && !ctx.IsSet("purpose") && !ctx.IsSet("retention-policy") && !ctx.IsSet("scope") && !ctx.IsSet("spec") && !ctx.IsSet("tag") && !ctx.IsSet("template-id") {
+			if ctx.String("file") == "" && !ctx.IsSet("bound-to-id") && !ctx.IsSet("bound-to-type") && !ctx.IsSet("environment-mode") && !ctx.IsSet("lifetime") && !ctx.IsSet("name") && !ctx.IsSet("owned-by") && !ctx.IsSet("provider") && !ctx.IsSet("purpose") && !ctx.IsSet("retention-policy") && !ctx.IsSet("scope") && !ctx.IsSet("spec") && !ctx.IsSet("tag") && !ctx.IsSet("template-id") {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
 			if ctx.Bool("dry-run") {
@@ -220,6 +230,48 @@ func registerEnvironmentsCommands(app *cli.App) {
 				return err
 			}
 			return printResponse(ctx, "createEnvironment", resp.StatusCode(), resp.Body)
+		})
+
+	environmentsGrp.Command("create-git-credential").
+		Description("Mint short-lived Git credentials for an environment").
+		Args("environment-id").
+		Flags(
+			cli.String("operation", "").Help("operation"),
+			cli.String("repo-full-name", "").Help("[required] GitHub `owner/name` repository full name."),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			p1 := ctx.Arg(0)
+			var body api.CreateEnvironmentGitCredentialJSONRequestBody
+			if err := readJSONBody(ctx, &body); err != nil {
+				return err
+			}
+			if ctx.IsSet("operation") {
+				v := api.CreateEnvironmentGitCredentialRequestOperation(ctx.String("operation"))
+				body.Operation = &v
+			}
+			if ctx.IsSet("repo-full-name") {
+				body.RepoFullName = ctx.String("repo-full-name")
+			}
+			if body.RepoFullName == "" {
+				return fmt.Errorf("--repo-full-name is required (or supply it via --file)")
+			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
+			}
+			resp, err := client.CreateEnvironmentGitCredentialWithResponse(ctx.Context(), p0, p1, body)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "createEnvironmentGitCredential", resp.StatusCode(), resp.Body)
 		})
 
 	environmentsGrp.Command("destroy").
@@ -312,6 +364,38 @@ func registerEnvironmentsCommands(app *cli.App) {
 			return printResponse(ctx, "getEnvironment", resp.StatusCode(), resp.Body)
 		})
 
+	environmentsGrp.Command("get-worker-logs").
+		Description("Get worker logs for an environment").
+		Args("environment-id").
+		Flags(
+			cli.String("log-name", "").Help("Named log stream to read. Defaults to stdout."),
+			cli.Int("tail", "").Help("Maximum number of lines to return from each selected log."),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			p1 := ctx.Arg(0)
+			params := &api.GetEnvironmentWorkerLogsParams{}
+			if ctx.IsSet("log-name") {
+				v := api.GetEnvironmentWorkerLogsParamsLogName(ctx.String("log-name"))
+				params.LogName = &v
+			}
+			if ctx.IsSet("tail") {
+				v := ctx.Int("tail")
+				params.Tail = &v
+			}
+			resp, err := client.GetEnvironmentWorkerLogsWithResponse(ctx.Context(), p0, p1, params)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "getEnvironmentWorkerLogs", resp.StatusCode(), resp.Body)
+		})
+
 	environmentsGrp.Command("list").
 		Description("List environments").
 		Flags(
@@ -320,6 +404,7 @@ func registerEnvironmentsCommands(app *cli.App) {
 			cli.String("provider", "").Help("provider"),
 			cli.String("status", "").Help("status"),
 			cli.String("lifetime", "").Help("lifetime"),
+			cli.String("environment-mode", "").Help("environment-mode"),
 			cli.String("purpose", "").Help("purpose"),
 			cli.String("scope", "").Help("Omit for all/default-scoped environments; use `owner` with `owned_by` to list owner-scoped environm…"),
 			cli.String("owned-by", "").Help("Canonical user owner ID for the environment."),
@@ -355,6 +440,10 @@ func registerEnvironmentsCommands(app *cli.App) {
 			if ctx.IsSet("lifetime") {
 				v := api.EnvironmentLifetime(ctx.String("lifetime"))
 				params.Lifetime = &v
+			}
+			if ctx.IsSet("environment-mode") {
+				v := api.EnvironmentMode(ctx.String("environment-mode"))
+				params.EnvironmentMode = &v
 			}
 			if ctx.IsSet("purpose") {
 				v := api.EnvironmentPurpose(ctx.String("purpose"))
@@ -429,8 +518,14 @@ func registerEnvironmentsCommands(app *cli.App) {
 		Description("Start a Mobius worker in an environment").
 		Args("environment-id").
 		Flags(
+			cli.Strings("action-names", "").Help("action-names"),
 			cli.Strings("command", "").Help("command"),
+			cli.Int("concurrency", "").Help("concurrency"),
 			cli.String("dir", "").Help("dir"),
+			cli.Bool("managed-runtime", "").Help("Install/refresh the managed Mobius runtime bundle before starting the worker. Defaults to true unle…"),
+			cli.Strings("queues", "").Help("queues"),
+			cli.String("runtime-version", "").Help("Runtime bundle version to install. Defaults to the server-configured runtime version."),
+			cli.String("worker-name", "").Help("Friendly worker session name. Defaults to the environment name."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -447,15 +542,39 @@ func registerEnvironmentsCommands(app *cli.App) {
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
 			}
+			if ctx.IsSet("action-names") {
+				v := ctx.Strings("action-names")
+				body.ActionNames = &v
+			}
 			if ctx.IsSet("command") {
 				v := ctx.Strings("command")
 				body.Command = &v
+			}
+			if ctx.IsSet("concurrency") {
+				v := ctx.Int("concurrency")
+				body.Concurrency = &v
 			}
 			if ctx.IsSet("dir") {
 				v := ctx.String("dir")
 				body.Dir = &v
 			}
-			if ctx.String("file") == "" && !ctx.IsSet("command") && !ctx.IsSet("dir") {
+			if ctx.IsSet("managed-runtime") {
+				v := ctx.Bool("managed-runtime")
+				body.ManagedRuntime = &v
+			}
+			if ctx.IsSet("queues") {
+				v := ctx.Strings("queues")
+				body.Queues = &v
+			}
+			if ctx.IsSet("runtime-version") {
+				v := ctx.String("runtime-version")
+				body.RuntimeVersion = &v
+			}
+			if ctx.IsSet("worker-name") {
+				v := ctx.String("worker-name")
+				body.WorkerName = &v
+			}
+			if ctx.String("file") == "" && !ctx.IsSet("action-names") && !ctx.IsSet("command") && !ctx.IsSet("concurrency") && !ctx.IsSet("dir") && !ctx.IsSet("managed-runtime") && !ctx.IsSet("queues") && !ctx.IsSet("runtime-version") && !ctx.IsSet("worker-name") {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
 			if ctx.Bool("dry-run") {

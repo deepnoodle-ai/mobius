@@ -8,7 +8,7 @@ package main
 //   - Group overrides the subcommand group (default: the operation's first
 //     OpenAPI tag).
 //   - Command overrides the leaf command name (default: derived from the
-//     operationId, e.g. `listWorkflows` -> `list`, `getWorkflow` -> `get`).
+//     operationId, e.g. `listAutomations` -> `list`, `getAutomation` -> `get`).
 //   - Description overrides the short help string (default: the OpenAPI
 //     operation summary).
 type Override struct {
@@ -123,9 +123,13 @@ var overrides = map[string]Override{
 	"respondToInteraction":       {Command: "respond"},
 
 	// --- jobs -------------------------------------------------------------
-	"reportJob":     {Command: "report"},
-	"runJobAction":  {Command: "run-action"},
-	"emitJobEvents": {Command: "emit-events"},
+	// The worker socket is a WebSocket transport endpoint, not a normal JSON
+	// request/response operation. The hand-written `mobius worker` command is
+	// the public CLI entrypoint for this path.
+	"openWorkerSocket": {Skip: true},
+	"reportJob":        {Command: "report"},
+	"runJobAction":     {Command: "run-action"},
+	"emitJobEvents":    {Command: "emit-events"},
 
 	// --- logs -------------------------------------------------------------
 	"ingestProjectLogs":     {Command: "ingest"},
@@ -152,15 +156,6 @@ var overrides = map[string]Override{
 	// --- references -------------------------------------------------------
 	"lookupReferences":  {Command: "lookup"},
 	"resolveReferences": {Command: "resolve"},
-
-	// --- runs -------------------------------------------------------------
-	"startRun":            {Command: "start"},
-	"resumeRun":           {Command: "resume"},
-	"forkRun":             {Command: "fork"},
-	"listRunsForWorkflow": {Command: "list-for-workflow"},
-	// startWorkflowRun is the path-bound variant of `runs start`; rename so
-	// the relationship to a specific workflow is clear in `mobius runs --help`.
-	"startWorkflowRun": {Command: "start-for-workflow"},
 
 	// --- permissions ------------------------------------------------------
 	"listProjectPermissions": {Command: "list"},
@@ -213,9 +208,6 @@ var overrides = map[string]Override{
 	// --- worker-sessions --------------------------------------------------
 	"listWorkerSessions": {Command: "list"},
 
-	// --- workflows --------------------------------------------------------
-	"validateWorkflowExpressions": {Command: "validate-expressions"},
-
 	// --- Skipped: hand-written in cmd/mobius -----------------------------
 	// The browser-based CLI login flow is hand-written in auth.go because it
 	// needs to drive the device challenge, open the browser, poll for
@@ -248,7 +240,7 @@ var overrides = map[string]Override{
 // well when listed vertically in `mobius --help`. Prefer consistent
 // grammatical shape across entries.
 var groupDescriptions = map[string]string{
-	"actions":               "Custom HTTP actions called by workflow steps",
+	"actions":               "Actions available to automations and agents",
 	"actor-state":           "Reportable actor state and per-target assignments",
 	"agent-invocations":     "Agent invocation lifecycle and results",
 	"agents":                "Agents, sessions, and presence",
@@ -264,16 +256,16 @@ var groupDescriptions = map[string]string{
 	"integration-catalog":   "Available integration providers and capabilities",
 	"integration-providers": "Connect and manage third-party integration providers",
 	"interactions":          "Approval, review, vote, and handoff prompts",
-	"jobs":                  "Worker runtime — claim, heartbeat, complete",
+	"jobs":                  "Internal worker runtime operations",
 	"logs":                  "Structured log ingestion and retrieval",
 	"messages":              "Send, list, and update channel messages",
-	"metrics":               "Platform and workflow metrics",
+	"metrics":               "Platform and automation metrics",
 	"observables":           "Tracked observables, observations, and state",
 	"permissions":           "Project permission definitions and presets",
 	"projects":              "Projects within the organization",
 	"references":            "Reference lookup and resolution",
 	"roles":                 "Project roles and role assignments",
-	"runs":                  "Workflow runs",
+	"runs":                  "Automation runs",
 	"secrets":               "Project secrets and secret versions",
 	"service-accounts":      "Project service accounts for agents and automation",
 	"skills":                "Skill templates that shape agent behavior and tool access",
@@ -281,10 +273,9 @@ var groupDescriptions = map[string]string{
 	"tables":                "Project-scoped tables and rows",
 	"team":                  "Project team membership",
 	"toolkits":              "Sets of tools agents can use to take action",
-	"tools":                 "Workflows published as callable tools",
+	"tools":                 "Automations published as callable tools",
 	"triggers":              "Event, schedule, and webhook triggers",
 	"user-state":            "Per-user project state and assignments",
 	"webhooks":              "Outgoing webhook subscriptions",
 	"worker-sessions":       "Registered worker sessions",
-	"workflows":             "Workflow definitions",
 }

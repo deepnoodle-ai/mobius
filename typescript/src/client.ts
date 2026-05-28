@@ -1,23 +1,22 @@
 import type {
-  ConfigEntries,
-  CreateWorkflowRequest,
-  JobClaim,
-  JobClaimRequest,
-  JobFenceRequest,
-  JobHeartbeat,
-  JobReportRequest,
-  Run,
-  RunListResponse,
-  RunSignalAccepted,
-  RunStatus,
-  SendRunSignalRequest,
-  StartBoundRunRequest,
+  Automation,
+  AutomationListResponse,
+  AutomationRun,
+  AutomationRunEvent,
+  AutomationRunListResponse,
+  AutomationRunSource,
+  AutomationRunStatus,
+  AutomationStatus,
+  AutomationTrigger,
+  AutomationVersion,
+  AutomationVersionListResponse,
+  CancelAutomationRunRequest,
+  CreateAutomationRequest,
+  CreateAutomationVersionRequest,
+  SignalAutomationRunRequest,
+  StartAutomationRunRequest,
   TagMap,
-  UpdateWorkflowRequest,
-  WorkflowDefinitionListResponse,
-  WorkflowDefinitionSummary,
-  WorkflowSpec,
-  components,
+  UpdateAutomationRequest,
 } from "./api/index.js";
 import {
   DEFAULT_MAX_RETRIES,
@@ -36,12 +35,7 @@ export interface ClientOptions {
   namespace?: string;
   /** Fetch timeout in milliseconds. Defaults to 60_000. */
   timeoutMs?: number;
-  /**
-   * Number of retries for 429/503 responses. Defaults to
-   * {@link DEFAULT_MAX_RETRIES}. Set to 0 to disable retries — 429
-   * responses then surface as {@link RateLimitError} on the first attempt.
-   * See `../../docs/retries.md` for the shared retry policy.
-   */
+  /** Number of retries for 429/503 responses. */
   retry?: number;
 }
 
@@ -49,62 +43,13 @@ export const DEFAULT_BASE_URL = "https://api.mobiusops.ai";
 export const DEFAULT_PROJECT = "default";
 export const DEFAULT_NAMESPACE = DEFAULT_PROJECT;
 
-export class LeaseLostError extends Error {
-  constructor(public readonly jobId: string) {
-    super(`lease lost for job ${jobId}`);
-    this.name = "LeaseLostError";
-  }
-}
-
-/**
- * Thrown when the server returns HTTP 401 on a worker-loop request.
- * The credential has been revoked mid-execution; the process needs
- * to restart under a fresh credential. Distinct from
- * {@link LeaseLostError} (409 — lease reclaimed by scheduler) because
- * the remedy is operational, not workflow-level.
- */
 export class AuthRevokedError extends Error {
-  constructor(public readonly jobId?: string) {
-    super(
-      jobId
-        ? `mobius: credential revoked (job ${jobId})`
-        : "mobius: credential revoked",
-    );
+  constructor() {
+    super("mobius: credential revoked");
     this.name = "AuthRevokedError";
   }
 }
 
-/**
- * Thrown when the server returns HTTP 409 with `worker_instance_conflict`
- * on a claim. Another live process has already registered this
- * `worker_instance_id` in the project under a different session token.
- * Surfaces from {@link Worker.run} as a hard error so the operator
- * notices the misconfiguration instead of the worker silently retrying —
- * fix by configuring a unique instance ID per process or by relying on
- * the SDK's auto-detection.
- */
-export class WorkerInstanceConflictError extends Error {
-  constructor(
-    public readonly workerInstanceId: string | undefined,
-    public readonly projectHandle: string,
-    message?: string,
-  ) {
-    super(
-      message ??
-        (workerInstanceId
-          ? `mobius: worker_instance_id ${JSON.stringify(workerInstanceId)} is already registered in project ${JSON.stringify(projectHandle)} by another live process; configure a unique instance ID per process or rely on auto-detection`
-          : "mobius: worker instance conflict"),
-    );
-    this.name = "WorkerInstanceConflictError";
-  }
-}
-
-/**
- * Thrown from {@link Client} construction when the API key or project
- * options are malformed (e.g. a project-pinned key whose handle prefix
- * doesn't match the server's handle regex, or a handle conflict
- * between `WithProjectHandle` and the handle embedded in the key).
- */
 export class ConfigError extends Error {
   constructor(message: string) {
     super(message);
@@ -112,21 +57,11 @@ export class ConfigError extends Error {
   }
 }
 
-// Mirrors the server-side handle regex (domain/validate.go) so the
-// extracted prefix is rejected here rather than as a 403 on first
-// request.
-const HANDLE_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
-
-function extractHandleFromApiKey(apiKey: string): string | null {
-  const slash = apiKey.indexOf("/");
-  if (slash < 0) return null;
-  const handle = apiKey.slice(0, slash);
-  if (!HANDLE_RE.test(handle)) {
-    throw new ConfigError(
-      `invalid project handle prefix in API key: ${JSON.stringify(handle)}`,
-    );
+export class LeaseLostError extends Error {
+  constructor(public readonly jobId: string) {
+    super(`lease lost for job ${jobId}`);
+    this.name = "LeaseLostError";
   }
-  return handle;
 }
 
 export class PayloadTooLargeError extends Error {
@@ -136,12 +71,6 @@ export class PayloadTooLargeError extends Error {
   }
 }
 
-/**
- * Legacy per-job rate-limit error raised by {@link Client.emitJobEvents}.
- * Subclass of {@link RateLimitError} so callers catching the newer,
- * transport-raised {@link RateLimitError} also catch this. New code
- * should prefer {@link RateLimitError}.
- */
 export class RateLimitedError extends RateLimitError {
   readonly jobId: string;
 
@@ -158,48 +87,81 @@ export class RateLimitedError extends RateLimitError {
   }
 }
 
-export interface JobEventEntry {
-  type: string;
-  payload: Record<string, unknown>;
+export class WorkerInstanceConflictError extends Error {
+  constructor(
+    public readonly workerInstanceId: string | undefined,
+    public readonly projectHandle: string,
+    message?: string,
+  ) {
+    super(
+      message ??
+        (workerInstanceId
+          ? `mobius: worker_instance_id ${JSON.stringify(workerInstanceId)} is already registered in project ${JSON.stringify(projectHandle)} by another live process`
+          : "mobius: worker instance conflict"),
+    );
+    this.name = "WorkerInstanceConflictError";
+  }
 }
 
-export interface JobEventsRequest {
-  worker_instance_id?: string;
-  lease_token: string;
-  events: JobEventEntry[];
+const HANDLE_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+
+function extractHandleFromApiKey(apiKey: string): string | null {
+  if (!apiKey.startsWith("mbx_") && !apiKey.startsWith("mbc_")) return null;
+  const dot = apiKey.lastIndexOf(".");
+  if (dot < 0 || dot === apiKey.length - 1) return null;
+  const handle = apiKey.slice(dot + 1);
+  if (!HANDLE_RE.test(handle)) {
+    throw new ConfigError(
+      `invalid project handle suffix in API key: ${JSON.stringify(handle)}`,
+    );
+  }
+  return handle;
 }
 
-export type RunDetail = components["schemas"]["RunDetail"];
-export type WorkflowDefinition = components["schemas"]["WorkflowDefinition"];
-
-export interface StartRunOptions {
-  queue?: string;
-  inputs?: Record<string, unknown>;
-  metadata?: Record<string, string>;
+export interface AutomationOptions {
+  name: string;
+  handle: string;
+  description?: string;
+  default_agent_id?: string;
+  default_inputs?: Record<string, unknown>;
+  settings?: Record<string, unknown>;
   tags?: TagMap;
-  external_id?: string;
-  config?: ConfigEntries;
+  triggers?: AutomationTrigger[];
 }
 
-export interface ListRunsOptions {
-  status?: RunStatus;
-  workflow_type?: string;
-  queue?: string;
-  parent_run_id?: string;
-  source_type?: string;
-  source_id?: string;
-  external_id?: string;
-  forked_from?: string;
+export interface UpdateAutomationOptions {
+  name?: string;
+  description?: string;
+  default_agent_id?: string;
+  default_inputs?: Record<string, unknown>;
+  settings?: Record<string, unknown>;
+  status?: AutomationStatus;
+  tags?: TagMap;
+  triggers?: AutomationTrigger[];
+}
+
+export interface AutomationVersionOptions {
+  compiled_plan?: Record<string, unknown>;
+  publish?: boolean;
+}
+
+export interface ListAutomationsOptions {
+  status?: AutomationStatus;
   cursor?: string;
   limit?: number;
 }
 
-export interface RunEvent {
-  type: string;
-  run_id: string;
-  seq: number;
-  timestamp: string;
-  data: Record<string, unknown>;
+export interface StartRunOptions {
+  inputs?: Record<string, unknown>;
+  source?: AutomationRunSource;
+  external_id?: string;
+}
+
+export interface ListRunsOptions {
+  status?: AutomationRunStatus;
+  automation_id?: string;
+  cursor?: string;
+  limit?: number;
 }
 
 export interface WatchRunOptions {
@@ -207,56 +169,12 @@ export interface WatchRunOptions {
   signal?: AbortSignal;
 }
 
-export interface WaitRunOptions {
-  since?: number;
-  signal?: AbortSignal;
+export interface WaitRunOptions extends WatchRunOptions {
   reconnectDelayMs?: number;
 }
 
-export interface WorkflowOptions {
-  /** Defaults to spec.name when omitted. */
-  name?: string;
-  /** Stable URL-safe workflow identifier. Server-derived from name when omitted on create. */
-  handle?: string;
-  description?: string;
-  published_as_tool?: boolean;
-  tags?: TagMap;
-}
+export type RunEvent = AutomationRunEvent;
 
-export interface UpdateWorkflowOptions {
-  expected_version: number;
-  name?: string;
-  description?: string;
-  published_as_tool?: boolean;
-  spec?: WorkflowSpec;
-  tags?: TagMap;
-}
-
-export interface ListWorkflowsOptions {
-  cursor?: string;
-  limit?: number;
-  tag?: string[];
-}
-
-export interface WorkflowSyncResult {
-  definition: WorkflowDefinition;
-  created: boolean;
-  updated: boolean;
-}
-
-export interface WorkflowDefinitionConfig {
-  spec: WorkflowSpec;
-  options?: WorkflowOptions;
-}
-
-/**
- * Low-level Mobius runtime API client. Prefer {@link Worker} in worker.ts
- * rather than calling these methods directly.
- *
- * Request and response shapes mirror the OpenAPI spec exactly (snake_case).
- * A worker claims individual *jobs* — one action invocation on behalf of
- * a workflow run — and reports each job's result back via this client.
- */
 export class Client {
   private readonly baseURL: string;
   readonly project: string;
@@ -267,9 +185,6 @@ export class Client {
   constructor(opts: ClientOptions) {
     this.baseURL = (opts.baseURL ?? DEFAULT_BASE_URL).replace(/\/$/, "");
     const explicitProject = opts.project ?? opts.namespace;
-    // Project-pinned keys arrive as "<handle>/mbx_<secret>". Split the
-    // handle off and use it as the project; any explicit project option
-    // must either match or be the default sentinel.
     const handleInKey = extractHandleFromApiKey(opts.apiKey);
     if (handleInKey != null) {
       if (
@@ -296,168 +211,182 @@ export class Client {
     );
   }
 
-  /**
-   * Long-poll for the next claimable job. Returns null when the poll
-   * window closes without a job being available.
-   */
-  async claimJob(
-    req: JobClaimRequest,
-    signal?: AbortSignal,
-  ): Promise<JobClaim | null> {
-    const resp = await this.request(
-      `/v1/projects/${encodeURIComponent(this.project)}/jobs/claim`,
-      { method: "POST", body: req, signal },
-    );
-    if (resp.status === 204) return null;
-    if (resp.status === 401) throw new AuthRevokedError();
-    if (resp.status === 409) {
-      const text = await resp.text().catch(() => "");
-      // The backend wraps errors as {"error":{"code","message"}}.
-      let body: { error?: { code?: string; message?: string } } = {};
-      try {
-        body = text ? (JSON.parse(text) as typeof body) : {};
-      } catch {
-        body = {};
-      }
-      if (body.error?.code === "worker_instance_conflict") {
-        throw new WorkerInstanceConflictError(
-          req.worker_instance_id,
-          this.project,
-          body.error.message,
-        );
-      }
-      throw new Error(
-        `mobius API POST /jobs/claim: HTTP 409: ${text || "(no body)"}`,
-      );
-    }
-    return (await resp.json()) as JobClaim;
+  workerSocketURL(): string {
+    const url = new URL(this.baseURL);
+    if (url.protocol === "http:") url.protocol = "ws:";
+    if (url.protocol === "https:") url.protocol = "wss:";
+    url.pathname = `${url.pathname.replace(/\/$/, "")}/v1/projects/${encodeURIComponent(this.project)}/workers/socket`;
+    url.search = "";
+    return url.toString();
   }
 
-  /** Refresh the lease on a claimed job. */
-  async heartbeatJob(
-    jobId: string,
-    req: JobFenceRequest,
-  ): Promise<JobHeartbeat> {
-    const resp = await this.request(
-      `/v1/projects/${encodeURIComponent(this.project)}/jobs/${encodeURIComponent(jobId)}/heartbeat`,
-      { method: "POST", body: req },
-    );
-    if (resp.status === 401) throw new AuthRevokedError(jobId);
-    if (resp.status === 409) throw new LeaseLostError(jobId);
-    return (await resp.json()) as JobHeartbeat;
-  }
-
-  /** Report the terminal outcome(s) of a claimed job. */
-  async reportJob(jobId: string, req: JobReportRequest): Promise<void> {
-    const resp = await this.request(
-      `/v1/projects/${encodeURIComponent(this.project)}/jobs/${encodeURIComponent(jobId)}/report`,
-      { method: "POST", body: req },
-    );
-    if (resp.status === 401) throw new AuthRevokedError(jobId);
-    if (resp.status === 409) throw new LeaseLostError(jobId);
-  }
-
-  async emitJobEvents(jobId: string, req: JobEventsRequest): Promise<void> {
-    // 429 responses surface as RateLimitError (thrown from the retry
-    // transport below). 401/409/413 are non-retryable and handled here.
-    const resp = await this.request(
-      `/v1/projects/${encodeURIComponent(this.project)}/jobs/${encodeURIComponent(jobId)}/events`,
-      { method: "POST", body: req },
-    );
-    if (resp.status === 401) throw new AuthRevokedError(jobId);
-    if (resp.status === 409) throw new LeaseLostError(jobId);
-    if (resp.status === 413) throw new PayloadTooLargeError(jobId);
-  }
-
-  async emitJobEvent(
-    jobId: string,
-    req: {
-      worker_instance_id?: string;
-      lease_token: string;
-      type: string;
-      payload: Record<string, unknown>;
-    },
-  ): Promise<void> {
-    await this.emitJobEvents(jobId, {
-      worker_instance_id: req.worker_instance_id,
-      lease_token: req.lease_token,
-      events: [{ type: req.type, payload: req.payload }],
+  async listAutomations(
+    opts: ListAutomationsOptions = {},
+  ): Promise<AutomationListResponse> {
+    const resp = await this.request(withQuery("/v1/projects/:project/automations", opts), {
+      method: "GET",
     });
+    return (await resp.json()) as AutomationListResponse;
+  }
+
+  async getAutomation(handle: string): Promise<Automation> {
+    const resp = await this.request(
+      `/v1/projects/:project/automations/${encodeURIComponent(handle)}`,
+      { method: "GET" },
+    );
+    return (await resp.json()) as Automation;
+  }
+
+  async createAutomation(opts: AutomationOptions): Promise<Automation> {
+    const body: CreateAutomationRequest = removeUndefined({
+      name: opts.name,
+      handle: opts.handle,
+      description: opts.description,
+      default_agent_id: opts.default_agent_id,
+      default_inputs: opts.default_inputs,
+      settings: opts.settings,
+      tags: opts.tags,
+      triggers: opts.triggers,
+    });
+    const resp = await this.request("/v1/projects/:project/automations", {
+      method: "POST",
+      body,
+    });
+    return (await resp.json()) as Automation;
+  }
+
+  async updateAutomation(
+    handle: string,
+    opts: UpdateAutomationOptions,
+  ): Promise<Automation> {
+    const body: UpdateAutomationRequest = removeUndefined(opts);
+    const resp = await this.request(
+      `/v1/projects/:project/automations/${encodeURIComponent(handle)}`,
+      { method: "PATCH", body },
+    );
+    return (await resp.json()) as Automation;
+  }
+
+  async deleteAutomation(handle: string): Promise<void> {
+    await this.request(
+      `/v1/projects/:project/automations/${encodeURIComponent(handle)}`,
+      { method: "DELETE" },
+    );
+  }
+
+  async listAutomationVersions(
+    handle: string,
+  ): Promise<AutomationVersionListResponse> {
+    const resp = await this.request(
+      `/v1/projects/:project/automations/${encodeURIComponent(handle)}/versions`,
+      { method: "GET" },
+    );
+    return (await resp.json()) as AutomationVersionListResponse;
+  }
+
+  async createAutomationVersion(
+    handle: string,
+    spec: Record<string, unknown>,
+    opts: AutomationVersionOptions = {},
+  ): Promise<AutomationVersion> {
+    const body: CreateAutomationVersionRequest = removeUndefined({
+      spec: spec as CreateAutomationVersionRequest["spec"],
+      compiled_plan: opts.compiled_plan,
+    });
+    const resp = await this.request(
+      `/v1/projects/:project/automations/${encodeURIComponent(handle)}/versions`,
+      { method: "POST", body },
+    );
+    const version = (await resp.json()) as AutomationVersion;
+    if (opts.publish) {
+      await this.publishAutomationVersion(handle, version.version);
+    }
+    return version;
+  }
+
+  async publishAutomationVersion(
+    handle: string,
+    version: number,
+  ): Promise<Automation> {
+    const resp = await this.request(
+      `/v1/projects/:project/automations/${encodeURIComponent(handle)}/versions/${version}/publication`,
+      { method: "POST" },
+    );
+    return (await resp.json()) as Automation;
   }
 
   async startRun(
-    spec: WorkflowSpec,
+    automationHandle: string,
     opts: StartRunOptions = {},
-  ): Promise<Run> {
-    const resp = await this.request(
-      `/v1/projects/${encodeURIComponent(this.project)}/runs`,
-      { method: "POST", body: { mode: "inline", spec, ...opts } },
-    );
-    return (await resp.json()) as Run;
+  ): Promise<AutomationRun> {
+    return this.startAutomationRun(automationHandle, opts);
   }
 
-  async startWorkflowRun(
-    workflowId: string,
+  async startAutomationRun(
+    automationHandle: string,
     opts: StartRunOptions = {},
-  ): Promise<Run> {
+  ): Promise<AutomationRun> {
+    const body: StartAutomationRunRequest = removeUndefined({
+      inputs: opts.inputs,
+      source: opts.source,
+      external_id: opts.external_id,
+    });
     const resp = await this.request(
-      `/v1/projects/${encodeURIComponent(this.project)}/workflows/${encodeURIComponent(workflowId)}/runs`,
-      { method: "POST", body: opts satisfies StartBoundRunRequest },
+      `/v1/projects/:project/automations/${encodeURIComponent(automationHandle)}/runs`,
+      { method: "POST", body },
     );
-    return (await resp.json()) as Run;
+    return (await resp.json()) as AutomationRun;
   }
 
-  async listRuns(opts: ListRunsOptions = {}): Promise<RunListResponse> {
-    const path = withQuery(
-      `/v1/projects/${encodeURIComponent(this.project)}/runs`,
-      opts,
-    );
-    const resp = await this.request(path, { method: "GET" });
-    return (await resp.json()) as RunListResponse;
+  async listRuns(opts: ListRunsOptions = {}): Promise<AutomationRunListResponse> {
+    const resp = await this.request(withQuery("/v1/projects/:project/runs", opts), {
+      method: "GET",
+    });
+    return (await resp.json()) as AutomationRunListResponse;
   }
 
-  async getRun(runId: string): Promise<RunDetail> {
+  async getRun(runId: string): Promise<AutomationRun> {
     const resp = await this.request(
-      `/v1/projects/${encodeURIComponent(this.project)}/runs/${encodeURIComponent(runId)}`,
+      `/v1/projects/:project/runs/${encodeURIComponent(runId)}`,
       { method: "GET" },
     );
-    return (await resp.json()) as RunDetail;
+    return (await resp.json()) as AutomationRun;
   }
 
-  async cancelRun(runId: string): Promise<void> {
-    await this.request(
-      `/v1/projects/${encodeURIComponent(this.project)}/runs/${encodeURIComponent(runId)}/cancellations`,
-      { method: "POST" },
-    );
-  }
-
-  async resumeRun(runId: string): Promise<void> {
-    await this.request(
-      `/v1/projects/${encodeURIComponent(this.project)}/runs/${encodeURIComponent(runId)}/resumptions`,
-      { method: "POST" },
-    );
-  }
-
-  async sendRunSignal(
-    runId: string,
-    req: SendRunSignalRequest,
-  ): Promise<RunSignalAccepted> {
+  async cancelRun(runId: string, reason?: string): Promise<AutomationRun> {
+    const body: CancelAutomationRunRequest = removeUndefined({ reason });
     const resp = await this.request(
-      `/v1/projects/${encodeURIComponent(this.project)}/runs/${encodeURIComponent(runId)}/signals`,
-      { method: "POST", body: req },
+      `/v1/projects/:project/runs/${encodeURIComponent(runId)}/cancellations`,
+      { method: "POST", body },
     );
-    return (await resp.json()) as RunSignalAccepted;
+    return (await resp.json()) as AutomationRun;
+  }
+
+  async signalRun(
+    runId: string,
+    stepKey: string,
+    result?: Record<string, unknown>,
+  ): Promise<AutomationRun> {
+    const body: SignalAutomationRunRequest = removeUndefined({
+      step_key: stepKey,
+      result,
+    });
+    const resp = await this.request(
+      `/v1/projects/:project/runs/${encodeURIComponent(runId)}/signals`,
+      { method: "POST", body },
+    );
+    return (await resp.json()) as AutomationRun;
   }
 
   async *watchRun(
     runId: string,
     opts: WatchRunOptions = {},
-  ): AsyncGenerator<RunEvent> {
+  ): AsyncGenerator<AutomationRunEvent> {
     const path = withQuery(
-      `/v1/projects/${encodeURIComponent(this.project)}/runs/${encodeURIComponent(runId)}/events`,
-      opts.since && opts.since > 0 ? { since: opts.since } : {},
+      `/v1/projects/:project/runs/${encodeURIComponent(runId)}/events.stream`,
+      opts.since && opts.since > 0 ? { since_sequence: opts.since } : {},
     );
-    const resp = await this.fetchFn(this.baseURL + path, {
+    const resp = await this.fetchFn(this.url(path), {
       method: "GET",
       headers: this.headers,
       signal: opts.signal,
@@ -471,29 +400,21 @@ export class Client {
     }
     for await (const evt of parseSSE(resp.body)) {
       if (!evt.data) continue;
-      yield JSON.parse(evt.data) as RunEvent;
+      yield JSON.parse(evt.data) as AutomationRunEvent;
     }
   }
 
-  async waitRun(
-    runId: string,
-    opts: WaitRunOptions = {},
-  ): Promise<RunDetail> {
+  async waitRun(runId: string, opts: WaitRunOptions = {}): Promise<AutomationRun> {
     let since = opts.since ?? 0;
     const reconnectDelayMs = opts.reconnectDelayMs ?? 1000;
     for (;;) {
       const run = await this.getRun(runId);
       if (isTerminalRunStatus(run.status)) return run;
-
       try {
-        for await (const ev of this.watchRun(runId, {
-          since,
-          signal: opts.signal,
-        })) {
-          if (ev.seq > since) since = ev.seq;
-          if (ev.type !== "run_updated") continue;
-          const status = ev.data.status;
-          if (status === "completed" || status === "failed") {
+        for await (const ev of this.watchRun(runId, { ...opts, since })) {
+          if (ev.sequence > since) since = ev.sequence;
+          const status = ev.payload?.status;
+          if (typeof status === "string" && isTerminalRunStatus(status)) {
             return await this.getRun(runId);
           }
         }
@@ -504,172 +425,59 @@ export class Client {
     }
   }
 
-  async listWorkflows(
-    opts: ListWorkflowsOptions = {},
-  ): Promise<WorkflowDefinitionListResponse> {
-    const path = withQuery(
-      `/v1/projects/${encodeURIComponent(this.project)}/workflows`,
-      opts,
-    );
-    const resp = await this.request(path, { method: "GET" });
-    return (await resp.json()) as WorkflowDefinitionListResponse;
-  }
-
-  async getWorkflow(workflowId: string): Promise<WorkflowDefinition> {
-    const resp = await this.request(
-      `/v1/projects/${encodeURIComponent(this.project)}/workflows/${encodeURIComponent(workflowId)}`,
-      { method: "GET" },
-    );
-    return (await resp.json()) as WorkflowDefinition;
-  }
-
-  async createWorkflow(
-    spec: WorkflowSpec,
-    opts: WorkflowOptions = {},
-  ): Promise<WorkflowDefinition> {
-    const body: CreateWorkflowRequest = createWorkflowRequest(spec, opts);
-    const resp = await this.request(
-      `/v1/projects/${encodeURIComponent(this.project)}/workflows`,
-      { method: "POST", body },
-    );
-    return (await resp.json()) as WorkflowDefinition;
-  }
-
-  async updateWorkflow(
-    workflowId: string,
-    opts: UpdateWorkflowOptions,
-  ): Promise<WorkflowDefinition> {
-    const body: UpdateWorkflowRequest = removeUndefined({
-      expected_version: opts.expected_version,
-      name: opts.name,
-      description: opts.description,
-      published_as_tool: opts.published_as_tool,
-      spec: opts.spec,
-      tags: opts.tags,
-    }) as UpdateWorkflowRequest;
-    const resp = await this.request(
-      `/v1/projects/${encodeURIComponent(this.project)}/workflows/${encodeURIComponent(workflowId)}`,
-      { method: "PATCH", body },
-    );
-    return (await resp.json()) as WorkflowDefinition;
-  }
-
-  async ensureWorkflow(
-    spec: WorkflowSpec,
-    opts: WorkflowOptions = {},
-  ): Promise<WorkflowSyncResult> {
-    const desired = normalizeWorkflowOptions(spec, opts);
-    const existing = await this.findWorkflow(desired);
-    if (!existing) {
-      return {
-        definition: await this.createWorkflow(spec, desired),
-        created: true,
-        updated: false,
-      };
-    }
-
-    const current = await this.getWorkflow(existing.id);
-    const update = workflowUpdateForDiff(current, spec, desired);
-    if (!update) {
-      return { definition: current, created: false, updated: false };
-    }
-    return {
-      definition: await this.updateWorkflow(current.id, update),
-      created: false,
-      updated: true,
-    };
-  }
-
-  async syncWorkflows(
-    defs: WorkflowDefinitionConfig[],
-  ): Promise<WorkflowSyncResult[]> {
-    const results: WorkflowSyncResult[] = [];
-    for (const def of defs) {
-      results.push(await this.ensureWorkflow(def.spec, def.options ?? {}));
-    }
-    return results;
-  }
-
   private async request(
     path: string,
     opts: { method: string; body?: unknown; signal?: AbortSignal | undefined },
   ): Promise<Response> {
     const timeout = AbortSignal.timeout(this.timeoutMs);
     const signal = opts.signal ? anySignal(opts.signal, timeout) : timeout;
-
     const init: RequestInit = {
       method: opts.method,
       headers: this.headers,
       signal,
     };
-    if (opts.body != null) {
-      init.body = JSON.stringify(opts.body);
-    }
-    const resp = await this.fetchFn(this.baseURL + path, init);
-    if (
-      !resp.ok &&
-      resp.status !== 204 &&
-      resp.status !== 401 &&
-      resp.status !== 409 &&
-      resp.status !== 413 &&
-      resp.status !== 429
-    ) {
+    if (opts.body != null) init.body = JSON.stringify(opts.body);
+    const resp = await this.fetchFn(this.url(path), init);
+    if (!resp.ok && resp.status !== 204) {
+      if (resp.status === 401) throw new AuthRevokedError();
       const text = await resp.text().catch(() => "");
-      throw new Error(
-        `mobius API ${opts.method} ${path}: HTTP ${resp.status}: ${text}`,
-      );
+      throw new Error(`mobius API ${opts.method} ${path}: HTTP ${resp.status}: ${text}`);
     }
     return resp;
   }
 
-  private async findWorkflow(
-    desired: Required<Pick<WorkflowOptions, "name">> & WorkflowOptions,
-  ): Promise<WorkflowDefinitionSummary | null> {
-    if (!desired.handle && !desired.name) {
-      throw new Error("mobius: ensure workflow requires a handle, name, or spec name");
-    }
-    let cursor = "";
-    for (;;) {
-      const page = await this.listWorkflows({ cursor, limit: 100 });
-      for (const item of page.items) {
-        if (desired.handle && item.handle === desired.handle) return item;
-        if (!desired.handle && item.name === desired.name) return item;
-      }
-      if (!page.has_more || !page.next_cursor) return null;
-      cursor = page.next_cursor;
-    }
+  private url(path: string): string {
+    return this.baseURL + path.replace(":project", encodeURIComponent(this.project));
   }
 }
 
-export type { JobClaim, JobHeartbeat };
-
 export type {
-  Run,
-  RunListResponse,
-  RunSignalAccepted,
-  RunStatus,
-  SendRunSignalRequest,
-  WorkflowDefinitionListResponse,
-  WorkflowDefinitionSummary,
-  WorkflowSpec,
+  Automation,
+  AutomationListResponse,
+  AutomationRun,
+  AutomationRunEvent,
+  AutomationRunListResponse,
+  AutomationRunStatus,
+  AutomationVersion,
+  AutomationVersionListResponse,
 };
+
+export function isTerminalRunStatus(status: AutomationRunStatus | string): boolean {
+  return status === "completed" || status === "failed" || status === "cancelled";
+}
 
 function anySignal(...signals: AbortSignal[]): AbortSignal {
   const controller = new AbortController();
-  for (const s of signals) {
-    if (s.aborted) {
-      controller.abort(s.reason);
+  for (const signal of signals) {
+    if (signal.aborted) {
+      controller.abort(signal.reason);
       break;
     }
-    s.addEventListener("abort", () => controller.abort(s.reason), {
+    signal.addEventListener("abort", () => controller.abort(signal.reason), {
       once: true,
     });
   }
   return controller.signal;
-}
-
-export function isTerminalRunStatus(status: RunStatus): boolean {
-  return status === "completed" || status === "failed";
 }
 
 function withQuery(path: string, params: object): string {
@@ -686,166 +494,56 @@ function withQuery(path: string, params: object): string {
   return qs ? `${path}?${qs}` : path;
 }
 
-function createWorkflowRequest(
-  spec: WorkflowSpec,
-  opts: WorkflowOptions,
-): CreateWorkflowRequest {
-  const normalized = normalizeWorkflowOptions(spec, opts);
-  return removeUndefined({
-    name: normalized.name,
-    handle: normalized.handle,
-    description: normalized.description,
-    published_as_tool: normalized.published_as_tool,
-    spec,
-    tags: normalized.tags,
-  });
-}
-
-function normalizeWorkflowOptions(
-  spec: WorkflowSpec,
-  opts: WorkflowOptions,
-): Required<Pick<WorkflowOptions, "name">> & WorkflowOptions {
-  return { ...opts, name: opts.name || spec.name };
-}
-
-function workflowUpdateForDiff(
-  current: WorkflowDefinition,
-  spec: WorkflowSpec,
-  desired: Required<Pick<WorkflowOptions, "name">> & WorkflowOptions,
-): UpdateWorkflowOptions | null {
-  const update: UpdateWorkflowOptions = {
-    expected_version: current.latest_version,
-  };
-  let changed = false;
-  if (desired.name && current.name !== desired.name) {
-    update.name = desired.name;
-    changed = true;
-  }
-  if (desired.description && current.description !== desired.description) {
-    update.description = desired.description;
-    changed = true;
-  }
-  if (
-    desired.published_as_tool !== undefined &&
-    current.published_as_tool !== desired.published_as_tool
-  ) {
-    update.published_as_tool = desired.published_as_tool;
-    changed = true;
-  }
-  if (desired.tags !== undefined && !jsonEqual(current.tags, desired.tags)) {
-    update.tags = desired.tags;
-    changed = true;
-  }
-  if (!jsonEqual(current.spec, spec)) {
-    update.spec = spec;
-    changed = true;
-  }
-  return changed ? update : null;
-}
-
-function jsonEqual(a: unknown, b: unknown): boolean {
-  return stableJsonStringify(a) === stableJsonStringify(b);
-}
-
-function stableJsonStringify(value: unknown): string | undefined {
-  if (value === null || typeof value !== "object") {
-    return JSON.stringify(value);
-  }
-  if (Array.isArray(value)) {
-    return `[${value.map((item) => stableJsonStringify(item) ?? "null").join(",")}]`;
-  }
-  const obj = value as Record<string, unknown>;
-  const entries = Object.keys(obj)
-    .sort()
-    .filter((key) => obj[key] !== undefined)
-    .map((key) => `${JSON.stringify(key)}:${stableJsonStringify(obj[key])}`);
-  return `{${entries.join(",")}}`;
-}
-
-function removeUndefined<T extends Record<string, unknown>>(obj: T): T {
+function removeUndefined<T extends object>(obj: T): T {
   return Object.fromEntries(
-    Object.entries(obj).filter(([, value]) => value !== undefined),
+    Object.entries(obj).filter(([, v]) => v !== undefined),
   ) as T;
 }
 
-interface ParsedSSEEvent {
-  event?: string;
-  id?: string;
+async function delay(ms: number, signal?: AbortSignal): Promise<void> {
+  if (ms <= 0) return;
+  await new Promise<void>((resolve, reject) => {
+    const timer = setTimeout(resolve, ms);
+    if (signal) {
+      signal.addEventListener(
+        "abort",
+        () => {
+          clearTimeout(timer);
+          reject(signal.reason ?? new Error("aborted"));
+        },
+        { once: true },
+      );
+    }
+  });
+}
+
+interface SSEEvent {
   data: string;
 }
 
-async function* parseSSE(
-  body: ReadableStream<Uint8Array>,
-): AsyncGenerator<ParsedSSEEvent> {
+async function* parseSSE(body: ReadableStream<Uint8Array>): AsyncGenerator<SSEEvent> {
   const reader = body.getReader();
   const decoder = new TextDecoder();
   let buffer = "";
-  let event = "";
-  let id = "";
-  let dataLines: string[] = [];
-
-  const dispatch = (): ParsedSSEEvent | null => {
-    if (dataLines.length === 0) {
-      event = "";
-      return null;
-    }
-    const out: ParsedSSEEvent = {
-      event: event || "message",
-      id,
-      data: dataLines.join("\n"),
-    };
-    event = "";
-    dataLines = [];
-    return out;
-  };
-
-  const processLine = (rawLine: string): ParsedSSEEvent | null => {
-    const line = rawLine.endsWith("\r") ? rawLine.slice(0, -1) : rawLine;
-    if (line === "") return dispatch();
-    if (line.startsWith(":")) return null;
-    const colon = line.indexOf(":");
-    const field = colon >= 0 ? line.slice(0, colon) : line;
-    let value = colon >= 0 ? line.slice(colon + 1) : "";
-    if (value.startsWith(" ")) value = value.slice(1);
-    if (field === "event") event = value;
-    if (field === "id" && !value.includes("\0")) id = value;
-    if (field === "data") dataLines.push(value);
-    return null;
-  };
-
-  for (;;) {
-    const { value, done } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
+  try {
     for (;;) {
-      const newline = buffer.indexOf("\n");
-      if (newline < 0) break;
-      const line = buffer.slice(0, newline);
-      buffer = buffer.slice(newline + 1);
-      const evt = processLine(line);
-      if (evt) yield evt;
+      const { value, done } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      for (;;) {
+        const match = /\r?\n\r?\n/.exec(buffer);
+        if (!match) break;
+        const raw = buffer.slice(0, match.index);
+        buffer = buffer.slice(match.index + match[0].length);
+        const data = raw
+          .split(/\r?\n/)
+          .filter((line) => line.startsWith("data:"))
+          .map((line) => line.slice(5).trimStart())
+          .join("\n");
+        yield { data };
+      }
     }
+  } finally {
+    reader.releaseLock();
   }
-  buffer += decoder.decode();
-  if (buffer.length > 0) {
-    const evt = processLine(buffer);
-    if (evt) yield evt;
-  }
-  const evt = dispatch();
-  if (evt) yield evt;
-}
-
-function delay(ms: number, signal?: AbortSignal): Promise<void> {
-  if (signal?.aborted) return Promise.reject(signal.reason);
-  return new Promise((resolve, reject) => {
-    const timeout = setTimeout(resolve, ms);
-    signal?.addEventListener(
-      "abort",
-      () => {
-        clearTimeout(timeout);
-        reject(signal.reason);
-      },
-      { once: true },
-    );
-  });
 }

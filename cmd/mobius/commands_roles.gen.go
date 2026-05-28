@@ -76,7 +76,6 @@ func registerRolesCommands(app *cli.App) {
 	rolesGrp.Command("create-assignment").
 		Description("Assign a role to a principal user").
 		Flags(
-			cli.String("project-id", "").Help("Scope this assignment to a project. Omit for org-wide assignment."),
 			cli.String("role-id", "").Help("Mutually exclusive with `role_name`."),
 			cli.String("role-name", "").Help("Resolved to a role ID server-side. Mutually exclusive with `role_id`."),
 			cli.String("user-id", "").Help("[required] Principal User ID to assign the role to."),
@@ -90,13 +89,10 @@ func registerRolesCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
+			p0 := authFor(ctx).Project
 			var body api.CreateRoleAssignmentJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
-			}
-			if ctx.IsSet("project-id") {
-				v := ctx.String("project-id")
-				body.ProjectId = &v
 			}
 			if ctx.IsSet("role-id") {
 				v := ctx.String("role-id")
@@ -115,7 +111,7 @@ func registerRolesCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.CreateRoleAssignmentWithResponse(ctx.Context(), body)
+			resp, err := client.CreateRoleAssignmentWithResponse(ctx.Context(), p0, body)
 			if err != nil {
 				return err
 			}
@@ -151,8 +147,9 @@ func registerRolesCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.Arg(0)
-			resp, err := client.DeleteRoleAssignmentWithResponse(ctx.Context(), p0)
+			p0 := authFor(ctx).Project
+			p1 := ctx.Arg(0)
+			resp, err := client.DeleteRoleAssignmentWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}
@@ -213,7 +210,6 @@ func registerRolesCommands(app *cli.App) {
 		Flags(
 			cli.String("user-id", "").Help("Filter to assignments for a specific user."),
 			cli.String("role-id", "").Help("Filter to assignments for a specific role."),
-			cli.String("project-id", "").Help("Filter to project-scoped assignments for this project."),
 		).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -222,6 +218,7 @@ func registerRolesCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
+			p0 := authFor(ctx).Project
 			params := &api.ListRoleAssignmentsParams{}
 			if ctx.IsSet("user-id") {
 				v := ctx.String("user-id")
@@ -231,11 +228,7 @@ func registerRolesCommands(app *cli.App) {
 				v := ctx.String("role-id")
 				params.RoleId = &v
 			}
-			if ctx.IsSet("project-id") {
-				v := ctx.String("project-id")
-				params.ProjectId = &v
-			}
-			resp, err := client.ListRoleAssignmentsWithResponse(ctx.Context(), params)
+			resp, err := client.ListRoleAssignmentsWithResponse(ctx.Context(), p0, params)
 			if err != nil {
 				return err
 			}

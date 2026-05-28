@@ -686,7 +686,7 @@ func verifyAuthenticatedRequest(ctx *cli.Context) (authProbeResult, error) {
 
 func authProbePath(apiKey string) string {
 	if project, ok := projectHandleFromCLIToken(apiKey); ok {
-		return "/v1/projects/" + url.PathEscape(project) + "/workflows"
+		return "/v1/projects/" + url.PathEscape(project) + "/automations"
 	}
 	return "/v1/projects"
 }

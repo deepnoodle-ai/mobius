@@ -26,7 +26,7 @@ type ResponseRenderer func(ctx *cli.Context, body []byte) error
 var responseRenderers = map[string]ResponseRenderer{}
 
 // RegisterResponseRenderer attaches a pretty renderer to one operation,
-// keyed by its OpenAPI operationId (e.g. "getRun", "listWorkflows"). Hand-
+// keyed by its OpenAPI operationId (e.g. "getRun", "listAutomations"). Hand-
 // written sibling files call this from init() to layer custom views on top
 // of the generic table/key-value renderer without touching cligen.
 func RegisterResponseRenderer(opID string, fn ResponseRenderer) {
@@ -40,7 +40,7 @@ func responseRendererFor(opID string) ResponseRenderer {
 }
 
 func init() {
-	RegisterResponseRenderer("getRun", renderRunDetail)
+	RegisterResponseRenderer("getAutomationRun", renderRunDetail)
 }
 
 // renderRunDetail renders a RunDetail as a status header followed by
@@ -59,11 +59,10 @@ func renderRunDetail(ctx *cli.Context, body []byte) error {
 	}
 
 	header := tui.Stack(
-		tui.KeyValue("workflow", asString(run["workflow_name"])),
+		tui.KeyValue("automation", asString(run["automation_id"])),
 		tui.KeyValue("run id", asString(run["id"])),
 		tui.KeyValue("status", colorizeRunStatus(status)),
-		tui.KeyValue("attempt", asString(run["attempt"])),
-		tui.KeyValue("queue", orDash(asString(run["queue"]))),
+		tui.KeyValue("version", asString(run["automation_version"])),
 	)
 
 	views := []tui.View{header}

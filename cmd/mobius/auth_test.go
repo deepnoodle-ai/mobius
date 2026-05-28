@@ -19,7 +19,7 @@ func TestAuthStatusReportsSavedCredentialAfterInjection(t *testing.T) {
 	unsetEnv(t, "MOBIUS_API_URL")
 	t.Setenv("MOBIUS_CONFIG_DIR", t.TempDir())
 	resetActiveAuth(t)
-	srv := newAuthProbeServer(t, "mbc_saved.default", "/v1/projects/default/workflows", http.StatusOK)
+	srv := newAuthProbeServer(t, "mbc_saved.default", "/v1/projects/default/automations", http.StatusOK)
 	defer srv.Close()
 
 	err := authstore.Save(&authstore.Credential{
@@ -49,7 +49,7 @@ func TestAuthStatusReportsSavedCredentialAfterInjection(t *testing.T) {
 	if strings.Contains(result.Stdout, "MOBIUS_API_KEY environment variable") {
 		t.Fatalf("stdout incorrectly reported synthetic env var:\n%s", result.Stdout)
 	}
-	if !strings.Contains(result.Stdout, "Auth check: GET /v1/projects/default/workflows -> HTTP 200") {
+	if !strings.Contains(result.Stdout, "Auth check: GET /v1/projects/default/automations -> HTTP 200") {
 		t.Fatalf("stdout missing auth check:\n%s", result.Stdout)
 	}
 	if !strings.Contains(result.Stdout, "Authenticated: yes (browser-based CLI credential verified)") {
@@ -113,7 +113,7 @@ func TestAuthStatusReportsRejectedCredential(t *testing.T) {
 }
 
 func TestAuthStatusReportsScopeForProjectPinnedAPIKey(t *testing.T) {
-	srv := newAuthProbeServer(t, "mbc_token.my-project", "/v1/projects/my-project/workflows", http.StatusOK)
+	srv := newAuthProbeServer(t, "mbc_token.my-project", "/v1/projects/my-project/automations", http.StatusOK)
 	defer srv.Close()
 	t.Setenv("MOBIUS_API_KEY", "mbc_token.my-project")
 	t.Setenv("MOBIUS_API_URL", srv.URL)
@@ -181,7 +181,7 @@ func TestAuthProbePathUsesProjectScopedEndpointForPinnedCLIToken(t *testing.T) {
 	}{
 		{name: "raw api key", key: "mbx_env", want: "/v1/projects"},
 		{name: "org scoped cli token", key: "mbc_token", want: "/v1/projects"},
-		{name: "project pinned cli token", key: "mbc_token.my-project", want: "/v1/projects/my-project/workflows"},
+		{name: "project pinned cli token", key: "mbc_token.my-project", want: "/v1/projects/my-project/automations"},
 		{name: "invalid project suffix", key: "mbc_token.BadProject", want: "/v1/projects"},
 	}
 	for _, tt := range tests {

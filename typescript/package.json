@@ -2,7 +2,7 @@
   "name": "@deepnoodle/mobius",
   "version": "0.0.21",
   "type": "module",
-  "description": "TypeScript SDK for Mobius workflow orchestration",
+  "description": "TypeScript SDK for Mobius agent automations and workers",
   "license": "Apache-2.0",
   "author": "Deepnoodle",
   "homepage": "https://github.com/deepnoodle-ai/mobius#readme",
@@ -16,8 +16,8 @@
   },
   "keywords": [
     "mobius",
-    "workflow",
-    "orchestration",
+    "automation",
+    "agent",
     "worker",
     "deepnoodle",
     "sdk"

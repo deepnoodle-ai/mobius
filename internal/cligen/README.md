@@ -4,7 +4,7 @@ Code generator that emits `commands.gen.go` (and `commands_<group>.gen.go`) for 
 
 It walks every `*ClientWithResponses` method, matches it to an `operationId` in `openapi.yaml`, applies any overrides from `overrides.go`, and emits one `wonton/cli` command per operation.
 
-Invoked via the `go:generate` directive in `cmd/mobius/app.go` and via `make generate-cli-commands`. Never hand-edit the generated files.
+Invoked via the `go:generate` directive in `cmd/mobius/app.go` and via `make generate-go-cli`. Never hand-edit the generated files.
 
 ## Customizing generated commands
 
@@ -14,7 +14,7 @@ All customization goes through the `overrides` map in [`overrides.go`](./overrid
 |---|---|
 | `Skip` | Drop the operation from CLI generation. Use when the command is hand-written in `cmd/mobius`, or when the endpoint is webhook-style and not meant for interactive use. |
 | `Group` | Override the subcommand group. Defaults to the operation's first OpenAPI tag. |
-| `Command` | Override the leaf command name. Defaults to a name derived from the `operationId` (e.g. `listWorkflows` → `list`, `getWorkflow` → `get`). |
+| `Command` | Override the leaf command name. Defaults to a name derived from the `operationId` (e.g. `listAutomations` -> `list`, `getAutomation` -> `get`). |
 | `Description` | Override the short help text. Defaults to the OpenAPI operation summary. |
 
 Example:
@@ -25,10 +25,10 @@ var overrides = map[string]Override{
     "handleSlackEvents": {Skip: true},
 
     // Rename + regroup:
-    "listWorkflowRuns": {
-        Group:       "runs",
+    "listAutomationRuns": {
+        Group:       "automations",
         Command:     "list",
-        Description: "List workflow runs in the current project",
+        Description: "List automation runs in the current project",
     },
 }
 ```
@@ -39,7 +39,7 @@ Group descriptions are opt-in. By default `app.Group("name")` is emitted with no
 
 ```go
 var groupDescriptions = map[string]string{
-    "workflows": "Manage workflow definitions",
+    "automations": "Manage automation definitions",
 }
 ```
 
@@ -48,5 +48,5 @@ var groupDescriptions = map[string]string{
 After editing `overrides.go`, regenerate:
 
 ```bash
-make generate-cli-commands
+make generate-go-cli
 ```

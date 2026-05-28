@@ -3,9 +3,10 @@
 TypeScript SDK for [Mobius](https://www.mobiusops.ai/) — a work coordination
 platform for mixed teams of humans, systems, and AI agents.
 
-This package contains the runtime client and worker used to claim and execute
-tasks against the Mobius API, plus high-level helpers for starting, observing,
-and controlling workflow runs. Types are generated from the canonical
+This package contains the runtime client and WebSocket worker used to execute
+actions and LLM generations against the Mobius API, plus high-level helpers for
+creating automations and starting, observing, and controlling automation runs.
+Types are generated from the canonical
 [OpenAPI spec](https://github.com/deepnoodle-ai/mobius/blob/main/openapi.yaml)
 and round-tripped against the same cross-language contract fixtures as the Go
 and Python SDKs.
@@ -57,38 +58,35 @@ For independent presence rows (one row per worker) — e.g. graceful
 draining or in-flight isolation — use `WorkerPool` with `count` and
 optionally `workerInstanceIdPrefix` instead.
 
-### Low-level client
+### Automation runs
 
 ```ts
 import { Client } from "@deepnoodle/mobius";
 
 const client = new Client({ apiKey: process.env.MOBIUS_API_KEY! });
 
-const claim = await client.claimJob({
-  worker_instance_id: "my-worker-1",
-  worker_session_token: crypto.randomUUID(),
-  concurrency_limit: 1,
-  queues: ["default"],
-  wait_seconds: 20,
+const run = await client.startAutomationRun("customer-onboarding", {
+  external_id: "customer-run-123",
+  inputs: { customer_id: "cus_123" },
 });
-```
-
-### Run control
-
-```ts
-const run = await client.startRun(
-  {
-    name: "demo",
-    steps: [],
-  },
-  {
-    external_id: "customer-run-123",
-    metadata: { org_id: "org_123" },
-  },
-);
 
 const terminal = await client.waitRun(run.id);
-console.log(terminal.status, terminal.result_b64, terminal.error_message);
+console.log(terminal.status, terminal.result, terminal.error_message);
+```
+
+### Automations
+
+```ts
+const automation = await client.createAutomation({
+  handle: "customer-onboarding",
+  name: "Customer onboarding",
+});
+
+const version = await client.createAutomationVersion(automation.handle, {
+  steps: [],
+}, { publish: true });
+
+console.log(automation.id, version.version);
 ```
 
 ### Webhooks
@@ -104,17 +102,6 @@ const verified = await verifySignedDelivery(request, {
 });
 const event = parseWebhookDelivery(verified);
 console.log(event.type, event.data);
-```
-
-### Saved workflows
-
-```ts
-const result = await client.ensureWorkflow(
-  { name: "customer-onboarding", steps: [] },
-  { handle: "customer-onboarding" },
-);
-
-console.log(result.created, result.updated, result.definition.id);
 ```
 
 ## Rate limiting
@@ -135,11 +122,9 @@ const client = new Client({
 });
 
 try {
-  await client.claimJob({
-    worker_instance_id: "w1",
-    worker_session_token: crypto.randomUUID(),
-    concurrency_limit: 1,
-    queues: ["default"],
+  await client.startAutomationRun("customer-onboarding", {
+    external_id: "customer-run-123",
+    inputs: { customer_id: "cus_123" },
   });
 } catch (err) {
   if (err instanceof RateLimitError) {

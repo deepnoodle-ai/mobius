@@ -1,23 +1,22 @@
-"""Mobius SDK for Python - build workers and control workflow runs."""
+"""Mobius SDK for Python - build workers and control automation runs."""
 
 from ._api.models import InteractionKind
 from .action import action
 from .client import (
     DEFAULT_BASE_URL,
+    AutomationOptions,
+    AutomationVersionOptions,
     Client,
     ClientOptions,
     LeaseLostError,
+    ListAutomationsOptions,
     ListRunsOptions,
-    ListWorkflowsOptions,
     PayloadTooLargeError,
     RateLimitedError,
     RunEvent,
     StartRunOptions,
-    UpdateWorkflowOptions,
+    UpdateAutomationOptions,
     WaitRunOptions,
-    WorkflowDefinitionConfig,
-    WorkflowOptions,
-    WorkflowSyncResult,
     is_terminal_run_status,
 )
 from .errors import AuthRevokedError, RateLimitError, WorkerInstanceConflictError
@@ -48,35 +47,39 @@ from .webhook import (
     build_synthetic_webhook_payload,
     deliver_synthetic_webhook,
 )
-from .worker import ActionContext, Worker, WorkerConfig, WorkerPool, WorkerPoolConfig
+from .worker import (
+    ActionContext,
+    ModelCapability,
+    Worker,
+    WorkerConfig,
+    WorkerPool,
+    WorkerPoolConfig,
+)
 
-INTERACTION_KIND_APPROVAL = InteractionKind.approval
-INTERACTION_KIND_REVIEW = InteractionKind.review
-INTERACTION_KIND_REQUEST = InteractionKind.request
-INTERACTION_KIND_VOTE = InteractionKind.vote
-INTERACTION_KIND_HANDOFF = InteractionKind.handoff
-INTERACTION_KIND_INPUT = InteractionKind.input
+INTERACTION_KIND_APPROVAL = InteractionKind.request_approval
+INTERACTION_KIND_REVIEW = InteractionKind.request_review
+INTERACTION_KIND_REQUEST = InteractionKind.request_information
 
 __all__ = [
     "ActionContext",
     "AuthRevokedError",
+    "AutomationOptions",
+    "AutomationVersionOptions",
     "Client",
     "ClientOptions",
     "DEFAULT_BASE_URL",
     "LeaseLostError",
+    "ListAutomationsOptions",
     "ListRunsOptions",
-    "ListWorkflowsOptions",
+    "ModelCapability",
     "PayloadTooLargeError",
     "RunEvent",
     "RateLimitError",
     "RateLimitedError",
     "RetryingTransport",
     "StartRunOptions",
-    "UpdateWorkflowOptions",
+    "UpdateAutomationOptions",
     "WaitRunOptions",
-    "WorkflowDefinitionConfig",
-    "WorkflowOptions",
-    "WorkflowSyncResult",
     "Worker",
     "WorkerConfig",
     "WorkerInstanceConflictError",
@@ -88,11 +91,8 @@ __all__ = [
     "WEBHOOK_EVENT_RUN_FAILED",
     "WEBHOOK_EVENT_TYPE_HEADER",
     "INTERACTION_KIND_APPROVAL",
-    "INTERACTION_KIND_HANDOFF",
-    "INTERACTION_KIND_INPUT",
     "INTERACTION_KIND_REQUEST",
     "INTERACTION_KIND_REVIEW",
-    "INTERACTION_KIND_VOTE",
     "InteractionKind",
     "DeliveryMeta",
     "InvalidSignatureError",

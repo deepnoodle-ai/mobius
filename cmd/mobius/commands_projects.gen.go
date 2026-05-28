@@ -305,7 +305,6 @@ func registerProjectsCommands(app *cli.App) {
 			cli.String("default-agent-role-id", "").Help("Replacement role assigned to the auto-created service account of any new agent in this project. `nu…"),
 			cli.String("description", "").Help("Replacement description."),
 			cli.String("name", "").Help("Replacement human-readable name."),
-			cli.Bool("permissions-enabled", "").Help("Enables or disables role-permission enforcement for this project. This is a project setting; there …"),
 			cli.Bool("seed-existing-members", "").Help("When transitioning from `org_open` to `restricted`, set true to insert all current org members as p…"),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
@@ -339,10 +338,6 @@ func registerProjectsCommands(app *cli.App) {
 				v := ctx.String("name")
 				body.Name = &v
 			}
-			if ctx.IsSet("permissions-enabled") {
-				v := ctx.Bool("permissions-enabled")
-				body.PermissionsEnabled = &v
-			}
 			if ctx.IsSet("seed-existing-members") {
 				v := ctx.Bool("seed-existing-members")
 				body.SeedExistingMembers = &v
@@ -353,7 +348,7 @@ func registerProjectsCommands(app *cli.App) {
 				v := api.TagMap(tags)
 				body.Tags = &v
 			}
-			if ctx.String("file") == "" && !ctx.IsSet("access-mode") && !ctx.IsSet("default-agent-role-id") && !ctx.IsSet("description") && !ctx.IsSet("name") && !ctx.IsSet("permissions-enabled") && !ctx.IsSet("seed-existing-members") && !ctx.IsSet("tag") {
+			if ctx.String("file") == "" && !ctx.IsSet("access-mode") && !ctx.IsSet("default-agent-role-id") && !ctx.IsSet("description") && !ctx.IsSet("name") && !ctx.IsSet("seed-existing-members") && !ctx.IsSet("tag") {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
 			if ctx.Bool("dry-run") {
@@ -386,7 +381,7 @@ func registerProjectsCommands(app *cli.App) {
 				return err
 			}
 			if ctx.String("file") == "" {
-				return fmt.Errorf("at least one flag or --file is required")
+				return fmt.Errorf("--file is required")
 			}
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)

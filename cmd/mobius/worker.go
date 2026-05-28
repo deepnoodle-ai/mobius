@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+	"strings"
 
 	"github.com/deepnoodle-ai/wonton/cli"
 
@@ -14,7 +16,7 @@ import (
 // registerWorkerCommand attaches the `mobius worker` subcommand, which claims
 // and executes jobs from one or more queues in the configured project. The
 // worker ships with every stock action from github.com/deepnoodle-ai/mobius/mobius/action
-// registered, so it can run trivial and test workflows out of the box.
+// registered, so it can run trivial and test automations out of the box.
 //
 // The default mode is one worker process serving up to `--concurrency` jobs
 // concurrently — that's the right shape for most operators because it
@@ -38,15 +40,18 @@ func registerWorkerCommand(app *cli.App) {
 			cli.Strings("queues", "q").
 				Env("MOBIUS_QUEUES").
 				Help("Queue names to poll; empty = all queues in the project"),
+			cli.Strings("actions", "a").
+				Env("MOBIUS_WORKER_ACTION_NAMES").
+				Help("Action names to advertise; empty = every registered action"),
+			cli.String("environment-id", "").
+				Env("MOBIUS_WORKER_ENVIRONMENT_ID").
+				Help("Managed environment ID this worker is executing inside"),
 			cli.Int("concurrency", "").
 				Default(1).
 				Help("Max in-flight jobs for one worker process (default 1)"),
 			cli.Int("workers", "").
 				Default(0).
 				Help("Run N independent worker instances (advanced; mutually exclusive with --concurrency)"),
-			cli.Int("poll-wait", "").
-				Default(20).
-				Help("Long-poll window in seconds (0-30)"),
 		).
 		Run(func(ctx *cli.Context) error {
 			client, err := clientFromContext(ctx)
@@ -57,7 +62,9 @@ func registerWorkerCommand(app *cli.App) {
 
 			name := ctx.String("name")
 			instanceID := ctx.String("instance-id")
-			queues := ctx.Strings("queues")
+			queues := firstNonEmptyStrings(ctx.Strings("queues"), splitEnv("MOBIUS_WORKER_QUEUES"))
+			actions := firstNonEmptyStrings(ctx.Strings("actions"), splitEnv("MOBIUS_WORKER_ACTION_NAMES"))
+			environmentID := ctx.String("environment-id")
 			concurrency := ctx.Int("concurrency")
 			workers := ctx.Int("workers")
 
@@ -74,9 +81,10 @@ func registerWorkerCommand(app *cli.App) {
 				Name:             name,
 				WorkerInstanceID: instanceID,
 				Version:          ctx.String("worker-version"),
+				EnvironmentID:    environmentID,
 				Queues:           queues,
+				Actions:          actions,
 				Concurrency:      concurrency,
-				PollWaitSeconds:  ctx.Int("poll-wait"),
 				Logger:           logger,
 			}
 
@@ -85,7 +93,9 @@ func registerWorkerCommand(app *cli.App) {
 				"name", name,
 				"api_url", auth.APIURL,
 				"project", auth.Project,
+				"environment_id", environmentID,
 				"queues", queues,
+				"actions", actions,
 				"concurrency", concurrency,
 				"workers", workers,
 			)
@@ -113,7 +123,7 @@ func registerWorkerCommand(app *cli.App) {
 
 // registerStockActions attaches every general-purpose action from
 // github.com/deepnoodle-ai/mobius/mobius/action to the worker. These cover most trivial and
-// test workflows without requiring custom code.
+// test automations without requiring custom code.
 type actionRegistrar interface {
 	Register(mobius.Action)
 }
@@ -126,9 +136,34 @@ func registerStockActions(w actionRegistrar) {
 		action.NewTimeAction(),
 		action.NewRandomAction(),
 	}
+	stock = append(stock, action.EnvironmentActions()...)
 	for _, a := range stock {
 		w.Register(a)
 	}
+}
+
+func splitEnv(name string) []string {
+	raw := os.Getenv(name)
+	if strings.TrimSpace(raw) == "" {
+		return nil
+	}
+	parts := strings.Split(raw, ",")
+	out := make([]string, 0, len(parts))
+	for _, part := range parts {
+		if value := strings.TrimSpace(part); value != "" {
+			out = append(out, value)
+		}
+	}
+	return out
+}
+
+func firstNonEmptyStrings(values ...[]string) []string {
+	for _, value := range values {
+		if len(value) > 0 {
+			return value
+		}
+	}
+	return nil
 }
 
 func isContextCanceled(err error) bool {

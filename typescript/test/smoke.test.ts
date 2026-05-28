@@ -3,12 +3,9 @@ import { test } from "node:test";
 
 import {
   Client,
+  ConfigError,
   DEFAULT_BASE_URL,
-  LeaseLostError,
-  PayloadTooLargeError,
-  RateLimitError,
-  RateLimitedError,
-  WorkerInstanceConflictError,
+  isTerminalRunStatus,
 } from "../src/client.js";
 import {
   WEBHOOK_EVENT_TYPE_HEADER,
@@ -27,377 +24,140 @@ import {
   verifySignedDelivery,
 } from "../src/signing.js";
 
-// Smoke tests for the hand-written Client wrapper: verify the error
-// translation layer around 409 lease-lost responses and 204 empty claims.
-// These are the failure modes most likely to silently drift from the Go
-// and Python wrappers, so we assert them explicitly.
-
-function clientWithFakeFetch(reply: {
+function installFakeFetch(reply: {
   status: number;
   body?: unknown;
-}): Client {
-  globalThis.fetch = (async () => {
-    const init: ResponseInit = {
-      status: reply.status,
-      headers: { "Content-Type": "application/json" },
-    };
+  headers?: Record<string, string>;
+  capture?: (input: RequestInfo | URL, init?: RequestInit) => void;
+}): () => void {
+  const original = globalThis.fetch;
+  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    reply.capture?.(input, init);
     return new Response(
       reply.body != null ? JSON.stringify(reply.body) : null,
-      init,
+      {
+        status: reply.status,
+        headers: {
+          "Content-Type": "application/json",
+          ...reply.headers,
+        },
+      },
     );
   }) as typeof fetch;
-  return new Client({
-    baseURL: "https://api.example.invalid",
-    apiKey: "mbx_test",
-    project: "test-project",
-  });
+  return () => {
+    globalThis.fetch = original;
+  };
 }
 
-test("smoke: defaults to the production API host", async () => {
+test("client: defaults to the production API host", async () => {
   let requestedURL = "";
-  globalThis.fetch = (async (input: RequestInfo | URL) => {
-    requestedURL = typeof input === "string" ? input : input.toString();
-    return new Response(null, { status: 204 });
-  }) as typeof fetch;
-
-  const client = new Client({ apiKey: "mbx_test", project: "test-project" });
-  await client.claimJob({
-    worker_instance_id: "worker-1",
-    worker_session_token: "test-session-token",
-    concurrency_limit: 1,
-  });
-
-  assert.equal(
-    requestedURL,
-    `${DEFAULT_BASE_URL}/v1/projects/test-project/jobs/claim`,
-  );
-});
-
-test("smoke: claimJob returns null on 204", async () => {
-  const client = clientWithFakeFetch({ status: 204 });
-  const job = await client.claimJob({
-    worker_instance_id: "worker-1",
-    worker_session_token: "test-session-token",
-    concurrency_limit: 1,
-  });
-  assert.equal(job, null);
-});
-
-test("smoke: claimJob returns job on 200", async () => {
-  const client = clientWithFakeFetch({
+  const restore = installFakeFetch({
     status: 200,
-    body: {
-      job_id: "job_1",
-      run_id: "run_1",
-      workflow_name: "hello",
-      step_name: "greet",
-      spec: { kind: "action", name: "print", parameters: { msg: "hi" } },
-      attempt_number: 1,
-      queue: "default",
-      lease_token: "lease-1",
+    body: { items: [], has_more: false },
+    capture: (input) => {
+      requestedURL = typeof input === "string" ? input : input.toString();
     },
   });
-  const job = await client.claimJob({
-    worker_instance_id: "worker-1",
-    worker_session_token: "test-session-token",
-    concurrency_limit: 1,
-  });
-  assert.ok(job);
-  assert.equal(job!.job_id, "job_1");
-  assert.equal(job!.spec.kind, "action");
-});
-
-test("smoke: claimJob 409 with worker_instance_conflict envelope raises typed error", async () => {
-  const client = clientWithFakeFetch({
-    status: 409,
-    body: {
-      error: {
-        code: "worker_instance_conflict",
-        message: "worker_instance_id worker-1 is already registered",
-      },
-    },
-  });
-  await assert.rejects(
-    () =>
-      client.claimJob({
-        worker_instance_id: "worker-1",
-        worker_session_token: "test-session-token",
-        concurrency_limit: 1,
-      }),
-    (err: unknown) =>
-      err instanceof WorkerInstanceConflictError &&
-      err.workerInstanceId === "worker-1",
-  );
-});
-
-test("smoke: heartbeatJob 409 raises LeaseLostError", async () => {
-  const client = clientWithFakeFetch({ status: 409 });
-  await assert.rejects(
-    () =>
-      client.heartbeatJob("job_1", {
-        worker_instance_id: "w",
-        lease_token: "lease-1",
-      }),
-    LeaseLostError,
-  );
-});
-
-test("smoke: reportJob 409 raises LeaseLostError", async () => {
-  const client = clientWithFakeFetch({ status: 409 });
-  await assert.rejects(
-    () =>
-      client.reportJob("job_1", {
-        worker_instance_id: "w",
-        lease_token: "lease-1",
-        outcomes: [{ kind: "complete" }],
-      }),
-    LeaseLostError,
-  );
-});
-
-// lease_token is the fence value: the SDK stamps it on every claim and
-// presents it on heartbeat / report / events. The tests below mirror the
-// worker_instance_id paths above so any drift in the token-bearing wire
-// shape fails the suite.
-test("smoke: heartbeatJob with lease_token serializes the token", async () => {
-  let requestBody = "";
-  globalThis.fetch = (async (_input: RequestInfo | URL, init?: RequestInit) => {
-    requestBody = String(init?.body ?? "");
-    return new Response(null, { status: 409 });
-  }) as typeof fetch;
-  const client = new Client({
-    apiKey: "mbx_test",
-    baseURL: "https://api.example.invalid",
-    project: "test-project",
-  });
-  await assert.rejects(
-    () =>
-      client.heartbeatJob("job_1", {
-        lease_token: "lease-abc",
-      }),
-    LeaseLostError,
-  );
-  assert.match(requestBody, /"lease_token":"lease-abc"/);
-});
-
-test("smoke: reportJob with lease_token serializes the token", async () => {
-  let requestBody = "";
-  globalThis.fetch = (async (_input: RequestInfo | URL, init?: RequestInit) => {
-    requestBody = String(init?.body ?? "");
-    return new Response(null, { status: 204 });
-  }) as typeof fetch;
-  const client = new Client({
-    apiKey: "mbx_test",
-    baseURL: "https://api.example.invalid",
-    project: "test-project",
-  });
-  await client.reportJob("job_1", {
-    lease_token: "lease-abc",
-    outcomes: [{ kind: "complete" }],
-  });
-  assert.match(requestBody, /"lease_token":"lease-abc"/);
-});
-
-test("smoke: emitJobEvent posts to project events endpoint", async () => {
-  let requestedURL = "";
-  let requestBody = "";
-  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
-    requestedURL = typeof input === "string" ? input : input.toString();
-    requestBody = String(init?.body ?? "");
-    return new Response(null, { status: 204 });
-  }) as typeof fetch;
-
-  const client = new Client({
-    apiKey: "mbx_test",
-    baseURL: "https://api.example.invalid",
-    project: "test-project",
-  });
-  await client.emitJobEvent("job_1", {
-    worker_instance_id: "worker-1",
-    lease_token: "lease-1",
-    type: "scrape.page_done",
-    payload: { url: "https://example.com" },
-  });
-
+  try {
+    const client = new Client({ apiKey: "mbx_test", project: "test-project" });
+    await client.listAutomations();
+  } finally {
+    restore();
+  }
   assert.equal(
     requestedURL,
-    "https://api.example.invalid/v1/projects/test-project/jobs/job_1/events",
-  );
-  assert.match(requestBody, /"type":"scrape\.page_done"/);
-});
-
-test("smoke: emitJobEvents 413 raises PayloadTooLargeError", async () => {
-  const client = clientWithFakeFetch({ status: 413 });
-  await assert.rejects(
-    () =>
-      client.emitJobEvent("job_1", {
-        worker_instance_id: "w",
-        lease_token: "lease-1",
-        type: "oversize",
-        payload: { blob: "x" },
-      }),
-    PayloadTooLargeError,
+    `${DEFAULT_BASE_URL}/v1/projects/test-project/automations`,
   );
 });
 
-test("smoke: emitJobEvents 429 raises RateLimitError", async () => {
-  globalThis.fetch = (async () => {
-    return new Response(null, {
-      status: 429,
-      headers: {
-        "Retry-After": "2",
-        "X-RateLimit-Scope": "key",
-        "X-RateLimit-Limit": "100",
-        "X-RateLimit-Remaining": "0",
-      },
-    });
-  }) as typeof fetch;
+test("client: extracts project handle from project-pinned API key", () => {
+  const client = new Client({ apiKey: "mbx_secret.prod" });
+  assert.equal(client.project, "prod");
+});
+
+test("client: rejects conflicting explicit project", () => {
+  assert.throws(
+    () => new Client({ apiKey: "mbx_secret.prod", project: "staging" }),
+    ConfigError,
+  );
+});
+
+test("client: workerSocketURL uses websocket scheme", () => {
   const client = new Client({
-    baseURL: "https://api.example.invalid",
     apiKey: "mbx_test",
-    project: "test-project",
-    // POST without Idempotency-Key surfaces RateLimitError immediately
-    // regardless of retry budget.
-    retry: 3,
+    baseURL: "http://localhost:8080",
+    project: "default",
   });
-  await assert.rejects(
-    () =>
-      client.emitJobEvent("job_1", {
-        worker_instance_id: "w",
-        lease_token: "lease-1",
-        type: "progress",
-        payload: { pct: 10 },
-      }),
-    RateLimitError,
-  );
-  // RateLimitedError still exported as a backward-compat subclass.
   assert.equal(
-    Object.getPrototypeOf(RateLimitedError.prototype).constructor.name,
-    "RateLimitError",
+    client.workerSocketURL(),
+    "ws://localhost:8080/v1/projects/default/workers/socket",
   );
 });
 
-test("smoke: startRun posts a correlated run request", async () => {
+test("client: startAutomationRun posts the new request shape", async () => {
   let requestedURL = "";
   let requestBody = "";
-  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
-    requestedURL = typeof input === "string" ? input : input.toString();
-    requestBody = String(init?.body ?? "");
-    return new Response(JSON.stringify(runBody("run_1", "active")), {
-      status: 202,
-      headers: { "Content-Type": "application/json" },
-    });
-  }) as typeof fetch;
-
-  const client = new Client({
-    apiKey: "mbx_test",
-    baseURL: "https://api.example.invalid",
-    project: "test-project",
+  const restore = installFakeFetch({
+    status: 202,
+    body: automationRun("run_1", "running"),
+    capture: (input, init) => {
+      requestedURL = typeof input === "string" ? input : input.toString();
+      requestBody = String(init?.body ?? "");
+    },
   });
-  const run = await client.startRun(
-    { name: "demo", steps: [] },
-    {
-      queue: "research",
+  try {
+    const client = new Client({
+      apiKey: "mbx_test",
+      baseURL: "https://api.example.invalid",
+      project: "test-project",
+    });
+    const run = await client.startAutomationRun("research", {
       external_id: "external-1",
-      metadata: { org_id: "org_1" },
       inputs: { topic: "sdk" },
-    },
-  );
-
-  assert.equal(
-    requestedURL,
-    "https://api.example.invalid/v1/projects/test-project/runs",
-  );
-  assert.equal(run.id, "run_1");
-  const body = JSON.parse(requestBody);
-  assert.equal(body.mode, "inline");
-  assert.equal(body.queue, "research");
-  assert.equal(body.external_id, "external-1");
-});
-
-test("smoke: startWorkflowRun uses the workflow-bound route", async () => {
-  let requestedURL = "";
-  let requestBody = "";
-  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
-    requestedURL = typeof input === "string" ? input : input.toString();
-    requestBody = String(init?.body ?? "");
-    return new Response(JSON.stringify(runBody("run_1", "active")), {
-      status: 202,
-      headers: { "Content-Type": "application/json" },
     });
-  }) as typeof fetch;
-
-  const client = new Client({
-    apiKey: "mbx_test",
-    baseURL: "https://api.example.invalid",
-    project: "test-project",
-  });
-  const run = await client.startWorkflowRun("wf_1", {
-    external_id: "external-1",
-    inputs: { topic: "sdk" },
-  });
-
+    assert.equal(run.id, "run_1");
+  } finally {
+    restore();
+  }
   assert.equal(
     requestedURL,
-    "https://api.example.invalid/v1/projects/test-project/workflows/wf_1/runs",
+    "https://api.example.invalid/v1/projects/test-project/automations/research/runs",
   );
-  assert.equal(run.id, "run_1");
-  const body = JSON.parse(requestBody);
-  assert.equal(body.external_id, "external-1");
-  assert.equal(body.mode, undefined);
-  assert.equal(body.definition_id, undefined);
+  assert.match(requestBody, /"external_id":"external-1"/);
 });
 
-test("smoke: run control helpers use project-scoped paths", async () => {
+test("client: run control helpers use automation run endpoints", async () => {
   const seen: string[] = [];
-  globalThis.fetch = (async (input: RequestInfo | URL) => {
-    const url = typeof input === "string" ? input : input.toString();
-    seen.push(url);
-    const path = new URL(url).pathname;
-    if (path.endsWith("/signals")) {
-      return new Response(
-        JSON.stringify({ source_event_id: "evt_1" }),
-        { status: 202, headers: { "Content-Type": "application/json" } },
-      );
-    }
-    if (path.endsWith("/cancellations") || path.endsWith("/resumptions")) {
-      return new Response(null, { status: 204 });
-    }
-    if (path.endsWith("/runs/run_1")) {
-      return new Response(JSON.stringify(runDetailBody("run_1", "completed")), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
-    return new Response(
-      JSON.stringify({ items: [runBody("run_1", "completed")], has_more: false }),
-      { status: 200, headers: { "Content-Type": "application/json" } },
-    );
-  }) as typeof fetch;
-
-  const client = new Client({
-    apiKey: "mbx_test",
-    baseURL: "https://api.example.invalid",
-    project: "test-project",
+  const restore = installFakeFetch({
+    status: 200,
+    body: automationRun("run_1", "cancelled"),
+    capture: (input) => {
+      seen.push(typeof input === "string" ? input : input.toString());
+    },
   });
-
-  assert.equal((await client.getRun("run_1")).status, "completed");
-  assert.equal(
-    (await client.listRuns({ status: "completed", external_id: "external-1" }))
-      .items.length,
-    1,
+  try {
+    const client = new Client({
+      apiKey: "mbx_test",
+      baseURL: "https://api.example.invalid",
+      project: "test-project",
+    });
+    await client.getRun("run_1");
+    await client.cancelRun("run_1", "user requested");
+    await client.signalRun("run_1", "approval", { ok: true });
+  } finally {
+    restore();
+  }
+  assert.ok(seen.some((url) => url.endsWith("/v1/projects/test-project/runs/run_1")));
+  assert.ok(
+    seen.some((url) =>
+      url.endsWith("/v1/projects/test-project/runs/run_1/cancellations"),
+    ),
   );
-  await client.cancelRun("run_1");
-  await client.resumeRun("run_1");
-  assert.equal(
-    (await client.sendRunSignal("run_1", { name: "approval" })).source_event_id,
-    "evt_1",
+  assert.ok(
+    seen.some((url) =>
+      url.endsWith("/v1/projects/test-project/runs/run_1/signals"),
+    ),
   );
-
-  assert.ok(seen.some((url) => url.includes("/runs?status=completed")));
-  assert.ok(seen.some((url) => url.endsWith("/runs/run_1/cancellations")));
-  assert.ok(seen.some((url) => url.endsWith("/runs/run_1/resumptions")));
-  assert.ok(seen.some((url) => url.endsWith("/runs/run_1/signals")));
 });
 
 test("smoke: waitRun fetches after stream closes before terminal", async () => {
@@ -405,7 +165,7 @@ test("smoke: waitRun fetches after stream closes before terminal", async () => {
   globalThis.fetch = (async (input: RequestInfo | URL) => {
     const url = typeof input === "string" ? input : input.toString();
     const path = new URL(url).pathname;
-    if (path.endsWith("/events")) {
+    if (path.endsWith("/events.stream")) {
       return new Response(
         `event: run_updated
 id: 7
@@ -417,7 +177,7 @@ data: {"type":"run_updated","run_id":"run_1","seq":7,"timestamp":"2026-04-27T00:
     }
     getCalls += 1;
     return new Response(
-      JSON.stringify(runDetailBody("run_1", getCalls === 1 ? "active" : "completed")),
+      JSON.stringify(automationRun("run_1", getCalls === 1 ? "running" : "completed")),
       { status: 200, headers: { "Content-Type": "application/json" } },
     );
   }) as typeof fetch;
@@ -528,138 +288,23 @@ test("smoke: synthetic webhook delivery posts signed Mobius envelope", async () 
   );
 });
 
-test("smoke: workflow helpers create, update, and ensure definitions", async () => {
-  const requests: Array<{ method: string; path: string; body: unknown }> = [];
-  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
-    const url = typeof input === "string" ? input : input.toString();
-    const path = new URL(url).pathname;
-    const body = init?.body ? JSON.parse(String(init.body)) : undefined;
-    requests.push({ method: init?.method ?? "GET", path, body });
-
-    if (path === "/v1/projects/test-project/workflows" && init?.method === "POST") {
-      return jsonResponse(
-        workflowDefinitionBody("wf_1", body.name, body.handle, body.spec),
-      );
-    }
-    if (
-      path === "/v1/projects/test-project/workflows/wf_1" &&
-      init?.method === "PATCH"
-    ) {
-      return jsonResponse(
-        workflowDefinitionBody(
-          "wf_1",
-          body.name ?? "research",
-          "research",
-          body.spec,
-        ),
-      );
-    }
-    if (path === "/v1/projects/test-project/workflows/wf_1") {
-      return jsonResponse(
-        workflowDefinitionBody("wf_1", "research", "research", {
-          name: "old",
-          steps: [],
-        }),
-      );
-    }
-    return jsonResponse({
-      items: [workflowDefinitionSummaryBody("wf_1", "research", "research")],
-      has_more: false,
-    });
-  }) as typeof fetch;
-
-  const client = new Client({
-    apiKey: "mbx_test",
-    baseURL: "https://api.example.invalid",
-    project: "test-project",
-  });
-
-  assert.equal(
-    (
-      await client.createWorkflow(
-        { name: "research", steps: [] },
-        { handle: "research" },
-      )
-    ).id,
-    "wf_1",
-  );
-  assert.equal(
-    (
-      await client.updateWorkflow("wf_1", {
-        expected_version: 1,
-        name: "research v2",
-        spec: { name: "research v2", steps: [] },
-      })
-    ).name,
-    "research v2",
-  );
-  const result = await client.ensureWorkflow(
-    { name: "research", steps: [] },
-    { handle: "research" },
-  );
-
-  assert.equal(result.created, false);
-  assert.equal(result.updated, true);
-  assert.ok(requests.some((req) => req.method === "PATCH"));
+test("client: terminal run status helper includes cancelled", () => {
+  assert.equal(isTerminalRunStatus("completed"), true);
+  assert.equal(isTerminalRunStatus("failed"), true);
+  assert.equal(isTerminalRunStatus("cancelled"), true);
+  assert.equal(isTerminalRunStatus("running"), false);
 });
 
-function runBody(id: string, status: "active" | "completed" | "failed") {
+function automationRun(id: string, status: string) {
   return {
     id,
-    ephemeral: true,
-    workflow_name: "demo",
+    org_id: "org_1",
+    project_id: "proj_1",
+    automation_id: "aut_1",
+    automation_version_id: "autv_1",
+    automation_version: 1,
     status,
-    path_counts: {
-      total: 1,
-      active: status === "active" ? 1 : 0,
-      working: status === "active" ? 1 : 0,
-      waiting: 0,
-      completed: status === "completed" ? 1 : 0,
-      failed: status === "failed" ? 1 : 0,
-    },
-    job_counts: { ready: 0, scheduled: 0, claimed: 0 },
-    wait_summary: {
-      waiting_paths: 0,
-      kind_counts: {},
-      next_wake_at: null,
-      waiting_on_signal_names: [],
-      interaction_ids: [],
-    },
-    errors: [],
-    attempt: 1,
-    created_at: "2026-04-27T00:00:00Z",
-    updated_at: "2026-04-27T00:00:00Z",
+    created_at: "2026-05-27T00:00:00Z",
+    updated_at: "2026-05-27T00:00:00Z",
   };
-}
-
-function runDetailBody(id: string, status: "active" | "completed" | "failed") {
-  return { ...runBody(id, status), paths: [] };
-}
-
-function jsonResponse(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { "Content-Type": "application/json" },
-  });
-}
-
-function workflowDefinitionSummaryBody(id: string, name: string, handle: string) {
-  return {
-    id,
-    name,
-    handle,
-    latest_version: 1,
-    created_by: "user_1",
-    created_at: "2026-04-27T00:00:00Z",
-    updated_at: "2026-04-27T00:00:00Z",
-  };
-}
-
-function workflowDefinitionBody(
-  id: string,
-  name: string,
-  handle: string,
-  spec: unknown,
-) {
-  return { ...workflowDefinitionSummaryBody(id, name, handle), spec };
 }

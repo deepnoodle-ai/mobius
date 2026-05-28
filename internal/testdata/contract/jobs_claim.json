@@ -1,0 +1,1 @@
+{"type":"jobs.claim","message_id":"msg_2","available_slots":4,"queues":["default"],"action_names":["send_email"],"models":[{"provider":"ollama","model":"llama3"}]}

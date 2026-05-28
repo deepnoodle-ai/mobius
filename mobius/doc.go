@@ -1,7 +1,7 @@
 // Package mobius is the Go client SDK for the Mobius work-coordination
 // platform. It exposes a thin wrapper over the generated OpenAPI client
-// (subpackage api) plus a long-running Worker for claiming and executing
-// workflow jobs.
+// (subpackage api) plus a long-running Worker for executing action and LLM
+// generation jobs.
 //
 // # Rate limiting
 //

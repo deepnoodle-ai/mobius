@@ -55,16 +55,24 @@ func loadManifest(t *testing.T) manifest {
 // without a Go binding is caught immediately.
 func newForSchema(schema string) (any, bool) {
 	switch schema {
-	case "JobClaimRequest":
-		return &api.JobClaimRequest{}, true
-	case "JobClaim":
-		return &api.JobClaim{}, true
-	case "JobFenceRequest":
-		return &api.JobFenceRequest{}, true
-	case "JobHeartbeat":
-		return &api.JobHeartbeat{}, true
-	case "JobReportRequest":
-		return &api.JobReportRequest{}, true
+	case "WorkerSocketRegisterFrame":
+		return &api.WorkerSocketRegisterFrame{}, true
+	case "WorkerSocketRegisteredFrame":
+		return &api.WorkerSocketRegisteredFrame{}, true
+	case "WorkerSocketJobsClaimFrame":
+		return &api.WorkerSocketJobsClaimFrame{}, true
+	case "WorkerSocketJobsClaimedFrame":
+		return &api.WorkerSocketJobsClaimedFrame{}, true
+	case "WorkerSocketJobHeartbeatFrame":
+		return &api.WorkerSocketJobHeartbeatFrame{}, true
+	case "WorkerSocketJobHeartbeatAckFrame":
+		return &api.WorkerSocketJobHeartbeatAckFrame{}, true
+	case "WorkerSocketJobReportFrame":
+		return &api.WorkerSocketJobReportFrame{}, true
+	case "WorkerSocketGenerationDeltaFrame":
+		return &api.WorkerSocketGenerationDeltaFrame{}, true
+	case "WorkerSocketJobCancelFrame":
+		return &api.WorkerSocketJobCancelFrame{}, true
 	}
 	return nil, false
 }

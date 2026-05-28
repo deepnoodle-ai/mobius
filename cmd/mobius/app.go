@@ -17,7 +17,7 @@ import (
 // declared here so every subcommand inherits them.
 func newApp() *cli.App {
 	app := cli.New("mobius").
-		Description("CLI for the Mobius workflow orchestration platform").
+		Description("CLI for the Mobius agent automation platform").
 		Version(cliVersion()).
 		AddCompletionCommand()
 
@@ -60,7 +60,6 @@ func newApp() *cli.App {
 	registerAuthCommands(app)
 	registerGeneratedCommands(app)
 	registerConfigExtensions(app)
-	registerWorkflowsExtras(app)
 
 	return app
 }
