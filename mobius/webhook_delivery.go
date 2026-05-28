@@ -88,6 +88,9 @@ func DeliverSyntheticWebhook(ctx context.Context, delivery SyntheticWebhookDeliv
 		deliveryID = uuid.NewString()
 	}
 	timestamp := delivery.Timestamp
+	if timestamp < 0 {
+		return errors.New("mobius: synthetic webhook timestamp must be non-negative")
+	}
 	if timestamp == 0 {
 		timestamp = time.Now().Unix()
 	}

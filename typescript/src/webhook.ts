@@ -60,8 +60,8 @@ export async function deliverSyntheticWebhook(
     throw new Error("mobius: synthetic webhook secret version is required");
   }
   const payload = buildSyntheticWebhookPayload(delivery.eventType, delivery.data);
-  const deliveryId = delivery.deliveryId ?? randomUUID();
-  const timestamp = delivery.timestamp ?? Math.floor(Date.now() / 1000);
+  const deliveryId = resolveDeliveryId(delivery.deliveryId);
+  const timestamp = resolveTimestamp(delivery.timestamp);
   const headers = new Headers(delivery.headers);
   headers.set("Content-Type", "application/json");
   headers.set("User-Agent", SYNTHETIC_WEBHOOK_USER_AGENT);
@@ -93,4 +93,24 @@ export async function deliverSyntheticWebhook(
       `mobius: synthetic webhook returned ${resp.status}: ${text}`,
     );
   }
+}
+
+function resolveDeliveryId(value: string | undefined): string {
+  if (value === undefined) {
+    return randomUUID();
+  }
+  if (typeof value !== "string" || value.length === 0) {
+    throw new Error("mobius: synthetic webhook deliveryId must be a non-empty string");
+  }
+  return value;
+}
+
+function resolveTimestamp(value: number | undefined): number {
+  if (value === undefined) {
+    return Math.floor(Date.now() / 1000);
+  }
+  if (!Number.isInteger(value) || value <= 0) {
+    throw new Error("mobius: synthetic webhook timestamp must be a positive integer");
+  }
+  return value;
 }

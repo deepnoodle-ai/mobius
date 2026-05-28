@@ -111,15 +111,26 @@ def verify_signed_delivery(
 
 
 def parse_webhook_delivery(v: VerifiedDelivery) -> dict[str, Any]:
-    return json.loads(v.body.decode())
+    payload = _parse_json_object(v, "webhook delivery")
+    event_type = payload.get("type")
+    if not isinstance(event_type, str) or not event_type:
+        raise ValueError("mobius: webhook delivery missing 'type'")
+    return payload
 
 
 def parse_action_invocation(v: VerifiedDelivery) -> dict[str, Any]:
-    return json.loads(v.body.decode())
+    return _parse_json_object(v, "action invocation")
 
 
 def parse_interaction_callback(v: VerifiedDelivery) -> dict[str, Any]:
-    return json.loads(v.body.decode())
+    return _parse_json_object(v, "interaction callback")
+
+
+def _parse_json_object(v: VerifiedDelivery, kind: str) -> dict[str, Any]:
+    payload = json.loads(v.body.decode())
+    if not isinstance(payload, dict):
+        raise ValueError(f"mobius: {kind} body must be a JSON object")
+    return payload
 
 
 def _verify_signature(key: bytes, body: bytes, meta: DeliveryMeta) -> None:

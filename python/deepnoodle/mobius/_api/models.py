@@ -3190,7 +3190,7 @@ class RotateSecretResult(BaseModel):
     )
     secret_ref: str = Field(
         ...,
-        description='Project secret reference that now stores the action signing key.',
+        description='Project secret reference that now stores the rotated signing key.',
     )
     secret_version: int = Field(..., description='New project-secret version number.')
     signing_secret: str = Field(

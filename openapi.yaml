@@ -13564,7 +13564,7 @@ components:
       properties:
         secret_ref:
           type: string
-          description: Project secret reference that now stores the action signing key.
+          description: Project secret reference that now stores the rotated signing key.
         secret_version:
           type: integer
           format: int64

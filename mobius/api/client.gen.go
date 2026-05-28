@@ -7985,7 +7985,7 @@ type RoleListResponse struct {
 
 // RotateSecretResult New signing key material returned after rotating a signing secret.
 type RotateSecretResult struct {
-	// SecretRef Project secret reference that now stores the action signing key.
+	// SecretRef Project secret reference that now stores the rotated signing key.
 	SecretRef string `json:"secret_ref"`
 
 	// SecretVersion New project-secret version number.

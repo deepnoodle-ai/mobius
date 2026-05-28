@@ -40,7 +40,7 @@ export function readDeliveryMeta(request: Request): DeliveryMeta {
     throw new InvalidSignatureError("unsupported signature version");
   }
   const timestamp = Number(requiredHeader(request, MOBIUS_TIMESTAMP_HEADER));
-  if (!Number.isFinite(timestamp) || timestamp <= 0) {
+  if (!Number.isInteger(timestamp) || timestamp <= 0) {
     throw new InvalidSignatureError("invalid timestamp");
   }
   const secretVersion = Number(

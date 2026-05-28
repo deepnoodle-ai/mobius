@@ -62,8 +62,18 @@ def deliver_synthetic_webhook(delivery: SyntheticWebhookDelivery) -> None:
         raise ValueError("mobius: synthetic webhook secret version is required")
 
     payload = build_synthetic_webhook_payload(delivery.event_type, delivery.data)
-    delivery_id = delivery.delivery_id or str(uuid.uuid4())
-    timestamp = delivery.timestamp or int(time.time())
+    if delivery.delivery_id is None:
+        delivery_id = str(uuid.uuid4())
+    else:
+        if not isinstance(delivery.delivery_id, str) or not delivery.delivery_id:
+            raise ValueError("mobius: synthetic webhook delivery_id must be a non-empty string")
+        delivery_id = delivery.delivery_id
+    if delivery.timestamp is None:
+        timestamp = int(time.time())
+    else:
+        if not isinstance(delivery.timestamp, int) or isinstance(delivery.timestamp, bool) or delivery.timestamp < 1:
+            raise ValueError("mobius: synthetic webhook timestamp must be a positive integer")
+        timestamp = delivery.timestamp
     headers = dict(delivery.headers or {})
     headers["Content-Type"] = "application/json"
     headers["User-Agent"] = _SYNTHETIC_WEBHOOK_USER_AGENT
