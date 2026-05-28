@@ -382,6 +382,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/projects/{project}/environments/{environment_id}/worker/logs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get worker logs for an environment
+         * @description Tails the managed Mobius worker log files from inside the environment. The worker filesystem is sandbox-local and treated as diagnostic scratch; clients should not use this endpoint as durable artifact storage.
+         */
+        get: operations["getEnvironmentWorkerLogs"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project}/environments/{environment_id}/git/credentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mint short-lived Git credentials for an environment
+         * @description Mints a repository-scoped GitHub App installation token for clone or push operations executed inside the environment. Mobius returns the token only in this response; the caller must inject it into the environment through a transient askpass/stdin flow and remove it before the command exits.
+         */
+        post: operations["createEnvironmentGitCredential"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/projects/{project}/secrets": {
         parameters: {
             query?: never;
@@ -1199,6 +1239,30 @@ export interface paths {
          * @description Replaces the agent's toolkit assignment set as a whole. The effective tool surface is the union of assigned toolkit grants intersected with service-account permissions and any per-invocation narrowing.
          */
         put: operations["replaceToolkits"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project}/agents/{id}/table-grants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List agent table grants
+         * @description Returns durable table memory grants assigned to one agent.
+         */
+        get: operations["listAgentTableGrants"];
+        /**
+         * Replace agent table grants
+         * @description Replaces the agent's durable table memory grant set as a whole.
+         */
+        put: operations["replaceAgentTableGrants"];
         post?: never;
         delete?: never;
         options?: never;
@@ -2607,6 +2671,21 @@ export interface components {
              * @description Endpoint URL (populated for endpoint_kind: http actions only).
              */
             endpoint_url?: string;
+            /** @description Execution locations and worker requirements available to automation authors. */
+            execution?: components["schemas"]["ActionExecutionMetadata"];
+        };
+        ActionExecutionMetadata: {
+            /** @description Execution locations supported by this action. */
+            supported_locations: ("managed" | "worker" | "environment")[];
+            /**
+             * @description Location selected by default in authoring UIs.
+             * @enum {string}
+             */
+            default_location: "managed" | "worker" | "environment";
+            /** @description Worker capability labels required when running this action on a customer worker. */
+            required_worker_capabilities?: string[];
+            /** @description Queue to use when dispatching this action to workers. */
+            queue?: string;
         };
         /** @description Unpaginated project action catalog. This endpoint returns the complete set of available project and platform actions so clients can build pickers without paging across a small catalog. */
         ActionCatalogListResponse: {
@@ -2702,10 +2781,15 @@ export interface components {
         /** @enum {string} */
         EnvironmentPurpose: "implementation" | "review" | "verification" | "preview" | "debug" | "worker" | "custom";
         /**
+         * @description High-level ownership policy for how Mobius plans to use the environment. `run` is one-shot and auto-cleaned with a run; `agent` and `automation` are persistent environment policies; `manual` is operator controlled.
+         * @enum {string}
+         */
+        EnvironmentMode: "manual" | "run" | "agent" | "automation";
+        /**
          * @description Execution or lifecycle object this environment is bound to. Ownership remains in `owned_by`.
          * @enum {string}
          */
-        EnvironmentBoundToType: "none" | "run" | "worker_session" | "service" | "manual";
+        EnvironmentBoundToType: "none" | "run" | "worker_session" | "service" | "agent" | "automation" | "manual";
         /** @enum {string} */
         EnvironmentRetentionPolicy: "manual" | "destroy_on_success" | "retain_on_failure" | "retain_always";
         /** @enum {string} */
@@ -2720,6 +2804,7 @@ export interface components {
             provider_resource_id?: string;
             provider_resource_name?: string;
             status: components["schemas"]["EnvironmentStatus"];
+            environment_mode: components["schemas"]["EnvironmentMode"];
             lifetime: components["schemas"]["EnvironmentLifetime"];
             purpose?: components["schemas"]["EnvironmentPurpose"];
             /** @description Canonical user owner ID. For agent-started work, this is the agent's backing user ID. */
@@ -2787,6 +2872,7 @@ export interface components {
             name?: string;
             scope?: components["schemas"]["ResourceScope"];
             provider?: components["schemas"]["EnvironmentProvider"];
+            environment_mode?: components["schemas"]["EnvironmentMode"];
             purpose?: components["schemas"]["EnvironmentPurpose"];
             /** @description Canonical user owner ID. Defaults to the authenticated user. */
             owned_by?: string;
@@ -2823,6 +2909,7 @@ export interface components {
             name?: string;
             scope?: components["schemas"]["ResourceScope"];
             provider?: components["schemas"]["EnvironmentProvider"];
+            environment_mode?: components["schemas"]["EnvironmentMode"];
             purpose?: components["schemas"]["EnvironmentPurpose"];
             holder_type?: components["schemas"]["EnvironmentBoundToType"];
             holder_id?: string;
@@ -2859,6 +2946,15 @@ export interface components {
         };
         StartEnvironmentWorkerRequest: {
             api_url?: string;
+            /** @description Install/refresh the managed Mobius runtime bundle before starting the worker. Defaults to true unless `command` is supplied. */
+            managed_runtime?: boolean;
+            /** @description Runtime bundle version to install. Defaults to the server-configured runtime version. */
+            runtime_version?: string;
+            /** @description Friendly worker session name. Defaults to the environment name. */
+            worker_name?: string;
+            queues?: string[];
+            action_names?: string[];
+            concurrency?: number;
             command?: string[];
             dir?: string;
         };
@@ -2867,9 +2963,42 @@ export interface components {
             api_key_id: string;
             /** Format: date-time */
             key_expires_at: string;
+            managed_runtime: boolean;
+            runtime_version: string;
+            /** Format: date-time */
+            runtime_installed_at?: string;
+            worker_log_path: string;
+            worker_session_id?: string;
             stdout: string;
             stderr: string;
             exit_code: number;
+        };
+        EnvironmentWorkerLogsResponse: {
+            environment_id: string;
+            log_name: string;
+            log_path: string;
+            tail: number;
+            content: string;
+            stderr?: string;
+            exit_code: number;
+        };
+        CreateEnvironmentGitCredentialRequest: {
+            /** @description GitHub `owner/name` repository full name. */
+            repo_full_name: string;
+            /**
+             * @default clone
+             * @enum {string}
+             */
+            operation: "clone" | "fetch" | "push";
+        };
+        EnvironmentGitCredentialResult: {
+            host: string;
+            username: string;
+            /** @description One-time GitHub installation token. Do not log or persist. */
+            token: string;
+            /** Format: date-time */
+            expires_at: string;
+            repo_full_name: string;
         };
         /** @description JSON key/value payload encrypted as a SecretVersion. */
         SecretValues: {
@@ -2969,8 +3098,14 @@ export interface components {
              * @description Most recent observed activity for this session, derived from `last_seen_at`, currently claimed job heartbeats, and the latest terminal job update.
              */
             last_activity_at?: string;
-            /** @description Reserved for future capability-based job routing. Not currently used for filtering. */
+            /** @description Coarse capability labels advertised by the worker for routing and builder eligibility. */
             capabilities?: string[];
+            /** @description Queue names this worker can claim. Empty or absent means the default project queue set. */
+            queues?: string[];
+            /** @description Action names this worker can execute. Empty or absent means the worker has not advertised a narrowed action set. */
+            action_names?: string[];
+            /** @description Provider/model pairs this worker can generate with. */
+            models?: components["schemas"]["WorkerSocketModelCapability"][];
             /** @description Service account this session authenticated as on register/heartbeat. Set when a machine identity is polling; mutually exclusive with `user_id`. Stable across credential rotation — use this to group sessions by identity in the admin UI. */
             service_account_id?: string;
             /** @description User this session authenticated as on register/heartbeat. Set when a human is polling via the CLI; mutually exclusive with `service_account_id`. */
@@ -2981,6 +3116,8 @@ export interface components {
             api_key_id?: string;
             /** @description Agent this session represents, when the polling process declared itself as a registered agent (via `agent_id` on the claim request or via inference from the service account). Absent for ad-hoc worker processes that are not tied to a declared agent. */
             agent_id?: string;
+            /** @description Managed environment this worker is running inside, when Mobius started it in a Sprite or another managed execution environment. */
+            environment_id?: string;
             /**
              * @description High-level lifecycle indicator for the row.
              *     * `active` — recent heartbeat, healthy.
@@ -3049,16 +3186,16 @@ export interface components {
             /** @description Count of `instance_status == "stale"` rows. */
             stale: number;
         };
-        /** @description Typed JSON frame exchanged over `/workers/socket`. WebSocket traffic is not ordinary request/response HTTP, but the frame schemas are included in the public OpenAPI contract so SDKs can share a wire format. */
-        WorkerSocketFrame: components["schemas"]["WorkerSocketRegisterFrame"] | components["schemas"]["WorkerSocketRegisteredFrame"] | components["schemas"]["WorkerSocketReadyFrame"] | components["schemas"]["WorkerSocketJobsClaimFrame"] | components["schemas"]["WorkerSocketJobsClaimedFrame"] | components["schemas"]["WorkerSocketWorkAvailableFrame"] | components["schemas"]["WorkerSocketJobHeartbeatFrame"] | components["schemas"]["WorkerSocketJobHeartbeatAckFrame"] | components["schemas"]["WorkerSocketJobReportFrame"] | components["schemas"]["WorkerSocketJobReportAckFrame"] | components["schemas"]["WorkerSocketGenerationDeltaFrame"] | components["schemas"]["WorkerSocketGenerationDeltaAckFrame"] | components["schemas"]["WorkerSocketJobCancelFrame"] | components["schemas"]["WorkerSocketWorkerDrainingFrame"] | components["schemas"]["WorkerSocketWorkerDrainingAckFrame"] | components["schemas"]["WorkerSocketWorkerDrainFrame"] | components["schemas"]["WorkerSocketKeepaliveFrame"] | components["schemas"]["WorkerSocketErrorFrame"];
-        /** @description Client-supplied correlation and short-window deduplication key. When present on a client frame, the server echoes it on the response frame. */
-        WorkerSocketMessageID: string;
         WorkerSocketModelCapability: {
             /** @description LLM provider identifier, such as `ollama`. */
             provider: string;
             /** @description Provider-local model name. */
             model: string;
         };
+        /** @description Typed JSON frame exchanged over `/workers/socket`. WebSocket traffic is not ordinary request/response HTTP, but the frame schemas are included in the public OpenAPI contract so SDKs can share a wire format. */
+        WorkerSocketFrame: components["schemas"]["WorkerSocketRegisterFrame"] | components["schemas"]["WorkerSocketRegisteredFrame"] | components["schemas"]["WorkerSocketReadyFrame"] | components["schemas"]["WorkerSocketJobsClaimFrame"] | components["schemas"]["WorkerSocketJobsClaimedFrame"] | components["schemas"]["WorkerSocketWorkAvailableFrame"] | components["schemas"]["WorkerSocketJobHeartbeatFrame"] | components["schemas"]["WorkerSocketJobHeartbeatAckFrame"] | components["schemas"]["WorkerSocketJobReportFrame"] | components["schemas"]["WorkerSocketJobReportAckFrame"] | components["schemas"]["WorkerSocketGenerationDeltaFrame"] | components["schemas"]["WorkerSocketGenerationDeltaAckFrame"] | components["schemas"]["WorkerSocketJobCancelFrame"] | components["schemas"]["WorkerSocketWorkerDrainingFrame"] | components["schemas"]["WorkerSocketWorkerDrainingAckFrame"] | components["schemas"]["WorkerSocketWorkerDrainFrame"] | components["schemas"]["WorkerSocketKeepaliveFrame"] | components["schemas"]["WorkerSocketErrorFrame"];
+        /** @description Client-supplied correlation and short-window deduplication key. When present on a client frame, the server echoes it on the response frame. */
+        WorkerSocketMessageID: string;
         WorkerSocketLeaseConfig: {
             /** @description Per-job lease duration stamped on claims. */
             lease_duration_seconds: number;
@@ -3089,6 +3226,8 @@ export interface components {
             available_slots?: number;
             name?: string;
             version?: string;
+            /** @description Environment this worker is running inside, when the worker was started by Mobius in a Sprite or other managed environment. */
+            environment_id?: string;
             /** @description Coarse capability labels reserved for future routing. */
             capabilities?: string[];
             /** @description Queue names this worker can claim. Empty means all project queues. */
@@ -3136,6 +3275,8 @@ export interface components {
             queue: string;
             /** @description Present for `action_execution` jobs. */
             action_name?: string;
+            /** @description Present when the job is pinned to a managed environment worker. */
+            environment_id?: string;
             /** @description Present for `llm_generation` jobs. */
             provider?: string;
             /** @description Present for `llm_generation` jobs. */
@@ -4158,6 +4299,49 @@ export interface components {
             /** @description Toolkit assignments for this agent, in position order. */
             items: components["schemas"]["ToolkitAssignment"][];
         };
+        /**
+         * @description Table operations the agent may perform through memory bindings.
+         * @enum {string}
+         */
+        AgentTableAccessMode: "read" | "append" | "write";
+        AgentTableGrant: {
+            /** @description Grant ID. */
+            id: string;
+            /** @description Agent receiving access. */
+            agent_id: string;
+            /** @description Stable table ID granted to the agent. */
+            table_id: string;
+            access_mode: components["schemas"]["AgentTableAccessMode"];
+            /** @description Author instructions for how the agent should use this table. */
+            instructions?: string;
+            /** @description User ID of the principal who last replaced the grant set. */
+            created_by?: string;
+            /**
+             * Format: date-time
+             * @description Record creation timestamp.
+             */
+            created_at: string;
+            /**
+             * Format: date-time
+             * @description Last update timestamp.
+             */
+            updated_at: string;
+        };
+        AgentTableGrantInput: {
+            /** @description Stable table ID to grant. */
+            table_id: string;
+            access_mode: components["schemas"]["AgentTableAccessMode"];
+            /** @description Author instructions for how the agent should use this table. */
+            instructions?: string;
+        };
+        ReplaceAgentTableGrantsRequest: {
+            /** @description Full replacement set of table grants for the agent. */
+            grants: components["schemas"]["AgentTableGrantInput"][];
+        };
+        AgentTableGrantListResponse: {
+            /** @description Durable table memory grants for this agent. */
+            items: components["schemas"]["AgentTableGrant"][];
+        };
         Skill: {
             /** @description Skill ID (TypeID `skill_...`). */
             id: string;
@@ -4383,7 +4567,7 @@ export interface components {
             /** @description When supplied, replaces the user tag set on the agent. System tags (`mobius:*`) are preserved. */
             tags?: components["schemas"]["TagMap"];
         };
-        /** @description An automation. The `triggers` array is part of the automation resource itself — clients add, remove, and edit triggers by sending the desired full set via `PATCH /automations/{handle}`. There is no separate trigger CRUD surface. */
+        /** @description An automation. The `triggers` array reports the currently materialized runnable triggers. Desired triggers are authored in `AutomationSpec.triggers` and reconciled when a version is published. */
         Automation: {
             /** @description Stable automation identifier. */
             id: string;
@@ -4475,10 +4659,8 @@ export interface components {
             tags?: {
                 [key: string]: string;
             };
-            /** @description Triggers to create with the automation. */
-            triggers?: components["schemas"]["AutomationTriggerInput"][];
         };
-        /** @description Partial update of the automation. When `triggers` is present it replaces the full trigger set: entries with `id` are updated in place, entries without are created, and triggers absent from the list are deleted. */
+        /** @description Partial update of automation metadata. Desired triggers live in `AutomationSpec.triggers` and are materialized when a version is published. */
         UpdateAutomationRequest: {
             /** @description Human-readable display name. */
             name?: string;
@@ -4499,8 +4681,6 @@ export interface components {
             tags?: {
                 [key: string]: string;
             };
-            /** @description Full replace-set of triggers. Omit the field to leave triggers untouched. Supply an empty array to delete all triggers. */
-            triggers?: components["schemas"]["AutomationTriggerInput"][];
         };
         AutomationVersion: {
             /** @description Stable identifier for this AutomationVersion record. */
@@ -4518,10 +4698,7 @@ export interface components {
              * @enum {string}
              */
             status: "draft" | "published" | "superseded";
-            /** @description Authoring representation of the automation spec. Free-form, but the engine recognises a typed `defaults` sub-object (`AutomationSpecDefaults`) for run-level guards such as `wall_clock_timeout`. */
-            spec?: {
-                [key: string]: unknown;
-            };
+            spec?: components["schemas"]["AutomationSpec"];
             /** @description Internal compiled execution plan derived from `spec`. Not part of the public contract. */
             compiled_plan?: {
                 [key: string]: unknown;
@@ -4538,15 +4715,178 @@ export interface components {
              */
             created_at: string;
         };
+        /** @description Authoring representation of an automation. */
+        AutomationSpec: {
+            /**
+             * @description Automation spec schema version. Current value is `1`.
+             * @default 1
+             * @enum {string}
+             */
+            schema_version: "1";
+            /** @description Optional spec-local display name. */
+            name?: string;
+            /** @description Optional spec-local Markdown description. */
+            description?: string;
+            inputs?: {
+                [key: string]: components["schemas"]["AutomationSpecInput"];
+            };
+            /**
+             * @description Behavior when a run starts while another run of the same automation is active.
+             * @enum {string}
+             */
+            concurrency?: "allow" | "queue" | "skip" | "replace";
+            /** @description Desired triggers materialized when a version is published. */
+            triggers?: components["schemas"]["AutomationSpecTrigger"][];
+            steps: components["schemas"]["AutomationStep"][];
+            cleanup?: {
+                [key: string]: unknown;
+            }[];
+            defaults?: components["schemas"]["AutomationSpecDefaults"];
+        };
+        AutomationSpecInput: {
+            type?: string;
+            description?: string;
+            required?: boolean;
+            default?: unknown;
+        };
+        AutomationSpecTrigger: {
+            /** @description Stable user-authored trigger key within the spec. */
+            key?: string;
+            /** @description Human-readable trigger name. */
+            name?: string;
+            /** @enum {string} */
+            kind: "webhook" | "schedule" | "event";
+            enabled?: boolean;
+            /** @description Kind-specific trigger configuration. */
+            config?: {
+                [key: string]: unknown;
+            };
+            /** @enum {string} */
+            concurrency_policy?: "allow" | "queue" | "skip" | "replace";
+            max_concurrent_runs?: number;
+        };
+        AutomationStep: {
+            /** @description Stable step key within the spec. */
+            key: string;
+            /** @description Human-readable step name. */
+            name?: string;
+            /** @enum {string} */
+            kind: "agent" | "action" | "sleep" | "wait_for_event" | "interaction";
+            /** @description Kind-specific step configuration. */
+            config: components["schemas"]["AutomationAgentStep"] | components["schemas"]["AutomationActionStep"] | components["schemas"]["AutomationSleepStep"] | components["schemas"]["AutomationWaitForEventStep"] | components["schemas"]["AutomationInteractionStep"];
+            /** @description Step-local input object resolved when the step starts. String leaves may contain `{{ inputs.* }}` or `{{ context.* }}` templates. */
+            input?: {
+                [key: string]: unknown;
+            };
+            retry?: components["schemas"]["AutomationRetryPolicy"];
+            timeout?: components["schemas"]["AutomationTimeoutPolicy"];
+            /** @description Context key used to store this step's output. Defaults to `key`. */
+            save_as?: string;
+        };
+        /** @description Run-level defaults inside the automation spec. Lives at `spec.defaults` in the JSON the engine compiles. */
+        AutomationSpecDefaults: {
+            /** @description Run wall-clock budget as a Go duration string (e.g. `30m`, `2h`, `90s`). When set, the engine stamps `wall_clock_deadline_at = run.started_at + wall_clock_timeout` and the reaper fails the run after that instant even if a step executor is still grinding. Omit or set to `0` to disable the guard. */
+            wall_clock_timeout?: string;
+            environment?: components["schemas"]["AutomationEnvironmentPolicy"];
+        };
+        /** @description Automatic managed-environment policy for automation execution. Omit to use the product default: each agent gets a persistent agent-bound environment, while direct environment actions get a run-bound environment. Set `disabled: true` to opt out. */
+        AutomationEnvironmentPolicy: {
+            /** @description Disable automatic environment allocation. */
+            disabled?: boolean;
+            mode?: components["schemas"]["EnvironmentMode"];
+            /** @description Existing dedicated environment to use for this automation. */
+            environment_id?: string;
+            /** @description Environment template to use when Mobius creates one. */
+            template_id?: string;
+            provider?: components["schemas"]["EnvironmentProvider"];
+            /** @description Mobius worker runtime version to install when starting the worker. */
+            runtime_version?: string;
+            /** @description Whether Mobius should start the managed worker automatically. */
+            auto_start_worker?: boolean;
+            retention_policy?: components["schemas"]["EnvironmentRetentionPolicy"];
+        };
+        /** @description Agent step configuration recognised inside `AutomationSpec.steps[].config`. */
+        AutomationAgentStep: {
+            agent_id: string;
+            instructions: string;
+            tool_names?: string[];
+            output_schema?: {
+                [key: string]: unknown;
+            };
+            max_turns?: number;
+            model_route?: components["schemas"]["AutomationModelRoute"];
+            memory_tables?: components["schemas"]["AutomationAgentMemoryTableRef"][];
+        };
+        AutomationModelRoute: {
+            /** @enum {string} */
+            mode: "managed" | "byo_provider" | "worker";
+            /** @description Managed environment to route worker-backed model calls to. */
+            environment_id?: string;
+            provider?: string;
+            model?: string;
+            queue?: string;
+            required_capabilities?: string[];
+        };
+        AutomationAgentMemoryTableRef: {
+            table_id: string;
+            /** @enum {string} */
+            access_mode: "read" | "append" | "write";
+            instructions?: string;
+        };
+        /** @description Action step configuration recognised inside `AutomationSpec.steps[].config`. */
+        AutomationActionStep: {
+            action_name: string;
+            /** @enum {string} */
+            execution_location?: "managed" | "worker" | "environment";
+            /** @description Managed environment to route this worker-backed action to. When omitted for `execution_location: environment`, Mobius resolves one from `spec.defaults.environment`. */
+            environment_id?: string;
+            parameters?: {
+                [key: string]: unknown;
+            };
+        };
+        /** @description Sleep step configuration recognised inside `AutomationSpec.steps[].config`. */
+        AutomationSleepStep: {
+            /** @description Go duration string such as `30s`, `5m`, or `2h`. */
+            duration?: string;
+            /** Format: date-time */
+            until?: string;
+        };
+        /** @description Wait-for-event step configuration recognised inside `AutomationSpec.steps[].config`. */
+        AutomationWaitForEventStep: {
+            event_type: string;
+            source_id?: string;
+            match?: {
+                [key: string]: unknown;
+            };
+        };
+        /** @description Human interaction step configuration recognised inside `AutomationSpec.steps[].config`. */
+        AutomationInteractionStep: {
+            /** @enum {string} */
+            protocol: "request_information" | "request_approval" | "request_review";
+            targets: string[];
+            prompt?: string;
+            resolution_policy?: string;
+            spec?: {
+                [key: string]: unknown;
+            };
+        };
+        AutomationRetryPolicy: {
+            max_attempts?: number;
+            /** @description Go duration string such as `30s`, `5m`, or `2h`. */
+            delay?: string;
+        };
+        AutomationTimeoutPolicy: {
+            /** @description Go duration string such as `30s`, `5m`, or `2h`. */
+            duration?: string;
+            /** @enum {string} */
+            on_timeout?: "fail";
+        };
         AutomationVersionListResponse: {
             /** @description AutomationVersions returned for this automation, newest version first. */
             items: components["schemas"]["AutomationVersion"][];
         };
         CreateAutomationVersionRequest: {
-            /** @description Authoring representation of the automation spec. Free-form, but the engine recognises a typed `defaults` sub-object (`AutomationSpecDefaults`) for run-level guards such as `wall_clock_timeout`. */
-            spec: {
-                [key: string]: unknown;
-            };
+            spec: components["schemas"]["AutomationSpec"];
             /** @description Optional precompiled execution plan. The engine will recompile from `spec` if omitted. */
             compiled_plan?: {
                 [key: string]: unknown;
@@ -4606,39 +4946,6 @@ export interface components {
              * @description Last update timestamp.
              */
             updated_at: string;
-        };
-        /** @description One trigger as supplied in CreateAutomationRequest.triggers or in UpdateAutomationRequest.triggers. Supply `id` to update an existing trigger in place; omit `id` to create a new one. */
-        AutomationTriggerInput: {
-            /** @description Existing trigger id. Omit for new triggers. */
-            id?: string;
-            /** @description Human-readable trigger name. */
-            name: string;
-            /**
-             * @description Trigger backing kind.
-             * @enum {string}
-             */
-            kind: "webhook" | "schedule" | "event";
-            /** @description Whether the trigger should be allowed to start runs. */
-            enabled?: boolean;
-            /** @description Kind-specific configuration (schedule cron, event matcher, webhook options). */
-            config?: {
-                [key: string]: unknown;
-            };
-            /**
-             * @description Behavior when a fire arrives while prior runs of this automation are still active.
-             * @enum {string}
-             */
-            concurrency_policy?: "allow" | "queue" | "skip" | "replace";
-            /** @description Cap on concurrent runs allowed from this trigger. */
-            max_concurrent_runs?: number;
-            /** @description Public webhook handle to assign. Set only for webhook-kind triggers. */
-            webhook_handle?: string;
-            /** @description HMAC secret used to verify inbound webhook signatures. Set only for webhook-kind triggers. */
-            signing_secret?: string;
-            /** @description Source-event type this trigger subscribes to. Set only for event-kind triggers. */
-            event_type?: string;
-            /** @description Optional source identifier used to scope event matching. */
-            source_id?: string;
         };
         /** @description Synchronous receipt for an inbound webhook delivery. The trigger dispatch and run start happen asynchronously after this response — the `fire_id` is the durable `source_event_id` that clients can poll via `GET /v1/projects/{project}/runs?source_event_id=<fire_id>` to discover the run once the source-event processor reserves it. */
         WebhookDeliveryResponse: {
@@ -4745,6 +5052,8 @@ export interface components {
             source?: components["schemas"]["AutomationRunSource"];
             /** @description Human-readable failure summary; populated on `failed` runs. */
             error_message?: string;
+            /** @description Machine-readable failure classification when available. */
+            error_type?: string;
             /**
              * Format: date-time
              * @description Scheduled wake time for a suspended run.
@@ -4873,10 +5182,12 @@ export interface components {
              * @description Monotonic per-run sequence number used for ordering and resume.
              */
             sequence: number;
-            /** @description Event type from the run-stream taxonomy (e.g. `run.started`, `step.completed`, `tool.called`, `interaction.requested`, `artifact.created`, `cleanup.completed`). */
+            /** @description Event type from the run-stream taxonomy (e.g. `run.started`, `step.completed`, `wait.opened`, `interaction.requested`, `action.completed`, `artifact.created`, `limit.reached`, `usage.recorded`). */
             event_type: string;
             /** @description ID of the step this event belongs to, when applicable. */
             step_id?: string | null;
+            /** @description Automation step key this event belongs to, when applicable. */
+            step_key?: string | null;
             /** @description Event-type-specific payload. See the run-event taxonomy for shapes. */
             payload?: {
                 [key: string]: unknown;
@@ -5911,6 +6222,7 @@ export interface operations {
                 provider?: components["schemas"]["EnvironmentProvider"];
                 status?: components["schemas"]["EnvironmentStatus"];
                 lifetime?: components["schemas"]["EnvironmentLifetime"];
+                environment_mode?: components["schemas"]["EnvironmentMode"];
                 purpose?: components["schemas"]["EnvironmentPurpose"];
                 /** @description Omit for all/default-scoped environments; use `owner` with `owned_by` to list owner-scoped environments. */
                 scope?: components["schemas"]["ResourceScope"];
@@ -6229,6 +6541,73 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EnvironmentStartWorkerResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    getEnvironmentWorkerLogs: {
+        parameters: {
+            query?: {
+                /** @description Named log stream to read. Defaults to stdout. */
+                log_name?: "stdout" | "stderr" | "bootstrap" | "worker" | "all";
+                /** @description Maximum number of lines to return from each selected log. */
+                tail?: number;
+            };
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+                environment_id: components["parameters"]["EnvironmentIDParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvironmentWorkerLogsResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    createEnvironmentGitCredential: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+                environment_id: components["parameters"]["EnvironmentIDParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateEnvironmentGitCredentialRequest"];
+            };
+        };
+        responses: {
+            /** @description Minted */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvironmentGitCredentialResult"];
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -8195,6 +8574,67 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ToolkitAssignmentListResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listAgentTableGrants: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
+                id: components["parameters"]["IDParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentTableGrantListResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    replaceAgentTableGrants: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
+                id: components["parameters"]["IDParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReplaceAgentTableGrantsRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentTableGrantListResponse"];
                 };
             };
             400: components["responses"]["BadRequest"];

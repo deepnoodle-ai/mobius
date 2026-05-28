@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+	"strings"
 
 	"github.com/deepnoodle-ai/wonton/cli"
 
@@ -38,6 +40,12 @@ func registerWorkerCommand(app *cli.App) {
 			cli.Strings("queues", "q").
 				Env("MOBIUS_QUEUES").
 				Help("Queue names to poll; empty = all queues in the project"),
+			cli.Strings("actions", "a").
+				Env("MOBIUS_WORKER_ACTION_NAMES").
+				Help("Action names to advertise; empty = every registered action"),
+			cli.String("environment-id", "").
+				Env("MOBIUS_WORKER_ENVIRONMENT_ID").
+				Help("Managed environment ID this worker is executing inside"),
 			cli.Int("concurrency", "").
 				Default(1).
 				Help("Max in-flight jobs for one worker process (default 1)"),
@@ -54,7 +62,9 @@ func registerWorkerCommand(app *cli.App) {
 
 			name := ctx.String("name")
 			instanceID := ctx.String("instance-id")
-			queues := ctx.Strings("queues")
+			queues := firstNonEmptyStrings(ctx.Strings("queues"), splitEnv("MOBIUS_WORKER_QUEUES"))
+			actions := firstNonEmptyStrings(ctx.Strings("actions"), splitEnv("MOBIUS_ACTION_NAMES"))
+			environmentID := ctx.String("environment-id")
 			concurrency := ctx.Int("concurrency")
 			workers := ctx.Int("workers")
 
@@ -71,7 +81,9 @@ func registerWorkerCommand(app *cli.App) {
 				Name:             name,
 				WorkerInstanceID: instanceID,
 				Version:          ctx.String("worker-version"),
+				EnvironmentID:    environmentID,
 				Queues:           queues,
+				Actions:          actions,
 				Concurrency:      concurrency,
 				Logger:           logger,
 			}
@@ -81,7 +93,9 @@ func registerWorkerCommand(app *cli.App) {
 				"name", name,
 				"api_url", auth.APIURL,
 				"project", auth.Project,
+				"environment_id", environmentID,
 				"queues", queues,
+				"actions", actions,
 				"concurrency", concurrency,
 				"workers", workers,
 			)
@@ -122,9 +136,34 @@ func registerStockActions(w actionRegistrar) {
 		action.NewTimeAction(),
 		action.NewRandomAction(),
 	}
+	stock = append(stock, action.EnvironmentActions()...)
 	for _, a := range stock {
 		w.Register(a)
 	}
+}
+
+func splitEnv(name string) []string {
+	raw := os.Getenv(name)
+	if strings.TrimSpace(raw) == "" {
+		return nil
+	}
+	parts := strings.Split(raw, ",")
+	out := make([]string, 0, len(parts))
+	for _, part := range parts {
+		if value := strings.TrimSpace(part); value != "" {
+			out = append(out, value)
+		}
+	}
+	return out
+}
+
+func firstNonEmptyStrings(values ...[]string) []string {
+	for _, value := range values {
+		if len(value) > 0 {
+			return value
+		}
+	}
+	return nil
 }
 
 func isContextCanceled(err error) bool {

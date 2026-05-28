@@ -36,18 +36,22 @@ type Context interface {
 
 type executionContext struct {
 	context.Context
-	logger      *slog.Logger
-	projectHndl string
-	runID       string
-	jobID       string
-	stepID      string
-	attempt     int
-	queue       string
+	logger        *slog.Logger
+	client        *Client
+	projectHndl   string
+	environmentID string
+	runID         string
+	jobID         string
+	stepID        string
+	attempt       int
+	queue         string
 }
 
 func (c *executionContext) Logger() *slog.Logger             { return c.logger }
+func (c *executionContext) MobiusClient() *Client            { return c.client }
 func (c *executionContext) ProjectHandle() string            { return c.projectHndl }
 func (c *executionContext) ProjectID() string                { return c.projectHndl }
+func (c *executionContext) EnvironmentID() string            { return c.environmentID }
 func (c *executionContext) RunID() string                    { return c.runID }
 func (c *executionContext) JobID() string                    { return c.jobID }
 func (c *executionContext) WorkflowName() string             { return "" }
@@ -58,13 +62,15 @@ func (c *executionContext) EmitEvent(string, map[string]any) {}
 
 func newContext(ctx context.Context, client *Client, j *runtimeJob, logger *slog.Logger, emit func(string, map[string]any)) Context {
 	return &executionContext{
-		Context:     ctx,
-		logger:      logger,
-		projectHndl: j.ProjectHandle,
-		runID:       j.RunID,
-		jobID:       j.JobID,
-		stepID:      j.StepID,
-		attempt:     j.Attempt,
-		queue:       j.Queue,
+		Context:       ctx,
+		logger:        logger,
+		client:        client,
+		projectHndl:   j.ProjectHandle,
+		environmentID: j.EnvironmentID,
+		runID:         j.RunID,
+		jobID:         j.JobID,
+		stepID:        j.StepID,
+		attempt:       j.Attempt,
+		queue:         j.Queue,
 	}
 }

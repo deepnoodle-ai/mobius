@@ -115,6 +115,48 @@ func (e ActionCatalogEntrySource) Valid() bool {
 	}
 }
 
+// Defines values for ActionExecutionMetadataDefaultLocation.
+const (
+	ActionExecutionMetadataDefaultLocationEnvironment ActionExecutionMetadataDefaultLocation = "environment"
+	ActionExecutionMetadataDefaultLocationManaged     ActionExecutionMetadataDefaultLocation = "managed"
+	ActionExecutionMetadataDefaultLocationWorker      ActionExecutionMetadataDefaultLocation = "worker"
+)
+
+// Valid indicates whether the value is a known member of the ActionExecutionMetadataDefaultLocation enum.
+func (e ActionExecutionMetadataDefaultLocation) Valid() bool {
+	switch e {
+	case ActionExecutionMetadataDefaultLocationEnvironment:
+		return true
+	case ActionExecutionMetadataDefaultLocationManaged:
+		return true
+	case ActionExecutionMetadataDefaultLocationWorker:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ActionExecutionMetadataSupportedLocations.
+const (
+	ActionExecutionMetadataSupportedLocationsEnvironment ActionExecutionMetadataSupportedLocations = "environment"
+	ActionExecutionMetadataSupportedLocationsManaged     ActionExecutionMetadataSupportedLocations = "managed"
+	ActionExecutionMetadataSupportedLocationsWorker      ActionExecutionMetadataSupportedLocations = "worker"
+)
+
+// Valid indicates whether the value is a known member of the ActionExecutionMetadataSupportedLocations enum.
+func (e ActionExecutionMetadataSupportedLocations) Valid() bool {
+	switch e {
+	case ActionExecutionMetadataSupportedLocationsEnvironment:
+		return true
+	case ActionExecutionMetadataSupportedLocationsManaged:
+		return true
+	case ActionExecutionMetadataSupportedLocationsWorker:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ActionInvocationResultStatus.
 const (
 	ActionInvocationResultStatusActive    ActionInvocationResultStatus = "active"
@@ -169,6 +211,27 @@ func (e AgentStatus) Valid() bool {
 	case AgentStatusActive:
 		return true
 	case AgentStatusInactive:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AgentTableAccessMode.
+const (
+	AgentTableAccessModeAppend AgentTableAccessMode = "append"
+	AgentTableAccessModeRead   AgentTableAccessMode = "read"
+	AgentTableAccessModeWrite  AgentTableAccessMode = "write"
+)
+
+// Valid indicates whether the value is a known member of the AgentTableAccessMode enum.
+func (e AgentTableAccessMode) Valid() bool {
+	switch e {
+	case AgentTableAccessModeAppend:
+		return true
+	case AgentTableAccessModeRead:
+		return true
+	case AgentTableAccessModeWrite:
 		return true
 	default:
 		return false
@@ -280,6 +343,90 @@ func (e AuditLogEntryAction) Valid() bool {
 	}
 }
 
+// Defines values for AutomationActionStepExecutionLocation.
+const (
+	AutomationActionStepExecutionLocationEnvironment AutomationActionStepExecutionLocation = "environment"
+	AutomationActionStepExecutionLocationManaged     AutomationActionStepExecutionLocation = "managed"
+	AutomationActionStepExecutionLocationWorker      AutomationActionStepExecutionLocation = "worker"
+)
+
+// Valid indicates whether the value is a known member of the AutomationActionStepExecutionLocation enum.
+func (e AutomationActionStepExecutionLocation) Valid() bool {
+	switch e {
+	case AutomationActionStepExecutionLocationEnvironment:
+		return true
+	case AutomationActionStepExecutionLocationManaged:
+		return true
+	case AutomationActionStepExecutionLocationWorker:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AutomationAgentMemoryTableRefAccessMode.
+const (
+	AutomationAgentMemoryTableRefAccessModeAppend AutomationAgentMemoryTableRefAccessMode = "append"
+	AutomationAgentMemoryTableRefAccessModeRead   AutomationAgentMemoryTableRefAccessMode = "read"
+	AutomationAgentMemoryTableRefAccessModeWrite  AutomationAgentMemoryTableRefAccessMode = "write"
+)
+
+// Valid indicates whether the value is a known member of the AutomationAgentMemoryTableRefAccessMode enum.
+func (e AutomationAgentMemoryTableRefAccessMode) Valid() bool {
+	switch e {
+	case AutomationAgentMemoryTableRefAccessModeAppend:
+		return true
+	case AutomationAgentMemoryTableRefAccessModeRead:
+		return true
+	case AutomationAgentMemoryTableRefAccessModeWrite:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AutomationInteractionStepProtocol.
+const (
+	AutomationInteractionStepProtocolRequestApproval    AutomationInteractionStepProtocol = "request_approval"
+	AutomationInteractionStepProtocolRequestInformation AutomationInteractionStepProtocol = "request_information"
+	AutomationInteractionStepProtocolRequestReview      AutomationInteractionStepProtocol = "request_review"
+)
+
+// Valid indicates whether the value is a known member of the AutomationInteractionStepProtocol enum.
+func (e AutomationInteractionStepProtocol) Valid() bool {
+	switch e {
+	case AutomationInteractionStepProtocolRequestApproval:
+		return true
+	case AutomationInteractionStepProtocolRequestInformation:
+		return true
+	case AutomationInteractionStepProtocolRequestReview:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AutomationModelRouteMode.
+const (
+	AutomationModelRouteModeByoProvider AutomationModelRouteMode = "byo_provider"
+	AutomationModelRouteModeManaged     AutomationModelRouteMode = "managed"
+	AutomationModelRouteModeWorker      AutomationModelRouteMode = "worker"
+)
+
+// Valid indicates whether the value is a known member of the AutomationModelRouteMode enum.
+func (e AutomationModelRouteMode) Valid() bool {
+	switch e {
+	case AutomationModelRouteModeByoProvider:
+		return true
+	case AutomationModelRouteModeManaged:
+		return true
+	case AutomationModelRouteModeWorker:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for AutomationRunStatus.
 const (
 	AutomationRunStatusCancelled AutomationRunStatus = "cancelled"
@@ -373,6 +520,90 @@ func (e AutomationRunStepStatus) Valid() bool {
 	}
 }
 
+// Defines values for AutomationSpecConcurrency.
+const (
+	AutomationSpecConcurrencyAllow   AutomationSpecConcurrency = "allow"
+	AutomationSpecConcurrencyQueue   AutomationSpecConcurrency = "queue"
+	AutomationSpecConcurrencyReplace AutomationSpecConcurrency = "replace"
+	AutomationSpecConcurrencySkip    AutomationSpecConcurrency = "skip"
+)
+
+// Valid indicates whether the value is a known member of the AutomationSpecConcurrency enum.
+func (e AutomationSpecConcurrency) Valid() bool {
+	switch e {
+	case AutomationSpecConcurrencyAllow:
+		return true
+	case AutomationSpecConcurrencyQueue:
+		return true
+	case AutomationSpecConcurrencyReplace:
+		return true
+	case AutomationSpecConcurrencySkip:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AutomationSpecSchemaVersion.
+const (
+	AutomationSpecSchemaVersionN1 AutomationSpecSchemaVersion = "1"
+)
+
+// Valid indicates whether the value is a known member of the AutomationSpecSchemaVersion enum.
+func (e AutomationSpecSchemaVersion) Valid() bool {
+	switch e {
+	case AutomationSpecSchemaVersionN1:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AutomationSpecTriggerConcurrencyPolicy.
+const (
+	AutomationSpecTriggerConcurrencyPolicyAllow   AutomationSpecTriggerConcurrencyPolicy = "allow"
+	AutomationSpecTriggerConcurrencyPolicyQueue   AutomationSpecTriggerConcurrencyPolicy = "queue"
+	AutomationSpecTriggerConcurrencyPolicyReplace AutomationSpecTriggerConcurrencyPolicy = "replace"
+	AutomationSpecTriggerConcurrencyPolicySkip    AutomationSpecTriggerConcurrencyPolicy = "skip"
+)
+
+// Valid indicates whether the value is a known member of the AutomationSpecTriggerConcurrencyPolicy enum.
+func (e AutomationSpecTriggerConcurrencyPolicy) Valid() bool {
+	switch e {
+	case AutomationSpecTriggerConcurrencyPolicyAllow:
+		return true
+	case AutomationSpecTriggerConcurrencyPolicyQueue:
+		return true
+	case AutomationSpecTriggerConcurrencyPolicyReplace:
+		return true
+	case AutomationSpecTriggerConcurrencyPolicySkip:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AutomationSpecTriggerKind.
+const (
+	AutomationSpecTriggerKindEvent    AutomationSpecTriggerKind = "event"
+	AutomationSpecTriggerKindSchedule AutomationSpecTriggerKind = "schedule"
+	AutomationSpecTriggerKindWebhook  AutomationSpecTriggerKind = "webhook"
+)
+
+// Valid indicates whether the value is a known member of the AutomationSpecTriggerKind enum.
+func (e AutomationSpecTriggerKind) Valid() bool {
+	switch e {
+	case AutomationSpecTriggerKindEvent:
+		return true
+	case AutomationSpecTriggerKindSchedule:
+		return true
+	case AutomationSpecTriggerKindWebhook:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for AutomationStatus.
 const (
 	AutomationStatusActive   AutomationStatus = "active"
@@ -397,6 +628,48 @@ func (e AutomationStatus) Valid() bool {
 	}
 }
 
+// Defines values for AutomationStepKind.
+const (
+	AutomationStepKindAction       AutomationStepKind = "action"
+	AutomationStepKindAgent        AutomationStepKind = "agent"
+	AutomationStepKindInteraction  AutomationStepKind = "interaction"
+	AutomationStepKindSleep        AutomationStepKind = "sleep"
+	AutomationStepKindWaitForEvent AutomationStepKind = "wait_for_event"
+)
+
+// Valid indicates whether the value is a known member of the AutomationStepKind enum.
+func (e AutomationStepKind) Valid() bool {
+	switch e {
+	case AutomationStepKindAction:
+		return true
+	case AutomationStepKindAgent:
+		return true
+	case AutomationStepKindInteraction:
+		return true
+	case AutomationStepKindSleep:
+		return true
+	case AutomationStepKindWaitForEvent:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AutomationTimeoutPolicyOnTimeout.
+const (
+	AutomationTimeoutPolicyOnTimeoutFail AutomationTimeoutPolicyOnTimeout = "fail"
+)
+
+// Valid indicates whether the value is a known member of the AutomationTimeoutPolicyOnTimeout enum.
+func (e AutomationTimeoutPolicyOnTimeout) Valid() bool {
+	switch e {
+	case AutomationTimeoutPolicyOnTimeoutFail:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for AutomationTriggerConcurrencyPolicy.
 const (
 	AutomationTriggerConcurrencyPolicyAllow   AutomationTriggerConcurrencyPolicy = "allow"
@@ -415,51 +688,6 @@ func (e AutomationTriggerConcurrencyPolicy) Valid() bool {
 	case AutomationTriggerConcurrencyPolicyReplace:
 		return true
 	case AutomationTriggerConcurrencyPolicySkip:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for AutomationTriggerInputConcurrencyPolicy.
-const (
-	AutomationTriggerInputConcurrencyPolicyAllow   AutomationTriggerInputConcurrencyPolicy = "allow"
-	AutomationTriggerInputConcurrencyPolicyQueue   AutomationTriggerInputConcurrencyPolicy = "queue"
-	AutomationTriggerInputConcurrencyPolicyReplace AutomationTriggerInputConcurrencyPolicy = "replace"
-	AutomationTriggerInputConcurrencyPolicySkip    AutomationTriggerInputConcurrencyPolicy = "skip"
-)
-
-// Valid indicates whether the value is a known member of the AutomationTriggerInputConcurrencyPolicy enum.
-func (e AutomationTriggerInputConcurrencyPolicy) Valid() bool {
-	switch e {
-	case AutomationTriggerInputConcurrencyPolicyAllow:
-		return true
-	case AutomationTriggerInputConcurrencyPolicyQueue:
-		return true
-	case AutomationTriggerInputConcurrencyPolicyReplace:
-		return true
-	case AutomationTriggerInputConcurrencyPolicySkip:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for AutomationTriggerInputKind.
-const (
-	AutomationTriggerInputKindEvent    AutomationTriggerInputKind = "event"
-	AutomationTriggerInputKindSchedule AutomationTriggerInputKind = "schedule"
-	AutomationTriggerInputKindWebhook  AutomationTriggerInputKind = "webhook"
-)
-
-// Valid indicates whether the value is a known member of the AutomationTriggerInputKind enum.
-func (e AutomationTriggerInputKind) Valid() bool {
-	switch e {
-	case AutomationTriggerInputKindEvent:
-		return true
-	case AutomationTriggerInputKindSchedule:
-		return true
-	case AutomationTriggerInputKindWebhook:
 		return true
 	default:
 		return false
@@ -544,6 +772,27 @@ func (e ConsumerKind) Valid() bool {
 	}
 }
 
+// Defines values for CreateEnvironmentGitCredentialRequestOperation.
+const (
+	CreateEnvironmentGitCredentialRequestOperationClone CreateEnvironmentGitCredentialRequestOperation = "clone"
+	CreateEnvironmentGitCredentialRequestOperationFetch CreateEnvironmentGitCredentialRequestOperation = "fetch"
+	CreateEnvironmentGitCredentialRequestOperationPush  CreateEnvironmentGitCredentialRequestOperation = "push"
+)
+
+// Valid indicates whether the value is a known member of the CreateEnvironmentGitCredentialRequestOperation enum.
+func (e CreateEnvironmentGitCredentialRequestOperation) Valid() bool {
+	switch e {
+	case CreateEnvironmentGitCredentialRequestOperationClone:
+		return true
+	case CreateEnvironmentGitCredentialRequestOperationFetch:
+		return true
+	case CreateEnvironmentGitCredentialRequestOperationPush:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for CreateEnvironmentRequestTemplateId.
 const (
 	CreateEnvironmentRequestTemplateIdCodingDefault CreateEnvironmentRequestTemplateId = "coding-default"
@@ -594,6 +843,8 @@ func (e EnvironmentTemplateId) Valid() bool {
 
 // Defines values for EnvironmentBoundToType.
 const (
+	EnvironmentBoundToTypeAgent         EnvironmentBoundToType = "agent"
+	EnvironmentBoundToTypeAutomation    EnvironmentBoundToType = "automation"
 	EnvironmentBoundToTypeManual        EnvironmentBoundToType = "manual"
 	EnvironmentBoundToTypeNone          EnvironmentBoundToType = "none"
 	EnvironmentBoundToTypeRun           EnvironmentBoundToType = "run"
@@ -604,6 +855,10 @@ const (
 // Valid indicates whether the value is a known member of the EnvironmentBoundToType enum.
 func (e EnvironmentBoundToType) Valid() bool {
 	switch e {
+	case EnvironmentBoundToTypeAgent:
+		return true
+	case EnvironmentBoundToTypeAutomation:
+		return true
 	case EnvironmentBoundToTypeManual:
 		return true
 	case EnvironmentBoundToTypeNone:
@@ -685,6 +940,30 @@ func (e EnvironmentLifetime) Valid() bool {
 	case EnvironmentLifetimeLease:
 		return true
 	case EnvironmentLifetimeRun:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for EnvironmentMode.
+const (
+	EnvironmentModeAgent      EnvironmentMode = "agent"
+	EnvironmentModeAutomation EnvironmentMode = "automation"
+	EnvironmentModeManual     EnvironmentMode = "manual"
+	EnvironmentModeRun        EnvironmentMode = "run"
+)
+
+// Valid indicates whether the value is a known member of the EnvironmentMode enum.
+func (e EnvironmentMode) Valid() bool {
+	switch e {
+	case EnvironmentModeAgent:
+		return true
+	case EnvironmentModeAutomation:
+		return true
+	case EnvironmentModeManual:
+		return true
+	case EnvironmentModeRun:
 		return true
 	default:
 		return false
@@ -1972,6 +2251,33 @@ func (e ListProjectsParamsStatus) Valid() bool {
 	}
 }
 
+// Defines values for GetEnvironmentWorkerLogsParamsLogName.
+const (
+	GetEnvironmentWorkerLogsParamsLogNameAll       GetEnvironmentWorkerLogsParamsLogName = "all"
+	GetEnvironmentWorkerLogsParamsLogNameBootstrap GetEnvironmentWorkerLogsParamsLogName = "bootstrap"
+	GetEnvironmentWorkerLogsParamsLogNameStderr    GetEnvironmentWorkerLogsParamsLogName = "stderr"
+	GetEnvironmentWorkerLogsParamsLogNameStdout    GetEnvironmentWorkerLogsParamsLogName = "stdout"
+	GetEnvironmentWorkerLogsParamsLogNameWorker    GetEnvironmentWorkerLogsParamsLogName = "worker"
+)
+
+// Valid indicates whether the value is a known member of the GetEnvironmentWorkerLogsParamsLogName enum.
+func (e GetEnvironmentWorkerLogsParamsLogName) Valid() bool {
+	switch e {
+	case GetEnvironmentWorkerLogsParamsLogNameAll:
+		return true
+	case GetEnvironmentWorkerLogsParamsLogNameBootstrap:
+		return true
+	case GetEnvironmentWorkerLogsParamsLogNameStderr:
+		return true
+	case GetEnvironmentWorkerLogsParamsLogNameStdout:
+		return true
+	case GetEnvironmentWorkerLogsParamsLogNameWorker:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ListInteractionsParamsStatus.
 const (
 	ListInteractionsParamsStatusCancelled ListInteractionsParamsStatus = "cancelled"
@@ -2084,7 +2390,10 @@ type AcquireEnvironmentRequest struct {
 	// BoundToType Execution or lifecycle object this environment is bound to. Ownership remains in `owned_by`.
 	BoundToType   *EnvironmentBoundToType `json:"bound_to_type,omitempty"`
 	EnvironmentId *string                 `json:"environment_id,omitempty"`
-	HolderId      *string                 `json:"holder_id,omitempty"`
+
+	// EnvironmentMode High-level ownership policy for how Mobius plans to use the environment. `run` is one-shot and auto-cleaned with a run; `agent` and `automation` are persistent environment policies; `manual` is operator controlled.
+	EnvironmentMode *EnvironmentMode `json:"environment_mode,omitempty"`
+	HolderId        *string          `json:"holder_id,omitempty"`
 
 	// HolderType Execution or lifecycle object this environment is bound to. Ownership remains in `owned_by`.
 	HolderType *EnvironmentBoundToType `json:"holder_type,omitempty"`
@@ -2206,7 +2515,8 @@ type ActionCatalogEntry struct {
 	EndpointKind ActionCatalogEntryEndpointKind `json:"endpoint_kind"`
 
 	// EndpointUrl Endpoint URL (populated for endpoint_kind: http actions only).
-	EndpointUrl *string `json:"endpoint_url,omitempty"`
+	EndpointUrl *string                  `json:"endpoint_url,omitempty"`
+	Execution   *ActionExecutionMetadata `json:"execution,omitempty"`
 
 	// InputSchema JSON Schema describing expected input parameters.
 	InputSchema *map[string]interface{} `json:"input_schema,omitempty"`
@@ -2244,6 +2554,27 @@ type ActionCatalogListResponse struct {
 	// Items The full list of catalog entries.
 	Items []ActionCatalogEntry `json:"items"`
 }
+
+// ActionExecutionMetadata defines model for ActionExecutionMetadata.
+type ActionExecutionMetadata struct {
+	// DefaultLocation Location selected by default in authoring UIs.
+	DefaultLocation ActionExecutionMetadataDefaultLocation `json:"default_location"`
+
+	// Queue Queue to use when dispatching this action to workers.
+	Queue *string `json:"queue,omitempty"`
+
+	// RequiredWorkerCapabilities Worker capability labels required when running this action on a customer worker.
+	RequiredWorkerCapabilities *[]string `json:"required_worker_capabilities,omitempty"`
+
+	// SupportedLocations Execution locations supported by this action.
+	SupportedLocations []ActionExecutionMetadataSupportedLocations `json:"supported_locations"`
+}
+
+// ActionExecutionMetadataDefaultLocation Location selected by default in authoring UIs.
+type ActionExecutionMetadataDefaultLocation string
+
+// ActionExecutionMetadataSupportedLocations defines model for ActionExecutionMetadata.SupportedLocations.
+type ActionExecutionMetadataSupportedLocations string
 
 // ActionInvocationEntry Per-invocation telemetry record for one action execution.
 type ActionInvocationEntry struct {
@@ -2444,6 +2775,54 @@ type AgentManifestWarning struct {
 
 // AgentStatus Administrative status. Inactive agents cannot claim new jobs. Soft-deleted agents are represented by `deleted_at` and excluded from normal reads.
 type AgentStatus string
+
+// AgentTableAccessMode Table operations the agent may perform through memory bindings.
+type AgentTableAccessMode string
+
+// AgentTableGrant defines model for AgentTableGrant.
+type AgentTableGrant struct {
+	// AccessMode Table operations the agent may perform through memory bindings.
+	AccessMode AgentTableAccessMode `json:"access_mode"`
+
+	// AgentId Agent receiving access.
+	AgentId string `json:"agent_id"`
+
+	// CreatedAt Record creation timestamp.
+	CreatedAt time.Time `json:"created_at"`
+
+	// CreatedBy User ID of the principal who last replaced the grant set.
+	CreatedBy *string `json:"created_by,omitempty"`
+
+	// Id Grant ID.
+	Id string `json:"id"`
+
+	// Instructions Author instructions for how the agent should use this table.
+	Instructions *string `json:"instructions,omitempty"`
+
+	// TableId Stable table ID granted to the agent.
+	TableId string `json:"table_id"`
+
+	// UpdatedAt Last update timestamp.
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+// AgentTableGrantInput defines model for AgentTableGrantInput.
+type AgentTableGrantInput struct {
+	// AccessMode Table operations the agent may perform through memory bindings.
+	AccessMode AgentTableAccessMode `json:"access_mode"`
+
+	// Instructions Author instructions for how the agent should use this table.
+	Instructions *string `json:"instructions,omitempty"`
+
+	// TableId Stable table ID to grant.
+	TableId string `json:"table_id"`
+}
+
+// AgentTableGrantListResponse defines model for AgentTableGrantListResponse.
+type AgentTableGrantListResponse struct {
+	// Items Durable table memory grants for this agent.
+	Items []AgentTableGrant `json:"items"`
+}
 
 // AgentToolConsumer defines model for AgentToolConsumer.
 type AgentToolConsumer struct {
@@ -2669,7 +3048,7 @@ type AuditLogListResponse struct {
 	NextCursor *string `json:"next_cursor,omitempty"`
 }
 
-// Automation An automation. The `triggers` array is part of the automation resource itself — clients add, remove, and edit triggers by sending the desired full set via `PATCH /automations/{handle}`. There is no separate trigger CRUD surface.
+// Automation An automation. The `triggers` array reports the currently materialized runnable triggers. Desired triggers are authored in `AutomationSpec.triggers` and reconciled when a version is published.
 type Automation struct {
 	// ArchivedAt Soft-archive timestamp; absent on active automations.
 	ArchivedAt *time.Time `json:"archived_at,omitempty"`
@@ -2729,6 +3108,75 @@ type Automation struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
+// AutomationActionStep Action step configuration recognised inside `AutomationSpec.steps[].config`.
+type AutomationActionStep struct {
+	ActionName string `json:"action_name"`
+
+	// EnvironmentId Managed environment to route this worker-backed action to. When omitted for `execution_location: environment`, Mobius resolves one from `spec.defaults.environment`.
+	EnvironmentId     *string                                `json:"environment_id,omitempty"`
+	ExecutionLocation *AutomationActionStepExecutionLocation `json:"execution_location,omitempty"`
+	Parameters        *map[string]interface{}                `json:"parameters,omitempty"`
+}
+
+// AutomationActionStepExecutionLocation defines model for AutomationActionStep.ExecutionLocation.
+type AutomationActionStepExecutionLocation string
+
+// AutomationAgentMemoryTableRef defines model for AutomationAgentMemoryTableRef.
+type AutomationAgentMemoryTableRef struct {
+	AccessMode   AutomationAgentMemoryTableRefAccessMode `json:"access_mode"`
+	Instructions *string                                 `json:"instructions,omitempty"`
+	TableId      string                                  `json:"table_id"`
+}
+
+// AutomationAgentMemoryTableRefAccessMode defines model for AutomationAgentMemoryTableRef.AccessMode.
+type AutomationAgentMemoryTableRefAccessMode string
+
+// AutomationAgentStep Agent step configuration recognised inside `AutomationSpec.steps[].config`.
+type AutomationAgentStep struct {
+	AgentId      string                           `json:"agent_id"`
+	Instructions string                           `json:"instructions"`
+	MaxTurns     *int                             `json:"max_turns,omitempty"`
+	MemoryTables *[]AutomationAgentMemoryTableRef `json:"memory_tables,omitempty"`
+	ModelRoute   *AutomationModelRoute            `json:"model_route,omitempty"`
+	OutputSchema *map[string]interface{}          `json:"output_schema,omitempty"`
+	ToolNames    *[]string                        `json:"tool_names,omitempty"`
+}
+
+// AutomationEnvironmentPolicy Automatic managed-environment policy for automation execution. Omit to use the product default: each agent gets a persistent agent-bound environment, while direct environment actions get a run-bound environment. Set `disabled: true` to opt out.
+type AutomationEnvironmentPolicy struct {
+	// AutoStartWorker Whether Mobius should start the managed worker automatically.
+	AutoStartWorker *bool `json:"auto_start_worker,omitempty"`
+
+	// Disabled Disable automatic environment allocation.
+	Disabled *bool `json:"disabled,omitempty"`
+
+	// EnvironmentId Existing dedicated environment to use for this automation.
+	EnvironmentId *string `json:"environment_id,omitempty"`
+
+	// Mode High-level ownership policy for how Mobius plans to use the environment. `run` is one-shot and auto-cleaned with a run; `agent` and `automation` are persistent environment policies; `manual` is operator controlled.
+	Mode            *EnvironmentMode            `json:"mode,omitempty"`
+	Provider        *EnvironmentProvider        `json:"provider,omitempty"`
+	RetentionPolicy *EnvironmentRetentionPolicy `json:"retention_policy,omitempty"`
+
+	// RuntimeVersion Mobius worker runtime version to install when starting the worker.
+	RuntimeVersion *string `json:"runtime_version,omitempty"`
+
+	// TemplateId Environment template to use when Mobius creates one.
+	TemplateId *string `json:"template_id,omitempty"`
+}
+
+// AutomationInteractionStep Human interaction step configuration recognised inside `AutomationSpec.steps[].config`.
+type AutomationInteractionStep struct {
+	Prompt           *string                           `json:"prompt,omitempty"`
+	Protocol         AutomationInteractionStepProtocol `json:"protocol"`
+	ResolutionPolicy *string                           `json:"resolution_policy,omitempty"`
+	Spec             *map[string]interface{}           `json:"spec,omitempty"`
+	Targets          []string                          `json:"targets"`
+}
+
+// AutomationInteractionStepProtocol defines model for AutomationInteractionStep.Protocol.
+type AutomationInteractionStepProtocol string
+
 // AutomationListResponse defines model for AutomationListResponse.
 type AutomationListResponse struct {
 	// HasMore True when more items exist after this page.
@@ -2739,6 +3187,27 @@ type AutomationListResponse struct {
 
 	// NextCursor Opaque cursor for the next page; absent when no more results.
 	NextCursor *string `json:"next_cursor,omitempty"`
+}
+
+// AutomationModelRoute defines model for AutomationModelRoute.
+type AutomationModelRoute struct {
+	// EnvironmentId Managed environment to route worker-backed model calls to.
+	EnvironmentId        *string                  `json:"environment_id,omitempty"`
+	Mode                 AutomationModelRouteMode `json:"mode"`
+	Model                *string                  `json:"model,omitempty"`
+	Provider             *string                  `json:"provider,omitempty"`
+	Queue                *string                  `json:"queue,omitempty"`
+	RequiredCapabilities *[]string                `json:"required_capabilities,omitempty"`
+}
+
+// AutomationModelRouteMode defines model for AutomationModelRoute.Mode.
+type AutomationModelRouteMode string
+
+// AutomationRetryPolicy defines model for AutomationRetryPolicy.
+type AutomationRetryPolicy struct {
+	// Delay Go duration string such as `30s`, `5m`, or `2h`.
+	Delay       *string `json:"delay,omitempty"`
+	MaxAttempts *int    `json:"max_attempts,omitempty"`
 }
 
 // AutomationRun One automation run record.
@@ -2760,6 +3229,9 @@ type AutomationRun struct {
 
 	// ErrorMessage Human-readable failure summary; populated on `failed` runs.
 	ErrorMessage *string `json:"error_message,omitempty"`
+
+	// ErrorType Machine-readable failure classification when available.
+	ErrorType *string `json:"error_type,omitempty"`
 
 	// Id Stable run identifier.
 	Id string `json:"id"`
@@ -2797,7 +3269,7 @@ type AutomationRunEvent struct {
 	// CreatedAt Server timestamp when the event was recorded.
 	CreatedAt time.Time `json:"created_at"`
 
-	// EventType Event type from the run-stream taxonomy (e.g. `run.started`, `step.completed`, `tool.called`, `interaction.requested`, `artifact.created`, `cleanup.completed`).
+	// EventType Event type from the run-stream taxonomy (e.g. `run.started`, `step.completed`, `wait.opened`, `interaction.requested`, `action.completed`, `artifact.created`, `limit.reached`, `usage.recorded`).
 	EventType string `json:"event_type"`
 
 	// Id Stable event identifier.
@@ -2820,6 +3292,9 @@ type AutomationRunEvent struct {
 
 	// StepId ID of the step this event belongs to, when applicable.
 	StepId *string `json:"step_id,omitempty"`
+
+	// StepKey Automation step key this event belongs to, when applicable.
+	StepKey *string `json:"step_key,omitempty"`
 }
 
 // AutomationRunEventListResponse defines model for AutomationRunEventListResponse.
@@ -2945,8 +3420,125 @@ type AutomationRunStepListResponse struct {
 // AutomationRunStepStatus Lifecycle state of an automation run step.
 type AutomationRunStepStatus string
 
+// AutomationSleepStep Sleep step configuration recognised inside `AutomationSpec.steps[].config`.
+type AutomationSleepStep struct {
+	// Duration Go duration string such as `30s`, `5m`, or `2h`.
+	Duration *string    `json:"duration,omitempty"`
+	Until    *time.Time `json:"until,omitempty"`
+}
+
+// AutomationSpec Authoring representation of an automation.
+type AutomationSpec struct {
+	Cleanup *[]map[string]interface{} `json:"cleanup,omitempty"`
+
+	// Concurrency Behavior when a run starts while another run of the same automation is active.
+	Concurrency *AutomationSpecConcurrency `json:"concurrency,omitempty"`
+
+	// Defaults Run-level defaults inside the automation spec. Lives at `spec.defaults` in the JSON the engine compiles.
+	Defaults *AutomationSpecDefaults `json:"defaults,omitempty"`
+
+	// Description Optional spec-local Markdown description.
+	Description *string                         `json:"description,omitempty"`
+	Inputs      *map[string]AutomationSpecInput `json:"inputs,omitempty"`
+
+	// Name Optional spec-local display name.
+	Name *string `json:"name,omitempty"`
+
+	// SchemaVersion Automation spec schema version. Current value is `1`.
+	SchemaVersion *AutomationSpecSchemaVersion `json:"schema_version,omitempty"`
+	Steps         []AutomationStep             `json:"steps"`
+
+	// Triggers Desired triggers materialized when a version is published.
+	Triggers *[]AutomationSpecTrigger `json:"triggers,omitempty"`
+}
+
+// AutomationSpecConcurrency Behavior when a run starts while another run of the same automation is active.
+type AutomationSpecConcurrency string
+
+// AutomationSpecSchemaVersion Automation spec schema version. Current value is `1`.
+type AutomationSpecSchemaVersion string
+
+// AutomationSpecDefaults Run-level defaults inside the automation spec. Lives at `spec.defaults` in the JSON the engine compiles.
+type AutomationSpecDefaults struct {
+	// Environment Automatic managed-environment policy for automation execution. Omit to use the product default: each agent gets a persistent agent-bound environment, while direct environment actions get a run-bound environment. Set `disabled: true` to opt out.
+	Environment *AutomationEnvironmentPolicy `json:"environment,omitempty"`
+
+	// WallClockTimeout Run wall-clock budget as a Go duration string (e.g. `30m`, `2h`, `90s`). When set, the engine stamps `wall_clock_deadline_at = run.started_at + wall_clock_timeout` and the reaper fails the run after that instant even if a step executor is still grinding. Omit or set to `0` to disable the guard.
+	WallClockTimeout *string `json:"wall_clock_timeout,omitempty"`
+}
+
+// AutomationSpecInput defines model for AutomationSpecInput.
+type AutomationSpecInput struct {
+	Default     interface{} `json:"default,omitempty"`
+	Description *string     `json:"description,omitempty"`
+	Required    *bool       `json:"required,omitempty"`
+	Type        *string     `json:"type,omitempty"`
+}
+
+// AutomationSpecTrigger defines model for AutomationSpecTrigger.
+type AutomationSpecTrigger struct {
+	ConcurrencyPolicy *AutomationSpecTriggerConcurrencyPolicy `json:"concurrency_policy,omitempty"`
+
+	// Config Kind-specific trigger configuration.
+	Config  *map[string]interface{} `json:"config,omitempty"`
+	Enabled *bool                   `json:"enabled,omitempty"`
+
+	// Key Stable user-authored trigger key within the spec.
+	Key               *string                   `json:"key,omitempty"`
+	Kind              AutomationSpecTriggerKind `json:"kind"`
+	MaxConcurrentRuns *int                      `json:"max_concurrent_runs,omitempty"`
+
+	// Name Human-readable trigger name.
+	Name *string `json:"name,omitempty"`
+}
+
+// AutomationSpecTriggerConcurrencyPolicy defines model for AutomationSpecTrigger.ConcurrencyPolicy.
+type AutomationSpecTriggerConcurrencyPolicy string
+
+// AutomationSpecTriggerKind defines model for AutomationSpecTrigger.Kind.
+type AutomationSpecTriggerKind string
+
 // AutomationStatus Lifecycle status of an automation.
 type AutomationStatus string
+
+// AutomationStep defines model for AutomationStep.
+type AutomationStep struct {
+	// Config Kind-specific step configuration.
+	Config AutomationStep_Config `json:"config"`
+
+	// Input Step-local input object resolved when the step starts. String leaves may contain `{{ inputs.* }}` or `{{ context.* }}` templates.
+	Input *map[string]interface{} `json:"input,omitempty"`
+
+	// Key Stable step key within the spec.
+	Key  string             `json:"key"`
+	Kind AutomationStepKind `json:"kind"`
+
+	// Name Human-readable step name.
+	Name  *string                `json:"name,omitempty"`
+	Retry *AutomationRetryPolicy `json:"retry,omitempty"`
+
+	// SaveAs Context key used to store this step's output. Defaults to `key`.
+	SaveAs  *string                  `json:"save_as,omitempty"`
+	Timeout *AutomationTimeoutPolicy `json:"timeout,omitempty"`
+}
+
+// AutomationStep_Config Kind-specific step configuration.
+type AutomationStep_Config struct {
+	union json.RawMessage
+}
+
+// AutomationStepKind defines model for AutomationStep.Kind.
+type AutomationStepKind string
+
+// AutomationTimeoutPolicy defines model for AutomationTimeoutPolicy.
+type AutomationTimeoutPolicy struct {
+	// Duration Go duration string such as `30s`, `5m`, or `2h`.
+	Duration  *string                           `json:"duration,omitempty"`
+	OnTimeout *AutomationTimeoutPolicyOnTimeout `json:"on_timeout,omitempty"`
+}
+
+// AutomationTimeoutPolicyOnTimeout defines model for AutomationTimeoutPolicy.OnTimeout.
+type AutomationTimeoutPolicyOnTimeout string
 
 // AutomationTrigger defines model for AutomationTrigger.
 type AutomationTrigger struct {
@@ -3008,48 +3600,6 @@ type AutomationTrigger struct {
 // AutomationTriggerConcurrencyPolicy Behavior when a fire arrives while prior runs of this automation are still active.
 type AutomationTriggerConcurrencyPolicy string
 
-// AutomationTriggerInput One trigger as supplied in CreateAutomationRequest.triggers or in UpdateAutomationRequest.triggers. Supply `id` to update an existing trigger in place; omit `id` to create a new one.
-type AutomationTriggerInput struct {
-	// ConcurrencyPolicy Behavior when a fire arrives while prior runs of this automation are still active.
-	ConcurrencyPolicy *AutomationTriggerInputConcurrencyPolicy `json:"concurrency_policy,omitempty"`
-
-	// Config Kind-specific configuration (schedule cron, event matcher, webhook options).
-	Config *map[string]interface{} `json:"config,omitempty"`
-
-	// Enabled Whether the trigger should be allowed to start runs.
-	Enabled *bool `json:"enabled,omitempty"`
-
-	// EventType Source-event type this trigger subscribes to. Set only for event-kind triggers.
-	EventType *string `json:"event_type,omitempty"`
-
-	// Id Existing trigger id. Omit for new triggers.
-	Id *string `json:"id,omitempty"`
-
-	// Kind Trigger backing kind.
-	Kind AutomationTriggerInputKind `json:"kind"`
-
-	// MaxConcurrentRuns Cap on concurrent runs allowed from this trigger.
-	MaxConcurrentRuns *int `json:"max_concurrent_runs,omitempty"`
-
-	// Name Human-readable trigger name.
-	Name string `json:"name"`
-
-	// SigningSecret HMAC secret used to verify inbound webhook signatures. Set only for webhook-kind triggers.
-	SigningSecret *string `json:"signing_secret,omitempty"`
-
-	// SourceId Optional source identifier used to scope event matching.
-	SourceId *string `json:"source_id,omitempty"`
-
-	// WebhookHandle Public webhook handle to assign. Set only for webhook-kind triggers.
-	WebhookHandle *string `json:"webhook_handle,omitempty"`
-}
-
-// AutomationTriggerInputConcurrencyPolicy Behavior when a fire arrives while prior runs of this automation are still active.
-type AutomationTriggerInputConcurrencyPolicy string
-
-// AutomationTriggerInputKind Trigger backing kind.
-type AutomationTriggerInputKind string
-
 // AutomationVersion defines model for AutomationVersion.
 type AutomationVersion struct {
 	// AutomationId Automation this version belongs to.
@@ -3073,8 +3623,8 @@ type AutomationVersion struct {
 	// ProjectId Project that owns this version.
 	ProjectId string `json:"project_id"`
 
-	// Spec Authoring representation of the automation spec. Free-form, but the engine recognises a typed `defaults` sub-object (`AutomationSpecDefaults`) for run-level guards such as `wall_clock_timeout`.
-	Spec *map[string]interface{} `json:"spec,omitempty"`
+	// Spec Authoring representation of an automation.
+	Spec *AutomationSpec `json:"spec,omitempty"`
 
 	// Status Publication state. `draft` is editable but not runnable; `published` is the currently runnable version; `superseded` is a prior published version retained for historical runs.
 	Status AutomationVersionStatus `json:"status"`
@@ -3093,6 +3643,13 @@ type AutomationVersionStatus string
 type AutomationVersionListResponse struct {
 	// Items AutomationVersions returned for this automation, newest version first.
 	Items []AutomationVersion `json:"items"`
+}
+
+// AutomationWaitForEventStep Wait-for-event step configuration recognised inside `AutomationSpec.steps[].config`.
+type AutomationWaitForEventStep struct {
+	EventType string                  `json:"event_type"`
+	Match     *map[string]interface{} `json:"match,omitempty"`
+	SourceId  *string                 `json:"source_id,omitempty"`
 }
 
 // BulkInsertRowsRequest defines model for BulkInsertRowsRequest.
@@ -3279,9 +3836,6 @@ type CreateAutomationRequest struct {
 
 	// Tags Free-form label map used to organise automations in listings and search.
 	Tags *map[string]string `json:"tags,omitempty"`
-
-	// Triggers Triggers to create with the automation.
-	Triggers *[]AutomationTriggerInput `json:"triggers,omitempty"`
 }
 
 // CreateAutomationVersionRequest defines model for CreateAutomationVersionRequest.
@@ -3289,9 +3843,20 @@ type CreateAutomationVersionRequest struct {
 	// CompiledPlan Optional precompiled execution plan. The engine will recompile from `spec` if omitted.
 	CompiledPlan *map[string]interface{} `json:"compiled_plan,omitempty"`
 
-	// Spec Authoring representation of the automation spec. Free-form, but the engine recognises a typed `defaults` sub-object (`AutomationSpecDefaults`) for run-level guards such as `wall_clock_timeout`.
-	Spec map[string]interface{} `json:"spec"`
+	// Spec Authoring representation of an automation.
+	Spec AutomationSpec `json:"spec"`
 }
+
+// CreateEnvironmentGitCredentialRequest defines model for CreateEnvironmentGitCredentialRequest.
+type CreateEnvironmentGitCredentialRequest struct {
+	Operation *CreateEnvironmentGitCredentialRequestOperation `json:"operation,omitempty"`
+
+	// RepoFullName GitHub `owner/name` repository full name.
+	RepoFullName string `json:"repo_full_name"`
+}
+
+// CreateEnvironmentGitCredentialRequestOperation defines model for CreateEnvironmentGitCredentialRequest.Operation.
+type CreateEnvironmentGitCredentialRequestOperation string
 
 // CreateEnvironmentRequest defines model for CreateEnvironmentRequest.
 type CreateEnvironmentRequest struct {
@@ -3299,6 +3864,9 @@ type CreateEnvironmentRequest struct {
 
 	// BoundToType Execution or lifecycle object this environment is bound to. Ownership remains in `owned_by`.
 	BoundToType *EnvironmentBoundToType `json:"bound_to_type,omitempty"`
+
+	// EnvironmentMode High-level ownership policy for how Mobius plans to use the environment. `run` is one-shot and auto-cleaned with a run; `agent` and `automation` are persistent environment policies; `manual` is operator controlled.
+	EnvironmentMode *EnvironmentMode `json:"environment_mode,omitempty"`
 
 	// Lifetime Lifecycle owner for automatic cleanup. `run` environments are destroyed during their owning run's Finalize phase; `lease` environments are reaped after lease expiry; `explicit` environments require an explicit destroy call.
 	Lifetime *EnvironmentLifetime `json:"lifetime,omitempty"`
@@ -3613,12 +4181,15 @@ type Environment struct {
 	CreatedBy              *string    `json:"created_by,omitempty"`
 	CurrentWorkerSessionId *string    `json:"current_worker_session_id,omitempty"`
 	DestroyedAt            *time.Time `json:"destroyed_at,omitempty"`
-	Id                     string     `json:"id"`
-	JobId                  *string    `json:"job_id,omitempty"`
-	LastError              *string    `json:"last_error,omitempty"`
-	LastReconciledAt       *time.Time `json:"last_reconciled_at,omitempty"`
-	LastSeenAt             *time.Time `json:"last_seen_at,omitempty"`
-	LeaseExpiresAt         *time.Time `json:"lease_expires_at,omitempty"`
+
+	// EnvironmentMode High-level ownership policy for how Mobius plans to use the environment. `run` is one-shot and auto-cleaned with a run; `agent` and `automation` are persistent environment policies; `manual` is operator controlled.
+	EnvironmentMode  EnvironmentMode `json:"environment_mode"`
+	Id               string          `json:"id"`
+	JobId            *string         `json:"job_id,omitempty"`
+	LastError        *string         `json:"last_error,omitempty"`
+	LastReconciledAt *time.Time      `json:"last_reconciled_at,omitempty"`
+	LastSeenAt       *time.Time      `json:"last_seen_at,omitempty"`
+	LeaseExpiresAt   *time.Time      `json:"lease_expires_at,omitempty"`
 
 	// Lifetime Lifecycle owner for automatic cleanup. `run` environments are destroyed during their owning run's Finalize phase; `lease` environments are reaped after lease expiry; `explicit` environments require an explicit destroy call.
 	Lifetime EnvironmentLifetime `json:"lifetime"`
@@ -3673,6 +4244,17 @@ type EnvironmentExecResult struct {
 	Stdout   string `json:"stdout"`
 }
 
+// EnvironmentGitCredentialResult defines model for EnvironmentGitCredentialResult.
+type EnvironmentGitCredentialResult struct {
+	ExpiresAt    time.Time `json:"expires_at"`
+	Host         string    `json:"host"`
+	RepoFullName string    `json:"repo_full_name"`
+
+	// Token One-time GitHub installation token. Do not log or persist.
+	Token    string `json:"token"`
+	Username string `json:"username"`
+}
+
 // EnvironmentLease defines model for EnvironmentLease.
 type EnvironmentLease struct {
 	AcquiredAt    time.Time  `json:"acquired_at"`
@@ -3701,6 +4283,9 @@ type EnvironmentListResponse struct {
 	NextCursor *string       `json:"next_cursor,omitempty"`
 }
 
+// EnvironmentMode High-level ownership policy for how Mobius plans to use the environment. `run` is one-shot and auto-cleaned with a run; `agent` and `automation` are persistent environment policies; `manual` is operator controlled.
+type EnvironmentMode string
+
 // EnvironmentProvider defines model for EnvironmentProvider.
 type EnvironmentProvider string
 
@@ -3712,16 +4297,32 @@ type EnvironmentRetentionPolicy string
 
 // EnvironmentStartWorkerResult defines model for EnvironmentStartWorkerResult.
 type EnvironmentStartWorkerResult struct {
-	ApiKeyId     string      `json:"api_key_id"`
-	Environment  Environment `json:"environment"`
-	ExitCode     int         `json:"exit_code"`
-	KeyExpiresAt time.Time   `json:"key_expires_at"`
-	Stderr       string      `json:"stderr"`
-	Stdout       string      `json:"stdout"`
+	ApiKeyId           string      `json:"api_key_id"`
+	Environment        Environment `json:"environment"`
+	ExitCode           int         `json:"exit_code"`
+	KeyExpiresAt       time.Time   `json:"key_expires_at"`
+	ManagedRuntime     bool        `json:"managed_runtime"`
+	RuntimeInstalledAt *time.Time  `json:"runtime_installed_at,omitempty"`
+	RuntimeVersion     string      `json:"runtime_version"`
+	Stderr             string      `json:"stderr"`
+	Stdout             string      `json:"stdout"`
+	WorkerLogPath      string      `json:"worker_log_path"`
+	WorkerSessionId    *string     `json:"worker_session_id,omitempty"`
 }
 
 // EnvironmentStatus defines model for EnvironmentStatus.
 type EnvironmentStatus string
+
+// EnvironmentWorkerLogsResponse defines model for EnvironmentWorkerLogsResponse.
+type EnvironmentWorkerLogsResponse struct {
+	Content       string  `json:"content"`
+	EnvironmentId string  `json:"environment_id"`
+	ExitCode      int     `json:"exit_code"`
+	LogName       string  `json:"log_name"`
+	LogPath       string  `json:"log_path"`
+	Stderr        *string `json:"stderr,omitempty"`
+	Tail          int     `json:"tail"`
+}
 
 // ErrorResponse Standard error envelope returned by API endpoints.
 type ErrorResponse struct {
@@ -4280,6 +4881,12 @@ type QueryRowsResponse struct {
 	Limit      *int       `json:"limit,omitempty"`
 	NextCursor *string    `json:"next_cursor,omitempty"`
 	Rows       []TableRow `json:"rows"`
+}
+
+// ReplaceAgentTableGrantsRequest defines model for ReplaceAgentTableGrantsRequest.
+type ReplaceAgentTableGrantsRequest struct {
+	// Grants Full replacement set of table grants for the agent.
+	Grants []AgentTableGrantInput `json:"grants"`
 }
 
 // ReplaceSkillsRequest defines model for ReplaceSkillsRequest.
@@ -4871,9 +5478,21 @@ type StartAutomationRunRequest struct {
 
 // StartEnvironmentWorkerRequest defines model for StartEnvironmentWorkerRequest.
 type StartEnvironmentWorkerRequest struct {
-	ApiUrl  *string   `json:"api_url,omitempty"`
-	Command *[]string `json:"command,omitempty"`
-	Dir     *string   `json:"dir,omitempty"`
+	ActionNames *[]string `json:"action_names,omitempty"`
+	ApiUrl      *string   `json:"api_url,omitempty"`
+	Command     *[]string `json:"command,omitempty"`
+	Concurrency *int      `json:"concurrency,omitempty"`
+	Dir         *string   `json:"dir,omitempty"`
+
+	// ManagedRuntime Install/refresh the managed Mobius runtime bundle before starting the worker. Defaults to true unless `command` is supplied.
+	ManagedRuntime *bool     `json:"managed_runtime,omitempty"`
+	Queues         *[]string `json:"queues,omitempty"`
+
+	// RuntimeVersion Runtime bundle version to install. Defaults to the server-configured runtime version.
+	RuntimeVersion *string `json:"runtime_version,omitempty"`
+
+	// WorkerName Friendly worker session name. Defaults to the environment name.
+	WorkerName *string `json:"worker_name,omitempty"`
 }
 
 // Table defines model for Table.
@@ -5119,7 +5738,7 @@ type UpdateArtifactContentRequest struct {
 // UpdateArtifactContentRequestEncoding defines model for UpdateArtifactContentRequest.Encoding.
 type UpdateArtifactContentRequestEncoding string
 
-// UpdateAutomationRequest Partial update of the automation. When `triggers` is present it replaces the full trigger set: entries with `id` are updated in place, entries without are created, and triggers absent from the list are deleted.
+// UpdateAutomationRequest Partial update of automation metadata. Desired triggers live in `AutomationSpec.triggers` and are materialized when a version is published.
 type UpdateAutomationRequest struct {
 	// DefaultAgentId Agent used by `agent` steps that do not pin an agent explicitly.
 	DefaultAgentId *string `json:"default_agent_id,omitempty"`
@@ -5141,9 +5760,6 @@ type UpdateAutomationRequest struct {
 
 	// Tags Free-form label map used to organise automations in listings and search.
 	Tags *map[string]string `json:"tags,omitempty"`
-
-	// Triggers Full replace-set of triggers. Omit the field to leave triggers untouched. Supply an empty array to delete all triggers.
-	Triggers *[]AutomationTriggerInput `json:"triggers,omitempty"`
 }
 
 // UpdateEnvironmentRequest defines model for UpdateEnvironmentRequest.
@@ -5432,6 +6048,9 @@ type WebhookListResponse struct {
 
 // WorkerSession Recently observed worker process for a project. Use sessions to see which machines, users, service accounts, or agents are polling for work, what their configured concurrency is, and whether they appear stale.
 type WorkerSession struct {
+	// ActionNames Action names this worker can execute. Empty or absent means the worker has not advertised a narrowed action set.
+	ActionNames *[]string `json:"action_names,omitempty"`
+
 	// AgentId Agent this session represents, when the polling process declared itself as a registered agent (via `agent_id` on the claim request or via inference from the service account). Absent for ad-hoc worker processes that are not tied to a declared agent.
 	AgentId *string `json:"agent_id,omitempty"`
 
@@ -5441,7 +6060,7 @@ type WorkerSession struct {
 	// BusyJobCount Number of jobs this worker session is currently holding.
 	BusyJobCount int `json:"busy_job_count"`
 
-	// Capabilities Reserved for future capability-based job routing. Not currently used for filtering.
+	// Capabilities Coarse capability labels advertised by the worker for routing and builder eligibility.
 	Capabilities *[]string `json:"capabilities,omitempty"`
 
 	// ConcurrencyLimit Configured maximum number of jobs this worker process will hold in flight simultaneously. Reported by the SDK on register; rendered as a saturation bar in the admin UI (`busy_job_count / concurrency_limit`).
@@ -5449,6 +6068,9 @@ type WorkerSession struct {
 
 	// CurrentJobs Currently claimed jobs held by this worker session.
 	CurrentJobs []WorkerSessionJobRef `json:"current_jobs"`
+
+	// EnvironmentId Managed environment this worker is running inside, when Mobius started it in a Sprite or another managed execution environment.
+	EnvironmentId *string `json:"environment_id,omitempty"`
 
 	// Id Server-assigned session row ID (`wsess_…`). Generated by the control plane on first registration; opaque to workers and stable across refreshes for a given live row.
 	Id string `json:"id"`
@@ -5470,8 +6092,14 @@ type WorkerSession struct {
 	// LastSeenAt Timestamp of this session's most recent register, claim, or job heartbeat activity. Used to compute `stale`.
 	LastSeenAt *time.Time `json:"last_seen_at,omitempty"`
 
+	// Models Provider/model pairs this worker can generate with.
+	Models *[]WorkerSocketModelCapability `json:"models,omitempty"`
+
 	// Name Optional human-readable name supplied in the claim request.
 	Name *string `json:"name,omitempty"`
+
+	// Queues Queue names this worker can claim. Empty or absent means the default project queue set.
+	Queues *[]string `json:"queues,omitempty"`
 
 	// ServiceAccountId Service account this session authenticated as on register/heartbeat. Set when a machine identity is polling; mutually exclusive with `user_id`. Stable across credential rotation — use this to group sessions by identity in the admin UI.
 	ServiceAccountId *string `json:"service_account_id,omitempty"`
@@ -5566,9 +6194,12 @@ type WorkerSocketCancelDirective struct {
 // WorkerSocketClaimedJob defines model for WorkerSocketClaimedJob.
 type WorkerSocketClaimedJob struct {
 	// ActionName Present for `action_execution` jobs.
-	ActionName              *string                            `json:"action_name,omitempty"`
-	AgentTurnId             *string                            `json:"agent_turn_id,omitempty"`
-	ClaimAttempt            int                                `json:"claim_attempt"`
+	ActionName   *string `json:"action_name,omitempty"`
+	AgentTurnId  *string `json:"agent_turn_id,omitempty"`
+	ClaimAttempt int     `json:"claim_attempt"`
+
+	// EnvironmentId Present when the job is pinned to a managed environment worker.
+	EnvironmentId           *string                            `json:"environment_id,omitempty"`
 	ExecutorKind            WorkerSocketClaimedJobExecutorKind `json:"executor_kind"`
 	HeartbeatCadenceSeconds int                                `json:"heartbeat_cadence_seconds"`
 
@@ -5825,6 +6456,9 @@ type WorkerSocketRegisterFrame struct {
 
 	// ConcurrencyLimit Maximum jobs this worker process will hold concurrently.
 	ConcurrencyLimit *int `json:"concurrency_limit,omitempty"`
+
+	// EnvironmentId Environment this worker is running inside, when the worker was started by Mobius in a Sprite or other managed environment.
+	EnvironmentId *string `json:"environment_id,omitempty"`
 
 	// MessageId Client-supplied correlation and short-window deduplication key. When present on a client frame, the server echoes it on the response frame.
 	MessageId *WorkerSocketMessageID `json:"message_id,omitempty"`
@@ -6195,11 +6829,12 @@ type ListEnvironmentsParams struct {
 	Cursor *CursorParam `form:"cursor,omitempty" json:"cursor,omitempty"`
 
 	// Limit Maximum number of items to return
-	Limit    *LimitParam          `form:"limit,omitempty" json:"limit,omitempty"`
-	Provider *EnvironmentProvider `form:"provider,omitempty" json:"provider,omitempty"`
-	Status   *EnvironmentStatus   `form:"status,omitempty" json:"status,omitempty"`
-	Lifetime *EnvironmentLifetime `form:"lifetime,omitempty" json:"lifetime,omitempty"`
-	Purpose  *EnvironmentPurpose  `form:"purpose,omitempty" json:"purpose,omitempty"`
+	Limit           *LimitParam          `form:"limit,omitempty" json:"limit,omitempty"`
+	Provider        *EnvironmentProvider `form:"provider,omitempty" json:"provider,omitempty"`
+	Status          *EnvironmentStatus   `form:"status,omitempty" json:"status,omitempty"`
+	Lifetime        *EnvironmentLifetime `form:"lifetime,omitempty" json:"lifetime,omitempty"`
+	EnvironmentMode *EnvironmentMode     `form:"environment_mode,omitempty" json:"environment_mode,omitempty"`
+	Purpose         *EnvironmentPurpose  `form:"purpose,omitempty" json:"purpose,omitempty"`
 
 	// Scope Omit for all/default-scoped environments; use `owner` with `owned_by` to list owner-scoped environments.
 	Scope *ResourceScope `form:"scope,omitempty" json:"scope,omitempty"`
@@ -6215,6 +6850,18 @@ type ListEnvironmentsParams struct {
 	// DestroyedSince Narrow destroyed rows to those torn down at or after this timestamp. Composes with `status=destroyed` to fetch a "recently destroyed" tombstone window (e.g. last hour). Non-destroyed rows are unaffected when this is combined with the default (no-status) view.
 	DestroyedSince *time.Time `form:"destroyed_since,omitempty" json:"destroyed_since,omitempty"`
 }
+
+// GetEnvironmentWorkerLogsParams defines parameters for GetEnvironmentWorkerLogs.
+type GetEnvironmentWorkerLogsParams struct {
+	// LogName Named log stream to read. Defaults to stdout.
+	LogName *GetEnvironmentWorkerLogsParamsLogName `form:"log_name,omitempty" json:"log_name,omitempty"`
+
+	// Tail Maximum number of lines to return from each selected log.
+	Tail *int `form:"tail,omitempty" json:"tail,omitempty"`
+}
+
+// GetEnvironmentWorkerLogsParamsLogName defines parameters for GetEnvironmentWorkerLogs.
+type GetEnvironmentWorkerLogsParamsLogName string
 
 // ListInteractionsParams defines parameters for ListInteractions.
 type ListInteractionsParams struct {
@@ -6574,6 +7221,9 @@ type AppendSessionMessagesJSONRequestBody = AppendSessionMessagesRequest
 // ReplaceSkillsJSONRequestBody defines body for ReplaceSkills for application/json ContentType.
 type ReplaceSkillsJSONRequestBody = ReplaceSkillsRequest
 
+// ReplaceAgentTableGrantsJSONRequestBody defines body for ReplaceAgentTableGrants for application/json ContentType.
+type ReplaceAgentTableGrantsJSONRequestBody = ReplaceAgentTableGrantsRequest
+
 // ReplaceToolkitsJSONRequestBody defines body for ReplaceToolkits for application/json ContentType.
 type ReplaceToolkitsJSONRequestBody = ReplaceToolkitsRequest
 
@@ -6612,6 +7262,9 @@ type ExecEnvironmentJSONRequestBody = ExecEnvironmentRequest
 
 // WriteEnvironmentFileJSONRequestBody defines body for WriteEnvironmentFile for application/json ContentType.
 type WriteEnvironmentFileJSONRequestBody = WriteEnvironmentFileRequest
+
+// CreateEnvironmentGitCredentialJSONRequestBody defines body for CreateEnvironmentGitCredential for application/json ContentType.
+type CreateEnvironmentGitCredentialJSONRequestBody = CreateEnvironmentGitCredentialRequest
 
 // StartEnvironmentWorkerJSONRequestBody defines body for StartEnvironmentWorker for application/json ContentType.
 type StartEnvironmentWorkerJSONRequestBody = StartEnvironmentWorkerRequest
@@ -6802,6 +7455,146 @@ func (a ActionAnnotationsResponse) MarshalJSON() ([]byte, error) {
 		}
 	}
 	return json.Marshal(object)
+}
+
+// AsAutomationAgentStep returns the union data inside the AutomationStep_Config as a AutomationAgentStep
+func (t AutomationStep_Config) AsAutomationAgentStep() (AutomationAgentStep, error) {
+	var body AutomationAgentStep
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromAutomationAgentStep overwrites any union data inside the AutomationStep_Config as the provided AutomationAgentStep
+func (t *AutomationStep_Config) FromAutomationAgentStep(v AutomationAgentStep) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeAutomationAgentStep performs a merge with any union data inside the AutomationStep_Config, using the provided AutomationAgentStep
+func (t *AutomationStep_Config) MergeAutomationAgentStep(v AutomationAgentStep) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsAutomationActionStep returns the union data inside the AutomationStep_Config as a AutomationActionStep
+func (t AutomationStep_Config) AsAutomationActionStep() (AutomationActionStep, error) {
+	var body AutomationActionStep
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromAutomationActionStep overwrites any union data inside the AutomationStep_Config as the provided AutomationActionStep
+func (t *AutomationStep_Config) FromAutomationActionStep(v AutomationActionStep) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeAutomationActionStep performs a merge with any union data inside the AutomationStep_Config, using the provided AutomationActionStep
+func (t *AutomationStep_Config) MergeAutomationActionStep(v AutomationActionStep) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsAutomationSleepStep returns the union data inside the AutomationStep_Config as a AutomationSleepStep
+func (t AutomationStep_Config) AsAutomationSleepStep() (AutomationSleepStep, error) {
+	var body AutomationSleepStep
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromAutomationSleepStep overwrites any union data inside the AutomationStep_Config as the provided AutomationSleepStep
+func (t *AutomationStep_Config) FromAutomationSleepStep(v AutomationSleepStep) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeAutomationSleepStep performs a merge with any union data inside the AutomationStep_Config, using the provided AutomationSleepStep
+func (t *AutomationStep_Config) MergeAutomationSleepStep(v AutomationSleepStep) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsAutomationWaitForEventStep returns the union data inside the AutomationStep_Config as a AutomationWaitForEventStep
+func (t AutomationStep_Config) AsAutomationWaitForEventStep() (AutomationWaitForEventStep, error) {
+	var body AutomationWaitForEventStep
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromAutomationWaitForEventStep overwrites any union data inside the AutomationStep_Config as the provided AutomationWaitForEventStep
+func (t *AutomationStep_Config) FromAutomationWaitForEventStep(v AutomationWaitForEventStep) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeAutomationWaitForEventStep performs a merge with any union data inside the AutomationStep_Config, using the provided AutomationWaitForEventStep
+func (t *AutomationStep_Config) MergeAutomationWaitForEventStep(v AutomationWaitForEventStep) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsAutomationInteractionStep returns the union data inside the AutomationStep_Config as a AutomationInteractionStep
+func (t AutomationStep_Config) AsAutomationInteractionStep() (AutomationInteractionStep, error) {
+	var body AutomationInteractionStep
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromAutomationInteractionStep overwrites any union data inside the AutomationStep_Config as the provided AutomationInteractionStep
+func (t *AutomationStep_Config) FromAutomationInteractionStep(v AutomationInteractionStep) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeAutomationInteractionStep performs a merge with any union data inside the AutomationStep_Config, using the provided AutomationInteractionStep
+func (t *AutomationStep_Config) MergeAutomationInteractionStep(v AutomationInteractionStep) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t AutomationStep_Config) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *AutomationStep_Config) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
 }
 
 // AsCreateStandaloneInteractionRequest returns the union data inside the CreateInteractionRequest as a CreateStandaloneInteractionRequest
@@ -7807,6 +8600,14 @@ type ClientInterface interface {
 
 	ReplaceSkills(ctx context.Context, project ProjectHandleParam, id IDParam, body ReplaceSkillsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ListAgentTableGrants request
+	ListAgentTableGrants(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ReplaceAgentTableGrantsWithBody request with any body
+	ReplaceAgentTableGrantsWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	ReplaceAgentTableGrants(ctx context.Context, project ProjectHandleParam, id IDParam, body ReplaceAgentTableGrantsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetAgentToolManifest request
 	GetAgentToolManifest(ctx context.Context, project ProjectHandleParam, id IDParam, params *GetAgentToolManifestParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -7936,8 +8737,16 @@ type ClientInterface interface {
 
 	WriteEnvironmentFile(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, body WriteEnvironmentFileJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// CreateEnvironmentGitCredentialWithBody request with any body
+	CreateEnvironmentGitCredentialWithBody(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	CreateEnvironmentGitCredential(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, body CreateEnvironmentGitCredentialJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ReconcileEnvironment request
 	ReconcileEnvironment(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetEnvironmentWorkerLogs request
+	GetEnvironmentWorkerLogs(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, params *GetEnvironmentWorkerLogsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// StartEnvironmentWorkerWithBody request with any body
 	StartEnvironmentWorkerWithBody(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -8779,6 +9588,42 @@ func (c *Client) ReplaceSkills(ctx context.Context, project ProjectHandleParam, 
 	return c.Client.Do(req)
 }
 
+func (c *Client) ListAgentTableGrants(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListAgentTableGrantsRequest(c.Server, project, id)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ReplaceAgentTableGrantsWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewReplaceAgentTableGrantsRequestWithBody(c.Server, project, id, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ReplaceAgentTableGrants(ctx context.Context, project ProjectHandleParam, id IDParam, body ReplaceAgentTableGrantsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewReplaceAgentTableGrantsRequest(c.Server, project, id, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) GetAgentToolManifest(ctx context.Context, project ProjectHandleParam, id IDParam, params *GetAgentToolManifestParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetAgentToolManifestRequest(c.Server, project, id, params)
 	if err != nil {
@@ -9343,8 +10188,44 @@ func (c *Client) WriteEnvironmentFile(ctx context.Context, project ProjectHandle
 	return c.Client.Do(req)
 }
 
+func (c *Client) CreateEnvironmentGitCredentialWithBody(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateEnvironmentGitCredentialRequestWithBody(c.Server, project, environmentId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateEnvironmentGitCredential(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, body CreateEnvironmentGitCredentialJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateEnvironmentGitCredentialRequest(c.Server, project, environmentId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) ReconcileEnvironment(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewReconcileEnvironmentRequest(c.Server, project, environmentId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetEnvironmentWorkerLogs(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, params *GetEnvironmentWorkerLogsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetEnvironmentWorkerLogsRequest(c.Server, project, environmentId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -12551,6 +13432,101 @@ func NewReplaceSkillsRequestWithBody(server string, project ProjectHandleParam, 
 	return req, nil
 }
 
+// NewListAgentTableGrantsRequest generates requests for ListAgentTableGrants
+func NewListAgentTableGrantsRequest(server string, project ProjectHandleParam, id IDParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/agents/%s/table-grants", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewReplaceAgentTableGrantsRequest calls the generic ReplaceAgentTableGrants builder with application/json body
+func NewReplaceAgentTableGrantsRequest(server string, project ProjectHandleParam, id IDParam, body ReplaceAgentTableGrantsJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewReplaceAgentTableGrantsRequestWithBody(server, project, id, "application/json", bodyReader)
+}
+
+// NewReplaceAgentTableGrantsRequestWithBody generates requests for ReplaceAgentTableGrants with any type of body
+func NewReplaceAgentTableGrantsRequestWithBody(server string, project ProjectHandleParam, id IDParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/agents/%s/table-grants", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewGetAgentToolManifestRequest generates requests for GetAgentToolManifest
 func NewGetAgentToolManifestRequest(server string, project ProjectHandleParam, id IDParam, params *GetAgentToolManifestParams) (*http.Request, error) {
 	var err error
@@ -14168,6 +15144,18 @@ func NewListEnvironmentsRequest(server string, project ProjectHandleParam, param
 
 		}
 
+		if params.EnvironmentMode != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "environment_mode", *params.EnvironmentMode, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
 		if params.Purpose != nil {
 
 			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "purpose", *params.Purpose, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
@@ -14645,6 +15633,60 @@ func NewWriteEnvironmentFileRequestWithBody(server string, project ProjectHandle
 	return req, nil
 }
 
+// NewCreateEnvironmentGitCredentialRequest calls the generic CreateEnvironmentGitCredential builder with application/json body
+func NewCreateEnvironmentGitCredentialRequest(server string, project ProjectHandleParam, environmentId EnvironmentIDParam, body CreateEnvironmentGitCredentialJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateEnvironmentGitCredentialRequestWithBody(server, project, environmentId, "application/json", bodyReader)
+}
+
+// NewCreateEnvironmentGitCredentialRequestWithBody generates requests for CreateEnvironmentGitCredential with any type of body
+func NewCreateEnvironmentGitCredentialRequestWithBody(server string, project ProjectHandleParam, environmentId EnvironmentIDParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "environment_id", environmentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/environments/%s/git/credentials", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewReconcileEnvironmentRequest generates requests for ReconcileEnvironment
 func NewReconcileEnvironmentRequest(server string, project ProjectHandleParam, environmentId EnvironmentIDParam) (*http.Request, error) {
 	var err error
@@ -14679,6 +15721,86 @@ func NewReconcileEnvironmentRequest(server string, project ProjectHandleParam, e
 	}
 
 	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetEnvironmentWorkerLogsRequest generates requests for GetEnvironmentWorkerLogs
+func NewGetEnvironmentWorkerLogsRequest(server string, project ProjectHandleParam, environmentId EnvironmentIDParam, params *GetEnvironmentWorkerLogsParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "environment_id", environmentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/environments/%s/worker/logs", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.LogName != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "log_name", *params.LogName, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Tail != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "tail", *params.Tail, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -19456,6 +20578,14 @@ type ClientWithResponsesInterface interface {
 
 	ReplaceSkillsWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body ReplaceSkillsJSONRequestBody, reqEditors ...RequestEditorFn) (*ReplaceSkillsResponse, error)
 
+	// ListAgentTableGrantsWithResponse request
+	ListAgentTableGrantsWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*ListAgentTableGrantsResponse, error)
+
+	// ReplaceAgentTableGrantsWithBodyWithResponse request with any body
+	ReplaceAgentTableGrantsWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ReplaceAgentTableGrantsResponse, error)
+
+	ReplaceAgentTableGrantsWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body ReplaceAgentTableGrantsJSONRequestBody, reqEditors ...RequestEditorFn) (*ReplaceAgentTableGrantsResponse, error)
+
 	// GetAgentToolManifestWithResponse request
 	GetAgentToolManifestWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, params *GetAgentToolManifestParams, reqEditors ...RequestEditorFn) (*GetAgentToolManifestResponse, error)
 
@@ -19585,8 +20715,16 @@ type ClientWithResponsesInterface interface {
 
 	WriteEnvironmentFileWithResponse(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, body WriteEnvironmentFileJSONRequestBody, reqEditors ...RequestEditorFn) (*WriteEnvironmentFileResponse, error)
 
+	// CreateEnvironmentGitCredentialWithBodyWithResponse request with any body
+	CreateEnvironmentGitCredentialWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateEnvironmentGitCredentialResponse, error)
+
+	CreateEnvironmentGitCredentialWithResponse(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, body CreateEnvironmentGitCredentialJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateEnvironmentGitCredentialResponse, error)
+
 	// ReconcileEnvironmentWithResponse request
 	ReconcileEnvironmentWithResponse(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, reqEditors ...RequestEditorFn) (*ReconcileEnvironmentResponse, error)
+
+	// GetEnvironmentWorkerLogsWithResponse request
+	GetEnvironmentWorkerLogsWithResponse(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, params *GetEnvironmentWorkerLogsParams, reqEditors ...RequestEditorFn) (*GetEnvironmentWorkerLogsResponse, error)
 
 	// StartEnvironmentWorkerWithBodyWithResponse request with any body
 	StartEnvironmentWorkerWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*StartEnvironmentWorkerResponse, error)
@@ -21034,6 +22172,73 @@ func (r ReplaceSkillsResponse) ContentType() string {
 	return ""
 }
 
+type ListAgentTableGrantsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *AgentTableGrantListResponse
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r ListAgentTableGrantsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListAgentTableGrantsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListAgentTableGrantsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ReplaceAgentTableGrantsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *AgentTableGrantListResponse
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r ReplaceAgentTableGrantsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ReplaceAgentTableGrantsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ReplaceAgentTableGrantsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type GetAgentToolManifestResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -22202,6 +23407,41 @@ func (r WriteEnvironmentFileResponse) ContentType() string {
 	return ""
 }
 
+type CreateEnvironmentGitCredentialResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *EnvironmentGitCredentialResult
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+	JSON409      *Conflict
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateEnvironmentGitCredentialResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateEnvironmentGitCredentialResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CreateEnvironmentGitCredentialResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type ReconcileEnvironmentResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -22229,6 +23469,41 @@ func (r ReconcileEnvironmentResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r ReconcileEnvironmentResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetEnvironmentWorkerLogsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *EnvironmentWorkerLogsResponse
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+	JSON409      *Conflict
+}
+
+// Status returns HTTPResponse.Status
+func (r GetEnvironmentWorkerLogsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetEnvironmentWorkerLogsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetEnvironmentWorkerLogsResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -25144,6 +26419,32 @@ func (c *ClientWithResponses) ReplaceSkillsWithResponse(ctx context.Context, pro
 	return ParseReplaceSkillsResponse(rsp)
 }
 
+// ListAgentTableGrantsWithResponse request returning *ListAgentTableGrantsResponse
+func (c *ClientWithResponses) ListAgentTableGrantsWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*ListAgentTableGrantsResponse, error) {
+	rsp, err := c.ListAgentTableGrants(ctx, project, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListAgentTableGrantsResponse(rsp)
+}
+
+// ReplaceAgentTableGrantsWithBodyWithResponse request with arbitrary body returning *ReplaceAgentTableGrantsResponse
+func (c *ClientWithResponses) ReplaceAgentTableGrantsWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ReplaceAgentTableGrantsResponse, error) {
+	rsp, err := c.ReplaceAgentTableGrantsWithBody(ctx, project, id, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseReplaceAgentTableGrantsResponse(rsp)
+}
+
+func (c *ClientWithResponses) ReplaceAgentTableGrantsWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body ReplaceAgentTableGrantsJSONRequestBody, reqEditors ...RequestEditorFn) (*ReplaceAgentTableGrantsResponse, error) {
+	rsp, err := c.ReplaceAgentTableGrants(ctx, project, id, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseReplaceAgentTableGrantsResponse(rsp)
+}
+
 // GetAgentToolManifestWithResponse request returning *GetAgentToolManifestResponse
 func (c *ClientWithResponses) GetAgentToolManifestWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, params *GetAgentToolManifestParams, reqEditors ...RequestEditorFn) (*GetAgentToolManifestResponse, error) {
 	rsp, err := c.GetAgentToolManifest(ctx, project, id, params, reqEditors...)
@@ -25555,6 +26856,23 @@ func (c *ClientWithResponses) WriteEnvironmentFileWithResponse(ctx context.Conte
 	return ParseWriteEnvironmentFileResponse(rsp)
 }
 
+// CreateEnvironmentGitCredentialWithBodyWithResponse request with arbitrary body returning *CreateEnvironmentGitCredentialResponse
+func (c *ClientWithResponses) CreateEnvironmentGitCredentialWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateEnvironmentGitCredentialResponse, error) {
+	rsp, err := c.CreateEnvironmentGitCredentialWithBody(ctx, project, environmentId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateEnvironmentGitCredentialResponse(rsp)
+}
+
+func (c *ClientWithResponses) CreateEnvironmentGitCredentialWithResponse(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, body CreateEnvironmentGitCredentialJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateEnvironmentGitCredentialResponse, error) {
+	rsp, err := c.CreateEnvironmentGitCredential(ctx, project, environmentId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateEnvironmentGitCredentialResponse(rsp)
+}
+
 // ReconcileEnvironmentWithResponse request returning *ReconcileEnvironmentResponse
 func (c *ClientWithResponses) ReconcileEnvironmentWithResponse(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, reqEditors ...RequestEditorFn) (*ReconcileEnvironmentResponse, error) {
 	rsp, err := c.ReconcileEnvironment(ctx, project, environmentId, reqEditors...)
@@ -25562,6 +26880,15 @@ func (c *ClientWithResponses) ReconcileEnvironmentWithResponse(ctx context.Conte
 		return nil, err
 	}
 	return ParseReconcileEnvironmentResponse(rsp)
+}
+
+// GetEnvironmentWorkerLogsWithResponse request returning *GetEnvironmentWorkerLogsResponse
+func (c *ClientWithResponses) GetEnvironmentWorkerLogsWithResponse(ctx context.Context, project ProjectHandleParam, environmentId EnvironmentIDParam, params *GetEnvironmentWorkerLogsParams, reqEditors ...RequestEditorFn) (*GetEnvironmentWorkerLogsResponse, error) {
+	rsp, err := c.GetEnvironmentWorkerLogs(ctx, project, environmentId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetEnvironmentWorkerLogsResponse(rsp)
 }
 
 // StartEnvironmentWorkerWithBodyWithResponse request with arbitrary body returning *StartEnvironmentWorkerResponse
@@ -28153,6 +29480,107 @@ func ParseReplaceSkillsResponse(rsp *http.Response) (*ReplaceSkillsResponse, err
 	return response, nil
 }
 
+// ParseListAgentTableGrantsResponse parses an HTTP response from a ListAgentTableGrantsWithResponse call
+func ParseListAgentTableGrantsResponse(rsp *http.Response) (*ListAgentTableGrantsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListAgentTableGrantsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest AgentTableGrantListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseReplaceAgentTableGrantsResponse parses an HTTP response from a ReplaceAgentTableGrantsWithResponse call
+func ParseReplaceAgentTableGrantsResponse(rsp *http.Response) (*ReplaceAgentTableGrantsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ReplaceAgentTableGrantsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest AgentTableGrantListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseGetAgentToolManifestResponse parses an HTTP response from a GetAgentToolManifestWithResponse call
 func ParseGetAgentToolManifestResponse(rsp *http.Response) (*GetAgentToolManifestResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -29889,6 +31317,67 @@ func ParseWriteEnvironmentFileResponse(rsp *http.Response) (*WriteEnvironmentFil
 	return response, nil
 }
 
+// ParseCreateEnvironmentGitCredentialResponse parses an HTTP response from a CreateEnvironmentGitCredentialWithResponse call
+func ParseCreateEnvironmentGitCredentialResponse(rsp *http.Response) (*CreateEnvironmentGitCredentialResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateEnvironmentGitCredentialResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest EnvironmentGitCredentialResult
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseReconcileEnvironmentResponse parses an HTTP response from a ReconcileEnvironmentWithResponse call
 func ParseReconcileEnvironmentResponse(rsp *http.Response) (*ReconcileEnvironmentResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -29930,6 +31419,67 @@ func ParseReconcileEnvironmentResponse(rsp *http.Response) (*ReconcileEnvironmen
 			return nil, err
 		}
 		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetEnvironmentWorkerLogsResponse parses an HTTP response from a GetEnvironmentWorkerLogsWithResponse call
+func ParseGetEnvironmentWorkerLogsResponse(rsp *http.Response) (*GetEnvironmentWorkerLogsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetEnvironmentWorkerLogsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest EnvironmentWorkerLogsResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	}
 

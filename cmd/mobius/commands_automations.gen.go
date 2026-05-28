@@ -67,7 +67,6 @@ func registerAutomationsCommands(app *cli.App) {
 			cli.String("name", "").Help("[required] Human-readable display name."),
 			cli.String("settings", "").Help("Free-form automation-level settings consumed by the engine. Accepts JSON, @file, or @-."),
 			cli.String("tags", "").Help("Free-form label map used to organise automations in listings and search. Accepts JSON, @file, or @-."),
-			cli.String("triggers", "").Help("Triggers to create with the automation. Accepts JSON, @file, or @-."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -112,11 +111,6 @@ func registerAutomationsCommands(app *cli.App) {
 					return err
 				}
 			}
-			if ctx.IsSet("triggers") {
-				if err := decodeFlagJSON(ctx, "triggers", ctx.String("triggers"), &body.Triggers); err != nil {
-					return err
-				}
-			}
 			if body.Handle == "" {
 				return fmt.Errorf("--handle is required (or supply it via --file)")
 			}
@@ -138,7 +132,7 @@ func registerAutomationsCommands(app *cli.App) {
 		Args("handle").
 		Flags(
 			cli.String("compiled-plan", "").Help("Optional precompiled execution plan. The engine will recompile from `spec` if omitted. Accepts JSON, @file, or @-."),
-			cli.String("spec", "").Help("[required] Authoring representation of the automation spec. Free-form, but the engine recognises a typed `defa… Accepts JSON, @file, or @-."),
+			cli.String("spec", "").Help("[required] Authoring representation of an automation. Accepts JSON, @file, or @-."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -572,7 +566,6 @@ func registerAutomationsCommands(app *cli.App) {
 			cli.String("settings", "").Help("Free-form automation-level settings consumed by the engine. Accepts JSON, @file, or @-."),
 			cli.String("status", "").Help("Lifecycle status of an automation."),
 			cli.String("tags", "").Help("Free-form label map used to organise automations in listings and search. Accepts JSON, @file, or @-."),
-			cli.String("triggers", "").Help("Full replace-set of triggers. Omit the field to leave triggers untouched. Supply an empty array to … Accepts JSON, @file, or @-."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -620,12 +613,7 @@ func registerAutomationsCommands(app *cli.App) {
 					return err
 				}
 			}
-			if ctx.IsSet("triggers") {
-				if err := decodeFlagJSON(ctx, "triggers", ctx.String("triggers"), &body.Triggers); err != nil {
-					return err
-				}
-			}
-			if ctx.String("file") == "" && !ctx.IsSet("default-agent-id") && !ctx.IsSet("default-inputs") && !ctx.IsSet("description") && !ctx.IsSet("name") && !ctx.IsSet("settings") && !ctx.IsSet("status") && !ctx.IsSet("tags") && !ctx.IsSet("triggers") {
+			if ctx.String("file") == "" && !ctx.IsSet("default-agent-id") && !ctx.IsSet("default-inputs") && !ctx.IsSet("description") && !ctx.IsSet("name") && !ctx.IsSet("settings") && !ctx.IsSet("status") && !ctx.IsSet("tags") {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
 			if ctx.Bool("dry-run") {

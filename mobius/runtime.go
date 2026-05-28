@@ -24,6 +24,7 @@ type runtimeJob struct {
 	JobID             string
 	RunID             string
 	ProjectHandle     string
+	EnvironmentID     string
 	StepID            string
 	AgentTurnID       string
 	SessionID         string
@@ -134,7 +135,7 @@ func readSocketFrame(ctx context.Context, s *workerSocket, out chan<- socketEnve
 	}
 }
 
-func claimedRuntimeJob(projectHandle, workerID string, j api.WorkerSocketClaimedJob) *runtimeJob {
+func claimedRuntimeJob(projectHandle, workerID, environmentID string, j api.WorkerSocketClaimedJob) *runtimeJob {
 	params := map[string]any{}
 	if raw, ok := j.Spec["parameters"].(map[string]any); ok {
 		params = raw
@@ -145,10 +146,14 @@ func claimedRuntimeJob(projectHandle, workerID string, j api.WorkerSocketClaimed
 	if actionName == "" {
 		actionName, _ = j.Spec["action_name"].(string)
 	}
+	if claimedEnvironmentID := stringPtrValue(j.EnvironmentId); claimedEnvironmentID != "" {
+		environmentID = claimedEnvironmentID
+	}
 	return &runtimeJob{
 		JobID:             j.Id,
 		RunID:             stringPtrValue(j.RunId),
 		ProjectHandle:     projectHandle,
+		EnvironmentID:     environmentID,
 		StepID:            stringPtrValue(j.StepId),
 		AgentTurnID:       stringPtrValue(j.AgentTurnId),
 		SessionID:         stringPtrValue(j.SessionId),

@@ -47,6 +47,7 @@ type WorkerConfig struct {
 	Concurrency       int
 	Name              string
 	Version           string
+	EnvironmentID     string
 	Queues            []string
 	Actions           []string
 	Models            []ModelCapability
@@ -230,7 +231,7 @@ func (w *Worker) runSocket(ctx context.Context) error {
 						continue
 					}
 					slots <- struct{}{}
-					job := claimedRuntimeJob(w.client.projectHandle, w.config.WorkerInstanceID, j)
+					job := claimedRuntimeJob(w.client.projectHandle, w.config.WorkerInstanceID, w.config.EnvironmentID, j)
 					jobCtx, cancelJob := context.WithCancel(socketCtx)
 					cancelMu.Lock()
 					cancels[j.Id] = cancelJob
@@ -302,6 +303,7 @@ func (w *Worker) register(ctx context.Context, socket *workerSocket) error {
 		ActionNames:        stringSlicePtr(w.actionNames()),
 		Queues:             stringSlicePtr(w.config.Queues),
 		Models:             modelCapabilitiesPtr(w.config.Models),
+		EnvironmentId:      strPtr(w.config.EnvironmentID),
 		Name:               strPtr(w.config.Name),
 		Version:            strPtr(w.config.Version),
 		WorkerSessionToken: strPtr(w.sessionToken),

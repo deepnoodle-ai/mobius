@@ -1,7 +1,6 @@
 package mobius
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -20,7 +19,7 @@ type AutomationOptions struct {
 	DefaultInputs  map[string]interface{}
 	Settings       map[string]interface{}
 	Tags           map[string]string
-	Triggers       []api.AutomationTriggerInput
+	Triggers       []api.AutomationSpecTrigger
 }
 
 // UpdateAutomationOptions contains metadata fields that can be updated on a
@@ -33,7 +32,7 @@ type UpdateAutomationOptions struct {
 	Settings        map[string]interface{}
 	Status          api.AutomationStatus
 	Tags            map[string]string
-	Triggers        []api.AutomationTriggerInput
+	Triggers        []api.AutomationSpecTrigger
 	ReplaceTriggers bool
 }
 
@@ -136,7 +135,11 @@ func (c *Client) DeleteAutomation(ctx context.Context, handle string) error {
 // CreateAutomationVersion creates an immutable automation version from the
 // authoring spec.
 func (c *Client) CreateAutomationVersion(ctx context.Context, handle string, spec map[string]interface{}, opts *AutomationVersionOptions) (*api.AutomationVersion, error) {
-	req := api.CreateAutomationVersionRequest{Spec: spec}
+	typedSpec, err := automationSpecFromMap(spec)
+	if err != nil {
+		return nil, err
+	}
+	req := api.CreateAutomationVersionRequest{Spec: typedSpec}
 	if opts != nil && opts.CompiledPlan != nil {
 		req.CompiledPlan = &opts.CompiledPlan
 	}
@@ -177,6 +180,7 @@ func (c *Client) EnsureAutomation(ctx context.Context, spec map[string]interface
 	if err != nil {
 		return nil, err
 	}
+	spec = automationSpecWithTriggers(spec, desired.Triggers)
 	existing, err := c.findAutomation(ctx, desired)
 	if err != nil {
 		return nil, err
@@ -265,9 +269,6 @@ func createAutomationRequest(opts AutomationOptions) (api.CreateAutomationReques
 	if normalized.Tags != nil {
 		req.Tags = &normalized.Tags
 	}
-	if normalized.Triggers != nil {
-		req.Triggers = &normalized.Triggers
-	}
 	return req, nil
 }
 
@@ -293,9 +294,6 @@ func updateAutomationRequest(opts UpdateAutomationOptions) api.UpdateAutomationR
 	}
 	if opts.Tags != nil {
 		req.Tags = &opts.Tags
-	}
-	if opts.ReplaceTriggers {
-		req.Triggers = &opts.Triggers
 	}
 	return req
 }
@@ -395,11 +393,6 @@ func automationUpdateForDiff(current *api.Automation, desired AutomationOptions)
 		update.Tags = desired.Tags
 		changed = true
 	}
-	if desired.Triggers != nil && !automationTriggersEqual(current.Triggers, desired.Triggers) {
-		update.Triggers = desired.Triggers
-		update.ReplaceTriggers = true
-		changed = true
-	}
 	if !changed {
 		return nil
 	}
@@ -420,23 +413,28 @@ func stringMapPtrValue(m *map[string]string) map[string]string {
 	return *m
 }
 
-func automationTriggersEqual(current []api.AutomationTrigger, desired []api.AutomationTriggerInput) bool {
-	if len(current) != len(desired) {
-		return false
+func automationSpecFromMap(spec map[string]interface{}) (api.AutomationSpec, error) {
+	raw, err := json.Marshal(spec)
+	if err != nil {
+		return api.AutomationSpec{}, err
 	}
-	return jsonEqual(current, desired)
+	var out api.AutomationSpec
+	if err := json.Unmarshal(raw, &out); err != nil {
+		return api.AutomationSpec{}, fmt.Errorf("mobius: invalid automation spec: %w", err)
+	}
+	return out, nil
 }
 
-func jsonEqual(a, b any) bool {
-	ab, err := json.Marshal(a)
-	if err != nil {
-		return false
+func automationSpecWithTriggers(spec map[string]interface{}, triggers []api.AutomationSpecTrigger) map[string]interface{} {
+	if len(triggers) == 0 {
+		return spec
 	}
-	bb, err := json.Marshal(b)
-	if err != nil {
-		return false
+	out := map[string]interface{}{}
+	for key, value := range spec {
+		out[key] = value
 	}
-	return bytes.Equal(ab, bb)
+	out["triggers"] = triggers
+	return out
 }
 
 func stringPtrValue(s *string) string {

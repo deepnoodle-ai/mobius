@@ -344,6 +344,25 @@ func registerAgentsCommands(app *cli.App) {
 			return printResponse(ctx, "listSkillAssignments", resp.StatusCode(), resp.Body)
 		})
 
+	agentsGrp.Command("list-table-grants").
+		Description("List agent table grants").
+		Args("id").
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			p1 := ctx.Arg(0)
+			resp, err := client.ListAgentTableGrantsWithResponse(ctx.Context(), p0, p1)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "listAgentTableGrants", resp.StatusCode(), resp.Body)
+		})
+
 	agentsGrp.Command("list-toolkit-assignments").
 		Description("List assigned toolkits").
 		Args("id").
@@ -380,6 +399,45 @@ func registerAgentsCommands(app *cli.App) {
 				return err
 			}
 			return printResponse(ctx, "provisionAgentInbox", resp.StatusCode(), resp.Body)
+		})
+
+	agentsGrp.Command("replace-agent-table-grants").
+		Description("Replace agent table grants").
+		Args("id").
+		Flags(
+			cli.String("grants", "").Help("[required] Full replacement set of table grants for the agent. Accepts JSON, @file, or @-."),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			p1 := ctx.Arg(0)
+			var body api.ReplaceAgentTableGrantsJSONRequestBody
+			if err := readJSONBody(ctx, &body); err != nil {
+				return err
+			}
+			if ctx.IsSet("grants") {
+				if err := decodeFlagJSON(ctx, "grants", ctx.String("grants"), &body.Grants); err != nil {
+					return err
+				}
+			}
+			if ctx.String("file") == "" && !ctx.IsSet("grants") {
+				return fmt.Errorf("--grants is required (or supply it via --file)")
+			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
+			}
+			resp, err := client.ReplaceAgentTableGrantsWithResponse(ctx.Context(), p0, p1, body)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "replaceAgentTableGrants", resp.StatusCode(), resp.Body)
 		})
 
 	agentsGrp.Command("replace-skills").

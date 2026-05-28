@@ -568,6 +568,10 @@ paths:
         in: query
         schema:
           $ref: '#/components/schemas/EnvironmentLifetime'
+      - name: environment_mode
+        in: query
+        schema:
+          $ref: '#/components/schemas/EnvironmentMode'
       - name: purpose
         in: query
         schema:
@@ -904,6 +908,91 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/EnvironmentStartWorkerResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /v1/projects/{project}/environments/{environment_id}/worker/logs:
+    get:
+      operationId: getEnvironmentWorkerLogs
+      tags:
+      - environments
+      summary: Get worker logs for an environment
+      description: Tails the managed Mobius worker log files from inside the environment.
+        The worker filesystem is sandbox-local and treated as diagnostic scratch; clients
+        should not use this endpoint as durable artifact storage.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/EnvironmentIDParam'
+      - name: log_name
+        in: query
+        description: Named log stream to read. Defaults to stdout.
+        schema:
+          type: string
+          enum:
+          - stdout
+          - stderr
+          - bootstrap
+          - worker
+          - all
+          default: stdout
+      - name: tail
+        in: query
+        description: Maximum number of lines to return from each selected log.
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 2000
+          default: 200
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnvironmentWorkerLogsResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /v1/projects/{project}/environments/{environment_id}/git/credentials:
+    post:
+      operationId: createEnvironmentGitCredential
+      tags:
+      - environments
+      summary: Mint short-lived Git credentials for an environment
+      description: Mints a repository-scoped GitHub App installation token for clone or push
+        operations executed inside the environment. Mobius returns the token only in this
+        response; the caller must inject it into the environment through a transient askpass/stdin
+        flow and remove it before the command exits.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/EnvironmentIDParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEnvironmentGitCredentialRequest'
+      responses:
+        '200':
+          description: Minted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnvironmentGitCredentialResult'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -2726,6 +2815,59 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ToolkitAssignmentListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/projects/{project}/agents/{id}/table-grants:
+    get:
+      operationId: listAgentTableGrants
+      tags:
+      - agents
+      summary: List agent table grants
+      description: Returns durable table memory grants assigned to one agent.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/IDParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentTableGrantListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      operationId: replaceAgentTableGrants
+      tags:
+      - agents
+      summary: Replace agent table grants
+      description: Replaces the agent's durable table memory grant set as a whole.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/IDParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReplaceAgentTableGrantsRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentTableGrantListResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -5793,6 +5935,42 @@ components:
           type: string
           format: uri
           description: 'Endpoint URL (populated for endpoint_kind: http actions only).'
+        execution:
+          $ref: '#/components/schemas/ActionExecutionMetadata'
+          description: Execution locations and worker requirements available to automation
+            authors.
+    ActionExecutionMetadata:
+      type: object
+      additionalProperties: false
+      required:
+      - supported_locations
+      - default_location
+      properties:
+        supported_locations:
+          type: array
+          items:
+            type: string
+            enum:
+            - managed
+            - worker
+            - environment
+          description: Execution locations supported by this action.
+        default_location:
+          type: string
+          enum:
+          - managed
+          - worker
+          - environment
+          description: Location selected by default in authoring UIs.
+        required_worker_capabilities:
+          type: array
+          items:
+            type: string
+          description: Worker capability labels required when running this action on a customer
+            worker.
+        queue:
+          type: string
+          description: Queue to use when dispatching this action to workers.
     ActionCatalogListResponse:
       type: object
       additionalProperties: false
@@ -5965,6 +6143,16 @@ components:
       - debug
       - worker
       - custom
+    EnvironmentMode:
+      type: string
+      enum:
+      - manual
+      - run
+      - agent
+      - automation
+      description: High-level ownership policy for how Mobius plans to use the environment.
+        `run` is one-shot and auto-cleaned with a run; `agent` and `automation` are persistent
+        environment policies; `manual` is operator controlled.
     EnvironmentBoundToType:
       type: string
       enum:
@@ -5972,6 +6160,8 @@ components:
       - run
       - worker_session
       - service
+      - agent
+      - automation
       - manual
       description: Execution or lifecycle object this environment is bound to. Ownership remains
         in `owned_by`.
@@ -6005,6 +6195,7 @@ components:
       - name
       - provider
       - status
+      - environment_mode
       - lifetime
       - capabilities
       - spec_version
@@ -6029,6 +6220,8 @@ components:
           type: string
         status:
           $ref: '#/components/schemas/EnvironmentStatus'
+        environment_mode:
+          $ref: '#/components/schemas/EnvironmentMode'
         lifetime:
           $ref: '#/components/schemas/EnvironmentLifetime'
         purpose:
@@ -6160,6 +6353,8 @@ components:
           $ref: '#/components/schemas/ResourceScope'
         provider:
           $ref: '#/components/schemas/EnvironmentProvider'
+        environment_mode:
+          $ref: '#/components/schemas/EnvironmentMode'
         purpose:
           $ref: '#/components/schemas/EnvironmentPurpose'
         owned_by:
@@ -6223,6 +6418,8 @@ components:
           $ref: '#/components/schemas/ResourceScope'
         provider:
           $ref: '#/components/schemas/EnvironmentProvider'
+        environment_mode:
+          $ref: '#/components/schemas/EnvironmentMode'
         purpose:
           $ref: '#/components/schemas/EnvironmentPurpose'
         holder_type:
@@ -6307,6 +6504,28 @@ components:
       properties:
         api_url:
           type: string
+        managed_runtime:
+          type: boolean
+          description: Install/refresh the managed Mobius runtime bundle before starting the
+            worker. Defaults to true unless `command` is supplied.
+        runtime_version:
+          type: string
+          description: Runtime bundle version to install. Defaults to the server-configured
+            runtime version.
+        worker_name:
+          type: string
+          description: Friendly worker session name. Defaults to the environment name.
+        queues:
+          type: array
+          items:
+            type: string
+        action_names:
+          type: array
+          items:
+            type: string
+        concurrency:
+          type: integer
+          minimum: 1
         command:
           type: array
           items:
@@ -6320,6 +6539,9 @@ components:
       - environment
       - api_key_id
       - key_expires_at
+      - managed_runtime
+      - runtime_version
+      - worker_log_path
       - stdout
       - stderr
       - exit_code
@@ -6331,12 +6553,86 @@ components:
         key_expires_at:
           type: string
           format: date-time
+        managed_runtime:
+          type: boolean
+        runtime_version:
+          type: string
+        runtime_installed_at:
+          type: string
+          format: date-time
+        worker_log_path:
+          type: string
+        worker_session_id:
+          type: string
         stdout:
           type: string
         stderr:
           type: string
         exit_code:
           type: integer
+    EnvironmentWorkerLogsResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - environment_id
+      - log_name
+      - log_path
+      - tail
+      - content
+      - exit_code
+      properties:
+        environment_id:
+          type: string
+        log_name:
+          type: string
+        log_path:
+          type: string
+        tail:
+          type: integer
+        content:
+          type: string
+        stderr:
+          type: string
+        exit_code:
+          type: integer
+    CreateEnvironmentGitCredentialRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - repo_full_name
+      properties:
+        repo_full_name:
+          type: string
+          description: GitHub `owner/name` repository full name.
+        operation:
+          type: string
+          enum:
+          - clone
+          - fetch
+          - push
+          default: clone
+    EnvironmentGitCredentialResult:
+      type: object
+      additionalProperties: false
+      required:
+      - host
+      - username
+      - token
+      - expires_at
+      - repo_full_name
+      properties:
+        host:
+          type: string
+        username:
+          type: string
+        token:
+          type: string
+          description: One-time GitHub installation token. Do not log or persist.
+        expires_at:
+          type: string
+          format: date-time
+        repo_full_name:
+          type: string
     SecretValues:
       type: object
       additionalProperties:
@@ -6530,8 +6826,25 @@ components:
           type: array
           items:
             type: string
-          description: Reserved for future capability-based job routing. Not currently used
-            for filtering.
+          description: Coarse capability labels advertised by the worker for routing and builder
+            eligibility.
+        queues:
+          type: array
+          items:
+            type: string
+          description: Queue names this worker can claim. Empty or absent means the default
+            project queue set.
+        action_names:
+          type: array
+          items:
+            type: string
+          description: Action names this worker can execute. Empty or absent means the worker
+            has not advertised a narrowed action set.
+        models:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkerSocketModelCapability'
+          description: Provider/model pairs this worker can generate with.
         service_account_id:
           type: string
           description: Service account this session authenticated as on register/heartbeat.
@@ -6558,6 +6871,10 @@ components:
             as a registered agent (via `agent_id` on the claim request or via inference from
             the service account). Absent for ad-hoc worker processes that are not tied to
             a declared agent.
+        environment_id:
+          type: string
+          description: Managed environment this worker is running inside, when Mobius started
+            it in a Sprite or another managed execution environment.
         instance_status:
           type: string
           enum:
@@ -6677,6 +6994,19 @@ components:
           type: integer
           minimum: 0
           description: Count of `instance_status == "stale"` rows.
+    WorkerSocketModelCapability:
+      type: object
+      additionalProperties: false
+      required:
+      - provider
+      - model
+      properties:
+        provider:
+          type: string
+          description: LLM provider identifier, such as `ollama`.
+        model:
+          type: string
+          description: Provider-local model name.
     WorkerSocketFrame:
       oneOf:
       - $ref: '#/components/schemas/WorkerSocketRegisterFrame'
@@ -6704,19 +7034,6 @@ components:
       type: string
       description: Client-supplied correlation and short-window deduplication key. When present
         on a client frame, the server echoes it on the response frame.
-    WorkerSocketModelCapability:
-      type: object
-      additionalProperties: false
-      required:
-      - provider
-      - model
-      properties:
-        provider:
-          type: string
-          description: LLM provider identifier, such as `ollama`.
-        model:
-          type: string
-          description: Provider-local model name.
     WorkerSocketLeaseConfig:
       type: object
       additionalProperties: false
@@ -6788,6 +7105,10 @@ components:
           type: string
         version:
           type: string
+        environment_id:
+          type: string
+          description: Environment this worker is running inside, when the worker was started
+            by Mobius in a Sprite or other managed environment.
         capabilities:
           type: array
           items:
@@ -6924,6 +7245,9 @@ components:
         action_name:
           type: string
           description: Present for `action_execution` jobs.
+        environment_id:
+          type: string
+          description: Present when the job is pinned to a managed environment worker.
         provider:
           type: string
           description: Present for `llm_generation` jobs.
@@ -9004,6 +9328,86 @@ components:
           description: Toolkit assignments for this agent, in position order.
           items:
             $ref: '#/components/schemas/ToolkitAssignment'
+    AgentTableAccessMode:
+      type: string
+      enum:
+      - read
+      - append
+      - write
+      description: Table operations the agent may perform through memory bindings.
+    AgentTableGrant:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - agent_id
+      - table_id
+      - access_mode
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+          description: Grant ID.
+        agent_id:
+          type: string
+          description: Agent receiving access.
+        table_id:
+          type: string
+          description: Stable table ID granted to the agent.
+        access_mode:
+          $ref: '#/components/schemas/AgentTableAccessMode'
+        instructions:
+          type: string
+          description: Author instructions for how the agent should use this table.
+        created_by:
+          type: string
+          description: User ID of the principal who last replaced the grant set.
+        created_at:
+          type: string
+          format: date-time
+          description: Record creation timestamp.
+        updated_at:
+          type: string
+          format: date-time
+          description: Last update timestamp.
+    AgentTableGrantInput:
+      type: object
+      additionalProperties: false
+      required:
+      - table_id
+      - access_mode
+      properties:
+        table_id:
+          type: string
+          description: Stable table ID to grant.
+        access_mode:
+          $ref: '#/components/schemas/AgentTableAccessMode'
+        instructions:
+          type: string
+          description: Author instructions for how the agent should use this table.
+    ReplaceAgentTableGrantsRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - grants
+      properties:
+        grants:
+          type: array
+          description: Full replacement set of table grants for the agent.
+          items:
+            $ref: '#/components/schemas/AgentTableGrantInput'
+    AgentTableGrantListResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      properties:
+        items:
+          type: array
+          description: Durable table memory grants for this agent.
+          items:
+            $ref: '#/components/schemas/AgentTableGrant'
     Skill:
       type: object
       additionalProperties: false
@@ -9465,9 +9869,9 @@ components:
     Automation:
       type: object
       additionalProperties: false
-      description: An automation. The `triggers` array is part of the automation resource
-        itself — clients add, remove, and edit triggers by sending the desired full set via
-        `PATCH /automations/{handle}`. There is no separate trigger CRUD surface.
+      description: An automation. The `triggers` array reports the currently materialized
+        runnable triggers. Desired triggers are authored in `AutomationSpec.triggers` and
+        reconciled when a version is published.
       required:
       - id
       - org_id
@@ -9603,17 +10007,11 @@ components:
           additionalProperties:
             type: string
           description: Free-form label map used to organise automations in listings and search.
-        triggers:
-          type: array
-          description: Triggers to create with the automation.
-          items:
-            $ref: '#/components/schemas/AutomationTriggerInput'
     UpdateAutomationRequest:
       type: object
       additionalProperties: false
-      description: 'Partial update of the automation. When `triggers` is present it replaces
-        the full trigger set: entries with `id` are updated in place, entries without are
-        created, and triggers absent from the list are deleted.'
+      description: Partial update of automation metadata. Desired triggers live in `AutomationSpec.triggers`
+        and are materialized when a version is published.
       properties:
         name:
           type: string
@@ -9639,12 +10037,6 @@ components:
           additionalProperties:
             type: string
           description: Free-form label map used to organise automations in listings and search.
-        triggers:
-          type: array
-          description: Full replace-set of triggers. Omit the field to leave triggers untouched.
-            Supply an empty array to delete all triggers.
-          items:
-            $ref: '#/components/schemas/AutomationTriggerInput'
     AutomationVersion:
       type: object
       additionalProperties: false
@@ -9682,11 +10074,7 @@ components:
             is the currently runnable version; `superseded` is a prior published version retained
             for historical runs.
         spec:
-          type: object
-          additionalProperties: true
-          description: Authoring representation of the automation spec. Free-form, but the
-            engine recognises a typed `defaults` sub-object (`AutomationSpecDefaults`) for
-            run-level guards such as `wall_clock_timeout`.
+          $ref: '#/components/schemas/AutomationSpec'
         compiled_plan:
           type: object
           additionalProperties: true
@@ -9703,6 +10091,348 @@ components:
           type: string
           format: date-time
           description: Record creation timestamp.
+    AutomationSpec:
+      type: object
+      additionalProperties: false
+      description: Authoring representation of an automation.
+      required:
+      - steps
+      properties:
+        schema_version:
+          type: string
+          enum:
+          - '1'
+          default: '1'
+          description: Automation spec schema version. Current value is `1`.
+        name:
+          type: string
+          description: Optional spec-local display name.
+        description:
+          type: string
+          description: Optional spec-local Markdown description.
+        inputs:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/AutomationSpecInput'
+        concurrency:
+          type: string
+          enum:
+          - allow
+          - queue
+          - skip
+          - replace
+          description: Behavior when a run starts while another run of the same automation
+            is active.
+        triggers:
+          type: array
+          description: Desired triggers materialized when a version is published.
+          items:
+            $ref: '#/components/schemas/AutomationSpecTrigger'
+        steps:
+          type: array
+          items:
+            $ref: '#/components/schemas/AutomationStep'
+        cleanup:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        defaults:
+          $ref: '#/components/schemas/AutomationSpecDefaults'
+    AutomationSpecInput:
+      type: object
+      additionalProperties: false
+      properties:
+        type:
+          type: string
+        description:
+          type: string
+        required:
+          type: boolean
+        default:
+          nullable: true
+    AutomationSpecTrigger:
+      type: object
+      additionalProperties: false
+      required:
+      - kind
+      properties:
+        key:
+          type: string
+          description: Stable user-authored trigger key within the spec.
+        name:
+          type: string
+          description: Human-readable trigger name.
+        kind:
+          type: string
+          enum:
+          - webhook
+          - schedule
+          - event
+        enabled:
+          type: boolean
+        config:
+          type: object
+          additionalProperties: true
+          description: Kind-specific trigger configuration.
+        concurrency_policy:
+          type: string
+          enum:
+          - allow
+          - queue
+          - skip
+          - replace
+        max_concurrent_runs:
+          type: integer
+          minimum: 1
+    AutomationStep:
+      type: object
+      additionalProperties: false
+      required:
+      - key
+      - kind
+      - config
+      properties:
+        key:
+          type: string
+          description: Stable step key within the spec.
+        name:
+          type: string
+          description: Human-readable step name.
+        kind:
+          type: string
+          enum:
+          - agent
+          - action
+          - sleep
+          - wait_for_event
+          - interaction
+        config:
+          oneOf:
+          - $ref: '#/components/schemas/AutomationAgentStep'
+          - $ref: '#/components/schemas/AutomationActionStep'
+          - $ref: '#/components/schemas/AutomationSleepStep'
+          - $ref: '#/components/schemas/AutomationWaitForEventStep'
+          - $ref: '#/components/schemas/AutomationInteractionStep'
+          description: Kind-specific step configuration.
+        input:
+          type: object
+          additionalProperties: true
+          description: Step-local input object resolved when the step starts. String leaves
+            may contain `{{ inputs.* }}` or `{{ context.* }}` templates.
+        retry:
+          $ref: '#/components/schemas/AutomationRetryPolicy'
+        timeout:
+          $ref: '#/components/schemas/AutomationTimeoutPolicy'
+        save_as:
+          type: string
+          description: Context key used to store this step's output. Defaults to `key`.
+    AutomationSpecDefaults:
+      type: object
+      additionalProperties: false
+      description: Run-level defaults inside the automation spec. Lives at `spec.defaults`
+        in the JSON the engine compiles.
+      properties:
+        wall_clock_timeout:
+          type: string
+          description: Run wall-clock budget as a Go duration string (e.g. `30m`, `2h`, `90s`).
+            When set, the engine stamps `wall_clock_deadline_at = run.started_at + wall_clock_timeout`
+            and the reaper fails the run after that instant even if a step executor is still
+            grinding. Omit or set to `0` to disable the guard.
+        environment:
+          $ref: '#/components/schemas/AutomationEnvironmentPolicy'
+    AutomationEnvironmentPolicy:
+      type: object
+      additionalProperties: false
+      description: 'Automatic managed-environment policy for automation execution. Omit to
+        use the product default: each agent gets a persistent agent-bound environment, while
+        direct environment actions get a run-bound environment. Set `disabled: true` to opt
+        out.'
+      properties:
+        disabled:
+          type: boolean
+          description: Disable automatic environment allocation.
+        mode:
+          $ref: '#/components/schemas/EnvironmentMode'
+        environment_id:
+          type: string
+          description: Existing dedicated environment to use for this automation.
+        template_id:
+          type: string
+          description: Environment template to use when Mobius creates one.
+        provider:
+          $ref: '#/components/schemas/EnvironmentProvider'
+        runtime_version:
+          type: string
+          description: Mobius worker runtime version to install when starting the worker.
+        auto_start_worker:
+          type: boolean
+          description: Whether Mobius should start the managed worker automatically.
+        retention_policy:
+          $ref: '#/components/schemas/EnvironmentRetentionPolicy'
+    AutomationAgentStep:
+      type: object
+      additionalProperties: false
+      description: Agent step configuration recognised inside `AutomationSpec.steps[].config`.
+      required:
+      - agent_id
+      - instructions
+      properties:
+        agent_id:
+          type: string
+        instructions:
+          type: string
+        tool_names:
+          type: array
+          items:
+            type: string
+        output_schema:
+          type: object
+          additionalProperties: true
+        max_turns:
+          type: integer
+          minimum: 1
+        model_route:
+          $ref: '#/components/schemas/AutomationModelRoute'
+        memory_tables:
+          type: array
+          items:
+            $ref: '#/components/schemas/AutomationAgentMemoryTableRef'
+    AutomationModelRoute:
+      type: object
+      additionalProperties: false
+      required:
+      - mode
+      properties:
+        mode:
+          type: string
+          enum:
+          - managed
+          - byo_provider
+          - worker
+        environment_id:
+          type: string
+          description: Managed environment to route worker-backed model calls to.
+        provider:
+          type: string
+        model:
+          type: string
+        queue:
+          type: string
+        required_capabilities:
+          type: array
+          items:
+            type: string
+    AutomationAgentMemoryTableRef:
+      type: object
+      additionalProperties: false
+      required:
+      - table_id
+      - access_mode
+      properties:
+        table_id:
+          type: string
+        access_mode:
+          type: string
+          enum:
+          - read
+          - append
+          - write
+        instructions:
+          type: string
+    AutomationActionStep:
+      type: object
+      additionalProperties: false
+      description: Action step configuration recognised inside `AutomationSpec.steps[].config`.
+      required:
+      - action_name
+      properties:
+        action_name:
+          type: string
+        execution_location:
+          type: string
+          enum:
+          - managed
+          - worker
+          - environment
+        environment_id:
+          type: string
+          description: 'Managed environment to route this worker-backed action to. When omitted
+            for `execution_location: environment`, Mobius resolves one from `spec.defaults.environment`.'
+        parameters:
+          type: object
+          additionalProperties: true
+    AutomationSleepStep:
+      type: object
+      additionalProperties: false
+      description: Sleep step configuration recognised inside `AutomationSpec.steps[].config`.
+      properties:
+        duration:
+          type: string
+          description: Go duration string such as `30s`, `5m`, or `2h`.
+        until:
+          type: string
+          format: date-time
+    AutomationWaitForEventStep:
+      type: object
+      additionalProperties: false
+      description: Wait-for-event step configuration recognised inside `AutomationSpec.steps[].config`.
+      required:
+      - event_type
+      properties:
+        event_type:
+          type: string
+        source_id:
+          type: string
+        match:
+          type: object
+          additionalProperties: true
+    AutomationInteractionStep:
+      type: object
+      additionalProperties: false
+      description: Human interaction step configuration recognised inside `AutomationSpec.steps[].config`.
+      required:
+      - protocol
+      - targets
+      properties:
+        protocol:
+          type: string
+          enum:
+          - request_information
+          - request_approval
+          - request_review
+        targets:
+          type: array
+          items:
+            type: string
+        prompt:
+          type: string
+        resolution_policy:
+          type: string
+        spec:
+          type: object
+          additionalProperties: true
+    AutomationRetryPolicy:
+      type: object
+      additionalProperties: false
+      properties:
+        max_attempts:
+          type: integer
+          minimum: 1
+        delay:
+          type: string
+          description: Go duration string such as `30s`, `5m`, or `2h`.
+    AutomationTimeoutPolicy:
+      type: object
+      additionalProperties: false
+      properties:
+        duration:
+          type: string
+          description: Go duration string such as `30s`, `5m`, or `2h`.
+        on_timeout:
+          type: string
+          enum:
+          - fail
     AutomationVersionListResponse:
       type: object
       additionalProperties: false
@@ -9721,11 +10451,7 @@ components:
       - spec
       properties:
         spec:
-          type: object
-          additionalProperties: true
-          description: Authoring representation of the automation spec. Free-form, but the
-            engine recognises a typed `defaults` sub-object (`AutomationSpecDefaults`) for
-            run-level guards such as `wall_clock_timeout`.
+          $ref: '#/components/schemas/AutomationSpec'
         compiled_plan:
           type: object
           additionalProperties: true
@@ -9817,63 +10543,6 @@ components:
           type: string
           format: date-time
           description: Last update timestamp.
-    AutomationTriggerInput:
-      type: object
-      additionalProperties: false
-      description: One trigger as supplied in CreateAutomationRequest.triggers or in UpdateAutomationRequest.triggers.
-        Supply `id` to update an existing trigger in place; omit `id` to create a new one.
-      required:
-      - name
-      - kind
-      properties:
-        id:
-          type: string
-          description: Existing trigger id. Omit for new triggers.
-        name:
-          type: string
-          description: Human-readable trigger name.
-        kind:
-          type: string
-          enum:
-          - webhook
-          - schedule
-          - event
-          description: Trigger backing kind.
-        enabled:
-          type: boolean
-          description: Whether the trigger should be allowed to start runs.
-        config:
-          type: object
-          additionalProperties: true
-          description: Kind-specific configuration (schedule cron, event matcher, webhook
-            options).
-        concurrency_policy:
-          type: string
-          enum:
-          - allow
-          - queue
-          - skip
-          - replace
-          description: Behavior when a fire arrives while prior runs of this automation are
-            still active.
-        max_concurrent_runs:
-          type: integer
-          minimum: 1
-          description: Cap on concurrent runs allowed from this trigger.
-        webhook_handle:
-          type: string
-          description: Public webhook handle to assign. Set only for webhook-kind triggers.
-        signing_secret:
-          type: string
-          description: HMAC secret used to verify inbound webhook signatures. Set only for
-            webhook-kind triggers.
-        event_type:
-          type: string
-          description: Source-event type this trigger subscribes to. Set only for event-kind
-            triggers.
-        source_id:
-          type: string
-          description: Optional source identifier used to scope event matching.
     WebhookDeliveryResponse:
       type: object
       additionalProperties: false
@@ -10035,6 +10704,9 @@ components:
         error_message:
           type: string
           description: Human-readable failure summary; populated on `failed` runs.
+        error_type:
+          type: string
+          description: Machine-readable failure classification when available.
         wake_at:
           type: string
           format: date-time
@@ -10233,11 +10905,16 @@ components:
         event_type:
           type: string
           description: Event type from the run-stream taxonomy (e.g. `run.started`, `step.completed`,
-            `tool.called`, `interaction.requested`, `artifact.created`, `cleanup.completed`).
+            `wait.opened`, `interaction.requested`, `action.completed`, `artifact.created`,
+            `limit.reached`, `usage.recorded`).
         step_id:
           type: string
           nullable: true
           description: ID of the step this event belongs to, when applicable.
+        step_key:
+          type: string
+          nullable: true
+          description: Automation step key this event belongs to, when applicable.
         payload:
           type: object
           additionalProperties: true
