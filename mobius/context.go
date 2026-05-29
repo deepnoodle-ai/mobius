@@ -43,6 +43,7 @@ type executionContext struct {
 	runID         string
 	jobID         string
 	stepID        string
+	leaseToken    string
 	attempt       int
 	queue         string
 }
@@ -54,6 +55,7 @@ func (c *executionContext) ProjectID() string                { return c.projectH
 func (c *executionContext) EnvironmentID() string            { return c.environmentID }
 func (c *executionContext) RunID() string                    { return c.runID }
 func (c *executionContext) JobID() string                    { return c.jobID }
+func (c *executionContext) LeaseToken() string               { return c.leaseToken }
 func (c *executionContext) WorkflowName() string             { return "" }
 func (c *executionContext) StepName() string                 { return c.stepID }
 func (c *executionContext) Attempt() int                     { return c.attempt }
@@ -70,6 +72,7 @@ func newContext(ctx context.Context, client *Client, j *runtimeJob, logger *slog
 		runID:         j.RunID,
 		jobID:         j.JobID,
 		stepID:        j.StepID,
+		leaseToken:    j.LeaseToken,
 		attempt:       j.Attempt,
 		queue:         j.Queue,
 	}

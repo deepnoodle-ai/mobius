@@ -26,6 +26,10 @@ type environmentContext interface {
 	StepName() string
 }
 
+type environmentLeaseContext interface {
+	LeaseToken() string
+}
+
 type BashInput struct {
 	Command        string            `json:"command"`
 	Dir            string            `json:"dir,omitempty"`
@@ -345,6 +349,15 @@ func NewEnvironmentArtifactPublishAction() mobius.Action {
 		ec, ok := ctx.(environmentContext)
 		if !ok || ec.MobiusClient() == nil {
 			return nil, fmt.Errorf("mobius client is not available in worker context")
+		}
+		if lc, ok := ctx.(environmentLeaseContext); ok {
+			if leaseToken := strings.TrimSpace(lc.LeaseToken()); leaseToken != "" {
+				ref, err := ec.MobiusClient().CreateArtifactRefFromFileWithLease(ctx, path, in.Name, in.Mime, leaseToken, in.Tags)
+				if err != nil {
+					return nil, err
+				}
+				return ref, nil
+			}
 		}
 		artifact, err := ec.MobiusClient().CreateArtifactFromFile(ctx, path, in.Name, in.Mime, ec.RunID(), ec.StepName(), in.Tags)
 		if err != nil {

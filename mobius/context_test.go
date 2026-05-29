@@ -36,6 +36,7 @@ func TestContext_JobIdentity(t *testing.T) {
 		RunID:         "run_1",
 		ProjectHandle: "test-project",
 		StepID:        "step_1",
+		LeaseToken:    "lease_1",
 		Attempt:       3,
 		Queue:         "default",
 	})
@@ -46,6 +47,9 @@ func TestContext_JobIdentity(t *testing.T) {
 	assert.Equal(t, ctx.Attempt(), 3)
 	assert.Equal(t, ctx.Queue(), "default")
 	assert.Equal(t, ctx.WorkflowName(), "")
+	leaseCtx, ok := ctx.(interface{ LeaseToken() string })
+	assert.True(t, ok)
+	assert.Equal(t, leaseCtx.LeaseToken(), "lease_1")
 
 	var _ context.Context = ctx
 }
